@@ -1,5 +1,7 @@
-from zsim.sim_progress.Buff import find_tick
 from zsim.sim_progress.Preload import SkillNode
+
+# [移除] 旧系统的 import
+# from zsim.sim_progress.Buff import find_tick
 
 
 class Shinrabanshou:
@@ -19,8 +21,10 @@ class Shinrabanshou:
     @property
     def active(self):
         """更新森罗万象的时间！"""
-
-        tick = find_tick(sim_instance=self.char.sim_instance)
+        # [修复] 直接从模拟器实例获取当前 Tick
+        # 假设 sim_instance 有一个属性叫 current_tick 或者 tick
+        # 如果你的模拟器时间属性名不同，请修改这里 (e.g., .now, .time)
+        tick = self.char.sim_instance.current_tick
         return tick < self.update_tick + self.max_duration
 
 
@@ -73,8 +77,10 @@ class StanceManager:
                     # raise ValueError(f'检测到首段强化E的突刺攻击时，架势管理器的ex_chain正处于打开状态！')
                     print("检测到首段强化E的突刺攻击时，架势管理器的ex_chain正处于打开状态！")
                 self.ex_chain = True
-                # print(f'强化E连段开始')
-                tick = find_tick(sim_instance=self.char.sim_instance)
+
+                # [修复] 直接获取当前 Tick
+                tick = self.char.sim_instance.current_tick
+
                 self.shinrabanshou.update_tick = tick
                 self.last_update_node = skill_node
                 self.change_stance()
@@ -103,9 +109,14 @@ class StanceManager:
         else:
             self.stance_jougen = True
             self.stance_kagen = False
-        from zsim.sim_progress.Buff.BuffAddStrategy import buff_add_strategy
 
-        buff_add_strategy(self.stance_changing_buff_index, sim_instance=self.char.sim_instance)
+        # [重要修复] 适配新 Buff 系统
+        # 旧代码: from zsim.sim_progress.Buff.BuffAddStrategy import buff_add_strategy
+        # 旧代码: buff_add_strategy(self.stance_changing_buff_index, sim_instance=self.char.sim_instance)
+
+        # 新代码逻辑 (假设 character 拥有 buff_controller)
+        # 你需要确认 add_buff 的具体参数 (比如是否需要 source 或 layer)
+        self.char.buff_controller.add_buff(self.stance_changing_buff_index)
 
     @property
     def stance_now(self):

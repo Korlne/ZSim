@@ -5,9 +5,16 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel
 
 from zsim.define import config
-from zsim.sim_progress.Buff import (
-    BuffLoadLoop,
-    buff_add,
+from zsim.sim_progress.Buff.BuffManager.BuffManagerClass import BuffManager
+
+# [Refactor] 移除旧的 Buff 系统引用
+# from zsim.sim_progress.Buff import (
+#     BuffLoadLoop,
+#     buff_add,
+# )
+# [Refactor] 引入新的 Buff 控制器和管理器
+from zsim.sim_progress.Buff.GlobalBuffControllerClass.global_buff_controller import (
+    GlobalBuffController,
 )
 from zsim.sim_progress.Character.skill_class import Skill
 from zsim.sim_progress.data_struct import ActionStack, Decibelmanager, ListenerManger, ZSimTimer
@@ -17,7 +24,9 @@ from zsim.sim_progress.Preload import PreloadClass
 from zsim.sim_progress.RandomNumberGenerator import RNG
 from zsim.sim_progress.Report import start_report_threads, stop_report_threads
 from zsim.sim_progress.ScheduledEvent import ScheduledEvent as ScE
-from zsim.sim_progress.Update.Update_Buff import update_time_related_effect
+
+# [Refactor] 移除旧的时间更新函数
+# from zsim.sim_progress.Update.Update_Buff import update_time_related_effect
 from zsim.sim_progress.zsim_event_system.accessor import ScheduleDataAccessor
 from zsim.simulator.dataclasses import (
     CharacterData,
@@ -68,6 +77,10 @@ class Simulator:
     - 并行模式标志（in_parallel_mode）
     - 模拟配置，用于控制并行模式下，模拟器作为子进程的参数（sim_cfg）
     """
+
+    # [Refactor] 初始化全局 Buff 控制器 (加载数据库)
+    # 确保在模拟器实例化前，Buff数据库已加载
+    GlobalBuffController.get_instance()
 
     tick: int
     crit_seed: int
@@ -154,6 +167,13 @@ class Simulator:
         self.tick = 0
         self.crit_seed = 0
         self.char_data = CharacterData(self.init_data, sim_cfg, sim_instance=self)
+
+        # [Refactor] 为每个角色初始化 BuffManager
+        # 这一步是连接新旧系统的关键，确保 Character 拥有管理 Buff 的能力
+        for char in self.char_data.char_obj_list:
+            if not hasattr(char, "buff_manager"):
+                char.buff_manager = BuffManager(char.NAME, self)
+
         self.load_data = LoadData(
             name_box=self.init_data.name_box,
             Judge_list_set=self.init_data.Judge_list_set,
@@ -175,7 +195,7 @@ class Simulator:
         self.preload = PreloadClass(
             skills,
             load_data=self.load_data,
-            apl_path=config.apl_mode.enabled if api_apl_path is None else api_apl_path,
+            apl_path=config.database.apl_file_path if api_apl_path is None else api_apl_path,
             sim_instance=self,
         )
         self.game_state: dict[str, Any] = {
@@ -190,8 +210,10 @@ class Simulator:
         self.decibel_manager = Decibelmanager(self)
         self.listener_manager = ListenerManger(self)
         self.rng_instance = RNG(sim_instance=self)
-        # 监听器的初始化需要整个Simulator实例，因此在这里进行初始化
-        self.load_data.buff_0_manager.initialize_buff_listener()
+
+        # [Refactor] 移除旧监听器的初始化 (因为 LoadData 中的 buff_0_manager 已被废弃)
+        # self.load_data.buff_0_manager.initialize_buff_listener()
+
         self.timer: ZSimTimer = ZSimTimer(sim_instance=self)
         self.schedule_data_accessor: ScheduleDataAccessor = ScheduleDataAccessor(
             schedule_data=self.schedule_data
@@ -208,13 +230,13 @@ class Simulator:
             self.cli_init_simulator(sim_cfg)
         while True:
             # Tick Update
-            # report_to_log(f"[Update] Tick step to {tick}")
-            update_time_related_effect(
-                self.global_stats.DYNAMIC_BUFF_DICT,
-                self.tick,
-                self.load_data.exist_buff_dict,
-                self.schedule_data.enemy,
-            )
+            # [Refactor] 移除旧的时间更新，改用 BuffManager.tick
+            # update_time_related_effect(
+            #     self.global_stats.DYNAMIC_BUFF_DICT,
+            #     self.tick,
+            #     self.load_data.exist_buff_dict,
+            #     self.schedule_data.enemy,
+            # )
 
             # Preload
             self.preload.do_preload(
@@ -244,6 +266,8 @@ class Simulator:
                     self.tick,
                     self.load_data.action_stack,
                 )
+
+            # 伤害判定逻辑
             DamageEventJudge(
                 self.tick,
                 self.load_data.load_mission_dict,
@@ -251,24 +275,18 @@ class Simulator:
                 self.schedule_data.event_list,
                 self.char_data.char_obj_list,
             )
-            BuffLoadLoop(
-                self.tick,
-                self.load_data.load_mission_dict,
-                self.load_data.exist_buff_dict,
-                self.init_data.name_box,
-                self.load_data.LOADING_BUFF_DICT,
-                self.load_data.all_name_order_box,
-                sim_instance=self,
-            )
-            buff_add(
-                self.tick,
-                self.load_data.LOADING_BUFF_DICT,
-                self.global_stats.DYNAMIC_BUFF_DICT,
-                self.schedule_data.enemy,
-            )
 
-            # Load.DamageEventJudge(tick, load_data.load_mission_dict, schedule_data.enemy, schedule_data.event_list, char_data.char_obj_list)
-            # ScheduledEvent
+            # [Refactor] 驱动新 Buff 系统
+            # 遍历所有角色，更新其 BuffManager (处理过期、冷却等)
+            for char in self.char_data.char_obj_list:
+                if hasattr(char, "buff_manager"):
+                    char.buff_manager.tick(self.tick)
+
+            # [Refactor] 移除旧的 Buff 加载与添加逻辑
+            # BuffLoadLoop(...)
+            # buff_add(...)
+
+            # ScheduledEvent (事件调度)
             sce = ScE(
                 self.global_stats.DYNAMIC_BUFF_DICT,
                 self.schedule_data,
@@ -278,9 +296,8 @@ class Simulator:
                 sim_instance=self,
             )
             sce.event_start()
-            # self.tick += 1
-            # if sce.data.processed_times > 0:
-            # print(f"\r{self.tick}", end="")
+
+            # 命令行输出日志 (Log Printing)
             if self.schedule_data.processed_state_this_tick and self.tick != 0:
                 minutes = self.tick // 3600
                 rest_seconds = self.tick % 3600 / 60
@@ -294,7 +311,6 @@ class Simulator:
                 )
                 print("---------------------------------------------")
 
-            # self.tick += 1
             self.timer.update_tick()
 
             self.schedule_data.reset_processed_event()

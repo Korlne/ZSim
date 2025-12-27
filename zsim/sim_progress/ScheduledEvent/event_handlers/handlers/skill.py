@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from zsim.sim_progress import Report
-from zsim.sim_progress.Buff import ScheduleBuffSettle
+from zsim.sim_progress.Buff.ScheduleBuffSettle import ScheduleBuffSettle
 from zsim.sim_progress.Character import Character
 from zsim.sim_progress.data_struct import (
     ActionStack,
