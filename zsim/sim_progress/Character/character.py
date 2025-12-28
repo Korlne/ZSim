@@ -884,10 +884,24 @@ class Character:
         #     print(f"{self.NAME} 释放技能时喧响值已满3000点！")
         from zsim.sim_progress.ScheduledEvent.Calculator import cal_buff_total_bonus
 
-        dynamic_buff = self.sim_instance.global_stats.DYNAMIC_BUFF_DICT
-        enabled_buff = tuple(dynamic_buff[self.NAME])
+        # [Refactor] 使用 BuffManager 获取当前激活的 Buff
+        # dynamic_buff = self.sim_instance.global_stats.DYNAMIC_BUFF_DICT # OLD
+
+        enabled_buff = []
+        if hasattr(self, "buff_manager"):
+            enabled_buff = tuple(self.buff_manager._active_buffs.values())
+
+        # 注意：cal_buff_total_bonus 可能还需要 Enemy 的 Buff (视具体实现而定)。
+        # 如果喧响获取效率只看自身的 Buff，则传 self 的即可。
+        # 如果 Calculator.cal_buff_total_bonus 内部逻辑需要合并 Enemy Buff，
+        # 则这里需要调整调用方式。根据 Calculator.py 的重构，它接受 enabled_buff 元组。
+        # 假设这里只关心角色自身的 Buff 对 "喧响获得效率" 的加成。
+
         buff_bonus_dict = cal_buff_total_bonus(
-            enabled_buff=enabled_buff, judge_obj=None, sim_instance=self.sim_instance
+            enabled_buff=enabled_buff,
+            judge_obj=None,
+            sim_instance=self.sim_instance,
+            char_name=self.NAME,
         )
         decibel_get_ratio = buff_bonus_dict.get("喧响获得效率", 0)
         final_decibel_change_value = decibel_value * (1 + decibel_get_ratio)

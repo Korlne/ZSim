@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
-from zsim.define import ALICE_REPORT, HUGO_REPORT  # 假设这是项目定义的常量
-from zsim.sim_progress.Buff.BuffAddStrategy import buff_add_strategy
+from zsim.define import ALICE_REPORT, HUGO_REPORT
 
 # ==============================================================================
 # 1. 标准导入 (Standard Imports)
@@ -137,9 +136,6 @@ def example_custom_event(buff: "Buff", event: "ZSimEventABC", context: "BaseZSim
             return
 
     # 3. 构造自定义事件 (以 PolarizedAssaultEvent 为例)
-    # 需导入对应的数据结构类，假设它在 data_struct 下
-    # from zsim.sim_progress.data_struct import PolarizedAssaultEvent
-
     target = getattr(event, "target", None)
     if not target:
         return
@@ -198,12 +194,30 @@ def example_complex_followup(buff: "Buff", event: "ZSimEventABC", context: "Base
     ratio = 1000 + min(300, rest_tick) / 60 * 280
 
     # 5. 动态添加数值 Buff
-    buff_add_strategy(
-        "Buff-角色-雨果-决算倍率增幅",  # 目标 Buff 名称
-        specified_count=ratio,  # 设置层数/数值
-        benifit_list=[buff.owner.name],
-        sim_instance=buff.sim_instance,
-    )
+    target_buff_name = "Buff-角色-雨果-决算倍率增幅"
+
+    # 假设是要给自己添加 Buff
+    if hasattr(buff.owner, "buff_manager"):
+        # 调用 Manager 添加 Buff。具体 API 取决于 BuffManager 的实现
+        # 这里假设 add_buff 返回 Buff 对象，或者通过 add_stack 更新层数/数值
+        new_buff = buff.owner.buff_manager.add_buff(target_buff_name)
+
+        # 如果该 Buff 是数值堆叠型 (Stackable/Count based)，更新其层数或数值
+        # 注意: Buff系统重构后，value 通常由 Effect 定义，但如果是动态数值 Buff，
+        # 可能需要通过 update_stack 或修改 custom_data 来实现
+        if new_buff:
+            # 假设这是一个层数代表数值的 Buff
+            # 先清空旧数值（如果设计是不叠加的话）或直接设置
+            # 这里简单演示调用 add_stack
+            # 实际数值传递可能需要更复杂的 Effect 参数传递机制，视具体 Buff 定义而定
+            if hasattr(new_buff, "add_stack"):
+                # 如果逻辑是设定为 ratio，可能需要先 reset 再 add，或者 diff
+                # 这里仅做示例:
+                new_buff.dy.count = int(ratio)  # 强制设定
+                # 或者: new_buff.add_stack(int(ratio))
+    else:
+        if HUGO_REPORT:
+            print(f"Error: Owner {buff.owner.name} does not have buff_manager.")
 
     # 6. 生成并调度追击技能
     # 假设从 sim_instance 获取 preload 数据

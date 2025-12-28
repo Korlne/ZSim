@@ -66,9 +66,6 @@ def astra_yao_core_passive_atk_bonus(
 ):
     """
     耀嘉音 - 核心被动攻击力加成
-    逻辑：
-        在 Buff 激活或刷新时，根据持有者(owner)的实时攻击力计算层数 (0.35 * ATK)。
-        刷新时延长持续时间。
     """
     sim = buff.sim_instance
     char = buff.owner
@@ -82,7 +79,8 @@ def astra_yao_core_passive_atk_bonus(
 
     # 2. 计算层数
     static_atk = getattr(char.statement, "ATK", 0)
-    target_count = min(int(static_atk * core_passive_ratio), buff.config.max_stacks)
+    # [Fix] Access ft instead of config, maxcount instead of max_stacks
+    target_count = min(int(static_atk * core_passive_ratio), buff.ft.maxcount)
 
     buff.dy.count = target_count
 
@@ -93,9 +91,10 @@ def astra_yao_core_passive_atk_bonus(
 
     is_refresh = buff.dy.active and last_end_tick >= current_tick
 
+    # [Fix] Access ft.maxduration instead of config.duration
     if is_refresh:
         new_end_tick = min(
-            last_end_tick + duration_added_per_active, current_tick + buff.config.duration
+            last_end_tick + duration_added_per_active, current_tick + buff.ft.maxduration
         )
         buff.dy.end_tick = new_end_tick
     else:
