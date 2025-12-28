@@ -6,13 +6,6 @@ from pydantic import BaseModel
 
 from zsim.define import config
 from zsim.sim_progress.Buff.BuffManager.BuffManagerClass import BuffManager
-
-# [Refactor] 移除旧的 Buff 系统引用
-# from zsim.sim_progress.Buff import (
-#     BuffLoadLoop,
-#     buff_add,
-# )
-# [Refactor] 引入新的 Buff 控制器和管理器
 from zsim.sim_progress.Buff.GlobalBuffControllerClass.global_buff_controller import (
     GlobalBuffController,
 )
@@ -24,9 +17,6 @@ from zsim.sim_progress.Preload import PreloadClass
 from zsim.sim_progress.RandomNumberGenerator import RNG
 from zsim.sim_progress.Report import start_report_threads, stop_report_threads
 from zsim.sim_progress.ScheduledEvent import ScheduledEvent as ScE
-
-# [Refactor] 移除旧的时间更新函数
-# from zsim.sim_progress.Update.Update_Buff import update_time_related_effect
 from zsim.sim_progress.zsim_event_system.accessor import ScheduleDataAccessor
 from zsim.simulator.dataclasses import (
     CharacterData,
@@ -211,8 +201,7 @@ class Simulator:
         self.listener_manager = ListenerManger(self)
         self.rng_instance = RNG(sim_instance=self)
 
-        # [Refactor] 移除旧监听器的初始化 (因为 LoadData 中的 buff_0_manager 已被废弃)
-        # self.load_data.buff_0_manager.initialize_buff_listener()
+        # [Refactor] 已移除旧监听器的初始化调用
 
         self.timer: ZSimTimer = ZSimTimer(sim_instance=self)
         self.schedule_data_accessor: ScheduleDataAccessor = ScheduleDataAccessor(
@@ -229,15 +218,6 @@ class Simulator:
         if not use_api:
             self.cli_init_simulator(sim_cfg)
         while True:
-            # Tick Update
-            # [Refactor] 移除旧的时间更新，改用 BuffManager.tick
-            # update_time_related_effect(
-            #     self.global_stats.DYNAMIC_BUFF_DICT,
-            #     self.tick,
-            #     self.load_data.exist_buff_dict,
-            #     self.schedule_data.enemy,
-            # )
-
             # Preload
             self.preload.do_preload(
                 self.tick,
@@ -281,10 +261,6 @@ class Simulator:
             for char in self.char_data.char_obj_list:
                 if hasattr(char, "buff_manager"):
                     char.buff_manager.tick(self.tick)
-
-            # [Refactor] 移除旧的 Buff 加载与添加逻辑
-            # BuffLoadLoop(...)
-            # buff_add(...)
 
             # ScheduledEvent (事件调度)
             sce = ScE(

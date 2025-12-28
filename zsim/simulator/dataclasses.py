@@ -5,8 +5,7 @@ from zsim.define import saved_char_config
 from zsim.models.session.session_run import CharConfig, CommonCfg
 from zsim.sim_progress.Buff import Buff
 
-# 移除旧 Manager，导入新 Controller 和 移动后的 utils
-# from zsim.sim_progress.Buff.Buff0Manager import Buff0ManagerClass, change_name_box
+# [Refactor] 导入新 Controller 和 utils
 from zsim.sim_progress.Buff.GlobalBuffControllerClass.global_buff_controller import (
     GlobalBuffController,
 )

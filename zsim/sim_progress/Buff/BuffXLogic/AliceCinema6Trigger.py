@@ -1,82 +1,64 @@
 from typing import TYPE_CHECKING
 
-from .. import Buff, JudgeTools, check_preparation
-from ._buff_record_base_class import BuffRecordBaseClass as BRBC
+from zsim.sim_progress.Buff.Event.callbacks import BuffCallbackRepository
 
 if TYPE_CHECKING:
-    pass
+    from zsim.sim_progress.Buff.buff_class import Buff
+    from zsim.sim_progress.zsim_event_system.zsim_events import BaseZSimEventContext, ZSimEventABC
+
+# 定义逻辑ID，需与 buff_effect.csv 中的 logic_id 对应
+LOGIC_ID = "Alice_Cinema6_Trigger"
 
 
-class AliceCinema6TriggerRecord(BRBC):
-    def __init__(self):
-        super().__init__()
-        self.additional_attack_skill_tag = "1401_Cinema_6"  # 6画额外攻击的技能tag
+@BuffCallbackRepository.register(LOGIC_ID)
+def alice_c6_trigger(buff: "Buff", event: "ZSimEventABC", context: "BaseZSimEventContext"):
+    """
+    爱丽丝6画额外攻击逻辑：
+    在【决胜】状态下，队友的攻击命中会触发爱丽丝的额外攻击。
+    """
+    sim = buff.sim_instance
 
+    # 1. 确保事件类型是技能命中
+    # 在新的事件系统中，通常通过 event_type 或 isinstance 判断
+    # 这里监听的是 SkillHit 事件
+    if not hasattr(event, "event_origin") or not event.event_origin:
+        return
 
-class AliceCinema6Trigger(Buff.BuffLogic):
-    def __init__(self, buff_instance):
-        super().__init__(buff_instance)
-        self.buff_instance: Buff = buff_instance
-        self.xjudge = self.special_judge_logic
-        self.xhit = self.special_hit_logic
-        self.buff_0: "Buff | None" = None
-        self.record: BRBC | None = None
+    skill_node = event.event_origin  # event_origin 是 SkillNode
 
-    def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+    # 2. 获取爱丽丝对象
+    # buff 的 owner 或者通过 CID 查找
+    alice_char = sim.char_data.find_char_obj(CID=1401)
+    if not alice_char:
+        return
 
-    def check_record_module(self):
-        if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["爱丽丝"][self.buff_instance.ft.index]
-        assert self.buff_0 is not None, "buff_0不能为空"
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = AliceCinema6TriggerRecord()
-        self.record = self.buff_0.history.record
+    # 3. 过滤条件
+    # 3.1 过滤掉爱丽丝自己的技能
+    if skill_node.char_name == alice_char.NAME:
+        return
 
-    def special_judge_logic(self, **kwargs):
-        """爱丽丝的6画额外攻击逻辑判定函数，只会在决胜状态可用时放行队友技能的命中事件"""
-        self.check_record_module()
-        self.get_prepared(char_CID=1401)
-        assert self.record is not None, "记录模块未正确初始化，请检查函数"
-        assert self.record.char is not None, "角色未正确初始化，请检查函数"
-        from zsim.sim_progress.Character.Alice import Alice
+    # 3.2 检查爱丽丝是否处于决胜状态 (victory_state)
+    # 假设 Alice 类有这个属性，或者存储在 char.info 中
+    if not getattr(alice_char, "victory_state", False):
+        return
 
-        if not isinstance(self.record.char, Alice):
-            raise TypeError("【爱丽丝6画触发器警告】初始化时获取的角色并非爱丽丝，请检查初始化逻辑")
-        skill_node = kwargs.get("skill_node")
-        if skill_node is None:
-            return False
-        from zsim.sim_progress.Preload import SkillNode
+    # 3.3 过滤掉非命中帧 (事件系统通常只在命中时分发 SkillHit，这里做二次确认)
+    if not skill_node.is_hit_now(tick=sim.tick):
+        return
 
-        assert isinstance(skill_node, SkillNode), "skill_node必须为SkillNode类型"
-        # 首先过滤掉自己的技能
-        if skill_node.char_name == self.record.char.NAME:
-            return False
+    # 4. CD 检查 (内置 1秒/60tick CD)
+    # 假设 CD 为 0.5秒 或 1秒，此处沿用旧逻辑的 check_cd
+    # 我们使用 buff.dy.custom_data 来存储上一次触发时间
+    last_trigger = buff.dy.custom_data.get("last_c6_trigger", -9999)
+    # 假设CD是 60 tick (需确认具体数值)
+    cd_limit = 60
 
-        # 当爱丽丝不处于决胜状态时，不触发
-        if not self.record.char.victory_state:
-            # print(self.record.char.victory_state_update_tick, self.record.char.victory_state_attack_counter)
-            return False
-        # 过滤掉并非处于命中帧的技能
-        if not skill_node.is_hit_now(tick=self.buff_instance.sim_instance.tick):
-            return False
-        else:
-            if self.record.check_cd(tick_now=self.buff_instance.sim_instance.tick):
-                return True
-            else:
-                return False
+    if sim.tick - last_trigger < cd_limit:
+        return
 
-    def special_hit_logic(self, **kwargs):
-        """爱丽丝6画额外攻击触发器的业务函数，主要负责调用角色方法，添加额外攻击的Preload事件"""
-        self.check_record_module()
-        self.get_prepared(char_CID=1401)
-        assert self.record is not None, "记录模块未正确初始化，请检查函数"
-        assert self.record.char is not None, "角色未正确初始化，请检查函数"
-        from zsim.sim_progress.Character.Alice import Alice
-
-        if not isinstance(self.record.char, Alice):
-            raise TypeError("【爱丽丝6画触发器警告】初始化时获取的角色并非爱丽丝，请检查初始化逻辑")
-        self.record.char.spawn_extra_attack()
-        self.record.last_active_tick = self.buff_instance.sim_instance.tick
+    # 5. 执行逻辑：触发额外攻击
+    # spawn_extra_attack 是 Alice 角色类的方法
+    if hasattr(alice_char, "spawn_extra_attack"):
+        alice_char.spawn_extra_attack()
+        # 更新 CD
+        buff.dy.custom_data["last_c6_trigger"] = sim.tick

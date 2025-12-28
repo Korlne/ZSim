@@ -120,14 +120,22 @@ class MultiplierData:
 
         Returns:
             dict: 包含所有buff加成的字典
+
+        [Refactor] 优先从 Character.BuffManager 读取 Buff
         """
-        if self.char_name is None:
-            char_buff: list = []
+        # 尝试从新系统的 BuffManager 获取 Buff
+        if self.char_instance and hasattr(self.char_instance, "buff_manager"):
+            # 访问私有属性 _active_buffs (或者建议在 BuffManager 加一个 get_all_buffs 方法)
+            char_buff = list(self.char_instance.buff_manager._active_buffs.values())
         else:
-            try:
-                char_buff = dynamic_buff[self.char_name]
-            except KeyError:
+            # [旧逻辑回退]
+            if self.char_name is None:
                 char_buff = []
+            else:
+                try:
+                    char_buff = dynamic_buff[self.char_name]
+                except KeyError:
+                    char_buff = []
                 report_to_log(f"[WARNING] 动态Buff列表内没有角色 {self.char_name}", level=4)
 
         try:

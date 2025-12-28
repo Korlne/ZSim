@@ -6,7 +6,9 @@ import pandas as pd
 
 from zsim.define import EFFECT_FILE_PATH, EXIST_FILE_PATH
 from zsim.sim_progress.Buff.buff_class import Buff
-from zsim.sim_progress.Buff.Effect.definitions import BonusEffect, EffectBase
+
+# [Refactor] 补充导入 TriggerEffect
+from zsim.sim_progress.Buff.Effect.definitions import BonusEffect, EffectBase, TriggerEffect
 from zsim.sim_progress.Report import report_to_log
 
 
@@ -149,14 +151,14 @@ class GlobalBuffController:
         if isinstance(config_series, pd.DataFrame):
             config_series = config_series.iloc[0]
 
-        # 2. 创建实例 (Phase 1 的 Buff 类)
+        # 2. 创建实例
         # 注意：这里使用了全关键字参数，防止参数顺序冲突
         buff = Buff(
             config=config_series,  # 假设你的 Buff 类接收 config 参数
             sim_instance=sim,
         )
 
-        # 3. 注入 Effects (这是 Phase 2 的核心补充)
+        # 3. 注入 Effects
         buff.effects = self._create_effects_for_buff(buff_id)
 
         return buff
@@ -181,8 +183,31 @@ class GlobalBuffController:
             effects.append(effect)
 
         # 2. 处理触发器效果 (TriggerEffect)
-        # TODO: 从触发判断.csv 的某些字段解析 TriggerEffect
-        # 例如: 如果 simple_hit_logic 为 True，可能意味着需要注册 Hit 事件
+        # 检查该 Buff 是否存在于触发配置表中
+        if buff_id in self._trigger_db.index:
+            # 获取配置行 (处理可能的重复索引)
+            config_data = self._trigger_db.loc[buff_id]
+            if isinstance(config_data, pd.DataFrame):
+                config_data = config_data.iloc[0]
+
+            # 解析 Logic ID (对应代码中 @BuffCallbackRepository.register("ID"))
+            # CSV 列名为 "logic_id"
+            logic_id = config_data.get("logic_id")
+
+            # 解析触发事件类型
+            # CSV 列名为 "trigger_type" (例如: "skill_hit", "skill_start")
+            trigger_type_str = config_data.get("trigger_type")
+
+            # 只有当两者都有效时，才创建 TriggerEffect
+            if pd.notna(logic_id) and pd.notna(trigger_type_str):
+                # 转换类型并创建
+                # 注意：trigger_type_str 需要与 EventRegistry 中使用的 Key 一致
+                trigger_effect = TriggerEffect(
+                    trigger_event_type=str(trigger_type_str),
+                    logic_id=str(logic_id),
+                    custom_params={},  # 预留：未来可以解析 params 列作为字典传入
+                )
+                effects.append(trigger_effect)
 
         return effects
 

@@ -5,7 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from zsim.sim_progress import Report
-from zsim.sim_progress.Buff.ScheduleBuffSettle import ScheduleBuffSettle
+
+# [Refactor] 移除旧 Buff 系统依赖
+# from zsim.sim_progress.Buff.ScheduleBuffSettle import ScheduleBuffSettle
 from zsim.sim_progress.Character import Character
 from zsim.sim_progress.data_struct import (
     ActionStack,
@@ -294,15 +296,10 @@ class SkillEventHandler(BaseEventHandler):
             skill_node: 技能节点
             sim_instance: 模拟器实例
         """
-        ScheduleBuffSettle(
-            tick,
-            exist_buff_dict,
-            enemy,
-            dynamic_buff,
-            action_stack,
-            skill_node=skill_node,
-            sim_instance=sim_instance,
-        )
+        # [Refactor] 旧的 ScheduleBuffSettle 已废弃
+        # 新系统的 Buff 触发应由 EventSystem 自动接管
+        # 如果需要在这里手动触发某些逻辑，应该调用 sim_instance.event_manager.dispatch(...)
+        pass
 
     def _update_damage_effects(
         self,

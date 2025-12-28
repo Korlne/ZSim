@@ -6,7 +6,7 @@ import pandas as pd
 
 from zsim.define import EXIST_FILE_PATH, config_path
 
-# 引入新定义的 Effect 类 (确保 zsim/sim_progress/Buff/effect/definitions.py 已创建)
+# 引入新定义的 Effect 类
 from zsim.sim_progress.Buff.Effect.definitions import EffectBase
 from zsim.sim_progress.Report import report_to_log
 
@@ -22,7 +22,7 @@ debug = config.get("debug")
 
 class Buff:
     """
-    Buff 实体类 (重构版 Phase 1)
+    Buff 实体类 (重构版)
 
     职责遵循 SRP (单一职责原则)：
     1. 状态容器：维护 Buff 的层数、持续时间、冷却等运行时状态 (BuffDynamic)。
@@ -30,7 +30,7 @@ class Buff:
     3. 效果持有者：携带 Effect 列表，但不包含 Effect 的具体执行逻辑。
 
     不再包含：
-    - 复杂的触发判定逻辑 (移交 EventRouter)。
+    - 复杂的触发判定逻辑 (移交 EventRegistry)。
     - 属性修正计算逻辑 (移交 BonusPool)。
     """
 
@@ -51,21 +51,9 @@ class Buff:
 
         self.sim_instance = sim_instance
 
-        # [Refactor] 效果列表
-        # 目前此处为占位逻辑，将在 Phase 2 通过 GlobalBuffController 完善解析
-        self.effects: List[EffectBase] = self.__parse_effects_from_config()
-
-    def __parse_effects_from_config(self) -> List[EffectBase]:
-        """
-        [Phase 2 TODO] 从配置或外部数据源解析出该 Buff 包含的效果列表。
-        目前返回空列表，待数据迁移完成后实现具体逻辑。
-        """
-        effects = []
-        # 示例逻辑 (伪代码):
-        # effect_data = lookup_effect_data(self.ft.index)
-        # if self.ft.is_attack_buff:
-        #     effects.append(BonusEffect(target="攻击力", value=100))
-        return effects
+        # 效果列表
+        # 由 GlobalBuffController 在实例化时通过 `_create_effects_for_buff` 填充
+        self.effects: List[EffectBase] = []
 
     # -------------------------------------------------------------------------
     # 状态管理方法 (State Mutation Methods)
@@ -104,6 +92,9 @@ class Buff:
         self.dy.active = False
         self.dy.count = 0
         self.dy.built_in_buff_box.clear()
+
+        # 注意：通常不在此处自动清除 custom_data，因为某些逻辑可能需要跨激活周期保存状态（如内置CD）
+        # 如果需要重置，应显式调用 reset_myself()
 
         # 更新历史记录
         self.history.last_end_tick = current_tick
@@ -212,15 +203,13 @@ class Buff:
             self.is_debuff = bool(data.get("is_debuff", False))
             self.is_weapon = bool(data.get("is_weapon", False))
 
-            # 机制标识 (保留用于兼容或未来 TriggerEffect 的转换)
+            # 机制标识
             self.individual_settled = bool(data.get("individual_settled", False))  # 层数独立结算
             self.hitincrease = bool(data.get("hitincrease", False))  # 是否命中叠层
 
             # 标签解析
             self.label: Optional[dict] = self.__process_label_str(data)
             self.label_effect_rule: Optional[int] = self.__process_label_rule(data)
-
-            # [Cleanup] 移除了大量 simple_judge_logic, simple_start_logic 等过程式控制字段
 
         def __process_label_rule(self, config_dict: dict) -> int | None:
             label_rule = config_dict.get("label_effect_rule", 0)
@@ -255,6 +244,11 @@ class Buff:
 
             self.last_trigger_tick: int = 0  # 上次触发时间 (用于计算内置 CD)
 
+            # [Added] 通用自定义数据字典
+            # 用于存储特定逻辑需要的私有状态，替代旧的 BuffRecord 类
+            # 例如: {"last_c6_trigger": 1024, "accumulated_damage": 5000}
+            self.custom_data: dict = {}
+
             # 独立结算层数容器: List[Tuple[start_tick, end_tick]]
             self.built_in_buff_box: List[Tuple[int, int]] = []
 
@@ -265,7 +259,6 @@ class Buff:
         @property
         def is_ready(self) -> bool:
             """(辅助属性) 检查是否处于 CD 就绪状态"""
-            # 注意：实际判定逻辑应由外部 Effect 检查，此处仅作为状态查询
             return True
 
     class BuffHistory:
@@ -287,8 +280,6 @@ def spawn_buff_from_index(index: str, sim_instance: "Simulator") -> Buff:
     """
     [Factory] 根据 Index 创建 Buff 实例。
     主要用于测试环境。
-
-    注意：不再读取 '激活判断.csv' (JUDGE_FILE_PATH)，仅读取 '触发判断.csv' (EXIST_FILE_PATH)。
     """
     try:
         df = pd.read_csv(EXIST_FILE_PATH)

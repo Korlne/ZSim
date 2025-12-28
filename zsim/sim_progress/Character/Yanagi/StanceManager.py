@@ -21,10 +21,8 @@ class Shinrabanshou:
     @property
     def active(self):
         """更新森罗万象的时间！"""
-        # [修复] 直接从模拟器实例获取当前 Tick
-        # 假设 sim_instance 有一个属性叫 current_tick 或者 tick
-        # 如果你的模拟器时间属性名不同，请修改这里 (e.g., .now, .time)
-        tick = self.char.sim_instance.current_tick
+        # [Fix] 模拟器的时间属性名是 .tick，不是 .current_tick
+        tick = self.char.sim_instance.tick
         return tick < self.update_tick + self.max_duration
 
 
@@ -78,8 +76,8 @@ class StanceManager:
                     print("检测到首段强化E的突刺攻击时，架势管理器的ex_chain正处于打开状态！")
                 self.ex_chain = True
 
-                # [修复] 直接获取当前 Tick
-                tick = self.char.sim_instance.current_tick
+                # [Fix] 使用正确的时间属性 .tick
+                tick = self.char.sim_instance.tick
 
                 self.shinrabanshou.update_tick = tick
                 self.last_update_node = skill_node
@@ -110,13 +108,10 @@ class StanceManager:
             self.stance_jougen = True
             self.stance_kagen = False
 
-        # [重要修复] 适配新 Buff 系统
-        # 旧代码: from zsim.sim_progress.Buff.BuffAddStrategy import buff_add_strategy
-        # 旧代码: buff_add_strategy(self.stance_changing_buff_index, sim_instance=self.char.sim_instance)
-
-        # 新代码逻辑 (假设 character 拥有 buff_controller)
-        # 你需要确认 add_buff 的具体参数 (比如是否需要 source 或 layer)
-        self.char.buff_controller.add_buff(self.stance_changing_buff_index)
+        # 1. 修正为 buff_manager (simulator_class.py 中定义的名字)
+        # 2. 传入 current_tick 参数
+        current_tick = self.char.sim_instance.tick
+        self.char.buff_manager.add_buff(self.stance_changing_buff_index, current_tick=current_tick)
 
     @property
     def stance_now(self):
