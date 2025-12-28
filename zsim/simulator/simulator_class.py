@@ -38,6 +38,37 @@ class Confirmation(BaseModel):
     sim_cfg: SimCfg | None = None
 
 
+# 定义上下文辅助类
+class SimulatorContext:
+    """
+    提供模拟器上下文的便捷访问接口 (sim.ctx)。
+    用于在 Buff 逻辑等处快速获取当前环境信息。
+    """
+
+    def __init__(self, sim: "Simulator"):
+        self._sim = sim
+
+    @property
+    def current_enemy(self):
+        """获取当前锁定的敌人"""
+        return self._sim.enemy
+
+    @property
+    def on_field_character(self):
+        """
+        获取当前前台角色。
+        注：这里假设 schedule_data 或 preload 中维护了当前操作的角色，
+        或者是 action_stack 中最后一个动作的发起者。
+        这里暂时返回 char_obj_list[0] 作为默认主控，具体需根据 Load 模块实现调整。
+        """
+        # 示例：尝试从 load_data 获取当前操作角色名，再转对象
+        # 实际项目中需根据 ActionStack 或 Squad 管理器实现精确获取
+        # 此处为兼容性占位，默认第一个角色为前台
+        if self._sim.char_data and self._sim.char_data.char_obj_list:
+            return self._sim.char_data.char_obj_list[0]
+        return None
+
+
 class Simulator:
     """模拟器类。
 
@@ -71,6 +102,9 @@ class Simulator:
     # [Refactor] 初始化全局 Buff 控制器 (加载数据库)
     # 确保在模拟器实例化前，Buff数据库已加载
     GlobalBuffController.get_instance()
+
+    # 上下文接口
+    ctx: SimulatorContext
 
     tick: int
     crit_seed: int
@@ -157,6 +191,10 @@ class Simulator:
         self.tick = 0
         self.crit_seed = 0
         self.char_data = CharacterData(self.init_data, sim_cfg, sim_instance=self)
+
+        # [Added] 初始化 SimulatorContext
+        # 提供 sim.ctx 接口，供 Buff 系统等使用
+        self.ctx = SimulatorContext(self)
 
         # [Refactor] 为每个角色初始化 BuffManager
         # 这一步是连接新旧系统的关键，确保 Character 拥有管理 Buff 的能力

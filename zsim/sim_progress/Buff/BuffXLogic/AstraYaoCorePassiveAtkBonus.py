@@ -1,88 +1,80 @@
+from typing import TYPE_CHECKING
+
 from zsim.define import ASTRAYAO_REPORT
+from zsim.sim_progress.Buff.Event.callbacks import BuffCallbackRepository
 
-from .. import Buff, JudgeTools, check_preparation, find_tick
+if TYPE_CHECKING:
+    from zsim.sim_progress.Buff.buff_class import Buff
+    from zsim.sim_progress.zsim_event_system.zsim_events import BaseZSimEventContext, ZSimEventABC
 
-
-class AstraYaoCorePassiveAtkBonusRecord:
-    def __init__(self):
-        self.char = None
-        self.core_passive_ratio = 0.35
-        self.duration_added_per_active = 1200
-        self.update_info_box = {}
-        self.sub_exist_buff_dict = None
+# 逻辑ID
+LOGIC_ID = "Astra_Yao_Core_Passive_Atk_Bonus"
 
 
-class AstraYaoCorePassiveAtkBonus(Buff.BuffLogic):
-    def __init__(self, buff_instance):
-        """耀嘉音核心被动攻击力的xstart方法"""
-        super().__init__(buff_instance)
-        self.buff_instance: Buff = buff_instance
-        self.buff_0: Buff | None = None
-        self.record = None
-        self.xstart = self.special_start_logic
+@BuffCallbackRepository.register(LOGIC_ID)
+def astra_yao_core_passive_atk_bonus(
+    buff: "Buff", event: "ZSimEventABC", context: "BaseZSimEventContext"
+):
+    """
+    耀嘉音 - 核心被动攻击力加成
+    逻辑：
+        在 Buff 激活或刷新时(BuffStart)，根据持有者(owner)的实时攻击力计算层数。
+        转化比例：0.35 * ATK。
+        包含特殊的持续时间延长机制：若处于活跃状态且刚更新过，则延长持续时间。
+    """
+    sim = buff.sim_instance
+    char = buff.owner  # Buff 的持有者即为受益人
 
-    def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+    if not char:
+        return
 
-    def check_record_module(self):
-        if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["耀嘉音"][self.buff_instance.ft.index]
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = AstraYaoCorePassiveAtkBonusRecord()
-        self.record = self.buff_0.history.record
+    # 1. 基础参数
+    core_passive_ratio = 0.35
+    duration_added_per_active = 1200
 
-    def special_start_logic(self, **kwargs):
-        self.check_record_module()
-        self.get_prepared(char_CID=1311, sub_exist_buff_dict=1)
-        from zsim.sim_progress.Character import Character
+    # 2. 计算层数 (Count)
+    # 基于当前属性快照
+    static_atk = getattr(char.statement, "ATK", 0)
+    target_count = min(int(static_atk * core_passive_ratio), buff.config.max_stacks)
 
-        if not isinstance(self.record.char, Character):
-            raise TypeError
-        benifit = kwargs.get("benifit", None)
-        if benifit is None:
-            raise ValueError(f"{self.buff_instance.ft.index}的xstart函数并未获取到benifit参数")
-        static_atk = self.record.char.statement.ATK
-        count = min(static_atk * self.record.core_passive_ratio, self.buff_instance.ft.maxcount)
-        tick = find_tick(sim_instance=self.buff_instance.sim_instance)
-        if self.buff_0.dy.active and benifit in self.record.update_info_box:
-            last_update_tick = self.record.update_info_box[benifit]["startticks"]
-            if last_update_tick == find_tick(sim_instance=self.buff_instance.sim_instance):
-                # print(f'已经检测到{benifit}角色在当前tick有过buff更新，所以不做重复更新！！！')
-                return
-            # last_update_duration = self.record.update_info_box[benifit]["endticks"] - last_update_tick
-            last_update_end_tick = self.record.update_info_box[benifit]["endticks"]
-            """如果本次buff更新的受益者曾在很久之前被加过buff，但是buff早就掉了，那么就当成第一次触发处理。"""
-            if last_update_end_tick < tick:
-                last_update_end_tick = tick
-            self.buff_instance.simple_start(
-                tick, self.record.sub_exist_buff_dict, no_start=1, no_count=1, no_end=1
-            )
-            self.buff_instance.dy.startticks = tick
-            # self.buff_instance.dy.endticks = min(last_update_duration - tick + last_update_tick + 1200, self.buff_instance.ft.maxduration+tick)
-            self.buff_instance.dy.endticks = min(
-                last_update_end_tick + 1200, self.buff_instance.ft.maxduration + tick
-            )
-            # if self.buff_instance.dy.startticks > self.buff_instance.dy.endticks:
-            #     print(self.buff_instance.dy.startticks, self.buff_instance.dy.endticks, benifit)
-            #     print(self.record.update_info_box[benifit])
-        else:
-            self.buff_instance.simple_start(
-                tick, self.record.sub_exist_buff_dict, no_count=1, no_end=1
-            )
-            self.buff_instance.dy.endticks = tick + self.record.duration_added_per_active
-        self.buff_instance.dy.count = count
-        # if self.buff_instance.dy.startticks > self.buff_instance.dy.endticks:
-        #     print(self.buff_instance.dy.startticks, self.buff_instance.dy.endticks, benifit)
-        self.record.update_info_box[benifit] = {
-            "startticks": tick,
-            "endticks": self.buff_instance.dy.endticks,
-            "count": count,
-        }
-        self.buff_instance.update_to_buff_0(self.buff_0)
-        if ASTRAYAO_REPORT:
-            self.buff_instance.sim_instance.schedule_data.change_process_state()
-            print(
-                f"核心被动触发器激活！成功为{benifit}角色添加攻击力buff（{count}点）！Buff的时间节点为：{self.buff_instance.dy.startticks}--{self.buff_instance.dy.endticks}"
-            )
+    buff.dy.count = target_count
+
+    # 3. 持续时间更新逻辑
+    # 获取记录 (Stored in custom_data)
+    # 结构: {"last_start_tick": int, "last_end_tick": int}
+    record_data = buff.dy.custom_data.get("update_info", {})
+
+    current_tick = sim.tick
+    last_end_tick = record_data.get("last_end_tick", -1)
+
+    # 判定是"刷新延长"还是"全新启动"
+    # 如果 Buff 之前是激活状态，且未完全过期（允许少量容差，或逻辑上的连续性）
+    is_refresh = buff.dy.active and last_end_tick >= current_tick
+
+    if is_refresh:
+        # 延长逻辑
+        # 原逻辑：min(last_update_end_tick + 1200, maxduration + tick)
+        # 这里简化为直接修改 buff.dy.end_tick
+        new_end_tick = min(
+            last_end_tick + duration_added_per_active, current_tick + buff.config.duration
+        )
+        buff.dy.end_tick = new_end_tick
+
+        # 此时 BuffStart 事件可能已经重置了 start_tick，这里通常不需要手动改 start_tick
+    else:
+        # 全新启动
+        # Buff 系统默认会设置 duration，这里我们确保它是我们期望的值
+        buff.dy.end_tick = current_tick + duration_added_per_active
+
+    # 4. 更新记录
+    buff.dy.custom_data["update_info"] = {
+        "last_start_tick": current_tick,
+        "last_end_tick": buff.dy.end_tick,
+    }
+
+    if ASTRAYAO_REPORT:
+        sim.schedule_data.change_process_state()
+        print(
+            f"核心被动触发器激活！为{char.NAME}添加攻击力Buff（{target_count}点）！"
+            f"持续时间: {current_tick} -> {buff.dy.end_tick}"
+        )

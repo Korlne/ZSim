@@ -1,6 +1,6 @@
 import ast
 import json
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 import pandas as pd
 
@@ -34,13 +34,14 @@ class Buff:
     - 属性修正计算逻辑 (移交 BonusPool)。
     """
 
-    def __init__(self, config: pd.Series, sim_instance: "Simulator"):
+    def __init__(self, config: pd.Series, sim_instance: "Simulator", owner: Optional[Any] = None):
         """
         初始化 Buff 实例。
 
         Args:
             config: 来自 `触发判断.csv` 的单行配置数据。
             sim_instance: 模拟器实例引用。
+            owner: Buff 的持有者 (通常是 Character 实例或 Enemy 实例)。
         """
         # 初始化静态特征
         self.ft = self.BuffFeature(config)
@@ -50,6 +51,10 @@ class Buff:
         self.history = self.BuffHistory()
 
         self.sim_instance = sim_instance
+
+        # Buff 持有者
+        # 用于在逻辑回调中快速访问属性（如 buff.owner.statement.AM）
+        self.owner = owner
 
         # 效果列表
         # 由 GlobalBuffController 在实例化时通过 `_create_effects_for_buff` 填充
@@ -213,9 +218,11 @@ class Buff:
 
         def __process_label_rule(self, config_dict: dict) -> int | None:
             label_rule = config_dict.get("label_effect_rule", 0)
-            if pd.isna(label_rule) or label_rule is None:
-                return 0 if self.label else None
-            return int(label_rule)
+            return (
+                int(label_rule)
+                if not (pd.isna(label_rule) or label_rule is None)
+                else (0 if self.label else None)
+            )
 
         def __process_label_str(self, config_dict: dict):
             label_str = config_dict.get("label", None)
@@ -276,7 +283,9 @@ class Buff:
             self.__init__()
 
 
-def spawn_buff_from_index(index: str, sim_instance: "Simulator") -> Buff:
+def spawn_buff_from_index(
+    index: str, sim_instance: "Simulator", owner: Optional[Any] = None
+) -> Buff:
     """
     [Factory] 根据 Index 创建 Buff 实例。
     主要用于测试环境。
@@ -291,7 +300,8 @@ def spawn_buff_from_index(index: str, sim_instance: "Simulator") -> Buff:
         trigger_config = matched.iloc[0].copy()
 
         # 创建 Buff 实例
-        return Buff(trigger_config, sim_instance=sim_instance)
+        # 传递 owner
+        return Buff(trigger_config, sim_instance=sim_instance, owner=owner)
 
     except FileNotFoundError:
         raise FileNotFoundError(f"CSV Database file not found: {EXIST_FILE_PATH}")

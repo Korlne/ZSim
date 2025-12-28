@@ -1,58 +1,60 @@
-from .. import Buff, JudgeTools, check_preparation
-from ._buff_record_base_class import BuffRecordBaseClass as BRBC
+from typing import TYPE_CHECKING
+
+from zsim.sim_progress.Buff.Event.callbacks import BuffCallbackRepository
+
+if TYPE_CHECKING:
+    from zsim.sim_progress.Buff.buff_class import Buff
+    from zsim.sim_progress.zsim_event_system.zsim_events import BaseZSimEventContext, ZSimEventABC
+
+# 定义逻辑ID，需与 buff_effect.csv 中的 logic_id 保持一致
+LOGIC_ID = "Alice_Additional_Ability_Ap_Bonus"
 
 
-class AliceAdditionalAbilityApBonusRecord(BRBC):
-    def __init__(self):
-        super().__init__()
-        self.trans_ratio: float = 1.6  # 转化比率
+@BuffCallbackRepository.register(LOGIC_ID)
+def alice_additional_ability_ap_bonus(
+    buff: "Buff", event: "ZSimEventABC", context: "BaseZSimEventContext"
+):
+    """
+    爱丽丝额外能力：异常掌控转精通
+    逻辑：
+        读取爱丽丝实时异常掌控(AM)，根据公式 (AM - 140) * 1.6 计算Buff层数。
+        直接从 Character.statement 对象中获取维护好的实时属性。
 
+    触发建议：
+        建议在 SkillStart, SkillHit 或 BuffStart 时触发，以保证属性随战斗变化实时更新。
+    """
+    sim = buff.sim_instance
 
-class AliceAdditionalAbilityApBonus(Buff.BuffLogic):
-    def __init__(self, buff_instance: Buff):
-        super().__init__(buff_instance)
-        self.buff_instance: Buff = buff_instance
-        self.xhit = self.special_hit_logic
-        self.buff_0: "Buff | None" = None
-        self.record: BRBC | None = None
+    # 1. 获取爱丽丝对象 (通过CID查找)
+    alice_char = sim.char_data.find_char_obj(CID=1401)
+    if not alice_char:
+        return
 
-    def get_prepared(self, **kwargs):
-        assert self.buff_0 is not None, "buff_0未初始化"
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+    # 2. 获取实时异常掌控 (AM)
+    # 依据 Character 类结构，statement 对象维护了属性快照
+    # 如果 Character 尚未实现自动更新 statement，则此处获取的是初始化时的值
+    current_am = getattr(alice_char.statement, "AM", 0)
 
-    def check_record_module(self):
-        if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["爱丽丝"][self.buff_instance.ft.index]
-        assert self.buff_0 is not None, "buff_0未初始化"
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = AliceAdditionalAbilityApBonusRecord()
-        self.record = self.buff_0.history.record
+    # 3. 计算转化层数
+    if current_am < 140:
+        target_count = 0
+    else:
+        trans_ratio = 1.6
+        target_count = int((current_am - 140) * trans_ratio)
 
-    def special_judge_logic(self, **kwargs):
-        """根据触发时的异常掌控，计算转化的Buff层数"""
-        self.check_record_module()
-        self.get_prepared(char_CID=1401, sub_exist_buff_dict=1, enemy=1, dynamic_buff_list=1)
-        assert self.record is not None, "记录模块未初始化"
-        assert self.record.enemy is not None, "敌人未初始化"
-        assert self.record.dynamic_buff_list is not None, "动态Buff列表未初始化"
-        assert self.record.sub_exist_buff_dict is not None, "子存在Buff字典未初始化"
+    # 4. 同步 Buff 状态
+    # 如果计算出的层数 > 0，确保 Buff 处于激活状态
+    if target_count > 0:
+        if not buff.dy.active:
+            buff.start(current_tick=sim.tick)
 
-        from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
+        # 更新层数 (避免重复赋值)
+        if buff.dy.count != target_count:
+            buff.dy.count = target_count
+            # print(f"[Alice AP Bonus] AM:{current_am} -> Stacks updated to {target_count}")
 
-        mul_data = MultiplierData(
-            enemy_obj=self.record.enemy,
-            dynamic_buff=self.record.dynamic_buff_list,
-            character_obj=self.record.char,
-        )
-        am = Calculator.AnomalyMul.cal_am(mul_data)
-        if am < 140:
-            return
-        count = (am - 140) * self.record.trans_ratio
-        tick = self.buff_instance.sim_instance.tick
-        self.buff_instance.simple_start(
-            timenow=tick, sub_exist_buff_dict=self.record.sub_exist_buff_dict, no_count=1
-        )
-        self.buff_instance.dy.count = count
-        self.buff_instance.update_to_buff_0(buff_0=self.buff_0)
+    else:
+        # 如果层数为 0，结束 Buff
+        if buff.dy.active:
+            buff.end(current_tick=sim.tick)
+            buff.dy.count = 0
