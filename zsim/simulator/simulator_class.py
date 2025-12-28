@@ -18,6 +18,11 @@ from zsim.sim_progress.RandomNumberGenerator import RNG
 from zsim.sim_progress.Report import start_report_threads, stop_report_threads
 from zsim.sim_progress.ScheduledEvent import ScheduledEvent as ScE
 from zsim.sim_progress.zsim_event_system.accessor import ScheduleDataAccessor
+
+# [New] 导入事件处理器注册表
+from zsim.sim_progress.zsim_event_system.Handler.zsim_event_handler_registry import (
+    ZSimEventHandlerRegistry,
+)
 from zsim.simulator.dataclasses import (
     CharacterData,
     GlobalStats,
@@ -120,6 +125,8 @@ class Simulator:
     decibel_manager: Decibelmanager
     listener_manager: ListenerManger
     rng_instance: RNG
+    # 事件注册表实例
+    event_handler_registry: ZSimEventHandlerRegistry
     in_parallel_mode: bool
     sim_cfg: SimCfg | None
 
@@ -192,9 +199,13 @@ class Simulator:
         self.crit_seed = 0
         self.char_data = CharacterData(self.init_data, sim_cfg, sim_instance=self)
 
-        # [Added] 初始化 SimulatorContext
+        # 初始化 SimulatorContext
         # 提供 sim.ctx 接口，供 Buff 系统等使用
         self.ctx = SimulatorContext(self)
+
+        # 初始化事件处理器注册表
+        # 必须在 BuffManager 初始化之前完成，以便后续 Trigger 注册
+        self.event_handler_registry = ZSimEventHandlerRegistry()
 
         # [Refactor] 为每个角色初始化 BuffManager
         # 这一步是连接新旧系统的关键，确保 Character 拥有管理 Buff 的能力
