@@ -37,10 +37,12 @@ def cal_buff_total_bonus(
 
     # 初始化动态语句字典，用于累加buff效果的值
     dynamic_statement: dict[str, float] = {}
-    # effect_buff_list: list[str] = []
-    # 遍历角色身上的所有buff
+
     from zsim.sim_progress.anomaly_bar import AnomalyBar
     from zsim.sim_progress.Buff import Buff
+
+    # [Refactor] 引入 BonusEffect
+    from zsim.sim_progress.Buff.Effect.definitions import BonusEffect
     from zsim.sim_progress.Preload.SkillsQueue import SkillNode
 
     # FIXME:
@@ -80,23 +82,19 @@ def cal_buff_total_bonus(
             # 获取buff的层数
             count = buff_obj.dy.count
             count = count if count > 0 else 0
-            # 遍历buff的每个效果和对应的值，并将其累加
-            # if buff_obj.ft.label and judge_obj is not None:
-            #     if 'only_label' in buff_obj.ft.label.keys():
-            #         print(f'{buff_obj.ft.index}通过了判定，享受该buff加成的对象为：{judge_obj}')
 
-            for key, value in buff_obj.effect_dct.items():
-                # 如果键值对在动态语句字典中，则累加值，否则初始化并赋值
-                try:
-                    dynamic_statement[key] = dynamic_statement.get(key, 0) + value * count
-                except TypeError:
-                    continue
-        # effect_buff_list.append(buff_obj)
-    # if judge_obj is not None and isinstance(judge_obj, SkillNode):
-    #     if "1291_CorePassive" in judge_obj.skill_tag:
-    #         print(f"检测到决算{judge_obj.skill_tag}, 其享受的buff列表为：")
-    #         for _buff in effect_buff_list:
-    #             print(f"{_buff.ft.index}: {_buff.effect_dct}")
+            # [Refactor] 使用 effects 列表替代 effect_dct
+            # 遍历buff的每个 BonusEffect 效果和对应的值，并将其累加
+            for effect in buff_obj.effects:
+                # 仅处理 BonusEffect 且启用的效果
+                if isinstance(effect, BonusEffect) and effect.enable:
+                    key = effect.target_attribute
+                    value = effect.value
+                    try:
+                        dynamic_statement[key] = dynamic_statement.get(key, 0) + value * count
+                    except TypeError:
+                        continue
+
     return dynamic_statement
 
 

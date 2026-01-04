@@ -187,22 +187,26 @@ class AnomalyBar:
             self.max_duration = self.basic_max_duration
             # print(f'属性类型为{self.element_type}的异常不存在影响持续时间的Buff，所以直接使用基础值{self.basic_max_duration}')
             return
+
+        # [Refactor] 引入 BonusEffect
+        from zsim.sim_progress.Buff.Effect.definitions import BonusEffect
+
         max_duration_delta_fix = 0
         max_duration_delta_pct = 0
         for _buff_index in self.duration_buff_list:
             enemy_buff_list = dynamic_buff_list.get("enemy")
             for buffs in enemy_buff_list:
                 if _buff_index == buffs.ft.index and buffs.dy.active:
-                    for keys in self.duration_buff_key_list:  # type: ignore
-                        if keys in buffs.effect_dct.keys():
-                            if "百分比" in keys:
-                                max_duration_delta_pct += buffs.dy.count * buffs.effect_dct.get(
-                                    keys
-                                )
-                            else:
-                                max_duration_delta_fix += buffs.dy.count * buffs.effect_dct.get(
-                                    keys
-                                )
+                    # [Refactor] 适配新 Buff 架构，遍历 effects 列表
+                    for effect in buffs.effects:
+                        if isinstance(effect, BonusEffect) and effect.enable:
+                            # 检查该效果是否针对我们关注的属性（如：冰冻持续时间）
+                            if effect.target_attribute in self.duration_buff_key_list:
+                                keys = effect.target_attribute
+                                if "百分比" in keys:
+                                    max_duration_delta_pct += buffs.dy.count * effect.value
+                                else:
+                                    max_duration_delta_fix += buffs.dy.count * effect.value
 
         self.max_duration = max(
             self.basic_max_duration * (1 + max_duration_delta_pct) + max_duration_delta_fix,
