@@ -7,6 +7,7 @@ from zsim.sim_progress.Buff.GlobalBuffControllerClass.global_buff_controller imp
     GlobalBuffController,
 )
 from zsim.sim_progress.Report import report_to_log
+from zsim.sim_progress.Report.buff_handler import report_buff_to_queue
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Character.character import Character
@@ -66,7 +67,7 @@ class BuffManager:
         existing_buff = self._active_buffs.get(buff_id)
 
         if existing_buff:
-            # 2a. 刷新逻辑 (Refresh)
+            # 刷新逻辑 (Refresh)
             # 使用 Buff 自身的 start 方法重置持续时间
             existing_buff.start(current_tick)
 
@@ -75,7 +76,7 @@ class BuffManager:
 
             return existing_buff
         else:
-            # 2b. 创建逻辑 (Create)
+            # 创建逻辑 (Create)
             # 使用 instantiate_buff 创建实例
             new_buff = self._controller.instantiate_buff(buff_id, self.sim_instance)
 
@@ -117,6 +118,18 @@ class BuffManager:
         return True
 
     def tick(self, current_tick: int):
+        # [Fix] 增加 Buff 日志上报逻辑
+        # 遍历所有激活的 Buff 并记录其层数
+        for buff_id, buff in self._active_buffs.items():
+            if buff.dy.active:
+                report_buff_to_queue(
+                    character_name=self.owner_id,
+                    time_tick=current_tick + 1,  # 补偿上报函数内部的 -1 偏移
+                    buff_name=buff_id,
+                    buff_count=buff.dy.count,
+                    all_match=True,  # 强制记录
+                )
+
         expired_buffs = []
         for buff_id, buff in self._active_buffs.items():
             if hasattr(buff, "check_expiry"):
@@ -162,7 +175,7 @@ class BuffManager:
         if not owner:
             return
 
-        # [Fix] 使用 BonusPool.remove_modifier 批量注销
+        # 使用 BonusPool.remove_modifier 批量注销
         if hasattr(owner, "bonus_pool"):
             owner.bonus_pool.remove_modifier(buff.ft.index)
 

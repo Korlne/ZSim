@@ -43,7 +43,8 @@ class BuffSubUnit(BaseSubConditionUnit):
             if search_result is None:
                 return 0
             tick = char.sim_instance.tick
-            return max(search_result.dy.endticks - tick, 0)
+            # [Fix] 将 endticks 修改为 end_tick 以匹配 BuffDynamic 的定义
+            return max(search_result.dy.end_tick - tick, 0)
 
     BuffHandlerMap = {
         "exist": BuffExistHandler,

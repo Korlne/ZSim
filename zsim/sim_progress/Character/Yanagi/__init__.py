@@ -23,12 +23,39 @@ class Yanagi(Character):
         self.cinme_1_buff_index = "Buff-角色-柳-1画-洞悉"
         self.cinema_4_buff_index = "Buff-角色-柳-4画-识破"
 
+        # 定义架势 Buff 的 ID
+        self._stance_buffs_initialized = False
+        self.stance_buff_jougen = "Buff-角色-柳-架势-上弦"
+        self.stance_buff_kagen = "Buff-角色-柳-架势-下弦"
+
     def special_resources(self, *args, **kwargs) -> None:
+        # 在第一帧或初始化时，将架势 Buff 注册到 BuffManager
+        # 这些 Buff 用于 APL 检测当前架势，必须长期存在
+        if not self._stance_buffs_initialized and self.sim_instance is not None:
+            tick = self.sim_instance.tick
+
+            # 1. 添加“上弦” Buff
+            # StanceManager 默认初始状态为上弦 (stance_jougen=True)
+            buff_j = self.buff_manager.add_buff(self.stance_buff_jougen, tick)
+            if buff_j:
+                buff_j.dy.end_tick = -1  # 设置为无限时长
+                buff_j.dy.active = self.stance_manager.stance_jougen  # 同步初始状态
+
+            # 2. 添加“下弦” Buff
+            # 默认初始状态下弦为 False
+            buff_k = self.buff_manager.add_buff(self.stance_buff_kagen, tick)
+            if buff_k:
+                buff_k.dy.end_tick = -1  # 设置为无限时长
+                buff_k.dy.active = self.stance_manager.stance_kagen  # 同步初始状态
+
+            self._stance_buffs_initialized = True
+
         skill_nodes: list["SkillNode"] = _skill_node_filter(*args, **kwargs)
         anomalies: list[NewAnomaly] = _anomaly_filter(*args, **kwargs)
         # tick = kwargs.get('tick', 0)
         for nodes in skill_nodes:
             self.stance_manager.update_myself(nodes)
+
         if self.cinema >= 1 and anomalies:
             if self.sim_instance is not None:
                 # 使用 self.buff_manager.add_buff 替代 buff_add_strategy
