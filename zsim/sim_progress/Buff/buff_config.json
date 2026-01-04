@@ -503,18 +503,6 @@
         "module": ".BuffXLogic.SpectralGazeImpactBonus",
         "class": "SpectralGazeImpactBonus"
     },
-    "Buff-角色-柳-架势-上弦": {
-        "module": ".BuffXLogic.YanagiStanceJougen",
-        "class": "YanagiStanceJougen"
-    },
-    "Buff-角色-柳-架势-下弦": {
-    "module": ".BuffXLogic.YanagiStanceKagen",
-    "class": "YanagiStanceKagen"
-    },
-    "Buff-角色-柳-极性紊乱触发器": {
-    "module": ".BuffXLogic.YanagiPolarityDisorderTrigger",
-    "class": "YanagiPolarityDisorderTrigger"
-},
     "Buff-角色-简-狂热状态触发器": {
         "module": ".BuffXLogic.JanePassionStateTrigger",
         "class": "JanePassionStateTrigger"
@@ -554,42 +542,6 @@
     "Buff-角色-简-2画-啮咬-攻击无视防御" : {
         "module": ".BuffXLogic.JaneCoreSkillStrikeCritDmgBonus",
         "class": "JaneCoreSkillStrikeCritDmgBonus"
-    },
-    "Buff-角色-柳-1画-精通增幅": {
-        "module": ".BuffXLogic.YangiCinema1ApBonus",
-        "class": "YangiCinema1ApBonus"
-    },
-    "Buff-角色-柳-6画-特殊技伤害提升": {
-        "module": ".BuffXLogic.YanagiCinema6EXDmgBonus",
-        "class": "YanagiCinema6EXDmgBonus"
-    },
-    "Buff-角色-薇薇安-协同攻击触发器": {
-        "module": ".BuffXLogic.VivianCoattackTrigger",
-        "class": "VivianCoattackTrigger"
-    },
-    "Buff-角色-薇薇安-羽毛结算触发器": {
-        "module": ".BuffXLogic.VivianFeatherTrigger",
-        "class": "VivianFeatherTrigger"
-    },
-    "Buff-角色-薇薇安-核心被动触发器": {
-        "module": ".BuffXLogic.VivianCorePassiveTrigger",
-        "class": "VivianCorePassiveTrigger"
-    },
-    "Buff-角色-薇薇安-预言触发器": {
-        "module": ".BuffXLogic.VivianDotTrigger",
-        "class": "VivianDotTrigger"
-    },
-    "Buff-角色-薇薇安-额外能力-协同攻击触发器": {
-        "module": ".BuffXLogic.VivianAdditionalAbilityCoAttackTrigger",
-        "class": "VivianAdditionalAbilityCoAttackTrigger"
-    },
-    "Buff-角色-薇薇安-1画-全属性异常和紊乱伤害提升": {
-        "module": ".BuffXLogic.VivianCinema1Debuff",
-        "class": "VivianCinema1Debuff"
-    },
-    "Buff-角色-薇薇安-6画-触发器": {
-        "module": ".BuffXLogic.VivianCinema6Trigger",
-        "class": "VivianCinema6Trigger"
     },
     "Buff-驱动盘-法厄同之歌-四件套-以太伤害提高": {
         "module": ".BuffXLogic.PhaethonsMelody",
@@ -694,22 +646,6 @@
     "Buff-武器-精5淬锋钳刺-属性异常积蓄效率提升" : {
         "module": ".BuffXLogic.SharpenedStingerAnomalyBuildupBonus",
         "class": "SharpenedStingerAnomalyBuildupBonus"
-    },
-    "Buff-角色-耀佳音-咏叹华彩": {
-        "module": ".BuffXLogic.AstraYaoIdyllicCadenza",
-        "class": "AstraYaoIdyllicCadenza"
-    },
-    "Buff-角色-耀佳音-核心被动-攻击力": {
-        "module": ".BuffXLogic.AstraYaoCorePassiveAtkBonus",
-        "class": "AstraYaoCorePassiveAtkBonus"
-    },
-    "Buff-角色-耀佳音-快支管理器-触发器": {
-        "module": ".BuffXLogic.AstraYaoQuickAssistManagerTrigger",
-        "class": "AstraYaoQuickAssistManagerTrigger"
-    },
-    "Buff-角色-耀佳音-震音管理器-触发器": {
-        "module": ".BuffXLogic.AstraYaoChordManagerTrigger",
-        "class": "AstraYaoChordManagerTrigger"
     },
     "Buff-武器-精1玲珑妆匣-回能": {
         "module": ".BuffXLogic.ElegantVanitySpRecover",

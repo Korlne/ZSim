@@ -1,131 +1,95 @@
+from typing import TYPE_CHECKING
+
 from zsim.define import VIVIAN_REPORT
-from zsim.sim_progress.ScheduledEvent.Calculator import (
-    Calculator as Cal,
-)
-from zsim.sim_progress.ScheduledEvent.Calculator import (
-    MultiplierData as Mul,
-)
+from zsim.sim_progress.anomaly_bar import AnomalyBar
+from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import DirgeOfDestinyAnomaly
+from zsim.sim_progress.Buff.Event.callbacks import BuffCallbackRepository
+from zsim.sim_progress.Preload import SkillNode
+from zsim.sim_progress.ScheduledEvent.Calculator import Calculator as Cal
+from zsim.sim_progress.ScheduledEvent.Calculator import MultiplierData as Mul
+from zsim.sim_progress.zsim_event_system.zsim_events.skill_event import SkillExecutionEvent
 
-from .. import Buff, JudgeTools, check_preparation
+if TYPE_CHECKING:
+    from zsim.sim_progress.Buff.buff_class import Buff
+    from zsim.sim_progress.zsim_event_system.zsim_events.base_zsim_event import (
+        BaseZSimEventContext,
+        ZSimEventABC,
+    )
+
+LOGIC_ID = "Buff-角色-薇薇安-核心被动"
+
+ANOMALY_RATIO_MUL = {
+    0: 0.0075,
+    1: 0.08,
+    2: 0.0108,
+    3: 0.032,
+    4: 0.0615,
+    5: 0.0108,
+}
 
 
-class VivianCorePassiveTriggerRecord:
-    def __init__(self):
-        self.char = None
-        self.preload_data = None
-        self.last_update_node = None
-        self.enemy = None
-        self.dynamic_buff_list = None
-        self.sub_exist_buff_dict = None
-        self.cinema_ratio = None
+@BuffCallbackRepository.register(LOGIC_ID)
+def vivian_core_passive_trigger(
+    buff: "Buff", event: "ZSimEventABC", context: "BaseZSimEventContext"
+):
+    """
+    薇薇安核心被动：落雨生花命中异常状态敌人，触发异放。
+    """
+    if not isinstance(event, SkillExecutionEvent):
+        return
 
+    skill_node = getattr(event, "event_origin", None)
+    if not isinstance(skill_node, SkillNode):
+        return
 
-class VivianCorePassiveTrigger(Buff.BuffLogic):
-    def __init__(self, buff_instance):
-        """薇薇安的核心被动触发器"""
-        super().__init__(buff_instance)
-        self.buff_instance: Buff = buff_instance
-        self.buff_0 = None
-        self.record = None
-        self.xjudge = self.special_judge_logic
-        self.xeffect = self.special_effect_logic
-        self.ANOMALY_RATIO_MUL = {
-            0: 0.0075,
-            1: 0.08,
-            2: 0.0108,
-            3: 0.032,
-            4: 0.0615,
-            5: 0.0108,
-        }
+    # 1. 筛选技能：落雨生花
+    if skill_node.skill_tag != "1331_CoAttack_A":
+        return
 
-    def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+    # 2. 获取目标及异常状态
+    target = getattr(event, "target", None)
+    if not target:
+        target = buff.sim_instance.enemy_group[1]  # fallback
 
-    def check_record_module(self):
-        if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["薇薇安"][self.buff_instance.ft.index]
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = VivianCorePassiveTriggerRecord()
-        self.record = self.buff_0.history.record
+    if not hasattr(target, "dynamic") or not target.dynamic.is_under_anomaly():
+        return
 
-    def special_judge_logic(self, **kwargs):
-        """
-        薇薇安的核心被动触发器：
-        触发机制为：落羽生花命中处于异常状态的目标时，构造一个新的属性异常放到Evenlist中
-        """
-        self.check_record_module()
-        self.get_prepared(char_CID=1331, enemy=1)
-        skill_node = kwargs.get("skill_node", None)
-        if skill_node is None:
-            return False
-        from zsim.sim_progress.Preload import SkillNode
+    # 3. 防止单次技能重复触发 (UUID check)
+    state = buff.dy.custom_data
+    if state.get("last_update_uuid") == skill_node.UUID:
+        return
+    state["last_update_uuid"] = skill_node.UUID
 
-        if not isinstance(skill_node, SkillNode):
-            raise TypeError(
-                f"{self.buff_instance.ft.index}的xjudge函数获取到的skill_node 不是SkillNode类型"
-            )
-        if skill_node.skill_tag != "1331_CoAttack_A":
-            return False
-        if not self.record.enemy.dynamic.is_under_anomaly():
-            return False
-        if self.record.last_update_node is None:
-            self.record.last_update_node = skill_node
-            return True
-        else:
-            if skill_node.UUID != self.record.last_update_node.UUID:
-                self.record.last_update_node = skill_node
-                return True
-            else:
-                return False
+    # 4. 执行效果：生成额外伤害
+    active_anomalies = target.dynamic.get_active_anomaly()
+    if not active_anomalies:
+        return  # 理论上前面 checks pass 这里不应为空
 
-    def special_effect_logic(self, **kwargs):
-        """当Xjudge检测到AnomalyBar传入时通过判定，并且执行xeffect"""
-        self.check_record_module()
-        self.get_prepared(
-            char_CID=1361,
-            preload_data=1,
-            dynamic_buff_list=1,
-            enemy=1,
-            sub_exist_buff_dict=1,
-        )
-        from zsim.sim_progress.anomaly_bar import AnomalyBar
+    active_bar = active_anomalies[0]
+    copied_anomaly = AnomalyBar.create_new_from_existing(active_bar)
+    if not copied_anomaly.settled:
+        copied_anomaly.anomaly_settled()
 
-        get_result = self.record.enemy.dynamic.get_active_anomaly()
+    # 计算倍率
+    enemy_buffs = getattr(target.dynamic, "buff_list", [])
+    mul_data = Mul(target, enemy_buffs, buff.owner)
+    ap = Cal.AnomalyMul.cal_ap(mul_data)
 
-        if not get_result:
-            raise ValueError(
-                f"{self.buff_instance.ft.index}的xeffect函数中，enemy.get_active_anomlay函数返回空列表，说明此时没有异常。但是xjudge函数却放行了。"
-            )
-        active_anomaly_bar = get_result[0]
-        copyed_anomaly = AnomalyBar.create_new_from_existing(active_anomaly_bar)
-        if not copyed_anomaly.settled:
-            copyed_anomaly.anomaly_settled()
-        event_list = JudgeTools.find_event_list(sim_instance=self.buff_instance.sim_instance)
-        mul_data = Mul(self.record.enemy, self.record.dynamic_buff_list, self.record.char)
-        ap = Cal.AnomalyMul.cal_ap(mul_data)
-        from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
-            DirgeOfDestinyAnomaly,
-        )
+    ratio = ANOMALY_RATIO_MUL.get(copied_anomaly.element_type, 0.01)
+    cinema_ratio = 1 if buff.owner.cinema < 2 else 1.3
 
-        dirge_of_destiny_anomaly = DirgeOfDestinyAnomaly(
-            copyed_anomaly,
-            active_by="1331",
-            sim_instance=self.buff_instance.sim_instance,
-        )
-        ratio = self.ANOMALY_RATIO_MUL.get(copyed_anomaly.element_type)
-        if self.record.cinema_ratio is None:
-            self.record.cinema_ratio = 1 if self.record.char.cinema < 2 else 1.3
-        """20250424参考波波獭视频，该倍率是每一点精通平滑收益，并非向下取整，故此调整模型，去掉floor。"""
-        """final_ratio = math.floor(ap/10) * ratio * self.record.cinema_ratio"""
-        final_ratio = ap / 10 * ratio * self.record.cinema_ratio
-        dirge_of_destiny_anomaly.anomaly_dmg_ratio = final_ratio
-        # dirge_of_destiny_anomaly.current_ndarray = (
-        #     dirge_of_destiny_anomaly.current_ndarray
-        #     / dirge_of_destiny_anomaly.current_anomaly
-        # )
-        event_list.append(dirge_of_destiny_anomaly)
-        if VIVIAN_REPORT:
-            self.buff_instance.sim_instance.schedule_data.change_process_state()
-            print("核心被动：检测到【落羽生花】命中异常状态下的敌人，触发一次异放！！！")
+    # 伤害公式
+    final_ratio = (ap / 10) * ratio * cinema_ratio
+
+    # 构造事件
+    dirge_event = DirgeOfDestinyAnomaly(
+        copied_anomaly, active_by="1331", sim_instance=buff.sim_instance
+    )
+    dirge_event.anomaly_dmg_ratio = final_ratio
+
+    # 推送事件
+    if hasattr(buff.sim_instance, "event_list"):
+        buff.sim_instance.event_list.append(dirge_event)
+
+    if VIVIAN_REPORT:
+        print("核心被动：【落雨生花】命中异常敌人，触发异放！")
