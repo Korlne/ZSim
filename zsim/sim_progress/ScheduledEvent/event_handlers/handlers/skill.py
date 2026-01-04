@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from zsim.sim_progress import Report
-from zsim.sim_progress.Character import Character
 from zsim.sim_progress.data_struct import (
     ActionStack,
     SingleHit,
@@ -19,6 +18,7 @@ from ..base import BaseEventHandler
 from ..context import EventContext
 
 if TYPE_CHECKING:
+    from zsim.sim_progress.Character import Character
     from zsim.sim_progress.Enemy import Enemy
     from zsim.simulator.dataclasses import ScheduleData
     from zsim.simulator.simulator_class import Simulator
