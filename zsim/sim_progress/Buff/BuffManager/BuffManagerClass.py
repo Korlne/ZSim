@@ -43,11 +43,11 @@ class BuffManager:
     @property
     def owner(self) -> Optional["Character"]:
         """[Helper] 获取 Buff 持有者的 Character 实例"""
-        # 注意：这里假设 owner 是角色。如果是敌人，可能需要从 enemy_group 或 direct reference 获取
-        # 为了兼容性，先尝试从 char_obj_dict 获取
-        char = self.sim_instance.char_obj_dict.get(self.owner_id)
-        if char:
-            return char
+        # [Fix] 适配新 Simulator 结构，通过 char_data 获取 char_obj_dict
+        if self.sim_instance.char_data:
+            char = self.sim_instance.char_data.char_obj_dict.get(self.owner_id)
+            if char:
+                return char
 
         # 如果是敌人
         if (
@@ -58,77 +58,77 @@ class BuffManager:
 
         return None
 
-    def add_buff(self, buff_id: str, current_tick: int, stacks: int = 1, duration: int = -1):
+    def add_buff(self, buff_id: str, current_tick: int) -> Optional[Buff]:
         """
         添加或刷新 Buff。
-        Args:
-            buff_id: Buff 名称/ID.
-            current_tick: 当前时间 tick.
-            stacks: 施加的层数 (默认为1).
-            duration: 持续时间 (tick), -1 表示使用配置的默认值.
+        [Refactor] 适配 GlobalBuffController 的 instantiate_buff 接口
         """
-        if buff_id in self._active_buffs:
-            # --- Case A: Buff 已存在 -> 刷新与叠层 ---
-            existing_buff = self._active_buffs[buff_id]
+        existing_buff = self._active_buffs.get(buff_id)
 
-            # 1. 刷新持续时间
-            if existing_buff.ft.maxduration > 0:
-                existing_buff.refresh(current_tick)
-                # 注：如果逻辑需要支持动态改变 duration，可在此扩展
+        if existing_buff:
+            # 2a. 刷新逻辑 (Refresh)
+            # 使用 Buff 自身的 start 方法重置持续时间
+            existing_buff.start(current_tick)
 
-            # 2. 叠加层数
-            if existing_buff.ft.maxcount > 1:
-                existing_buff.add_stack(stacks)
+            if existing_buff.dy.count < existing_buff.ft.maxcount:
+                existing_buff.dy.count += 1
+
+            return existing_buff
+        else:
+            # 2b. 创建逻辑 (Create)
+            # 使用 instantiate_buff 创建实例
+            new_buff = self._controller.instantiate_buff(buff_id, self.sim_instance)
+
+            if not new_buff:
+                report_to_log(f"[BuffManager] Failed to create buff: {buff_id}", "warning")
+                return None
+
+            # 绑定 Owner
+            new_buff.owner = self.owner
+
+            # 初始化/激活 Buff
+            new_buff.start(current_tick)
+            if new_buff.dy.count == 0:
+                new_buff.dy.count = 1
+
+            self._active_buffs[buff_id] = new_buff
+
+            # 注册效果
+            self._register_buff_bonuses(new_buff)
+            self._register_buff_triggers(new_buff)
 
             report_to_log(
-                f"[{self.owner_id}] Buff刷新: {buff_id}, 层数: {existing_buff.dy.count}", level=1
+                f"[BuffManager] {self.owner_id} 获得了 Buff [{buff_id}] (Tick: {current_tick})"
             )
+            return new_buff
 
-        else:
-            # --- Case B: Buff 不存在 -> 新建实例 ---
-            try:
-                # 1. 工厂创建
-                new_buff = self._controller.instantiate_buff(buff_id, self.sim_instance)
+    def remove_buff(self, buff_id: str, current_tick: int) -> bool:
+        buff = self._active_buffs.get(buff_id)
+        if not buff:
+            return False
 
-                # 2. 初始化状态
-                initial_stack = min(stacks, new_buff.ft.maxcount) if stacks > 0 else 1
-                new_buff.dy.count = initial_stack
-                new_buff.start(current_tick, duration)
+        self._unregister_buff_bonuses(buff)
+        self._unregister_buff_triggers(buff)
+        del self._active_buffs[buff_id]
 
-                self._active_buffs[buff_id] = new_buff
+        report_to_log(
+            f"[BuffManager] {self.owner_id} 失去了 Buff [{buff_id}] (Tick: {current_tick})"
+        )
+        return True
 
-                # 3. 注册触发器 (Event System)
-                self._register_buff_triggers(new_buff)
+    def tick(self, current_tick: int):
+        expired_buffs = []
+        for buff_id, buff in self._active_buffs.items():
+            if hasattr(buff, "check_expiry"):
+                if buff.check_expiry(current_tick):
+                    expired_buffs.append(buff_id)
+            else:
+                if buff.ft.maxduration > 0:
+                    if (current_tick - buff.dy.start_tick) >= buff.ft.maxduration:
+                        expired_buffs.append(buff_id)
 
-                # 4. 注册属性加成 (Bonus Pool)
-                self._register_buff_bonuses(new_buff)
-
-                report_to_log(f"[{self.owner_id}] Buff获得: {buff_id}", level=2)
-
-            except Exception as e:
-                import traceback
-
-                traceback.print_exc()
-                report_to_log(f"[{self.owner_id}] 添加Buff失败 '{buff_id}': {e}", level=4)
-
-    def remove_buff(self, buff_id: str, current_tick: int):
-        """主动移除 Buff"""
-        if buff_id in self._active_buffs:
-            buff = self._active_buffs[buff_id]
-
-            # 1. 标记结束
-            buff.end(current_tick)
-
-            # 2. 注销触发器 (清理 Handler 引用)
-            self._unregister_buff_triggers(buff_id)
-
-            # 3. 注销属性加成 (从 BonusPool 移除)
-            self._unregister_buff_bonuses(buff)
-
-            # 4. 从容器移除
-            del self._active_buffs[buff_id]
-
-            report_to_log(f"[{self.owner_id}] Buff移除: {buff_id}", level=2)
+        for buff_id in expired_buffs:
+            self.remove_buff(buff_id, current_tick)
 
     def get_buff(self, buff_id: str) -> Optional[Buff]:
         """查询 Buff"""
@@ -139,79 +139,62 @@ class BuffManager:
         buff = self._active_buffs.get(buff_id)
         return buff is not None and buff.dy.active
 
-    def tick(self, current_tick: int):
-        """
-        [生命周期维护]
-        在 Simulator 主循环中调用，检查自然过期的 Buff。
-        """
-        # 使用 list(keys) 避免遍历时删除报错
-        for buff_id in list(self._active_buffs.keys()):
-            buff = self._active_buffs[buff_id]
-
-            if buff.check_expiry(current_tick):
-                report_to_log(f"[{self.owner_id}] Buff自然过期: {buff_id}", level=1)
-                self.remove_buff(buff_id, current_tick)
-
-    # -------------------------------------------------------------------------
-    # 内部集成方法
-    # -------------------------------------------------------------------------
-
-    def _register_buff_triggers(self, buff: Buff):
-        """解析 TriggerEffect 并注册 Handler 到全局事件系统"""
-        registry = getattr(self.sim_instance, "event_handler_registry", None)
-        if not registry:
-            # 如果模拟器尚未集成新事件注册表，则跳过
-            return
-
-        handlers = []
-        for effect in buff.effects:
-            if isinstance(effect, TriggerEffect):
-                # 创建 Handler
-                handler = BuffTriggerHandler(self.owner_id, buff, effect)
-
-                # 注册到事件系统
-                # 注意：事件类型通常在 definitions.py 或 TriggerEffect 中定义
-                registry.register(effect.trigger_event_type, handler)
-
-                handlers.append(handler)
-
-        if handlers:
-            self._buff_handlers[buff.ft.index] = handlers
-
-    def _unregister_buff_triggers(self, buff_id: str):
-        """清理本地 Handler 引用"""
-        # 注意：ZSimEventHandlerRegistry 目前没有 unregister 接口。
-        # 机制上依赖 Buff.dy.active = False 来让 Handler.supports() 返回 False，从而停止响应。
-        if buff_id in self._buff_handlers:
-            del self._buff_handlers[buff_id]
+    # =========================================================================
+    #  内部集成方法
+    # =========================================================================
 
     def _register_buff_bonuses(self, buff: Buff):
-        """将 BonusEffect 注入角色的 BonusPool"""
+        """将 Buff 的数值加成 (BonusEffect) 注册到 Owner 的 BonusPool"""
         owner = self.owner
-        if owner and hasattr(owner, "bonus_pool"):
-            # 筛选出所有的 BonusEffect
-            bonus_effects = [e for e in buff.effects if isinstance(e, BonusEffect)]
+        if not owner:
+            return
 
-            if not bonus_effects:
-                return
+        # 使用 BonusPool.add_modifier 批量注册
+        # 筛选出所有的 BonusEffect
+        bonus_effects = [e for e in buff.effects if isinstance(e, BonusEffect)]
 
-            # 优先使用新版批量接口 add_modifier
-            if hasattr(owner.bonus_pool, "add_modifier"):
-                owner.bonus_pool.add_modifier(buff.ft.index, bonus_effects)
-            else:
-                # 兼容旧版逐个添加
-                for effect in bonus_effects:
-                    owner.bonus_pool.add_effect(effect)
+        if bonus_effects and hasattr(owner, "bonus_pool"):
+            owner.bonus_pool.add_modifier(buff.ft.index, bonus_effects)
 
     def _unregister_buff_bonuses(self, buff: Buff):
-        """从角色的 BonusPool 移除 BonusEffect"""
+        """注销数值加成"""
         owner = self.owner
-        if owner and hasattr(owner, "bonus_pool"):
-            # 优先使用新版批量接口 remove_modifier
-            if hasattr(owner.bonus_pool, "remove_modifier"):
-                owner.bonus_pool.remove_modifier(buff.ft.index)
-            else:
-                # 兼容旧版逐个移除
-                for effect in buff.effects:
-                    if isinstance(effect, BonusEffect):
-                        owner.bonus_pool.remove_effect(effect)
+        if not owner:
+            return
+
+        # [Fix] 使用 BonusPool.remove_modifier 批量注销
+        if hasattr(owner, "bonus_pool"):
+            owner.bonus_pool.remove_modifier(buff.ft.index)
+
+    def _register_buff_triggers(self, buff: Buff):
+        """注册事件触发器 (TriggerEffect) 到 EventSystem"""
+        if buff.ft.index not in self._buff_handlers:
+            self._buff_handlers[buff.ft.index] = []
+
+        for effect in buff.effects:
+            if isinstance(effect, TriggerEffect) and effect.enable:
+                # 创建专用 Handler
+                handler = BuffTriggerHandler(
+                    buff_instance=buff,
+                    trigger_effect=effect,
+                    sim_instance=self.sim_instance,
+                )
+
+                from zsim.sim_progress.zsim_event_system.Handler.zsim_event_handler_registry import (
+                    ZSimEventHandlerRegistry,
+                )
+
+                ZSimEventHandlerRegistry.register(handler)
+                self._buff_handlers[buff.ft.index].append(handler)
+
+    def _unregister_buff_triggers(self, buff: Buff):
+        """注销事件触发器"""
+        handlers = self._buff_handlers.get(buff.ft.index, [])
+        from zsim.sim_progress.zsim_event_system.Handler.zsim_event_handler_registry import (
+            ZSimEventHandlerRegistry,
+        )
+
+        for handler in handlers:
+            ZSimEventHandlerRegistry.unregister(handler)
+
+        self._buff_handlers[buff.ft.index] = []

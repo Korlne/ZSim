@@ -199,7 +199,6 @@ class GlobalBuffController:
             config_series = config_series.iloc[0]
 
         # 2. 创建实例
-        # [Fix] 检查是否存在该 buff_id 的自定义类映射
         if buff_id in self.buff_config:
             # 自定义类逻辑
             class_info = self.buff_config[buff_id]
@@ -219,7 +218,6 @@ class GlobalBuffController:
 
                 # 实例化自定义类
                 # 注意：像 Shock 这样的遗留类可能有不同的构造函数签名。
-                # 假设它们支持 sim_instance 参数。
                 # DoT 类 (Shock) 接受 (bar, sim_instance)。Buff 类接受 (config, sim_instance)。
                 # 这里尝试基于参数兼容性进行实例化。
                 try:
