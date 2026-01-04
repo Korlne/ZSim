@@ -1,44 +1,39 @@
-from .. import Buff, JudgeTools, check_preparation
+from typing import TYPE_CHECKING
+
+from zsim.sim_progress.Buff.Event.callbacks import BuffCallbackRepository
+from zsim.sim_progress.zsim_event_system.zsim_events.skill_event import SkillExecutionEvent
+
+if TYPE_CHECKING:
+    from zsim.sim_progress.Buff.buff_class import Buff
+    from zsim.sim_progress.zsim_event_system.zsim_events.base_zsim_event import (
+        BaseZSimEventContext,
+        ZSimEventABC,
+    )
+
+# 对应配置文件中的 BuffName
+LOGIC_ID = "Buff-角色-柳-6画-特殊技伤害提升"
 
 
-class YanagiCinema6EXDmgBonusRecord:
-    def __init__(self):
-        self.char = None
-
-
-class YanagiCinema6EXDmgBonus(Buff.BuffLogic):
+@BuffCallbackRepository.register(LOGIC_ID)
+def yanagi_cinema6_ex_dmg_bonus(
+    buff: "Buff", event: "ZSimEventABC", context: "BaseZSimEventContext"
+):
     """
-    柳的6画，森罗万象激活时，通过判定。
+    柳的6画，森罗万象激活时，Buff状态置为Active。
     """
+    # 仅在技能执行时检查（足以覆盖伤害计算前的状态判定）
+    if not isinstance(event, SkillExecutionEvent):
+        return
 
-    def __init__(self, buff_instance):
-        super().__init__(buff_instance)
-        self.buff_instance: Buff = buff_instance
-        self.xjudge = self.special_judge_logic
-        self.xexit = self.special_exit_logic
-        self.buff_0 = None
-        self.record = None
+    char = buff.owner
+    # 确保宿主是柳且拥有架势管理器
+    if not hasattr(char, "stance_manager"):
+        return
 
-    def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+    # 访问森罗万象状态 (property，内部依赖 sim_instance.tick)
+    # 如果处于森罗万象状态，则 buff 激活
+    is_active = char.stance_manager.shinrabanshou.active
 
-    def check_record_module(self):
-        if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["柳"][self.buff_instance.ft.index]
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = YanagiCinema6EXDmgBonusRecord()
-        self.record = self.buff_0.history.record
-
-    def special_judge_logic(self, **kwargs):
-        """检测当前的森罗万象状态是否开启，若开启则通过判定。"""
-        self.check_record_module()
-        self.get_prepared(char_CID=1221)
-        if self.record.char.get_special_stats()["森罗万象状态"]:
-            return True
-        else:
-            return False
-
-    def special_exit_logic(self, **kwargs):
-        return not self.special_judge_logic(**kwargs)
+    # 更新 Buff 状态
+    if buff.dy.active != is_active:
+        buff.dy.active = is_active

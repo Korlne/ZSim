@@ -2,6 +2,7 @@ import json
 import shutil
 import sys
 import tomllib
+from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, ClassVar, Literal, cast
 
@@ -14,8 +15,23 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+
+# ZSim事件类型定义
+class ZSimEventTypes(str, Enum):
+    DEFAULT = "default"
+    SKILL_EVENT = "skill_event"
+    BUFF_EVENT = "buff_event"
+
+
+class SkillSubEventTypes(str, Enum):
+    HIT = "skill.hit"
+    START = "skill.start"
+    END = "skill.end"
+
+
 # 属性类型：
 ElementType = Literal[0, 1, 2, 3, 4, 5, 6]
+SkillType = Literal[1, 2, 3, 4, 5]
 Number = int | float
 
 INVALID_ELEMENT_ERROR = "Invalid element type"
@@ -116,6 +132,7 @@ class CharReportConfig(BaseModel):
     yuzuha: bool
     alice: bool
     seed: bool
+    yanagi: bool = False
 
     model_config = ConfigDict(populate_by_name=True, alias_generator=to_pascal)
 
@@ -128,6 +145,7 @@ class NaModeLevelConfig(BaseModel):
 
 class DevConfig(BaseModel):
     new_sim_boot: bool = True
+    zsim_event_system_dev: bool = False
 
 
 class Config(BaseSettings):
@@ -180,7 +198,7 @@ char_config_file = data_dir / "character_config.toml"
 saved_char_config = {}
 
 
-# 修复：将char_config_file作为参数传递给initialize_config_files
+# 将char_config_file作为参数传递给initialize_config_files
 def initialize_config_files_with_paths(char_file: Path, data_dir: Path, config_path: Path):
     """
     初始化配置文件。
@@ -327,6 +345,7 @@ TRIGGER_REPORT: bool = config.char_report.trigger
 YUZUHA_REPORT: bool = config.char_report.yuzuha
 ALICE_REPORT: bool = config.char_report.alice
 SEED_REPORT: bool = config.char_report.seed
+YANAGI_REPORT: bool = config.char_report.yanagi
 
 # Cal计算debug
 CHECK_SKILL_MUL: bool = config.debug.check_skill_mul
@@ -334,6 +353,7 @@ CHECK_SKILL_MUL_TAG: list[str] = config.debug.check_skill_mul_tag
 
 # 开发变量
 NEW_SIM_BOOT: bool = config.dev.new_sim_boot
+ZSIM_EVENT_SYSTEM_DEV: bool = config.dev.zsim_event_system_dev
 
 compare_methods_mapping: dict[str, Callable[[float | int, float | int], bool]] = {
     "<": lambda a, b: a < b,

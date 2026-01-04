@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
@@ -12,8 +14,6 @@ from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
     Disorder,
     PolarityDisorder,
 )
-from zsim.sim_progress.Character.character import Character
-from zsim.sim_progress.Character.Yanagi import Yanagi
 from zsim.sim_progress.Enemy import Enemy
 from zsim.sim_progress.Report import report_to_log
 
@@ -21,8 +21,8 @@ from .Calculator import Calculator as Cal
 from .Calculator import MultiplierData as MulData
 
 if TYPE_CHECKING:
-    from zsim.sim_progress.Buff import Buff
     from zsim.sim_progress.Character import Character
+    from zsim.sim_progress.Character.Yanagi import Yanagi
     from zsim.simulator.simulator_class import Simulator
 
 
@@ -31,16 +31,11 @@ class CalAnomaly:
         self,
         anomaly_obj: AnomalyBar,
         enemy_obj: Enemy,
-        dynamic_buff: dict[str, list["Buff"]],
+        # [New Architecture] Removed dynamic_buff argument
         sim_instance: "Simulator",
     ):
         """
         Schedule 节点对于异常伤害的分支逻辑，用于计算异常伤害
-
-        调用方法 cal_anomaly_dmg() 输出.伤害期望
-
-        异常伤害快照以 array 形式储存，顺序为：
-        [基础伤害区、增伤区、异常精通区、等级、异常增伤区、异常暴击区、穿透率、穿透值、抗性穿透]
         """
         self.sim_instance = sim_instance
         self.enemy_obj = enemy_obj
@@ -49,13 +44,16 @@ class CalAnomaly:
             raise ValueError(
                 f"即将被计算的 {ETM[self.anomaly_obj.element_type]} 异常条对象尚未结算快照，请检查前置业务逻辑"
             )
-        self.dynamic_buff = dynamic_buff
+
+        # [New Architecture] dynamic_buff is no longer needed
+        # self.dynamic_buff = dynamic_buff
+
         snapshot: tuple[ElementType, np.ndarray] = (
             self.anomaly_obj.element_type,
             self.anomaly_obj.current_ndarray,
         )
         self.element_type: ElementType = snapshot[0]
-        # self.dmg_sp 以 array 形式储存，顺序为：基础伤害区、增伤区、异常精通区、等级、异常增伤区、异常暴击区、穿透率、穿透值、抗性穿透、冲击力、失衡值增幅
+
         self.dmg_sp: np.ndarray = snapshot[1]
         assert self.dmg_sp.shape == (1, 11), (
             f"tick: {self.sim_instance.tick}  异常伤害快照形状错误，期望(1, 11)，实际{self.dmg_sp}\n"
@@ -71,18 +69,17 @@ class CalAnomaly:
             raise NotImplementedError
         else:
             char_obj: "Character | None" = anomaly_obj.activated_by.skill.char_obj
-        # 根据动态buff读取怪物面板
 
+        # 根据 BuffManager 读取面板
         self.data: MulData = MulData(
             enemy_obj=self.enemy_obj,
-            dynamic_buff=self.dynamic_buff,
+            dynamic_buff=None,  # [New Architecture] Pass None or rely on MulData defaults
             judge_node=anomaly_obj,
             character_obj=char_obj,
         )
+
         # 虚拟角色等级
-        v_char_level: int = int(
-            np.floor(self.dmg_sp[0, 3] + 0.0000001)
-        )  # 加一个极小的数避免精度向下丢失导致的误差
+        v_char_level: int = int(np.floor(self.dmg_sp[0, 3] + 0.0000001))
 
         self.v_char_level = v_char_level
         # 等级系数
@@ -122,6 +119,7 @@ class CalAnomaly:
             stun_mul,
         )
 
+    # ... (cal_k_level, cal_active_crit, cal_def_mul, set_final_multipliers, cal_anomaly_dmg methods remain unchanged) ...
     @staticmethod
     def cal_k_level(v_char_level: int) -> np.float64:
         """等级区 = trunc(1+ 1/59* (等级 - 1), 4)"""
@@ -237,19 +235,16 @@ class CalDisorder(CalAnomaly):
         self,
         disorder_obj: Disorder,
         enemy_obj: Enemy,
-        dynamic_buff: dict[str, list["Buff"]],
+        # [New Architecture] Removed dynamic_buff argument
         sim_instance: "Simulator",
     ):
-        """
-        异常伤害快照以 array 形式储存，顺序为：
-        [基础伤害区、增伤区、异常精通区、等级、异常增伤区、异常暴击区、穿透率、穿透值、抗性穿透]
-        """
-        super().__init__(disorder_obj, enemy_obj, dynamic_buff, sim_instance=sim_instance)
+        super().__init__(disorder_obj, enemy_obj, sim_instance=sim_instance)
         self.final_multipliers[0] = self.cal_disorder_base_dmg(
             np.float64(self.final_multipliers[0])
         )
         self.final_multipliers[4] = self.cal_disorder_extra_mul()
 
+    # ... (cal_disorder_base_dmg, cal_disorder_extra_mul, cal_disorder_stun remain unchanged) ...
     def cal_disorder_base_dmg(self, base_mul: np.float64) -> np.float64:
         """
         计算紊乱的基础伤害
@@ -320,14 +315,14 @@ class CalPolarityDisorder(CalDisorder):
         self,
         disorder_obj: PolarityDisorder,
         enemy_obj: Enemy,
-        dynamic_buff: dict[str, list["Buff"]],
+        # [New Architecture] Removed dynamic_buff argument
         sim_instance: "Simulator",
     ):
-        super().__init__(disorder_obj, enemy_obj, dynamic_buff, sim_instance=sim_instance)
+        # [New Architecture] Pass dynamic_buff=None handled by MulData internal logic in CalAnomaly
+        super().__init__(disorder_obj, enemy_obj, sim_instance=sim_instance)
         yanagi_obj = self.__find_yanagi()
-        yanagi_mul = MulData(
-            enemy_obj=enemy_obj, dynamic_buff=dynamic_buff, character_obj=yanagi_obj
-        )
+        # [Refactor] No dynamic_buff passed
+        yanagi_mul = MulData(enemy_obj=enemy_obj, dynamic_buff=None, character_obj=yanagi_obj)
         ap = Cal.AnomalyMul.cal_ap(yanagi_mul)
         self.final_multipliers[0] = (
             self.final_multipliers[0] * disorder_obj.polarity_disorder_ratio
@@ -345,8 +340,8 @@ class CalAbloom(CalAnomaly):
         self,
         abloom_obj: Abloom,
         enemy_obj: Enemy,
-        dynamic_buff: dict[str, list["Buff"]],
+        # [New Architecture] Removed dynamic_buff argument
         sim_instance: "Simulator",
     ):
-        super().__init__(abloom_obj, enemy_obj, dynamic_buff, sim_instance=sim_instance)
+        super().__init__(abloom_obj, enemy_obj, sim_instance=sim_instance)
         self.final_multipliers[0] *= abloom_obj.anomaly_dmg_ratio

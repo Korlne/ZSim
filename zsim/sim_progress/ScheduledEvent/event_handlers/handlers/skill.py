@@ -5,15 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from zsim.sim_progress import Report
-from zsim.sim_progress.Buff import ScheduleBuffSettle
-from zsim.sim_progress.Character import Character
 from zsim.sim_progress.data_struct import (
     ActionStack,
     SingleHit,
-)
-from zsim.sim_progress.Load.LoadDamageEvent import (
-    ProcessFreezLikeDots,
-    ProcessHitUpdateDots,
 )
 from zsim.sim_progress.Load.loading_mission import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
@@ -24,6 +18,7 @@ from ..base import BaseEventHandler
 from ..context import EventContext
 
 if TYPE_CHECKING:
+    from zsim.sim_progress.Character import Character
     from zsim.sim_progress.Enemy import Enemy
     from zsim.simulator.dataclasses import ScheduleData
     from zsim.simulator.simulator_class import Simulator
@@ -105,13 +100,15 @@ class SkillEventHandler(BaseEventHandler):
             skill_node, enemy, tick, data, dynamic_buff, sim_instance
         )
 
-        # 处理buff结算
-        self._settle_buffs(
-            tick, exist_buff_dict, enemy, dynamic_buff, action_stack, skill_node, sim_instance
-        )
+        # 处理buff结算 (已弃用，由Buff系统接管)
+        # self._settle_buffs(
+        #     tick, exist_buff_dict, enemy, dynamic_buff, action_stack, skill_node, sim_instance
+        # )
 
-        # 处理伤害更新
-        self._update_damage_effects(tick, enemy, data, event)
+        # 处理伤害更新 (已弃用，由Buff系统接管)
+        # self._update_damage_effects(tick, enemy, data, event)
+
+        # 广播事件
         self._broadcast_skill_event_to_char(event=event, sim_instance=sim_instance)
 
     def _broadcast_skill_event_to_char(
@@ -294,30 +291,7 @@ class SkillEventHandler(BaseEventHandler):
             skill_node: 技能节点
             sim_instance: 模拟器实例
         """
-        ScheduleBuffSettle(
-            tick,
-            exist_buff_dict,
-            enemy,
-            dynamic_buff,
-            action_stack,
-            skill_node=skill_node,
-            sim_instance=sim_instance,
-        )
-
-    def _update_damage_effects(
-        self,
-        tick: int,
-        enemy: Enemy,
-        data: ScheduleData,
-        event: SkillNode | LoadingMission,
-    ) -> None:
-        """处理伤害更新效果
-
-        Args:
-            tick: 当前tick
-            enemy: 敌人对象
-            data: 调度数据
-            event: 技能事件对象
-        """
-        ProcessHitUpdateDots(tick, enemy.dynamic.dynamic_dot_list, data.event_list)
-        ProcessFreezLikeDots(timetick=tick, enemy=enemy, event_list=data.event_list, event=event)
+        # [Refactor] 旧的 ScheduleBuffSettle 已废弃
+        # 新系统的 Buff 触发应由 EventSystem 自动接管
+        # 如果需要在这里手动触发某些逻辑，应该调用 sim_instance.event_manager.dispatch(...)
+        pass

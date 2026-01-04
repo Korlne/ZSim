@@ -4,7 +4,9 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from zsim.sim_progress import Buff
-from zsim.sim_progress.Character import Character
+
+# [Fix] 移除顶层导入，避免循环引用 Character -> Buff -> ScheduledEvent -> Character
+# from zsim.sim_progress.Character import Character
 from zsim.sim_progress.data_struct import (
     ActionStack,
     PolarizedAssaultEvent,
@@ -19,6 +21,8 @@ from zsim.sim_progress.Update import update_anomaly
 from .event_handlers import EventContext, event_handler_factory, register_all_handlers
 
 if TYPE_CHECKING:
+    # [Fix] 将 Character 导入移至 TYPE_CHECKING 块
+    from zsim.sim_progress.Character import Character
     from zsim.simulator.dataclasses import ScheduleData
     from zsim.simulator.simulator_class import Simulator
 

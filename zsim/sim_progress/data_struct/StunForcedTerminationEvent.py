@@ -1,5 +1,11 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from zsim.define import HUGO_REPORT
-from zsim.sim_progress.Enemy import Enemy
+
+if TYPE_CHECKING:
+    from zsim.sim_progress.Enemy import Enemy
 
 
 class StunForcedTerminationEvent:

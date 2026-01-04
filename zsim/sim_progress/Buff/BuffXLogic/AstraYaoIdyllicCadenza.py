@@ -1,41 +1,30 @@
-from .. import Buff, JudgeTools, check_preparation
+from typing import TYPE_CHECKING
+
+from zsim.sim_progress.Buff.Event.callbacks import BuffCallbackRepository
+from zsim.sim_progress.zsim_event_system.zsim_events.skill_event import SkillExecutionEvent
+
+if TYPE_CHECKING:
+    from zsim.sim_progress.Buff.buff_class import Buff
+    from zsim.sim_progress.zsim_event_system.zsim_events.base_zsim_event import (
+        BaseZSimEventContext,
+        ZSimEventABC,
+    )
+
+LOGIC_ID = "Buff-角色-耀佳音-咏叹华彩"
 
 
-class AstraYaoIdyllicCadenzaRecord:
-    def __init__(self):
-        self.char = None
+@BuffCallbackRepository.register(LOGIC_ID)
+def astra_yao_idyllic_cadenza(buff: "Buff", event: "ZSimEventABC", context: "BaseZSimEventContext"):
+    """
+    耀嘉音咏叹华彩状态监控。
+    监听技能事件，同步 Character 实例中的 idyllic_cadenza 状态。
+    """
+    if not isinstance(event, SkillExecutionEvent):
+        return
 
-
-class AstraYaoIdyllicCadenza(Buff.BuffLogic):
-    def __init__(self, buff_instance):
-        """耀嘉音咏叹华彩的加成效果的判定逻辑"""
-        super().__init__(buff_instance)
-        self.buff_instance: Buff = buff_instance
-        self.buff_0 = None
-        self.record = None
-        self.xjudge = self.special_judge_logic
-        self.xexit = self.special_exit_logic
-
-    def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
-
-    def check_record_module(self):
-        if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["耀嘉音"][self.buff_instance.ft.index]
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = AstraYaoIdyllicCadenzaRecord()
-        self.record = self.buff_0.history.record
-
-    def special_judge_logic(self, **kwargs):
-        """检测咏叹华彩状态"""
-        self.check_record_module()
-        self.get_prepared(char_CID=1311)
-        if self.record.char.get_resources()[1]:
-            return True
-        else:
-            return False
-
-    def special_exit_logic(self, **kwargs):
-        return not self.special_judge_logic(**kwargs)
+    char = buff.owner
+    # 耀嘉音的 idyllic_cadenza 属性在 Character 类中维护
+    if hasattr(char, "idyllic_cadenza"):
+        is_active = char.idyllic_cadenza
+        if buff.dy.active != is_active:
+            buff.dy.active = is_active

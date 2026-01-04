@@ -1,46 +1,38 @@
-from .. import Buff, JudgeTools, check_preparation
+from typing import TYPE_CHECKING
+
+from zsim.sim_progress.Buff.Event.callbacks import BuffCallbackRepository
+from zsim.sim_progress.zsim_event_system.zsim_events.skill_event import SkillExecutionEvent
+
+if TYPE_CHECKING:
+    from zsim.sim_progress.Buff.buff_class import Buff
+    from zsim.sim_progress.zsim_event_system.zsim_events.base_zsim_event import (
+        BaseZSimEventContext,
+        ZSimEventABC,
+    )
+
+LOGIC_ID = "Buff-角色-柳-1画-精通增幅"
+TRIGGER_BUFF_NAME = "Buff-角色-柳-1画-洞悉"
 
 
-class YangiCinema1ApBonusRecord:
-    def __init__(self):
-        self.char = None
-        self.trigger_buff_0 = None
+@BuffCallbackRepository.register(LOGIC_ID)
+def yangi_cinema1_ap_bonus(buff: "Buff", event: "ZSimEventABC", context: "BaseZSimEventContext"):
+    """
+    柳1画的精通增幅。
+    检测“洞悉”Buff的层数，若 >= 1 则激活本Buff。
+    """
+    if not isinstance(event, SkillExecutionEvent):
+        return
 
+    owner = buff.owner
+    should_activate = False
 
-class YangiCinema1ApBonus(Buff.BuffLogic):
-    """柳1画的精通增幅"""
+    # 尝试获取目标 Buff
+    # 假设 owner.buff_manager 提供了 get_buff 方法，或者直接访问 buff 容器
+    if hasattr(owner, "buff_manager"):
+        trigger_buff = owner.buff_manager.get_buff(TRIGGER_BUFF_NAME)
+        if trigger_buff and trigger_buff.dy.active:
+            if trigger_buff.dy.count >= 1:
+                should_activate = True
 
-    def __init__(self, buff_instance):
-        super().__init__(buff_instance)
-        self.buff_instance: Buff = buff_instance
-        self.xjudge = self.special_judge_logic
-        self.xexit = self.special_exit_logic
-        self.buff_0 = None
-        self.record = None
-
-    def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
-
-    def check_record_module(self):
-        if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["柳"][self.buff_instance.ft.index]
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = YangiCinema1ApBonusRecord()
-        self.record = self.buff_0.history.record
-
-    def special_judge_logic(self, **kwargs):
-        """
-        检测触发器Buff洞悉的层数，层数>= 1 就触发！
-        """
-        self.check_record_module()
-        self.get_prepared(char_CID=1221, trigger_buff_0=("柳", "Buff-角色-柳-1画-洞悉"))
-        if self.record.trigger_buff_0.dy.active:
-            if self.record.trigger_buff_0.dy.count >= 1:
-                return True
-        return False
-
-    def special_exit_logic(self, **kwargs):
-        """退出逻辑和触发逻辑相反！"""
-        return not self.special_judge_logic(**kwargs)
+    if buff.dy.active != should_activate:
+        buff.dy.active = should_activate

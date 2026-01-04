@@ -12,10 +12,12 @@ from zsim.define import (
     WEAPON_DATA_PATH,
 )
 from zsim.models.session.session_run import CharConfig, ExecAttrCurveCfg, ExecWeaponCfg
-from zsim.sim_progress.Report import report_to_log
 
-from .skill_class import Skill, lookup_name_or_cid
-from .utils.filters import _skill_node_filter, _sp_update_data_filter
+# 引入 BonusPool
+from zsim.sim_progress.Character.bonus_pool import BonusPool
+from zsim.sim_progress.Character.skill_class import Skill, lookup_name_or_cid
+from zsim.sim_progress.Character.utils.filters import _skill_node_filter, _sp_update_data_filter
+from zsim.sim_progress.Report import report_to_log
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Buff.buff_class import Buff
@@ -81,6 +83,9 @@ class Character:
 
         # 从数据库中查找角色信息，并核对必填项
         self.NAME, self.CID = lookup_name_or_cid(name, CID)
+
+        # 必须在 self.statement 初始化之前完成
+        self.bonus_pool = BonusPool(self)
 
         # 初始化为0的各属性
         self.baseATK = 0.0
@@ -223,68 +228,114 @@ class Character:
     class Statement:
         def __init__(self, char: "Character", crit_balancing: bool):
             """
-            -char_class : 已实例化的角色
-
-            用于计算角色面板属性：
-            -传入已经实例化的 Character 对象，计算出目前的角色面板
-            -如果和 Character 对象同时调用，那么本对象会储存角色的局外面板属性
-            -可在调用本类前对一个 Character 对象内的值进行更改，以实现手动调整面板的功能
-
-            调用格式为：
-            char_dynamic = Character.Statement(char)    # 需要传入一个角色对象
-
-            获取面板数值：
-            -使用属性名调用，格式为 char_dynamic.ATK
-            -使用内置字典调用，格式为 char_dynamic.statement['ATK'] # 谁会想用这个方法呢，这个字典不过是方便输出 log 罢了
-
-            值得注意的是，这个类有许多属性直接继承自 Character，但是防止混淆没有写成子类，但你依然可以直接调用 NAME、CID 等静态参数
-
-            包含的方法：
-            -还是没有！这个类是被动的，不应该自己变化，需要的时候重新生成，你要强行写函数改也行（乐
+            计算角色面板属性 (重构版)。
+            集成了 BonusPool 中的 Buff 加成效果。
             """
+            bp = char.bonus_pool  # 获取 BonusPool 引用
 
             self.NAME = char.NAME
             self.CID = char.CID
-            self.ATK = (char.baseATK * (1 + char.ATK_percent) + char.ATK_numeric) * (
-                1 + char.overall_ATK_percent
+
+            # --- 攻击力 ---
+            # 基础百分比 = 装备% + Buff(加算)%
+            atk_pct_total = (
+                char.ATK_percent
+                + bp.query_total_add("攻击力%")
+                + bp.query_total_add("攻击力百分比")
+            )
+            # 基础固定值 = 装备固定值 + Buff固定值
+            atk_flat_total = (
+                char.ATK_numeric + bp.query_total_add("攻击力") + bp.query_total_add("攻击力数值")
+            )
+            # 局内乘区 (Overall)
+            overall_atk_pct = char.overall_ATK_percent + bp.query_total_mul("攻击力")
+
+            self.ATK = (char.baseATK * (1 + atk_pct_total) + atk_flat_total) * (
+                1 + overall_atk_pct
             ) + char.overall_ATK_numeric
-            self.HP = (char.baseHP * (1 + char.HP_percent) + char.HP_numeric) * (
+
+            # --- 生命值 ---
+            hp_pct_total = char.HP_percent + bp.query_total_add("生命值%")
+            hp_flat_total = char.HP_numeric + bp.query_total_add("生命值")
+
+            self.HP = (char.baseHP * (1 + hp_pct_total) + hp_flat_total) * (
                 1 + char.overall_HP_percent
             ) + char.overall_HP_numeric
-            self.DEF = (char.baseDEF * (1 + char.DEF_percent) + char.DEF_numeric) * (
+
+            # --- 防御力 ---
+            def_pct_total = char.DEF_percent + bp.query_total_add("防御力%")
+            def_flat_total = char.DEF_numeric + bp.query_total_add("防御力")
+
+            self.DEF = (char.baseDEF * (1 + def_pct_total) + def_flat_total) * (
                 1 + char.overall_DEF_percent
             ) + char.overall_DEF_numeric
-            self.IMP = (char.baseIMP * (1 + char.IMP_percent) + char.IMP_numeric) * (
+
+            # --- 冲击力 ---
+            imp_pct_total = char.IMP_percent + bp.query_total_add("冲击力%")
+            imp_flat_total = char.IMP_numeric + bp.query_total_add("冲击力")
+
+            self.IMP = (char.baseIMP * (1 + imp_pct_total) + imp_flat_total) * (
                 1 + char.overall_IMP_percent
             ) + char.overall_IMP_numeric
-            self.AP = (char.baseAP * (1 + char.AP_percent) + char.AP_numeric) * (
+
+            # --- 异常精通 (AP) ---
+            ap_pct_total = char.AP_percent + bp.query_total_add("异常精通%")
+            ap_flat_total = char.AP_numeric + bp.query_total_add("异常精通")
+
+            self.AP = (char.baseAP * (1 + ap_pct_total) + ap_flat_total) * (
                 1 + char.overall_AP_percent
             ) + char.overall_AP_numeric
-            self.AM = (char.baseAM * (1 + char.AM_percent) + char.AM_numeric) * (
+
+            # --- 异常掌控 (AM) ---
+            am_pct_total = char.AM_percent + bp.query_total_add("异常掌控%")
+            am_flat_total = char.AM_numeric + bp.query_total_add("异常掌控")
+
+            self.AM = (char.baseAM * (1 + am_pct_total) + am_flat_total) * (
                 1 + char.overall_AM_percent
             ) + char.overall_AM_numeric
-            # 更换balancing参数可实现不同的逻辑，默认为True，即配平逻辑
+
+            # --- 双暴 (Critical) ---
+            # 获取 Buff 带来的额外暴击/暴伤
+            buff_crit_rate = bp.query_total_add("暴击率") + bp.query_total_add("暴击率%")
+            buff_crit_dmg = bp.query_total_add("暴击伤害") + bp.query_total_add("暴击伤害%")
+
             self.CRIT_damage, self.CRIT_rate = self._func_statement_CRIT(
                 char.baseCRIT_score,
-                char.CRIT_rate_numeric,
-                char.CRIT_damage_numeric,
+                char.CRIT_rate_numeric + buff_crit_rate,
+                char.CRIT_damage_numeric + buff_crit_dmg,
                 char.crit_rate_limit,
                 balancing=crit_balancing,
             )
-            self.sp_regen = char.base_sp_regen * (1 + char.sp_regen_percent) + char.sp_regen_numeric
-            self.sp_get_ratio = char.sp_get_ratio
+
+            # --- 能量回复 & 获取效率 ---
+            sp_regen_pct = char.sp_regen_percent + bp.query_total_add("能量自动回复%")
+            sp_regen_flat = char.sp_regen_numeric + bp.query_total_add("能量自动回复")
+            self.sp_regen = char.base_sp_regen * (1 + sp_regen_pct) + sp_regen_flat
+
+            self.sp_get_ratio = char.sp_get_ratio + bp.query_total_add("能量获取效率")
             self.sp_limit = char.sp_limit
-            # 储存目前能量与喧响的参数
 
-            self.PEN_ratio = char.PEN_ratio
-            self.PEN_numeric = char.PEN_numeric
-            self.ICE_DMG_bonus = char.ICE_DMG_bonus
-            self.FIRE_DMG_bonus = char.FIRE_DMG_bonus
-            self.PHY_DMG_bonus = char.PHY_DMG_bonus
-            self.ETHER_DMG_bonus = char.ETHER_DMG_bonus
-            self.ELECTRIC_DMG_bonus = char.ELECTRIC_DMG_bonus
+            # --- 穿透 (Penetration) ---
+            self.PEN_ratio = (
+                char.PEN_ratio + bp.query_total_add("穿透率") + bp.query_total_add("穿透率%")
+            )
+            self.PEN_numeric = char.PEN_numeric + bp.query_total_add("穿透值")
 
-            # 将当前对象 (self) 的所有非可调用（即不是方法或函数）的属性收集到一个字典中
+            # --- 属性伤害加成 ---
+            self.ICE_DMG_bonus = char.ICE_DMG_bonus + bp.query_total_add("冰属性伤害提升")
+            self.FIRE_DMG_bonus = char.FIRE_DMG_bonus + bp.query_total_add("火属性伤害提升")
+            self.PHY_DMG_bonus = char.PHY_DMG_bonus + bp.query_total_add("物理属性伤害提升")
+            self.ETHER_DMG_bonus = char.ETHER_DMG_bonus + bp.query_total_add("以太属性伤害提升")
+            self.ELECTRIC_DMG_bonus = char.ELECTRIC_DMG_bonus + bp.query_total_add("电属性伤害提升")
+
+            self.ALL_DMG_bonus = (
+                char.ALL_DMG_bonus
+                + bp.query_total_add("全属性伤害提升")
+                + bp.query_total_add("造成的伤害提升")
+            )
+            self.Trigger_DMG_bonus = char.Trigger_DMG_bonus  # 保留原有逻辑
+
+            # 将当前对象 (self) 的所有非可调用属性收集到一个字典中
             self.statement = {
                 attr: getattr(self, attr)
                 for attr in dir(self)
@@ -833,10 +884,24 @@ class Character:
         #     print(f"{self.NAME} 释放技能时喧响值已满3000点！")
         from zsim.sim_progress.ScheduledEvent.Calculator import cal_buff_total_bonus
 
-        dynamic_buff = self.sim_instance.global_stats.DYNAMIC_BUFF_DICT
-        enabled_buff = tuple(dynamic_buff[self.NAME])
+        # [Refactor] 使用 BuffManager 获取当前激活的 Buff
+        # dynamic_buff = self.sim_instance.global_stats.DYNAMIC_BUFF_DICT # OLD
+
+        enabled_buff = []
+        if hasattr(self, "buff_manager"):
+            enabled_buff = tuple(self.buff_manager._active_buffs.values())
+
+        # 注意：cal_buff_total_bonus 可能还需要 Enemy 的 Buff (视具体实现而定)。
+        # 如果喧响获取效率只看自身的 Buff，则传 self 的即可。
+        # 如果 Calculator.cal_buff_total_bonus 内部逻辑需要合并 Enemy Buff，
+        # 则这里需要调整调用方式。根据 Calculator.py 的重构，它接受 enabled_buff 元组。
+        # 假设这里只关心角色自身的 Buff 对 "喧响获得效率" 的加成。
+
         buff_bonus_dict = cal_buff_total_bonus(
-            enabled_buff=enabled_buff, judge_obj=None, sim_instance=self.sim_instance
+            enabled_buff=enabled_buff,
+            judge_obj=None,
+            sim_instance=self.sim_instance,
+            char_name=self.NAME,
         )
         decibel_get_ratio = buff_bonus_dict.get("喧响获得效率", 0)
         final_decibel_change_value = decibel_value * (1 + decibel_get_ratio)
@@ -879,7 +944,11 @@ class Character:
         return action
 
     def POST_INIT_DATA(self, sim_instance: "Simulator"):
-        pass
+        self.sim_instance = sim_instance
+        # 初始化 BuffManager
+        from zsim.sim_progress.Buff.BuffManager.BuffManagerClass import BuffManager
+
+        self.buff_manager = BuffManager(self.NAME, sim_instance)
 
 
 class LastingNode:

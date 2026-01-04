@@ -1,170 +1,124 @@
 import math
+from typing import TYPE_CHECKING
 
 from zsim.define import VIVIAN_REPORT
-from zsim.sim_progress.ScheduledEvent.Calculator import (
-    Calculator as Cal,
-)
-from zsim.sim_progress.ScheduledEvent.Calculator import (
-    MultiplierData as Mul,
-)
+from zsim.sim_progress.anomaly_bar import AnomalyBar
+from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import DirgeOfDestinyAnomaly
+from zsim.sim_progress.Buff.Event.callbacks import BuffCallbackRepository
+from zsim.sim_progress.Preload import SkillNode
+from zsim.sim_progress.ScheduledEvent.Calculator import Calculator as Cal
+from zsim.sim_progress.ScheduledEvent.Calculator import MultiplierData as Mul
+from zsim.sim_progress.zsim_event_system.zsim_events.skill_event import SkillExecutionEvent
 
-from .. import Buff, JudgeTools, check_preparation
+if TYPE_CHECKING:
+    from zsim.sim_progress.Buff.buff_class import Buff
+    from zsim.sim_progress.zsim_event_system.zsim_events.base_zsim_event import (
+        BaseZSimEventContext,
+        ZSimEventABC,
+    )
+
+LOGIC_ID = "Buff-角色-薇薇安-6画-核心被动强化"
+
+ANOMALY_RATIO_MUL = {
+    0: 0.0075,
+    1: 0.08,
+    2: 0.0108,
+    3: 0.032,
+    4: 0.0615,
+    5: 0.0108,
+}
 
 
-class VivianCinema6TriggerRecord:
-    def __init__(self):
-        self.char = None
-        self.preload_data = None
-        self.last_update_node = None
-        self.enemy = None
-        self.dynamic_buff_list = None
-        self.sub_exist_buff_dict = None
-        self.cinema_ratio = None
-        self.guard_feather = None
+@BuffCallbackRepository.register(LOGIC_ID)
+def vivian_cinema6_trigger(buff: "Buff", event: "ZSimEventABC", context: "BaseZSimEventContext"):
+    """
+    薇薇安6画：使用【悬落】(1331_SNA_2) 时消耗护羽，强化异放伤害。
+    """
+    if not isinstance(event, SkillExecutionEvent):
+        return
 
-    @property
-    def c6_ratio(self):
-        return self.guard_feather * 0.8
+    skill_node = getattr(event, "event_origin", None)
+    if not isinstance(skill_node, SkillNode):
+        return
 
+    if skill_node.skill_tag != "1331_SNA_2":
+        return
 
-class VivianCinema6Trigger(Buff.BuffLogic):
-    def __init__(self, buff_instance):
-        """薇薇安的核心被动触发器"""
-        super().__init__(buff_instance)
-        self.buff_instance: Buff = buff_instance
-        self.buff_0 = None
-        self.record = None
-        self.xjudge = self.special_judge_logic
-        self.xeffect = self.special_effect_logic
-        self.ANOMALY_RATIO_MUL = {
-            0: 0.0075,
-            1: 0.08,
-            2: 0.0108,
-            3: 0.032,
-            4: 0.0615,
-            5: 0.0108,
-        }
+    state = buff.dy.custom_data
 
-    def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+    # 1. 消耗逻辑 (Pre-Active)
+    # 防止同一技能重复消耗
+    if state.get("last_consumed_uuid") != skill_node.UUID:
+        char = buff.owner
+        if hasattr(char, "feather_manager"):
+            guard_feather = char.feather_manager.guard_feather
+            cost = min(guard_feather, 5)
 
-    def check_record_module(self):
-        if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["薇薇安"][self.buff_instance.ft.index]
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = VivianCinema6TriggerRecord()
-        self.record = self.buff_0.history.record
+            # 记录消耗量供后续伤害计算
+            state["current_cost"] = cost
+            state["last_consumed_uuid"] = skill_node.UUID
 
-    def special_judge_logic(self, **kwargs):
-        """
-        薇薇安的核心被动触发器：
-        触发机制为：全队任意角色触发属性异常的第一跳时，构造一个新的属性异常放到Evenlist中
-        """
-        self.check_record_module()
-        self.get_prepared(char_CID=1331, enemy=1)
-        skill_node = kwargs.get("skill_node", None)
-        from zsim.sim_progress.Preload import SkillNode
-
-        if not isinstance(skill_node, SkillNode):
-            raise TypeError(
-                f"{self.buff_instance.ft.index}的xjudge函数获取到的skill_node不是SkillNode类型！"
-            )
-        if skill_node.skill_tag != "1331_SNA_2":
-            return False
-        if not self.record.enemy.dynamic.is_under_anomaly:
-            if VIVIAN_REPORT:
-                self.buff_instance.sim_instance.schedule_data.change_process_state()
-                print(" APL警告：怪物没异常你打什么SNA_2！豆子全没了吧傻子！")
-        if self.record.last_update_node is None:
-            self.c6_pre_active(skill_node)
-            return True
-        else:
-            if skill_node.UUID != self.record.last_update_node.UUID:
-                self.c6_pre_active(skill_node)
-                return True
-        return False
-
-    def c6_pre_active(self, skill_node):
-        self.record.last_update_node = skill_node
-        guard_feather_cost = min(self.record.char.feather_manager.guard_feather, 5)
-        if VIVIAN_REPORT:
-            self.buff_instance.sim_instance.schedule_data.change_process_state()
-            print(
-                f"6画触发器：检测到【悬落】，即将消耗全部护羽！消耗前的资源情况为：{self.record.char.get_special_stats()}"
-            )
-        self.record.guard_feather = guard_feather_cost
-        self.record.char.feather_manager.guard_feather = 0
-        self.record.char.feather_manager.c1_counter += guard_feather_cost
-        while self.record.char.feather_manager.c1_counter >= 4:
-            self.record.char.feather_manager.c1_counter -= 4
-            self.record.char.feather_manager.flight_feather = min(
-                self.record.char.feather_manager.flight_feather + 1, 5
-            )
-            if VIVIAN_REPORT:
-                self.buff_instance.sim_instance.schedule_data.change_process_state()
-                print(
-                    f"6画触发器：因6画触发、联动1画，恢复一点飞羽！当前资源情况为：{self.record.char.get_special_stats()}"
+            # 扣除资源 & 1画联动
+            char.feather_manager.guard_feather = 0
+            char.feather_manager.c1_counter += cost
+            while char.feather_manager.c1_counter >= 4:
+                char.feather_manager.c1_counter -= 4
+                char.feather_manager.flight_feather = min(
+                    char.feather_manager.flight_feather + 1, 5
                 )
 
-    def special_effect_logic(self, **kwargs):
-        """当Xjudge检测到AnomalyBar传入时通过判定，并且执行xeffect"""
-        self.check_record_module()
-        self.get_prepared(
-            char_CID=1361,
-            preload_data=1,
-            dynamic_buff_list=1,
-            enemy=1,
-            sub_exist_buff_dict=1,
-        )
-        from zsim.sim_progress.anomaly_bar import AnomalyBar
-
-        get_result = self.record.enemy.dynamic.get_active_anomaly()
-        if not get_result:
-            self.record.char.feather_manager.update_myself(c6_signal=True)
             if VIVIAN_REPORT:
-                self.buff_instance.sim_instance.schedule_data.change_process_state()
-                print(
-                    "6画触发器：在怪物没有异常的情况下打了【悬落】，虽然不能触发额外的异放，但是依然可以进行羽毛转化！"
-                )
-        else:
-            active_anomaly_bar = get_result[0]
-            copyed_anomaly = AnomalyBar.create_new_from_existing(active_anomaly_bar)
-            if not copyed_anomaly.settled:
-                copyed_anomaly.anomaly_settled()
-            # copyed_anomaly = self.record.last_update_anomaly
-            event_list = JudgeTools.find_event_list(sim_instance=self.buff_instance.sim_instance)
-            mul_data = Mul(self.record.enemy, self.record.dynamic_buff_list, self.record.char)
-            ap = Cal.AnomalyMul.cal_ap(mul_data)
-            from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
-                DirgeOfDestinyAnomaly,
-            )
+                print(f"6画触发器：【悬落】消耗护羽 {cost}。")
 
-            dirge_of_destiny_anomaly = DirgeOfDestinyAnomaly(
-                copyed_anomaly,
-                active_by="1331",
-                sim_instance=self.buff_instance.sim_instance,
-            )
-            ratio = self.ANOMALY_RATIO_MUL.get(copyed_anomaly.element_type)
-            if self.record.cinema_ratio is None:
-                self.record.cinema_ratio = 1 if self.record.char.cinema < 2 else 1.3
-            final_ratio = (
-                math.floor(ap / 10) * ratio * self.record.cinema_ratio * self.record.c6_ratio
-            )
-            dirge_of_destiny_anomaly.anomaly_dmg_ratio = final_ratio
+    # 2. 伤害计算逻辑 (Effect)
+    target = getattr(event, "target", None) or buff.sim_instance.enemy_group[1]
 
-            # 在柚叶版本更新后，异常计算的逻辑改变了。current_ndarray不再动态变更，而是在属性异常触发后集中计算。
-            # 所以，这里获取到的current_ndarray是已经计算好的，所以这里不需要除以当前异常值
-            # dirge_of_destiny_anomaly.current_ndarray = (
-            #     dirge_of_destiny_anomaly.current_ndarray
-            #     / dirge_of_destiny_anomaly.current_anomaly
-            # )
-            event_list.append(dirge_of_destiny_anomaly)
-            if VIVIAN_REPORT:
-                self.buff_instance.sim_instance.schedule_data.change_process_state()
-                print(
-                    f"6画触发器：触发额外异放！本次触发消耗额外护羽数量为：{self.record.guard_feather}，当前资源情况为：{self.record.char.get_special_stats()}"
-                )
-        self.record.guard_feather = 0
-        self.record.char.feather_manager.update_myself(c6_signal=True)
+    # 检查异常状态
+    active_anomalies = target.dynamic.get_active_anomaly()
+    if not active_anomalies:
+        # 无异常，只触发羽毛转化 (C6 signal)
+        char = buff.owner
+        if hasattr(char, "feather_manager"):
+            # 这里复用 FeatherManager update_myself 的副作用(转化羽毛)
+            # 但注意 update_myself 会调用 trans_feather，
+            # 该函数可能会在此时机被触发两次 (trigger itself + logic)，需留意 FeatherTrigger 实现
+            # 在本逻辑中显式调用 c6_signal
+            char.feather_manager.update_myself(c6_signal=True)
+        return
+
+    # 防止同一技能重复造成伤害
+    if state.get("last_dmg_uuid") == skill_node.UUID:
+        return
+    state["last_dmg_uuid"] = skill_node.UUID
+
+    # 计算额外伤害
+    active_bar = active_anomalies[0]
+    copied_anomaly = AnomalyBar.create_new_from_existing(active_bar)
+    if not copied_anomaly.settled:
+        copied_anomaly.anomaly_settled()
+
+    enemy_buffs = getattr(target.dynamic, "buff_list", [])
+    mul_data = Mul(target, enemy_buffs, buff.owner)
+    ap = Cal.AnomalyMul.cal_ap(mul_data)
+
+    ratio = ANOMALY_RATIO_MUL.get(copied_anomaly.element_type, 0.01)
+    cinema_ratio = 1 if buff.owner.cinema < 2 else 1.3
+    c6_ratio_bonus = state.get("current_cost", 0) * 0.8
+
+    final_ratio = math.floor(ap / 10) * ratio * cinema_ratio * c6_ratio_bonus
+
+    dirge_event = DirgeOfDestinyAnomaly(
+        copied_anomaly, active_by="1331", sim_instance=buff.sim_instance
+    )
+    dirge_event.anomaly_dmg_ratio = final_ratio
+
+    if hasattr(buff.sim_instance, "event_list"):
+        buff.sim_instance.event_list.append(dirge_event)
+
+    if VIVIAN_REPORT:
+        print(f"6画触发器：触发额外异放！倍率加成: {c6_ratio_bonus}")
+
+    # 伤害触发后，再次确保羽毛转化逻辑执行
+    char = buff.owner
+    if hasattr(char, "feather_manager"):
+        char.feather_manager.update_myself(c6_signal=True)

@@ -31,6 +31,10 @@ class Shock(Dot):
         max_duration: int | None = None
         max_effect_times: int = 30
 
+        # [Refactor] 新架构适配：显式声明字段
+        label: dict | None = None
+        beneficiary: str | None = None
+
         def __post_init__(self):
             if self.sim_instance is None:
                 raise ValueError("sim_instance is None, but it should not be.")
