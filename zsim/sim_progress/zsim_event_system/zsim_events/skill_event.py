@@ -1,7 +1,7 @@
 from typing import Any, TypeVar
 
 from ....define import SkillSubEventTypes, SkillType
-from ...data_struct import ZSimTimer
+from ...data_struct.zsim_timer import ZSimTimer
 from ...Preload import SkillNode
 from ..accessor import ScheduleDataAccessor
 from .base_zsim_event import BaseZSimEventContext, EventMessage, ExecutionEvent

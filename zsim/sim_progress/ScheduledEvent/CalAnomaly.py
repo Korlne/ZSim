@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
@@ -12,8 +14,6 @@ from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
     Disorder,
     PolarityDisorder,
 )
-from zsim.sim_progress.Character.character import Character
-from zsim.sim_progress.Character.Yanagi import Yanagi
 from zsim.sim_progress.Enemy import Enemy
 from zsim.sim_progress.Report import report_to_log
 
@@ -22,6 +22,7 @@ from .Calculator import MultiplierData as MulData
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Character import Character
+    from zsim.sim_progress.Character.Yanagi import Yanagi
     from zsim.simulator.simulator_class import Simulator
 
 

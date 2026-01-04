@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING
 
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import NewAnomaly
-from zsim.sim_progress.Buff.BuffAddStrategy import buff_add_strategy
 from zsim.sim_progress.Preload import SkillNode
 
 from ..character import Character
@@ -32,14 +31,17 @@ class Yanagi(Character):
             self.stance_manager.update_myself(nodes)
         if self.cinema >= 1 and anomalies:
             if self.sim_instance is not None:
-                buff_add_strategy(self.cinme_1_buff_index, sim_instance=self.sim_instance)
+                # 使用 self.buff_manager.add_buff 替代 buff_add_strategy
+                self.buff_manager.add_buff(self.cinme_1_buff_index, self.sim_instance.tick)
+
             if self.cinema >= 4:
                 for _anomaly in anomalies:
                     if isinstance(_anomaly.activate_by, SkillNode):
                         if str(self.CID) in _anomaly.activate_by.skill_tag:
                             if self.sim_instance is not None:
-                                buff_add_strategy(
-                                    self.cinema_4_buff_index, sim_instance=self.sim_instance
+                                # 使用 self.buff_manager.add_buff 替代 buff_add_strategy
+                                self.buff_manager.add_buff(
+                                    self.cinema_4_buff_index, self.sim_instance.tick
                                 )
                             break
 

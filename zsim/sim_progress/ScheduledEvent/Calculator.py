@@ -1,18 +1,22 @@
+from __future__ import annotations
+
 import json
 from functools import lru_cache
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 
 from zsim.define import CHECK_SKILL_MUL, CHECK_SKILL_MUL_TAG, INVALID_ELEMENT_ERROR, ElementType
 from zsim.sim_progress.anomaly_bar.AnomalyBarClass import AnomalyBar
-from zsim.sim_progress.Character import Character
 from zsim.sim_progress.data_struct import cal_buff_total_bonus
 from zsim.sim_progress.Enemy import Enemy
 from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.Report import report_to_log
 
 from .constants import EventConstants
+
+if TYPE_CHECKING:
+    from zsim.sim_progress.Character import Character
 
 with open(
     file="./zsim/sim_progress/ScheduledEvent/buff_effect_trans.json",
