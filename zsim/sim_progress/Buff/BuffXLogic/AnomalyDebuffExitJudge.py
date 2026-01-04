@@ -1,61 +1,46 @@
-from typing import TYPE_CHECKING
+from .. import Buff, JudgeTools
 
-from zsim.sim_progress.Buff.Event.callbacks import BuffCallbackRepository
-
-if TYPE_CHECKING:
-    from zsim.sim_progress.Buff.buff_class import Buff
-    from zsim.sim_progress.zsim_event_system.zsim_events import BaseZSimEventContext, ZSimEventABC
-
-# 逻辑ID
-LOGIC_ID = "Anomaly_Debuff_Exit_Judge"
-
-# Buff名称到敌人动态属性名的映射
-ANOMALY_MAP = {
+anomaly_statement_dict = {
     "Buff-异常-霜寒": "frostbite",
     "Buff-异常-畏缩": "assault",
     "Buff-异常-烈霜霜寒": "frost_frostbite",
-    # 可根据需要补充其他映射
 }
 
 
-@BuffCallbackRepository.register(LOGIC_ID)
-def anomaly_debuff_exit_judge(buff: "Buff", event: "ZSimEventABC", context: "BaseZSimEventContext"):
+class AnomalyDebuffExitJudge(Buff.BuffLogic):
     """
-    通用异常Debuff退出判决
-    逻辑：
-        每帧检查敌人的异常状态（由Buff名称映射得到）。
-        如果检测到异常状态结束（下降沿），则结束此Buff。
+    理论上所有属性异常导致的debuff都适用这退出特效。
     """
-    sim = buff.sim_instance
-    enemy = sim.ctx.current_enemy
-    if not enemy:
-        return
 
-    # 1. 确定需要监控的异常属性名
-    # 优先从 custom_data 获取，避免重复查表
-    target_attr = buff.dy.custom_data.get("target_anomaly_attr")
-    if not target_attr:
-        # 尝试通过 buff 名称匹配 (原逻辑使用 index，这里建议用 name 或 config key)
-        # 假设 buff.config.name 是 "Buff-异常-霜寒" 这种格式
-        buff_name = buff.config.name
-        target_attr = ANOMALY_MAP.get(buff_name)
-        if target_attr:
-            buff.dy.custom_data["target_anomaly_attr"] = target_attr
-        else:
-            # 如果找不到映射，可能不需要此逻辑，直接返回
-            return
+    def __init__(self, buff_instance):
+        super().__init__(buff_instance)
+        self.buff_instance: Buff = buff_instance
+        self.xexit = self.special_exit_logic
+        self.last_frostbite = False
+        self.last_frost_frostbite = False
+        self.last_assault = False
+        self.last_shock = False
+        self.last_burn = False
+        self.last_corruption = False
+        self.enemy = None
 
-    # 2. 获取当前状态
-    current_state = getattr(enemy.dynamic, target_attr, False)
+    def special_exit_logic(self, **kwargs):
+        """
+        特殊属性异常退出机制
+        即：属性异常结束（检测到下降沿）就结束
+        """
+        if self.enemy is None:
+            self.enemy = JudgeTools.find_enemy(sim_instance=self.buff_instance.sim_instance)
+        anomaly_name = anomaly_statement_dict[self.buff_instance.ft.index]
+        anomaly_now = getattr(self.enemy.dynamic, anomaly_name)
+        anomaly_statement = [
+            getattr(self.buff_instance.logic, f"last_{anomaly_name}"),
+            anomaly_now,
+        ]
 
-    # 3. 获取上一帧状态 (默认为当前状态，避免初始化误判)
-    last_state = buff.dy.custom_data.get("last_state", current_state)
+        def mode_func(a, b):
+            return a is True and b is False
 
-    # 4. 下降沿检测 (True -> False)
-    if last_state is True and current_state is False:
-        # 异常状态结束，Buff 也应结束
-        if buff.dy.active:
-            buff.end(current_tick=sim.tick)
-
-    # 5. 更新状态记录
-    buff.dy.custom_data["last_state"] = current_state
+        result = JudgeTools.detect_edge(anomaly_statement, mode_func)
+        setattr(self.buff_instance.logic, f"last_{anomaly_name}", anomaly_now)
+        return result

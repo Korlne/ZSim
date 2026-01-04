@@ -1,52 +1,54 @@
-from typing import TYPE_CHECKING
+from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
 
-from zsim.sim_progress.Buff.Event.callbacks import BuffCallbackRepository
-from zsim.sim_progress.Preload import SkillNode
-
-if TYPE_CHECKING:
-    from zsim.sim_progress.Buff.buff_class import Buff
-    from zsim.sim_progress.zsim_event_system.zsim_events import BaseZSimEventContext, ZSimEventABC
-
-# Logic ID
-LOGIC_ID = "Branch_Blade_Song_Crit_Damage_Bonus"
+from .. import Buff, JudgeTools, check_preparation
 
 
-@BuffCallbackRepository.register(LOGIC_ID)
-def branch_blade_song_crit_damage_bonus(
-    buff: "Buff", event: "ZSimEventABC", context: "BaseZSimEventContext"
-):
+class BranchBladeSongRecord:
+    def __init__(self):
+        self.equipper = None
+        self.enemy = None
+        self.dynamic_buff_list = None
+        self.char = None
+
+
+class BranchBladeSongCritDamageBonus(Buff.BuffLogic):
     """
-    折枝剑歌 - 爆伤加成 (新冰套)
-    逻辑：
-        检测角色实时异常掌控(AM)。
-        如果 AM >= 115，则激活 Buff。
-        由于无法实现"AM>=115时永久激活"，因此在每次技能开始时(SkillStart)进行检测。
+    该buff是新冰4件套中的第一特效：异常掌控>=115就会触发。
+    由于不能实现“异常掌控>=115时候，将buff.ft.alltime修改为True的操作，
+    所以只能让该buff在每个动作都检测，然后每个动作都触发，用来平替alltime。
     """
-    sim = buff.sim_instance
-    owner = buff.owner
 
-    if not owner:
-        return
+    def __init__(self, buff_instance):
+        super().__init__(buff_instance)
+        self.buff_instance: Buff = buff_instance
+        self.xjudge = self.special_judge_logic
+        self.equipper = None
+        self.buff_0 = None
+        self.record = None
 
-    # 1. 仅在技能开始或Buff刷新时检测
-    # 这里选择 SkillStart 以确保战斗中实时性
-    is_check_timing = False
-    if hasattr(event, "event_origin") and isinstance(event.event_origin, SkillNode):
-        is_check_timing = True
-    # 也可以在 BuffStart 时做一次初始检测
-    if event.event_type == "BuffStart":
-        is_check_timing = True
+    def get_prepared(self, **kwargs):
+        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
 
-    if not is_check_timing:
-        return
+    def check_record_module(self):
+        if self.equipper is None:
+            self.equipper = JudgeTools.find_equipper(
+                "折枝剑歌", sim_instance=self.buff_instance.sim_instance
+            )
+        if self.buff_0 is None:
+            self.buff_0 = JudgeTools.find_exist_buff_dict(
+                sim_instance=self.buff_instance.sim_instance
+            )[self.equipper][self.buff_instance.ft.index]
+        if self.buff_0.history.record is None:
+            self.buff_0.history.record = BranchBladeSongRecord()
+        self.record = self.buff_0.history.record
 
-    # 2. 获取实时属性 (AM)
-    current_am = getattr(owner.statement, "AM", 0)
-
-    # 3. 判定与状态同步
-    if current_am >= 115:
-        if not buff.dy.active:
-            buff.start(current_tick=sim.tick)
-    else:
-        if buff.dy.active:
-            buff.end(current_tick=sim.tick)
+    def special_judge_logic(self, **kwargs):
+        self.check_record_module()
+        self.get_prepared(equipper="折枝剑歌", enemy=1, dynamic_buff_list=1)
+        mul_data = MultiplierData(
+            self.record.enemy, self.record.dynamic_buff_list, self.record.char
+        )
+        am = Calculator.AnomalyMul.cal_am(mul_data)
+        if am >= 115:
+            return True
+        return False

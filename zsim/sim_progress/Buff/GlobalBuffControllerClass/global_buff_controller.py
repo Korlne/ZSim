@@ -1,3 +1,6 @@
+import importlib
+import json
+import os
 from collections import defaultdict
 from typing import Any, Dict, List
 
@@ -50,6 +53,8 @@ class GlobalBuffController:
         self.sim_instance = sim_instance
         self._trigger_db: pd.DataFrame = pd.DataFrame()
         self._effect_db: Dict[str, Dict[str, float]] = {}
+        # [New] 用于存储从 buff_config.json 加载的类映射配置
+        self.buff_config: Dict[str, Dict[str, str]] = {}
 
         # 使用 defaultdict(dict) 可以在访问新角色名时自动创建空字典，防止 KeyError
         # 结构: { "CharacterName": { "BuffName": BuffInstance }, ... }
@@ -68,11 +73,28 @@ class GlobalBuffController:
             # 确保文件路径存在，建议加上错误捕获或路径检查
             self._trigger_db = pd.read_csv(EXIST_FILE_PATH)
             # 建立索引以加速查找
-            self._trigger_db.set_index("BuffName", inplace=False, drop=False)
+            # [Fix] 必须使用 inplace=True 或者将结果赋值回 self._trigger_db，否则索引不会更新
+            self._trigger_db.set_index("BuffName", inplace=True, drop=False)
 
             # 2. 加载效果表 (Buff 数值效果)
             # 复用并优化原 buff_class.py 中的解析逻辑
             self._effect_db = self._parse_effect_csv(EFFECT_FILE_PATH)
+
+            # 3. [New] 加载 JSON 配置文件 (用于 Python 类映射)
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            # buff_config.json 位于父目录 (zsim/sim_progress/Buff/)
+            config_path = os.path.join(current_dir, "..", "buff_config.json")
+            try:
+                with open(config_path, "r", encoding="utf-8") as f:
+                    self.buff_config = json.load(f)
+            except FileNotFoundError:
+                report_to_log(
+                    f"[GlobalBuffController] 警告: 未在 {config_path} 找到配置文件", level=3
+                )
+                self.buff_config = {}
+
+            # 4. [Fix] 注入缺失的 DoT 条目，防止 ValueError
+            self._inject_missing_entries()
 
             report_to_log(
                 f"[GlobalBuffController] 初始化完成，加载了 {len(self._trigger_db)} 个Buff定义。",
@@ -82,6 +104,31 @@ class GlobalBuffController:
         except Exception as e:
             report_to_log(f"[GlobalBuffController] 数据库加载失败: {e}", level=4)
             raise e
+
+    def _inject_missing_entries(self):
+        """
+        手动注入代码中需要但 CSV/JSON 中缺失的条目（例如旧版的 DoT 类）。
+        """
+        missing_dots = {
+            "Shock": {"module": "zsim.sim_progress.Dot.Dots.Shock", "class": "Shock"},
+            "Corruption": {
+                "module": "zsim.sim_progress.Dot.Dots.Corruption",
+                "class": "Corruption",
+            },
+            # 如果需要，可以在这里添加其他异常状态: Ignite, Freeze, Assault 等
+        }
+
+        for name, cfg in missing_dots.items():
+            # 如果配置中缺失，则注入
+            if name not in self.buff_config:
+                self.buff_config[name] = cfg
+
+            # 如果数据库索引中缺失，则注入（创建一个虚拟行以通过 'in index' 检查）
+            if name not in self._trigger_db.index:
+                # 创建一个虚拟 Series
+                dummy_row = pd.Series({"BuffName": name}, name=name)
+                # 使用 loc 追加到 DataFrame
+                self._trigger_db.loc[name] = dummy_row
 
     def _parse_effect_csv(self, csv_path: str) -> Dict[str, Dict[str, float]]:
         """
@@ -125,7 +172,7 @@ class GlobalBuffController:
 
         return result
 
-    def instantiate_buff(self, buff_id: str, sim_instance=None) -> Buff:
+    def instantiate_buff(self, buff_id: str, sim_instance=None) -> Any:
         """
         [Factory Method] 根据 ID 创建一个新的 Buff 实例。
 
@@ -134,7 +181,7 @@ class GlobalBuffController:
             sim_instance: 模拟器实例引用。如果调用时未传入，尝试使用初始化时保存的。
 
         Returns:
-            初始化完成并填充了 Effects 的 Buff 对象。
+            初始化完成并填充了 Effects 的 Buff 或自定义类对象。
         """
         # 优先使用传入的 sim_instance，其次使用 self.sim_instance
         sim = sim_instance if sim_instance is not None else self.sim_instance
@@ -152,14 +199,49 @@ class GlobalBuffController:
             config_series = config_series.iloc[0]
 
         # 2. 创建实例
-        # 注意：这里使用了全关键字参数，防止参数顺序冲突
-        buff = Buff(
-            config=config_series,  # 假设你的 Buff 类接收 config 参数
-            sim_instance=sim,
-        )
+        # [Fix] 检查是否存在该 buff_id 的自定义类映射
+        if buff_id in self.buff_config:
+            # 自定义类逻辑
+            class_info = self.buff_config[buff_id]
+            module_path = class_info.get("module")
+            class_name = class_info.get("class")
 
-        # 3. 注入 Effects
-        buff.effects = self._create_effects_for_buff(buff_id)
+            try:
+                # 处理相对导入（如果 module 以 '.' 开头）
+                if module_path.startswith("."):
+                    # 假设相对于 zsim.sim_progress.Buff
+                    package = "zsim.sim_progress.Buff"
+                    module = importlib.import_module(module_path, package=package)
+                else:
+                    module = importlib.import_module(module_path)
+
+                cls = getattr(module, class_name)
+
+                # 实例化自定义类
+                # 注意：像 Shock 这样的遗留类可能有不同的构造函数签名。
+                # 假设它们支持 sim_instance 参数。
+                # DoT 类 (Shock) 接受 (bar, sim_instance)。Buff 类接受 (config, sim_instance)。
+                # 这里尝试基于参数兼容性进行实例化。
+                try:
+                    buff = cls(config=config_series, sim_instance=sim)
+                except TypeError:
+                    # 如果不支持 config 参数（例如旧版 DoT 类），降级为只传 sim_instance
+                    buff = cls(sim_instance=sim)
+
+            except (ImportError, AttributeError) as e:
+                report_to_log(f"无法为 {buff_id} 加载自定义类: {e}。回退到默认 Buff 类。", level=3)
+                buff = Buff(config=config_series, sim_instance=sim)
+        else:
+            # 默认 Buff 类
+            buff = Buff(
+                config=config_series,
+                sim_instance=sim,
+            )
+
+        # 3. 注入 Effects (仅当是标准 Buff 或对象支持 effects 属性时)
+        # 自定义类可能自己管理 effects
+        if hasattr(buff, "effects"):
+            buff.effects = self._create_effects_for_buff(buff_id)
 
         return buff
 
