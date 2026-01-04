@@ -490,6 +490,9 @@ class Calculator:
         if dynamic_buff is None:
             dynamic_buff = {}
 
+        # [Fix] 局部导入以避免循环引用
+        from zsim.sim_progress.Character import Character
+
         if not isinstance(skill_node, SkillNode):
             raise ValueError("错误的参数类型，应该为SkillNode")
         if not isinstance(character_obj, Character):

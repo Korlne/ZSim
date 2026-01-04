@@ -86,7 +86,7 @@ class Enemy:
         self.dynamic = self.EnemyDynamic(self)
 
         # 初始化BuffManager
-        self.buff_manager = BuffManager(host=self)
+        self.buff_manager = BuffManager(owner_id=self.name, sim_instance=self.sim_instance)
 
         # 初始化敌人基础属性
         self.base_max_HP: float = float(self.data_dict["70级最大生命值"])
@@ -602,7 +602,7 @@ class Enemy:
         self.dynamic.reset_myself()
         self.reset_anomaly_bars()
         # 重置 BuffManager
-        self.buff_manager = BuffManager(host=self)
+        self.buff_manager = BuffManager(owner_id=self.name, sim_instance=self.sim_instance)
 
         assert self.qte_manager is not None
         self.qte_manager.reset_myself()
