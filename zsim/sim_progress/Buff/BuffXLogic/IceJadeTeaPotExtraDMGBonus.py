@@ -15,13 +15,15 @@ class IceJadeTeaPotExtraDMGBonus(Buff.BuffLogic):
         equipper = JudgeTools.find_equipper(
             "玉壶青冰", sim_instance=self.buff_instance.sim_instance
         )
-        dynamic_buff_list = JudgeTools.find_dynamic_buff_list(
-            sim_instance=self.buff_instance.sim_instance
-        )
-        for buffs in dynamic_buff_list[equipper]:
-            if "玉壶青冰-普攻加冲击" not in buffs.ft.index:
+        # [新架构] 使用 BuffManager 查询装备者身上的激活 Buff
+        char_obj = self.buff_instance.sim_instance.char_data.char_obj_dict.get(equipper)
+        if char_obj is None or not hasattr(char_obj, "buff_manager"):
+            return False
+
+        for buff in char_obj.buff_manager._active_buffs.values():
+            if "玉壶青冰-普攻加冲击" not in buff.ft.index:
                 continue
-            if buffs.dy.count >= 15:
+            if buff.dy.count >= 15:
                 return True
-            else:
-                return False
+            return False
+        return False

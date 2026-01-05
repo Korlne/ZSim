@@ -19,11 +19,6 @@ def find_char_list(sim_instance: "Simulator" = None):
     return char_list
 
 
-def find_dynamic_buff_list(sim_instance: "Simulator" = None):
-    dynamic_buff_list = sim_instance.global_stats.DYNAMIC_BUFF_DICT
-    return dynamic_buff_list
-
-
 def find_tick(sim_instance: "Simulator" = None):
     tick = sim_instance.tick
     return tick

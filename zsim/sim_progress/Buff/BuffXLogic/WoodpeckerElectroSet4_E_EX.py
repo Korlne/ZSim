@@ -8,7 +8,6 @@ class WoodpeckerElectroEXRecord:
     def __init__(self):
         self.equipper = None
         self.char = None
-        self.dynamic_buff_list = None
         self.enemy = None
         self.action_stack = None
 
@@ -41,7 +40,7 @@ class WoodpeckerElectroSet4_E_EX(Buff.BuffLogic):
 
     def special_judge_logic(self, **kwargs):
         self.check_record_module()
-        self.get_prepared(equipper="啄木鸟电音", enemy=1, dynamic_buff_list=1, action_stack=1)
+        self.get_prepared(equipper="啄木鸟电音", enemy=1, action_stack=1)
         skill_node = kwargs.get("skill_node", None)
         if skill_node is None:
             return False
@@ -56,8 +55,9 @@ class WoodpeckerElectroSet4_E_EX(Buff.BuffLogic):
             return False
         if str(self.record.char.CID) not in skill_node.skill_tag:
             return False
+        # [新架构] 使用 BuffManager 计算暴击率
         mul_data = MultiplierData(
-            self.record.enemy, self.record.dynamic_buff_list, self.record.char
+            enemy_obj=self.record.enemy, character_obj=self.record.char
         )
         if skill_node.skill.trigger_buff_level == 2:
             cric_rate = Calculator.RegularMul.cal_crit_rate(mul_data)
