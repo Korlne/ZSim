@@ -297,32 +297,3 @@ class GlobalStats:
 
     def reset_myself(self, name_box):
         return None
-
-    @property
-    def DYNAMIC_BUFF_DICT(self) -> dict[str, list[Buff]]:
-        """
-        兼容旧接口的只读视图。
-
-        [新架构] 实际数据来源为 BuffManager，仅返回当前激活的 Buff 列表，
-        用于避免旧接口调用时直接报错。
-        """
-        if self.sim_instance is None:
-            return {}
-
-        active_buff_map: dict[str, list[Buff]] = {}
-        if self.sim_instance.char_data:
-            for char in self.sim_instance.char_data.char_obj_list:
-                if hasattr(char, "buff_manager"):
-                    active_buff_map[char.NAME] = [
-                        buff
-                        for buff in char.buff_manager._active_buffs.values()
-                        if buff.dy.active
-                    ]
-
-        enemy = getattr(self.sim_instance, "enemy", None)
-        if enemy is not None and hasattr(enemy, "buff_manager"):
-            active_buff_map["enemy"] = [
-                buff for buff in enemy.buff_manager._active_buffs.values() if buff.dy.active
-            ]
-
-        return active_buff_map
