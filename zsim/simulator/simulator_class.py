@@ -325,7 +325,6 @@ class Simulator:
 
             # ScheduledEvent (事件调度)
             sce = ScE(
-                self.global_stats.DYNAMIC_BUFF_DICT,
                 self.schedule_data,
                 self.tick,
                 self.load_data.exist_buff_dict,

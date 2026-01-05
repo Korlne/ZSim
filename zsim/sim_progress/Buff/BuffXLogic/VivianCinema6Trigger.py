@@ -97,8 +97,7 @@ def vivian_cinema6_trigger(buff: "Buff", event: "ZSimEventABC", context: "BaseZS
     if not copied_anomaly.settled:
         copied_anomaly.anomaly_settled()
 
-    enemy_buffs = getattr(target.dynamic, "buff_list", [])
-    mul_data = Mul(target, enemy_buffs, buff.owner)
+    mul_data = Mul(enemy_obj=target, character_obj=buff.owner)
     ap = Cal.AnomalyMul.cal_ap(mul_data)
 
     ratio = ANOMALY_RATIO_MUL.get(copied_anomaly.element_type, 0.01)

@@ -7,7 +7,6 @@ from .FindEquipper import find_equipper
 from .FindMain import (
     find_all_name_order_box,  # noqa: F401
     find_char_list,
-    find_dynamic_buff_list,
     find_enemy,
     find_event_list,
     find_exist_buff_dict,
@@ -41,7 +40,6 @@ def check_preparation(
     # 参数获取
     enemy = kwargs.get("enemy")
     sub_exist_buff_dict = kwargs.get("sub_exist_buff_dict")
-    dynamic_buff_list = kwargs.get("dynamic_buff_list")
     action_stack = kwargs.get("action_stack")
     event_list = kwargs.get("event_list")
     trigger_buff_0 = kwargs.get("trigger_buff_0")
@@ -85,11 +83,6 @@ def check_preparation(
     if enemy:
         if record.enemy is None:
             record.enemy = find_enemy(sim_instance=buff_instance.sim_instance)
-    if dynamic_buff_list:
-        if record.dynamic_buff_list is None:
-            record.dynamic_buff_list = find_dynamic_buff_list(
-                sim_instance=buff_instance.sim_instance
-            )
     if action_stack:
         if record.action_stack is None:
             record.action_stack = find_stack(sim_instance=buff_instance.sim_instance)

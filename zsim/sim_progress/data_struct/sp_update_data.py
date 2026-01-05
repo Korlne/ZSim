@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 
 class SPUpdateData:
-    def __init__(self, char_obj: "Character", dynamic_buff: dict):
+    def __init__(self, char_obj: "Character"):
         """更新角色SP时的专用数据结构，仅用于传递角色的静态与动态的能量自动回复效率"""
         self.char_name = char_obj.NAME
         self.static_sp_regen: float = char_obj.statement.sp_regen

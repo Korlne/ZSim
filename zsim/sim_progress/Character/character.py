@@ -885,8 +885,6 @@ class Character:
         from zsim.sim_progress.ScheduledEvent.Calculator import cal_buff_total_bonus
 
         # [Refactor] 使用 BuffManager 获取当前激活的 Buff
-        # dynamic_buff = self.sim_instance.global_stats.DYNAMIC_BUFF_DICT # OLD
-
         enabled_buff = []
         if hasattr(self, "buff_manager"):
             enabled_buff = tuple(self.buff_manager._active_buffs.values())
