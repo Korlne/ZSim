@@ -6,7 +6,6 @@ class TimeweaverDisorderDmgMulRecord:
         self.equipper = None
         self.char = None
         self.preload_data = None
-        self.dynamic_buff_list = None
         self.enemy = None
 
 
@@ -41,7 +40,7 @@ class TimeweaverDisorderDmgMul(Buff.BuffLogic):
     def special_judge_logic(self, **kwargs):
         """时流贤者的精通AP检查相关Buff的核心逻辑。"""
         self.check_record_module()
-        self.get_prepared(equipper="时流贤者", preload_data=1, dynamic_buff_list=1, enemy=1)
+        self.get_prepared(equipper="时流贤者", preload_data=1, enemy=1)
         from zsim.sim_progress.ScheduledEvent.Calculator import (
             Calculator as Cal,
         )
@@ -49,7 +48,8 @@ class TimeweaverDisorderDmgMul(Buff.BuffLogic):
             MultiplierData as Mul,
         )
 
-        mul_data = Mul(self.record.enemy, self.record.dynamic_buff_list, self.record.char)
+        # [新架构] 使用 BuffManager 计算精通
+        mul_data = Mul(enemy_obj=self.record.enemy, character_obj=self.record.char)
         ap = Cal.AnomalyMul.cal_ap(mul_data)
         return ap >= 375
 

@@ -42,7 +42,7 @@ class AnomalyEventHandler(BaseEventHandler):
         self._validate_context(context)
 
         enemy = self._get_context_enemy(context)
-        # [Refactor] 移除未使用的变量 (dynamic_buff, exist_buff_dict, action_stack)
+        # [Refactor] 移除旧接口相关变量，仅保留 BuffManager 所需数据
         sim_instance = self._get_context_sim_instance(context)
         tick = self._get_context_tick(context)
 

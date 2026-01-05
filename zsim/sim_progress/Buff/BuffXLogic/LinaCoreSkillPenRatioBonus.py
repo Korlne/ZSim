@@ -13,7 +13,6 @@ class LinaCoreSkillRecord:
         self.action_stack = None
         self.char = None
         self.enemy = None
-        self.dynamic_buff_list = None
         self.sub_exist_buff_dict = None
 
 
@@ -58,14 +57,14 @@ class LinaCoreSkillPenRatioBonus(Buff.BuffLogic):
         self.get_prepared(
             action_stack=1,
             char_CID=1211,
-            dynamic_buff_list=1,
             enemy=1,
             sub_exist_buff_dict=1,
         )
         tick_now = JudgeTools.find_tick(sim_instance=self.buff_instance.sim_instance)
         self.buff_instance.simple_start(tick_now, self.record.sub_exist_buff_dict)
         self.buff_0.dy.count -= self.buff_0.ft.step
-        mul_data = Mul(self.record.enemy, self.record.dynamic_buff_list, self.record.char)
+        # [新架构] 使用 BuffManager 计算穿透率
+        mul_data = Mul(enemy_obj=self.record.enemy, character_obj=self.record.char)
 
         pen_ratio = Cal.RegularMul.cal_pen_ratio(mul_data)
 

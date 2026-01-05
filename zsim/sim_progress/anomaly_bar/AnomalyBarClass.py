@@ -115,7 +115,6 @@ class AnomalyBar:
         self,
         timenow: int,
         skill_node: "SkillNode",
-        dynamic_buff_dict: dict[str, list["Buff"]],
     ):
         """
         属性异常激活时，必要的信息更新
@@ -126,7 +125,8 @@ class AnomalyBar:
         self.last_active = timenow
         self.active = True
         self.activated_by = skill_node
-        self.__get_max_duration(dynamic_buff_dict, char_cid)
+        # [新架构] 直接从 BuffManager 获取影响持续时间的 Buff
+        self.__get_max_duration(char_cid)
 
     def reset_current_info_cause_output(self):
         """
@@ -156,8 +156,8 @@ class AnomalyBar:
         self.max_anomaly = None
         self.ndarray_box = []
 
-    def __get_max_duration(self, dynamic_buff_list, anomaly_from: int | str) -> None:
-        """通过Buff计算当前异常的最大持续时间"""
+    def __get_max_duration(self, anomaly_from: int | str) -> None:
+        """通过 BuffManager 计算当前异常的最大持续时间"""
         if self.duration_buff_list is None:
             self.max_duration = self.basic_max_duration
             return
@@ -167,10 +167,17 @@ class AnomalyBar:
 
         max_duration_delta_fix = 0
         max_duration_delta_pct = 0
+        enemy = getattr(self.sim_instance, "enemy", None)
+        if enemy is None or not hasattr(enemy, "buff_manager"):
+            self.max_duration = self.basic_max_duration
+            return
+
+        enemy_buff_list = [
+            buff for buff in enemy.buff_manager._active_buffs.values() if buff.dy.active
+        ]
         for _buff_index in self.duration_buff_list:
-            enemy_buff_list = dynamic_buff_list.get("enemy")
             for buffs in enemy_buff_list:
-                if _buff_index == buffs.ft.index and buffs.dy.active:
+                if _buff_index == buffs.ft.index:
                     # [Refactor] 直接使用 effects 列表
                     for effect in buffs.effects:
                         if isinstance(effect, BonusEffect) and effect.enable:

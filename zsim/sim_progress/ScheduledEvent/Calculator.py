@@ -40,7 +40,6 @@ class MultiplierData:
     def __new__(
         cls,
         enemy_obj: Enemy,
-        dynamic_buff: dict[str, list],
         character_obj: Character | None = None,
         judge_node: SkillNode | AnomalyBar | None = None,
     ):
@@ -91,16 +90,12 @@ class MultiplierData:
     def __init__(
         self,
         enemy_obj: Enemy,
-        dynamic_buff: dict | None = None,
         character_obj: Character | None = None,
         judge_node: SkillNode | AnomalyBar | None = None,
     ):
         """
         初始化乘数数据实例
         """
-        if dynamic_buff is None:
-            dynamic_buff = {}
-
         if not hasattr(self, "char_name"):
             self.judge_node: SkillNode | AnomalyBar | None = judge_node
             self.enemy_instance = enemy_obj
@@ -479,17 +474,14 @@ class Calculator:
         skill_node: SkillNode,
         character_obj: Character,
         enemy_obj: Enemy,
-        dynamic_buff: dict | None = None,
     ):
         """
         Calculator 是 Schedule 阶段获得 SkillNode 后的计算处理逻辑
 
-        当计划事件读取到 SkillNode 时，Calculator 会根据目前的角色的面板、enemy 对象、角色的动态buff，
-        计算出角色的直伤、异常、失衡的各乘区，并根据需求计算出输出、异常值、异常快照、失衡值
+        当计划事件读取到 SkillNode 时，Calculator 会根据目前的角色面板、敌人对象、
+        以及 BuffManager 提供的激活 Buff 状态，计算出角色的直伤、异常、失衡的各乘区，
+        并根据需求计算出输出、异常值、异常快照、失衡值。
         """
-        if dynamic_buff is None:
-            dynamic_buff = {}
-
         # [Fix] 局部导入以避免循环引用
         from zsim.sim_progress.Character import Character
 
@@ -499,11 +491,8 @@ class Calculator:
             raise ValueError("错误的参数类型，应该为Character")
         if not isinstance(enemy_obj, Enemy):
             raise ValueError("错误的参数类型，应该为Enemy")
-        # if not isinstance(dynamic_buff, dict):
-        #     raise ValueError("错误的参数类型，应该为dict")
-
         # 创建MultiplierData对象，用于计算各种战斗中的乘区数据
-        data = MultiplierData(enemy_obj, dynamic_buff, character_obj, skill_node)
+        data = MultiplierData(enemy_obj, character_obj, skill_node)
 
         # 初始化角色名称和角色ID
 

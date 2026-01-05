@@ -12,7 +12,6 @@ class WoodpeckerElectroCARecord:
     def __init__(self):
         self.equipper = None
         self.char = None
-        self.dynamic_buff_list = None
         self.enemy = None
         self.action_stack = None
 
@@ -45,7 +44,7 @@ class WoodpeckerElectroSet4_CA(Buff.BuffLogic):
 
     def special_judge_logic(self, **kwargs):
         self.check_record_module()
-        self.get_prepared(equipper="啄木鸟电音", enemy=1, dynamic_buff_list=1, action_stack=1)
+        self.get_prepared(equipper="啄木鸟电音", enemy=1, action_stack=1)
         skill_node = kwargs.get("skill_node", None)
         if skill_node is None:
             return False
@@ -62,8 +61,9 @@ class WoodpeckerElectroSet4_CA(Buff.BuffLogic):
             return False
         from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
 
+        # [新架构] 使用 BuffManager 计算暴击率
         mul_data = MultiplierData(
-            self.record.enemy, self.record.dynamic_buff_list, self.record.char
+            enemy_obj=self.record.enemy, character_obj=self.record.char
         )
         if skill_node.skill.trigger_buff_level == 4:
             rng: RNG = self.buff_instance.sim_instance.rng_instance

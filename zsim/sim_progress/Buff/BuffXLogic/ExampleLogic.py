@@ -97,10 +97,7 @@ def example_rng_trigger(buff: "Buff", event: "ZSimEventABC", context: "BaseZSimE
 
     # 3. 准备计算数据
     target = getattr(event, "target", None) or buff.sim_instance.enemy_group[1]
-    # 注意: 获取 buff_list 可能需要从 target.dynamic 获取
-    enemy_buffs = getattr(target.dynamic, "buff_list", []) if hasattr(target, "dynamic") else []
-
-    mul_data = MultiplierData(target, enemy_buffs, buff.owner)
+    mul_data = MultiplierData(enemy_obj=target, character_obj=buff.owner)
 
     # 4. 计算概率 (这里以暴击率为例)
     crit_rate = Calculator.RegularMul.cal_crit_rate(mul_data)

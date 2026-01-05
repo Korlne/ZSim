@@ -101,7 +101,6 @@ def update_anomaly(
     char_obj_list: list,
     sim_instance: "Simulator",
     skill_node: "SkillNode",
-    dynamic_buff_dict: dict[str, list["Buff"]],
     **kwargs,
 ):
     """
@@ -124,9 +123,7 @@ def update_anomaly(
         if bar.ready:
             # 触发异常
             sim_instance.decibel_manager.update(skill_node=skill_node, key="anomaly")
-            bar.change_info_cause_active(
-                time_now, dynamic_buff_dict=dynamic_buff_dict, skill_node=skill_node
-            )
+            bar.change_info_cause_active(time_now, skill_node=skill_node)
             enemy.update_max_anomaly(element_type)
 
             active_bar = deepcopy(bar)
