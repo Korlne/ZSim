@@ -11,12 +11,13 @@ class SPUpdateData:
         """更新角色SP时的专用数据结构，仅用于传递角色的静态与动态的能量自动回复效率"""
         self.char_name = char_obj.NAME
         self.static_sp_regen: float = char_obj.statement.sp_regen
-        # [新架构] 直接使用 BuffManager 的激活 Buff 进行能量回复计算
-        if not hasattr(char_obj, "buff_manager"):
-            raise ValueError("角色缺少 BuffManager，无法使用新 Buff 系统进行能量回复计算")
-        enabled_buff: Generator = (
-            buff for buff in char_obj.buff_manager._active_buffs.values() if buff.dy.active
-        )
+        # [兼容修复] 优先使用新 BuffManager 的激活 Buff，避免旧列表混入未激活 Buff
+        if hasattr(char_obj, "buff_manager"):
+            enabled_buff: Generator = (
+                buff for buff in char_obj.buff_manager._active_buffs.values()
+            )
+        else:
+            enabled_buff = (buff for buff in dynamic_buff[self.char_name])
         self.dynamic_sp_regen: tuple[float, float] = self.__cal_dynamic_sp_regen(enabled_buff)
 
     @staticmethod
