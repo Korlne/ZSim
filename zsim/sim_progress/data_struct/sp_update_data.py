@@ -14,7 +14,7 @@ class SPUpdateData:
         # [兼容修复] 优先使用新 BuffManager 的激活 Buff，避免旧列表混入未激活 Buff
         if hasattr(char_obj, "buff_manager"):
             enabled_buff: Generator = (
-                buff for buff in char_obj.buff_manager._active_buffs.values() if buff.dy.active
+                buff for buff in char_obj.buff_manager._active_buffs.values()
             )
         else:
             enabled_buff = (buff for buff in dynamic_buff[self.char_name])

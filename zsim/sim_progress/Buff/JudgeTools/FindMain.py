@@ -32,16 +32,10 @@ def find_dynamic_buff_list(sim_instance: "Simulator" = None):
     if sim_instance.char_data:
         for char in sim_instance.char_data.char_obj_list:
             if hasattr(char, "buff_manager"):
-                active_buff_map[char.NAME] = [
-                    buff
-                    for buff in char.buff_manager._active_buffs.values()
-                    if buff.dy.active
-                ]
+                active_buff_map[char.NAME] = list(char.buff_manager._active_buffs.values())
 
     if sim_instance.enemy and hasattr(sim_instance.enemy, "buff_manager"):
-        active_buff_map["enemy"] = [
-            buff for buff in sim_instance.enemy.buff_manager._active_buffs.values() if buff.dy.active
-        ]
+        active_buff_map["enemy"] = list(sim_instance.enemy.buff_manager._active_buffs.values())
 
     if active_buff_map:
         # 同步写回旧的全局字典，保证旧接口获取到的是新系统激活状态
