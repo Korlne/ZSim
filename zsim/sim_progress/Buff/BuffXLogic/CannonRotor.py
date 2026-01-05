@@ -6,7 +6,6 @@ class CannonRotorRecord:
         self.equipper = None
         self.char = None
         self.enemy = None
-        self.dynamic_buff_list = None
         self.skill_tag = "CannonRotorAdditionalDamage"
         self.preload_data = None
         self.sub_exist_buff_dict = None
@@ -40,7 +39,7 @@ class CannonRotor(Buff.BuffLogic):
 
     def special_judge_logic(self, **kwargs):
         self.check_record_module()
-        self.get_prepared(equipper="加农转子", enemy=1, dynamic_buff_list=1, sub_exist_buff_dict=1)
+        self.get_prepared(equipper="加农转子", enemy=1, sub_exist_buff_dict=1)
         skill_node = kwargs.get("skill_node", None)
         if skill_node is None:
             return False
@@ -58,8 +57,9 @@ class CannonRotor(Buff.BuffLogic):
         from zsim.sim_progress.RandomNumberGenerator import RNG
         from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
 
+        # [新架构] 使用 BuffManager 计算暴击率
         mul_data = MultiplierData(
-            self.record.enemy, self.record.dynamic_buff_list, self.record.char
+            enemy_obj=self.record.enemy, character_obj=self.record.char
         )
         rng: RNG = self.buff_instance.sim_instance.rng_instance
         normalized_value = rng.random_float()
@@ -70,7 +70,7 @@ class CannonRotor(Buff.BuffLogic):
 
     def special_hit_logic(self, **kwargs):
         self.check_record_module()
-        self.get_prepared(equipper="加农转子", enemy=1, dynamic_buff_list=1, preload_data=1)
+        self.get_prepared(equipper="加农转子", enemy=1, preload_data=1)
         event_list = JudgeTools.find_event_list(sim_instance=self.buff_instance.sim_instance)
         from zsim.sim_progress.Preload.SkillsQueue import spawn_node
 

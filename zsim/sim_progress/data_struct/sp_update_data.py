@@ -7,11 +7,16 @@ if TYPE_CHECKING:
 
 
 class SPUpdateData:
-    def __init__(self, char_obj: "Character", dynamic_buff: dict):
+    def __init__(self, char_obj: "Character"):
         """更新角色SP时的专用数据结构，仅用于传递角色的静态与动态的能量自动回复效率"""
         self.char_name = char_obj.NAME
         self.static_sp_regen: float = char_obj.statement.sp_regen
-        enabled_buff: Generator = (buff for buff in dynamic_buff[self.char_name])
+        # [新架构] 直接使用 BuffManager 的激活 Buff 进行能量回复计算
+        if not hasattr(char_obj, "buff_manager"):
+            raise ValueError("角色缺少 BuffManager，无法使用新 Buff 系统进行能量回复计算")
+        enabled_buff: Generator = (
+            buff for buff in char_obj.buff_manager._active_buffs.values() if buff.dy.active
+        )
         self.dynamic_sp_regen: tuple[float, float] = self.__cal_dynamic_sp_regen(enabled_buff)
 
     @staticmethod

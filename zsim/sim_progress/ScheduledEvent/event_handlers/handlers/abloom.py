@@ -22,7 +22,6 @@ class AbloomEventHandler(BaseEventHandler):
     def handle(self, event: Abloom, context: EventContext) -> None:
         """处理薇薇安异放事件"""
         enemy = self._get_context_enemy(context)
-        dynamic_buff = self._get_context_dynamic_buff(context)
         sim_instance = self._get_context_sim_instance(context)
         tick = self._get_context_tick(context)
 
@@ -30,7 +29,6 @@ class AbloomEventHandler(BaseEventHandler):
         calculator = CalAbloom(
             abloom_obj=event,
             enemy_obj=enemy,
-            dynamic_buff=dynamic_buff,
             sim_instance=sim_instance,
         )
 

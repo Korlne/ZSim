@@ -13,7 +13,6 @@ class MiyabiCoreSkillIF:
     def __init__(self):
         self.char = None
         self.sub_exist_buff_dict = None
-        self.dynamic_buff_list = None
         self.last_frostbite = False
         self.enemy = None
         self.action_stack = None
@@ -106,15 +105,15 @@ class MiyabiCoreSkill_IceFire(Buff.BuffLogic):
         但是如果buff判定不通过，那么烈霜伤害，该buff层数的变动就没有实际意义，
         """
         self.check_record_module()
-        self.get_prepared(char_CID=1091, enemy=1, dynamic_buff_list=1, sub_exist_buff_dict=1)
+        self.get_prepared(char_CID=1091, enemy=1, sub_exist_buff_dict=1)
         enemy = self.record.enemy
-        dynamic_buff = self.record.dynamic_buff_list
         tick_now = JudgeTools.find_tick(sim_instance=self.buff_instance.sim_instance)
         buff_i = self.buff_instance
         buff_i.simple_start(tick_now, self.record.sub_exist_buff_dict)
         buff_i.dy.count -= buff_i.ft.step
 
-        mul_data = MultiplierData(enemy, dynamic_buff, self.record.char)
+        # [新架构] MultiplierData 直接使用 BuffManager
+        mul_data = MultiplierData(enemy_obj=enemy, character_obj=self.record.char)
         crit_rate = Calculator.RegularMul.cal_crit_rate(mul_data)
         count = min(crit_rate, 0.8) * 100
 

@@ -15,7 +15,6 @@ class BuffRecordBaseClass:
     def __init__(self):
         self.char: "Character | None | Alice | Yixuan | Seed" = None
         self.sub_exist_buff_dict: dict[str, "Buff"] | None = None
-        self.dynamic_buff_list: dict[str, list] | None = None
         self.enemy: "Enemy | None" = None
         self.equipper: "str | None" = None
         self.action_stack: "ActionStack | None" = None

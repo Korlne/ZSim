@@ -256,7 +256,6 @@ class ScheduleData:
     event_list: list[Any] = field(default_factory=list)
     # judge_required_info_dict = {"skill_node": None}
     loading_buff: dict[str, list[Buff]] = field(default_factory=dict)
-    dynamic_buff: dict[str, list[Buff]] = field(default_factory=dict)
     sim_instance: "Simulator | None" = None
     processed_event: bool = False
     # 记录已处理的事件次数, 给外部判断是否有事件发生, 便于前端跳过没有 event 的帧的 log
@@ -272,7 +271,6 @@ class ScheduleData:
         # self.judge_required_info_dict = {"skill_node": None}
         for char_name in self.loading_buff:
             self.loading_buff[char_name] = []
-            self.dynamic_buff[char_name] = []
         self.processed_times = 0
 
     @property
@@ -292,13 +290,10 @@ class ScheduleData:
 @dataclass
 class GlobalStats:
     name_box: list[str]
-    DYNAMIC_BUFF_DICT: dict[str, list[Buff]] = field(default_factory=dict)
     sim_instance: "Simulator | None" = None
 
     def __post_init__(self):
-        for name in self.name_box + ["enemy"]:
-            self.DYNAMIC_BUFF_DICT[name] = []
+        return None
 
     def reset_myself(self, name_box):
-        for name in self.name_box + ["enemy"]:
-            self.DYNAMIC_BUFF_DICT[name] = []
+        return None

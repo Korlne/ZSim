@@ -73,9 +73,8 @@ class CalAnomaly:
         # 根据 BuffManager 读取面板
         self.data: MulData = MulData(
             enemy_obj=self.enemy_obj,
-            dynamic_buff=None,  # [New Architecture] Pass None or rely on MulData defaults
-            judge_node=anomaly_obj,
             character_obj=char_obj,
+            judge_node=anomaly_obj,
         )
 
         # 虚拟角色等级
@@ -318,11 +317,11 @@ class CalPolarityDisorder(CalDisorder):
         # [New Architecture] Removed dynamic_buff argument
         sim_instance: "Simulator",
     ):
-        # [New Architecture] Pass dynamic_buff=None handled by MulData internal logic in CalAnomaly
+        # [New Architecture] MulData 直接依赖 BuffManager，不再传入旧接口参数
         super().__init__(disorder_obj, enemy_obj, sim_instance=sim_instance)
         yanagi_obj = self.__find_yanagi()
-        # [Refactor] No dynamic_buff passed
-        yanagi_mul = MulData(enemy_obj=enemy_obj, dynamic_buff=None, character_obj=yanagi_obj)
+        # [Refactor] No legacy dynamic_buff passed
+        yanagi_mul = MulData(enemy_obj=enemy_obj, character_obj=yanagi_obj)
         ap = Cal.AnomalyMul.cal_ap(yanagi_mul)
         self.final_multipliers[0] = (
             self.final_multipliers[0] * disorder_obj.polarity_disorder_ratio
