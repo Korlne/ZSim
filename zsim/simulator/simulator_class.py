@@ -311,17 +311,9 @@ class Simulator:
                 if hasattr(char, "buff_manager"):
                     char.buff_manager.tick(self.tick)
 
-            # [兼容修复] 同步新 BuffManager 的激活 Buff 到旧动态 Buff 字典
-            # 避免旧接口读取到未激活 Buff，导致新旧系统模拟结果不一致
-            for char in self.char_data.char_obj_list:
-                if hasattr(char, "buff_manager"):
-                    self.global_stats.DYNAMIC_BUFF_DICT[char.NAME] = list(
-                        char.buff_manager._active_buffs.values()
-                    )
-            if self.enemy and hasattr(self.enemy, "buff_manager"):
-                self.global_stats.DYNAMIC_BUFF_DICT["enemy"] = list(
-                    self.enemy.buff_manager._active_buffs.values()
-                )
+            # [Refactor] 移除已废弃的旧动态 Buff 字典同步逻辑
+            # GlobalStats.DYNAMIC_BUFF_DICT 已被移除，所有 Buff 状态由 BuffManager 管理
+            # 报告系统现在通过 Report/buff_handler.py 直接上报数据
 
             # ScheduledEvent (事件调度)
             sce = ScE(

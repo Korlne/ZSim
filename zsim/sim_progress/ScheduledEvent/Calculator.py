@@ -53,7 +53,9 @@ class MultiplierData:
             for buff in sorted(
                 enemy_obj.buff_manager._active_buffs.values(), key=lambda b: b.ft.index
             ):
-                enemy_buff_sig.append((buff.ft.index, buff.dy.count))
+                # [Fix] 必须检查 buff.dy.active，否则休眠 Buff 会导致缓存键污染
+                if buff.dy.active:
+                    enemy_buff_sig.append((buff.ft.index, buff.dy.count))
         enemy_hashable = tuple(enemy_buff_sig)
 
         # 2. 获取角色 Buff 状态签名
@@ -62,7 +64,9 @@ class MultiplierData:
             for buff in sorted(
                 character_obj.buff_manager._active_buffs.values(), key=lambda b: b.ft.index
             ):
-                char_buff_sig.append((buff.ft.index, buff.dy.count))
+                # [Fix] 必须检查 buff.dy.active
+                if buff.dy.active:
+                    char_buff_sig.append((buff.ft.index, buff.dy.count))
         char_hashable = tuple(char_buff_sig)
 
         node_id = id(judge_node)
@@ -129,12 +133,18 @@ class MultiplierData:
         # 1. 收集角色 Buff
         char_buff = []
         if self.char_instance and hasattr(self.char_instance, "buff_manager"):
-            char_buff = list(self.char_instance.buff_manager._active_buffs.values())
+            # [Fix] 增加 active 状态过滤，消除 "混入未激活 buff" 的 Warning
+            char_buff = [
+                b for b in self.char_instance.buff_manager._active_buffs.values() if b.dy.active
+            ]
 
         # 2. 收集敌人 Buff (替代旧的 dynamic_debuff_list)
         enemy_buff = []
         if hasattr(self.enemy_obj, "buff_manager"):
-            enemy_buff = list(self.enemy_obj.buff_manager._active_buffs.values())
+            # [Fix] 增加 active 状态过滤
+            enemy_buff = [
+                b for b in self.enemy_obj.buff_manager._active_buffs.values() if b.dy.active
+            ]
 
         # 合并所有生效 Buff
         enabled_buff: tuple = tuple(char_buff + enemy_buff)
