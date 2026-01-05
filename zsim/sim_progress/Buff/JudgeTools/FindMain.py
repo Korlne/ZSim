@@ -20,7 +20,29 @@ def find_char_list(sim_instance: "Simulator" = None):
 
 
 def find_dynamic_buff_list(sim_instance: "Simulator" = None):
+    """
+    获取当前激活的动态 Buff 列表。
+
+    [兼容修复] 新 Buff 系统以 BuffManager 为准，这里需要把活跃 Buff 写回旧接口，
+    避免旧 dynamic_buff_list 混入未激活 Buff，导致模拟结果不一致。
+    """
     dynamic_buff_list = sim_instance.global_stats.DYNAMIC_BUFF_DICT
+    active_buff_map: dict[str, list] = {}
+
+    if sim_instance.char_data:
+        for char in sim_instance.char_data.char_obj_list:
+            if hasattr(char, "buff_manager"):
+                active_buff_map[char.NAME] = list(char.buff_manager._active_buffs.values())
+
+    if sim_instance.enemy and hasattr(sim_instance.enemy, "buff_manager"):
+        active_buff_map["enemy"] = list(sim_instance.enemy.buff_manager._active_buffs.values())
+
+    if active_buff_map:
+        # 同步写回旧的全局字典，保证旧接口获取到的是新系统激活状态
+        for name, buffs in active_buff_map.items():
+            dynamic_buff_list[name] = buffs
+        return dynamic_buff_list
+
     return dynamic_buff_list
 
 
