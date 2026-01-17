@@ -1,8 +1,9 @@
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from .buff_model import Buff
 
 if TYPE_CHECKING:
     from zsim.simulator.config_classes import SimConfig  # 假设的配置类路径
+
 
 class GlobalBuffController:
     """
@@ -14,7 +15,7 @@ class GlobalBuffController:
     """
     def __init__(self):
         # 核心仓库：BuffID -> Buff Instance
-        self._buff_box: Dict[str, Buff] = {}
+        self._buff_box: dict[int, Buff] = {}
 
     def buff_register(self, buff: Buff) -> None:
         """
@@ -27,7 +28,7 @@ class GlobalBuffController:
         
         self._buff_box[buff.ft.buff_id] = buff
 
-    def get_buff(self, buff_id: str) -> Optional[Buff]:
+    def get_buff(self, buff_id: int) -> Optional[Buff]:
         """
         根据 ID 获取 Buff 实例。
         """
@@ -46,6 +47,6 @@ class GlobalBuffController:
         # 5.     self.buff_register(new_buff)
         pass
 
-    def reset(self):
+    def reset(self) -> None:
         """重置控制器状态 (用于多次模拟之间)"""
         self._buff_box.clear()

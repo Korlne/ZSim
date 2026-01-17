@@ -12,12 +12,16 @@ from .skill_event import (
     SkillEventMessage,
     SkillExecutionEvent,
 )
+from .event_profile import EventProfile
+from .zsim_event import ZSimEvent
 
 __all__ = [
     "EventMessage",
     "BaseZSimEventContext",
     "EventOriginType",
     "ZSimEventABC",
+    "ZSimEvent",
+    "EventProfile",
     "SkillEvent",
     "SkillEventContext",
     "SkillEventMessage",
