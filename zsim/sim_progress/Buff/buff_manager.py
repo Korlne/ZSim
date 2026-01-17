@@ -1,8 +1,9 @@
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from .buff_model import Buff
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Character.character import Character
+
 
 class BuffManager:
     """
@@ -15,21 +16,23 @@ class BuffManager:
     def __init__(self, owner: "Character"):
         self.owner = owner
         # 动态 Buff 列表：BuffID -> Buff Instance
-        self._active_buffs: Dict[str, Buff] = {}
+        self._active_buffs: dict[int, Buff] = {}
 
-    def get_active_buffs(self) -> List[Buff]:
+    def get_active_buffs(self) -> list[Buff]:
         """获取当前所有激活的 Buff"""
         return list(self._active_buffs.values())
 
-    def has_buff(self, buff_id: str) -> bool:
+    def has_buff(self, buff_id: int) -> bool:
         """检查角色是否持有指定 Buff"""
         return buff_id in self._active_buffs
 
-    def get_buff(self, buff_id: str) -> Optional[Buff]:
+    def get_buff(self, buff_id: int) -> Optional[Buff]:
         """获取指定的激活 Buff"""
         return self._active_buffs.get(buff_id)
 
-    def add_buff(self, buff: Buff, timestamp: int, duration: Optional[int] = None, stacks: int = 0) -> None:
+    def add_buff(
+        self, buff: Buff, timestamp: int, duration: Optional[int] = None, stacks: int = 0
+    ) -> None:
         """
         向角色添加或刷新 Buff。
         :param buff: 要添加的 Buff 对象 (通常来自 GlobalBuffController)
@@ -57,7 +60,7 @@ class BuffManager:
             self._active_buffs[buff_id] = buff
             self._on_buff_added(buff)
 
-    def remove_buff(self, buff_id: str, timestamp: int) -> None:
+    def remove_buff(self, buff_id: int, timestamp: int) -> None:
         """
         移除指定 Buff。
         :param buff_id: Buff ID
@@ -67,7 +70,7 @@ class BuffManager:
             return
 
         buff = self._active_buffs[buff_id]
-        buff.end(timestamp) # 执行 Buff 自身的结束逻辑 (统计数据等)
+        buff.end(timestamp)  # 执行 Buff 自身的结束逻辑 (统计数据等)
         
         del self._active_buffs[buff_id]
         self._on_buff_removed(buff)
@@ -88,7 +91,7 @@ class BuffManager:
             # 2. 检查 Buff 是否整体过期 (Buff.end() 会将 is_active 置为 False)
             # 如果非独立堆叠，cleanup_expired_stacks 也会处理 end_time 检查
             if not buff.ft.independent_stacks:
-                 buff.cleanup_expired_stacks(current_time)
+                buff.cleanup_expired_stacks(current_time)
 
             if not buff.dy.is_active:
                 expired_ids.append(buff_id)
@@ -108,15 +111,15 @@ class BuffManager:
 
     # --- 内部同步方法 (将在后续接入 BonusPool 时具体实现) ---
 
-    def _on_buff_added(self, buff: Buff):
+    def _on_buff_added(self, buff: Buff) -> None:
         """Buff 添加时的回调"""
         self._sync_bonus_pool(buff)
 
-    def _on_buff_removed(self, buff: Buff):
+    def _on_buff_removed(self, buff: Buff) -> None:
         """Buff 移除时的回调"""
         self._sync_bonus_pool_remove(buff.ft.buff_id)
 
-    def _sync_bonus_pool(self, buff: Buff):
+    def _sync_bonus_pool(self, buff: Buff) -> None:
         """
         通知 Character 的 BonusPool 更新该 Buff 的效果。
         (等待 BonusPool 重构完成后接入)
@@ -125,7 +128,7 @@ class BuffManager:
             # self.owner.bonus_pool.update_effects(buff)
             pass
 
-    def _sync_bonus_pool_remove(self, buff_id: str):
+    def _sync_bonus_pool_remove(self, buff_id: int) -> None:
         """
         通知 Character 的 BonusPool 移除该 Buff 的效果。
         """
