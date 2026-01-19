@@ -13,7 +13,7 @@ class BuffFeature:
     对应原系统中的 Buff.ft (BuffFeature)
     注意：已设置为 frozen=True，禁止在运行时修改
     """
-    buff_id: int                    # Buff 唯一标识符 (原 index/BuffName)
+    buff_id: str                    # Buff 唯一标识符 (原 index/BuffName)
     name: str                       # 显示名称 (原 description)
     max_duration: int               # 最大持续时间
     max_stacks: int                 # 最大层数

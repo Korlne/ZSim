@@ -16,7 +16,7 @@ class GlobalBuffController:
     """
     def __init__(self):
         # 核心仓库：BuffID -> BuffFeature (Recipe)
-        self._feature_registry: dict[int, BuffFeature] = {}
+        self._feature_registry: dict[str, BuffFeature] = {}
 
     def register_buff_feature(self, feature: BuffFeature) -> None:
         """
@@ -28,7 +28,7 @@ class GlobalBuffController:
         
         self._feature_registry[feature.buff_id] = feature
 
-    def create_buff_instance(self, buff_id: int) -> Optional[Buff]:
+    def create_buff_instance(self, buff_id: str) -> Optional[Buff]:
         """
         [工厂方法] 根据 ID 创建一个新的 Buff 实例。
         如果 ID 不存在，返回 None。

@@ -6,7 +6,7 @@ class EffectBase(ABC):
     Buff 效果基类 (Abstract Base Class)
     对应设计文档中的 effect_base_class
     """
-    def __init__(self, source_buff_id: int, effect_config: Optional[Dict[str, Any]] = None):
+    def __init__(self, source_buff_id: str, effect_config: Optional[Dict[str, Any]] = None):
         """
         :param source_buff_id: 来源 Buff 的 ID
         :param effect_config: 效果的原始配置数据 (来自 JSON/CSV)
