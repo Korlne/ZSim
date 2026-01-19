@@ -5,6 +5,7 @@ if TYPE_CHECKING:
     from zsim.simulator.config_classes import SimConfig
 
 
+
 class GlobalBuffController:
     """
     全局 Buff 控制器 (Factory & Registry)
