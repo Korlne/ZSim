@@ -1,18 +1,22 @@
+from __future__ import annotations
+
 import json
 from functools import lru_cache
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 
 from zsim.define import CHECK_SKILL_MUL, CHECK_SKILL_MUL_TAG, INVALID_ELEMENT_ERROR, ElementType
 from zsim.sim_progress.anomaly_bar.AnomalyBarClass import AnomalyBar
-from zsim.sim_progress.Character import Character
 from zsim.sim_progress.data_struct import cal_buff_total_bonus
 from zsim.sim_progress.Enemy import Enemy
 from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.Report import report_to_log
 
 from .constants import EventConstants
+
+if TYPE_CHECKING:
+    from zsim.sim_progress.Character import Character
 
 with open(
     file="./zsim/sim_progress/ScheduledEvent/buff_effect_trans.json",
@@ -36,27 +40,48 @@ class MultiplierData:
     def __new__(
         cls,
         enemy_obj: Enemy,
-        dynamic_buff: dict[str, list],
         character_obj: Character | None = None,
         judge_node: SkillNode | AnomalyBar | None = None,
     ):
-        hashable_dynamic_buff = tuple((key, tuple(value)) for key, value in dynamic_buff.items())
-        enemy_hashable = (
-            tuple(enemy_obj.dynamic.dynamic_debuff_list),
-            tuple(enemy_obj.dynamic.dynamic_dot_list),
-        )
+        # [Buff refractor] 移除对旧 dynamic_buff 字典的依赖，转而构建基于 BuffManager 状态的缓存键
+        # 缓存键构造策略：收集所有 Active Buff 的 (ID, Count) 元组，确保层数变化时缓存失效
+
+        # 1. 获取敌人 Buff 状态签名
+        enemy_buff_sig = []
+        if hasattr(enemy_obj, "buff_manager"):
+            # 排序保证顺序一致性
+            for buff in sorted(
+                enemy_obj.buff_manager._active_buffs.values(), key=lambda b: b.ft.index
+            ):
+                # [Fix] 必须检查 buff.dy.active，否则休眠 Buff 会导致缓存键污染
+                if buff.dy.active:
+                    enemy_buff_sig.append((buff.ft.index, buff.dy.count))
+        enemy_hashable = tuple(enemy_buff_sig)
+
+        # 2. 获取角色 Buff 状态签名
+        char_buff_sig = []
+        if character_obj and hasattr(character_obj, "buff_manager"):
+            for buff in sorted(
+                character_obj.buff_manager._active_buffs.values(), key=lambda b: b.ft.index
+            ):
+                # [Fix] 必须检查 buff.dy.active
+                if buff.dy.active:
+                    char_buff_sig.append((buff.ft.index, buff.dy.count))
+        char_hashable = tuple(char_buff_sig)
 
         node_id = id(judge_node)
         if isinstance(judge_node, AnomalyBar):
             node_id = judge_node.UUID
 
-        # 使用更稳定的唯一标识符，避免垃圾回收后的问题
+        # 使用更稳定的唯一标识符
         character_id = (
             getattr(character_obj, "UUID", None)
             or getattr(character_obj, "CID", None)
             or f"{character_obj.__class__.__name__}_{id(character_obj)}"
         )
-        cache_key = tuple((enemy_hashable, hashable_dynamic_buff, character_id, node_id))
+
+        cache_key = tuple((enemy_hashable, char_hashable, character_id, node_id))
+
         if cache_key in cls.mul_data_cache:
             return cls.mul_data_cache[cache_key]
         else:
@@ -69,22 +94,12 @@ class MultiplierData:
     def __init__(
         self,
         enemy_obj: Enemy,
-        dynamic_buff: dict | None = None,
         character_obj: Character | None = None,
         judge_node: SkillNode | AnomalyBar | None = None,
     ):
         """
         初始化乘数数据实例
-
-        Args:
-            enemy_obj: 敌人对象
-            dynamic_buff: 动态buff字典
-            character_obj: 角色对象
-            judge_node: 判断节点（技能节点或异常条）
         """
-        if dynamic_buff is None:
-            dynamic_buff = {}
-
         if not hasattr(self, "char_name"):
             self.judge_node: SkillNode | AnomalyBar | None = judge_node
             self.enemy_instance = enemy_obj
@@ -107,39 +122,33 @@ class MultiplierData:
             self.enemy_obj = enemy_obj
 
             # 获取buff动态加成
-            dynamic_statement: dict = self.get_buff_bonus(dynamic_buff, self.judge_node)
+            dynamic_statement: dict = self.get_buff_bonus(self.judge_node)
             self.dynamic = self.DynamicStatement(dynamic_statement)
 
-    def get_buff_bonus(self, dynamic_buff: dict, node: SkillNode | AnomalyBar | None) -> dict:
+    def get_buff_bonus(self, node: SkillNode | AnomalyBar | None) -> dict:
         """
         获取buff加成数据
-
-        Args:
-            dynamic_buff: 动态buff字典
-            node: 判断节点
-
-        Returns:
-            dict: 包含所有buff加成的字典
+        [Refactor] 完全切换至 BuffManager
         """
-        if self.char_name is None:
-            char_buff: list = []
-        else:
-            try:
-                char_buff = dynamic_buff[self.char_name]
-            except KeyError:
-                char_buff = []
-                report_to_log(f"[WARNING] 动态Buff列表内没有角色 {self.char_name}", level=4)
+        # 1. 收集角色 Buff
+        char_buff = []
+        if self.char_instance and hasattr(self.char_instance, "buff_manager"):
+            # [Fix] 增加 active 状态过滤，消除 "混入未激活 buff" 的 Warning
+            char_buff = [
+                b for b in self.char_instance.buff_manager._active_buffs.values() if b.dy.active
+            ]
 
-        try:
-            enemy_buff: list = self.enemy_obj.dynamic.dynamic_debuff_list
-        except AttributeError:
-            report_to_log("[WARNING] self.enemy_obj 中找不到动态buff列表", level=4)
-            try:
-                enemy_buff = dynamic_buff["enemy"]
-            except KeyError:
-                report_to_log("[WARNING] dynamic_buff 中依然找不到动态buff列表", level=4)
-                enemy_buff = []
+        # 2. 收集敌人 Buff (替代旧的 dynamic_debuff_list)
+        enemy_buff = []
+        if hasattr(self.enemy_obj, "buff_manager"):
+            # [Fix] 增加 active 状态过滤
+            enemy_buff = [
+                b for b in self.enemy_obj.buff_manager._active_buffs.values() if b.dy.active
+            ]
+
+        # 合并所有生效 Buff
         enabled_buff: tuple = tuple(char_buff + enemy_buff)
+
         try:
             dynamic_statement: dict = cal_buff_total_bonus(
                 enabled_buff=enabled_buff,
@@ -475,16 +484,16 @@ class Calculator:
         skill_node: SkillNode,
         character_obj: Character,
         enemy_obj: Enemy,
-        dynamic_buff: dict | None = None,
     ):
         """
         Calculator 是 Schedule 阶段获得 SkillNode 后的计算处理逻辑
 
-        当计划事件读取到 SkillNode 时，Calculator 会根据目前的角色的面板、enemy 对象、角色的动态buff，
-        计算出角色的直伤、异常、失衡的各乘区，并根据需求计算出输出、异常值、异常快照、失衡值
+        当计划事件读取到 SkillNode 时，Calculator 会根据目前的角色面板、敌人对象、
+        以及 BuffManager 提供的激活 Buff 状态，计算出角色的直伤、异常、失衡的各乘区，
+        并根据需求计算出输出、异常值、异常快照、失衡值。
         """
-        if dynamic_buff is None:
-            dynamic_buff = {}
+        # [Fix] 局部导入以避免循环引用
+        from zsim.sim_progress.Character import Character
 
         if not isinstance(skill_node, SkillNode):
             raise ValueError("错误的参数类型，应该为SkillNode")
@@ -492,11 +501,8 @@ class Calculator:
             raise ValueError("错误的参数类型，应该为Character")
         if not isinstance(enemy_obj, Enemy):
             raise ValueError("错误的参数类型，应该为Enemy")
-        if not isinstance(dynamic_buff, dict):
-            raise ValueError("错误的参数类型，应该为dict")
-
         # 创建MultiplierData对象，用于计算各种战斗中的乘区数据
-        data = MultiplierData(enemy_obj, dynamic_buff, character_obj, skill_node)
+        data = MultiplierData(enemy_obj, character_obj, skill_node)
 
         # 初始化角色名称和角色ID
 

@@ -1,45 +1,46 @@
-from .. import Buff, JudgeTools, check_preparation, find_tick
+from typing import TYPE_CHECKING
+
+from zsim.sim_progress.Buff.Event.callbacks import BuffCallbackRepository
+from zsim.sim_progress.Preload import SkillNode
+from zsim.sim_progress.zsim_event_system.zsim_events.skill_event import SkillExecutionEvent
+
+if TYPE_CHECKING:
+    from zsim.sim_progress.Buff.buff_class import Buff
+    from zsim.sim_progress.zsim_event_system.zsim_events.base_zsim_event import (
+        BaseZSimEventContext,
+        ZSimEventABC,
+    )
+
+LOGIC_ID = "Buff-角色-耀佳音-快支管理器-触发器"
 
 
-class AstraYaoQuickAssistManagerTriggerRecord:
-    def __init__(self):
-        self.char = None
+def get_skill_node(event: "ZSimEventABC"):
+    """辅助函数：提取 SkillNode"""
+    if hasattr(event, "event_origin") and isinstance(event.event_origin, SkillNode):
+        return event.event_origin
+    # 部分事件结构可能不同，需根据实际情况适配
+    return getattr(event, "event_origin", None)
 
 
-class AstraYaoQuickAssistManagerTrigger(Buff.BuffLogic):
-    def __init__(self, buff_instance):
-        """耀嘉音快支管理器的触发器，该触发器只负责把skill_node或者loading_mission扔给特殊资源模块。"""
-        super().__init__(buff_instance)
-        self.buff_instance: Buff = buff_instance
-        self.buff_0 = None
-        self.record = None
-        self.xjudge = self.special_judge_logic
-        self.xeffect = self.special_effect_logic
+@BuffCallbackRepository.register(LOGIC_ID)
+def astra_yao_quick_assist_manager_trigger(
+    buff: "Buff", event: "ZSimEventABC", context: "BaseZSimEventContext"
+):
+    """
+    耀嘉音快支管理器触发器。
+    监听到技能执行后，将事件转发给 chord_manager 进行处理。
+    """
+    if not isinstance(event, SkillExecutionEvent):
+        return
 
-    def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+    skill_node = get_skill_node(event)
+    if not skill_node:
+        return
 
-    def check_record_module(self):
-        if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["耀嘉音"][self.buff_instance.ft.index]
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = AstraYaoQuickAssistManagerTriggerRecord()
-        self.record = self.buff_0.history.record
-
-    def special_judge_logic(self, **kwargs):
-        return True
-
-    def special_effect_logic(self, **kwargs):
-        """通过简单判定之后，执行special_effect_logic"""
-        self.check_record_module()
-        self.get_prepared(char_CID=1311)
-        skill_node = kwargs.get("skill_node", None)
-        if skill_node is None:
-            return
-        self.record.char.chord_manager.quick_assist_trigger_manager.update_myself(
-            find_tick(sim_instance=self.buff_instance.sim_instance), skill_node
+    char = buff.owner
+    if hasattr(char, "chord_manager"):
+        # 调用 Manager 的 update_myself 方法
+        # 注意：Manager 方法签名可能需要适配 context.timer.tick
+        char.chord_manager.quick_assist_trigger_manager.update_myself(
+            context.timer.tick, skill_node
         )
-        # if ASTRAYAO_REPORT:
-        #     print(f'检测到攻击动作命中，尝试调用快支管理器！')

@@ -6,7 +6,6 @@ class NicoleCoreSkillRecord:
         self.action_stack = None
         self.char = None
         self.enemy = None
-        self.dynamic_buff_list = None
         self.sub_exist_buff_dict = None
 
 

@@ -12,7 +12,6 @@ class JaneCinema1APTransToDmgBonusRecord:
     def __init__(self):
         self.char = None
         self.trigger_buff_0 = None
-        self.dynamic_buff_list = None
         self.enemy = None
         self.sub_exist_buff_dict = None
 
@@ -55,11 +54,11 @@ class JaneCinema1APTransToDmgBonus(Buff.BuffLogic):
         self.get_prepared(
             char_CID=1261,
             trigger_buff_0=("简", "Buff-角色-简-狂热状态触发器"),
-            dynamic_buff_list=1,
             enemy=1,
             sub_exist_buff_dict=1,
         )
-        mul_data = Mul(self.record.enemy, self.record.dynamic_buff_list, self.record.char)
+        # [新架构] 使用 BuffManager 计算精通
+        mul_data = Mul(enemy_obj=self.record.enemy, character_obj=self.record.char)
         ap = Cal.AnomalyMul.cal_ap(mul_data)
         count = min(ap * 0.1, self.buff_instance.ft.maxcount)
         tick = find_tick(sim_instance=self.buff_instance.sim_instance)

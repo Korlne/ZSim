@@ -23,7 +23,6 @@ class DisorderEventHandler(BaseEventHandler):
     def handle(self, event: Disorder, context: EventContext) -> None:
         """处理紊乱事件"""
         enemy = self._get_context_enemy(context)
-        dynamic_buff = self._get_context_dynamic_buff(context)
         sim_instance = self._get_context_sim_instance(context)
         tick = self._get_context_tick(context)
 
@@ -31,10 +30,10 @@ class DisorderEventHandler(BaseEventHandler):
         sim_instance.listener_manager.broadcast_event(event=event, signal=LBS.DISORDER_SETTLED)
 
         # 计算紊乱伤害
+        # [Refractor] 去除 dynamic_buff 适配新 CalAnomaly
         calculator = CalDisorder(
             disorder_obj=event,
             enemy_obj=enemy,
-            dynamic_buff=dynamic_buff,
             sim_instance=sim_instance,
         )
 

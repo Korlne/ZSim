@@ -8,7 +8,6 @@ class TriggerAdditionalAbilityStunBonusRecord:
         self.char = None
         self.sub_exist_buff_dict = None
         self.enemy = None
-        self.dynamic_buff_list = None
 
 
 class TriggerAdditionalAbilityStunBonus(Buff.BuffLogic):
@@ -52,10 +51,11 @@ class TriggerAdditionalAbilityStunBonus(Buff.BuffLogic):
     def special_hit_logic(self, **kwargs):
         """判定通过后，执行Buff激活，计算实时暴击率，替换当前层数。"""
         self.check_record_module()
-        self.get_prepared(char_CID=1361, sub_exist_buff_dict=1, enemy=1, dynamic_buff_list=1)
+        self.get_prepared(char_CID=1361, sub_exist_buff_dict=1, enemy=1)
         tick = find_tick(sim_instance=self.buff_instance.sim_instance)
+        # [新架构] 直接使用 BuffManager 计算暴击率
         mul_data = MultiplierData(
-            self.record.enemy, self.record.dynamic_buff_list, self.record.char
+            enemy_obj=self.record.enemy, character_obj=self.record.char
         )
         crit_rate = Calculator.RegularMul.cal_personal_crit_rate(mul_data)
 

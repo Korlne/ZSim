@@ -74,10 +74,6 @@ class BaseEventHandler(EventHandlerABC):
         """从上下文中获取敌人对象"""
         return context.get_enemy()
 
-    def _get_context_dynamic_buff(self, context: EventContext):
-        """从上下文中获取动态buff"""
-        return context.get_dynamic_buff()
-
     def _get_context_exist_buff_dict(self, context: EventContext):
         """从上下文中获取已存在buff字典"""
         return context.get_exist_buff_dict()

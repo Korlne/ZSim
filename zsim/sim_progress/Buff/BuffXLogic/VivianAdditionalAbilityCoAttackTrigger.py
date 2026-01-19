@@ -1,94 +1,73 @@
+from typing import TYPE_CHECKING
+
 from zsim.define import VIVIAN_REPORT
+from zsim.sim_progress.Buff.Event.callbacks import BuffCallbackRepository
 
-from .. import Buff, JudgeTools, check_preparation, find_tick
+# 假设存在此事件，如不存在需根据实际事件系统调整，或监听 Update 阶段
+from zsim.sim_progress.zsim_event_system.zsim_events.anomaly_event import AnomalyActivatedEvent
+
+if TYPE_CHECKING:
+    from zsim.sim_progress.Buff.buff_class import Buff
+    from zsim.sim_progress.zsim_event_system.zsim_events.base_zsim_event import (
+        BaseZSimEventContext,
+        ZSimEventABC,
+    )
+
+LOGIC_ID = "Buff-角色-薇薇安-组队被动-协同攻击"
 
 
-class VivianAdditionalAbilityCoAttackTriggerRecord:
-    def __init__(self):
-        self.char = None
-        self.last_update_anomaly = None  # 上次更新的异常。
-        self.cd = 30  # 内置CD0.5秒
-        self.last_update_tick = 0  # 上次更新时间
-        self.preload_data = None
+@BuffCallbackRepository.register(LOGIC_ID)
+def vivian_additional_ability_coattack_trigger(
+    buff: "Buff", event: "ZSimEventABC", context: "BaseZSimEventContext"
+):
+    """
+    薇薇安组队被动：队友触发异常时，触发落雨生花。
+    内置CD 0.5秒 (30 ticks)。
+    """
+    if not isinstance(event, AnomalyActivatedEvent):
+        return
 
+    anomaly_bar = event.anomaly_bar
+    if not anomaly_bar:
+        return
 
-class VivianAdditionalAbilityCoAttackTrigger(Buff.BuffLogic):
-    def __init__(self, buff_instance):
-        """薇薇安组队被动中的协同攻击触发器"""
-        super().__init__(buff_instance)
-        self.buff_instance: Buff = buff_instance
-        self.buff_0 = None
-        self.record = None
-        self.xjudge = self.special_judge_logic
-        self.xeffect = self.special_effect_logic
+    # 1. 过滤薇薇安自己触发的异常
+    if anomaly_bar.activated_by and "1331" in getattr(anomaly_bar.activated_by, "skill_tag", ""):
+        return
 
-    def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+    # 2. CD 和 重复触发检查
+    state = buff.dy.custom_data
+    current_tick = context.timer.tick
+    last_update_tick = state.get("last_update_tick", 0)
+    last_anomaly_id = state.get("last_anomaly_id", None)
 
-    def check_record_module(self):
-        if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["薇薇安"][self.buff_instance.ft.index]
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = VivianAdditionalAbilityCoAttackTriggerRecord()
-        self.record = self.buff_0.history.record
+    # CD 检查 (30 ticks)
+    if current_tick - last_update_tick < 30:
+        return
 
-    def special_judge_logic(self, **kwargs):
-        """检测到属性异常传入后，进行判定。如果新的异常，则放行。"""
-        self.check_record_module()
-        self.get_prepared(char_CID=1331, preload_data=1)
-        anomaly_bar = kwargs.get("anomaly_bar", None)
-        if anomaly_bar is None:
-            return False
-        from zsim.sim_progress.anomaly_bar import AnomalyBar
+    # 同一异常不重复触发
+    if id(anomaly_bar) == last_anomaly_id:
+        return
 
-        if not isinstance(anomaly_bar, AnomalyBar):
-            raise TypeError(
-                f"{self.buff_instance.ft.index}的xjudge函数获取的{anomaly_bar}不是AnomalyBar类！"
-            )
-        # 如果是VVA自己触发的异常，则不放行。
-        if anomaly_bar.activated_by:
-            if "1331" in anomaly_bar.activated_by.skill_tag:
-                if VIVIAN_REPORT:
-                    self.buff_instance.sim_instance.schedule_data.change_process_state()
-                    print("组队被动：检测到薇薇安触发的属性异常，不放行！")
-                return False
-        # 如果是首次传入的属性异常类，则直接放行。
-        tick = find_tick(sim_instance=self.buff_instance.sim_instance)
-        if self.record.last_update_anomaly is None:
-            self.record.last_update_anomaly = anomaly_bar
-            self.record.last_update_tick = tick
-            return True
+    # 3. 更新状态
+    state["last_update_tick"] = current_tick
+    state["last_anomaly_id"] = id(anomaly_bar)
 
-        # 如果是同一异常，则不放行。
-        if id(anomaly_bar) == id(self.record.last_update_anomaly):
-            return False
+    # 4. 执行效果
+    char = buff.owner
+    if hasattr(char, "feather_manager"):
+        coattack_skill_tag = char.feather_manager.spawn_coattack()
 
-        # CD没转好，不触发。
-        if tick - self.record.last_update_tick < self.record.cd:
-            return False
-
-        self.record.last_update_anomaly = anomaly_bar
-        self.record.last_update_tick = tick
-        return True
-
-    def special_effect_logic(self, **kwargs):
-        """一旦Xjudge放行，那么就执行本函数，试图生成一次生花。"""
-        self.check_record_module()
-        self.get_prepared(char_CID=1361, preload_data=1)
-        coattack_skill_tag = self.record.char.feather_manager.spawn_coattack()
         if coattack_skill_tag is None:
             if VIVIAN_REPORT:
-                self.buff_instance.sim_instance.schedule_data.change_process_state()
-                print(
-                    f"组队被动：虽然有{self.record.last_update_anomaly.element_type}类型的新异常触发！但是豆子不够！当前资源情况为：{self.record.char.get_special_stats()}"
-                )
+                print(f"组队被动：豆子不够，无法触发。新异常类型：{anomaly_bar.element_type}")
             return
-        input_tuple = (coattack_skill_tag, False, 0)
-        self.record.preload_data.external_add_skill(input_tuple)
-        if VIVIAN_REPORT:
-            self.buff_instance.sim_instance.schedule_data.change_process_state()
-            print(
-                f"组队被动：监听到队友的技能{self.record.last_update_anomaly.activate_by}触发了新的异常，薇薇安触发了一次落雨生花！"
-            )
+
+        # 添加技能
+        preload_data = getattr(buff.sim_instance, "preload_data", None)
+        if preload_data:
+            input_tuple = (coattack_skill_tag, False, 0)
+            preload_data.external_add_skill(input_tuple)
+
+            if VIVIAN_REPORT:
+                print("组队被动：队友触发异常，薇薇安触发落雨生花！")

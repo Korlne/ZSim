@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel
 
 from zsim.define import config
-from zsim.sim_progress.Buff import (
-    BuffLoadLoop,
-    buff_add,
+from zsim.sim_progress.Buff.BuffManager.BuffManagerClass import BuffManager
+from zsim.sim_progress.Buff.GlobalBuffControllerClass.global_buff_controller import (
+    GlobalBuffController,
 )
 from zsim.sim_progress.Character.skill_class import Skill
 from zsim.sim_progress.data_struct import ActionStack, Decibelmanager, ListenerManger, ZSimTimer
@@ -17,8 +17,12 @@ from zsim.sim_progress.Preload import PreloadClass
 from zsim.sim_progress.RandomNumberGenerator import RNG
 from zsim.sim_progress.Report import start_report_threads, stop_report_threads
 from zsim.sim_progress.ScheduledEvent import ScheduledEvent as ScE
-from zsim.sim_progress.Update.Update_Buff import update_time_related_effect
 from zsim.sim_progress.zsim_event_system.accessor import ScheduleDataAccessor
+
+# [New] 导入事件处理器注册表
+from zsim.sim_progress.zsim_event_system.Handler.zsim_event_handler_registry import (
+    ZSimEventHandlerRegistry,
+)
 from zsim.simulator.dataclasses import (
     CharacterData,
     GlobalStats,
@@ -37,6 +41,37 @@ class Confirmation(BaseModel):
     status: str
     timestamp: int
     sim_cfg: SimCfg | None = None
+
+
+# 定义上下文辅助类
+class SimulatorContext:
+    """
+    提供模拟器上下文的便捷访问接口 (sim.ctx)。
+    用于在 Buff 逻辑等处快速获取当前环境信息。
+    """
+
+    def __init__(self, sim: "Simulator"):
+        self._sim = sim
+
+    @property
+    def current_enemy(self):
+        """获取当前锁定的敌人"""
+        return self._sim.enemy
+
+    @property
+    def on_field_character(self):
+        """
+        获取当前前台角色。
+        注：这里假设 schedule_data 或 preload 中维护了当前操作的角色，
+        或者是 action_stack 中最后一个动作的发起者。
+        这里暂时返回 char_obj_list[0] 作为默认主控，具体需根据 Load 模块实现调整。
+        """
+        # 示例：尝试从 load_data 获取当前操作角色名，再转对象
+        # 实际项目中需根据 ActionStack 或 Squad 管理器实现精确获取
+        # 此处为兼容性占位，默认第一个角色为前台
+        if self._sim.char_data and self._sim.char_data.char_obj_list:
+            return self._sim.char_data.char_obj_list[0]
+        return None
 
 
 class Simulator:
@@ -69,6 +104,13 @@ class Simulator:
     - 模拟配置，用于控制并行模式下，模拟器作为子进程的参数（sim_cfg）
     """
 
+    # [Refactor] 初始化全局 Buff 控制器 (加载数据库)
+    # 确保在模拟器实例化前，Buff数据库已加载
+    GlobalBuffController.get_instance()
+
+    # 上下文接口
+    ctx: SimulatorContext
+
     tick: int
     crit_seed: int
     init_data: InitData
@@ -83,6 +125,8 @@ class Simulator:
     decibel_manager: Decibelmanager
     listener_manager: ListenerManger
     rng_instance: RNG
+    # 事件注册表实例
+    event_handler_registry: ZSimEventHandlerRegistry
     in_parallel_mode: bool
     sim_cfg: SimCfg | None
 
@@ -154,6 +198,21 @@ class Simulator:
         self.tick = 0
         self.crit_seed = 0
         self.char_data = CharacterData(self.init_data, sim_cfg, sim_instance=self)
+
+        # 初始化 SimulatorContext
+        # 提供 sim.ctx 接口，供 Buff 系统等使用
+        self.ctx = SimulatorContext(self)
+
+        # 初始化事件处理器注册表
+        # 必须在 BuffManager 初始化之前完成，以便后续 Trigger 注册
+        self.event_handler_registry = ZSimEventHandlerRegistry()
+
+        # [Refactor] 为每个角色初始化 BuffManager
+        # 这一步是连接新旧系统的关键，确保 Character 拥有管理 Buff 的能力
+        for char in self.char_data.char_obj_list:
+            if not hasattr(char, "buff_manager"):
+                char.buff_manager = BuffManager(char.NAME, self)
+
         self.load_data = LoadData(
             name_box=self.init_data.name_box,
             Judge_list_set=self.init_data.Judge_list_set,
@@ -175,7 +234,7 @@ class Simulator:
         self.preload = PreloadClass(
             skills,
             load_data=self.load_data,
-            apl_path=config.apl_mode.enabled if api_apl_path is None else api_apl_path,
+            apl_path=config.database.apl_file_path if api_apl_path is None else api_apl_path,
             sim_instance=self,
         )
         self.game_state: dict[str, Any] = {
@@ -190,8 +249,9 @@ class Simulator:
         self.decibel_manager = Decibelmanager(self)
         self.listener_manager = ListenerManger(self)
         self.rng_instance = RNG(sim_instance=self)
-        # 监听器的初始化需要整个Simulator实例，因此在这里进行初始化
-        self.load_data.buff_0_manager.initialize_buff_listener()
+
+        # [Refactor] 已移除旧监听器的初始化调用
+
         self.timer: ZSimTimer = ZSimTimer(sim_instance=self)
         self.schedule_data_accessor: ScheduleDataAccessor = ScheduleDataAccessor(
             schedule_data=self.schedule_data
@@ -207,15 +267,6 @@ class Simulator:
         if not use_api:
             self.cli_init_simulator(sim_cfg)
         while True:
-            # Tick Update
-            # report_to_log(f"[Update] Tick step to {tick}")
-            update_time_related_effect(
-                self.global_stats.DYNAMIC_BUFF_DICT,
-                self.tick,
-                self.load_data.exist_buff_dict,
-                self.schedule_data.enemy,
-            )
-
             # Preload
             self.preload.do_preload(
                 self.tick,
@@ -244,6 +295,8 @@ class Simulator:
                     self.tick,
                     self.load_data.action_stack,
                 )
+
+            # 伤害判定逻辑
             DamageEventJudge(
                 self.tick,
                 self.load_data.load_mission_dict,
@@ -251,26 +304,19 @@ class Simulator:
                 self.schedule_data.event_list,
                 self.char_data.char_obj_list,
             )
-            BuffLoadLoop(
-                self.tick,
-                self.load_data.load_mission_dict,
-                self.load_data.exist_buff_dict,
-                self.init_data.name_box,
-                self.load_data.LOADING_BUFF_DICT,
-                self.load_data.all_name_order_box,
-                sim_instance=self,
-            )
-            buff_add(
-                self.tick,
-                self.load_data.LOADING_BUFF_DICT,
-                self.global_stats.DYNAMIC_BUFF_DICT,
-                self.schedule_data.enemy,
-            )
 
-            # Load.DamageEventJudge(tick, load_data.load_mission_dict, schedule_data.enemy, schedule_data.event_list, char_data.char_obj_list)
-            # ScheduledEvent
+            # [Refactor] 驱动新 Buff 系统
+            # 遍历所有角色，更新其 BuffManager (处理过期、冷却等)
+            for char in self.char_data.char_obj_list:
+                if hasattr(char, "buff_manager"):
+                    char.buff_manager.tick(self.tick)
+
+            # [Refactor] 移除已废弃的旧动态 Buff 字典同步逻辑
+            # GlobalStats.DYNAMIC_BUFF_DICT 已被移除，所有 Buff 状态由 BuffManager 管理
+            # 报告系统现在通过 Report/buff_handler.py 直接上报数据
+
+            # ScheduledEvent (事件调度)
             sce = ScE(
-                self.global_stats.DYNAMIC_BUFF_DICT,
                 self.schedule_data,
                 self.tick,
                 self.load_data.exist_buff_dict,
@@ -278,9 +324,8 @@ class Simulator:
                 sim_instance=self,
             )
             sce.event_start()
-            # self.tick += 1
-            # if sce.data.processed_times > 0:
-            # print(f"\r{self.tick}", end="")
+
+            # 命令行输出日志 (Log Printing)
             if self.schedule_data.processed_state_this_tick and self.tick != 0:
                 minutes = self.tick // 3600
                 rest_seconds = self.tick % 3600 / 60
@@ -294,7 +339,6 @@ class Simulator:
                 )
                 print("---------------------------------------------")
 
-            # self.tick += 1
             self.timer.update_tick()
 
             self.schedule_data.reset_processed_event()

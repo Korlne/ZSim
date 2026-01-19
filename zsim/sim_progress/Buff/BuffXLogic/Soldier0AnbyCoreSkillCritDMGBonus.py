@@ -11,7 +11,6 @@ from .. import Buff, JudgeTools, check_preparation
 class Soldier0AnbyCoreSkillCritDMGBonusRecord:
     def __init__(self):
         self.char = None
-        self.dynamic_buff_list = None
         self.enemy = None
         self.sub_exist_buff_dict = None
         self.trigger_buff_0 = None
@@ -59,10 +58,11 @@ class Soldier0AnbyCoreSkillCritDMGBonus(Buff.BuffLogic):
     def special_hit_logic(self, **kwargs):
         """在Buff触发时，读取安比的暴伤，计算当前的层数"""
         self.check_record_module()
-        self.get_prepared(char_CID=1381, dynamic_buff_list=1, enemy=1, sub_exist_buff_dict=1)
+        self.get_prepared(char_CID=1381, enemy=1, sub_exist_buff_dict=1)
         tick_now = JudgeTools.find_tick(sim_instance=self.buff_instance.sim_instance)
         self.buff_instance.simple_start(tick_now, self.record.sub_exist_buff_dict, no_count=1)
-        mul_data = Mul(self.record.enemy, self.record.dynamic_buff_list, self.record.char)
+        # [新架构] 使用 BuffManager 计算暴击伤害
+        mul_data = Mul(enemy_obj=self.record.enemy, character_obj=self.record.char)
         crit_dmg = Cal.RegularMul.cal_personal_crit_dmg(mul_data)
         count = crit_dmg * 0.3 * 100
         self.buff_instance.dy.count = count
