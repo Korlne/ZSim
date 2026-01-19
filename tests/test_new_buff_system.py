@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import pandas as pd
 
 from zsim.sim_progress.Buff.BuffManager.BuffManagerClass import BuffManager
-from zsim.sim_progress.Buff.GlobalBuffControllerClass.global_buff_controller import (
+from ZSim.zsim.sim_progress.Buff.global_buff_controller import (
     GlobalBuffController,
 )
 from zsim.sim_progress.Character.bonus_pool import BonusPool

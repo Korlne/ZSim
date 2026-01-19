@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from zsim.define import config
 from zsim.sim_progress.Buff.BuffManager.BuffManagerClass import BuffManager
-from zsim.sim_progress.Buff.GlobalBuffControllerClass.global_buff_controller import (
+from ZSim.zsim.sim_progress.Buff.global_buff_controller import (
     GlobalBuffController,
 )
 from zsim.sim_progress.Character.skill_class import Skill

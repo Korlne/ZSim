@@ -6,7 +6,7 @@ from zsim.models.session.session_run import CharConfig, CommonCfg
 from zsim.sim_progress.Buff import Buff
 
 # [Refactor] 导入新 Controller 和 utils
-from zsim.sim_progress.Buff.GlobalBuffControllerClass.global_buff_controller import (
+from ZSim.zsim.sim_progress.Buff.global_buff_controller import (
     GlobalBuffController,
 )
 from zsim.sim_progress.Buff.utils import change_name_box
