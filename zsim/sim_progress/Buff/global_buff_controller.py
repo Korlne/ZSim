@@ -2,7 +2,7 @@ from typing import Dict, Optional, TYPE_CHECKING
 from .buff_model import Buff
 
 if TYPE_CHECKING:
-    from zsim.simulator.config_classes import SimConfig  # 假设的配置类路径
+    from zsim.simulator.config_classes import SimulationConfig
 
 class GlobalBuffController:
     """
@@ -33,7 +33,7 @@ class GlobalBuffController:
         """
         return self._buff_box.get(buff_id)
 
-    def buff_initiate_factory(self, sim_config: "SimConfig") -> None:
+    def buff_initiate_factory(self, sim_config: "SimulationConfig") -> None:
         """
         [工厂方法] 读取配置，初始化并注册所有涉及的 Buff。
         注意：此处为框架代码，具体的数据读取逻辑(select_buff)将在后续数据迁移阶段实现。
