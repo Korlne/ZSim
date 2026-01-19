@@ -3,7 +3,6 @@ from .. import Buff, JudgeTools, check_preparation
 
 class SokakuAdditionalAbilityATKRecord:
     def __init__(self):
-        self.dynamic_buff_list = None
         self.char = None
         self.action_stack = None
         self.sub_exist_buff_dict = None

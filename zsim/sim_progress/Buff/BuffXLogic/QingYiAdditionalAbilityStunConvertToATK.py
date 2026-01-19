@@ -8,7 +8,6 @@ class QingYiAdditionalSkillRecord:
         self.char = None
         self.enemy = None
         self.sub_exist_buff_dict = None
-        self.dynamic_buff_list = None
 
 
 class QingYiAdditionalAbilityStunConvertToATK(Buff.BuffLogic):
@@ -43,12 +42,13 @@ class QingYiAdditionalAbilityStunConvertToATK(Buff.BuffLogic):
         找冲击力，并且构建mul现场算。算完出层数即可。
         """
         self.check_record_module()
-        self.get_prepared(char_CID=1251, enemy=1, dynamic_buff_list=1, sub_exist_buff_dict=1)
+        self.get_prepared(char_CID=1251, enemy=1, sub_exist_buff_dict=1)
         tick_now = JudgeTools.find_tick(sim_instance=self.buff_instance.sim_instance)
         self.buff_instance.simple_start(tick_now, self.record.sub_exist_buff_dict)
         self.buff_0.dy.count -= self.buff_0.ft.step
+        # [新架构] MultiplierData 从 BuffManager 获取当前激活 Buff
         mul_data = MultiplierData(
-            self.record.enemy, self.record.dynamic_buff_list, self.record.char
+            enemy_obj=self.record.enemy, character_obj=self.record.char
         )
         stun_value = Calculator.StunMul.cal_imp(mul_data)
         count = min((stun_value - 120) * 6, self.buff_instance.ft.maxcount)

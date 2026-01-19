@@ -4,7 +4,12 @@ from typing import TYPE_CHECKING, Any, Literal
 from zsim.define import saved_char_config
 from zsim.models.session.session_run import CharConfig, CommonCfg
 from zsim.sim_progress.Buff import Buff
-from zsim.sim_progress.Buff.Buff0Manager import Buff0ManagerClass, change_name_box
+
+# [Refactor] 导入新 Controller 和 utils
+from zsim.sim_progress.Buff.GlobalBuffControllerClass.global_buff_controller import (
+    GlobalBuffController,
+)
+from zsim.sim_progress.Buff.utils import change_name_box
 from zsim.sim_progress.Character import Character, character_factory
 from zsim.sim_progress.data_struct import ActionStack
 from zsim.sim_progress.Enemy import Enemy
@@ -211,23 +216,23 @@ class LoadData:
     sim_instance: "Simulator | None" = None
 
     def __post_init__(self):
-        self.buff_0_manager = Buff0ManagerClass.Buff0Manager(
-            self.name_box,
-            self.Judge_list_set,
-            self.weapon_dict,
-            self.cinema_dict,
-            self.char_obj_dict,
-            sim_instance=self.sim_instance,
-        )
-        self.exist_buff_dict = self.buff_0_manager.exist_buff_dict
+        # 使用新的 GlobalBuffController 替代旧的 Buff0Manager
+        # 注意：这里我们不再传那一堆复杂的参数，因为新控制器通常更智能
+        # 或者是通过 sim_instance 获取必要信息
+
+        self.buff_controller = GlobalBuffController(sim_instance=self.sim_instance)
+
+        # 重新映射 exist_buff_dict
+        self.exist_buff_dict = self.buff_controller.exist_buff_dict
+
+        # 使用从 utils 导入的 change_name_box
         self.all_name_order_box = change_name_box(self.name_box)
-        # self.all_name_order_box = Buff.Buff0Manager.change_name_box()
 
     def reset_exist_buff_dict(self):
         """重置buff_exist_dict"""
         for _char_name, sub_exist_buff_dict in self.exist_buff_dict.items():
             for _buff_name, buff in sub_exist_buff_dict.items():
-                buff.reset_myself()
+                buff.reset_myself()  # 确保新 Buff 类有 reset_myself 方法
 
     def reset_myself(self, name_box, Judge_list_set, weapon_dict, cinema_dict):
         self.name_box = name_box
@@ -239,6 +244,7 @@ class LoadData:
         self.load_mission_dict = {}
         self.LOADING_BUFF_DICT = {}
         self.name_dict = {}
+        # change_name_box 现在很安全
         self.all_name_order_box = change_name_box(self.name_box)
         self.preload_tick_stamp = {}
 
@@ -250,7 +256,6 @@ class ScheduleData:
     event_list: list[Any] = field(default_factory=list)
     # judge_required_info_dict = {"skill_node": None}
     loading_buff: dict[str, list[Buff]] = field(default_factory=dict)
-    dynamic_buff: dict[str, list[Buff]] = field(default_factory=dict)
     sim_instance: "Simulator | None" = None
     processed_event: bool = False
     # 记录已处理的事件次数, 给外部判断是否有事件发生, 便于前端跳过没有 event 的帧的 log
@@ -266,7 +271,6 @@ class ScheduleData:
         # self.judge_required_info_dict = {"skill_node": None}
         for char_name in self.loading_buff:
             self.loading_buff[char_name] = []
-            self.dynamic_buff[char_name] = []
         self.processed_times = 0
 
     @property
@@ -286,13 +290,10 @@ class ScheduleData:
 @dataclass
 class GlobalStats:
     name_box: list[str]
-    DYNAMIC_BUFF_DICT: dict[str, list[Buff]] = field(default_factory=dict)
     sim_instance: "Simulator | None" = None
 
     def __post_init__(self):
-        for name in self.name_box + ["enemy"]:
-            self.DYNAMIC_BUFF_DICT[name] = []
+        return None
 
     def reset_myself(self, name_box):
-        for name in self.name_box + ["enemy"]:
-            self.DYNAMIC_BUFF_DICT[name] = []
+        return None

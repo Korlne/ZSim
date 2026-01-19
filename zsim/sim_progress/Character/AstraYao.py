@@ -2,7 +2,8 @@ import math
 from typing import TYPE_CHECKING
 
 from zsim.define import ASTRAYAO_REPORT
-from zsim.sim_progress.Buff import JudgeTools
+
+# [Refactor] 移除了旧的 JudgeTools，改用 sim_instance 直接访问
 from zsim.sim_progress.data_struct import schedule_preload_event_factory
 from zsim.sim_progress.Preload.PreloadDataClass import PreloadData
 
@@ -75,7 +76,7 @@ class AstraYao(Character):
 
 
 class ChordCoattackManager:
-    def __init__(self, char_instance: AstraYao):
+    def __init__(self, char_instance: "AstraYao"):
         self.char = char_instance
         self.quick_assist_trigger_manager = self.QuickAssistTriggerManager(self.char)
         self.chord_trigger = self.ChordTrigger(self)
@@ -83,7 +84,7 @@ class ChordCoattackManager:
     class QuickAssistTriggerManager:
         """快速支援管理器"""
 
-        def __init__(self, char_instance: AstraYao):
+        def __init__(self, char_instance: "AstraYao"):
             self.char = char_instance
             self.light_attack_trigger = self.BaseSingleTrigger(
                 self, cd=180 if self.char.cinema < 4 else 60
@@ -108,12 +109,6 @@ class ChordCoattackManager:
             if skill_node.loading_mission is None:
                 skill_node.loading_mission = LoadingMission(skill_node)
                 skill_node.loading_mission.mission_start(tick, report=False)
-
-            # # 检查当前tick是否为命中tick
-            # if not skill_node.loading_mission.is_hit_now(tick):
-            #     raise ValueError(
-            #         f"在非命中tick {tick} 上调用了耀嘉音快支管理器中的update_myself方法，当前的命中tick列表为：{skill_node.loading_mission.mission_dict}"
-            #     )
 
             # 根据轻重攻击情况触发快速支援
             if skill_node.loading_mission.is_heavy_hit(tick):
@@ -154,7 +149,6 @@ class ChordCoattackManager:
                     target = current_name_order[2]
                 else:
                     target = current_name_order[1]
-                # print(_operating_node.skill_tag, current_name_order, target)
                 return target
 
             def __active(self, tick: int, skill_node):
@@ -162,9 +156,10 @@ class ChordCoattackManager:
                 if self.manager.preload_data is None:
                     if self.manager.char.sim_instance is None:
                         raise ValueError("sim_instance is None, cannot find preload_data")
-                    self.manager.preload_data = JudgeTools.find_preload_data(
-                        sim_instance=self.manager.char.sim_instance
-                    )
+
+                    # [Refactor] 使用 sim_instance 直接获取 preload_data，替代 JudgeTools
+                    self.manager.preload_data = self.manager.char.sim_instance.preload.preload_data
+
                     if not isinstance(self.manager.preload_data, PreloadData):
                         raise TypeError("快速支援管理器无法找到PreloadData实例！")
                 self.last_update_tick = tick
@@ -231,9 +226,10 @@ class ChordCoattackManager:
             if self.preload_data is None:
                 if self.manager.char.sim_instance is None:
                     raise ValueError("sim_instance is None, cannot find preload_data")
-                self.preload_data = JudgeTools.find_preload_data(
-                    sim_instance=self.manager.char.sim_instance
-                )
+
+                # [Refactor] 使用 sim_instance 直接获取 preload_data，替代 JudgeTools
+                self.preload_data = self.manager.char.sim_instance.preload.preload_data
+
                 if not isinstance(self.preload_data, PreloadData):
                     raise TypeError("和弦管理器无法找到PreloadData实例！")
             priority_list = [-1, -1]
@@ -265,20 +261,35 @@ class ChordCoattackManager:
                 )
 
         def __add_core_passive_buff(self, skill_node: "SkillNode"):
-            """在触发第一次震音的时刻，也会给角色上Buff"""
+            """
+            在触发第一次震音的时刻，也会给角色上Buff。
+            [Refactor] 适配新Buff系统，通过 Char.buff_manager 施加 Buff。
+            """
             add_buff_list = [self.manager.char.NAME] + [skill_node.char_name]
             benifit_list = list(set(add_buff_list))
-            from zsim.sim_progress.Buff.BuffAddStrategy import buff_add_strategy
 
             if self.manager.char.sim_instance is None:
                 raise ValueError("sim_instance is None, cannot add buff")
 
-            buff_add_strategy(
-                self.core_passive_buff_index,
-                benifit_list=benifit_list,
-                sim_instance=self.manager.char.sim_instance,
-            )
+            sim = self.manager.char.sim_instance
+            current_tick = sim.tick
+
+            for char_name in benifit_list:
+                # 获取目标角色对象
+                target_char = sim.char_data.char_obj_dict.get(char_name)
+                if target_char and hasattr(target_char, "buff_manager"):
+                    # 使用新的 BuffManager 接口添加 Buff
+                    target_char.buff_manager.add_buff(self.core_passive_buff_index, current_tick)
+                else:
+                    # 容错处理：理论上不太可能发生，除非角色名不匹配
+                    print(
+                        f"[Warning] 耀佳音核心被动无法施加给: {char_name} (未找到对象或Buff管理器)"
+                    )
+
             if ASTRAYAO_REPORT:
+                # 日志记录逻辑保持不变，但可以利用 sim_instance 状态
                 assert self.manager.char.sim_instance is not None
                 self.manager.char.sim_instance.schedule_data.change_process_state()
-                print(f"核心被动触发器激活！为{benifit_list}添加了{self.core_passive_buff_index}！")
+                print(
+                    f"核心被动触发器激活！尝试为{benifit_list}添加了{self.core_passive_buff_index}！"
+                )

@@ -4,7 +4,9 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from zsim.sim_progress import Buff
-from zsim.sim_progress.Character import Character
+
+# [Fix] 移除顶层导入，避免循环引用 Character -> Buff -> ScheduledEvent -> Character
+# from zsim.sim_progress.Character import Character
 from zsim.sim_progress.data_struct import (
     ActionStack,
     PolarizedAssaultEvent,
@@ -19,6 +21,8 @@ from zsim.sim_progress.Update import update_anomaly
 from .event_handlers import EventContext, event_handler_factory, register_all_handlers
 
 if TYPE_CHECKING:
+    # [Fix] 将 Character 导入移至 TYPE_CHECKING 块
+    from zsim.sim_progress.Character import Character
     from zsim.simulator.dataclasses import ScheduleData
     from zsim.simulator.simulator_class import Simulator
 
@@ -44,7 +48,6 @@ class ScheduledEvent:
 
     def __init__(
         self,
-        dynamic_buff: dict,
         data,
         tick: int,
         exist_buff_dict: dict,
@@ -54,7 +57,6 @@ class ScheduledEvent:
         sim_instance: Simulator,
     ):
         self.data: "ScheduleData" = data
-        self.data.dynamic_buff = dynamic_buff
         self.data.processed_times = 0
         # self.judge_required_info_dict = data.judge_required_info_dict
         self.action_stack = action_stack
@@ -102,7 +104,6 @@ class ScheduledEvent:
             data=self.data,
             tick=self.tick,
             enemy=self.enemy,
-            dynamic_buff=self.data.dynamic_buff,
             exist_buff_dict=self.exist_buff_dict,
             action_stack=self.action_stack,
             sim_instance=self.sim_instance,
@@ -113,7 +114,7 @@ class ScheduledEvent:
         # 更新角色面板
         for char in self.data.char_obj_list:
             char: Character
-            sp_update_data = SPUpdateData(char_obj=char, dynamic_buff=self.data.dynamic_buff)
+            sp_update_data = SPUpdateData(char_obj=char)
             char.update_sp_and_decibel(sp_update_data)
             if hasattr(char, "refresh_myself"):
                 char.refresh_myself()
@@ -282,14 +283,13 @@ class ScheduledEvent:
                 self.data.event_list,
                 self.data.char_obj_list,
                 skill_node=_node,
-                dynamic_buff_dict=self.data.dynamic_buff,
                 sim_instance=self.sim_instance,
             )
 
     def solve_buff(self) -> None:
         """提前处理Buff实例"""
         # Buff.buff_add(
-        #     self.tick, self.data.loading_buff, self.data.dynamic_buff, self.data.enemy
+        #     self.tick, self.data.loading_buff, self.data.enemy
         # )
         buff_events = []
         other_events = []

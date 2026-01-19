@@ -93,7 +93,6 @@ class WarningMessages:
     """警告消息常量"""
 
     # Buff相关警告
-    DYNAMIC_BUFF_NOT_FOUND = "[WARNING] 动态Buff列表内没有角色 {}"
     BUFF_LIST_EMPTY = "[WARNING] Buff列表为空"
 
     # 事件处理警告

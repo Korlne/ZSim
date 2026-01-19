@@ -7,7 +7,6 @@ class LighterExtraSkillRecord:
     def __init__(self):
         self.char = None
         self.enemy = None
-        self.dynamic_buff_list = None
         self.sub_exist_buff_dict = None
         self.real_count = 0
 
@@ -51,7 +50,7 @@ class LighterExtraSkill_IceFireBonus(Buff.BuffLogic):
 
     def special_hit_logic(self, **kwargs):
         self.check_record_module()
-        self.get_prepared(char_CID=1161, enemy=1, dynamic_buff_list=1, sub_exist_buff_dict=1)
+        self.get_prepared(char_CID=1161, enemy=1, sub_exist_buff_dict=1)
         tick_now = JudgeTools.find_tick(sim_instance=self.buff_instance.sim_instance)
         buff_i = self.buff_instance
         buff_i.simple_start(tick_now, self.record.sub_exist_buff_dict)
@@ -70,8 +69,9 @@ class LighterExtraSkill_IceFireBonus(Buff.BuffLogic):
         self.record.real_count = real_count
 
         # 计算实时冲击力
+        # [新架构] 直接使用 BuffManager 提供的激活 Buff
         mul_data = MultiplierData(
-            self.record.enemy, self.record.dynamic_buff_list, self.record.char
+            enemy_obj=self.record.enemy, character_obj=self.record.char
         )
         stun_value = Calculator.StunMul.cal_imp(mul_data)
 

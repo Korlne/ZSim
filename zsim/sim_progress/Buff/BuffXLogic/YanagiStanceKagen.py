@@ -1,42 +1,32 @@
-from .. import Buff, JudgeTools, check_preparation
+from typing import TYPE_CHECKING
+
+from zsim.sim_progress.Buff.Event.callbacks import BuffCallbackRepository
+from zsim.sim_progress.zsim_event_system.zsim_events.skill_event import SkillExecutionEvent
+
+if TYPE_CHECKING:
+    from zsim.sim_progress.Buff.buff_class import Buff
+    from zsim.sim_progress.zsim_event_system.zsim_events.base_zsim_event import (
+        BaseZSimEventContext,
+        ZSimEventABC,
+    )
+
+LOGIC_ID = "Buff-角色-柳-架势-下弦"
 
 
-class YanagiStanceKagenRecord:
-    def __init__(self):
-        self.char = None
-
-
-class YanagiStanceKagen(Buff.BuffLogic):
+@BuffCallbackRepository.register(LOGIC_ID)
+def yanagi_stance_kagen(buff: "Buff", event: "ZSimEventABC", context: "BaseZSimEventContext"):
     """
-    柳的下弦增幅，检测到下弦状态就通过判定
+    柳的下弦增幅，检测到下弦状态就激活 Buff。
     """
+    if not isinstance(event, SkillExecutionEvent):
+        return
 
-    def __init__(self, buff_instance):
-        super().__init__(buff_instance)
-        self.buff_instance: Buff = buff_instance
-        self.xjudge = self.special_judge_logic
-        self.buff_0 = None
-        self.record = None
+    char = buff.owner
+    if not hasattr(char, "stance_manager"):
+        return
 
-    def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+    # stance_now: True 为上弦, False 为下弦
+    is_kagen = not char.stance_manager.stance_now
 
-    def check_record_module(self):
-        if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["柳"][self.buff_instance.ft.index]
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = YanagiStanceKagenRecord()
-        self.record = self.buff_0.history.record
-
-    def special_judge_logic(self, **kwargs):
-        """
-        检测柳的当前状态，如果当前状态为下弦就通过判定。
-        """
-        self.check_record_module()
-        self.get_prepared(char_CID=1221)
-        if self.record.char.stance_manager.stance_now:
-            return False
-        else:
-            return True
+    if buff.dy.active != is_kagen:
+        buff.dy.active = is_kagen

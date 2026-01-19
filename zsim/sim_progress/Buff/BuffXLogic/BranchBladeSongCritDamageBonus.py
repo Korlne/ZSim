@@ -7,7 +7,6 @@ class BranchBladeSongRecord:
     def __init__(self):
         self.equipper = None
         self.enemy = None
-        self.dynamic_buff_list = None
         self.char = None
 
 
@@ -44,9 +43,10 @@ class BranchBladeSongCritDamageBonus(Buff.BuffLogic):
 
     def special_judge_logic(self, **kwargs):
         self.check_record_module()
-        self.get_prepared(equipper="折枝剑歌", enemy=1, dynamic_buff_list=1)
+        self.get_prepared(equipper="折枝剑歌", enemy=1)
+        # [新架构] 直接使用 BuffManager 计算异常掌控
         mul_data = MultiplierData(
-            self.record.enemy, self.record.dynamic_buff_list, self.record.char
+            enemy_obj=self.record.enemy, character_obj=self.record.char
         )
         am = Calculator.AnomalyMul.cal_am(mul_data)
         if am >= 115:

@@ -16,6 +16,7 @@ from zsim.sim_progress.anomaly_bar import (
     PhysicalAnomaly,
 )
 from zsim.sim_progress.anomaly_bar.AnomalyBarClass import AnomalyBar
+from zsim.sim_progress.Buff.BuffManager.BuffManagerClass import BuffManager
 from zsim.sim_progress.data_struct import SingleHit
 from zsim.sim_progress.data_struct.enemy_special_state_manager import SpecialStateManager
 from zsim.sim_progress.Report import report_to_log
@@ -83,6 +84,10 @@ class Enemy:
         self.difficulty: float = difficulty
         # 初始化动态属性
         self.dynamic = self.EnemyDynamic(self)
+
+        # 初始化BuffManager
+        self.buff_manager = BuffManager(owner_id=self.name, sim_instance=self.sim_instance)
+
         # 初始化敌人基础属性
         self.base_max_HP: float = float(self.data_dict["70级最大生命值"])
         self.max_HP: float = (
@@ -596,6 +601,9 @@ class Enemy:
     def reset_myself(self):
         self.dynamic.reset_myself()
         self.reset_anomaly_bars()
+        # 重置 BuffManager
+        self.buff_manager = BuffManager(owner_id=self.name, sim_instance=self.sim_instance)
+
         assert self.qte_manager is not None
         self.qte_manager.reset_myself()
         self.attack_method.reset_myself()
@@ -619,16 +627,6 @@ class Enemy:
             )
             anomaly_bar.max_anomaly = max_value
 
-    def find_dot(self, dot_tag: str) -> object | None:
-        """通过dot名，查找enemy身上是否存在此dot"""
-        for dots in self.dynamic.dynamic_dot_list:
-            if dots.ft.index == dot_tag and dots.dy.active:
-                return dots
-            else:
-                continue
-        else:
-            return None
-
     class EnemyDynamic:
         def __init__(self, enemy_instance):
             self.enemy: Enemy = enemy_instance
@@ -643,10 +641,9 @@ class Enemy:
             self.corruption = False  # 侵蚀状态
             self.auricink_corruption = False  # 玄墨侵蚀状态
 
-            self.dynamic_debuff_list = []  # 用来装debuff的list
-            # from zsim.sim_progress.data_struct.monitor_list_class import MonitoredList
-            # self.dynamic_dot_list = MonitoredList()  # 用来装dot的list
-            self.dynamic_dot_list = []  # 用来装dot的list
+            # [Removed] Delete old buff/dot containers
+            # self.dynamic_debuff_list = []  # 用来装debuff的list
+            # self.dynamic_dot_list = []  # 用来装dot的list
 
             self.active_anomaly_bar_dict: dict[int, type[AnomalyBar] | None] = {
                 number: AnomalyBar for number in range(6)
@@ -707,8 +704,10 @@ class Enemy:
             self.shock: bool = False
             self.burn: bool = False
             self.corruption: bool = False
-            self.dynamic_debuff_list: list = []
-            self.dynamic_dot_list: list = []
+            # [Removed] Delete old buff/dot containers reset
+            # self.dynamic_debuff_list: list = []
+            # self.dynamic_dot_list: list = []
+
             self.active_anomaly_bar_dict = {number: None for number in range(6)}
             self.stun_bar: float = 0
             self.lost_hp: float = 0

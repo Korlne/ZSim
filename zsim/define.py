@@ -132,6 +132,7 @@ class CharReportConfig(BaseModel):
     yuzuha: bool
     alice: bool
     seed: bool
+    yanagi: bool = False
 
     model_config = ConfigDict(populate_by_name=True, alias_generator=to_pascal)
 
@@ -197,7 +198,7 @@ char_config_file = data_dir / "character_config.toml"
 saved_char_config = {}
 
 
-# 修复：将char_config_file作为参数传递给initialize_config_files
+# 将char_config_file作为参数传递给initialize_config_files
 def initialize_config_files_with_paths(char_file: Path, data_dir: Path, config_path: Path):
     """
     初始化配置文件。
@@ -344,6 +345,7 @@ TRIGGER_REPORT: bool = config.char_report.trigger
 YUZUHA_REPORT: bool = config.char_report.yuzuha
 ALICE_REPORT: bool = config.char_report.alice
 SEED_REPORT: bool = config.char_report.seed
+YANAGI_REPORT: bool = config.char_report.yanagi
 
 # Cal计算debug
 CHECK_SKILL_MUL: bool = config.debug.check_skill_mul
