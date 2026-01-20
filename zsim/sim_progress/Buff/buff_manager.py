@@ -1,6 +1,11 @@
 from typing import Optional, TYPE_CHECKING
 from .buff_model import Buff
 
+from zsim.sim_progress.zsim_event_system.zsim_events.buff_event import (
+    PeriodicBuffTickEvent, 
+    BuffEventMessage
+)
+
 if TYPE_CHECKING:
     from zsim.sim_progress.Character.character import Character
 
@@ -44,13 +49,14 @@ class BuffManager:
             return
 
         # 场景 B: 新 Buff -> 激活传入的新实例
-        # 这里的 buff 实例是由 GlobalBuffController.create_buff_instance 创建的全新对象
-        # 属于当前角色独占，直接使用即可。
         buff.start(timestamp, duration, stacks)
         
         if buff.dy.is_active:
             self._active_buffs[buff_id] = buff
             self._on_buff_added(buff)
+            
+            # 检查并注册周期性事件
+            self._register_periodic_events(buff, timestamp)
 
     def remove_buff(self, buff_id: int, timestamp: int) -> None:
         """移除指定 Buff"""
@@ -62,6 +68,51 @@ class BuffManager:
         
         del self._active_buffs[buff_id]
         self._on_buff_removed(buff)
+
+    def _register_periodic_events(self, buff: Buff, current_tick: int) -> None:
+        """检查 Buff 是否包含周期性 TriggerEffect，并注册首个 Tick 事件"""
+        # 假设 buff.effects 包含了该 Buff 的所有 Effect 对象
+        # 需要确保 Buff Model 中有 effects 属性，或者通过 buff_feature 获取
+        effects = getattr(buff, "effects", []) 
+        
+        for effect in effects:
+            # 判断是否为 TriggerEffect 且包含定时器配置
+            if hasattr(effect, "timer_config") and effect.timer_config:
+                self._schedule_next_tick(buff, effect, current_tick, is_first=True)
+
+    def _schedule_next_tick(self, buff: Buff, effect, current_tick: int, is_first: bool = False):
+            """向调度器注册下一个 Tick 事件"""
+            # [ZSim 架构规范] Character 必定持有 sim_instance 引用
+            # 且 Simulator 必定持有 data (ScheduleData)
+            if self.owner.sim_instance is None:
+                # 仅在非仿真环境（如单元测试未mock simulator）时可能发生，视情况保留或移除
+                return
+
+            interval_seconds = effect.timer_config.interval
+            # 1秒 = 60 ticks
+            interval_ticks = int(interval_seconds * 60)
+            
+            # 如果配置了立即触发且是第一次
+            if is_first and effect.timer_config.immediate:
+                execute_tick = current_tick
+            else:
+                execute_tick = current_tick + interval_ticks
+
+            # 构造事件
+            event_msg = BuffEventMessage(
+                buff_id=str(buff.ft.buff_id),
+                lifecycle_type="periodic_tick",
+                current_stacks=buff.dy.current_stacks,
+                duration_remaining=buff.dy.end_tick - execute_tick
+            )
+            
+            event = PeriodicBuffTickEvent(
+                event_message=event_msg,
+                event_origin=buff,
+                execute_tick=execute_tick
+            )
+
+            self.owner.sim_instance.data.event_list.append(event)
 
     def tick(self, current_time: int) -> None:
         """[生命周期] 负责清理过期 Buff"""

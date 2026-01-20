@@ -21,6 +21,13 @@ class TriggerAction(Protocol):
 
 
 @dataclass
+class PeriodicTimerConfig:
+    """周期性触发器的配置"""
+    interval: float  # 触发间隔（秒）
+    immediate: bool = False  # 是否在 Buff 施加时立即触发一次
+
+
+@dataclass
 class TriggerEffect(EffectBase):
     """
     机制型触发效果
@@ -32,6 +39,7 @@ class TriggerEffect(EffectBase):
     actions: list[TriggerAction] = field(default_factory=list)
     source_buff_id: int = 0
     effect_config: Optional[dict] = None
+    timer_config: Optional[PeriodicTimerConfig] = None  # 新增：周期性定时器配置
 
     def __post_init__(self) -> None:
         super().__init__(source_buff_id=self.source_buff_id, effect_config=self.effect_config)

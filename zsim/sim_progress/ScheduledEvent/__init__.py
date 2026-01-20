@@ -5,8 +5,6 @@ from typing import TYPE_CHECKING, Any
 
 from zsim.sim_progress import Buff
 
-# [Fix] 移除顶层导入，避免循环引用 Character -> Buff -> ScheduledEvent -> Character
-# from zsim.sim_progress.Character import Character
 from zsim.sim_progress.data_struct import (
     ActionStack,
     PolarizedAssaultEvent,
@@ -18,10 +16,11 @@ from zsim.sim_progress.Load.loading_mission import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.Update import update_anomaly
 
+from zsim.sim_progress.zsim_event_system.zsim_events.buff_event import PeriodicBuffTickEvent
+
 from .event_handlers import EventContext, event_handler_factory, register_all_handlers
 
 if TYPE_CHECKING:
-    # [Fix] 将 Character 导入移至 TYPE_CHECKING 块
     from zsim.sim_progress.Character import Character
     from zsim.simulator.dataclasses import ScheduleData
     from zsim.simulator.simulator_class import Simulator
@@ -80,6 +79,8 @@ class ScheduledEvent:
             QuickAssistEvent: "execute_tick",
             SchedulePreload: "execute_tick",
             PolarizedAssaultEvent: "execute_tick",
+            # 注册周期性 Buff 事件的 tick 属性
+            PeriodicBuffTickEvent: "execute_tick",
         }
         self.sim_instance: Simulator = sim_instance
         # 确保事件处理器已注册

@@ -21,6 +21,7 @@ class ZSimEventTypes(str, Enum):
     DEFAULT = "default"
     SKILL_EVENT = "skill_event"
     BUFF_EVENT = "buff_event"
+    PERIODIC_BUFF_TICK = "periodic_buff_tick"
 
 
 class SkillSubEventTypes(str, Enum):
