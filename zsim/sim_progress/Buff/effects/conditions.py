@@ -77,7 +77,6 @@ class PeriodicTimer(BaseCondition):
             return False
 
         # 从事件载荷中获取目标 Buff ID
-        # 假设 PeriodicBuffTickEvent 的 message 中包含 buff_id
         event_message = getattr(context.event, "event_message", None)
         target_buff_id = getattr(event_message, "buff_id", None)
         
