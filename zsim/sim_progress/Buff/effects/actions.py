@@ -81,7 +81,7 @@ class DealDotDamageAction:
     snapshot: "AnomalySnapshot"
     dot_type: str
     damage_multiplier: float = 1.0
-    source_buff_id: int = 0  # 用于校验 Tick 是否属于当前 Buff
+    source_buff_id: str = 0  # 用于校验 Tick 是否属于当前 Buff
 
     def execute(self, profile: "EventProfile") -> Iterable[object]:
         """

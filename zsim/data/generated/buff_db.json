@@ -1,4 +1,85 @@
-{
+{ 
+"9001": {
+    "feature": {
+      "buff_id": "9001",
+      "name": "感电",
+      "max_stacks": 1,
+      "max_duration": 600,
+      "allows_refresh": true,
+      "tags": ["Debuff", "Anomaly", "Electric", "Dot"],
+      "source": "AnomalySystem"
+    },
+    "effects": [
+      {
+        "type": "dot",
+        "interval": 1.0,
+        "damage_rate": 1.25,
+        "element": "Electric"
+      }
+    ]
+  },
+  "9002": {
+    "feature": {
+      "buff_id": "9002",
+      "name": "灼烧",
+      "max_stacks": 1,
+      "max_duration": 600,
+      "allows_refresh": true,
+      "tags": ["Debuff", "Anomaly", "Fire", "Dot"],
+      "source": "AnomalySystem"
+    },
+    "effects": [
+      {
+        "type": "dot",
+        "interval": 0.5,
+        "damage_rate": 0.5,
+        "element": "Fire"
+      }
+    ]
+  },
+  "9003": {
+    "feature": {
+      "buff_id": "9003",
+      "name": "侵蚀",
+      "max_stacks": 1,
+      "max_duration": 600,
+      "allows_refresh": true,
+      "tags": ["Debuff", "Anomaly", "Ether", "Dot"],
+      "source": "AnomalySystem"
+    },
+    "effects": [
+      {
+        "type": "dot",
+        "interval": 0.5,
+        "damage_rate": 0.5,
+        "element": "Ether"
+      }
+    ]
+  },
+  "9004": {
+    "feature": {
+      "buff_id": "9004",
+      "name": "冻结",
+      "max_stacks": 1,
+      "max_duration": 240,
+      "allows_refresh": true,
+      "tags": ["Debuff", "Anomaly", "Ice", "Control", "Freeze"]
+    },
+    "effects": [
+      {
+        "type": "trigger",
+        "trigger_event": "ATTACK_HIT",
+        "conditions": {
+          "target_has_tag": "Freeze",
+          "attack_type": "Heavy"
+        },
+        "actions": [
+          {"func": "trigger_shatter", "args": {"multiplier": 5.0}},
+          {"func": "remove_buff", "args": {"buff_id": 9004}}
+        ]
+      }
+    ]
+  },
   "Buff-角色-艾莲-核心被动": {
     "feature": {
       "buff_id": "Buff-角色-艾莲-核心被动",

@@ -8,7 +8,8 @@ from zsim.sim_progress.Buff.effects.base_effect import EffectBase
 from zsim.sim_progress.Buff.effects.bonus_effect import BonusEffect
 from zsim.sim_progress.Buff.effects.trigger_effect import TriggerEffect
 from zsim.sim_progress.Buff.effects.conditions import ConditionFactory, PeriodicTimer
-from zsim.sim_progress.Buff.effects.actions import ActionFactory, DealAnomalyDamage
+from zsim.sim_progress.Buff.effects.actions import ActionFactory, DealDotDamageAction
+from zsim.sim_progress.Buff.effects.dot_effect import DotEffect
 
 class GlobalBuffController:
     """
@@ -123,34 +124,34 @@ class GlobalBuffController:
                     effects_list.append(effect)
                 
                 elif eff_type == "dot":
-                    # [新增] 解析 Dot 类型配置，转换为 TriggerEffect 结构
-                    # 这种转换使得 Dot 逻辑能够复用通用的 Trigger 流程
-                    
-                    # 读取 Dot 特有配置
-                    interval = eff_data.get("interval", 1000) # 默认 1s
-                    dmg_rate = eff_data.get("damage_rate", 0.5)
+                    # Dot 解析逻辑
+                    # 获取配置，默认值为 1.0 (秒)
+                    interval = eff_data.get("interval", 1.0) 
+                    dmg_rate = eff_data.get("damage_rate", 1.0)
                     element = eff_data.get("element", "Physical")
                     
-                    # 1. 构建周期性触发条件
-                    # 注意：Dot 通常是由周期性 Tick 事件驱动的
+                    # 构建周期性条件 (PeriodicTimer 接收秒)
                     condition_objs = [PeriodicTimer(interval=float(interval))]
                     
-                    # 2. 构建造成异常伤害的行为
+                    # 构建伤害行为
                     action_objs = [
-                        DealAnomalyDamage(
-                            dmg_type=element,
-                            multiplier=float(dmg_rate),
-                            use_snapshot=True # Dot 通常基于快照
+                        DealDotDamageAction(
+                            dot_type=element,      
+                            damage_multiplier=float(dmg_rate), 
+                            source_buff_id=str(buff_id) # 注入当前 Buff ID 用于校验 Tick
                         )
                     ]
                     
-                    # 3. 包装为 TriggerEffect
-                    # 事件名需与 PeriodicTimer.check 中监听的事件名一致
-                    effect = TriggerEffect(
+                    # 包装为 DotEffect 
+                    
+                    effect = DotEffect(
                         trigger_event_type="PERIODIC_BUFF_TICK",
                         conditions=condition_objs,
                         actions=action_objs,
-                        source_buff_id=buff_id
+                        source_buff_id=int(buff_id),
+                        dot_type=element,
+                        tick_interval=float(interval),
+                        damage_multiplier=float(dmg_rate)
                     )
                     effects_list.append(effect)
 

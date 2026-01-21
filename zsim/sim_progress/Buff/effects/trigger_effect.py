@@ -37,7 +37,7 @@ class TriggerEffect(EffectBase):
     trigger_event_type: str
     conditions: list[TriggerCondition] = field(default_factory=list)
     actions: list[TriggerAction] = field(default_factory=list)
-    source_buff_id: int = 0
+    source_buff_id: str = 0
     effect_config: Optional[dict] = None
     timer_config: Optional[PeriodicTimerConfig] = None  # 新增：周期性定时器配置
 
