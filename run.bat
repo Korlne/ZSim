@@ -1,0 +1,1 @@
+.\.venv\Scripts\python -m streamlit run .\zsim\webui.py

@@ -1,0 +1,28 @@
+[general]
+title = "薇薇安-柳-耀嘉音"
+comment = "开发组为 薇薇安、柳、耀嘉音队伍提供的默认APL"
+author = "虎皮"
+create_time = "2025-04-27T22:14:15.235+08:00"
+latest_change_time = "2025-05-22T01:23:35.784+08:00"
+
+[characters]
+required = [ "薇薇安", "耀嘉音", "柳",]
+optional = []
+
+[apl_logic]
+logic = "# 耀嘉音开场E\r\n1311|action+=|1311_E_A|action.1311:first_action==True\r\n1331|action+=|1331_SNA_2|status.1331:on_field==False|attribute.1331:special_state→裙裾浮游==True\r\n\r\n# 柳硬等快支触发，不提前上场抢队。\r\n1221|action+=|wait|status.1221:assist_waiting_for_anwser==True\r\n1221|action+=|1221_BH_Aid|status.1221:quick_assist_available==True|status.enemy:is_shock==False\r\n1331|action+=|1331_BH_Aid|status.1331:quick_assist_available==True|status.enemy:is_corruption==False\r\n\r\n# 柳开场强化E\r\n1221|action+=|1221_E_EX_1|attribute.1221:energy>=40|action.1221:first_action==True\r\n\r\n\r\n# VVA测试\r\n1331|action+=|1331_Q|status.enemy:is_corruption==False|attribute.1331:decibel==3000\r\n1331|action+=|1331_E_EX|attribute.1331:energy>=60|status.enemy:is_corruption==False\r\n\r\n# 强化E飘浮后，长按闪避回到开伞状态\r\n# 1331|action+=|1331_SNA_0|attribute.1331:special_state→裙裾浮游==True|action.1331:strict_linked_after==1331_E_EX||status.enemy:is_corruption==False\r\n# 开伞状态下打SNA1\r\n1331|action+=|1331_SNA_1|attribute.1331:special_state→淑女仪态==True\r\n\r\n\r\n# 柳切换架势逻辑\r\n1221|action+=|1221_E_A|buff.1221:duration→Buff-角色-柳-架势-下弦<=120|action.1221:strict_linked_after==1221_NA_5\r\n1221|action+=|1221_E_A|buff.1221:duration→Buff-角色-柳-架势-上弦<=120|action.1221:strict_linked_after==1221_SNA_5\r\n# 柳平A逻辑——不是感电就A\r\n1221|action+=|auto_NA|status.enemy:is_shock==False\r\n\r\n# 柳强化E释放逻辑\r\n# 强化E终结一击逻辑（2~5命），1穿刺达到2次上限后再接2\r\n1221|action+=|1221_E_EX_2|action.1221:strict_linked_after==1221_E_EX_1|attribute.1221:cinema>=2|attribute.1221:cinema<6|status.1221:lasting_node_tag==1221_E_EX_1|status.1221:repeat_times>1\r\n# 强化E终结一击逻辑（6命），1穿刺达到4次上限后再接2\r\n1221|action+=|1221_E_EX_2|action.1221:strict_linked_after==1221_E_EX_1|attribute.1221:cinema<=6|status.1221:lasting_node_tag==1221_E_EX_1|status.1221:repeat_times>3\r\n\r\n# 连击逻辑\r\n1221|action+=|1221_E_EX_1|attribute.1221:cinema>1|attribute.1221:energy>=40|action.1221:strict_linked_after==1221_E_EX_1|status.enemy:is_under_anomaly==True\r\n# 启动逻辑\r\n1221|action+=|1221_Q|attribute.1221:decibel==3000|status.enemy:is_under_anomaly==True\r\n1221|action+=|1221_E_EX_1|attribute.1221:energy>=50|status.enemy:is_under_anomaly==True\r\n\r\n# 手动释放SNA2——VVA的SNA_2大多会强制在技能后面自动释放，所以基本没有手动释放的时候。\r\n1331|action+=|1331_SNA_2|attribute.1331:special_state→裙裾浮游==True\r\n\r\n1221|action+=|auto_NA\r\n\r\n"
+
+[characters."薇薇安"]
+cinema = []
+weapon = ""
+equip_set4 = ""
+
+[characters."耀嘉音"]
+cinema = []
+weapon = ""
+equip_set4 = ""
+
+[characters."柳"]
+cinema = []
+weapon = ""
+equip_set4 = ""

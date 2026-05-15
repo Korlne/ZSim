@@ -1,0 +1,1406 @@
+{
+    "Buff-角色-莱特-额外能力-冰火增伤": {
+        "module": ".BuffXLogic.LighterAdditionalAbility_IceFireBonus",
+        "class": "LighterExtraSkill_IceFireBonus"
+    },
+    "Buff-驱动盘-极地重金属-冲刺与普攻增伤-有条件": {
+        "module": ".BuffXLogic.PolarMetalFreezeBonus",
+        "class": "PolarMetalFreezeBonus"
+    },
+    "Buff-驱动盘-啄木鸟电音-普攻": {
+        "module": ".BuffXLogic.WoodpeckerElectroSet4_NA",
+        "class": "WoodpeckerElectroSet4_NA"
+    },
+    "Buff-驱动盘-啄木鸟电音-闪避反击": {
+        "module": ".BuffXLogic.WoodpeckerElectroSet4_CA",
+        "class": "WoodpeckerElectroSet4_CA"
+    },
+    "Buff-驱动盘-啄木鸟电音-强化特殊技": {
+        "module": ".BuffXLogic.WoodpeckerElectroSet4_E_EX",
+        "class": "WoodpeckerElectroSet4_E_EX"
+    },
+    "Buff-角色-莱特-核心被动-冲击力提升": {
+        "module": ".BuffXLogic.LighterUniqueSkillStunBonus",
+        "class": "LighterUniqueSkillStunBonus"
+    },
+    "Buff-角色-莱特-核心被动-失衡时间延长": {
+        "module": ".BuffXLogic.LighterUniqueSkillStunTimeLimitBonus",
+        "class": "LighterUniqueSkillStunTimeLimitBonus"
+    },
+    "Buff-角色-莱卡恩-额外能力-失衡易伤倍率": {
+        "module": ".BuffXLogic.LyconAdditionalAbilityStunVulnerability",
+        "class": "LyconAdditionalAbilityStunVulnerability"
+    },
+    "Buff-武器-精1燃狱齿轮-后台能量自动回复": {
+        "module": ".BuffXLogic.HellfireGearsSpRBonus",
+        "class": "HellfireGearsSpRBonus"
+    },
+    "Buff-武器-精2燃狱齿轮-后台能量自动回复": {
+        "module": ".BuffXLogic.HellfireGearsSpRBonus",
+        "class": "HellfireGearsSpRBonus"
+    },
+    "Buff-武器-精3燃狱齿轮-后台能量自动回复": {
+        "module": ".BuffXLogic.HellfireGearsSpRBonus",
+        "class": "HellfireGearsSpRBonus"
+    },
+    "Buff-武器-精4燃狱齿轮-后台能量自动回复": {
+        "module": ".BuffXLogic.HellfireGearsSpRBonus",
+        "class": "HellfireGearsSpRBonus"
+    },
+    "Buff-武器-精5燃狱齿轮-后台能量自动回复": {
+        "module": ".BuffXLogic.HellfireGearsSpRBonus",
+        "class": "HellfireGearsSpRBonus"
+    },
+    "Buff-武器-精1玉壶青冰-15层后增伤": {
+        "module": ".BuffXLogic.IceJadeTeaPotExtraDMGBonus",
+        "class": "IceJadeTeaPotExtraDMGBonus"
+    },
+    "Buff-武器-精2玉壶青冰-15层后增伤": {
+        "module": ".BuffXLogic.IceJadeTeaPotExtraDMGBonus",
+        "class": "IceJadeTeaPotExtraDMGBonus"
+    },
+    "Buff-武器-精3玉壶青冰-15层后增伤": {
+        "module": ".BuffXLogic.IceJadeTeaPotExtraDMGBonus",
+        "class": "IceJadeTeaPotExtraDMGBonus"
+    },
+    "Buff-武器-精4玉壶青冰-15层后增伤": {
+        "module": ".BuffXLogic.IceJadeTeaPotExtraDMGBonus",
+        "class": "IceJadeTeaPotExtraDMGBonus"
+    },
+    "Buff-武器-精5玉壶青冰-15层后增伤": {
+        "module": ".BuffXLogic.IceJadeTeaPotExtraDMGBonus",
+        "class": "IceJadeTeaPotExtraDMGBonus"
+    },
+    "Buff-异常-霜寒": {
+        "module": ".BuffXLogic.AnomalyDebuffExitJudge",
+        "class": "AnomalyDebuffExitJudge"
+    },
+    "Buff-异常-畏缩": {
+        "module": ".BuffXLogic.AnomalyDebuffExitJudge",
+        "class": "AnomalyDebuffExitJudge"
+    },
+    "Buff-异常-烈霜霜寒": {
+        "module": ".BuffXLogic.AnomalyDebuffExitJudge",
+        "class": "AnomalyDebuffExitJudge"
+    },
+    "Buff-角色-雅-核心被动-冰焰": {
+        "module": ".BuffXLogic.MiyabiCoreSkill_IceFire",
+        "class": "MiyabiCoreSkill_IceFire"
+    },
+    "Buff-角色-雅-核心被动-霜灼": {
+        "module": ".BuffXLogic.MiyabiCoreSkill_FrostBurn",
+        "class": "MiyabiCoreSkill_FrostBurn"
+    },
+    "Buff-角色-雅-组队被动-无视冰抗": {
+        "module": ".BuffXLogic.MiyabiAdditionalAbility_IgnoreIceRes",
+        "class": "MiyabiAdditionalAbility_IgnoreIceRes"
+    },
+    "Buff-音擎-精1霰落星殿-叠层冰伤": {
+        "module": ".BuffXLogic.HailstormShrineIceBonus",
+        "class": "HailstormShrineIceBonus"
+    },
+    "Buff-音擎-精2霰落星殿-叠层冰伤": {
+        "module": ".BuffXLogic.HailstormShrineIceBonus",
+        "class": "HailstormShrineIceBonus"
+    },
+    "Buff-音擎-精3霰落星殿-叠层冰伤": {
+        "module": ".BuffXLogic.HailstormShrineIceBonus",
+        "class": "HailstormShrineIceBonus"
+    },
+    "Buff-音擎-精4霰落星殿-叠层冰伤": {
+        "module": ".BuffXLogic.HailstormShrineIceBonus",
+        "class": "HailstormShrineIceBonus"
+    },
+    "Buff-音擎-精5霰落星殿-叠层冰伤": {
+        "module": ".BuffXLogic.HailstormShrineIceBonus",
+        "class": "HailstormShrineIceBonus"
+    },
+    "Buff-驱动盘-折枝剑歌-暴伤": {
+    "module": ".BuffXLogic.BranchBladeSongCritDamageBonus",
+    "class": "BranchBladeSongCritDamageBonus"
+},
+    "Buff-驱动盘-折枝剑歌-暴击率": {
+    "module": ".BuffXLogic.BranchBladeSongCritRateBonus",
+    "class": "BranchBladeSongCritRateBonus"
+},
+    "Buff-武器-精1贵重骨核-75%以上": {
+    "module": ".BuffXLogic.PreciousFossilizedCoreStunBonusOver75Hp",
+    "class": "PreciousFossilizedCoreStunBonusOver75Hp"
+    },
+    "Buff-武器-精2贵重骨核-75%以上": {
+    "module": ".BuffXLogic.PreciousFossilizedCoreStunBonusOver75Hp",
+    "class": "PreciousFossilizedCoreStunBonusOver75Hp"
+    },
+    "Buff-武器-精3贵重骨核-75%以上": {
+    "module": ".BuffXLogic.PreciousFossilizedCoreStunBonusOver75Hp",
+    "class": "PreciousFossilizedCoreStunBonusOver75Hp"
+    },
+    "Buff-武器-精4贵重骨核-75%以上": {
+    "module": ".BuffXLogic.PreciousFossilizedCoreStunBonusOver75Hp",
+    "class": "PreciousFossilizedCoreStunBonusOver75Hp"
+    },
+    "Buff-武器-精5贵重骨核-75%以上": {
+    "module": ".BuffXLogic.PreciousFossilizedCoreStunBonusOver75Hp",
+    "class": "PreciousFossilizedCoreStunBonusOver75Hp"
+    },
+    "Buff-武器-精1贵重骨核-50%以上": {
+    "module": ".BuffXLogic.PreciousFossilizedCoreStunBonusOver50Hp",
+    "class": "PreciousFossilizedCoreStunBonusOver50Hp"
+    },
+    "Buff-武器-精2贵重骨核-50%以上": {
+    "module": ".BuffXLogic.PreciousFossilizedCoreStunBonusOver50Hp",
+    "class": "PreciousFossilizedCoreStunBonusOver50Hp"
+    },
+    "Buff-武器-精3贵重骨核-50%以上": {
+    "module": ".BuffXLogic.PreciousFossilizedCoreStunBonusOver50Hp",
+    "class": "PreciousFossilizedCoreStunBonusOver50Hp"
+    },
+    "Buff-武器-精4贵重骨核-50%以上": {
+    "module": ".BuffXLogic.PreciousFossilizedCoreStunBonusOver50Hp",
+    "class": "PreciousFossilizedCoreStunBonusOver50Hp"
+    },
+    "Buff-武器-精5贵重骨核-50%以上": {
+    "module": ".BuffXLogic.PreciousFossilizedCoreStunBonusOver50Hp",
+    "class": "PreciousFossilizedCoreStunBonusOver50Hp"
+    },
+    "Buff-武器-精1人为刀俎": {
+        "module": ".BuffXLogic.SteamOven",
+        "class": "SteamOven"
+    },
+    "Buff-武器-精2人为刀俎": {
+        "module": ".BuffXLogic.SteamOven",
+        "class": "SteamOven"
+    },
+    "Buff-武器-精3人为刀俎": {
+        "module": ".BuffXLogic.SteamOven",
+        "class": "SteamOven"
+    },
+    "Buff-武器-精4人为刀俎": {
+        "module": ".BuffXLogic.SteamOven",
+        "class": "SteamOven"
+    },
+    "Buff-武器-精5人为刀俎": {
+        "module": ".BuffXLogic.SteamOven",
+        "class": "SteamOven"
+    },
+    "Buff-角色-苍角-额外能力": {
+        "module": ".BuffXLogic.SokakuAdditionalAbilityICEBonus",
+        "class": "SokakuAdditionalAbilityICEBonus"
+    },
+    "Buff-角色-苍角-核心被动-1": {
+        "module": ".BuffXLogic.SokakuUniqueSkillMinorATKBonus",
+        "class": "SokakuUniqueSkillMinorATKBonus"
+    },
+    "Buff-角色-苍角-核心被动-2": {
+        "module": ".BuffXLogic.SokakuUniqueSkillMajorATKBonus",
+        "class": "SokakuUniqueSkillMajorATKBonus"
+    },
+    "Buff-角色-青衣-核心被动-失衡易伤": {
+        "module": ".BuffXLogic.QingYiCoreSkillStunDMGBonus",
+        "class": "QingYiCoreSkillStunDMGBonus"
+    },
+    "Buff-角色-青衣-核心被动-额外电压补偿": {
+        "module": ".BuffXLogic.QingYiCoreSkillExtraStunBonus",
+        "class": "QingYiCoreSkillExtraStunBonus"
+    },
+    "Buff-角色-青衣-额外能力-冲击转攻击": {
+        "module": ".BuffXLogic.QingYiAdditionalAbilityStunConvertToATK",
+        "class": "QingYiAdditionalAbilityStunConvertToATK"
+    },
+    "Buff-角色-丽娜-核心被动-穿透率": {
+        "module": ".BuffXLogic.LinaCoreSkillPenRatioBonus",
+        "class": "LinaCoreSkillPenRatioBonus"
+    },
+    "Buff-角色-丽娜-组队被动-增伤": {
+        "module": ".BuffXLogic.LinaAdditionalSkillEleDMGBonus",
+        "class": "LinaAdditionalSkillEleDMGBonus"
+    },
+    "Buff-驱动盘-自由蓝调-物理": {
+        "module": ".BuffXLogic.FreedomBlues",
+        "class": "FreedomBlues"
+    },
+    "Buff-驱动盘-自由蓝调-火": {
+        "module": ".BuffXLogic.FreedomBlues",
+        "class": "FreedomBlues"
+    },
+    "Buff-驱动盘-自由蓝调-冰": {
+        "module": ".BuffXLogic.FreedomBlues",
+        "class": "FreedomBlues"
+    },
+    "Buff-驱动盘-自由蓝调-电": {
+        "module": ".BuffXLogic.FreedomBlues",
+        "class": "FreedomBlues"
+    },
+    "Buff-驱动盘-自由蓝调-以太": {
+        "module": ".BuffXLogic.FreedomBlues",
+        "class": "FreedomBlues"
+    },
+    "Buff-驱动盘-自由蓝调-烈霜": {
+        "module": ".BuffXLogic.FreedomBlues",
+        "class": "FreedomBlues"
+    },
+    "Buff-驱动盘-静听嘉音-增伤": {
+        "module": ".BuffXLogic.AstralVoice",
+        "class": "AstralVoice"
+    },
+    "Buff-武器-精1啜泣摇篮-全队增伤自增长": {
+        "module": ".BuffXLogic.WeepingCradleDMGBonusIncrease",
+        "class": "WeepingCradleDMGBonusIncrease"
+    },
+    "Buff-武器-精1啜泣摇篮-后台回能": {
+        "module": ".BuffXLogic.BackendJudge",
+        "class": "BackendJudge"
+    },
+    "Buff-武器-精2啜泣摇篮-全队增伤自增长": {
+        "module": ".BuffXLogic.WeepingCradleDMGBonusIncrease",
+        "class": "WeepingCradleDMGBonusIncrease"
+    },
+    "Buff-武器-精2啜泣摇篮-后台回能": {
+        "module": ".BuffXLogic.BackendJudge",
+        "class": "BackendJudge"
+    },
+    "Buff-武器-精3啜泣摇篮-全队增伤自增长": {
+        "module": ".BuffXLogic.WeepingCradleDMGBonusIncrease",
+        "class": "WeepingCradleDMGBonusIncrease"
+    },
+    "Buff-武器-精3啜泣摇篮-后台回能": {
+        "module": ".BuffXLogic.BackendJudge",
+        "class": "BackendJudge"
+    },
+    "Buff-武器-精4啜泣摇篮-全队增伤自增长": {
+        "module": ".BuffXLogic.WeepingCradleDMGBonusIncrease",
+        "class": "WeepingCradleDMGBonusIncrease"
+    },
+    "Buff-武器-精4啜泣摇篮-后台回能": {
+        "module": ".BuffXLogic.BackendJudge",
+        "class": "BackendJudge"
+    },
+    "Buff-武器-精5啜泣摇篮-全队增伤自增长": {
+        "module": ".BuffXLogic.WeepingCradleDMGBonusIncrease",
+        "class": "WeepingCradleDMGBonusIncrease"
+    },
+    "Buff-武器-精5啜泣摇篮-后台回能": {
+        "module": ".BuffXLogic.BackendJudge",
+        "class": "BackendJudge"
+    },
+    "Buff-武器-精1时光切片-回能回喧响": {
+        "module": ".BuffXLogic.SliceofTimeExtraResources",
+        "class": "SliceofTimeExtraResources"
+    },
+    "Buff-武器-精2时光切片-回能回喧响": {
+        "module": ".BuffXLogic.SliceofTimeExtraResources",
+        "class": "SliceofTimeExtraResources"
+    },
+    "Buff-武器-精3时光切片-回能回喧响": {
+        "module": ".BuffXLogic.SliceofTimeExtraResources",
+        "class": "SliceofTimeExtraResources"
+    },
+    "Buff-武器-精4时光切片-回能回喧响": {
+        "module": ".BuffXLogic.SliceofTimeExtraResources",
+        "class": "SliceofTimeExtraResources"
+    },
+    "Buff-武器-精5时光切片-回能回喧响": {
+        "module": ".BuffXLogic.SliceofTimeExtraResources",
+        "class": "SliceofTimeExtraResources"
+    },
+    "Buff-武器-精1聚宝箱-回能": {
+        "module": ".BuffXLogic.TheVault",
+        "class": "TheVault"
+    },
+    "Buff-武器-精2聚宝箱-回能": {
+        "module": ".BuffXLogic.TheVault",
+        "class": "TheVault"
+    },
+    "Buff-武器-精3聚宝箱-回能": {
+        "module": ".BuffXLogic.TheVault",
+        "class": "TheVault"
+    },
+    "Buff-武器-精4聚宝箱-回能": {
+        "module": ".BuffXLogic.TheVault",
+        "class": "TheVault"
+    },
+    "Buff-武器-精5聚宝箱-回能": {
+        "module": ".BuffXLogic.TheVault",
+        "class": "TheVault"
+    },
+    "Buff-武器-精1聚宝箱-全队增伤": {
+        "module": ".BuffXLogic.TheVault",
+        "class": "TheVault"
+    },
+    "Buff-武器-精2聚宝箱-全队增伤": {
+        "module": ".BuffXLogic.TheVault",
+        "class": "TheVault"
+    },
+    "Buff-武器-精3聚宝箱-全队增伤": {
+        "module": ".BuffXLogic.TheVault",
+        "class": "TheVault"
+    },
+    "Buff-武器-精4聚宝箱-全队增伤": {
+        "module": ".BuffXLogic.TheVault",
+        "class": "TheVault"
+    },
+    "Buff-武器-精5聚宝箱-全队增伤": {
+        "module": ".BuffXLogic.TheVault",
+        "class": "TheVault"
+    },
+    "Buff-武器-精1好斗的阿炮-全局攻击力": {
+        "module": ".BuffXLogic.KaboomTheCannon",
+        "class": "KaboomTheCannon"
+    },
+    "Buff-武器-精2好斗的阿炮-全局攻击力": {
+        "module": ".BuffXLogic.KaboomTheCannon",
+        "class": "KaboomTheCannon"
+    },
+    "Buff-武器-精3好斗的阿炮-全局攻击力": {
+        "module": ".BuffXLogic.KaboomTheCannon",
+        "class": "KaboomTheCannon"
+    },
+    "Buff-武器-精4好斗的阿炮-全局攻击力": {
+        "module": ".BuffXLogic.KaboomTheCannon",
+        "class": "KaboomTheCannon"
+    },
+    "Buff-武器-精5好斗的阿炮-全局攻击力": {
+        "module": ".BuffXLogic.KaboomTheCannon",
+        "class": "KaboomTheCannon"
+    },
+    "Buff-角色-零号·安比-银星触发器": {
+        "module": ".BuffXLogic.Soldier0AnbySilverStarTrigger",
+        "class": "Soldier0AnbySilverStarTrigger"
+    },
+    "Buff-角色-零号·安比-核心被动-增伤": {
+        "module": ".BuffXLogic.Soldier0AnbyCoreSkillDMGBonus",
+        "class": "Soldier0AnbyCoreSkillDMGBonus"
+    },
+    "Buff-角色-零号·安比-核心被动-受暴伤增加": {
+        "module": ".BuffXLogic.Soldier0AnbyCoreSkillCritDMGBonus",
+        "class": "Soldier0AnbyCoreSkillCritDMGBonus"
+    },
+    "Buff-角色-零号·安比-组队被动-全队对银星目标增伤": {
+        "module": ".BuffXLogic.Soldier0AnbyAdditionalSkillDMGBonus",
+        "class": "Soldier0AnbyAdditionalSkillDMGBonus"
+    },
+    "Buff-角色-零号·安比-4画-无视电抗": {
+        "module": ".BuffXLogic.Soldier0AnbyCinema4EleResReduce",
+        "class": "Soldier0AnbyCinema4EleResReduce"
+    },
+    "Buff-武器-精1牺牲洁纯-触发暴伤": {
+        "module": ".BuffXLogic.SeveredInnocenceCritDMGBonus",
+        "class": "SeveredInnocenceCritDMGBonus"
+    },
+    "Buff-武器-精2牺牲洁纯-触发暴伤": {
+        "module": ".BuffXLogic.SeveredInnocenceCritDMGBonus",
+        "class": "SeveredInnocenceCritDMGBonus"
+    },
+    "Buff-武器-精3牺牲洁纯-触发暴伤": {
+        "module": ".BuffXLogic.SeveredInnocenceCritDMGBonus",
+        "class": "SeveredInnocenceCritDMGBonus"
+    },
+    "Buff-武器-精4牺牲洁纯-触发暴伤": {
+        "module": ".BuffXLogic.SeveredInnocenceCritDMGBonus",
+        "class": "SeveredInnocenceCritDMGBonus"
+    },
+    "Buff-武器-精5牺牲洁纯-触发暴伤": {
+        "module": ".BuffXLogic.SeveredInnocenceCritDMGBonus",
+        "class": "SeveredInnocenceCritDMGBonus"
+    },
+    "Buff-武器-精1牺牲洁纯-满层电伤": {
+        "module": ".BuffXLogic.SeveredInnocencELEDMGBonus",
+        "class": "SeveredInnocencELEDMGBonus"
+    },
+    "Buff-武器-精2牺牲洁纯-满层电伤": {
+        "module": ".BuffXLogic.SeveredInnocencELEDMGBonus",
+        "class": "SeveredInnocencELEDMGBonus"
+    },
+    "Buff-武器-精3牺牲洁纯-满层电伤": {
+        "module": ".BuffXLogic.SeveredInnocencELEDMGBonus",
+        "class": "SeveredInnocencELEDMGBonus"
+    },
+    "Buff-武器-精4牺牲洁纯-满层电伤": {
+        "module": ".BuffXLogic.SeveredInnocencELEDMGBonus",
+        "class": "SeveredInnocencELEDMGBonus"
+    },
+    "Buff-武器-精5牺牲洁纯-满层电伤": {
+        "module": ".BuffXLogic.SeveredInnocencELEDMGBonus",
+        "class": "SeveredInnocencELEDMGBonus"
+    },
+    "Buff-驱动盘-如影相随-四件套": {
+        "module": ".BuffXLogic.ShadowHarmony4",
+        "class": "ShadowHarmony4"
+    },
+    "Buff-角色-扳机-协同攻击-触发器": {
+        "module": ".BuffXLogic.TriggerAfterShockTrigger",
+        "class": "TriggerAfterShockTrigger"
+    },
+    "Buff-角色-扳机-核心被动-失衡易伤": {
+        "module": ".BuffXLogic.TriggerCoreSkillStunDMGBonus",
+        "class": "TriggerCoreSkillStunDMGBonus"
+    },
+    "Buff-角色-扳机-额外能力-追加攻击失衡值提升": {
+        "module": ".BuffXLogic.TriggerAdditionalAbilityStunBonus",
+        "class": "TriggerAdditionalAbilityStunBonus"
+    },
+    "Buff-角色-扳机-1画-失衡易伤提升": {
+        "module": ".BuffXLogic.TriggerCoreSkillStunDMGBonus",
+        "class": "TriggerCoreSkillStunDMGBonus"
+    },
+    "Buff-武器-精1索魂影眸-减防": {
+        "module": ".BuffXLogic.SpectralGazeDefReduce",
+        "class": "SpectralGazeDefReduce"
+    },
+    "Buff-武器-精2索魂影眸-减防": {
+        "module": ".BuffXLogic.SpectralGazeDefReduce",
+        "class": "SpectralGazeDefReduce"
+    },
+    "Buff-武器-精3索魂影眸-减防": {
+        "module": ".BuffXLogic.SpectralGazeDefReduce",
+        "class": "SpectralGazeDefReduce"
+    },
+    "Buff-武器-精4索魂影眸-减防": {
+        "module": ".BuffXLogic.SpectralGazeDefReduce",
+        "class": "SpectralGazeDefReduce"
+    },
+    "Buff-武器-精5索魂影眸-减防": {
+        "module": ".BuffXLogic.SpectralGazeDefReduce",
+        "class": "SpectralGazeDefReduce"
+    },
+    "Buff-武器-精1索魂影眸-魂锁": {
+        "module": ".BuffXLogic.SpectralGazeSpiritLock",
+        "class": "SpectralGazeSpiritLock"
+    },
+    "Buff-武器-精2索魂影眸-魂锁": {
+        "module": ".BuffXLogic.SpectralGazeSpiritLock",
+        "class": "SpectralGazeSpiritLock"
+    },
+    "Buff-武器-精3索魂影眸-魂锁": {
+        "module": ".BuffXLogic.SpectralGazeSpiritLock",
+        "class": "SpectralGazeSpiritLock"
+    },
+    "Buff-武器-精4索魂影眸-魂锁": {
+        "module": ".BuffXLogic.SpectralGazeSpiritLock",
+        "class": "SpectralGazeSpiritLock"
+    },
+    "Buff-武器-精5索魂影眸-魂锁": {
+        "module": ".BuffXLogic.SpectralGazeSpiritLock",
+        "class": "SpectralGazeSpiritLock"
+    },
+    "Buff-武器-精1索魂影眸-冲击力": {
+        "module": ".BuffXLogic.SpectralGazeImpactBonus",
+        "class": "SpectralGazeImpactBonus"
+    },
+    "Buff-武器-精2索魂影眸-冲击力": {
+        "module": ".BuffXLogic.SpectralGazeImpactBonus",
+        "class": "SpectralGazeImpactBonus"
+    },
+    "Buff-武器-精3索魂影眸-冲击力": {
+        "module": ".BuffXLogic.SpectralGazeImpactBonus",
+        "class": "SpectralGazeImpactBonus"
+    },
+    "Buff-武器-精4索魂影眸-冲击力": {
+        "module": ".BuffXLogic.SpectralGazeImpactBonus",
+        "class": "SpectralGazeImpactBonus"
+    },
+    "Buff-武器-精5索魂影眸-冲击力": {
+        "module": ".BuffXLogic.SpectralGazeImpactBonus",
+        "class": "SpectralGazeImpactBonus"
+    },
+    "Buff-角色-柳-架势-上弦": {
+        "module": ".BuffXLogic.YanagiStanceJougen",
+        "class": "YanagiStanceJougen"
+    },
+    "Buff-角色-柳-架势-下弦": {
+    "module": ".BuffXLogic.YanagiStanceKagen",
+    "class": "YanagiStanceKagen"
+    },
+    "Buff-角色-柳-极性紊乱触发器": {
+    "module": ".BuffXLogic.YanagiPolarityDisorderTrigger",
+    "class": "YanagiPolarityDisorderTrigger"
+},
+    "Buff-角色-简-狂热状态触发器": {
+        "module": ".BuffXLogic.JanePassionStateTrigger",
+        "class": "JanePassionStateTrigger"
+    },
+    "Buff-角色-简-狂热-物理积蓄效率提升": {
+        "module": ".BuffXLogic.JanePassionStatePhyBuildupBonus",
+        "class": "JanePassionStatePhyBuildupBonus"
+    },
+    "Buff-角色-简-狂热-额外精通转攻击力": {
+        "module": ".BuffXLogic.JanePassionStateAPTransToATK",
+        "class": "JanePassionStateAPTransToATK"
+    },
+    "Buff-角色-简-核心被动-啮咬-强击暴击率提升": {
+        "module": ".BuffXLogic.JaneCoreSkillStrikeCritRateBonus",
+        "class": "JaneCoreSkillStrikeCritRateBonus"
+    },
+    "Buff-角色-简-核心被动-啮咬-强击暴击伤害提升": {
+        "module": ".BuffXLogic.JaneCoreSkillStrikeCritDmgBonus",
+        "class": "JaneCoreSkillStrikeCritDmgBonus"
+    },
+    "Buff-角色-简-额外能力-物理异常积蓄效率额外提升": {
+        "module": ".BuffXLogic.JaneAdditionalAbilityPhyBuildupBonus",
+        "class": "JaneAdditionalAbilityPhyBuildupBonus"
+    },
+    "Buff-角色-简-1画-狂热物理异常积蓄效率额外提升": {
+        "module": ".BuffXLogic.JanePassionStatePhyBuildupBonus",
+        "class": "JanePassionStatePhyBuildupBonus"
+    },
+    "Buff-角色-简-1画-精通转增伤": {
+        "module": ".BuffXLogic.JaneCinema1APTransToDmgBonus",
+        "class": "JaneCinema1APTransToDmgBonus"
+    },
+    "Buff-角色-简-2画-啮咬-强击无视防御与暴击伤害提升" : {
+        "module": ".BuffXLogic.JaneCoreSkillStrikeCritDmgBonus",
+        "class": "JaneCoreSkillStrikeCritDmgBonus"
+    },
+    "Buff-角色-简-2画-啮咬-攻击无视防御" : {
+        "module": ".BuffXLogic.JaneCoreSkillStrikeCritDmgBonus",
+        "class": "JaneCoreSkillStrikeCritDmgBonus"
+    },
+    "Buff-角色-柳-1画-精通增幅": {
+        "module": ".BuffXLogic.YangiCinema1ApBonus",
+        "class": "YangiCinema1ApBonus"
+    },
+    "Buff-角色-柳-6画-特殊技伤害提升": {
+        "module": ".BuffXLogic.YanagiCinema6EXDmgBonus",
+        "class": "YanagiCinema6EXDmgBonus"
+    },
+    "Buff-角色-薇薇安-协同攻击触发器": {
+        "module": ".BuffXLogic.VivianCoattackTrigger",
+        "class": "VivianCoattackTrigger"
+    },
+    "Buff-角色-薇薇安-羽毛结算触发器": {
+        "module": ".BuffXLogic.VivianFeatherTrigger",
+        "class": "VivianFeatherTrigger"
+    },
+    "Buff-角色-薇薇安-核心被动触发器": {
+        "module": ".BuffXLogic.VivianCorePassiveTrigger",
+        "class": "VivianCorePassiveTrigger"
+    },
+    "Buff-角色-薇薇安-预言触发器": {
+        "module": ".BuffXLogic.VivianDotTrigger",
+        "class": "VivianDotTrigger"
+    },
+    "Buff-角色-薇薇安-额外能力-协同攻击触发器": {
+        "module": ".BuffXLogic.VivianAdditionalAbilityCoAttackTrigger",
+        "class": "VivianAdditionalAbilityCoAttackTrigger"
+    },
+    "Buff-角色-薇薇安-1画-全属性异常和紊乱伤害提升": {
+        "module": ".BuffXLogic.VivianCinema1Debuff",
+        "class": "VivianCinema1Debuff"
+    },
+    "Buff-角色-薇薇安-6画-触发器": {
+        "module": ".BuffXLogic.VivianCinema6Trigger",
+        "class": "VivianCinema6Trigger"
+    },
+    "Buff-驱动盘-法厄同之歌-四件套-以太伤害提高": {
+        "module": ".BuffXLogic.PhaethonsMelody",
+        "class": "PhaethonsMelody"
+    },
+    "Buff-武器-精1飞鸟星梦-精通增幅": {
+        "module": ".BuffXLogic.FlightOfFancy",
+        "class": "FlightOfFancy"
+    },
+    "Buff-武器-精2飞鸟星梦-精通增幅": {
+        "module": ".BuffXLogic.FlightOfFancy",
+        "class": "FlightOfFancy"
+    },
+    "Buff-武器-精3飞鸟星梦-精通增幅": {
+        "module": ".BuffXLogic.FlightOfFancy",
+        "class": "FlightOfFancy"
+    },
+    "Buff-武器-精4飞鸟星梦-精通增幅": {
+        "module": ".BuffXLogic.FlightOfFancy",
+        "class": "FlightOfFancy"
+    },
+    "Buff-武器-精5飞鸟星梦-精通增幅": {
+        "module": ".BuffXLogic.FlightOfFancy",
+        "class": "FlightOfFancy"
+    },
+    "Buff-武器-精1时流贤者-精通提升": {
+        "module": ".BuffXLogic.TimeweaverApBonus",
+        "class": "TimeweaverApBonus"
+    },
+    "Buff-武器-精2时流贤者-精通提升": {
+        "module": ".BuffXLogic.TimeweaverApBonus",
+        "class": "TimeweaverApBonus"
+    },
+    "Buff-武器-精3时流贤者-精通提升": {
+        "module": ".BuffXLogic.TimeweaverApBonus",
+        "class": "TimeweaverApBonus"
+    },
+    "Buff-武器-精4时流贤者-精通提升": {
+        "module": ".BuffXLogic.TimeweaverApBonus",
+        "class": "TimeweaverApBonus"
+    },
+    "Buff-武器-精5时流贤者-精通提升": {
+        "module": ".BuffXLogic.TimeweaverApBonus",
+        "class": "TimeweaverApBonus"
+    },
+    "Buff-武器-精1时流贤者-装备者紊乱伤害提升": {
+        "module": ".BuffXLogic.TimeweaverDisorderDmgMul",
+        "class": "TimeweaverDisorderDmgMul"
+    },
+    "Buff-武器-精2时流贤者-装备者紊乱伤害提升": {
+        "module": ".BuffXLogic.TimeweaverDisorderDmgMul",
+        "class": "TimeweaverDisorderDmgMul"
+    },
+    "Buff-武器-精3时流贤者-装备者紊乱伤害提升": {
+        "module": ".BuffXLogic.TimeweaverDisorderDmgMul",
+        "class": "TimeweaverDisorderDmgMul"
+    },
+    "Buff-武器-精4时流贤者-装备者紊乱伤害提升": {
+        "module": ".BuffXLogic.TimeweaverDisorderDmgMul",
+        "class": "TimeweaverDisorderDmgMul"
+    },
+    "Buff-武器-精5时流贤者-装备者紊乱伤害提升": {
+        "module": ".BuffXLogic.TimeweaverDisorderDmgMul",
+        "class": "TimeweaverDisorderDmgMul"
+    },
+    "Buff-武器-精1淬锋钳刺-猎意": {
+        "module": ".BuffXLogic.SharpenedStingerPhyDmgBonus",
+        "class": "SharpenedStingerPhyDmgBonus"
+    },
+    "Buff-武器-精2淬锋钳刺-猎意": {
+        "module": ".BuffXLogic.SharpenedStingerPhyDmgBonus",
+        "class": "SharpenedStingerPhyDmgBonus"
+    },
+    "Buff-武器-精3淬锋钳刺-猎意": {
+        "module": ".BuffXLogic.SharpenedStingerPhyDmgBonus",
+        "class": "SharpenedStingerPhyDmgBonus"
+    },
+    "Buff-武器-精4淬锋钳刺-猎意": {
+        "module": ".BuffXLogic.SharpenedStingerPhyDmgBonus",
+        "class": "SharpenedStingerPhyDmgBonus"
+    },
+    "Buff-武器-精5淬锋钳刺-猎意": {
+        "module": ".BuffXLogic.SharpenedStingerPhyDmgBonus",
+        "class": "SharpenedStingerPhyDmgBonus"
+    },
+    "Buff-武器-精1淬锋钳刺-属性异常积蓄效率提升" : {
+        "module": ".BuffXLogic.SharpenedStingerAnomalyBuildupBonus",
+        "class": "SharpenedStingerAnomalyBuildupBonus"
+    },
+    "Buff-武器-精2淬锋钳刺-属性异常积蓄效率提升" : {
+        "module": ".BuffXLogic.SharpenedStingerAnomalyBuildupBonus",
+        "class": "SharpenedStingerAnomalyBuildupBonus"
+    },
+    "Buff-武器-精3淬锋钳刺-属性异常积蓄效率提升" : {
+        "module": ".BuffXLogic.SharpenedStingerAnomalyBuildupBonus",
+        "class": "SharpenedStingerAnomalyBuildupBonus"
+    },
+    "Buff-武器-精4淬锋钳刺-属性异常积蓄效率提升" : {
+        "module": ".BuffXLogic.SharpenedStingerAnomalyBuildupBonus",
+        "class": "SharpenedStingerAnomalyBuildupBonus"
+    },
+    "Buff-武器-精5淬锋钳刺-属性异常积蓄效率提升" : {
+        "module": ".BuffXLogic.SharpenedStingerAnomalyBuildupBonus",
+        "class": "SharpenedStingerAnomalyBuildupBonus"
+    },
+    "Buff-角色-耀佳音-咏叹华彩": {
+        "module": ".BuffXLogic.AstraYaoIdyllicCadenza",
+        "class": "AstraYaoIdyllicCadenza"
+    },
+    "Buff-角色-耀佳音-核心被动-攻击力": {
+        "module": ".BuffXLogic.AstraYaoCorePassiveAtkBonus",
+        "class": "AstraYaoCorePassiveAtkBonus"
+    },
+    "Buff-角色-耀佳音-快支管理器-触发器": {
+        "module": ".BuffXLogic.AstraYaoQuickAssistManagerTrigger",
+        "class": "AstraYaoQuickAssistManagerTrigger"
+    },
+    "Buff-角色-耀佳音-震音管理器-触发器": {
+        "module": ".BuffXLogic.AstraYaoChordManagerTrigger",
+        "class": "AstraYaoChordManagerTrigger"
+    },
+    "Buff-武器-精1玲珑妆匣-回能": {
+        "module": ".BuffXLogic.ElegantVanitySpRecover",
+        "class": "ElegantVanitySpRecover"
+    },
+    "Buff-武器-精2玲珑妆匣-回能": {
+        "module": ".BuffXLogic.ElegantVanitySpRecover",
+        "class": "ElegantVanitySpRecover"
+    },
+    "Buff-武器-精3玲珑妆匣-回能": {
+        "module": ".BuffXLogic.ElegantVanitySpRecover",
+        "class": "ElegantVanitySpRecover"
+    },
+    "Buff-武器-精4玲珑妆匣-回能": {
+        "module": ".BuffXLogic.ElegantVanitySpRecover",
+        "class": "ElegantVanitySpRecover"
+    },
+    "Buff-武器-精5玲珑妆匣-回能": {
+        "module": ".BuffXLogic.ElegantVanitySpRecover",
+        "class": "ElegantVanitySpRecover"
+    },
+    "Buff-武器-精1玲珑妆匣-全队增伤": {
+        "module": ".BuffXLogic.ElegantVanityDmgBonus",
+        "class": "ElegantVanityDmgBonus"
+    },
+    "Buff-武器-精2玲珑妆匣-全队增伤": {
+        "module": ".BuffXLogic.ElegantVanityDmgBonus",
+        "class": "ElegantVanityDmgBonus"
+    },
+    "Buff-武器-精3玲珑妆匣-全队增伤": {
+        "module": ".BuffXLogic.ElegantVanityDmgBonus",
+        "class": "ElegantVanityDmgBonus"
+    },
+    "Buff-武器-精4玲珑妆匣-全队增伤": {
+        "module": ".BuffXLogic.ElegantVanityDmgBonus",
+        "class": "ElegantVanityDmgBonus"
+    },
+    "Buff-武器-精5玲珑妆匣-全队增伤": {
+        "module": ".BuffXLogic.ElegantVanityDmgBonus",
+        "class": "ElegantVanityDmgBonus"
+    },
+    "Buff-武器-精1灼心摇壶-回能": {
+        "module": ".BuffXLogic.BackendJudge",
+        "class": "BackendJudge"
+    },
+    "Buff-武器-精2灼心摇壶-回能": {
+        "module": ".BuffXLogic.BackendJudge",
+        "class": "BackendJudge"
+    },
+    "Buff-武器-精3灼心摇壶-回能": {
+        "module": ".BuffXLogic.BackendJudge",
+        "class": "BackendJudge"
+    },
+    "Buff-武器-精4灼心摇壶-回能": {
+        "module": ".BuffXLogic.BackendJudge",
+        "class": "BackendJudge"
+    },
+    "Buff-武器-精5灼心摇壶-回能": {
+        "module": ".BuffXLogic.BackendJudge",
+        "class": "BackendJudge"
+    },
+    "Buff-武器-精1灼心摇壶-增伤": {
+        "module": ".BuffXLogic.FlamemakerShakerDmgBonus",
+        "class": "FlamemakerShakerDmgBonus"
+    },
+    "Buff-武器-精2灼心摇壶-增伤": {
+        "module": ".BuffXLogic.FlamemakerShakerDmgBonus",
+        "class": "FlamemakerShakerDmgBonus"
+    },
+    "Buff-武器-精3灼心摇壶-增伤": {
+        "module": ".BuffXLogic.FlamemakerShakerDmgBonus",
+        "class": "FlamemakerShakerDmgBonus"
+    },
+    "Buff-武器-精4灼心摇壶-增伤": {
+        "module": ".BuffXLogic.FlamemakerShakerDmgBonus",
+        "class": "FlamemakerShakerDmgBonus"
+    },
+    "Buff-武器-精5灼心摇壶-增伤": {
+        "module": ".BuffXLogic.FlamemakerShakerDmgBonus",
+        "class": "FlamemakerShakerDmgBonus"
+    },
+    "Buff-武器-精1灼心摇壶-精通": {
+        "module": ".BuffXLogic.FlamemakerShakerApBonus",
+        "class": "FlamemakerShakerApBonus"
+    },
+    "Buff-武器-精2灼心摇壶-精通": {
+        "module": ".BuffXLogic.FlamemakerShakerApBonus",
+        "class": "FlamemakerShakerApBonus"
+    },
+    "Buff-武器-精3灼心摇壶-精通": {
+        "module": ".BuffXLogic.FlamemakerShakerApBonus",
+        "class": "FlamemakerShakerApBonus"
+    },
+    "Buff-武器-精4灼心摇壶-精通": {
+        "module": ".BuffXLogic.FlamemakerShakerApBonus",
+        "class": "FlamemakerShakerApBonus"
+    },
+    "Buff-武器-精5灼心摇壶-精通": {
+        "module": ".BuffXLogic.FlamemakerShakerApBonus",
+        "class": "FlamemakerShakerApBonus"
+    },
+    "Buff-武器-精1雨林饕客-局内攻击力": {
+        "module": ".BuffXLogic.RainforestGourmetATKBonus",
+        "class": "RainforestGourmetATKBonus"
+    },
+    "Buff-武器-精2雨林饕客-局内攻击力": {
+        "module": ".BuffXLogic.RainforestGourmetATKBonus",
+        "class": "RainforestGourmetATKBonus"
+    },
+    "Buff-武器-精3雨林饕客-局内攻击力": {
+        "module": ".BuffXLogic.RainforestGourmetATKBonus",
+        "class": "RainforestGourmetATKBonus"
+    },
+    "Buff-武器-精4雨林饕客-局内攻击力": {
+        "module": ".BuffXLogic.RainforestGourmetATKBonus",
+        "class": "RainforestGourmetATKBonus"
+    },
+    "Buff-武器-精5雨林饕客-局内攻击力": {
+        "module": ".BuffXLogic.RainforestGourmetATKBonus",
+        "class": "RainforestGourmetATKBonus"
+    },
+    "Buff-武器-精1双生泣星-精通增幅": {
+        "module": ".BuffXLogic.WeepingGeminiApBonus",
+        "class": "WeepingGeminiApBonus"
+    },
+    "Buff-武器-精2双生泣星-精通增幅": {
+        "module": ".BuffXLogic.WeepingGeminiApBonus",
+        "class": "WeepingGeminiApBonus"
+    },
+    "Buff-武器-精3双生泣星-精通增幅": {
+        "module": ".BuffXLogic.WeepingGeminiApBonus",
+        "class": "WeepingGeminiApBonus"
+    },
+    "Buff-武器-精4双生泣星-精通增幅": {
+        "module": ".BuffXLogic.WeepingGeminiApBonus",
+        "class": "WeepingGeminiApBonus"
+    },
+    "Buff-武器-精5双生泣星-精通增幅": {
+        "module": ".BuffXLogic.WeepingGeminiApBonus",
+        "class": "WeepingGeminiApBonus"
+    },
+    "Buff-武器-精1触电唇彩-攻击力与增伤": {
+        "module": ".BuffXLogic.ElectroLipGlossAtkAndDmgBonus",
+        "class": "ElectroLipGlossAtkAndDmgBonus"
+    },
+    "Buff-武器-精2触电唇彩-攻击力与增伤": {
+        "module": ".BuffXLogic.ElectroLipGlossAtkAndDmgBonus",
+        "class": "ElectroLipGlossAtkAndDmgBonus"
+    },
+    "Buff-武器-精3触电唇彩-攻击力与增伤": {
+        "module": ".BuffXLogic.ElectroLipGlossAtkAndDmgBonus",
+        "class": "ElectroLipGlossAtkAndDmgBonus"
+    },
+    "Buff-武器-精4触电唇彩-攻击力与增伤": {
+        "module": ".BuffXLogic.ElectroLipGlossAtkAndDmgBonus",
+        "class": "ElectroLipGlossAtkAndDmgBonus"
+    },
+    "Buff-武器-精5触电唇彩-攻击力与增伤": {
+        "module": ".BuffXLogic.ElectroLipGlossAtkAndDmgBonus",
+        "class": "ElectroLipGlossAtkAndDmgBonus"
+    },
+    "Buff-武器-精1轰鸣座驾-触发器": {
+        "module": ".BuffXLogic.RoaringRideBuffTrigger",
+        "class": "RoaringRideBuffTrigger"
+    },
+    "Buff-武器-精2轰鸣座驾-触发器": {
+        "module": ".BuffXLogic.RoaringRideBuffTrigger",
+        "class": "RoaringRideBuffTrigger"
+    },
+    "Buff-武器-精3轰鸣座驾-触发器": {
+        "module": ".BuffXLogic.RoaringRideBuffTrigger",
+        "class": "RoaringRideBuffTrigger"
+    },
+    "Buff-武器-精4轰鸣座驾-触发器": {
+        "module": ".BuffXLogic.RoaringRideBuffTrigger",
+        "class": "RoaringRideBuffTrigger"
+    },
+    "Buff-武器-精5轰鸣座驾-触发器": {
+        "module": ".BuffXLogic.RoaringRideBuffTrigger",
+        "class": "RoaringRideBuffTrigger"
+    },
+    "Buff-武器-精1「电磁暴」-壹式-异常掌控": {
+        "module": ".BuffXLogic.MagneticStormAlphaAMBonus",
+        "class": "MagneticStormAlphaAMBonus"
+    },
+    "Buff-武器-精2「电磁暴」-壹式-异常掌控": {
+        "module": ".BuffXLogic.MagneticStormAlphaAMBonus",
+        "class": "MagneticStormAlphaAMBonus"
+    },
+    "Buff-武器-精3「电磁暴」-壹式-异常掌控": {
+        "module": ".BuffXLogic.MagneticStormAlphaAMBonus",
+        "class": "MagneticStormAlphaAMBonus"
+    },
+    "Buff-武器-精4「电磁暴」-壹式-异常掌控": {
+        "module": ".BuffXLogic.MagneticStormAlphaAMBonus",
+        "class": "MagneticStormAlphaAMBonus"
+    },
+    "Buff-武器-精5「电磁暴」-壹式-异常掌控": {
+        "module": ".BuffXLogic.MagneticStormAlphaAMBonus",
+        "class": "MagneticStormAlphaAMBonus"
+    },
+    "Buff-武器-精2「电磁暴」-贰式-异常精通": {
+        "module": ".BuffXLogic.MagneticStormBravoApBonus",
+        "class": "MagneticStormBravoApBonus"
+    },
+    "Buff-武器-精3「电磁暴」-贰式-异常精通": {
+        "module": ".BuffXLogic.MagneticStormBravoApBonus",
+        "class": "MagneticStormBravoApBonus"
+    },
+    "Buff-武器-精4「电磁暴」-贰式-异常精通": {
+        "module": ".BuffXLogic.MagneticStormBravoApBonus",
+        "class": "MagneticStormBravoApBonus"
+    },
+    "Buff-武器-精5「电磁暴」-贰式-异常精通": {
+        "module": ".BuffXLogic.MagneticStormBravoApBonus",
+        "class": "MagneticStormBravoApBonus"
+    },
+    "Buff-武器-精1「电磁暴」-叁式-回能": {
+        "module": ".BuffXLogic.MagneticStormCharlieSpRecover",
+        "class": "MagneticStormCharlieSpRecover"
+    },
+    "Buff-武器-精2「电磁暴」-叁式-回能": {
+        "module": ".BuffXLogic.MagneticStormCharlieSpRecover",
+        "class": "MagneticStormCharlieSpRecover"
+    },
+    "Buff-武器-精3「电磁暴」-叁式-回能": {
+        "module": ".BuffXLogic.MagneticStormCharlieSpRecover",
+        "class": "MagneticStormCharlieSpRecover"
+    },
+    "Buff-武器-精4「电磁暴」-叁式-回能": {
+        "module": ".BuffXLogic.MagneticStormCharlieSpRecover",
+        "class": "MagneticStormCharlieSpRecover"
+    },
+    "Buff-武器-精5「电磁暴」-叁式-回能": {
+        "module": ".BuffXLogic.MagneticStormCharlieSpRecover",
+        "class": "MagneticStormCharlieSpRecover"
+    },
+    "Buff-角色-雨果-核心被动-单击破攻击力": {
+        "module": ".BuffXLogic.HugoCorePassiveSingleStunAtkBonus",
+        "class": "HugoCorePassiveSingleStunAtkBonus"
+    },
+    "Buff-角色-雨果-核心被动-双击破攻击力": {
+        "module": ".BuffXLogic.HugoCorePassiveDoubleStunAtkBonus",
+        "class": "HugoCorePassiveDoubleStunAtkBonus"
+    },
+    "Buff-角色-雨果-决算触发器": {
+        "module": ".BuffXLogic.HugoCorePassiveTotalizeTrigger",
+        "class": "HugoCorePassiveTotalizeTrigger"
+    },
+    "Buff-角色-雨果-核心被动-强化E失衡值提升": {
+        "module": ".BuffXLogic.HugoCorePassiveEXStunBonus",
+        "class": "HugoCorePassiveEXStunBonus"
+    },
+    "Buff-角色-雨果-额外能力-连携技对普通敌人伤害提升": {
+        "module": ".BuffXLogic.HugoAdditionalAbilityExtraQTEDmgBonus",
+        "class": "HugoAdditionalAbilityExtraQTEDmgBonus"
+    },
+    "Buff-驱动盘-激素朋克-全局攻击力": {
+        "module": ".BuffXLogic.HormonePunkAtkBonus",
+        "class": "HormonePunkAtkBonus"
+    },
+    "Buff-武器-精1防暴者Ⅵ型-普攻增伤": {
+        "module": ".BuffXLogic.RiotSuppressorMarkVI",
+        "class": "RiotSuppressorMarkVI"
+    },
+    "Buff-武器-精2防暴者Ⅵ型-普攻增伤": {
+        "module": ".BuffXLogic.RiotSuppressorMarkVI",
+        "class": "RiotSuppressorMarkVI"
+    },
+    "Buff-武器-精3防暴者Ⅵ型-普攻增伤": {
+        "module": ".BuffXLogic.RiotSuppressorMarkVI",
+        "class": "RiotSuppressorMarkVI"
+    },
+    "Buff-武器-精4防暴者Ⅵ型-普攻增伤": {
+        "module": ".BuffXLogic.RiotSuppressorMarkVI",
+        "class": "RiotSuppressorMarkVI"
+    },
+    "Buff-武器-精5防暴者Ⅵ型-普攻增伤": {
+        "module": ".BuffXLogic.RiotSuppressorMarkVI",
+        "class": "RiotSuppressorMarkVI"
+    },
+    "Buff-武器-精1残心青囊-条件暴击率": {
+        "module": ".BuffXLogic.ZanshinHerbCase",
+        "class": "ZanshinHerbCase"
+    },
+    "Buff-武器-精2残心青囊-条件暴击率": {
+        "module": ".BuffXLogic.ZanshinHerbCase",
+        "class": "ZanshinHerbCase"
+    },
+    "Buff-武器-精3残心青囊-条件暴击率": {
+        "module": ".BuffXLogic.ZanshinHerbCase",
+        "class": "ZanshinHerbCase"
+    },
+    "Buff-武器-精4残心青囊-条件暴击率": {
+        "module": ".BuffXLogic.ZanshinHerbCase",
+        "class": "ZanshinHerbCase"
+    },
+    "Buff-武器-精5残心青囊-条件暴击率": {
+        "module": ".BuffXLogic.ZanshinHerbCase",
+        "class": "ZanshinHerbCase"
+    },
+    "Buff-武器-精1心弦夜响-无视火抗": {
+        "module": ".BuffXLogic.HeartstringNocturne",
+        "class": "HeartstringNocturne"
+    },
+    "Buff-武器-精2心弦夜响-无视火抗": {
+        "module": ".BuffXLogic.HeartstringNocturne",
+        "class": "HeartstringNocturne"
+    },
+    "Buff-武器-精3心弦夜响-无视火抗": {
+        "module": ".BuffXLogic.HeartstringNocturne",
+        "class": "HeartstringNocturne"
+    },
+    "Buff-武器-精4心弦夜响-无视火抗": {
+        "module": ".BuffXLogic.HeartstringNocturne",
+        "class": "HeartstringNocturne"
+    },
+    "Buff-武器-精5心弦夜响-无视火抗": {
+        "module": ".BuffXLogic.HeartstringNocturne",
+        "class": "HeartstringNocturne"
+    },
+    "Buff-武器-精1街头巨星-终结技增伤": {
+        "module": ".BuffXLogic.StreetSuperstar",
+        "class": "StreetSuperstar"
+    },
+    "Buff-武器-精2街头巨星-终结技增伤": {
+        "module": ".BuffXLogic.StreetSuperstar",
+        "class": "StreetSuperstar"
+    },
+    "Buff-武器-精3街头巨星-终结技增伤": {
+        "module": ".BuffXLogic.StreetSuperstar",
+        "class": "StreetSuperstar"
+    },
+    "Buff-武器-精4街头巨星-终结技增伤": {
+        "module": ".BuffXLogic.StreetSuperstar",
+        "class": "StreetSuperstar"
+    },
+    "Buff-武器-精5街头巨星-终结技增伤": {
+        "module": ".BuffXLogic.StreetSuperstar",
+        "class": "StreetSuperstar"
+    },
+    "Buff-武器-精1强音热望-额外攻击力加成": {
+        "module": ".BuffXLogic.MarcatoDesireAtkBonus",
+        "class": "MarcatoDesireAtkBonus"
+    },
+    "Buff-武器-精2强音热望-额外攻击力加成": {
+        "module": ".BuffXLogic.MarcatoDesireAtkBonus",
+        "class": "MarcatoDesireAtkBonus"
+    },
+    "Buff-武器-精3强音热望-额外攻击力加成": {
+        "module": ".BuffXLogic.MarcatoDesireAtkBonus",
+        "class": "MarcatoDesireAtkBonus"
+    },
+    "Buff-武器-精4强音热望-额外攻击力加成": {
+        "module": ".BuffXLogic.MarcatoDesireAtkBonus",
+        "class": "MarcatoDesireAtkBonus"
+    },
+    "Buff-武器-精5强音热望-额外攻击力加成": {
+        "module": ".BuffXLogic.MarcatoDesireAtkBonus",
+        "class": "MarcatoDesireAtkBonus"
+    },
+    "Buff-武器-精1加农转子-附加伤害触发器": {
+        "module": ".BuffXLogic.CannonRotor",
+        "class": "CannonRotor"
+    },
+    "Buff-武器-精2加农转子-附加伤害触发器": {
+        "module": ".BuffXLogic.CannonRotor",
+        "class": "CannonRotor"
+    },
+    "Buff-武器-精3加农转子-附加伤害触发器": {
+        "module": ".BuffXLogic.CannonRotor",
+        "class": "CannonRotor"
+    },
+    "Buff-武器-精4加农转子-附加伤害触发器": {
+        "module": ".BuffXLogic.CannonRotor",
+        "class": "CannonRotor"
+    },
+    "Buff-武器-精5加农转子-附加伤害触发器": {
+        "module": ".BuffXLogic.CannonRotor",
+        "class": "CannonRotor"
+    },
+    "Buff-武器-精1「月相」-朔-回能触发器": {
+        "module": ".BuffXLogic.LunarNoviluna",
+        "class": "LunarNoviluna"
+    },
+    "Buff-武器-精2「月相」-朔-回能触发器": {
+        "module": ".BuffXLogic.LunarNoviluna",
+        "class": "LunarNoviluna"
+    },
+    "Buff-武器-精3「月相」-朔-回能触发器": {
+        "module": ".BuffXLogic.LunarNoviluna",
+        "class": "LunarNoviluna"
+    },
+    "Buff-武器-精4「月相」-朔-回能触发器": {
+        "module": ".BuffXLogic.LunarNoviluna",
+        "class": "LunarNoviluna"
+    },
+    "Buff-武器-精5「月相」-朔-回能触发器": {
+        "module": ".BuffXLogic.LunarNoviluna",
+        "class": "LunarNoviluna"
+    },
+    "Buff-角色-仪玄-额外能力-对失衡敌人增伤": {
+        "module": ".BuffXLogic.YixuanAdditionalAbilityDmgBonus",
+        "class": "YixuanAdditionalAbilityDmgBonus"
+    },
+    "Buff-角色-仪玄-1画-落雷触发器": {
+        "module": ".BuffXLogic.YixuanCinema1Trigger",
+        "class": "YixuanCinema1Trigger"
+    },
+    "Buff-角色-仪玄-2画-失衡时间提升": {
+        "module": ".BuffXLogic.YixuanCinema2StunTimeLimitBonus",
+        "class": "YixuanCinema2StunTimeLimitBonus"
+    },
+    "Buff-武器-精1青溟笼舍-以太伤害提升": {
+        "module": ".BuffXLogic.QingmingBirdcageCompanionEthDmgBonus",
+        "class": "QingmingBirdcageCompanionEthDmgBonus"
+    },
+    "Buff-武器-精2青溟笼舍-以太伤害提升": {
+        "module": ".BuffXLogic.QingmingBirdcageCompanionEthDmgBonus",
+        "class": "QingmingBirdcageCompanionEthDmgBonus"
+    },
+    "Buff-角色-仪玄-4画-静心": {
+        "module": ".BuffXLogic.YixuanCinema4Tranquility",
+        "class": "YixuanCinema4Tranquility"
+    },
+    "Buff-武器-精3青溟笼舍-以太伤害提升": {
+        "module": ".BuffXLogic.QingmingBirdcageCompanionEthDmgBonus",
+        "class": "QingmingBirdcageCompanionEthDmgBonus"
+    },
+    "Buff-武器-精4青溟笼舍-以太伤害提升": {
+        "module": ".BuffXLogic.QingmingBirdcageCompanionEthDmgBonus",
+        "class": "QingmingBirdcageCompanionEthDmgBonus"
+    },
+    "Buff-武器-精5青溟笼舍-以太伤害提升": {
+        "module": ".BuffXLogic.QingmingBirdcageCompanionEthDmgBonus",
+        "class": "QingmingBirdcageCompanionEthDmgBonus"
+    },
+    "Buff-武器-精1青溟笼舍-贯穿伤害提升": {
+        "module": ".BuffXLogic.QingmingBirdcageCompanionSheerAtkBonus",
+        "class": "QingmingBirdcageCompanionSheerAtkBonus"
+    },
+    "Buff-武器-精2青溟笼舍-贯穿伤害提升": {
+        "module": ".BuffXLogic.QingmingBirdcageCompanionSheerAtkBonus",
+        "class": "QingmingBirdcageCompanionSheerAtkBonus"
+    },
+    "Buff-武器-精3青溟笼舍-贯穿伤害提升": {
+        "module": ".BuffXLogic.QingmingBirdcageCompanionSheerAtkBonus",
+        "class": "QingmingBirdcageCompanionSheerAtkBonus"
+    },
+    "Buff-武器-精4青溟笼舍-贯穿伤害提升": {
+        "module": ".BuffXLogic.QingmingBirdcageCompanionSheerAtkBonus",
+        "class": "QingmingBirdcageCompanionSheerAtkBonus"
+    },
+    "Buff-武器-精5青溟笼舍-贯穿伤害提升": {
+        "module": ".BuffXLogic.QingmingBirdcageCompanionSheerAtkBonus",
+        "class": "QingmingBirdcageCompanionSheerAtkBonus"
+    },
+    "Buff-驱动盘-云岿如我-四件套-贯穿伤害提升": {
+        "module": ".BuffXLogic.YunkuiTalesSheerAtkBonus",
+        "class": "YunkuiTalesSheerAtkBonus"
+    },
+    "Buff-武器-精1幻变魔方-强化E增伤": {
+        "module": ".BuffXLogic.PuzzleSphereExDmgBonus",
+        "class": "PuzzleSphereExDmgBonus"
+    },
+    "Buff-武器-精2幻变魔方-强化E增伤": {
+        "module": ".BuffXLogic.PuzzleSphereExDmgBonus",
+        "class": "PuzzleSphereExDmgBonus"
+    },
+    "Buff-武器-精3幻变魔方-强化E增伤": {
+        "module": ".BuffXLogic.PuzzleSphereExDmgBonus",
+        "class": "PuzzleSphereExDmgBonus"
+    },
+    "Buff-武器-精4幻变魔方-强化E增伤": {
+        "module": ".BuffXLogic.PuzzleSphereExDmgBonus",
+        "class": "PuzzleSphereExDmgBonus"
+    },
+    "Buff-武器-精5幻变魔方-强化E增伤": {
+        "module": ".BuffXLogic.PuzzleSphereExDmgBonus",
+        "class": "PuzzleSphereExDmgBonus"
+    },
+    "Buff-武器-精1「灰烬」-钴蓝-攻击力提升": {
+        "module": ".BuffXLogic.CinderCobaltAtkBonus",
+        "class": "CinderCobaltAtkBonus"
+    },
+    "Buff-武器-精2「灰烬」-钴蓝-攻击力提升": {
+        "module": ".BuffXLogic.CinderCobaltAtkBonus",
+        "class": "CinderCobaltAtkBonus"
+    },
+    "Buff-武器-精3「灰烬」-钴蓝-攻击力提升": {
+        "module": ".BuffXLogic.CinderCobaltAtkBonus",
+        "class": "CinderCobaltAtkBonus"
+    },
+    "Buff-武器-精4「灰烬」-钴蓝-攻击力提升": {
+        "module": ".BuffXLogic.CinderCobaltAtkBonus",
+        "class": "CinderCobaltAtkBonus"
+    },
+    "Buff-武器-精5「灰烬」-钴蓝-攻击力提升": {
+        "module": ".BuffXLogic.CinderCobaltAtkBonus",
+        "class": "CinderCobaltAtkBonus"
+    },
+    "Buff-角色-柚叶-甜蜜惊吓": {
+        "module": ".BuffXLogic.YuzuhaCorePassiveSweetScare",
+        "class": "YuzuhaCorePassiveSweetScare"
+    },
+    "Buff-角色-柚叶-硬糖射击触发器": {
+        "module": ".BuffXLogic.YuzuhaHardCandyShotTrigger",
+        "class": "YuzuhaHardCandyShotTrigger"
+    },
+    "Buff-角色-柚叶-彩糖花火积蓄值增加": {
+        "module": ".BuffXLogic.YuzuhaSugarBurstAnomalyBuildupBonus",
+        "class": "YuzuhaSugarBurstAnomalyBuildupBonus"
+    },
+    "Buff-角色-柚叶-彩糖花火·极积蓄值增加": {
+        "module": ".BuffXLogic.YuzuhaSugarBurstMaxAnomalyBuildupBonus",
+        "class": "YuzuhaSugarBurstMaxAnomalyBuildupBonus"
+    },
+    "Buff-角色-柚叶-核心被动-狸之愿-攻击力": {
+        "module": ".BuffXLogic.YuzuhaTanukiWishAtkBonus",
+        "class": "YuzuhaTanukiWishAtkBonus"
+    },
+    "Buff-角色-柚叶-组队被动-积蓄值增幅": {
+        "module": ".BuffXLogic.YuzuhaAdditionalAbilityAnomalyBuildupBonus",
+        "class": "YuzuhaAdditionalAbilityAnomalyBuildupBonus"
+    },
+    "Buff-角色-柚叶-组队被动-属性异常与紊乱伤害增幅": {
+        "module": ".BuffXLogic.YuzuhaAdditionalAbilityAnomalyDmgBonus",
+        "class": "YuzuhaAdditionalAbilityAnomalyDmgBonus"
+    },
+    "Buff-角色-柚叶-1画-全属性伤害抗性降低": {
+        "module": ".BuffXLogic.YuzuhaCinem1EleResReduce",
+        "class": "YuzuhaCinem1EleResReduce"
+    },
+    "Buff-角色-柚叶-2画-连携技触发器": {
+        "module": ".BuffXLogic.YuzuhaCinema2Trigger",
+        "class": "YuzuhaCinema2Trigger"
+    },
+    "Buff-角色-柚叶-4画-快支触发器": {
+        "module": ".BuffXLogic.YuzuhaCinema4QuickAssistTrigger",
+        "class": "YuzuhaCinema4QuickAssistTrigger"
+    },
+    "Buff-角色-柚叶-6画-炮弹触发器": {
+        "module": ".BuffXLogic.YuzuhaCinema6SheelTrigger",
+        "class": "YuzuhaCinema6SheelTrigger"
+    },
+    "Buff-角色-柚叶-6画-彩糖花火极触发器": {
+        "module": ".BuffXLogic.YuzuhaCinema6SugarBurstMaxTrigger",
+        "class": "YuzuhaCinema6SugarBurstMaxTrigger"
+    },
+    "Buff-武器-精1狸法七变化-全队异常精通": {
+        "module": ".BuffXLogic.MetanukiMorphosisAPBonus",
+        "class": "MetanukiMorphosisAPBonus"
+    },
+    "Buff-武器-精2狸法七变化-全队异常精通": {
+        "module": ".BuffXLogic.MetanukiMorphosisAPBonus",
+        "class": "MetanukiMorphosisAPBonus"
+    },
+    "Buff-武器-精3狸法七变化-全队异常精通": {
+        "module": ".BuffXLogic.MetanukiMorphosisAPBonus",
+        "class": "MetanukiMorphosisAPBonus"
+    },
+    "Buff-武器-精4狸法七变化-全队异常精通": {
+        "module": ".BuffXLogic.MetanukiMorphosisAPBonus",
+        "class": "MetanukiMorphosisAPBonus"
+    },
+    "Buff-武器-精5狸法七变化-全队异常精通": {
+        "module": ".BuffXLogic.MetanukiMorphosisAPBonus",
+        "class": "MetanukiMorphosisAPBonus"
+    },
+  "Buff-角色-爱丽丝-额外能力-异常掌控转精通": {
+    "module": ".BuffXLogic.AliceAdditionalAbilityApBonus",
+    "class": "AliceAdditionalAbilityApBonus"
+  },
+  "Buff-角色-爱丽丝-极性强击触发器": {
+    "module": ".BuffXLogic.AlicePolarizedAssaultTrigger",
+    "class": "AlicePolarizedAssaultTrigger"
+  },
+  "Buff-角色-爱丽丝-影画-6画-额外攻击触发器": {
+    "module": ".BuffXLogic.AliceCinema6Trigger",
+    "class": "AliceCinema6Trigger"
+  },
+  "Buff-角色-席德-强袭": {
+    "module": ".BuffXLogic.SeedOnslaughtBonus",
+    "class": "SeedOnslaughtBonus"
+  },
+  "Buff-角色-席德-明攻": {
+    "module": ".BuffXLogic.SeedDirectStrikeBonus",
+    "class": "SeedDirectStrikeBonus"
+  },
+  "Buff-角色-席德-明攻触发器": {
+    "module": ".BuffXLogic.SeedDirectStrikeTrigger",
+    "class": "SeedDirectStrikeTrigger"
+  },
+  "Buff-角色-席德-围杀": {
+    "module": ".BuffXLogic.SeedBesiegeBonus",
+    "class": "SeedBesiegeBonus"
+  },
+  "Buff-角色-席德-额外能力-重击大招增伤无视电抗": {
+    "module": ".BuffXLogic.SeedAdditionalAbilityTrigger",
+    "class": "SeedAdditionalAbilityTrigger"
+  },
+  "Buff-角色-席德-影画-2画-围杀无视防御力": {
+    "module": ".BuffXLogic.SeedCinema2BesiegeIgnoreDefense",
+    "class": "SeedCinema2BesiegeIgnoreDefense"
+  },
+  "Buff-角色-席德-影画-4画-喧响效率与大招增伤": {
+    "module": ".BuffXLogic.SeedCinema4Bonus",
+    "class": "SeedCinema4Bonus"
+  },
+  "Buff-角色-席德-影画-6画-触发器": {
+    "module": ".BuffXLogic.SeedCinema6Trigger",
+    "class": "SeedCinema6Trigger"
+  },
+  "Buff-武器-精1机巧心种-常驻暴击": {
+    "module": ".BuffXLogic.CordisGerminaCritRateBonus",
+    "class": "CordisGerminaCritRateBonus"
+  },
+  "Buff-武器-精2机巧心种-常驻暴击": {
+    "module": ".BuffXLogic.CordisGerminaCritRateBonus",
+    "class": "CordisGerminaCritRateBonus"
+  },
+  "Buff-武器-精3机巧心种-常驻暴击": {
+    "module": ".BuffXLogic.CordisGerminaCritRateBonus",
+    "class": "CordisGerminaCritRateBonus"
+  },
+  "Buff-武器-精4机巧心种-常驻暴击": {
+    "module": ".BuffXLogic.CordisGerminaCritRateBonus",
+    "class": "CordisGerminaCritRateBonus"
+  },
+  "Buff-武器-精5机巧心种-常驻暴击": {
+    "module": ".BuffXLogic.CordisGerminaCritRateBonus",
+    "class": "CordisGerminaCritRateBonus"
+  },
+  "Buff-武器-精1机巧心种-电属性增伤": {
+    "module": ".BuffXLogic.CordisGerminaEleDmgBonus",
+    "class": "CordisGerminaEleDmgBonus"
+  },
+  "Buff-武器-精2机巧心种-电属性增伤": {
+    "module": ".BuffXLogic.CordisGerminaEleDmgBonus",
+    "class": "CordisGerminaEleDmgBonus"
+  },
+  "Buff-武器-精3机巧心种-电属性增伤": {
+    "module": ".BuffXLogic.CordisGerminaEleDmgBonus",
+    "class": "CordisGerminaEleDmgBonus"
+  },
+  "Buff-武器-精4机巧心种-电属性增伤": {
+    "module": ".BuffXLogic.CordisGerminaEleDmgBonus",
+    "class": "CordisGerminaEleDmgBonus"
+  },
+  "Buff-武器-精5机巧心种-电属性增伤": {
+    "module": ".BuffXLogic.CordisGerminaEleDmgBonus",
+    "class": "CordisGerminaEleDmgBonus"
+  },
+  "Buff-武器-精1机巧心种-普攻大招无视防御": {
+    "module": ".BuffXLogic.CordisGerminaSNAAndQIgnoreDefense",
+    "class": "CordisGerminaSNAAndQIgnoreDefense"
+  },
+  "Buff-武器-精2机巧心种-普攻大招无视防御": {
+    "module": ".BuffXLogic.CordisGerminaSNAAndQIgnoreDefense",
+    "class": "CordisGerminaSNAAndQIgnoreDefense"
+  },
+  "Buff-武器-精3机巧心种-普攻大招无视防御": {
+    "module": ".BuffXLogic.CordisGerminaSNAAndQIgnoreDefense",
+    "class": "CordisGerminaSNAAndQIgnoreDefense"
+  },
+  "Buff-武器-精4机巧心种-普攻大招无视防御": {
+    "module": ".BuffXLogic.CordisGerminaSNAAndQIgnoreDefense",
+    "class": "CordisGerminaSNAAndQIgnoreDefense"
+  },
+  "Buff-武器-精5机巧心种-普攻大招无视防御": {
+    "module": ".BuffXLogic.CordisGerminaSNAAndQIgnoreDefense",
+    "class": "CordisGerminaSNAAndQIgnoreDefense"
+  },
+  "Buff-驱动盘-拂晓生花-四件套-触发普攻增伤": {
+    "module": ".BuffXLogic.DawnsBloom4SetTriggerNADmgBonus",
+    "class": "DawnsBloom4SetTriggerNADmgBonus"
+  },
+  "Buff-驱动盘-月光骑士颂-全队增伤": {
+    "module": ".BuffXLogic.MoonlightLullabyAllTeamDmgBonus",
+    "class": "MoonlightLullabyAllTeamDmgBonus"
+  },
+  "Buff-角色-席德-影画-2画-无视防御触发器": {
+    "module": ".BuffXLogic.SeedCinema2BesiegeIgnoreDefenceTrigger",
+    "class": "SeedCinema2BesiegeIgnoreDefenceTrigger"
+  },
+  "Buff-角色-席德-围杀触发器": {
+    "module": ".BuffXLogic.SeedBesiegeBonusTrigger",
+    "class": "SeedBesiegeBonusTrigger"
+  },
+  "Buff-角色-席德-影画-4画-触发器": {
+    "module": ".BuffXLogic.SeedCinema4Trigger",
+    "class": "SeedCinema4Trigger"
+  }
+}

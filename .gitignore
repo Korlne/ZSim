@@ -1,0 +1,71 @@
+# 编译生成的文件
+__pycache__
+*.pyc
+*.pyd
+*.so
+*.dll
+*.exe
+*.app
+
+# 日志和配置文件
+logs
+mypy.ini
+pytest.ini
+result*
+/results/
+
+# 开发工具和环境文件
+.idea
+.vscode
+.venv
+.env
+.ipynb_checkpoints
+.run
+.env
+.mypy_cache
+.pytest_cache
+.hypothesis/
+.pytest_cache/
+.clinerules/
+venv/
+node_modules/
+.claude/
+CLAUDE.md
+.mcp.json
+QWEN.md
+AGENTS.md
+# Ai学习用的文件
+knowledge_base*
+# 运行时生成的文件
+build*
+dist*
+*.egg-info/
+*.egg
+zsim/data/character_config.toml
+zsim/data/zsim.db
+zsim/config.json
+
+# macOS系统文件
+.DS_Store
+
+# pytest相关
+.tests
+.coverage
+coverage.xml
+htmlcov/
+
+# 临时文件
+*.tmp
+*cache
+~*
+
+# 生成文件
+zsim/data/APLData/custom/*
+*out*
+.nul
+
+# gemini-cli settings
+.gemini/
+
+# GitHub App credentials
+gha-creds-*.json

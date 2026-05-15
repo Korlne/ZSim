@@ -1,0 +1,8 @@
+﻿CID,name,CN_TriggerLevel,skill_tag,CN_skill_tag,skill_text,INSTRUCTION,comment,damage_ratio,damage_ratio_growth,D_LEVEL12,D_LEVEL14,D_LEVEL16,stun_ratio,stun_ratio_growth,S_LEVEL12,S_LEVEL14,S_LEVEL16,sp_threshold,sp_consume,sp_recovery,fever_recovery,self_fever_re,distance_attenuation,initial_level,anomaly_accumulation,skill_type,trigger_buff_level,element_type,element_damage_percent,diff_multiplier,ticks,hit_times,on_field,anomaly_attack,interruption_resistance,swap_cancel_ticks,labels,follow_up,follow_by,aid_direction,aid_lag_ticks,tick_list,force_add_condition_APL,heavy_attack,max_repeat_times,do_immediately,anomaly_update_list,adrenaline_recovery,adrenaline_threshold,adrenaline_consume
+0,0,0,dodge,闪避,默认技能,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,30,0,FALSE,FALSE,0,0,,,,0,0,,,FALSE,1,TRUE,,0,0,0
+0,0,0,switch,向前切人,默认技能,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,10,0,FALSE,FALSE,0,0,,,,0,0,,,FALSE,1,FALSE,,0,0,0
+0,0,0,bwswitch,向后切人,默认技能,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,10,0,FALSE,FALSE,0,0,,,,0,0,,,FALSE,1,FALSE,,0,0,0
+0,0,0,interrupted,被打断,默认技能,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,60,0,FALSE,FALSE,0,0,,,,0,0,,,FALSE,1,TRUE,,0,0,0
+0,0,0,sleep,发呆,默认技能,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,FALSE,FALSE,0,0,,,,0,0,,,FALSE,1,FALSE,,0,0,0
+0,0,0,CannonRotorAdditionalDamage,加农转子附加伤害,默认技能,0,0,2,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,1,0,FALSE,FALSE,0,0,,,,0,0,,,FALSE,1,FALSE,,0,0,0
+0,0,0,knock_back_cause_parry,招架后被击退,默认技能,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,50,0,FALSE,FALSE,0,0,,,,0,0,,,FALSE,1,FALSE,,0,0,0
