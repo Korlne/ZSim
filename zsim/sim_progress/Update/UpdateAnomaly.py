@@ -351,9 +351,9 @@ def create_dot_instance(class_name: str, sim_instance: "Simulator | None" = None
         module = importlib.import_module(module_name)  # 导入模块
         class_obj = getattr(module, class_name)  # 获取类对象
         if bar:
-            dot_obj: Dot = class_obj(bar=bar, sim_instance=sim_instance)
+            dot_obj = class_obj(bar=bar, sim_instance=sim_instance)
         else:
-            dot_obj: Dot = class_obj(sim_instance=sim_instance)
+            dot_obj = class_obj(sim_instance=sim_instance)
         return dot_obj  # 创建并返回类实例
     except (ModuleNotFoundError, AttributeError) as e:
         raise ValueError(f"Error loading class {class_name}: {e}")
