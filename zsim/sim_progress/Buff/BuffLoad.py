@@ -113,6 +113,7 @@ def process_buff(
             所以单独进行处理
             """
             buff_new = Buff(active_condition_dict, judge_condition_dict, sim_instance=sim_instance)
+            assert buff_new.logic.xeffect is not None, f"{buff_new.ft.index} 的 xeffect 不能为空"
             buff_new.logic.xeffect()
             if buff_new.dy.is_changed:
                 buff_new.ft.operator = buff_0.ft.operator
@@ -361,6 +362,7 @@ def BuffJudge(
         all_match = simple_string_judge(judge_condition_dict, skill_now)
     else:
         try:
+            assert buff_now.logic.xjudge is not None, f"{buff_now.ft.index} 的 xjudge 不能为空"
             all_match = buff_now.logic.xjudge(
                 loading_mission=mission, skill_node=mission.mission_node
             )

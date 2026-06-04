@@ -17,6 +17,13 @@ if TYPE_CHECKING:
 
 @dataclass
 class InitData:
+    name_box: list[str]
+    Judge_list_set: list[list[str | None]]
+    weapon_dict: dict[str, list[str | Literal[1, 2, 3, 4, 5] | None]]
+    cinema_dict: dict[str, Literal[0, 1, 2, 3, 4, 5, 6]]
+    sim_cfg: SimCfg | None
+    sim_instance: "Simulator | None"
+
     def __init__(
         self,
         *,
@@ -47,10 +54,8 @@ class InitData:
         if not config:
             raise AssertionError("No character init configuration found.")
         try:
-            self.name_box: list[str] = config["name_box"]
-            self.Judge_list_set: list[
-                list[str | None]
-            ] = []  # [[角色名, 武器名, 四件套, 二件套], ...]
+            self.name_box = config["name_box"]
+            self.Judge_list_set = []  # [[瑙掕壊鍚? 姝﹀櫒鍚? 鍥涗欢濂? 浜屼欢濂梋, ...]
             self.char_0 = config[self.name_box[0]]
             self.char_1 = config[self.name_box[1]]
             self.char_2 = config[self.name_box[2]]
@@ -67,7 +72,7 @@ class InitData:
                     char.get("equip_set2_a", ""),
                 ]
             )
-        self.weapon_dict: dict[str, list[str | Literal[1, 2, 3, 4, 5] | None]] = {
+        self.weapon_dict = {
             name: [
                 getattr(self, f"char_{self.name_box.index(name)}")["weapon"],
                 getattr(self, f"char_{self.name_box.index(name)}")["weapon_level"],
@@ -81,7 +86,7 @@ class InitData:
 
     def __api_init(self, common_cfg: CommonCfg):
         """API方法传入常规配置"""
-        self.name_box: list[str] = [char.name for char in common_cfg.char_config]
+        self.name_box = [char.name for char in common_cfg.char_config]
         assert len(self.name_box) == 3, "Character configuration must be 3."
 
         # 创建 char_0, char_1, char_2 属性，将 CharConfig 对象转换为字典
@@ -89,16 +94,14 @@ class InitData:
             char_dict = char_config.model_dump()
             setattr(self, f"char_{i}", char_dict)
 
-        self.Judge_list_set: list[list[str | None]] = [
+        self.Judge_list_set = [
             [char.name, char.weapon, char.equip_set4, char.equip_set2_a]
             for char in common_cfg.char_config
         ]
-        self.weapon_dict: dict[str, list[str | Literal[1, 2, 3, 4, 5] | None]] = {
+        self.weapon_dict = {
             char.name: [char.weapon, char.weapon_level] for char in common_cfg.char_config
         }
-        self.cinema_dict: dict[str, Literal[0, 1, 2, 3, 4, 5, 6]] = {
-            char.name: char.cinema for char in common_cfg.char_config
-        }
+        self.cinema_dict = {char.name: char.cinema for char in common_cfg.char_config}
         self.__adjust_weapon_with_sim_cfg()
 
     def __adjust_weapon_with_sim_cfg(self):
@@ -182,16 +185,17 @@ class CharacterData:
     def find_char_obj(
         self, CID: int | None = None, char_name: str | None = None
     ) -> Character | None:
-        if not CID and not char_name:
+        if CID is None and char_name is None:
             raise ValueError("查找角色时，必须提供CID或是char_name中的一个！")
         for char_obj in self.char_obj_list:
             if CID == char_obj.CID or char_name == char_obj.NAME:
                 return char_obj
         else:
-            if CID:
+            if CID is not None:
                 raise ValueError(f"未找到CID为{CID}的角色！")
-            elif char_name:
+            if char_name is not None:
                 raise ValueError(f"未找到名称为{char_name}的角色！")
+        return None
 
 
 @dataclass
