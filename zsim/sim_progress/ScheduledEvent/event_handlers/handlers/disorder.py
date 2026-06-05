@@ -23,7 +23,7 @@ class DisorderEventHandler(BaseEventHandler):
     def handle(self, event: Disorder, context: EventContext) -> None:
         """处理紊乱事件"""
         enemy = self._get_context_enemy(context)
-        dynamic_buff = self._get_context_dynamic_buff(context)
+        active_buff_view = self._get_context_active_buff_view(context)
         sim_instance = self._get_context_sim_instance(context)
         tick = self._get_context_tick(context)
 
@@ -34,7 +34,7 @@ class DisorderEventHandler(BaseEventHandler):
         calculator = CalDisorder(
             disorder_obj=event,
             enemy_obj=enemy,
-            dynamic_buff=dynamic_buff,
+            dynamic_buff=active_buff_view,
             sim_instance=sim_instance,
         )
 

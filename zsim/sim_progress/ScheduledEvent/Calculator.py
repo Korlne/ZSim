@@ -1,6 +1,7 @@
+from collections.abc import Mapping as MappingABC
 import json
 from functools import lru_cache
-from typing import Any, Literal
+from typing import Any, Literal, Mapping, Sequence
 
 import numpy as np
 
@@ -36,7 +37,7 @@ class MultiplierData:
     def __new__(
         cls,
         enemy_obj: Enemy,
-        dynamic_buff: dict[str, list],
+        dynamic_buff: Mapping[str, Sequence[Any]],
         character_obj: Character | None = None,
         judge_node: SkillNode | AnomalyBar | None = None,
     ):
@@ -69,7 +70,7 @@ class MultiplierData:
     def __init__(
         self,
         enemy_obj: Enemy,
-        dynamic_buff: dict | None = None,
+        dynamic_buff: Mapping[str, Sequence[Any]] | None = None,
         character_obj: Character | None = None,
         judge_node: SkillNode | AnomalyBar | None = None,
     ):
@@ -110,7 +111,11 @@ class MultiplierData:
             dynamic_statement: dict = self.get_buff_bonus(dynamic_buff, self.judge_node)
             self.dynamic = self.DynamicStatement(dynamic_statement)
 
-    def get_buff_bonus(self, dynamic_buff: dict, node: SkillNode | AnomalyBar | None) -> dict:
+    def get_buff_bonus(
+        self,
+        dynamic_buff: Mapping[str, Sequence[Any]],
+        node: SkillNode | AnomalyBar | None,
+    ) -> dict:
         """
         获取buff加成数据
 
@@ -122,24 +127,24 @@ class MultiplierData:
             dict: 包含所有buff加成的字典
         """
         if self.char_name is None:
-            char_buff: list = []
+            char_buff: Sequence[Any] = ()
         else:
             try:
                 char_buff = dynamic_buff[self.char_name]
             except KeyError:
-                char_buff = []
+                char_buff = ()
                 report_to_log(f"[WARNING] 动态Buff列表内没有角色 {self.char_name}", level=4)
 
         try:
-            enemy_buff: list = self.enemy_obj.dynamic.dynamic_debuff_list
+            enemy_buff: Sequence[Any] = self.enemy_obj.dynamic.dynamic_debuff_list
         except AttributeError:
             report_to_log("[WARNING] self.enemy_obj 中找不到动态buff列表", level=4)
             try:
                 enemy_buff = dynamic_buff["enemy"]
             except KeyError:
                 report_to_log("[WARNING] dynamic_buff 中依然找不到动态buff列表", level=4)
-                enemy_buff = []
-        enabled_buff: tuple = tuple(char_buff + enemy_buff)
+                enemy_buff = ()
+        enabled_buff = tuple(char_buff) + tuple(enemy_buff)
         try:
             dynamic_statement: dict = cal_buff_total_bonus(
                 enabled_buff=enabled_buff,
@@ -475,7 +480,7 @@ class Calculator:
         skill_node: SkillNode,
         character_obj: Character,
         enemy_obj: Enemy,
-        dynamic_buff: dict | None = None,
+        dynamic_buff: Mapping[str, Sequence[Any]] | None = None,
     ):
         """
         Calculator 是 Schedule 阶段获得 SkillNode 后的计算处理逻辑
@@ -492,7 +497,7 @@ class Calculator:
             raise ValueError("错误的参数类型，应该为Character")
         if not isinstance(enemy_obj, Enemy):
             raise ValueError("错误的参数类型，应该为Enemy")
-        if not isinstance(dynamic_buff, dict):
+        if not isinstance(dynamic_buff, MappingABC):
             raise ValueError("错误的参数类型，应该为dict")
 
         # 创建MultiplierData对象，用于计算各种战斗中的乘区数据

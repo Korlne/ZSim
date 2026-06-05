@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Mapping, Sequence
 
 import numpy as np
 
@@ -31,7 +31,7 @@ class CalAnomaly:
         self,
         anomaly_obj: AnomalyBar,
         enemy_obj: Enemy,
-        dynamic_buff: dict[str, list["Buff"]],
+        dynamic_buff: Mapping[str, Sequence["Buff"]],
         sim_instance: "Simulator",
     ):
         """
@@ -237,7 +237,7 @@ class CalDisorder(CalAnomaly):
         self,
         disorder_obj: Disorder,
         enemy_obj: Enemy,
-        dynamic_buff: dict[str, list["Buff"]],
+        dynamic_buff: Mapping[str, Sequence["Buff"]],
         sim_instance: "Simulator",
     ):
         """
@@ -320,7 +320,7 @@ class CalPolarityDisorder(CalDisorder):
         self,
         disorder_obj: PolarityDisorder,
         enemy_obj: Enemy,
-        dynamic_buff: dict[str, list["Buff"]],
+        dynamic_buff: Mapping[str, Sequence["Buff"]],
         sim_instance: "Simulator",
     ):
         super().__init__(disorder_obj, enemy_obj, dynamic_buff, sim_instance=sim_instance)
@@ -345,7 +345,7 @@ class CalAbloom(CalAnomaly):
         self,
         abloom_obj: Abloom,
         enemy_obj: Enemy,
-        dynamic_buff: dict[str, list["Buff"]],
+        dynamic_buff: Mapping[str, Sequence["Buff"]],
         sim_instance: "Simulator",
     ):
         super().__init__(abloom_obj, enemy_obj, dynamic_buff, sim_instance=sim_instance)

@@ -36,8 +36,9 @@ class AnomalyEventHandler(BaseEventHandler):
         self._validate_context(context)
 
         enemy = self._get_context_enemy(context)
-        dynamic_buff = self._get_context_dynamic_buff(context)
-        exist_buff_dict = self._get_context_exist_buff_dict(context)
+        active_buff_view = self._get_context_active_buff_view(context)
+        legacy_dynamic_buff = self._get_context_legacy_dynamic_buff(context)
+        legacy_exist_buff_dict = self._get_context_legacy_exist_buff_dict(context)
         action_stack = self._get_context_action_stack(context)
         sim_instance = self._get_context_sim_instance(context)
         tick = self._get_context_tick(context)
@@ -46,7 +47,7 @@ class AnomalyEventHandler(BaseEventHandler):
         calculator = CalAnomaly(
             anomaly_obj=event,
             enemy_obj=enemy,
-            dynamic_buff=dynamic_buff,
+            dynamic_buff=active_buff_view,
             sim_instance=sim_instance,
         )
 
@@ -68,9 +69,9 @@ class AnomalyEventHandler(BaseEventHandler):
         # 处理buff结算
         ScheduleBuffSettle(
             tick,
-            exist_buff_dict,
+            legacy_exist_buff_dict,
             enemy,
-            dynamic_buff,
+            legacy_dynamic_buff,
             action_stack,
             anomaly_bar=event,
             sim_instance=sim_instance,
