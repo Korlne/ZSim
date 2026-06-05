@@ -7,6 +7,11 @@ from .LinkedList import LinkedList
 from .PolarizedAssaultEventClass import PolarizedAssaultEvent
 from .QuickAssistSystem import QuickAssistEvent, QuickAssistSystem
 from .SchedulePreload import SchedulePreload, schedule_preload_event_factory
+from .schedule_dispatch import (
+    LegacyEventListScheduleDispatchAdapter,
+    ScheduleDispatchPort,
+    create_schedule_dispatch_port,
+)
 from .single_hit import SingleHit
 from .sp_update_data import ScheduleRefreshData, SPUpdateData
 from .StunForcedTerminationEvent import StunForcedTerminationEvent
@@ -22,6 +27,9 @@ __all__ = [
     "QuickAssistSystem",
     "QuickAssistEvent",
     "SchedulePreload",
+    "ScheduleDispatchPort",
+    "LegacyEventListScheduleDispatchAdapter",
+    "create_schedule_dispatch_port",
     "schedule_preload_event_factory",
     "SingleHit",
     "SPUpdateData",
