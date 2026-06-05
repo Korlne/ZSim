@@ -203,3 +203,15 @@
 - ä¸‹ä¸€æ­¥ï¼š
   - ç»§ç»­è¡¥å¼ºä»£è¡¨æ€§ producer ä¸ write-boundary ç»„åˆçš„ focused validationï¼Œå¹¶ä¿æŒåç»­ handler è¿ç§»æ²¿ç”¨ `runtime view` è¯»ã€`runtime command` å†™çš„è¾¹ç•Œ
 ---
+## 2026-06-06 00:59:56 - US-005
+- ±¾ÂÖÎÄ¼ş£º`scripts/run_buff_refactor_validation.py`, `tests/simulator/test_skill_handler_runtime_view.py`, `tests/simulator/test_basic_simulator.py`
+- Ìæ»»ËµÃ÷£º
+  - `scripts/run_buff_refactor_validation.py` ÀïµÄ `implicit-events` focused pytest ÇĞÆ¬¿ªÊ¼Ìæ»» `progress.txt` ÖĞÁãÉ¢µÄÒ»´ÎĞÔÃüÁî£¬×÷Îª´ú±íĞÔ `BuffXLogic` producer / `PolarizedAssaultEvent` producer / same-tick write-boundary µÄ¹²ÏíÑéÖ¤Èë¿Ú¡£
+  - `test_skill_handler_runtime_view.py` ĞÂÔö `SkillEventHandler -> RuntimeCommandPort -> legacy containers` Éí·İ¶ÏÑÔ£¬¿ªÊ¼Ìæ»»¡°Ö»Ö¤Ã÷µ÷ÓÃ·¢Éú¡¢µ«²»Ö¤Ã÷¾ÉÈİÆ÷Éí·İÈÔ±»±£Áô¡±µÄÒşº¬¼ÙÉè¡£
+  - `test_basic_simulator.py` °Ñµ¼ÈëµÄ `TestSimulator` helper ¸Ä³É·Ç `Test*` ±ğÃû£¬Ìæ»» pytest ¶Ô `tests/test_simulator.py` ÕûÌ×Òì²½¶ÓÁĞ / ÄÚ´æÓÃÀıµÄÎóÊÕ¼¯Â·¾¶¡£
+- ¼æÈİ±£Áô£º
+  - ±¾ÂÖÃ»ÓĞĞÂÔö live runtime Â·¾¶Ìæ»»£»`ScheduleDispatchPort` Óë `RuntimeCommandPort` ÈÔÍ¨¹ı legacy adapters ³Ğ½Ó¾É¶ÓÁĞºÍ¾ÉÈİÆ÷Éí·İ¡£
+  - ÑéÖ¤½Å±¾Ö»ÇåÀí¹²Ïí `sessions` ±íÀ´Ïû³ıÖØ¸´ `session_id` ÔëÒô£¬Ã»ÓĞ¸Ä¶¯ simulator ÕæÊµÔËĞĞÊ±µÄÊı¾İ½á¹¹»òÒµÎñË³Ğò¡£
+- ÏÂÒ»²½£º
+  - `US-006` Ó¦°Ñ¡°´ú±íĞÔ producer Á´ÒÑ±ÕºÏ¡¢same-tick write facade ÒÑÂäµØ¡¢focused validation ÒÑ¹Ì»¯½ø¹²Ïí gate¡±Í¬²½½ø½×¶Î 1 handoff ÎÄµµ¡£
+---
