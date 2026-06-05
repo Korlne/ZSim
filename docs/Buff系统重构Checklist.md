@@ -19,7 +19,7 @@
 ## 阶段 1：基础设施解耦
 
 - [x] 完成阶段 1 的调查型 PRD，产出生命周期、事件模型、Calculator seam、验证入口与交接包。
-- [ ] 为 Buff runtime 建立抽象接口与适配层。
+- [x] 为 Buff runtime 建立抽象接口与适配层。
 - [ ] 隔离 `exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT`。
 - [ ] 建立事件驱动基础设施边界，明确事件对象、事件上下文、事件分发入口与订阅入口。
 - [ ] 让 `Simulator` 不再直接控制旧 Buff 运行细节。
@@ -28,7 +28,7 @@
 - [ ] 为 `Calculator` 建立属性读取接口，隔离 `MultiplierData` 直读。
 - [ ] 为基础设施解耦新增单元测试。
 - [ ] 为事件分发边界与事件顺序新增单元测试。
-- [ ] 基础设施阶段不引入主循环结果回归。
+- [x] 为主循环一致性与性能验证补齐真实命令入口。
 
 ## 阶段 2：XLogic 全量分析与复用收敛
 
@@ -86,7 +86,17 @@
 - [x] 记录本轮验证命令与结果。
 - [x] 确认下一轮 PRD 的实现范围和非目标。
 
+## 本轮阶段 1 实现基线 PRD 收口状态（2026-06-05）
+
+- [x] `ScheduleDispatchPort` 已落地，`SchedulePreload` 与 `QuickAssistSystem` 已改经 dispatch gateway。
+- [x] `BuffRuntimeReadPort` / `EventContext.buff_runtime_view` 已落地，`anomaly`、`abloom`、`disorder`、`polarity_disorder` 已改走 runtime view。
+- [x] `scripts/run_buff_main_loop_consistency.py` 与 `scripts/run_buff_runtime_benchmark.py` 已提供真实 CLI 入口与稳定输出字段约定。
+- [x] 更新 [Buff重构下阶段计划草稿.md](./Buff重构下阶段计划草稿.md)、[Buff重构替换说明.md](./Buff重构替换说明.md) 与 [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md)，同步阶段 1 当前基线。
+- [ ] `UpdateAnomaly`、`BattleEventListener`、代表性 `BuffXLogic` / `PolarizedAssaultEvent` 等剩余计划事件生产者仍待迁移。
+- [ ] 高风险 `skill` handler 读路径、runtime write facade 与旧容器隔离仍待后续阶段 1 切片推进。
+
 ## 当前默认下一步
 
-- [ ] 启动“阶段 1：基础设施解耦”的第一个实现型 PRD，优先落地事件发布入口、`EventContext` runtime view 与最小适配层。
-- [ ] 为主循环一致性验证与性能验证补齐真实命令入口或等价脚本骨架。
+- [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的实现型 PRD，优先收口剩余计划事件生产者的旧直写入口，并保持 `event_list`、`listener_manager.broadcast_event()` 与 runtime command 三层语义分离。
+- [ ] 继续把高风险 `ScheduledEvent` handler 与同 tick 写边界从 legacy getter 收口到 `buff_runtime_view` / write facade，不扩到 `Calculator` 全量迁移或旧容器删除。
+- [ ] 仅在 live simulator 真正消费 `config.buff_runtime.mode` 后，再把一致性 / benchmark 命令升级为真实 runtime switch 证据。
