@@ -4,12 +4,14 @@ from typing import TYPE_CHECKING
 from zsim.define import ALICE_REPORT
 from zsim.define import ELEMENT_TYPE_MAPPING as ETM
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 if TYPE_CHECKING:
     from zsim.sim_progress.anomaly_bar import AnomalyBar
     from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import Disorder
     from zsim.sim_progress.Character.character import Character
     from zsim.sim_progress.Preload import SkillNode
+    from zsim.sim_progress.data_struct.schedule_dispatch import ScheduleDispatchPort
 
 
 class PolarizedAssaultEvent:
@@ -57,16 +59,19 @@ class PolarizedAssaultEvent:
             )
         self.sim_instance = self.anomaly_bar.sim_instance
 
+    def _create_dispatch_port(self) -> "ScheduleDispatchPort":
+        return create_schedule_dispatch_port(sim_instance=self.sim_instance)
+
     def execute(self):
         """执行极性强击事件，向EventList添加强击、紊乱事件"""
         # 先添加一次极性强击；
-        event_list = self.sim_instance.schedule_data.event_list
+        dispatch_port = self._create_dispatch_port()
         enemy = self.sim_instance.enemy
         self.sim_instance.listener_manager.broadcast_event(
             event=self.anomaly_bar, signal=LBS.POLARIZED_ASSAULT_SPAWN
         )
         # if self.anomaly_bar.settled:
-        event_list.append(self.anomaly_bar)
+        dispatch_port.publish_scheduled(self.anomaly_bar)
         if ALICE_REPORT:
             self.sim_instance.schedule_data.change_process_state()
             print(
@@ -105,7 +110,7 @@ class PolarizedAssaultEvent:
             mode_number=1,
             sim_instance=self.sim_instance,
         )
-        event_list.append(disorder)
+        dispatch_port.publish_scheduled(disorder)
         if ALICE_REPORT:
             self.sim_instance.schedule_data.change_process_state()
             print(
