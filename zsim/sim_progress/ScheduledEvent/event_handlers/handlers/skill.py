@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 from zsim.sim_progress import Report
 from zsim.sim_progress.Buff import ScheduleBuffSettle
@@ -24,6 +24,7 @@ from ..base import BaseEventHandler
 from ..context import EventContext
 
 if TYPE_CHECKING:
+    from zsim.sim_progress.Buff import Buff
     from zsim.sim_progress.Enemy import Enemy
     from zsim.simulator.dataclasses import ScheduleData
     from zsim.simulator.simulator_class import Simulator
@@ -47,8 +48,10 @@ class SkillEventHandler(BaseEventHandler):
         data = self._get_context_data(context)
         tick = self._get_context_tick(context)
         enemy = self._get_context_enemy(context)
-        dynamic_buff = self._get_context_dynamic_buff(context)
-        exist_buff_dict = self._get_context_exist_buff_dict(context)
+        runtime_active_buff_view = self._get_context_runtime_active_buff_view(context)
+        # 同 tick 结算仍依赖旧容器身份，这里显式保留为兼容写边界。
+        legacy_dynamic_buff = self._get_context_legacy_dynamic_buff(context)
+        legacy_exist_buff_dict = self._get_context_legacy_exist_buff_dict(context)
         action_stack = self._get_context_action_stack(context)
         sim_instance = self._get_context_sim_instance(context)
 
@@ -62,8 +65,9 @@ class SkillEventHandler(BaseEventHandler):
             data=data,
             tick=tick,
             enemy=enemy,
-            dynamic_buff=dynamic_buff,
-            exist_buff_dict=exist_buff_dict,
+            runtime_active_buff_view=runtime_active_buff_view,
+            legacy_dynamic_buff=legacy_dynamic_buff,
+            legacy_exist_buff_dict=legacy_exist_buff_dict,
             action_stack=action_stack,
             sim_instance=sim_instance,
         )
@@ -84,8 +88,9 @@ class SkillEventHandler(BaseEventHandler):
         data: ScheduleData,
         tick: int,
         enemy: Enemy,
-        dynamic_buff: dict,
-        exist_buff_dict: dict,
+        runtime_active_buff_view: Mapping[str, Sequence["Buff"]],
+        legacy_dynamic_buff: dict,
+        legacy_exist_buff_dict: dict,
         action_stack: ActionStack,
         sim_instance: Simulator,
     ) -> None:
@@ -98,16 +103,35 @@ class SkillEventHandler(BaseEventHandler):
         char_obj = self._find_character(skill_node.skill.char_name, data.char_obj_list)
 
         # 计算伤害
-        self._calculate_damage(skill_node, char_obj, enemy, dynamic_buff, hit_count, event, tick)
+        self._calculate_damage(
+            skill_node,
+            char_obj,
+            enemy,
+            runtime_active_buff_view,
+            hit_count,
+            event,
+            tick,
+        )
 
         # 更新异常条
         self._update_anomaly_bar_after_skill_event(
-            skill_node, enemy, tick, data, dynamic_buff, sim_instance
+            skill_node,
+            enemy,
+            tick,
+            data,
+            runtime_active_buff_view,
+            sim_instance,
         )
 
         # 处理buff结算
         self._settle_buffs(
-            tick, exist_buff_dict, enemy, dynamic_buff, action_stack, skill_node, sim_instance
+            tick,
+            legacy_exist_buff_dict,
+            enemy,
+            legacy_dynamic_buff,
+            action_stack,
+            skill_node,
+            sim_instance,
         )
 
         # 处理伤害更新
@@ -154,7 +178,7 @@ class SkillEventHandler(BaseEventHandler):
         skill_node: SkillNode,
         char_obj: Character,
         enemy: Enemy,
-        dynamic_buff: dict,
+        dynamic_buff: Mapping[str, Sequence["Buff"]],
         hit_count: int,
         event: SkillNode | LoadingMission,
         tick: int,
@@ -218,7 +242,7 @@ class SkillEventHandler(BaseEventHandler):
         enemy: Enemy,
         tick: int,
         data: ScheduleData,
-        dynamic_buff: dict,
+        dynamic_buff: Mapping[str, Sequence["Buff"]],
         sim_instance: Simulator,
     ) -> None:
         """
