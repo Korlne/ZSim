@@ -130,6 +130,10 @@ class DevConfig(BaseModel):
     new_sim_boot: bool = True
 
 
+class BuffRuntimeConfig(BaseModel):
+    mode: str = "legacy"
+
+
 class Config(BaseSettings):
     model_config: ClassVar[SettingsConfigDict] = SettingsConfigDict(
         json_file=config_path,
@@ -155,6 +159,7 @@ class Config(BaseSettings):
     na_mode_level: NaModeLevelConfig
     parallel_mode: dict[str, Any] = {}
     dev: DevConfig = DevConfig()
+    buff_runtime: BuffRuntimeConfig = BuffRuntimeConfig()
 
     @classmethod
     def settings_customise_sources(
