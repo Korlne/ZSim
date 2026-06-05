@@ -16,6 +16,7 @@ from zsim.sim_progress.Load.loading_mission import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.Update import update_anomaly
 
+from .buff_runtime import create_buff_runtime_read_port
 from .event_handlers import EventContext, event_handler_factory, register_all_handlers
 
 if TYPE_CHECKING:
@@ -72,6 +73,10 @@ class ScheduledEvent:
         self.data.loading_buff = loading_buff
         self.exist_buff_dict = exist_buff_dict
         self.enemy = self.data.enemy
+        self.buff_runtime_view = create_buff_runtime_read_port(
+            dynamic_buff=self.data.dynamic_buff,
+            exist_buff_dict=self.exist_buff_dict,
+        )
 
         self.execute_tick_key_map = {
             SkillNode: "preload_tick",
@@ -102,8 +107,7 @@ class ScheduledEvent:
             data=self.data,
             tick=self.tick,
             enemy=self.enemy,
-            dynamic_buff=self.data.dynamic_buff,
-            exist_buff_dict=self.exist_buff_dict,
+            buff_runtime_view=self.buff_runtime_view,
             action_stack=self.action_stack,
             sim_instance=self.sim_instance,
         )

@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
+from ..buff_runtime import BuffRuntimeReadPort
 from .context import EventContext
 
 if TYPE_CHECKING:
@@ -74,13 +75,17 @@ class BaseEventHandler(EventHandlerABC):
         """从上下文中获取敌人对象"""
         return context.get_enemy()
 
+    def _get_context_buff_runtime_view(self, context: EventContext) -> BuffRuntimeReadPort:
+        """从上下文中获取 Buff runtime 只读视图"""
+        return context.get_buff_runtime_view()
+
     def _get_context_dynamic_buff(self, context: EventContext):
         """从上下文中获取动态buff"""
-        return context.get_dynamic_buff()
+        return self._get_context_buff_runtime_view(context).get_legacy_dynamic_buff_dict()
 
     def _get_context_exist_buff_dict(self, context: EventContext):
         """从上下文中获取已存在buff字典"""
-        return context.get_exist_buff_dict()
+        return self._get_context_buff_runtime_view(context).get_legacy_exist_buff_dict()
 
     def _get_context_action_stack(self, context: EventContext):
         """从上下文中获取动作栈"""

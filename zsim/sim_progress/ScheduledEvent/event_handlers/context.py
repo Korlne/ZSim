@@ -9,8 +9,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from ..buff_runtime import BuffRuntimeReadPort
+
 if TYPE_CHECKING:
-    from zsim.sim_progress.Buff import Buff
     from zsim.sim_progress.data_struct import ActionStack
     from zsim.sim_progress.Enemy import Enemy
     from zsim.sim_progress.Preload.SkillsQueue import SkillNode
@@ -29,8 +30,7 @@ class EventContext:
     data: ScheduleData
     tick: int
     enemy: Enemy
-    dynamic_buff: dict[str, list[Buff]]
-    exist_buff_dict: dict[str, dict[str, Buff]]
+    buff_runtime_view: BuffRuntimeReadPort
     action_stack: ActionStack[SkillNode]
     sim_instance: Simulator
 
@@ -46,13 +46,17 @@ class EventContext:
         """获取敌人对象"""
         return self.enemy
 
-    def get_dynamic_buff(self) -> dict[str, list[Buff]]:
-        """获取动态buff字典"""
-        return self.dynamic_buff
+    def get_buff_runtime_view(self) -> BuffRuntimeReadPort:
+        """获取 Buff runtime 只读视图"""
+        return self.buff_runtime_view
 
-    def get_exist_buff_dict(self) -> dict[str, dict[str, Buff]]:
-        """获取已存在buff字典"""
-        return self.exist_buff_dict
+    def get_dynamic_buff(self):
+        """获取兼容旧接口的动态 Buff 容器"""
+        return self.buff_runtime_view.get_legacy_dynamic_buff_dict()
+
+    def get_exist_buff_dict(self):
+        """获取兼容旧接口的旧快照 Buff 容器"""
+        return self.buff_runtime_view.get_legacy_exist_buff_dict()
 
     def get_action_stack(self) -> ActionStack[SkillNode]:
         """获取动作栈"""
