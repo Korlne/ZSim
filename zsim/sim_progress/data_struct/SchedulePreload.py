@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING
 
+from .schedule_dispatch import create_schedule_dispatch_port
+
 if TYPE_CHECKING:
     from zsim.sim_progress.Preload.PreloadDataClass import PreloadData
     from zsim.simulator.simulator_class import Simulator
@@ -61,13 +63,13 @@ def schedule_preload_event_factory(
     from zsim.sim_progress.Buff import JudgeTools
 
     tick_now = JudgeTools.find_tick(sim_instance=sim_instance)
-    event_list = JudgeTools.find_event_list(sim_instance=sim_instance)
     if len(preload_tick_list) != event_count:
         raise ValueError("preload_tick_list和skill_tag_list的长度不一致")
     if apl_priority_list is not None and len(apl_priority_list) != event_count:
         raise ValueError("apl_priority_list和skill_tag_list的长度不一致")
     if active_generation_list is not None and len(active_generation_list) != event_count:
         raise ValueError("active_generation_list和skill_tag_list的长度不一致")
+    dispatch_port = create_schedule_dispatch_port(sim_instance=sim_instance)
     for i in range(event_count):
         preload_tick = preload_tick_list[i]
         if preload_tick < tick_now:
@@ -78,6 +80,11 @@ def schedule_preload_event_factory(
             active_generation_list[i] if active_generation_list is not None else False
         )
         schedule_event = SchedulePreload(
-            preload_tick, skill_tag, preload_data, apl_priority, active_generation
+            preload_tick,
+            skill_tag,
+            preload_data,
+            apl_priority,
+            active_generation,
+            sim_instance=sim_instance,
         )
-        event_list.append(schedule_event)
+        dispatch_port.publish_scheduled(schedule_event)
