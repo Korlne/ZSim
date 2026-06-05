@@ -71,6 +71,7 @@ def _build_skill_event_context(runtime_view: BuffRuntimeReadPort) -> tuple[Event
         tick=10,
         enemy=enemy,
         buff_runtime_view=runtime_view,
+        runtime_command_port=SimpleNamespace(),
         action_stack=SimpleNamespace(),
         sim_instance=sim_instance,
     )

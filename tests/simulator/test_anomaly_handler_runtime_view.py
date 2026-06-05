@@ -81,6 +81,7 @@ def _build_context(runtime_view: BuffRuntimeReadPort) -> tuple[EventContext, lis
         tick=10,
         enemy=enemy,
         buff_runtime_view=runtime_view,
+        runtime_command_port=SimpleNamespace(),
         action_stack=SimpleNamespace(),
         sim_instance=sim_instance,
     )

@@ -18,6 +18,7 @@ from zsim.sim_progress.Update import update_anomaly
 
 from .buff_runtime import create_buff_runtime_read_port
 from .event_handlers import EventContext, event_handler_factory, register_all_handlers
+from .runtime_command import create_runtime_command_port
 
 if TYPE_CHECKING:
     from zsim.simulator.dataclasses import ScheduleData
@@ -77,6 +78,12 @@ class ScheduledEvent:
             dynamic_buff=self.data.dynamic_buff,
             exist_buff_dict=self.exist_buff_dict,
         )
+        self.runtime_command_port = create_runtime_command_port(
+            data=self.data,
+            exist_buff_dict=self.exist_buff_dict,
+            action_stack=self.action_stack,
+            sim_instance=sim_instance,
+        )
 
         self.execute_tick_key_map = {
             SkillNode: "preload_tick",
@@ -108,6 +115,7 @@ class ScheduledEvent:
             tick=self.tick,
             enemy=self.enemy,
             buff_runtime_view=self.buff_runtime_view,
+            runtime_command_port=self.runtime_command_port,
             action_stack=self.action_stack,
             sim_instance=self.sim_instance,
         )

@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Mapping, Sequence
 
 from ..buff_runtime import BuffRuntimeReadPort
+from ..runtime_command import RuntimeCommandPort
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Buff import Buff
@@ -32,6 +33,7 @@ class EventContext:
     tick: int
     enemy: Enemy
     buff_runtime_view: BuffRuntimeReadPort
+    runtime_command_port: RuntimeCommandPort
     action_stack: ActionStack[SkillNode]
     sim_instance: Simulator
 
@@ -50,6 +52,10 @@ class EventContext:
     def get_buff_runtime_view(self) -> BuffRuntimeReadPort:
         """获取 Buff runtime 只读视图"""
         return self.buff_runtime_view
+
+    def get_runtime_command_port(self) -> RuntimeCommandPort:
+        """鑾峰彇 Buff runtime 鍐欏懡浠ゅ叆鍙?"""
+        return self.runtime_command_port
 
     def get_runtime_active_buffs(self, beneficiary: str) -> Sequence["Buff"]:
         """获取指定受益者的 runtime active Buff 只读列表"""

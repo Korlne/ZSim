@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 from ..buff_runtime import BuffRuntimeReadPort
+from ..runtime_command import RuntimeCommandPort
 from .context import EventContext
 
 if TYPE_CHECKING:
@@ -79,6 +80,10 @@ class BaseEventHandler(EventHandlerABC):
     def _get_context_buff_runtime_view(self, context: EventContext) -> BuffRuntimeReadPort:
         """从上下文中获取 Buff runtime 只读视图"""
         return context.get_buff_runtime_view()
+
+    def _get_context_runtime_command_port(self, context: EventContext) -> RuntimeCommandPort:
+        """浠庝笂涓嬫枃涓幏鍙?Buff runtime 鍐欏懡浠ゅ叆鍙?"""
+        return context.get_runtime_command_port()
 
     def _get_context_runtime_active_buffs(
         self, context: EventContext, beneficiary: str
