@@ -1,10 +1,15 @@
 from copy import deepcopy
+from typing import TYPE_CHECKING
 
 from define import ALICE_REPORT
 
 from zsim.sim_progress.Preload import SkillNode
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from .. import Buff, JudgeTools, check_preparation
+
+if TYPE_CHECKING:
+    from zsim.sim_progress.data_struct.schedule_dispatch import ScheduleDispatchPort
 
 
 class AlicePolarizedAssaultTriggerRecord:
@@ -28,6 +33,9 @@ class AlicePolarizedAssaultTrigger(Buff.BuffLogic):
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
 
+    def _create_dispatch_port(self) -> "ScheduleDispatchPort":
+        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
+
     def check_record_module(self):
         if self.buff_0 is None:
             self.buff_0 = JudgeTools.find_exist_buff_dict(
@@ -41,6 +49,7 @@ class AlicePolarizedAssaultTrigger(Buff.BuffLogic):
         """极性强击的判断函数，放行三蓄和大招"""
         self.check_record_module()
         self.get_prepared(char_CID=1401)
+        assert self.record is not None
         skill_node = kwargs.get("skill_node")
         if skill_node is None:
             return False
@@ -67,11 +76,13 @@ class AlicePolarizedAssaultTrigger(Buff.BuffLogic):
         """极性强击触发器的执行函数，构造一个极性强击事件并且将其添加进event_list中，同时置空自己的触发信号"""
         self.check_record_module()
         self.get_prepared(char_CID=1401)
+        assert self.record is not None
         from zsim.sim_progress.data_struct import PolarizedAssaultEvent
 
         sim_instance = self.buff_instance.sim_instance
         tick = sim_instance.tick
         enemy = sim_instance.schedule_data.enemy
+        dispatch_port = self._create_dispatch_port()
         copyed_anomaly_bar = deepcopy(enemy.anomaly_bars_dict[0])
         copyed_anomaly_bar.activated_by = self.record.trigger_origin
         event = PolarizedAssaultEvent(
@@ -80,8 +91,7 @@ class AlicePolarizedAssaultTrigger(Buff.BuffLogic):
             char_instance=self.record.char,
             skill_node=self.record.trigger_origin,
         )
-        event_list = sim_instance.schedule_data.event_list
-        event_list.append(event)
+        dispatch_port.publish_scheduled(event)
         if ALICE_REPORT:
             sim_instance.schedule_data.change_process_state()
             print(
