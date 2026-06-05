@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -32,7 +33,7 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
     )
     enemy = SimpleNamespace()
     skill_node = SimpleNamespace(skill_tag="1001_TEST")
-    captured: dict[str, object] = {}
+    captured: dict[str, Any] = {}
 
     def _fake_update_anomaly(
         element_type,
@@ -72,6 +73,7 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
         captured["settle_action_stack"] = action_stack_arg
         captured["settle_sim_instance"] = sim_instance
         captured["settle_skill_node"] = kwargs.get("skill_node")
+        captured["settle_kwargs"] = kwargs
 
     monkeypatch.setattr(runtime_command_module, "legacy_update_anomaly", _fake_update_anomaly)
     monkeypatch.setattr(
@@ -111,3 +113,4 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
     assert captured["settle_action_stack"] is action_stack
     assert captured["settle_sim_instance"] is sim_instance
     assert captured["settle_skill_node"] is skill_node
+    assert "anomaly_bar" not in captured["settle_kwargs"]

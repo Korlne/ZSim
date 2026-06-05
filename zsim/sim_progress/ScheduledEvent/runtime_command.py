@@ -86,15 +86,21 @@ class LegacyRuntimeCommandAdapter(RuntimeCommandPort):
         skill_node: "SkillNode | LoadingMission | None" = None,
         anomaly_bar: "AnomalyBar | None" = None,
     ) -> None:
+        legacy_kwargs: dict[str, object] = {
+            "sim_instance": self._sim_instance,
+        }
+        if skill_node is not None:
+            legacy_kwargs["skill_node"] = skill_node
+        if anomaly_bar is not None:
+            legacy_kwargs["anomaly_bar"] = anomaly_bar
+
         legacy_schedule_buff_settle(
             tick,
             self._exist_buff_dict,
             enemy,
             self._data.dynamic_buff,
             self._action_stack,
-            skill_node=skill_node,
-            anomaly_bar=anomaly_bar,
-            sim_instance=self._sim_instance,
+            **legacy_kwargs,
         )
 
 
