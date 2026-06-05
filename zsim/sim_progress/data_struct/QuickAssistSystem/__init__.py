@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from zsim.sim_progress.Buff import JudgeTools
-
 from .quick_assist_manager import QuickAssistManager
+from ..schedule_dispatch import create_schedule_dispatch_port
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Character.character import Character
     from zsim.sim_progress.Preload import SkillNode
     from zsim.simulator.simulator_class import Simulator
+    from ..schedule_dispatch import ScheduleDispatchPort
 
 
 class QuickAssistSystem:
@@ -61,8 +61,8 @@ class QuickAssistSystem:
             manager=manager,
             answer=True,
         )
-        event_list = JudgeTools.find_event_list(sim_instance=self.sim_instance)
-        event_list.append(end_event)
+        dispatch_port = self._create_dispatch_port()
+        dispatch_port.publish_scheduled(end_event)
         # print(f'{skill_node.char_name}响应了快速支援！')
 
     def spawn_event_group(
@@ -84,13 +84,16 @@ class QuickAssistSystem:
         start_event.manager.assist_event_update_tick = tick_now
         start_event.manager.last_update_node = skill_node
         end_event.manager.assist_event_update_tick = tick_now
-        event_list = JudgeTools.find_event_list(sim_instance=self.sim_instance)
-        event_list.append(start_event)
-        event_list.append(end_event)
+        dispatch_port = self._create_dispatch_port()
+        dispatch_port.publish_scheduled_batch([start_event, end_event])
 
     def force_active_quick_assist(self, tick_now: int, skill_node: "SkillNode", char_name: str):
         """强制激活快速支援，主要是服务于外部调用。"""
         self.spawn_event_group(tick_now, skill_node, self.quick_assist_manager_group[char_name])
+
+    def _create_dispatch_port(self) -> "ScheduleDispatchPort":
+        """按需创建发布入口，避免缓存旧 `event_list` 引用。"""
+        return create_schedule_dispatch_port(sim_instance=self.sim_instance)
 
 
 class QuickAssistEvent:
