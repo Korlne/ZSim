@@ -12,10 +12,12 @@ from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
 )
 from zsim.sim_progress.Buff.BuffAddStrategy import buff_add_strategy
 from zsim.sim_progress.Dot.BaseDot import Dot
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Buff import Buff
     from zsim.sim_progress.Preload import SkillNode
+    from zsim.sim_progress.data_struct.schedule_dispatch import ScheduleDispatchPort
     from zsim.simulator.simulator_class import Simulator
 
 anomlay_dot_dict = {
@@ -64,6 +66,10 @@ def spawn_output(anomaly_bar, mode_number, sim_instance: "Simulator", **kwargs):
     if mode_number in [1, 2]:
         sim_instance.listener_manager.broadcast_event(event=output, signal=LBS.DISORDER_SPAWN)
     return output
+
+
+def _publish_scheduled_event(dispatch_port: "ScheduleDispatchPort", event) -> None:
+    dispatch_port.publish_scheduled(event)
 
 
 def anomaly_effect_active(
@@ -121,6 +127,7 @@ def update_anomaly(
     第一个参数是属性种类，第二个参数是Enemy类的实例，第三个参数是当前时间
     如果判断通过触发，则会立刻实例化一个对应的属性异常实例（自带复制父类的状态与属性），
     """
+    dispatch_port = create_schedule_dispatch_port(sim_instance=sim_instance)
     bar: AnomalyBar = enemy.anomaly_bars_dict[skill_node.element_type]
     if not isinstance(bar, AnomalyBar):
         raise TypeError(f"{type(bar)}不是Anomaly类！")
@@ -184,7 +191,7 @@ def update_anomaly(
                     最后，frozen的状态参数被打开。
                     """
                     if enemy.dynamic.frozen:
-                        event_list.append(new_anomaly)
+                        _publish_scheduled_event(dispatch_port, new_anomaly)
                         # print("新的冰异常触发导致老碎冰直接结算")
                     enemy.dynamic.frozen = True
                     # print("触发了新的冰异常！")
@@ -192,7 +199,7 @@ def update_anomaly(
                     """
                     只要不是冰和烈霜异常，就直接向eventlist里面添加即可。
                     """
-                    event_list.append(new_anomaly)
+                    _publish_scheduled_event(dispatch_port, new_anomaly)
                 setattr(enemy.dynamic, enemy.trans_anomaly_effect_to_str[element_type], True)
                 enemy.dynamic.active_anomaly_bar_dict[element_type] = active_bar
             elif element_type not in active_anomaly_list and len(active_anomaly_list) > 0:
@@ -223,7 +230,7 @@ def update_anomaly(
                 )
                 enemy.dynamic.active_anomaly_bar_dict[last_anomaly_element_type] = None
                 enemy.anomaly_bars_dict[last_anomaly_element_type].active = False
-                remove_dots_cause_disorder(disorder, enemy, event_list, time_now)
+                remove_dots_cause_disorder(disorder, enemy, dispatch_port, time_now)
 
                 # 新的激活异常根据原来的Bar进行复制，并且添加到enemy身上。
                 new_anomaly = spawn_output(
@@ -241,10 +248,10 @@ def update_anomaly(
 
                 # 向eventlist中添加事件。主要包括非烈霜、冰属性的新异常，以及紊乱。
                 if element_type not in [2, 5]:
-                    event_list.append(new_anomaly)
+                    _publish_scheduled_event(dispatch_port, new_anomaly)
                 for obj in char_obj_list:
                     obj.special_resources(disorder)
-                event_list.append(disorder)
+                _publish_scheduled_event(dispatch_port, disorder)
                 sim_instance.decibel_manager.update(skill_node=skill_node, key="disorder")
                 enemy.sim_instance.schedule_data.change_process_state()
                 if disorder.activated_by:
@@ -257,7 +264,7 @@ def update_anomaly(
             bar.reset_current_info_cause_output()
 
 
-def remove_dots_cause_disorder(disorder, enemy, event_list, time_now):
+def remove_dots_cause_disorder(disorder, enemy, dispatch_port, time_now):
     """
     该函数只负责移除dot。
     """
@@ -273,7 +280,7 @@ def remove_dots_cause_disorder(disorder, enemy, event_list, time_now):
         sim_instance = enemy.sim_instance
         for _dot in remove_dots_list:
             if _dot.ft.index in ["Freez", "Freezdot"]:
-                event_list.append(_dot.anomaly_data)
+                _publish_scheduled_event(dispatch_port, _dot.anomaly_data)
                 _dot.dy.ready = False
                 _dot.dy.last_effect_ticks = time_now
                 _dot.dy.effect_times += 1
