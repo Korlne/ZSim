@@ -29,11 +29,11 @@ class BuffRuntimeReadPort(ABC):
 
     @abstractmethod
     def get_legacy_dynamic_buff_dict(self) -> dict[str, list["Buff"]]:
-        """过渡期兼容读口，返回旧 `dynamic_buff` 容器。"""
+        """过渡期兼容读口，返回旧 `dynamic_buff` 容器。仅供同 tick 写边界读取。"""
 
     @abstractmethod
     def get_legacy_exist_buff_dict(self) -> dict[str, dict[str, "Buff"]]:
-        """过渡期兼容读口，返回旧 `exist_buff_dict` 容器。"""
+        """过渡期兼容读口，返回旧 `exist_buff_dict` 容器。仅供同 tick 写边界读取。"""
 
 
 class LegacyBuffRuntimeReadAdapter(BuffRuntimeReadPort):
@@ -67,9 +67,11 @@ class LegacyBuffRuntimeReadAdapter(BuffRuntimeReadPort):
         )
 
     def get_legacy_dynamic_buff_dict(self) -> dict[str, list["Buff"]]:
+        # 兼容旧容器身份；仅供同 tick 写边界读取，不是新的主读口。
         return self._dynamic_buff
 
     def get_legacy_exist_buff_dict(self) -> dict[str, dict[str, "Buff"]]:
+        # 兼容旧容器身份；仅供同 tick 写边界读取，不是新的主读口。
         return self._exist_buff_dict
 
 

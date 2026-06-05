@@ -80,36 +80,62 @@ class BaseEventHandler(EventHandlerABC):
         """从上下文中获取 Buff runtime 只读视图"""
         return context.get_buff_runtime_view()
 
+    def _get_context_runtime_active_buffs(
+        self, context: EventContext, beneficiary: str
+    ) -> Sequence["Buff"]:
+        """从上下文中获取某个受益者的 runtime active Buff 只读列表"""
+        return self._get_context_buff_runtime_view(context).get_active_buffs(beneficiary)
+
     def _get_context_active_buffs(
         self, context: EventContext, beneficiary: str
     ) -> Sequence["Buff"]:
         """从上下文中获取某个受益者的 active Buff 只读列表"""
-        return self._get_context_buff_runtime_view(context).get_active_buffs(beneficiary)
+        return self._get_context_runtime_active_buffs(context, beneficiary)
+
+    def _get_context_runtime_active_buff_view(
+        self, context: EventContext
+    ) -> Mapping[str, Sequence["Buff"]]:
+        """从上下文中获取所有受益者的 runtime active Buff 只读视图"""
+        return self._get_context_buff_runtime_view(context).get_active_buff_view()
 
     def _get_context_active_buff_view(
         self, context: EventContext
     ) -> Mapping[str, Sequence["Buff"]]:
         """从上下文中获取所有受益者的 active Buff 只读视图"""
-        return self._get_context_buff_runtime_view(context).get_active_buff_view()
+        return self._get_context_runtime_active_buff_view(context)
+
+    def _get_context_runtime_exist_buff_snapshot(
+        self, context: EventContext, beneficiary: str
+    ) -> Mapping[str, "Buff"]:
+        """从上下文中获取某个受益者的 runtime snapshot Buff 只读视图"""
+        return self._get_context_buff_runtime_view(context).get_exist_buff_snapshot(beneficiary)
 
     def _get_context_exist_buff_snapshot(
         self, context: EventContext, beneficiary: str
     ) -> Mapping[str, "Buff"]:
         """从上下文中获取某个受益者的 snapshot Buff 只读视图"""
-        return self._get_context_buff_runtime_view(context).get_exist_buff_snapshot(beneficiary)
+        return self._get_context_runtime_exist_buff_snapshot(context, beneficiary)
+
+    def _get_context_runtime_exist_buff_snapshot_view(
+        self, context: EventContext
+    ) -> Mapping[str, Mapping[str, "Buff"]]:
+        """从上下文中获取所有受益者的 runtime snapshot Buff 只读视图"""
+        return self._get_context_buff_runtime_view(context).get_exist_buff_snapshot_view()
 
     def _get_context_exist_buff_snapshot_view(
         self, context: EventContext
     ) -> Mapping[str, Mapping[str, "Buff"]]:
         """从上下文中获取所有受益者的 snapshot Buff 只读视图"""
-        return self._get_context_buff_runtime_view(context).get_exist_buff_snapshot_view()
+        return self._get_context_runtime_exist_buff_snapshot_view(context)
 
     def _get_context_legacy_dynamic_buff(self, context: EventContext):
         """从上下文中获取兼容旧读写路径的动态 Buff 容器"""
+        # 兼容旧容器身份；仅供同 tick 写边界读取，不是新的主读口。
         return self._get_context_buff_runtime_view(context).get_legacy_dynamic_buff_dict()
 
     def _get_context_legacy_exist_buff_dict(self, context: EventContext):
         """从上下文中获取兼容旧读写路径的旧 snapshot Buff 容器"""
+        # 兼容旧容器身份；仅供同 tick 写边界读取，不是新的主读口。
         return self._get_context_buff_runtime_view(context).get_legacy_exist_buff_dict()
 
     def _get_context_dynamic_buff(self, context: EventContext):

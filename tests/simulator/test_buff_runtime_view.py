@@ -15,19 +15,27 @@ class _FakeRuntimeView(BuffRuntimeReadPort):
     def __init__(self, dynamic_buff, exist_buff_dict):
         self.dynamic_buff = dynamic_buff
         self.exist_buff_dict = exist_buff_dict
+        self.active_buff_calls = 0
+        self.active_view_calls = 0
+        self.snapshot_calls = 0
+        self.snapshot_view_calls = 0
         self.dynamic_calls = 0
         self.exist_calls = 0
 
     def get_active_buffs(self, beneficiary: str):
+        self.active_buff_calls += 1
         return tuple(self.dynamic_buff.get(beneficiary, []))
 
     def get_active_buff_view(self):
+        self.active_view_calls += 1
         return {beneficiary: tuple(buffs) for beneficiary, buffs in self.dynamic_buff.items()}
 
     def get_exist_buff_snapshot(self, beneficiary: str):
+        self.snapshot_calls += 1
         return dict(self.exist_buff_dict.get(beneficiary, {}))
 
     def get_exist_buff_snapshot_view(self):
+        self.snapshot_view_calls += 1
         return {
             beneficiary: dict(buff_dict)
             for beneficiary, buff_dict in self.exist_buff_dict.items()
@@ -57,6 +65,18 @@ class _AccessorProbeHandler(BaseEventHandler):
 
     def read_exist_buff_dict(self, context):
         return self._get_context_exist_buff_dict(context)
+
+    def read_runtime_active_buffs(self, context, beneficiary):
+        return self._get_context_runtime_active_buffs(context, beneficiary)
+
+    def read_runtime_active_buff_view(self, context):
+        return self._get_context_runtime_active_buff_view(context)
+
+    def read_runtime_exist_buff_snapshot(self, context, beneficiary):
+        return self._get_context_runtime_exist_buff_snapshot(context, beneficiary)
+
+    def read_runtime_exist_buff_snapshot_view(self, context):
+        return self._get_context_runtime_exist_buff_snapshot_view(context)
 
 
 def _build_context(runtime_view: BuffRuntimeReadPort) -> EventContext:
@@ -115,6 +135,25 @@ def test_event_context_compatibility_getters_delegate_to_runtime_view():
     assert runtime_view.exist_calls == 1
 
 
+def test_event_context_runtime_read_accessors_delegate_without_legacy_container_access():
+    alpha_buff = object()
+    dynamic_buff = {"alpha": [alpha_buff]}
+    exist_buff_dict = {"alpha": {"buff": alpha_buff}}
+    runtime_view = _FakeRuntimeView(dynamic_buff, exist_buff_dict)
+    context = _build_context(runtime_view)
+
+    assert context.get_runtime_active_buffs("alpha") == (alpha_buff,)
+    assert context.get_runtime_active_buff_view()["alpha"] == (alpha_buff,)
+    assert context.get_runtime_exist_buff_snapshot("alpha") == {"buff": alpha_buff}
+    assert context.get_runtime_exist_buff_snapshot_view()["alpha"] == {"buff": alpha_buff}
+    assert runtime_view.active_buff_calls == 1
+    assert runtime_view.active_view_calls == 1
+    assert runtime_view.snapshot_calls == 1
+    assert runtime_view.snapshot_view_calls == 1
+    assert runtime_view.dynamic_calls == 0
+    assert runtime_view.exist_calls == 0
+
+
 def test_base_event_handler_compatibility_accessors_delegate_via_runtime_view():
     dynamic_buff = {"enemy": [object()]}
     exist_buff_dict = {"enemy": {"buff": object()}}
@@ -126,3 +165,23 @@ def test_base_event_handler_compatibility_accessors_delegate_via_runtime_view():
     assert handler.read_exist_buff_dict(context) is exist_buff_dict
     assert runtime_view.dynamic_calls == 1
     assert runtime_view.exist_calls == 1
+
+
+def test_base_event_handler_runtime_read_accessors_delegate_without_legacy_access():
+    buff = object()
+    dynamic_buff = {"enemy": [buff]}
+    exist_buff_dict = {"enemy": {"buff": buff}}
+    runtime_view = _FakeRuntimeView(dynamic_buff, exist_buff_dict)
+    context = _build_context(runtime_view)
+    handler = _AccessorProbeHandler()
+
+    assert handler.read_runtime_active_buffs(context, "enemy") == (buff,)
+    assert handler.read_runtime_active_buff_view(context)["enemy"] == (buff,)
+    assert handler.read_runtime_exist_buff_snapshot(context, "enemy") == {"buff": buff}
+    assert handler.read_runtime_exist_buff_snapshot_view(context)["enemy"] == {"buff": buff}
+    assert runtime_view.active_buff_calls == 1
+    assert runtime_view.active_view_calls == 1
+    assert runtime_view.snapshot_calls == 1
+    assert runtime_view.snapshot_view_calls == 1
+    assert runtime_view.dynamic_calls == 0
+    assert runtime_view.exist_calls == 0

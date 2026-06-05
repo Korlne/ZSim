@@ -51,28 +51,46 @@ class EventContext:
         """获取 Buff runtime 只读视图"""
         return self.buff_runtime_view
 
+    def get_runtime_active_buffs(self, beneficiary: str) -> Sequence["Buff"]:
+        """获取指定受益者的 runtime active Buff 只读列表"""
+        return self.buff_runtime_view.get_active_buffs(beneficiary)
+
     def get_active_buffs(self, beneficiary: str) -> Sequence["Buff"]:
         """获取指定受益者的 active Buff 只读列表"""
-        return self.buff_runtime_view.get_active_buffs(beneficiary)
+        return self.get_runtime_active_buffs(beneficiary)
+
+    def get_runtime_active_buff_view(self) -> Mapping[str, Sequence["Buff"]]:
+        """获取所有受益者的 runtime active Buff 只读视图"""
+        return self.buff_runtime_view.get_active_buff_view()
 
     def get_active_buff_view(self) -> Mapping[str, Sequence["Buff"]]:
         """获取所有受益者的 active Buff 只读视图"""
-        return self.buff_runtime_view.get_active_buff_view()
+        return self.get_runtime_active_buff_view()
+
+    def get_runtime_exist_buff_snapshot(self, beneficiary: str) -> Mapping[str, "Buff"]:
+        """获取指定受益者的 runtime snapshot Buff 只读视图"""
+        return self.buff_runtime_view.get_exist_buff_snapshot(beneficiary)
 
     def get_exist_buff_snapshot(self, beneficiary: str) -> Mapping[str, "Buff"]:
         """获取指定受益者的 snapshot Buff 只读视图"""
-        return self.buff_runtime_view.get_exist_buff_snapshot(beneficiary)
+        return self.get_runtime_exist_buff_snapshot(beneficiary)
+
+    def get_runtime_exist_buff_snapshot_view(self) -> Mapping[str, Mapping[str, "Buff"]]:
+        """获取所有受益者的 runtime snapshot Buff 只读视图"""
+        return self.buff_runtime_view.get_exist_buff_snapshot_view()
 
     def get_exist_buff_snapshot_view(self) -> Mapping[str, Mapping[str, "Buff"]]:
         """获取所有受益者的 snapshot Buff 只读视图"""
-        return self.buff_runtime_view.get_exist_buff_snapshot_view()
+        return self.get_runtime_exist_buff_snapshot_view()
 
     def get_dynamic_buff(self):
         """获取兼容旧接口的动态 Buff 容器"""
+        # 兼容旧容器身份；仅供同 tick 写边界读取，不是新的主读口。
         return self.buff_runtime_view.get_legacy_dynamic_buff_dict()
 
     def get_exist_buff_dict(self):
         """获取兼容旧接口的旧 snapshot Buff 容器"""
+        # 兼容旧容器身份；仅供同 tick 写边界读取，不是新的主读口。
         return self.buff_runtime_view.get_legacy_exist_buff_dict()
 
     def get_action_stack(self) -> ActionStack[SkillNode]:
