@@ -92,11 +92,12 @@
 - [x] `BuffRuntimeReadPort` / `EventContext.buff_runtime_view` 已落地，`anomaly`、`abloom`、`disorder`、`polarity_disorder` 已改走 runtime view。
 - [x] `scripts/run_buff_main_loop_consistency.py` 与 `scripts/run_buff_runtime_benchmark.py` 已提供真实 CLI 入口与稳定输出字段约定。
 - [x] 更新 [Buff重构下阶段计划草稿.md](./Buff重构下阶段计划草稿.md)、[Buff重构替换说明.md](./Buff重构替换说明.md) 与 [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md)，同步阶段 1 当前基线。
-- [ ] `UpdateAnomaly`、`BattleEventListener`、代表性 `BuffXLogic` / `PolarizedAssaultEvent` 等剩余计划事件生产者仍待迁移。
-- [ ] 高风险 `skill` handler 读路径、runtime write facade 与旧容器隔离仍待后续阶段 1 切片推进。
+- [x] `UpdateAnomaly` 计划事件发布路径与 `BattleEventListener` 中 `AliceDotTriggerListener` 样本已改经 dispatch gateway，当前不再把这两条入口列为阶段 1 主缺口。
+- [x] 高风险 `SkillEventHandler` 已把 `Calculator` / `update_anomaly()` 的主 Buff 读口迁到 runtime view。
+- [ ] 代表性 `BuffXLogic` / `PolarizedAssaultEvent` 计划事件生产者、其余 `BattleEventListener` 旁路入口与同 tick runtime write facade 仍待后续阶段 1 切片推进。
 
 ## 当前默认下一步
 
-- [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的实现型 PRD，优先收口剩余计划事件生产者的旧直写入口，并保持 `event_list`、`listener_manager.broadcast_event()` 与 runtime command 三层语义分离。
-- [ ] 继续把高风险 `ScheduledEvent` handler 与同 tick 写边界从 legacy getter 收口到 `buff_runtime_view` / write facade，不扩到 `Calculator` 全量迁移或旧容器删除。
+- [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的实现型 PRD，优先收口代表性 `BuffXLogic` / `PolarizedAssaultEvent` 等剩余计划事件生产者的旧直写入口，并保持 `event_list`、`listener_manager.broadcast_event()` 与 runtime command 三层语义分离。
+- [ ] 在 `SkillEventHandler` 已迁到 runtime view 主读口的基础上，继续把 `ScheduleBuffSettle()`、`update_anomaly()` 等同 tick 写边界收口到最小 write facade / command port，不扩到 `Calculator` 全量迁移或旧容器删除。
 - [ ] 仅在 live simulator 真正消费 `config.buff_runtime.mode` 后，再把一致性 / benchmark 命令升级为真实 runtime switch 证据。
