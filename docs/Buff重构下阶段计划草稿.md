@@ -6,12 +6,12 @@
 - 当前默认阶段仍为“基础设施解耦”。
 - Buff 系统现已明确要求采用事件驱动架构。
 - 阶段 1 当前实现基线已经落地：
-  - `ScheduleDispatchPort` 已接入 `SchedulePreload`、`QuickAssistSystem`、`UpdateAnomaly` 以及 `BattleEventListener` 中的 `AliceDotTriggerListener` 样本路径；剩余 raw `event_list` producer 主要收敛到代表性 `BuffXLogic` / `PolarizedAssaultEvent` 与其他未迁移监听器入口。
+  - `ScheduleDispatchPort` 已接入 `SchedulePreload`、`QuickAssistSystem`、`UpdateAnomaly`、`BattleEventListener` 中的 `AliceDotTriggerListener`，以及代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` planned-event 链；剩余 raw `event_list` producer 主要收敛到其他 `BuffXLogic`、`BattleEventListener` 与 `Character` 旁路入口。
   - `BuffRuntimeReadPort` / `EventContext.buff_runtime_view` 已接入 `ScheduledEvent`，`anomaly`、`abloom`、`disorder`、`polarity_disorder` 与高风险 `SkillEventHandler` 主读路径已改用 runtime view。
-  - 当前尚未引入新的 `runtime_command_port` / write facade；`ScheduleBuffSettle()`、`update_anomaly()` 等同 tick 写边界仍保留 legacy 容器身份。
+  - `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 已接入 `ScheduledEvent` / `EventContext`；`SkillEventHandler` 的 `ScheduleBuffSettle()`、`update_anomaly()` 等同 tick 写边界已改走显式命令口，同时仍通过 adapter 保留 legacy 容器身份。
   - `scripts/run_buff_main_loop_consistency.py` 与 `scripts/run_buff_runtime_benchmark.py` 已是仓库内真实命令入口，不再是占位脚本。
   - `--legacy-runtime` / `--candidate-runtime` 仍只是报告标签；live simulator 还未消费 `config.buff_runtime.mode`。
-- 下一轮 Ralph PRD 仍应留在阶段 1，继续围绕“剩余发布入口收口 + 高风险 runtime 边界推进”，而不是直接挑角色 XLogic 开始迁移。
+- 下一轮 Ralph PRD 仍应留在阶段 1，继续围绕“剩余 raw `event_list` bypass 收口 + 必要时扩展显式 same-tick write boundary”，而不是直接挑角色 XLogic 开始迁移。
 - 下一轮路线仍然严格遵循 [Buff重构方案.md](./Buff重构方案.md) 中的阶段顺序，不回退到角色驱动式切片。
 
 ## 本文档的用途
@@ -24,19 +24,20 @@
 
 ### 下一轮 PRD 名称建议
 
-`Buff 重构 PRD-4：代表性 BuffXLogic 计划事件生产者与同 tick 写边界收口`
+`Buff 重构 PRD-5：剩余计划事件旁路入口与相邻运行时边界收口`
 
 ### 下一轮 PRD 的建议范围
 
-- 继续收口剩余计划事件直写入口，优先覆盖代表性 `BuffXLogic` / `PolarizedAssaultEvent` 与其他仍会直接感知 `event_list` 的 producer，不再把已完成的 `UpdateAnomaly` / `AliceDotTriggerListener` 样本重复作为主目标。
-- 在 `SkillEventHandler` 已迁到 runtime view 主读口的基础上，继续收口 `ScheduleBuffSettle()`、`update_anomaly()` 等同 tick 写边界，减少 legacy getter 继续同时承担读口与写边界双重职责。
-- 如果本轮触达同 tick 写边界，只补最小 `runtime_command_port` / write facade，而不是继续把 raw `dynamic_buff` / `exist_buff_dict` 深透传给新代码。
+- 继续收口剩余计划事件直写入口，优先覆盖其他仍会直接感知 `event_list` 的 `BuffXLogic`、`BattleEventListener` 与 `Character` 旁路 producer，不再把已完成的代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` 样本重复作为主目标。
+- 仅在发现其他具体 handler / helper 仍通过 legacy getter 承担 same-tick 写协作时，继续扩展 `RuntimeCommandPort` / write facade，减少读口与写边界双重职责继续泄露。
+- 如果本轮触达同 tick 写边界，沿用现有 `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 模式，而不是继续把 raw `dynamic_buff` / `exist_buff_dict` 深透传给新代码。
+- 除非 focused validation 暴露回归，否则不要重新打开已经闭合的 `SkillEventHandler` 代表性读写分层样本。
 - 保持 `Simulator` 仍做总流程编排，但不顺手扩大到 `UpdateAnomaly` 全量拆分、`Calculator` 全量迁移或 enemy debuff 单一事实源收口。
 
 ### 下一轮 PRD 的建议产物
 
-- 额外一组或多组改经 dispatch gateway 的代表性 `BuffXLogic` / `PolarizedAssaultEvent` producer 样本。
-- `SkillEventHandler` 同 tick 写边界的最小 `runtime_command_port` / write facade 样本，或等价的显式兼容写边界收口。
+- 额外一组或多组改经 dispatch gateway 的非代表性 `BuffXLogic`、`BattleEventListener` 或 `Character` producer 样本。
+- 如有需要，再补一组沿用 `RuntimeCommandPort` 的相邻 handler / helper same-tick 写边界样本，而不是重新发明新的写门面。
 - 聚焦事件顺序、发布边界与同 tick 写语义的单元测试或 focused pytest。
 - 按实际触达面同步扩大 `implicit-events` typecheck profile 的目标文件，避免 scoped gate 漏掉新 callsite。
 - 继续复用现有真实验证入口，而不是再引入新的占位脚本名。

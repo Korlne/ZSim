@@ -94,10 +94,17 @@
 - [x] 更新 [Buff重构下阶段计划草稿.md](./Buff重构下阶段计划草稿.md)、[Buff重构替换说明.md](./Buff重构替换说明.md) 与 [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md)，同步阶段 1 当前基线。
 - [x] `UpdateAnomaly` 计划事件发布路径与 `BattleEventListener` 中 `AliceDotTriggerListener` 样本已改经 dispatch gateway，当前不再把这两条入口列为阶段 1 主缺口。
 - [x] 高风险 `SkillEventHandler` 已把 `Calculator` / `update_anomaly()` 的主 Buff 读口迁到 runtime view。
-- [ ] 代表性 `BuffXLogic` / `PolarizedAssaultEvent` 计划事件生产者、其余 `BattleEventListener` 旁路入口与同 tick runtime write facade 仍待后续阶段 1 切片推进。
+- [ ] 其余 `BuffXLogic` / `BattleEventListener` / `Character` 旁路计划事件生产者，以及其他相邻同 tick runtime 写路径仍待后续阶段 1 切片推进。
+
+## 本轮代表性 producer / write-boundary PRD 收口状态（2026-06-06）
+
+- [x] 代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` 计划事件链已改经 `ScheduleDispatchPort`，阶段 1 不再把这条样本链列为主缺口。
+- [x] `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 已落地，`SkillEventHandler` 的 `update_anomaly()` 与 `ScheduleBuffSettle()` 同 tick 写边界已改经显式命令边界。
+- [x] `implicit-events` 共享验证入口已覆盖代表性 producer、`SkillEventHandler` 与 `RuntimeCommandPort`，handoff 文档已同步记录验证命令与当前基线。
+- [ ] 阶段 1 剩余缺口仍是其他 `BuffXLogic`、`BattleEventListener`、`Character` 旁路 producer 的 raw `event_list` 写入口，以及尚未收口到显式命令边界的相邻高风险写路径。
 
 ## 当前默认下一步
 
-- [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的实现型 PRD，优先收口代表性 `BuffXLogic` / `PolarizedAssaultEvent` 等剩余计划事件生产者的旧直写入口，并保持 `event_list`、`listener_manager.broadcast_event()` 与 runtime command 三层语义分离。
-- [ ] 在 `SkillEventHandler` 已迁到 runtime view 主读口的基础上，继续把 `ScheduleBuffSettle()`、`update_anomaly()` 等同 tick 写边界收口到最小 write facade / command port，不扩到 `Calculator` 全量迁移或旧容器删除。
+- [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的实现型 PRD，优先收口其他 `BuffXLogic`、`BattleEventListener`、`Character` 旁路 producer 的旧直写入口，并保持 `event_list`、`listener_manager.broadcast_event()` 与 runtime command 三层语义分离。
+- [ ] 仅在发现其他具体 same-tick 写路径仍依赖 legacy getter 时，继续把对应 handler / helper 收口到最小 `RuntimeCommandPort` / write facade，不扩到 `Calculator` 全量迁移或旧容器删除。
 - [ ] 仅在 live simulator 真正消费 `config.buff_runtime.mode` 后，再把一致性 / benchmark 命令升级为真实 runtime switch 证据。
