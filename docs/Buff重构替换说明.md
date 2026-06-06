@@ -521,3 +521,15 @@
 - Next step:
   - Add focused static guardrails for new production uses of `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list`, then keep migrations limited to concrete producer-level planned-event writers if a future scan finds one.
 ---
+
+## 2026-06-07 02:21:16 - US-002
+- Files changed: `tests/simulator/test_legacy_event_list_discovery_guardrail.py`, `scripts/run_buff_refactor_validation.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_legacy_event_list_discovery_guardrail.py` prepares to replace manual grep-only checks for `JudgeTools.find_event_list()` and `BuffRecordBaseClass.event_list` with an AST-based guardrail in the shared `implicit-events` gate.
+  - No live path was replaced in this story; it only guards the remaining legacy discovery compatibility surface.
+- Compatibility retained:
+  - `Buff/JudgeTools/__init__.py` may still import/call `find_event_list(...)` to lazily cache `record.event_list`, and `_buff_record_base_class.py` still defines the compatibility field.
+  - `FindMain.find_event_list(...)`, `LegacyEventListScheduleDispatchAdapter`, core Load/Schedule queue semantics, handler requeue, and existing dispatch/runtime boundaries remain unchanged.
+- Next step:
+  - Audit `check_preparation(..., event_list=True)` compatibility evidence in US-003, and only migrate code if a concrete producer-level planned-event writer is found.
+---
