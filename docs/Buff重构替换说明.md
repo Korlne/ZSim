@@ -451,3 +451,15 @@
 - 下一步：
   - 继续把 `BreakingLegManager` 的 part-break `ScheduleRefreshData` 发布路径改经 `ScheduleDispatchPort`，不要重开 Yixuan adrenaline 本地事件组。
 ---
+
+## 2026-06-07 01:01:25 - US-003
+- 本轮文件：`zsim/sim_progress/Enemy/EnemyUniqueMechanic/BreakingLegManager.py`, `tests/simulator/test_breaking_leg_manager_dispatch.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- 替换说明：
+  - `BreakingEvent.update_decibel(...)` 现在用 `create_schedule_dispatch_port(sim_instance=self.enemy.sim_instance).publish_scheduled(refresh_data)` 替换旧的 `self.game_state["schedule_data"].event_list.append(refresh_data)` 隐藏 helper raw queue 写入。
+  - `test_breaking_leg_manager_dispatch.py` 用 fail-fast `schedule_data.event_list` 锁定 part-break 奖励只经 dispatch gateway 发布一次，并验证 `sp_target=(char_name,)`、`decibel_target=(char_name,)`、`decibel_value=1000` 与 `find_char_from_CID(...)` 缓存语义。
+- 兼容保留：
+  - 底层 `LegacyEventListScheduleDispatchAdapter` 仍保留旧队列 append 语义；本轮只替换 producer 入口，不改 Schedule 阶段消费、排序或 requeue 逻辑。
+  - `BreakingEvent.active(...)` 仍保持 planned-event 喧响刷新先于 same-tick `enemy.update_stun(...)`、`enemy.stun_judge(...)`、`enemy._Enemy__HP_update(...)` 与 `report_dmg_result(...)`。
+- 下一步：
+  - 在 US-006 中把 `test_breaking_leg_manager_dispatch.py` 加入 shared `implicit-events` pytest 与 scoped mypy gate；后续 handoff 再同步旧审查表和下阶段计划。
+---
