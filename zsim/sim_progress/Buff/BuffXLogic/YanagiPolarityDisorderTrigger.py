@@ -1,5 +1,7 @@
 from copy import deepcopy
 
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+
 from .. import Buff, JudgeTools, check_preparation, find_tick
 
 
@@ -36,6 +38,9 @@ class YanagiPolarityDisorderTrigger(Buff.BuffLogic):
 
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+
+    def _create_dispatch_port(self):
+        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
 
     def check_record_module(self):
         if self.buff_0 is None:
@@ -135,8 +140,7 @@ class YanagiPolarityDisorderTrigger(Buff.BuffLogic):
         )
         # polarity_disorder_output = spawn_output(active_anomaly_bar, mode_number=1)
         # 置入event_list
-        event_list = JudgeTools.find_event_list(sim_instance=self.buff_instance.sim_instance)
-        event_list.append(polarity_disorder_output)
+        self._create_dispatch_port().publish_scheduled(polarity_disorder_output)
 
         # 清空记录，回收更新信号
         self.record.e_counter = {"update_from": "", "count": 0}
