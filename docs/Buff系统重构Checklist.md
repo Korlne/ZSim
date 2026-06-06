@@ -108,10 +108,18 @@
 - [x] `MiyabiCoreSkill_IceFire`、`YixuanCinema1Trigger`、`VivianDotTrigger`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger` 与 `Character/Yuzuha` cinema-6 energy 分支的 planned-event 直写入口已全部改经 `ScheduleDispatchPort`。
 - [x] `implicit-events` 共享 gate 已覆盖这组 producer 的 focused no-raw-queue 回归、生产文件 mypy target 与测试文件 scoped mypy target；本轮验证命令为 `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`。
 - [x] 当前源码扫描未在 `BattleEventListener` 目录发现直接 `JudgeTools.find_event_list()` / `schedule_data.event_list.append(...)` planned-event 写入；`AliceDotTriggerListener` 保留的是 dot runtime registration，不再把整个 listener 目录作为已知 raw queue backlog。
-- [ ] 当前已知的后续审计入口包括 `Character/Yixuan/AdrenalineManagerClass.py` 这类本地事件组 helper；它不是 `schedule_data.event_list` 直写，但仍需判断是否属于计划事件边界或纯 runtime manager。后续仍需审计其他 `BuffXLogic` / `Character` helper、可能隐藏的 listener helper，以及故事驱动暴露出来的 same-tick runtime 写边界。
+- [x] `Character/Yixuan/AdrenalineManagerClass.py` 已在 2026-06-07 审计为本地事件组 helper，`BreakingLegManager` hidden helper 已闭合到 `ScheduleDispatchPort`；后续不再把这两个入口列为未判断的 planned-event backlog。
+
+## 本轮 Character helper hidden-listener audit PRD 收口状态（2026-06-07）
+
+- [x] `Character/Yixuan/AdrenalineManagerClass.py` 已锁定为本地 `BaseAdrenalineEvent` 事件组 helper，不是 `schedule_data.event_list` scheduler queue writer。
+- [x] `EnemyUniqueMechanic/BreakingLegManager` part-break `ScheduleRefreshData` 已改经 `ScheduleDispatchPort` 发布，并由 shared `implicit-events` 覆盖 focused regression 与 scoped mypy。
+- [x] `LoadDamageEvent` 的 Load-stage event spawn / damage-effect continuation 与 `ScheduledEvent` handler not-yet-executable requeue 已保留为 core dispatcher / requeue 边界，没有改写队列语义。
+- [x] 复扫后没有在 `BuffXLogic` / `Character` / `BattleEventListener` / `EnemyUniqueMechanic` / `DecibelManager` 发现新的具体 producer-level raw scheduler writer；`AliceDotTriggerListener` dot runtime registration 不列入 planned-event backlog。
+- [x] `--legacy-runtime` / `--candidate-runtime` 继续只是报告标签，不是 live runtime switch；下一轮仍沿 [Buff重构方案.md](./Buff重构方案.md) 的阶段 1 路线推进。
 
 ## 当前默认下一步
 
-- [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的实现型 PRD，优先审计 `Character/Yixuan/AdrenalineManagerClass.py` 与其他 one-off `BuffXLogic` / `Character` helper、可能隐藏的 listener helper，先区分本地事件组、计划队列发布与 runtime manager 职责，不再重开本轮已闭合的 producer batch，并继续保持 `event_list`、`listener_manager.broadcast_event()` 与 runtime command 三层语义分离。
+- [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的实现型 PRD，优先补 `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 旧兼容发现口的清理证据，或只在扫描发现新的具体 producer-level planned-event writer 时新增迁移故事；不再重开 `Yixuan` 本地事件组、`BreakingLegManager` hidden helper、`LoadDamageEvent` core spawn 或 `ScheduledEvent` handler requeue。
 - [ ] 仅在发现新的具体 same-tick 写路径仍依赖 legacy getter 时，继续把对应 handler / helper 收口到最小 `RuntimeCommandPort` / write facade，并把新增 focused 回归同步并入 `implicit-events` 共享 gate，不扩到 `Calculator` 全量迁移或旧容器删除。
 - [ ] 仅在 live simulator 真正消费 `config.buff_runtime.mode` 后，再把一致性 / benchmark 命令升级为真实 runtime switch 证据。

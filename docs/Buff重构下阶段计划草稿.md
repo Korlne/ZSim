@@ -12,8 +12,8 @@
   - `implicit-events` 共享验证入口现已同时覆盖 `test_schedule_dispatch.py`、上述 focused dispatch/runtime-boundary pytest，以及这些回归文件本身的 scoped mypy，不再只类型检查它们所命中的生产代码。
   - `scripts/run_buff_main_loop_consistency.py` 与 `scripts/run_buff_runtime_benchmark.py` 已是仓库内真实命令入口，不再是占位脚本。
   - `--legacy-runtime` / `--candidate-runtime` 仍只是报告标签；live simulator 还未消费 `config.buff_runtime.mode`。
-  - 2026-06-07 `US-005` 复扫 `BuffXLogic`、`Character`、`BattleEventListener`、`EnemyUniqueMechanic` 与 `DecibelManager` 后，未发现新的 producer-level `schedule_data.event_list.append(...)` / `JudgeTools.find_event_list()` planned-event writer；`BattleEventListener` 目录明确没有新的 raw queue backlog，`AliceDotTriggerListener` 的 `dynamic_dot_list.append(dot)` 仍是 dot runtime registration。
-- 下一轮 Ralph PRD 仍应留在阶段 1，继续围绕真实剩余边界推进：先补 shared validation / handoff 与旧兼容发现口清理证据，再在发现具体 producer-level planned-event writer 时收口；不要从注释、本地 list 或 `change_process_state()` 推断新迁移目标。
+  - 2026-06-07 `US-005` / `US-007` 复扫并完成 handoff 后，未在 `BuffXLogic`、`Character`、`BattleEventListener`、`EnemyUniqueMechanic` 或 `DecibelManager` 发现新的 producer-level `schedule_data.event_list.append(...)` / `JudgeTools.find_event_list()` planned-event writer；`BattleEventListener` 目录明确没有新的 raw queue backlog，`AliceDotTriggerListener` 的 `dynamic_dot_list.append(dot)` 仍是 dot runtime registration。
+- 下一轮 Ralph PRD 仍应留在阶段 1，继续围绕真实剩余边界推进：优先补 `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 旧兼容发现口清理证据，或只在发现具体 producer-level planned-event writer 时收口；不要从注释、本地 list、core dispatcher append、handler requeue 或 `change_process_state()` 推断新迁移目标。
 - 下一轮路线仍然严格遵循 [Buff重构方案.md](./Buff重构方案.md) 中的阶段顺序，不回退到角色驱动式切片。
 
 ## 本文档的用途
@@ -26,13 +26,13 @@
 
 ### 下一轮 PRD 名称建议
 
-`Buff 重构 PRD-7：剩余 Character helper 与 hidden listener 发布入口审计`
+`Buff 重构 PRD-8：旧兼容发现口清理证据与剩余 producer 守门`
 
 ### 下一轮 PRD 的建议范围
 
-- `Character/Yixuan/AdrenalineManagerClass.py` 已确认是本地 `BaseAdrenalineEvent` 事件组，`EnemyUniqueMechanic/BreakingLegManager.py` part-break `ScheduleRefreshData` 已改经 `ScheduleDispatchPort`；复扫未在 `BuffXLogic`、`Character`、`BattleEventListener`、`EnemyUniqueMechanic` 或 `DecibelManager` 发现新的具体 one-off raw scheduler writer。不再重开已闭合的 `MiyabiCoreSkill_IceFire`、`YixuanCinema1Trigger`、`VivianDotTrigger`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger`、`Character/Yuzuha` cinema-6 energy 分支及前序 xstart/xhit refresh、`CannonRotor`、`Yanagi`、`Hugo`、`DecibelManager`、`BreakingLegManager` 批次。
+- `Character/Yixuan/AdrenalineManagerClass.py` 已确认是本地 `BaseAdrenalineEvent` 事件组，`EnemyUniqueMechanic/BreakingLegManager.py` part-break `ScheduleRefreshData` 已改经 `ScheduleDispatchPort`；`LoadDamageEvent` 的 Load-stage event spawn / damage-effect continuation 与 `ScheduledEvent` handler not-yet-executable append 均保留为 core dispatcher / requeue 语义。复扫未在 `BuffXLogic`、`Character`、`BattleEventListener`、`EnemyUniqueMechanic` 或 `DecibelManager` 发现新的具体 one-off raw scheduler writer。不再重开已闭合的 `MiyabiCoreSkill_IceFire`、`YixuanCinema1Trigger`、`VivianDotTrigger`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger`、`Character/Yuzuha` cinema-6 energy 分支及前序 xstart/xhit refresh、`CannonRotor`、`Yanagi`、`Hugo`、`DecibelManager`、`BreakingLegManager` 批次。
 - 当前源码扫描未在 `BattleEventListener` 目录发现直接 `JudgeTools.find_event_list()` / `schedule_data.event_list.append(...)` planned-event 写入；`AliceDotTriggerListener` 的 dot runtime registration 不应继续被写成 listener raw queue backlog。
-- 真实剩余 backlog 是 `US-006` 把 `Yixuan` / `BreakingLegManager` focused regressions 纳入 shared `implicit-events` gate、`US-007` 同步 handoff，以及后续在所有 producer 迁移稳定后收口 `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 旧兼容发现口；当前没有可立即迁移的新 producer payload。
+- 真实剩余 backlog 是后续在所有 producer 迁移稳定后收口 `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 旧兼容发现口，并继续守门新扫描中真正出现的 producer-level planned-event writer；当前没有可立即迁移的新 producer payload。
 - 仅在发现其他具体 handler / helper 仍通过 legacy getter 承担 same-tick 写协作时，继续扩展 `RuntimeCommandPort` / write facade，减少读口与写边界双重职责继续泄露。
 - 如果本轮触达同 tick 写边界，沿用现有 `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 模式，而不是继续把 raw `dynamic_buff` / `exist_buff_dict` 深透传给新代码。
 - 除非 focused validation 暴露回归，否则不要重新打开已经闭合的 `SkillEventHandler` 代表性读写分层样本，也不要把已经收口的 xstart/xhit refresh、`CannonRotor`、`Yanagi`、`Hugo` 或 `DecibelManager` 批次重新当成主故事。

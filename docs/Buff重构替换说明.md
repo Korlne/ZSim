@@ -498,3 +498,15 @@
 - Next step:
   - Continue with `US-007` handoff synchronization, recording the closed hidden-helper path and retained core dispatcher/requeue boundaries without inventing a new migration target.
 ---
+
+## 2026-06-07 01:33:42 - US-007
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-007` handoff docs and Ralph artifacts replace stale wording that still treated `Yixuan` local event groups, `BreakingLegManager`, `LoadDamageEvent`, or `ScheduledEvent` handler requeue branches as unresolved raw scheduler backlog.
+  - No live path was replaced in this story; it only synchronizes the phase-1 audit baseline after `BreakingLegManager` was closed to `ScheduleDispatchPort` and shared validation was expanded.
+- Compatibility retained:
+  - `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` compatibility discovery, `LegacyEventListScheduleDispatchAdapter`, local Yixuan event groups, dot runtime registration, core Load/Schedule appends, handler requeue semantics, and report-label runtime comparison flags remain in place.
+  - `--legacy-runtime` / `--candidate-runtime` remain report labels until live simulator code consumes `config.buff_runtime.mode`.
+- Next step:
+  - Continue closing the old compatibility discovery path with evidence, and only migrate a new producer when a concrete producer-level planned-event writer is found.
+---
