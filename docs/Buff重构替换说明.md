@@ -1,206 +1,266 @@
 # Buff重构替换说明
 
-## 用�?
+## 用途
 
-- 记录每一�?Ralph �?Buff 重构里实际新增的边界、适配层或运行路径替换�?
-- 只做增量追加，不重写历史结论�?
-- 每轮都要更新；如果本轮还没有直接替换旧运行路径，也要明确写出“本轮仅铺边界，尚未正式替换”�?
+- 记录每一轮 Ralph 在 Buff 重构里实际新增的边界、适配层或运行路径替换。
+- 只做增量追加，不重写历史结论。
+- 每轮都要更新；如果本轮还没有直接替换旧运行路径，也要明确写出“本轮仅铺边界，尚未正式替换”。
 
 ## 追加格式
 
 ```text
 ## [日期时间] - [Story ID / PRD 切片]
 - 本轮文件：`file_a`, `file_b`
-- 替换说明�?
-  - `新文�?/ 新入�?/ 新边界` 替换或准备替�?`旧文�?/ 旧入�?/ 旧字�?/ 旧职责`
-- 兼容保留�?
-  - 本轮仍保留的旧路径、旧容器或旧副作�?
+- 替换说明：
+  - `新文件 / 新入口 / 新边界` 替换或准备替换 `旧文件 / 旧入口 / 旧字段 / 旧职责`
+- 兼容保留：
+  - 本轮仍保留的旧路径、旧容器或旧副作用
 - 下一步：
   - 下一轮应继续收口的旧路径
 ---
 ```
 
-## 2026-06-05 - 调查�?PRD 收口基线
+## 2026-06-05 - 调查型 PRD 收口基线
 
-- 本轮文件：`docs/旧Buff系统耦合审查结果.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草�?md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
-- 替换说明�?
-  - 本轮未直接替换旧 Buff 运行路径；当前交付的是生命周期、事件模型、runtime seam、Calculator seam 与验证入口的调查结论，用来约束下一轮实现型 PRD 的真实替换动作�?
-- 兼容保留�?
-  - `JudgeTools.find_event_list()` / `schedule_data.event_list.append(...)` 仍是计划事件的旧发布入口�?
-  - `exist_buff_dict` / `DYNAMIC_BUFF_DICT` / `LOADING_BUFF_DICT` 仍是�?runtime 容器主事实源�?
-  - `Calculator` �?`MultiplierData` 的直接依赖仍保留，尚未切到独立属性读取接口�?
+- 本轮文件：`docs/旧Buff系统耦合审查结果.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- 替换说明：
+  - 本轮未直接替换旧 Buff 运行路径；当前交付的是生命周期、事件模型、runtime seam、Calculator seam 与验证入口的调查结论，用来约束下一轮实现型 PRD 的真实替换动作。
+- 兼容保留：
+  - `JudgeTools.find_event_list()` / `schedule_data.event_list.append(...)` 仍是计划事件的旧发布入口。
+  - `exist_buff_dict` / `DYNAMIC_BUFF_DICT` / `LOADING_BUFF_DICT` 仍是旧 runtime 容器主事实源。
+  - `Calculator` 对 `MultiplierData` 的直接依赖仍保留，尚未切到独立属性读取接口。
 - 下一步：
-  - 下一轮优先落地事件发布入口、`EventContext` runtime view 与最小适配层，并从该轮开始在本文档记录真实的新旧路径替换关系�?
+  - 下一轮优先落地事件发布入口、`EventContext` runtime view 与最小适配层，并从该轮开始在本文档记录真实的新旧路径替换关系。
 ---
 ## 2026-06-05 13:28:48 - US-001
 - 本轮文件：`zsim/sim_progress/data_struct/schedule_dispatch.py`, `tests/simulator/test_schedule_dispatch.py`, `scripts/run_buff_refactor_validation.py`
-- 替换说明�?
-  - `ScheduleDispatchPort / LegacyEventListScheduleDispatchAdapter / create_schedule_dispatch_port()` �?`JudgeTools.find_event_list()` �?`schedule_data.event_list.append(...)` 之间先铺一层计划事件发布边界，但本轮尚未改写具体生产者�?
-- 兼容保留�?
-  - `schedule_data.event_list` 仍是底层计划队列，适配器继续沿用原�?`append` 顺序语义�?
-  - `JudgeTools.find_event_list()`、`SchedulePreload`、`QuickAssistSystem` 等旧发布路径仍保留，等待后续逐个迁移�?
+- 替换说明：
+  - `ScheduleDispatchPort / LegacyEventListScheduleDispatchAdapter / create_schedule_dispatch_port()` 为 `JudgeTools.find_event_list()` 与 `schedule_data.event_list.append(...)` 之间先铺一层计划事件发布边界，但本轮尚未改写具体生产者。
+- 兼容保留：
+  - `schedule_data.event_list` 仍是底层计划队列，适配器继续沿用原有 `append` 顺序语义。
+  - `JudgeTools.find_event_list()`、`SchedulePreload`、`QuickAssistSystem` 等旧发布路径仍保留，等待后续逐个迁移。
 - 下一步：
-  - 优先�?`SchedulePreload` 改为通过 dispatch gateway 发布，再继续收拢 `QuickAssistSystem` 等低风险生产者�?
+  - 优先把 `SchedulePreload` 改为通过 dispatch gateway 发布，再继续收拢 `QuickAssistSystem` 等低风险生产者。
 ---
 ## 2026-06-05 13:45:10 - US-002
 - 本轮文件：`zsim/sim_progress/data_struct/SchedulePreload.py`, `tests/simulator/test_schedule_preload_dispatch.py`, `scripts/run_buff_refactor_validation.py`
-- 替换说明�?
-  - `schedule_preload_event_factory()` 现通过 `create_schedule_dispatch_port()` 发布 `SchedulePreload`，替�?`JudgeTools.find_event_list()` + `event_list.append(...)` 的计划事件直写入口�?
-- 兼容保留�?
-  - `schedule_data.event_list` 仍是底层计划队列，`LegacyEventListScheduleDispatchAdapter` 继续保持原有 `append` 顺序语义�?
-  - `QuickAssistSystem` 等其他计划事件生产者仍保留旧直写路径，本轮只迁�?`SchedulePreload`�?
+- 替换说明：
+  - `schedule_preload_event_factory()` 现通过 `create_schedule_dispatch_port()` 发布 `SchedulePreload`，替换 `JudgeTools.find_event_list()` + `event_list.append(...)` 的计划事件直写入口。
+- 兼容保留：
+  - `schedule_data.event_list` 仍是底层计划队列，`LegacyEventListScheduleDispatchAdapter` 继续保持原有 `append` 顺序语义。
+  - `QuickAssistSystem` 等其他计划事件生产者仍保留旧直写路径，本轮只迁移 `SchedulePreload`。
 - 下一步：
-  - 继续�?`QuickAssistSystem` 等低风险计划事件生产者迁�?dispatch gateway�?
+  - 继续把 `QuickAssistSystem` 等低风险计划事件生产者迁到 dispatch gateway。
 ---
 ## 2026-06-05 13:55:24 - US-003
 - 本轮文件：`zsim/sim_progress/data_struct/QuickAssistSystem/__init__.py`, `tests/simulator/test_quick_assist_dispatch.py`, `scripts/run_buff_refactor_validation.py`
-- 替换说明�?
-  - `QuickAssistSystem.answer_assist()` / `spawn_event_group()` 现通过 `create_schedule_dispatch_port()` 发布 `QuickAssistEvent`，替�?QuickAssistSystem 内部直写 `JudgeTools.find_event_list()` + `event_list.append(...)` 的计划事件入口�?
-- 兼容保留�?
-  - `schedule_data.event_list` 仍是底层计划队列，`QuickAssistEventHandler` 与既有调度排序逻辑保持不变�?
-  - `UpdateAnomaly`、`PolarizedAssaultEvent` 等其他计划事件生产者仍保留旧直写路径，本轮只迁�?`QuickAssistSystem`�?
+- 替换说明：
+  - `QuickAssistSystem.answer_assist()` / `spawn_event_group()` 现通过 `create_schedule_dispatch_port()` 发布 `QuickAssistEvent`，替换 QuickAssistSystem 内部直写 `JudgeTools.find_event_list()` + `event_list.append(...)` 的计划事件入口。
+- 兼容保留：
+  - `schedule_data.event_list` 仍是底层计划队列，`QuickAssistEventHandler` 与既有调度排序逻辑保持不变。
+  - `UpdateAnomaly`、`PolarizedAssaultEvent` 等其他计划事件生产者仍保留旧直写路径，本轮只迁移 `QuickAssistSystem`。
 - 下一步：
-  - �?`ScheduledEvent` / `EventContext` 上接�?`buff_runtime_view`，开始替�?raw `dynamic_buff` / `exist_buff_dict` 读口�?
+  - 在 `ScheduledEvent` / `EventContext` 上接入 `buff_runtime_view`，开始替换 raw `dynamic_buff` / `exist_buff_dict` 读口。
 ---
 ## 2026-06-05 14:08:10 - US-004
 - 本轮文件：`zsim/sim_progress/ScheduledEvent/buff_runtime.py`, `zsim/sim_progress/ScheduledEvent/__init__.py`, `zsim/sim_progress/ScheduledEvent/event_handlers/context.py`, `zsim/sim_progress/ScheduledEvent/event_handlers/base.py`, `tests/simulator/test_buff_runtime_view.py`, `scripts/run_buff_refactor_validation.py`
-- 替换说明�?
-  - `BuffRuntimeReadPort / LegacyBuffRuntimeReadAdapter / create_buff_runtime_read_port()` �?`EventContext.buff_runtime_view` 开始替�?`EventContext.dynamic_buff` / `exist_buff_dict` 作为 handler 主读口；兼容 getter 现改为经�?runtime view 委托�?
-- 兼容保留�?
-  - `ScheduleData.dynamic_buff`、`exist_buff_dict` �?`sim_instance` 仍保留在调度链路中，`SkillEventHandler`、`ScheduleBuffSettle()`、`update_anomaly()` 仍通过兼容 getter 读取旧容器�?
-  - 本轮尚未迁移具体 anomaly-family handler �?runtime view 的细粒度读方法，只先完成上下文接线与兼容适配�?
+- 替换说明：
+  - `BuffRuntimeReadPort / LegacyBuffRuntimeReadAdapter / create_buff_runtime_read_port()` 与 `EventContext.buff_runtime_view` 开始替换 `EventContext.dynamic_buff` / `exist_buff_dict` 作为 handler 主读口；兼容 getter 现改为经由 runtime view 委托。
+- 兼容保留：
+  - `ScheduleData.dynamic_buff`、`exist_buff_dict` 与 `sim_instance` 仍保留在调度链路中，`SkillEventHandler`、`ScheduleBuffSettle()`、`update_anomaly()` 仍通过兼容 getter 读取旧容器。
+  - 本轮尚未迁移具体 anomaly-family handler 到 runtime view 的细粒度读方法，只先完成上下文接线与兼容适配。
 - 下一步：
-  - �?`anomaly`、`abloom`、`disorder`、`polarity_disorder` 这组低风�?handler 直接通过 `buff_runtime_view` 读取所需 Buff 数据，减少对 raw dict 兼容 getter 的依赖�?
+  - 让 `anomaly`、`abloom`、`disorder`、`polarity_disorder` 这组低风险 handler 直接通过 `buff_runtime_view` 读取所需 Buff 数据，减少对 raw dict 兼容 getter 的依赖。
 ---
 ## 2026-06-05 14:31:15 - US-005
 - 本轮文件：`zsim/sim_progress/ScheduledEvent/event_handlers/base.py`, `zsim/sim_progress/ScheduledEvent/event_handlers/context.py`, `zsim/sim_progress/ScheduledEvent/event_handlers/handlers/anomaly.py`, `zsim/sim_progress/ScheduledEvent/event_handlers/handlers/abloom.py`, `zsim/sim_progress/ScheduledEvent/event_handlers/handlers/disorder.py`, `zsim/sim_progress/ScheduledEvent/event_handlers/handlers/polarity_disorder.py`, `zsim/sim_progress/ScheduledEvent/CalAnomaly.py`, `zsim/sim_progress/ScheduledEvent/Calculator.py`, `tests/simulator/test_anomaly_handler_runtime_view.py`, `scripts/run_buff_refactor_validation.py`
-- 替换说明�?
-  - `BaseEventHandler / EventContext` 新增 active-buff read view accessor，开始替�?anomaly-family handler �?raw `dynamic_buff` / `exist_buff_dict` 的主读口�?
-  - `AnomalyEventHandler / AbloomEventHandler / DisorderEventHandler / PolarityDisorderEventHandler` 现通过 `buff_runtime_view` 读取 active Buff；仅 `AnomalyEventHandler -> ScheduleBuffSettle()` 保留 legacy 容器作为�?tick 写边界�?
-- 兼容保留�?
-  - `ScheduleBuffSettle()`、`update_anomaly()` 与其他会原地修改容器的旧路径仍通过 legacy getter 读取原始容器，本轮未替换 live write path�?
+- 替换说明：
+  - `BaseEventHandler / EventContext` 新增 active-buff read view accessor，开始替换 anomaly-family handler 对 raw `dynamic_buff` / `exist_buff_dict` 的主读口。
+  - `AnomalyEventHandler / AbloomEventHandler / DisorderEventHandler / PolarityDisorderEventHandler` 现通过 `buff_runtime_view` 读取 active Buff；仅 `AnomalyEventHandler -> ScheduleBuffSettle()` 保留 legacy 容器作为同 tick 写边界。
+- 兼容保留：
+  - `ScheduleBuffSettle()`、`update_anomaly()` 与其他会原地修改容器的旧路径仍通过 legacy getter 读取原始容器，本轮未替换 live write path。
 - 下一步：
-  - 继续把更高风险的 `skill` handler �?read path �?legacy getter 收口�?runtime view，并评估是否需要后�?write facade�?
+  - 继续把更高风险的 `skill` handler 等 read path 从 legacy getter 收口到 runtime view，并评估是否需要后续 write facade。
 ---
 ## 2026-06-05 18:09:00 - US-006
 - 本轮文件：`zsim/utils/main_loop_consistency.py`, `scripts/run_buff_main_loop_consistency.py`, `tests/simulator/test_main_loop_consistency.py`, `scripts/run_buff_refactor_validation.py`, `zsim/define.py`
-- 替换说明�?  - `scripts/run_buff_main_loop_consistency.py` / `zsim.utils.main_loop_consistency` 把文档中的主循环一致性占位命令替换成真实可运行入口，并固�?`team / apl / total_damage / event_counts / buff_timeline / differences` 输出契约�?  - `implicit-events` typecheck profile 现纳入该入口与其 utility，开始把“主循环一致性验证命令”本身也收进当前 Buff 基础设施切片的验证边界�?
-- 兼容保留�?
-  - 当前 `--legacy-runtime` / `--candidate-runtime` 仅作为报告标签记录；live simulator 仍未消费 `config.buff_runtime.mode`，本轮尚未实现真正的新旧 runtime 切换�?
-  - 比对命令继续复用现有 `Simulator`、`prepare_dmg_data_and_cache()` �?`prepare_buff_data_and_cache()` 结果链路，因�?session/result id 仍需保持旧链路兼容的纯数字格式�?
+- 替换说明：
+  - `scripts/run_buff_main_loop_consistency.py` / `zsim.utils.main_loop_consistency` 把文档中的主循环一致性占位命令替换成真实可运行入口，并固化 `team / apl / total_damage / event_counts / buff_timeline / differences` 输出契约。
+  - `implicit-events` typecheck profile 现纳入该入口与其 utility，开始把“主循环一致性验证命令”本身也收进当前 Buff 基础设施切片的验证边界。
+- 兼容保留：
+  - 当前 `--legacy-runtime` / `--candidate-runtime` 仅作为报告标签记录；live simulator 仍未消费 `config.buff_runtime.mode`，本轮尚未实现真正的新旧 runtime 切换。
+  - 比对命令继续复用现有 `Simulator`、`prepare_dmg_data_and_cache()` 与 `prepare_buff_data_and_cache()` 结果链路，因此 session/result id 仍需保持旧链路兼容的纯数字格式。
 - 下一步：
-  - 为后�?runtime 切换落地真实�?`legacy/candidate` 执行开关，再让该入口输出真正的新旧 runtime 一致性证据，而不只是同一 runtime 的双跑比较骨架�?---
+  - 为后续 runtime 切换落地真实的 `legacy/candidate` 执行开关，再让该入口输出真正的新旧 runtime 一致性证据，而不只是同一 runtime 的双跑比较骨架。
+---
 
 ## 2026-06-05 20:33:37 - US-001
 - 本轮文件：`zsim/sim_progress/Update/UpdateAnomaly.py`, `tests/simulator/test_update_anomaly_dispatch.py`
-- 替换说明�?  - `UpdateAnomaly.update_anomaly()` / `remove_dots_cause_disorder()` 现通过 `create_schedule_dispatch_port()` 发布 `new_anomaly`、`disorder` �?freeze follow-up 计划事件，替换该路径里对 `event_list.append(...)` 的直接依赖�?- 兼容保留�?  - `spawn_output()` 仍只负责构造异常对象并触发同步 listener broadcast，本轮没有把广播、计划入队与 runtime 立即写混成单一入口�?  - `PolarizedAssaultEvent`、`YanagiPolarityDisorderTrigger`、`BattleEventListener` 等其�?producer 仍保�?raw 队列写法，等待后续故事继续迁移�?- 下一步：
-  - 继续收口 `BattleEventListener` 与其他剩�?producer �?raw 队列写入口，并评估是否需要让 `spawn_output()` 的其他调用方也统一�?dispatch gateway�?---
+- 替换说明：
+  - `UpdateAnomaly.update_anomaly()` / `remove_dots_cause_disorder()` 现通过 `create_schedule_dispatch_port()` 发布 `new_anomaly`、`disorder` 与 freeze follow-up 计划事件，替换该路径里对 `event_list.append(...)` 的直接依赖。
+- 兼容保留：
+  - `spawn_output()` 仍只负责构造异常对象并触发同步 listener broadcast，本轮没有把广播、计划入队与 runtime 立即写混成单一入口。
+  - `PolarizedAssaultEvent`、`YanagiPolarityDisorderTrigger`、`BattleEventListener` 等其他 producer 仍保留 raw 队列写法，等待后续故事继续迁移。
+- 下一步：
+  - 继续收口 `BattleEventListener` 与其他剩余 producer 的 raw 队列写入口，并评估是否需要让 `spawn_output()` 的其他调用方也统一走 dispatch gateway。
+---
 ## 2026-06-05 18:49:32 - US-007
 - 本轮文件：`zsim/utils/runtime_benchmark.py`, `scripts/run_buff_runtime_benchmark.py`, `tests/simulator/test_runtime_benchmark.py`, `scripts/run_buff_refactor_validation.py`
-- 替换说明�?  - `scripts/run_buff_runtime_benchmark.py` / `zsim.utils.runtime_benchmark` 把文档中�?Buff runtime 性能验证占位命令替换成真实可运行入口，并固化 `team / apl / stop_tick / total_runtime_ms / hotspots / comparisons` 输出契约�?  - `implicit-events` typecheck profile 现纳�?benchmark 入口与其 utility，开始把“性能验证命令”本身也收进当前 Buff 基础设施切片的验证边界�?- 兼容保留�?  - 当前 `--legacy-runtime` / `--candidate-runtime` 仍仅作为报告标签记录；live simulator 仍未消费 `config.buff_runtime.mode`，本轮尚未实现真正的新旧 runtime 切换�?  - 本轮 `hotspots` �?`simulator_run`、damage 报表后处理与 buff 报表后处理三段阶段级计时，不�?live runtime 内部细粒度探针�?- 下一步：
-  - 为后�?runtime 切换落地真实�?`legacy/candidate` 执行开关，并在需要时把阶段级 hotspot 继续下钻�?live simulator 内部的真实热点探针�?---
+- 替换说明：
+  - `scripts/run_buff_runtime_benchmark.py` / `zsim.utils.runtime_benchmark` 把文档中的 Buff runtime 性能验证占位命令替换成真实可运行入口，并固化 `team / apl / stop_tick / total_runtime_ms / hotspots / comparisons` 输出契约。
+  - `implicit-events` typecheck profile 现纳入 benchmark 入口与其 utility，开始把“性能验证命令”本身也收进当前 Buff 基础设施切片的验证边界。
+- 兼容保留：
+  - 当前 `--legacy-runtime` / `--candidate-runtime` 仍仅作为报告标签记录；live simulator 仍未消费 `config.buff_runtime.mode`，本轮尚未实现真正的新旧 runtime 切换。
+  - 本轮 `hotspots` 是 `simulator_run`、damage 报表后处理与 buff 报表后处理三段阶段级计时，不是 live runtime 内部细粒度探针。
+- 下一步：
+  - 为后续 runtime 切换落地真实的 `legacy/candidate` 执行开关，并在需要时把阶段级 hotspot 继续下钻到 live simulator 内部的真实热点探针。
+---
 ## 2026-06-05 18:57:20 - US-008
-- 本轮文件：`docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草�?md`, `docs/Buff重构替换说明.md`, `docs/旧Buff系统耦合审查结果.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
-- 替换说明�?  - 文档基线现明确记�?`SchedulePreload` / `QuickAssistSystem` 已改�?`ScheduleDispatchPort`，`anomaly` / `abloom` / `disorder` / `polarity_disorder` 已改�?`buff_runtime_view`，以�?`scripts/run_buff_main_loop_consistency.py` / `scripts/run_buff_runtime_benchmark.py` 已替换旧的占位验证入口�?- 兼容保留�?  - 本轮仅同步阶�?1 基线文档�?PRD 状态，未新�?live runtime 替换路径�?  - `UpdateAnomaly`、`BattleEventListener`、部�?`BuffXLogic` / `PolarizedAssaultEvent` 计划事件生产者仍保留旧直写路径；高风�?`skill` handler �?runtime write facade 仍未收口�?- 下一步：
-  - 下一轮继续留在阶�?1，收口剩余计划事件生产者与高风�?read/write 边界，不扩到 `Calculator` 全量迁移或旧容器删除�?---
+- 本轮文件：`docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `docs/旧Buff系统耦合审查结果.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- 替换说明：
+  - 文档基线现明确记录 `SchedulePreload` / `QuickAssistSystem` 已改经 `ScheduleDispatchPort`，`anomaly` / `abloom` / `disorder` / `polarity_disorder` 已改经 `buff_runtime_view`，以及 `scripts/run_buff_main_loop_consistency.py` / `scripts/run_buff_runtime_benchmark.py` 已替换旧的占位验证入口。
+- 兼容保留：
+  - 本轮仅同步阶段 1 基线文档与 PRD 状态，未新增 live runtime 替换路径。
+  - `UpdateAnomaly`、`BattleEventListener`、部分 `BuffXLogic` / `PolarizedAssaultEvent` 计划事件生产者仍保留旧直写路径；高风险 `skill` handler 与 runtime write facade 仍未收口。
+- 下一步：
+  - 下一轮继续留在阶段 1，收口剩余计划事件生产者与高风险 read/write 边界，不扩到 `Calculator` 全量迁移或旧容器删除。
+---
 ## 2026-06-05 20:50:55 - US-002
 - 本轮文件：`zsim/sim_progress/data_struct/BattleEventListener/AliceDotTriggerListener.py`, `tests/simulator/test_alice_dot_trigger_dispatch.py`, `scripts/run_buff_refactor_validation.py`
-- 替换说明�?  - `AliceDotTriggerListener._create_dispatch_port()` / `dispatch_port.publish_scheduled(dot.anomaly_data)` 开始替�?`BattleEventListener` 内部 Alice 强击 Dot �?`schedule_data.event_list.append(...)` 的直接计划事件发布入�?- 兼容保留�?  - �?tick �?Dot 替换、旧 Dot 移除以及 `listener_manager` 同步广播触发链保持不变；底层计划队列仍由 `LegacyEventListScheduleDispatchAdapter` 追加
+- 替换说明：
+  - `AliceDotTriggerListener._create_dispatch_port()` / `dispatch_port.publish_scheduled(dot.anomaly_data)` 开始替换 `BattleEventListener` 内部 Alice 强击 Dot 对 `schedule_data.event_list.append(...)` 的直接计划事件发布入口
+- 兼容保留：
+  - 同 tick 的 Dot 替换、旧 Dot 移除以及 `listener_manager` 同步广播触发链保持不变；底层计划队列仍由 `LegacyEventListScheduleDispatchAdapter` 追加
 - 下一步：
-  - 继续收口 `PolarizedAssaultEvent`、代表�?`BuffXLogic` 等剩�?raw 队列 producer；本轮尚未替�?live runtime 写边�?---
+  - 继续收口 `PolarizedAssaultEvent`、代表性 `BuffXLogic` 等剩余 raw 队列 producer；本轮尚未替换 live runtime 写边界
+---
 ## 2026-06-05 21:29:15 - US-003
 - 本轮文件：`zsim/sim_progress/ScheduledEvent/buff_runtime.py`, `zsim/sim_progress/ScheduledEvent/event_handlers/context.py`, `zsim/sim_progress/ScheduledEvent/event_handlers/base.py`, `tests/simulator/test_buff_runtime_view.py`
-- 替换说明�?  - `EventContext.get_runtime_*()` / `BaseEventHandler._get_context_runtime_*()` 开始把 `buff_runtime_view` �?active-buff �?snapshot 读口显式提升为高风险 handler 可直接依赖的主读契约，减少后续迁移继续默认使�?`dynamic_buff` / `exist_buff_dict` 兼容 getter�?- 兼容保留�?  - `get_dynamic_buff()`、`get_exist_buff_dict()` �?`get_legacy_*()` 仍保留旧容器身份，仅标记为同 tick 写边界兼容口；本轮没有引入新�?write facade，也没有替换 `ScheduleBuffSettle()`、`update_anomaly()` �?live write path�?- 下一步：
-  - 继续挑选一个高风险 `skill` handler 切到 `get_runtime_*()` 读口，并只在确实需要同 tick 原地写旧容器时保�?legacy getter�?---
+- 替换说明：
+  - `EventContext.get_runtime_*()` / `BaseEventHandler._get_context_runtime_*()` 开始把 `buff_runtime_view` 的 active-buff 与 snapshot 读口显式提升为高风险 handler 可直接依赖的主读契约，减少后续迁移继续默认使用 `dynamic_buff` / `exist_buff_dict` 兼容 getter。
+- 兼容保留：
+  - `get_dynamic_buff()`、`get_exist_buff_dict()` 与 `get_legacy_*()` 仍保留旧容器身份，仅标记为同 tick 写边界兼容口；本轮没有引入新的 write facade，也没有替换 `ScheduleBuffSettle()`、`update_anomaly()` 等 live write path。
+- 下一步：
+  - 继续挑选一个高风险 `skill` handler 切到 `get_runtime_*()` 读口，并只在确实需要同 tick 原地写旧容器时保留 legacy getter。
+---
 
 ## 2026-06-05 21:45:20 - US-004
 - 本轮文件：`zsim/sim_progress/ScheduledEvent/event_handlers/handlers/skill.py`, `tests/simulator/test_skill_handler_runtime_view.py`, `scripts/run_buff_refactor_validation.py`
-- 替换说明�?  - `SkillEventHandler` 现在�?`buff_runtime_view.get_active_buff_view()` 作为 `Calculator` �?`update_anomaly()` 的主 Buff 读口，准备替换技能事件处理路径对 raw `dynamic_buff` 的默认依赖�?- 兼容保留�?  - `ScheduleBuffSettle()` 仍通过 `get_legacy_dynamic_buff_dict()` / `get_legacy_exist_buff_dict()` 拿旧容器身份；本轮没有引入新�?write facade，也尚未替换�?tick 写边界�?- 下一步：
-  - 继续收口剩余高风�?skill-side read/write 边界，只在确实需要同 tick 写旧容器的地方再评估最�?write facade�?---
+- 替换说明：
+  - `SkillEventHandler` 现在把 `buff_runtime_view.get_active_buff_view()` 作为 `Calculator` 与 `update_anomaly()` 的主 Buff 读口，准备替换技能事件处理路径对 raw `dynamic_buff` 的默认依赖。
+- 兼容保留：
+  - `ScheduleBuffSettle()` 仍通过 `get_legacy_dynamic_buff_dict()` / `get_legacy_exist_buff_dict()` 拿旧容器身份；本轮没有引入新的 write facade，也尚未替换同 tick 写边界。
+- 下一步：
+  - 继续收口剩余高风险 skill-side read/write 边界，只在确实需要同 tick 写旧容器的地方再评估最小 write facade。
+---
 ## 2026-06-05 22:25:00 - US-005
-- 本轮文件：`docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草�?md`, `docs/Buff重构替换说明.md`, `docs/旧Buff系统耦合审查结果.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
-- 替换说明�?  - 本轮没有新增 live runtime 替换路径；只同步阶段 1 交接基线，明�?`UpdateAnomaly` �?`BattleEventListener` 中的 `AliceDotTriggerListener` 已改�?`ScheduleDispatchPort`，`SkillEventHandler` 已把 runtime view 作为�?Buff 读口�?- 兼容保留�?  - 代表�?`BuffXLogic` / `PolarizedAssaultEvent` 与其余未迁移监听器入口仍保留 raw 队列发布；`ScheduleBuffSettle()`、`update_anomaly()` 等同 tick 写边界仍依赖 legacy 容器身份，本轮没有引入新�?write facade�?  - `--legacy-runtime` / `--candidate-runtime` 仍只是报告标签，live simulator 尚未消费 `config.buff_runtime.mode`�?- 下一步：
-  - 继续�?[Buff重构方案.md](./Buff重构方案.md) 的阶�?1 路线，优先收口代表�?`BuffXLogic` / `PolarizedAssaultEvent` producer 与同 tick 写边界的最�?write facade / command port�?---
+- 本轮文件：`docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `docs/旧Buff系统耦合审查结果.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- 替换说明：
+  - 本轮没有新增 live runtime 替换路径；只同步阶段 1 交接基线，明确 `UpdateAnomaly` 与 `BattleEventListener` 中的 `AliceDotTriggerListener` 已改经 `ScheduleDispatchPort`，`SkillEventHandler` 已把 runtime view 作为主 Buff 读口。
+- 兼容保留：
+  - 代表性 `BuffXLogic` / `PolarizedAssaultEvent` 与其余未迁移监听器入口仍保留 raw 队列发布；`ScheduleBuffSettle()`、`update_anomaly()` 等同 tick 写边界仍依赖 legacy 容器身份，本轮没有引入新的 write facade。
+  - `--legacy-runtime` / `--candidate-runtime` 仍只是报告标签，live simulator 尚未消费 `config.buff_runtime.mode`。
+- 下一步：
+  - 继续沿 [Buff重构方案.md](./Buff重构方案.md) 的阶段 1 路线，优先收口代表性 `BuffXLogic` / `PolarizedAssaultEvent` producer 与同 tick 写边界的最小 write facade / command port。
+---
 ## 2026-06-05 23:39:09 - US-001
 - 本轮文件：`zsim/sim_progress/Buff/BuffXLogic/AlicePolarizedAssaultTrigger.py`、`tests/simulator/test_alice_polarized_assault_trigger_dispatch.py`、`scripts/run_buff_refactor_validation.py`
-- 替换说明�?  - `AlicePolarizedAssaultTrigger._create_dispatch_port()` / `dispatch_port.publish_scheduled(event)` 替换 `AlicePolarizedAssaultTrigger.special_effect_logic()` 内对 `schedule_data.event_list.append(...)` 的直�?planned-event 写入�?- 兼容保留�?  - `PolarizedAssaultEvent.execute()` 里的 anomaly / disorder follow-up planned events 仍直接写 `event_list.append(...)`�?  - `listener_manager.broadcast_event()` 的同步广播语义未改动，本轮只收口 planned-event 入队边界�?- 下一步：
-  - 继续�?`PolarizedAssaultEvent` �?follow-up producer 迁到 dispatch gateway，完成这条代表性事件链的收口�?---
+- 替换说明：
+  - `AlicePolarizedAssaultTrigger._create_dispatch_port()` / `dispatch_port.publish_scheduled(event)` 替换 `AlicePolarizedAssaultTrigger.special_effect_logic()` 内对 `schedule_data.event_list.append(...)` 的直接 planned-event 写入。
+- 兼容保留：
+  - `PolarizedAssaultEvent.execute()` 里的 anomaly / disorder follow-up planned events 仍直接写 `event_list.append(...)`。
+  - `listener_manager.broadcast_event()` 的同步广播语义未改动，本轮只收口 planned-event 入队边界。
+- 下一步：
+  - 继续把 `PolarizedAssaultEvent` 的 follow-up producer 迁到 dispatch gateway，完成这条代表性事件链的收口。
+---
 ## 2026-06-05 23:51:20 - US-002
 - 本轮文件：`zsim/sim_progress/data_struct/PolarizedAssaultEventClass.py`、`tests/simulator/test_polarized_assault_event_dispatch.py`、`scripts/run_buff_refactor_validation.py`
-- 替换说明�?  - `PolarizedAssaultEvent._create_dispatch_port()` / `dispatch_port.publish_scheduled(...)` 替换 `PolarizedAssaultEvent.execute()` �?anomaly �?disorder follow-up planned-event �?`schedule_data.event_list.append(...)` 的直写入�?- 兼容保留�?  - `listener_manager.broadcast_event()` 的同步广播语义与 `anomaly_effect_active()` 的同 tick 状态更新顺序保持不�?  - `schedule_data.event_list` 仍由 `LegacyEventListScheduleDispatchAdapter` 作为底层计划队列承接
+- 替换说明：
+  - `PolarizedAssaultEvent._create_dispatch_port()` / `dispatch_port.publish_scheduled(...)` 替换 `PolarizedAssaultEvent.execute()` 内 anomaly 与 disorder follow-up planned-event 对 `schedule_data.event_list.append(...)` 的直写入口
+- 兼容保留：
+  - `listener_manager.broadcast_event()` 的同步广播语义与 `anomaly_effect_active()` 的同 tick 状态更新顺序保持不变
+  - `schedule_data.event_list` 仍由 `LegacyEventListScheduleDispatchAdapter` 作为底层计划队列承接
 - 下一步：
-  - 继续�?`SkillEventHandler` 引入最�?write facade / command port，收�?`update_anomaly()` �?`ScheduleBuffSettle()` 的同 tick 写边�?---
+  - 继续为 `SkillEventHandler` 引入最小 write facade / command port，收口 `update_anomaly()` 与 `ScheduleBuffSettle()` 的同 tick 写边界
+---
 ## 2026-06-06 00:22:24 - US-003
 - 本轮文件：`zsim/sim_progress/ScheduledEvent/runtime_command.py`、`zsim/sim_progress/ScheduledEvent/__init__.py`、`zsim/sim_progress/ScheduledEvent/event_handlers/context.py`、`zsim/sim_progress/ScheduledEvent/event_handlers/base.py`、`tests/simulator/test_runtime_command_port.py`、`scripts/run_buff_refactor_validation.py`
-- 替换说明�?  - `RuntimeCommandPort / LegacyRuntimeCommandAdapter / create_runtime_command_port()` 先把 `update_anomaly()` �?`ScheduleBuffSettle()` 包进显式 same-tick 写边界，为后续替�?`SkillEventHandler` �?`get_legacy_*()` 的默认写协作做准�?- 兼容保留�?  - `SkillEventHandler`、`AnomalyEventHandler` 目前仍通过 legacy getter 间接走旧写路径，本轮只新增边界并把它接进 `ScheduledEvent` / `EventContext`
-  - `event_list`、`dynamic_buff`、`exist_buff_dict` 仍由旧容器承载；新端口只保持对象身份并避免缓存过期队列引�?- 下一步：
-  - �?`US-004` �?`SkillEventHandler` �?same-tick `update_anomaly()` / `ScheduleBuffSettle()` 调用改为显式�?`runtime_command_port`
+- 替换说明：
+  - `RuntimeCommandPort / LegacyRuntimeCommandAdapter / create_runtime_command_port()` 先把 `update_anomaly()` 与 `ScheduleBuffSettle()` 包进显式 same-tick 写边界，为后续替换 `SkillEventHandler` 对 `get_legacy_*()` 的默认写协作做准备
+- 兼容保留：
+  - `SkillEventHandler`、`AnomalyEventHandler` 目前仍通过 legacy getter 间接走旧写路径，本轮只新增边界并把它接进 `ScheduledEvent` / `EventContext`
+  - `event_list`、`dynamic_buff`、`exist_buff_dict` 仍由旧容器承载；新端口只保持对象身份并避免缓存过期队列引用
+- 下一步：
+  - 在 `US-004` 把 `SkillEventHandler` 的 same-tick `update_anomaly()` / `ScheduleBuffSettle()` 调用改为显式走 `runtime_command_port`
 ---
 ## 2026-06-06 00:42:45 - US-004
 - 本轮文件：`zsim/sim_progress/ScheduledEvent/event_handlers/handlers/skill.py`、`zsim/sim_progress/ScheduledEvent/runtime_command.py`、`tests/simulator/test_skill_handler_runtime_view.py`、`tests/simulator/test_runtime_command_port.py`
-- 替换说明�?  - `SkillEventHandler` 现通过 `RuntimeCommandPort.update_anomaly()` / `RuntimeCommandPort.settle_buffs()` 替换处理器内部默认依�?legacy getter 再直�?`update_anomaly()` / `ScheduleBuffSettle()` �?same-tick 写协作路�?- 兼容保留�?  - `RuntimeCommandPort` 仍由 `LegacyRuntimeCommandAdapter` 承接�?`event_list`、`dynamic_buff`、`exist_buff_dict` 身份，只在适配器内部保留旧写路径兼�?  - 本轮没有替换 live runtime 容器本身，只�?`SkillEventHandler` 的读写分层显式化
+- 替换说明：
+  - `SkillEventHandler` 现通过 `RuntimeCommandPort.update_anomaly()` / `RuntimeCommandPort.settle_buffs()` 替换处理器内部默认依赖 legacy getter 再直连 `update_anomaly()` / `ScheduleBuffSettle()` 的 same-tick 写协作路径
+- 兼容保留：
+  - `RuntimeCommandPort` 仍由 `LegacyRuntimeCommandAdapter` 承接旧 `event_list`、`dynamic_buff`、`exist_buff_dict` 身份，只在适配器内部保留旧写路径兼容
+  - 本轮没有替换 live runtime 容器本身，只把 `SkillEventHandler` 的读写分层显式化
 - 下一步：
-  - 继续补强代表�?producer �?write-boundary 组合�?focused validation，并保持后续 handler 迁移沿用 `runtime view` 读、`runtime command` 写的边界
+  - 继续补强代表性 producer 与 write-boundary 组合的 focused validation，并保持后续 handler 迁移沿用 `runtime view` 读、`runtime command` 写的边界
 ---
 ## 2026-06-06 00:59:56 - US-005
-- �����ļ���`scripts/run_buff_refactor_validation.py`, `tests/simulator/test_skill_handler_runtime_view.py`, `tests/simulator/test_basic_simulator.py`
-- �滻˵����
-  - `scripts/run_buff_refactor_validation.py` ��� `implicit-events` focused pytest ��Ƭ��ʼ�滻 `progress.txt` ����ɢ��һ���������Ϊ������ `BuffXLogic` producer / `PolarizedAssaultEvent` producer / same-tick write-boundary �Ĺ�����֤��ڡ�
-  - `test_skill_handler_runtime_view.py` ���� `SkillEventHandler -> RuntimeCommandPort -> legacy containers` ���ݶ��ԣ���ʼ�滻��ֻ֤�����÷���������֤�������������Ա����������������衣
-  - `test_basic_simulator.py` �ѵ���� `TestSimulator` helper �ĳɷ� `Test*` �������滻 pytest �� `tests/test_simulator.py` �����첽���� / �ڴ����������ռ�·����
-- ���ݱ�����
-  - ����û������ live runtime ·���滻��`ScheduleDispatchPort` �� `RuntimeCommandPort` ��ͨ�� legacy adapters �нӾɶ��к;��������ݡ�
-  - ��֤�ű�ֻ�������� `sessions` ���������ظ� `session_id` ������û�иĶ� simulator ��ʵ����ʱ�����ݽṹ��ҵ��˳��
-- ��һ����
-  - `US-006` Ӧ�ѡ������� producer ���ѱպϡ�same-tick write facade ����ء�focused validation �ѹ̻������� gate��ͬ�����׶� 1 handoff �ĵ���
+- 本轮文件：`scripts/run_buff_refactor_validation.py`, `tests/simulator/test_skill_handler_runtime_view.py`, `tests/simulator/test_basic_simulator.py`
+- 替换说明：
+  - `scripts/run_buff_refactor_validation.py` 里的 `implicit-events` focused pytest 切片开始替换 `progress.txt` 中零散的一次性命令，作为代表性 `BuffXLogic` producer / `PolarizedAssaultEvent` producer / same-tick write-boundary 的共享验证入口。
+  - `test_skill_handler_runtime_view.py` 新增 `SkillEventHandler -> RuntimeCommandPort -> legacy containers` 身份断言，开始替换“只证明调用发生、但不证明旧容器身份仍被保留”的隐含假设。
+  - `test_basic_simulator.py` 把导入的 `TestSimulator` helper 改成非 `Test*` 别名，替换 pytest 对 `tests/test_simulator.py` 整套异步队列 / 内存用例的误收集路径。
+- 兼容保留：
+  - 本轮没有新增 live runtime 路径替换；`ScheduleDispatchPort` 与 `RuntimeCommandPort` 仍通过 legacy adapters 承接旧队列和旧容器身份。
+  - 验证脚本只清理共享 `sessions` 表来消除重复 `session_id` 噪音，没有改动 simulator 真实运行时的数据结构或业务顺序。
+- 下一步：
+  - `US-006` 应把“代表性 producer 链已闭合、same-tick write facade 已落地、focused validation 已固化进共享 gate”同步进阶段 1 handoff 文档。
 ---
 ## 2026-06-06 01:17:59 - US-006
-- 本轮文件：docs/Buff系统重构Checklist.md, docs/Buff重构下阶段计划草�?md, docs/Buff重构替换说明.md, docs/旧Buff系统耦合审查结果.md, scripts/ralph/prd.json, scripts/ralph/progress.txt
-- 替换说明�?
-  - 阶段 1 handoff 文档现已明确把代表�?AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent planned-event 链标记为“已改经 ScheduleDispatchPort 的真实替换边界”，替换此前“代表�?producer 仍待后续收口”的旧基线表述�?
-  - 阶段 1 handoff 文档现已明确�?SkillEventHandler -> RuntimeCommandPort -> LegacyRuntimeCommandAdapter 标记为“已落地�?same-tick 显式写边界”，替换此前“ScheduleBuffSettle() / update_anomaly() 仍未引入�?write facade”的旧基线表述�?
-  - scripts/ralph/prd.json、docs/*handoff �?scripts/ralph/progress.txt 现已统一�?implicit-events 视为这组代表�?producer / write-boundary 样本的共享验证入口，而不是散落在进度记录里的临时命令集合�?
-- 兼容保留�?
-  - 本轮只同�?handoff 基线，没有新�?live runtime 路径替换；ScheduleDispatchPort �?RuntimeCommandPort 仍通过 legacy adapters 承接旧队列和旧容器身份�?
-  - --legacy-runtime / --candidate-runtime 仍只是报告标签；�?live simulator 真正消费 config.buff_runtime.mode 前，文档与后�?PRD 仍不得把它们写成真实 runtime 切换开关�?
-  - 其余未迁移的 BuffXLogic、BattleEventListener、Character 旁路 producer 与相�?same-tick 高风险写路径仍保留旧入口，本轮没有假装这些边界已经替换完成�?
+- 本轮文件：docs/Buff系统重构Checklist.md, docs/Buff重构下阶段计划草稿.md, docs/Buff重构替换说明.md, docs/旧Buff系统耦合审查结果.md, scripts/ralph/prd.json, scripts/ralph/progress.txt
+- 替换说明：
+  - 阶段 1 handoff 文档现已明确把代表性 AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent planned-event 链标记为“已改经 ScheduleDispatchPort 的真实替换边界”，替换此前“代表性 producer 仍待后续收口”的旧基线表述。
+  - 阶段 1 handoff 文档现已明确把 SkillEventHandler -> RuntimeCommandPort -> LegacyRuntimeCommandAdapter 标记为“已落地的 same-tick 显式写边界”，替换此前“ScheduleBuffSettle() / update_anomaly() 仍未引入新 write facade”的旧基线表述。
+  - scripts/ralph/prd.json、docs/*handoff 与 scripts/ralph/progress.txt 现已统一把 implicit-events 视为这组代表性 producer / write-boundary 样本的共享验证入口，而不是散落在进度记录里的临时命令集合。
+- 兼容保留：
+  - 本轮只同步 handoff 基线，没有新增 live runtime 路径替换；ScheduleDispatchPort 与 RuntimeCommandPort 仍通过 legacy adapters 承接旧队列和旧容器身份。
+  - --legacy-runtime / --candidate-runtime 仍只是报告标签；在 live simulator 真正消费 config.buff_runtime.mode 前，文档与后续 PRD 仍不得把它们写成真实 runtime 切换开关。
+  - 其余未迁移的 BuffXLogic、BattleEventListener、Character 旁路 producer 与相邻 same-tick 高风险写路径仍保留旧入口，本轮没有假装这些边界已经替换完成。
 - 下一步：
-  - 下一轮继续沿阶段 1 路线，收口其�?raw event_list bypass 与必要的相邻 RuntimeCommandPort 样本，不扩到 Calculator 全量迁移或旧容器删除�?
+  - 下一轮继续沿阶段 1 路线，收口其他 raw event_list bypass 与必要的相邻 RuntimeCommandPort 样本，不扩到 Calculator 全量迁移或旧容器删除。
 ---
 ## 2026-06-06 08:40:07 - US-001
-- �����ļ���`zsim/sim_progress/Buff/BuffXLogic/ElegantVanitySpRecover.py`, `zsim/sim_progress/Buff/BuffXLogic/LunarNoviluna.py`, `tests/simulator/test_xstart_sp_refresh_dispatch.py`, `scripts/run_buff_refactor_validation.py`
-- �滻˵����
-  - `ElegantVanitySpRecover._create_dispatch_port()` / `LunarNoviluna._create_dispatch_port()` ��ʼ�滻������ xstart SP refresh producer �� `JudgeTools.find_event_list()` �� `event_list.append(...)` �� planned-event ֱд��ڡ�
-  - `tests/simulator/test_xstart_sp_refresh_dispatch.py` ��ʼ�滻������ͷ��� SP refresh producer ˳��һ�������������裬��ʽ�̶� `ElegantVanitySpRecover` �� `simple_start() -> publish` �� `LunarNoviluna` �� `publish -> simple_start()` ����˳��
-- ���ݱ�����
-  - `schedule_data.event_list` ���� `LegacyEventListScheduleDispatchAdapter` �нӣ��ײ� planned-event ���к� append ����û�б���д��
-  - ����ֻ�ر� xstart SP refresh producer �� raw queue bypass��`MagneticStormCharlieSpRecover`��`SeedAdditionalAbilityTrigger` �Ⱥ��� producer �Ա�������ڣ���δ�滻 live runtime ·����
-- ��һ����
-  - ������ͬ��ģʽ�տ� `US-002` �� xhit SP refresh producer�������µ� focused regression �������� `implicit-events` ������֤��ڡ�
+- 本轮文件：`zsim/sim_progress/Buff/BuffXLogic/ElegantVanitySpRecover.py`, `zsim/sim_progress/Buff/BuffXLogic/LunarNoviluna.py`, `tests/simulator/test_xstart_sp_refresh_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- 替换说明：
+  - `ElegantVanitySpRecover._create_dispatch_port()` / `LunarNoviluna._create_dispatch_port()` 开始替换这两个 xstart SP refresh producer 对 `JudgeTools.find_event_list()` 与 `event_list.append(...)` 的 planned-event 直写入口。
+  - `tests/simulator/test_xstart_sp_refresh_dispatch.py` 开始替换“这类低风险 SP refresh producer 顺序都一样”的隐含假设，显式固定 `ElegantVanitySpRecover` 的 `simple_start() -> publish` 与 `LunarNoviluna` 的 `publish -> simple_start()` 兼容顺序。
+- 兼容保留：
+  - `schedule_data.event_list` 仍由 `LegacyEventListScheduleDispatchAdapter` 承接，底层 planned-event 队列和 append 语义没有被改写。
+  - 本轮只关闭 xstart SP refresh producer 的 raw queue bypass，`MagneticStormCharlieSpRecover`、`SeedAdditionalAbilityTrigger` 等后续 producer 仍保留旧入口，尚未替换 live runtime 路径。
+- 下一步：
+  - 继续按同样模式收口 `US-002` 的 xhit SP refresh producer，并把新的 focused regression 继续并入 `implicit-events` 共享验证入口。
 ---
 ## 2026-06-06 08:56:11 - US-002
-- Files: `zsim/sim_progress/Buff/BuffXLogic/MagneticStormCharlieSpRecover.py`, `zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py`, `tests/simulator/test_xhit_sp_refresh_dispatch.py`, `scripts/run_buff_refactor_validation.py`
-- Replacement note:
-  - `MagneticStormCharlieSpRecover._create_dispatch_port()` and `SeedAdditionalAbilityTrigger._create_dispatch_port()` now replace the xhit SP refresh producers' raw `JudgeTools.find_event_list()` / `schedule_data.event_list.append(...)` publishing path.
-  - `tests/simulator/test_xhit_sp_refresh_dispatch.py` now proves both legacy queue bypass styles are blocked while preserving `simple_start()`, vanguard targeting, and `last_active_tick` semantics.
-- Compatibility kept:
-  - `schedule_data.event_list` is still owned by `LegacyEventListScheduleDispatchAdapter`, so the underlying planned-event queue and append semantics are unchanged.
-  - This slice only closes the xhit SP refresh raw-queue bypass; `SliceofTimeExtraResources`, `CannonRotor`, and later producers still use the old entry path.
-- Next:
-  - Reuse the same focused no-raw-queue regression shape for `US-003`, while preserving the mixed SP/decibel payload contract.
+- 本轮文件：`zsim/sim_progress/Buff/BuffXLogic/MagneticStormCharlieSpRecover.py`, `zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py`, `tests/simulator/test_xhit_sp_refresh_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- 替换说明：
+  - `MagneticStormCharlieSpRecover._create_dispatch_port()` 与 `SeedAdditionalAbilityTrigger._create_dispatch_port()` 现在替换 xhit SP refresh producers 对 `JudgeTools.find_event_list()` / `schedule_data.event_list.append(...)` 的 raw planned-event 发布路径。
+  - `tests/simulator/test_xhit_sp_refresh_dispatch.py` 现在证明两种 legacy queue bypass 风格都被阻断，同时保留 `simple_start()`、vanguard 目标选择与 `last_active_tick` 语义。
+- 兼容保留：
+  - `schedule_data.event_list` 仍由 `LegacyEventListScheduleDispatchAdapter` 承接，底层 planned-event 队列和 append 语义没有变化。
+  - 本轮只关闭 xhit SP refresh raw-queue bypass；`SliceofTimeExtraResources`、`CannonRotor` 以及后续 producer 仍保留旧入口。
+- 下一步：
+  - `US-003` 继续复用同样的 focused no-raw-queue 回归形态，同时保留 mixed SP/decibel payload 契约。
 ---
 ## 2026-06-06 09:28:11 - US-003
-- �����ļ���`zsim/sim_progress/Buff/BuffXLogic/SliceofTimeExtraResources.py`, `tests/simulator/test_slice_of_time_extra_resources_dispatch.py`, `scripts/run_buff_refactor_validation.py`
-- �滻˵����
-  - `SliceofTimeExtraResources._create_dispatch_port()` / `dispatch_port.publish_scheduled(refresh_data)` �����滻�� mixed refresh producer �� `JudgeTools.find_event_list()` �� `event_list.append(...)` �� planned-event ֱд��ڡ�
-  - `tests/simulator/test_slice_of_time_extra_resources_dispatch.py` ��ʽ�̶� `simple_start() -> publish` ˳�򣬲�ͬʱ��֤ͬһ�� `ScheduleRefreshData` ��� `sp_target / sp_value / decibel_target / decibel_value` û���� gateway Ǩ���ж�ʧ��
-- ���ݱ�����
-  - `schedule_data.event_list` ���� `LegacyEventListScheduleDispatchAdapter` �нӣ��ײ� planned-event ���к� append ����û�б仯��
-  - ����ֻ�ر� `SliceofTimeExtraResources` �� raw queue bypass��`CannonRotor`��`YanagiPolarityDisorderTrigger`��`HugoCorePassiveTotalizeTrigger` �� `DecibelManager` �Ա�������ڡ�
-- ��һ����
-  - ������ͬ���� focused no-raw-queue Ǩ��ģʽ�տ� `US-004` �� `CannonRotor`����Ҫ�л��� follow-up `SkillNode` ��������˳����Զ����� refresh payload ���ԡ�
+- 本轮文件：`zsim/sim_progress/Buff/BuffXLogic/SliceofTimeExtraResources.py`, `tests/simulator/test_slice_of_time_extra_resources_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- 替换说明：
+  - `SliceofTimeExtraResources._create_dispatch_port()` / `dispatch_port.publish_scheduled(refresh_data)` 现在替换该 mixed refresh producer 对 `JudgeTools.find_event_list()` 与 `event_list.append(...)` 的 planned-event 直写入口。
+  - `tests/simulator/test_slice_of_time_extra_resources_dispatch.py` 显式固定 `simple_start() -> publish` 顺序，并同时验证同一份 `ScheduleRefreshData` 里的 `sp_target / sp_value / decibel_target / decibel_value` 没有在 gateway 迁移中丢失。
+- 兼容保留：
+  - `schedule_data.event_list` 仍由 `LegacyEventListScheduleDispatchAdapter` 承接，底层 planned-event 队列和 append 语义没有变化。
+  - 本轮只关闭 `SliceofTimeExtraResources` 的 raw queue bypass；`CannonRotor`、`YanagiPolarityDisorderTrigger`、`HugoCorePassiveTotalizeTrigger` 和 `DecibelManager` 仍保留旧入口。
+- 下一步：
+  - 继续按同样的 focused no-raw-queue 迁移模式收口 `US-004` 的 `CannonRotor`，但要切换到 follow-up `SkillNode` 发布链的顺序断言而不是 refresh payload 断言。
 ---
-
 ## 2026-06-06 11:29:59 - US-004
 - 本轮文件：`zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py`, `tests/simulator/test_cannon_rotor_dispatch.py`, `scripts/run_buff_refactor_validation.py`
 - 替换说明：
@@ -277,93 +337,105 @@
 ---
 
 ## 2026-06-06 18:05:08 - US-001
-- Files: `zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py`, `tests/simulator/test_miyabi_core_skill_icefire_dispatch.py`, `scripts/run_buff_refactor_validation.py`
-- Replacement note:
-  - `MiyabiCoreSkill_IceFire._create_dispatch_port()` / `publish_scheduled(skill_node)` now replaces the Frostburn rising-edge follow-up `SkillNode` raw `JudgeTools.find_event_list()` / `event_list.append(skill_node)` path in `special_exit_logic()`.
-  - `tests/simulator/test_miyabi_core_skill_icefire_dispatch.py` locks the `publish -> special_resources(skill_node)` order and proves the same frostbite state does not publish twice.
-- Compatibility kept:
-  - `schedule_data.event_list` is still backed by `LegacyEventListScheduleDispatchAdapter`; underlying planned-event queue semantics are unchanged.
-  - This slice does not touch `special_hit_logic()` `MultiplierData` / `Calculator.RegularMul.cal_crit_rate(...)`, and it adds no same-tick write facade.
-- Next:
-  - Continue with `YixuanCinema1Trigger` lightning `SkillNode` routing while preserving LoadingMission and adrenaline recovery order.
+- 本轮文件：`zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py`, `tests/simulator/test_miyabi_core_skill_icefire_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- 替换说明：
+  - `MiyabiCoreSkill_IceFire._create_dispatch_port()` / `publish_scheduled(skill_node)` 现在替换 `special_exit_logic()` 中霜灼上升沿 follow-up `SkillNode` 对 `JudgeTools.find_event_list()` / `event_list.append(skill_node)` 的 raw planned-event 发布路径。
+  - `tests/simulator/test_miyabi_core_skill_icefire_dispatch.py` 固定 `publish -> special_resources(skill_node)` 顺序，并证明同一个 frostbite 状态不会重复发布。
+- 兼容保留：
+  - `schedule_data.event_list` 仍由 `LegacyEventListScheduleDispatchAdapter` 承接，底层 planned-event 队列语义没有变化。
+  - 本轮不触碰 `special_hit_logic()` 的 `MultiplierData` / `Calculator.RegularMul.cal_crit_rate(...)`，也没有新增 same-tick write facade。
+- 下一步：
+  - 继续收口 `YixuanCinema1Trigger` 落雷 `SkillNode` 发布路径，同时保留 `LoadingMission` 与闪能恢复顺序。
 ---
 ## 2026-06-06 19:14:16 - US-002
-- Files changed: `zsim/sim_progress/Buff/BuffXLogic/YixuanCinema1Trigger.py`, `tests/simulator/test_yixuan_cinema1_dispatch.py`, `scripts/run_buff_refactor_validation.py`
-- Replacement note:
-  - `YixuanCinema1Trigger._create_dispatch_port()` / `publish_scheduled(lightning_strick_node)` now replaces the lightning `SkillNode` direct `schedule_data.event_list.append(lightning_strick_node)` path in `special_hit_logic()`.
-  - `tests/simulator/test_yixuan_cinema1_dispatch.py` locks `LoadingMission.mission_start(...) -> publish -> update_adrenaline(sp_value=5) -> simple_start(...)` ordering while raw queue append is disabled.
-- Compatibility retained:
-  - `schedule_data.event_list` is still backed by `LegacyEventListScheduleDispatchAdapter`; underlying planned-event queue append semantics are unchanged.
-  - `char.update_adrenaline(sp_value=5)` remains the existing Character resource recovery call; this slice did not add a second same-tick write facade or change `RuntimeCommandPort`.
-- Next step:
-  - Continue with `VivianDotTrigger` dot `SkillNode` routing while keeping planned-skill publishing separate from dot runtime registration.
+- 本轮文件：`zsim/sim_progress/Buff/BuffXLogic/YixuanCinema1Trigger.py`, `tests/simulator/test_yixuan_cinema1_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- 替换说明：
+  - `YixuanCinema1Trigger._create_dispatch_port()` / `publish_scheduled(lightning_strick_node)` 现在替换 `special_hit_logic()` 中落雷 `SkillNode` 对 `schedule_data.event_list.append(lightning_strick_node)` 的直接 planned-event 写入路径。
+  - `tests/simulator/test_yixuan_cinema1_dispatch.py` 在禁用 raw queue append 时固定 `LoadingMission.mission_start(...) -> publish -> update_adrenaline(sp_value=5) -> simple_start(...)` 顺序。
+- 兼容保留：
+  - `schedule_data.event_list` 仍由 `LegacyEventListScheduleDispatchAdapter` 承接，底层 planned-event 队列 append 语义没有变化。
+  - `char.update_adrenaline(sp_value=5)` 仍是现有 Character 资源恢复调用；本轮没有新增第二套 same-tick write facade，也没有改动 `RuntimeCommandPort`。
+- 下一步：
+  - 继续收口 `VivianDotTrigger` 的 dot `SkillNode` 发布路径，同时保持 planned-skill 发布与 dot runtime registration 分层。
 ---
 ## 2026-06-06 19:55:44 - US-003
-- Files changed: `zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py`, `tests/simulator/test_vivian_dot_trigger_dispatch.py`, `scripts/run_buff_refactor_validation.py`
-- Replacement note:
-  - `VivianDotTrigger._create_dispatch_port()` / `publish_scheduled(dot.skill_node_data)` now replaces the dot follow-up `SkillNode` raw `JudgeTools.find_event_list()` / `event_list.append(dot.skill_node_data)` path in `special_hit_logic()`.
-  - `tests/simulator/test_vivian_dot_trigger_dispatch.py` locks `dot.start(...) -> LoadingMission.mission_start(...) -> enemy.dynamic.dynamic_dot_list.append(dot) -> publish` ordering while raw queue lookup and append are disabled.
-- Compatibility retained:
-  - `schedule_data.event_list` is still backed by `LegacyEventListScheduleDispatchAdapter`; underlying planned-event queue append semantics are unchanged.
-  - Dot runtime registration still uses the existing `enemy.dynamic.dynamic_dot_list.append(dot)` path; this slice did not add a new facade or change `spawn_normal_dot("ViviansProphecy", ...)`.
-- Next step:
-  - Continue with `VivianCorePassiveTrigger` anomaly output routing while preserving the existing anomaly cloning and Calculator read path.
+- 本轮文件：`zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py`, `tests/simulator/test_vivian_dot_trigger_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- 替换说明：
+  - `VivianDotTrigger._create_dispatch_port()` / `publish_scheduled(dot.skill_node_data)` 现在替换 `special_hit_logic()` 中 dot follow-up `SkillNode` 对 `JudgeTools.find_event_list()` / `event_list.append(dot.skill_node_data)` 的 raw planned-event 发布路径。
+  - `tests/simulator/test_vivian_dot_trigger_dispatch.py` 在禁用 raw queue lookup 与 append 时固定 `dot.start(...) -> LoadingMission.mission_start(...) -> enemy.dynamic.dynamic_dot_list.append(dot) -> publish` 顺序。
+- 兼容保留：
+  - `schedule_data.event_list` 仍由 `LegacyEventListScheduleDispatchAdapter` 承接，底层 planned-event 队列 append 语义没有变化。
+  - Dot runtime registration 仍使用现有 `enemy.dynamic.dynamic_dot_list.append(dot)` 路径；本轮没有新增 facade，也没有改动 `spawn_normal_dot("ViviansProphecy", ...)`。
+- 下一步：
+  - 继续收口 `VivianCorePassiveTrigger` 异常输出发布路径，同时保留现有 anomaly clone 与 Calculator 读取路径。
 ---
 ## 2026-06-06 21:06:06 - US-004
-- Files changed: `zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py`, `tests/simulator/test_vivian_core_passive_trigger_dispatch.py`, `scripts/run_buff_refactor_validation.py`
-- Replacement note:
-  - `VivianCorePassiveTrigger._create_dispatch_port()` / `publish_scheduled(dirge_of_destiny_anomaly)` now replaces the `DirgeOfDestinyAnomaly` raw `JudgeTools.find_event_list()` / `event_list.append(dirge_of_destiny_anomaly)` path in `special_effect_logic()`.
-  - `tests/simulator/test_vivian_core_passive_trigger_dispatch.py` locks cloned anomaly settlement, `active_by="1331"` normalization, `anomaly_dmg_ratio`, and single gateway publish while raw queue lookup and append are disabled.
-- Compatibility retained:
-  - `schedule_data.event_list` is still backed by `LegacyEventListScheduleDispatchAdapter`; underlying planned-event queue append semantics are unchanged.
-  - Active anomaly cloning, `anomaly_settled()`, `MultiplierData`, and `Calculator.AnomalyMul.cal_ap(...)` remain the existing business path; this slice did not add a new same-tick write facade or change the Dirge formula.
-- Next step:
-  - Continue with `VivianCinema6Trigger`, preserving the no-anomaly resource branch while routing only the extra anomaly-output branch through the dispatch gateway.
+- 本轮文件：`zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py`, `tests/simulator/test_vivian_core_passive_trigger_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- 替换说明：
+  - `VivianCorePassiveTrigger._create_dispatch_port()` / `publish_scheduled(dirge_of_destiny_anomaly)` 现在替换 `special_effect_logic()` 中 `DirgeOfDestinyAnomaly` 对 `JudgeTools.find_event_list()` / `event_list.append(dirge_of_destiny_anomaly)` 的 raw planned-event 发布路径。
+  - `tests/simulator/test_vivian_core_passive_trigger_dispatch.py` 在禁用 raw queue lookup 与 append 时固定 cloned anomaly settlement、`active_by="1331"` 归一化、`anomaly_dmg_ratio` 与单次 gateway publish 语义。
+- 兼容保留：
+  - `schedule_data.event_list` 仍由 `LegacyEventListScheduleDispatchAdapter` 承接，底层 planned-event 队列 append 语义没有变化。
+  - Active anomaly cloning、`anomaly_settled()`、`MultiplierData` 与 `Calculator.AnomalyMul.cal_ap(...)` 仍保留现有业务路径；本轮没有新增 same-tick write facade，也没有改动 Dirge 公式。
+- 下一步：
+  - 继续收口 `VivianCinema6Trigger`，保留无异常时的资源分支，同时只把额外异常输出分支改经 dispatch gateway。
 ---
 ## 2026-06-06 21:21:50 - US-005
-- Files changed: `zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py`, `tests/simulator/test_vivian_cinema6_trigger_dispatch.py`, `scripts/run_buff_refactor_validation.py`
-- Replacement note:
-  - `VivianCinema6Trigger._create_dispatch_port()` / `publish_scheduled(dirge_of_destiny_anomaly)` now replaces the conditional extra `DirgeOfDestinyAnomaly` raw `JudgeTools.find_event_list()` / `event_list.append(dirge_of_destiny_anomaly)` path in `special_effect_logic()`.
-  - `tests/simulator/test_vivian_cinema6_trigger_dispatch.py` locks the publish and no-publish branches while raw queue lookup and append are disabled.
-- Compatibility retained:
-  - `schedule_data.event_list` is still backed by `LegacyEventListScheduleDispatchAdapter`; underlying planned-event queue append semantics are unchanged.
-  - Guard-feather consumption, `c1_counter` / `flight_feather` updates, active anomaly cloning, `anomaly_settled()`, `MultiplierData`, `Calculator.AnomalyMul.cal_ap(...)`, and the existing `feather_manager.update_myself(c6_signal=True)` resource path remain unchanged; this slice did not add a new same-tick write facade.
-- Next step:
-  - Continue with `Character/Yuzuha` cinema-6 team energy fan-out routing while preserving teammate target and 25-energy semantics.
+- 本轮文件：`zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py`, `tests/simulator/test_vivian_cinema6_trigger_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- 替换说明：
+  - `VivianCinema6Trigger._create_dispatch_port()` / `publish_scheduled(dirge_of_destiny_anomaly)` 现在替换 `special_effect_logic()` 中条件性额外 `DirgeOfDestinyAnomaly` 对 `JudgeTools.find_event_list()` / `event_list.append(dirge_of_destiny_anomaly)` 的 raw planned-event 发布路径。
+  - `tests/simulator/test_vivian_cinema6_trigger_dispatch.py` 在禁用 raw queue lookup 与 append 时固定发布与不发布两个分支。
+- 兼容保留：
+  - `schedule_data.event_list` 仍由 `LegacyEventListScheduleDispatchAdapter` 承接，底层 planned-event 队列 append 语义没有变化。
+  - `guard_feather` 消耗、`c1_counter` / `flight_feather` 更新、active anomaly cloning、`anomaly_settled()`、`MultiplierData`、`Calculator.AnomalyMul.cal_ap(...)` 与现有 `feather_manager.update_myself(c6_signal=True)` 资源路径都保持不变；本轮没有新增 same-tick write facade。
+- 下一步：
+  - 继续收口 `Character/Yuzuha` cinema-6 全队回能 fan-out，同时保留队友目标与 25 点能量语义。
 ---
 
 ## 2026-06-06 21:57:39 - US-006
-- Files changed: `zsim/sim_progress/Character/Yuzuha/__init__.py`, `tests/simulator/test_yuzuha_cinema6_energy_dispatch.py`, `scripts/run_buff_refactor_validation.py`
-- Replacement note:
-  - `Yuzuha._create_dispatch_port()` / `publish_scheduled(schedule_refresh_event)` now replaces the cinema-6 team energy fan-out direct `sim_instance.schedule_data.event_list.append(schedule_refresh_event)` path in `special_resources()`.
-  - `tests/simulator/test_yuzuha_cinema6_energy_dispatch.py` locks teammate fan-out count, Yuzuha self-exclusion, target order, and `ScheduleRefreshData(sp_value=25)` payload semantics while raw queue append is disabled.
-- Compatibility retained:
-  - `schedule_data.event_list` is still backed by `LegacyEventListScheduleDispatchAdapter`; underlying planned-event queue append semantics are unchanged.
-  - `broadcast_and_update(...)`, sugar point handling, `hard_candy_shot`, and other non-cinema-6 branches remain unchanged; this slice did not add a same-tick write facade.
-- Next step:
-  - Continue with `US-007` shared implicit-events validation expansion for the remaining bypass producer batch.
+- 本轮文件：`zsim/sim_progress/Character/Yuzuha/__init__.py`, `tests/simulator/test_yuzuha_cinema6_energy_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- 替换说明：
+  - `Yuzuha._create_dispatch_port()` / `publish_scheduled(schedule_refresh_event)` 现在替换 `special_resources()` 中 cinema-6 全队回能 fan-out 对 `sim_instance.schedule_data.event_list.append(schedule_refresh_event)` 的直接 planned-event 写入路径。
+  - `tests/simulator/test_yuzuha_cinema6_energy_dispatch.py` 在禁用 raw queue append 时固定队友 fan-out 数量、Yuzuha 自身排除、目标顺序与 `ScheduleRefreshData(sp_value=25)` payload 语义。
+- 兼容保留：
+  - `schedule_data.event_list` 仍由 `LegacyEventListScheduleDispatchAdapter` 承接，底层 planned-event 队列 append 语义没有变化。
+  - `broadcast_and_update(...)`、sugar point 处理、`hard_candy_shot` 与其他非 cinema-6 分支保持不变；本轮没有新增 same-tick write facade。
+- 下一步：
+  - 继续收口 `US-007` 的 shared `implicit-events` 验证扩展，覆盖本轮剩余 bypass producer batch。
 ---
 
 ## 2026-06-06 22:10:04 - US-007
-- Files changed: `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
-- Replacement note:
-  - `REMAINING_BYPASS_PRODUCER_TARGETS` and `REMAINING_BYPASS_FOCUSED_TEST_TARGETS` make the shared `implicit-events` validation gate explicitly replace scattered per-story runner entries for the already migrated `MiyabiCoreSkill_IceFire`, `YixuanCinema1Trigger`, `VivianDotTrigger`, `VivianCorePassiveTrigger`, `VivianCinema6Trigger`, and `Character/Yuzuha` producer batch.
-  - This iteration only builds and verifies the validation boundary; it does not replace another live raw queue writer.
-- Compatibility retained:
-  - Existing dispatch gateway adapters, focused no-raw-queue regressions, and underlying planned-event queue semantics remain unchanged.
-  - No lifecycle/runtime write path changed, and no new `RuntimeCommandPort` facade or raw `event_list` / `dynamic_buff` / `exist_buff_dict` passthrough was introduced.
-- Next step:
-  - Continue with `US-008` final handoff docs, recording the closed producer batch and distinguishing remaining phase-1 backlog from the callsites already covered by this gate.
+- 本轮文件：`scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- 替换说明：
+  - `REMAINING_BYPASS_PRODUCER_TARGETS` 与 `REMAINING_BYPASS_FOCUSED_TEST_TARGETS` 让 shared `implicit-events` 验证 gate 显式替换此前散落在各 story runner 中的条目，覆盖已迁移的 `MiyabiCoreSkill_IceFire`、`YixuanCinema1Trigger`、`VivianDotTrigger`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger` 与 `Character/Yuzuha` producer batch。
+  - 本轮只建立并验证 shared validation boundary，没有替换新的 live raw queue writer。
+- 兼容保留：
+  - 现有 dispatch gateway adapter、focused no-raw-queue 回归与底层 planned-event 队列语义保持不变。
+  - 本轮没有改动 lifecycle/runtime write path，也没有新增 `RuntimeCommandPort` facade 或 raw `event_list` / `dynamic_buff` / `exist_buff_dict` passthrough。
+- 下一步：
+  - 继续收口 `US-008` final handoff 文档，记录已关闭 producer batch，并区分剩余 phase-1 backlog 与已由本 gate 覆盖的 callsite。
 ---
 
 ## 2026-06-06 22:20:18 - US-008
-- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
-- Replacement note:
-  - Stage-1 handoff docs now replace stale backlog wording with the closed producer batch: `MiyabiCoreSkill_IceFire`, `YixuanCinema1Trigger`, `VivianDotTrigger`, `VivianCorePassiveTrigger`, `VivianCinema6Trigger`, and `Character/Yuzuha` cinema-6 energy branch all route planned-event publishing through `ScheduleDispatchPort`.
-  - Handoff now records that current `BattleEventListener` source has no direct `JudgeTools.find_event_list()` / `schedule_data.event_list.append(...)` planned-event writer; `AliceDotTriggerListener` keeps dot runtime registration separate from schedule publishing.
-- Compatibility retained:
-  - This iteration only syncs handoff and Ralph artifacts; existing dispatch adapters, runtime command boundaries, focused tests, and planned-event queue semantics remain unchanged.
-  - `--legacy-runtime` / `--candidate-runtime` remain report labels, not live runtime switches.
-- Next step:
-  - Next phase-1 PRD should audit remaining `BuffXLogic` / `Character` helpers and possible hidden listener helpers, first distinguishing local event-group lists from real scheduler queue writes.
+- 本轮文件：`docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- 替换说明：
+  - 阶段 1 handoff 文档现在用已关闭 producer batch 替换过期 backlog 表述：`MiyabiCoreSkill_IceFire`、`YixuanCinema1Trigger`、`VivianDotTrigger`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger` 与 `Character/Yuzuha` cinema-6 energy 分支的 planned-event 发布都已改经 `ScheduleDispatchPort`。
+  - handoff 现在记录当前 `BattleEventListener` 源码中没有直接 `JudgeTools.find_event_list()` / `schedule_data.event_list.append(...)` planned-event writer；`AliceDotTriggerListener` 保留 dot runtime registration，与 schedule publishing 分层。
+- 兼容保留：
+  - 本轮只同步 handoff 与 Ralph 工件；现有 dispatch adapter、runtime command boundary、focused tests 与 planned-event 队列语义保持不变。
+  - `--legacy-runtime` / `--candidate-runtime` 仍只是报告标签，不是 live runtime switch。
+- 下一步：
+  - 下一轮 phase-1 PRD 应审计剩余 `BuffXLogic` / `Character` helper 与可能隐藏的 listener helper，先区分 local event-group list 与真实 scheduler queue write。
+---
+
+## 2026-06-07 00:40:53 - US-001
+- 本轮文件：`docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- 替换说明：
+  - 本轮只建立 `zsim/sim_progress` 中剩余 `JudgeTools.find_event_list()`、`schedule_data.event_list` 与 `event_list.append(...)` 命中的分类基线，没有替换新的 live path。
+  - 分类结论准备替换后续 PRD 中“所有 event_list.append 都是 raw queue bypass”的粗粒度判断：`Yixuan/AdrenalineManagerClass.py` 是本地 `BaseAdrenalineEvent` 事件组，`LoadDamageEvent.py` 是 core Load-stage event spawn，`ScheduledEvent/event_handlers/handlers/*.py` 是 not-yet-executable requeue，`BreakingLegManager.py` 才是本轮确认的隐藏 helper planned-event writer。
+- 兼容保留：
+  - 旧 `JudgeTools.find_event_list()`、`schedule_data.event_list` 底层队列、`LegacyEventListScheduleDispatchAdapter`、Load/Schedule 核心调度与 handler requeue 语义全部保留。
+  - 本轮没有改动 lifecycle/runtime write path，也没有新增 `RuntimeCommandPort` facade 或 raw `event_list` passthrough。
+- 下一步：
+  - 下一轮继续按本分类推进：先锁定 `Yixuan` 本地事件组边界，再把 `BreakingLegManager` 的 `ScheduleRefreshData` 发布改经 `ScheduleDispatchPort`。
 ---
