@@ -510,3 +510,14 @@
 - Next step:
   - Continue closing the old compatibility discovery path with evidence, and only migrate a new producer when a concrete producer-level planned-event writer is found.
 ---
+
+## 2026-06-07 02:09:46 - US-001
+- Files changed: `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `PRD-8 US-001` scan evidence replaces stale backlog assumptions that might classify legacy discovery cache, dispatch adapter queue access, handler requeue, local event-group lists, or dot runtime registration as new producer-level planned-event writers.
+  - No live path was replaced in this story; it only rebuilds the post-PRD-7 raw queue and legacy discovery scan baseline.
+- Compatibility retained:
+  - `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` compatibility discovery, `LegacyEventListScheduleDispatchAdapter`, core Load/Schedule appends, handler requeue, Yixuan local event groups, and Alice dot runtime registration remain in place.
+- Next step:
+  - Add focused static guardrails for new production uses of `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list`, then keep migrations limited to concrete producer-level planned-event writers if a future scan finds one.
+---
