@@ -331,3 +331,15 @@
 - Next step:
   - Continue with `Character/Yuzuha` cinema-6 team energy fan-out routing while preserving teammate target and 25-energy semantics.
 ---
+
+## 2026-06-06 21:57:39 - US-006
+- Files changed: `zsim/sim_progress/Character/Yuzuha/__init__.py`, `tests/simulator/test_yuzuha_cinema6_energy_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- Replacement note:
+  - `Yuzuha._create_dispatch_port()` / `publish_scheduled(schedule_refresh_event)` now replaces the cinema-6 team energy fan-out direct `sim_instance.schedule_data.event_list.append(schedule_refresh_event)` path in `special_resources()`.
+  - `tests/simulator/test_yuzuha_cinema6_energy_dispatch.py` locks teammate fan-out count, Yuzuha self-exclusion, target order, and `ScheduleRefreshData(sp_value=25)` payload semantics while raw queue append is disabled.
+- Compatibility retained:
+  - `schedule_data.event_list` is still backed by `LegacyEventListScheduleDispatchAdapter`; underlying planned-event queue append semantics are unchanged.
+  - `broadcast_and_update(...)`, sugar point handling, `hard_candy_shot`, and other non-cinema-6 branches remain unchanged; this slice did not add a same-tick write facade.
+- Next step:
+  - Continue with `US-007` shared implicit-events validation expansion for the remaining bypass producer batch.
+---

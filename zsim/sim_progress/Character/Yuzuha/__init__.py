@@ -4,12 +4,14 @@ from zsim.define import YUZUHA_REPORT
 from zsim.models.event_enums import PostInitObjectType as PIOT
 from zsim.models.event_enums import SpecialStateUpdateSignal as SSUS
 from zsim.sim_progress.Preload import SkillNode
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from ...data_struct.SchedulePreload import schedule_preload_event_factory
 from ..character import Character
 from ..utils.filters import _skill_node_filter
 
 if TYPE_CHECKING:
+    from zsim.sim_progress.data_struct.schedule_dispatch import ScheduleDispatchPort
     from zsim.sim_progress.data_struct.enemy_special_state_manager.special_classes import SweetScare
     from zsim.simulator.simulator_class import Simulator
 
@@ -22,6 +24,9 @@ class Yuzuha(Character):
         self.sugar_points: int = 3  # 甜度点
         self.max_sugar_points: int = 6
         self.hard_candy_shot_tag = "1411_CoAttack_A"
+
+    def _create_dispatch_port(self) -> "ScheduleDispatchPort":
+        return create_schedule_dispatch_port(sim_instance=self.sim_instance)
 
     def special_resources(self, *args, **kwargs) -> None:
         skill_nodes: list[SkillNode] = _skill_node_filter(*args, **kwargs)
@@ -47,6 +52,7 @@ class Yuzuha(Character):
             if node.skill.trigger_buff_level == 6:
                 from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
 
+                dispatch_port = self._create_dispatch_port()
                 report_namelist = []
                 for char_obj in sim_instance.char_data.char_obj_list:
                     if char_obj.NAME == self.NAME:
@@ -56,8 +62,7 @@ class Yuzuha(Character):
                         sp_target=(char_obj.NAME,),
                         sp_value=25,
                     )
-                    event_list = sim_instance.schedule_data.event_list
-                    event_list.append(schedule_refresh_event)
+                    dispatch_port.publish_scheduled(schedule_refresh_event)
                 else:
                     if YUZUHA_REPORT:
                         sim_instance.schedule_data.change_process_state()
@@ -118,4 +123,4 @@ class Yuzuha(Character):
         return "甜度点", self.sugar_points
 
     def get_special_stats(self, *args, **kwargs) -> dict[str | None, object | None]:
-        pass
+        return {}
