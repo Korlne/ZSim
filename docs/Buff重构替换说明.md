@@ -343,3 +343,15 @@
 - Next step:
   - Continue with `US-007` shared implicit-events validation expansion for the remaining bypass producer batch.
 ---
+
+## 2026-06-06 22:10:04 - US-007
+- Files changed: `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `REMAINING_BYPASS_PRODUCER_TARGETS` and `REMAINING_BYPASS_FOCUSED_TEST_TARGETS` make the shared `implicit-events` validation gate explicitly replace scattered per-story runner entries for the already migrated `MiyabiCoreSkill_IceFire`, `YixuanCinema1Trigger`, `VivianDotTrigger`, `VivianCorePassiveTrigger`, `VivianCinema6Trigger`, and `Character/Yuzuha` producer batch.
+  - This iteration only builds and verifies the validation boundary; it does not replace another live raw queue writer.
+- Compatibility retained:
+  - Existing dispatch gateway adapters, focused no-raw-queue regressions, and underlying planned-event queue semantics remain unchanged.
+  - No lifecycle/runtime write path changed, and no new `RuntimeCommandPort` facade or raw `event_list` / `dynamic_buff` / `exist_buff_dict` passthrough was introduced.
+- Next step:
+  - Continue with `US-008` final handoff docs, recording the closed producer batch and distinguishing remaining phase-1 backlog from the callsites already covered by this gate.
+---
