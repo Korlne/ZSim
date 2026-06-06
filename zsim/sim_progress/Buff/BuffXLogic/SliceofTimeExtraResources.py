@@ -1,3 +1,5 @@
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+
 from .. import Buff, JudgeTools, check_preparation
 
 
@@ -45,6 +47,9 @@ class SliceofTimeExtraResources(Buff.BuffLogic):
 
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+
+    def _create_dispatch_port(self):
+        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
 
     def check_record_module(self):
         if self.equipper is None:
@@ -95,7 +100,6 @@ class SliceofTimeExtraResources(Buff.BuffLogic):
         ]
         energy_value = self.record.energy_value_dict[self.buff_instance.ft.refinement]
         actor_name = action_now.mission_character
-        event_list = JudgeTools.find_event_list(sim_instance=self.buff_instance.sim_instance)
         from zsim.sim_progress.data_struct import ScheduleRefreshData
 
         refresh_data = ScheduleRefreshData(
@@ -104,7 +108,7 @@ class SliceofTimeExtraResources(Buff.BuffLogic):
             decibel_target=(actor_name,),
             decibel_value=decibel_value,
         )
-        event_list.append(refresh_data)
+        self._create_dispatch_port().publish_scheduled(refresh_data)
 
     def check_update_cd(self, tbl: int, tick_now: int):
         """
