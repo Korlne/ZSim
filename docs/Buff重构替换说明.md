@@ -355,3 +355,15 @@
 - Next step:
   - Continue with `US-008` final handoff docs, recording the closed producer batch and distinguishing remaining phase-1 backlog from the callsites already covered by this gate.
 ---
+
+## 2026-06-06 22:20:18 - US-008
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - Stage-1 handoff docs now replace stale backlog wording with the closed producer batch: `MiyabiCoreSkill_IceFire`, `YixuanCinema1Trigger`, `VivianDotTrigger`, `VivianCorePassiveTrigger`, `VivianCinema6Trigger`, and `Character/Yuzuha` cinema-6 energy branch all route planned-event publishing through `ScheduleDispatchPort`.
+  - Handoff now records that current `BattleEventListener` source has no direct `JudgeTools.find_event_list()` / `schedule_data.event_list.append(...)` planned-event writer; `AliceDotTriggerListener` keeps dot runtime registration separate from schedule publishing.
+- Compatibility retained:
+  - This iteration only syncs handoff and Ralph artifacts; existing dispatch adapters, runtime command boundaries, focused tests, and planned-event queue semantics remain unchanged.
+  - `--legacy-runtime` / `--candidate-runtime` remain report labels, not live runtime switches.
+- Next step:
+  - Next phase-1 PRD should audit remaining `BuffXLogic` / `Character` helpers and possible hidden listener helpers, first distinguishing local event-group lists from real scheduler queue writes.
+---

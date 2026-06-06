@@ -94,17 +94,24 @@
 - [x] 更新 [Buff重构下阶段计划草稿.md](./Buff重构下阶段计划草稿.md)、[Buff重构替换说明.md](./Buff重构替换说明.md) 与 [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md)，同步阶段 1 当前基线。
 - [x] `UpdateAnomaly` 计划事件发布路径与 `BattleEventListener` 中 `AliceDotTriggerListener` 样本已改经 dispatch gateway，当前不再把这两条入口列为阶段 1 主缺口。
 - [x] 高风险 `SkillEventHandler` 已把 `Calculator` / `update_anomaly()` 的主 Buff 读口迁到 runtime view。
-- [ ] 其余 `BuffXLogic` / `BattleEventListener` / `Character` 旁路计划事件生产者，以及其他相邻同 tick runtime 写路径仍待后续阶段 1 切片推进。
+- [ ] 其余 `BuffXLogic` / `Character` 旁路计划事件生产者、可能隐藏在 listener helper 中的发布入口，以及其他相邻同 tick runtime 写路径仍待后续阶段 1 切片推进。
 
 ## 本轮剩余 producer batch / shared-validation PRD 收口状态（2026-06-06）
 
 - [x] 代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` 计划事件链，以及本轮收口的 `ElegantVanitySpRecover`、`LunarNoviluna`、`MagneticStormCharlieSpRecover`、`SeedAdditionalAbilityTrigger`、`SliceofTimeExtraResources`、`CannonRotor`、`YanagiPolarityDisorderTrigger`、`HugoCorePassiveTotalizeTrigger` 与 `DecibelManager`，现都已改经 `ScheduleDispatchPort` 发布 planned event。
 - [x] `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 仍是本轮唯一沿用的 same-tick 显式写边界；`SkillEventHandler` 的 `update_anomaly()` 与 `ScheduleBuffSettle()` 同 tick 写边界保持走显式命令口，没有引入第二套 write facade。
 - [x] `implicit-events` 共享验证入口现已同时覆盖 `test_schedule_dispatch.py`、聚焦 dispatch/runtime-boundary pytest，以及这些 focused 回归文件本身的 scoped mypy，handoff 文档已同步记录验证命令与当前基线。
-- [ ] 阶段 1 剩余缺口已收敛为其他 one-off `BuffXLogic`、`Character` 旁路 producer 的 raw `event_list` 写入口，以及后续若继续暴露出来的相邻高风险 same-tick 写路径。
+- [ ] 阶段 1 剩余缺口已收敛为其他 one-off `BuffXLogic`、`Character` 旁路 producer 的 raw `event_list` 写入口、可能隐藏的 listener/helper 发布入口，以及后续若继续暴露出来的相邻高风险 same-tick 写路径。
+
+## 本轮 remaining bypass producers runtime-boundary PRD 收口状态（2026-06-06）
+
+- [x] `MiyabiCoreSkill_IceFire`、`YixuanCinema1Trigger`、`VivianDotTrigger`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger` 与 `Character/Yuzuha` cinema-6 energy 分支的 planned-event 直写入口已全部改经 `ScheduleDispatchPort`。
+- [x] `implicit-events` 共享 gate 已覆盖这组 producer 的 focused no-raw-queue 回归、生产文件 mypy target 与测试文件 scoped mypy target；本轮验证命令为 `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`。
+- [x] 当前源码扫描未在 `BattleEventListener` 目录发现直接 `JudgeTools.find_event_list()` / `schedule_data.event_list.append(...)` planned-event 写入；`AliceDotTriggerListener` 保留的是 dot runtime registration，不再把整个 listener 目录作为已知 raw queue backlog。
+- [ ] 当前已知的后续审计入口包括 `Character/Yixuan/AdrenalineManagerClass.py` 这类本地事件组 helper；它不是 `schedule_data.event_list` 直写，但仍需判断是否属于计划事件边界或纯 runtime manager。后续仍需审计其他 `BuffXLogic` / `Character` helper、可能隐藏的 listener helper，以及故事驱动暴露出来的 same-tick runtime 写边界。
 
 ## 当前默认下一步
 
-- [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的实现型 PRD，优先扫描其他 one-off `BuffXLogic` 与 `Character` 旁路 producer 的旧直写入口，不再重开本轮已闭合的 producer batch，并继续保持 `event_list`、`listener_manager.broadcast_event()` 与 runtime command 三层语义分离。
+- [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的实现型 PRD，优先审计 `Character/Yixuan/AdrenalineManagerClass.py` 与其他 one-off `BuffXLogic` / `Character` helper、可能隐藏的 listener helper，先区分本地事件组、计划队列发布与 runtime manager 职责，不再重开本轮已闭合的 producer batch，并继续保持 `event_list`、`listener_manager.broadcast_event()` 与 runtime command 三层语义分离。
 - [ ] 仅在发现新的具体 same-tick 写路径仍依赖 legacy getter 时，继续把对应 handler / helper 收口到最小 `RuntimeCommandPort` / write facade，并把新增 focused 回归同步并入 `implicit-events` 共享 gate，不扩到 `Calculator` 全量迁移或旧容器删除。
 - [ ] 仅在 live simulator 真正消费 `config.buff_runtime.mode` 后，再把一致性 / benchmark 命令升级为真实 runtime switch 证据。

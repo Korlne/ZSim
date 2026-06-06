@@ -6,7 +6,7 @@
 - 当前默认阶段仍为“基础设施解耦”。
 - Buff 系统现已明确要求采用事件驱动架构。
 - 阶段 1 当前实现基线已经落地：
-  - `ScheduleDispatchPort` 已接入 `SchedulePreload`、`QuickAssistSystem`、`UpdateAnomaly`、`BattleEventListener` 中的 `AliceDotTriggerListener`、代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` planned-event 链，以及本轮收口的 `ElegantVanitySpRecover`、`LunarNoviluna`、`MagneticStormCharlieSpRecover`、`SeedAdditionalAbilityTrigger`、`SliceofTimeExtraResources`、`CannonRotor`、`YanagiPolarityDisorderTrigger`、`HugoCorePassiveTotalizeTrigger` 与 `DecibelManager`；剩余 raw `event_list` producer 现主要收敛到其他 one-off `BuffXLogic` 与 `Character` 旁路入口。
+  - `ScheduleDispatchPort` 已接入 `SchedulePreload`、`QuickAssistSystem`、`UpdateAnomaly`、`BattleEventListener` 中的 `AliceDotTriggerListener`、代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` planned-event 链，以及已收口的 `ElegantVanitySpRecover`、`LunarNoviluna`、`MagneticStormCharlieSpRecover`、`SeedAdditionalAbilityTrigger`、`SliceofTimeExtraResources`、`CannonRotor`、`YanagiPolarityDisorderTrigger`、`HugoCorePassiveTotalizeTrigger`、`DecibelManager`、`MiyabiCoreSkill_IceFire`、`YixuanCinema1Trigger`、`VivianDotTrigger`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger` 与 `Character/Yuzuha` cinema-6 energy 分支；剩余阶段 1 审计面现主要收敛到其他 one-off `BuffXLogic` / `Character` helper、可能隐藏的 listener/helper 发布入口，以及故事驱动暴露出来的 same-tick runtime 写边界。
   - `BuffRuntimeReadPort` / `EventContext.buff_runtime_view` 已接入 `ScheduledEvent`，`anomaly`、`abloom`、`disorder`、`polarity_disorder` 与高风险 `SkillEventHandler` 主读路径已改用 runtime view。
   - `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 已接入 `ScheduledEvent` / `EventContext`；`SkillEventHandler` 的 `ScheduleBuffSettle()`、`update_anomaly()` 等同 tick 写边界已改走显式命令口，同时仍通过 adapter 保留 legacy 容器身份。
   - `implicit-events` 共享验证入口现已同时覆盖 `test_schedule_dispatch.py`、上述 focused dispatch/runtime-boundary pytest，以及这些回归文件本身的 scoped mypy，不再只类型检查它们所命中的生产代码。
@@ -25,11 +25,12 @@
 
 ### 下一轮 PRD 名称建议
 
-`Buff 重构 PRD-6：剩余 one-off planned-event producer 与 Character 旁路入口收口`
+`Buff 重构 PRD-7：剩余 Character helper 与 hidden listener 发布入口审计`
 
 ### 下一轮 PRD 的建议范围
 
-- 继续收口剩余计划事件直写入口，优先覆盖其他仍会直接感知 `event_list` 的 one-off `BuffXLogic` 与 `Character` 旁路 producer；默认优先级可从 `MiyabiCoreSkill_IceFire`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger`、`VivianDotTrigger`、`YixuanCinema1Trigger`、`Character/Yuzuha/__init__.py` 与 `Character/Yixuan/AdrenalineManagerClass.py` 这组剩余样本开始，不再重开本轮已闭合的 producer batch。
+- 继续审计剩余计划事件相关入口，优先覆盖当前已知会构造本地事件组的 `Character/Yixuan/AdrenalineManagerClass.py`，先判定它属于计划队列发布、runtime manager，还是纯本地状态管理；同时审计其他 `BuffXLogic` / `Character` helper 与可能隐藏的 listener/helper 发布入口。不再重开已闭合的 `MiyabiCoreSkill_IceFire`、`YixuanCinema1Trigger`、`VivianDotTrigger`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger`、`Character/Yuzuha` cinema-6 energy 分支及前序 xstart/xhit refresh、`CannonRotor`、`Yanagi`、`Hugo`、`DecibelManager` 批次。
+- 当前源码扫描未在 `BattleEventListener` 目录发现直接 `JudgeTools.find_event_list()` / `schedule_data.event_list.append(...)` planned-event 写入；`AliceDotTriggerListener` 的 dot runtime registration 不应继续被写成 listener raw queue backlog。
 - 仅在发现其他具体 handler / helper 仍通过 legacy getter 承担 same-tick 写协作时，继续扩展 `RuntimeCommandPort` / write facade，减少读口与写边界双重职责继续泄露。
 - 如果本轮触达同 tick 写边界，沿用现有 `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 模式，而不是继续把 raw `dynamic_buff` / `exist_buff_dict` 深透传给新代码。
 - 除非 focused validation 暴露回归，否则不要重新打开已经闭合的 `SkillEventHandler` 代表性读写分层样本，也不要把已经收口的 xstart/xhit refresh、`CannonRotor`、`Yanagi`、`Hugo` 或 `DecibelManager` 批次重新当成主故事。
