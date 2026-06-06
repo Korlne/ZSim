@@ -221,7 +221,8 @@ class HugoCorePassiveTotalizeTrigger(Buff.BuffLogic):
         totalize_node.loading_mission.mission_start(
             find_tick(sim_instance=self.buff_instance.sim_instance)
         )
-        self._create_dispatch_port().publish_scheduled(totalize_node)
+        dispatch_port = self._create_dispatch_port()
+        dispatch_port.publish_scheduled(totalize_node)
 
         """失衡状态强制结算事件"""
         from zsim.sim_progress.data_struct import StunForcedTerminationEvent
@@ -253,8 +254,7 @@ class HugoCorePassiveTotalizeTrigger(Buff.BuffLogic):
 
         """2画以上的大招触发决算时，不结算失衡状态。"""
         if stun_event is not None:
-            event_list = JudgeTools.find_event_list(sim_instance=self.buff_instance.sim_instance)
-            event_list.append(stun_event)
+            dispatch_port.publish_scheduled(stun_event)
 
         """重置信号"""
         self.record.active_signal = None

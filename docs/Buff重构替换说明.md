@@ -233,3 +233,13 @@
 - 下一步：
   - 继续收口 `US-007` 的 `StunForcedTerminationEvent` 条件发布分支，并显式验证 2 影大招不终结失衡的跳过路径。
 ---
+## 2026-06-06 12:50:41 - US-007
+- 本轮文件：`zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py`, `tests/simulator/test_hugo_totalize_dispatch.py`
+- 替换说明：
+  - `HugoCorePassiveTotalizeTrigger.special_hit_logic()` 现在复用同一个按需 `dispatch_port`，把条件 `StunForcedTerminationEvent` 和已迁移的 `totalize_node` 一并通过 `publish_scheduled(...)` 发布，替换最后一条 `event_list.append(stun_event)` planned-event 直写入口。
+- 兼容保留：
+  - `buff_add_strategy(...)` 的同步副作用、`LoadingMission.mission_start(...)` 初始化时序、以及“2 影大招不终结失衡”的分支跳过语义都保持不变。
+  - `schedule_data.event_list` 仍由 `LegacyEventListScheduleDispatchAdapter` 承接；本轮只是关闭 Hugo 最后一条 raw queue bypass，没有改写底层队列 append 语义。
+- 下一步：
+  - 继续收口 `US-008` 的 `DecibelManager` planned-event 发布入口；Hugo 这条高风险 producer 的两条 planned-event 分支现已都闭合到 dispatch gateway。
+---

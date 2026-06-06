@@ -17,11 +17,14 @@ from zsim.sim_progress.Buff.BuffXLogic.HugoCorePassiveTotalizeTrigger import (
     HugoCorePassiveTotalizeTriggerRecord,
 )
 from zsim.sim_progress.Load import LoadingMission
+from zsim.sim_progress.data_struct import StunForcedTerminationEvent
 
 
 class _FailFastEventList(list):
     def append(self, item):
-        raise AssertionError("HugoCorePassiveTotalizeTrigger totalize_node should publish via dispatch port")
+        raise AssertionError(
+            "HugoCorePassiveTotalizeTrigger should publish planned events via dispatch port"
+        )
 
 
 class _RecordingDispatchPort:
@@ -37,15 +40,19 @@ class _RecordingDispatchPort:
 def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError(
-            "HugoCorePassiveTotalizeTrigger should not read raw event_list for totalize_node"
+            "HugoCorePassiveTotalizeTrigger should not read raw event_list"
         )
 
     monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list)
 
 
-def test_hugo_totalize_node_publishes_via_dispatch_port_before_any_raw_queue_access(
-    monkeypatch: pytest.MonkeyPatch,
-):
+def _build_hugo_harness(
+    *,
+    active_signal: int,
+    cinema: int,
+    enemy_stun: bool,
+    rest_tick: int = 360,
+) -> SimpleNamespace:
     call_order: list[str] = []
     dispatch_port = _RecordingDispatchPort(call_order)
     schedule_data = SimpleNamespace(event_list=_FailFastEventList())
@@ -56,34 +63,51 @@ def test_hugo_totalize_node_publishes_via_dispatch_port_before_any_raw_queue_acc
     )
     logic = HugoCorePassiveTotalizeTrigger(buff_instance)
     record = HugoCorePassiveTotalizeTriggerRecord()
-    record.active_signal = 2
-    record.char = SimpleNamespace(cinema=6)
+    record.active_signal = active_signal
+    record.char = SimpleNamespace(cinema=cinema)
     record.enemy = SimpleNamespace(
-        dynamic=SimpleNamespace(stun=False),
-        get_stun_rest_tick=lambda: 360,
+        dynamic=SimpleNamespace(stun=enemy_stun),
+        get_stun_rest_tick=lambda: rest_tick,
     )
     record.preload_data = SimpleNamespace(skills=[])
+    return SimpleNamespace(
+        call_order=call_order,
+        dispatch_port=dispatch_port,
+        schedule_data=schedule_data,
+        sim_instance=sim_instance,
+        logic=logic,
+        record=record,
+    )
 
+
+def _patch_hugo_dependencies(
+    monkeypatch: pytest.MonkeyPatch,
+    harness: SimpleNamespace,
+) -> None:
     def fake_check_record_module() -> None:
-        logic.record = record
+        harness.logic.record = harness.record
 
     def fake_get_prepared(**kwargs) -> None:
         return None
 
-    monkeypatch.setattr(logic, "check_record_module", fake_check_record_module)
-    monkeypatch.setattr(logic, "get_prepared", fake_get_prepared)
+    monkeypatch.setattr(harness.logic, "check_record_module", fake_check_record_module)
+    monkeypatch.setattr(harness.logic, "get_prepared", fake_get_prepared)
     monkeypatch.setattr(
         hugo_module,
         "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
+        lambda *, sim_instance: harness.dispatch_port,
     )
-    monkeypatch.setattr(hugo_module, "find_tick", lambda *, sim_instance: sim_instance.tick)
+    monkeypatch.setattr(
+        hugo_module,
+        "find_tick",
+        lambda *, sim_instance: sim_instance.tick,
+    )
     _block_legacy_event_lookup(monkeypatch)
 
     buff_add_calls: list[tuple[str, dict[str, object]]] = []
 
     def fake_buff_add_strategy(buff_index, **kwargs):
-        call_order.append(buff_index)
+        harness.call_order.append(buff_index)
         buff_add_calls.append((buff_index, kwargs))
 
     monkeypatch.setattr(
@@ -91,8 +115,13 @@ def test_hugo_totalize_node_publishes_via_dispatch_port_before_any_raw_queue_acc
         fake_buff_add_strategy,
     )
 
+    expected_node_tag = (
+        harness.record.E_totalize_tag
+        if harness.record.active_signal == 2
+        else harness.record.Q_totalize_tag
+    )
     spawned_skill = SimpleNamespace(
-        skill_tag=record.E_totalize_tag,
+        skill_tag=expected_node_tag,
         char_name="Hugo",
         preload_tick=88,
         hit_times=1,
@@ -102,9 +131,9 @@ def test_hugo_totalize_node_publishes_via_dispatch_port_before_any_raw_queue_acc
     )
 
     def fake_spawn_node(tag, preload_tick, skills):
-        assert tag == record.E_totalize_tag
+        assert tag == expected_node_tag
         assert preload_tick == 88
-        assert skills is record.preload_data.skills
+        assert skills is harness.record.preload_data.skills
         return spawned_skill
 
     monkeypatch.setattr("zsim.sim_progress.Preload.SkillsQueue.spawn_node", fake_spawn_node)
@@ -112,42 +141,108 @@ def test_hugo_totalize_node_publishes_via_dispatch_port_before_any_raw_queue_acc
     original_mission_start = LoadingMission.mission_start
 
     def fake_mission_start(self, timenow: int, **kwargs) -> None:
-        call_order.append("mission_start")
+        harness.call_order.append("mission_start")
         assert timenow == 88
         original_mission_start(self, timenow, **kwargs)
 
     monkeypatch.setattr(LoadingMission, "mission_start", fake_mission_start)
 
-    logic.special_hit_logic()
+    harness.buff_add_calls = buff_add_calls
+    harness.spawned_skill = spawned_skill
 
-    assert call_order == [
-        record.totalize_buff_index,
-        record.cinema_1_buff_index,
-        record.cinema_2_buff_index,
-        record.cinema_6_buff_index,
+
+def test_hugo_totalize_node_publishes_via_dispatch_port_before_any_raw_queue_access(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    harness = _build_hugo_harness(active_signal=2, cinema=6, enemy_stun=False)
+    _patch_hugo_dependencies(monkeypatch, harness)
+
+    harness.logic.special_hit_logic()
+
+    assert harness.call_order == [
+        harness.record.totalize_buff_index,
+        harness.record.cinema_1_buff_index,
+        harness.record.cinema_2_buff_index,
+        harness.record.cinema_6_buff_index,
         "mission_start",
         "publish",
     ]
-    assert [buff_index for buff_index, _ in buff_add_calls] == [
-        record.totalize_buff_index,
-        record.cinema_1_buff_index,
-        record.cinema_2_buff_index,
-        record.cinema_6_buff_index,
+    assert [buff_index for buff_index, _ in harness.buff_add_calls] == [
+        harness.record.totalize_buff_index,
+        harness.record.cinema_1_buff_index,
+        harness.record.cinema_2_buff_index,
+        harness.record.cinema_6_buff_index,
     ]
-    assert buff_add_calls[0][1]["specified_count"] == 2500.0
-    for _, kwargs in buff_add_calls:
-        assert kwargs["sim_instance"] is sim_instance
+    assert harness.buff_add_calls[0][1]["specified_count"] == 2500.0
+    for _, kwargs in harness.buff_add_calls:
+        assert kwargs["sim_instance"] is harness.sim_instance
         assert isinstance(kwargs["benifit_list"], list)
         assert len(kwargs["benifit_list"]) == 1
         assert isinstance(kwargs["benifit_list"][0], str)
-    assert len(dispatch_port.events) == 1
-    published_node = dispatch_port.events[0]
-    assert published_node is spawned_skill
+    assert len(harness.dispatch_port.events) == 1
+    published_node = harness.dispatch_port.events[0]
+    assert published_node is harness.spawned_skill
     assert published_node.loading_mission is not None
     assert isinstance(published_node.loading_mission, LoadingMission)
     assert published_node.loading_mission.mission_node is published_node
     assert published_node.loading_mission.mission_active_state is True
     assert published_node.loading_mission.mission_start_tick == 88
     assert published_node.loading_mission.mission_dict[88.0] == "start"
-    assert schedule_data.event_list == []
-    assert record.active_signal is None
+    assert harness.schedule_data.event_list == []
+    assert harness.record.active_signal is None
+
+
+def test_hugo_stun_event_publishes_via_dispatch_port_when_branch_conditions_match(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    harness = _build_hugo_harness(active_signal=2, cinema=1, enemy_stun=True)
+    _patch_hugo_dependencies(monkeypatch, harness)
+
+    harness.logic.special_hit_logic()
+
+    assert harness.call_order == [
+        harness.record.totalize_buff_index,
+        harness.record.cinema_1_buff_index,
+        "mission_start",
+        "publish",
+        "publish",
+    ]
+    assert [buff_index for buff_index, _ in harness.buff_add_calls] == [
+        harness.record.totalize_buff_index,
+        harness.record.cinema_1_buff_index,
+    ]
+    assert len(harness.dispatch_port.events) == 2
+    assert harness.dispatch_port.events[0] is harness.spawned_skill
+    published_stun_event = harness.dispatch_port.events[1]
+    assert isinstance(published_stun_event, StunForcedTerminationEvent)
+    assert published_stun_event.enemy is harness.record.enemy
+    assert published_stun_event.feed_back_ratio == 0.25
+    assert published_stun_event.execute_tick == 88
+    assert harness.schedule_data.event_list == []
+    assert harness.record.active_signal is None
+
+
+def test_hugo_cinema_two_ultimate_keeps_stun_event_skipped_after_gateway_migration(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    harness = _build_hugo_harness(active_signal=6, cinema=2, enemy_stun=True)
+    _patch_hugo_dependencies(monkeypatch, harness)
+
+    harness.logic.special_hit_logic()
+
+    assert harness.call_order == [
+        harness.record.totalize_buff_index,
+        harness.record.cinema_1_buff_index,
+        harness.record.cinema_2_buff_index,
+        "mission_start",
+        "publish",
+    ]
+    assert [buff_index for buff_index, _ in harness.buff_add_calls] == [
+        harness.record.totalize_buff_index,
+        harness.record.cinema_1_buff_index,
+        harness.record.cinema_2_buff_index,
+    ]
+    assert len(harness.dispatch_port.events) == 1
+    assert harness.dispatch_port.events[0] is harness.spawned_skill
+    assert harness.schedule_data.event_list == []
+    assert harness.record.active_signal is None
