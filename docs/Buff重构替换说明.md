@@ -475,3 +475,14 @@
 - 下一步：
   - 继续 US-005 的 post-migration backlog rescan，只把真实 producer-level planned-event writer 记录为后续迁移目标。
 ---
+
+## 2026-06-07 01:16:11 - US-005
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-005` post-migration scan conclusion replaces stale backlog wording that treated remaining `BuffXLogic` / `Character` / `BattleEventListener` `event_list` mentions as likely raw scheduler writers.
+  - No live path was replaced in this story; `BreakingLegManager` was already closed to `ScheduleDispatchPort`, and the rescan found no new concrete one-off planned-event writer.
+- Compatibility retained:
+  - `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` compatibility discovery, `LegacyEventListScheduleDispatchAdapter`, local Yixuan event-group lists, dot runtime registration, core Load/Schedule appends, and handler requeue semantics remain in place.
+- Next step:
+  - Add this PRD's focused regressions to shared `implicit-events` validation, then sync final handoff docs without inventing a new migration target from comments or local lists.
+---
