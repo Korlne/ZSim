@@ -178,3 +178,14 @@
 - 下一步：
   - 继续按同样模式收口 `US-002` 的 xhit SP refresh producer，并把新的 focused regression 继续并入 `implicit-events` 共享验证入口。
 ---
+## 2026-06-06 08:56:11 - US-002
+- Files: `zsim/sim_progress/Buff/BuffXLogic/MagneticStormCharlieSpRecover.py`, `zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py`, `tests/simulator/test_xhit_sp_refresh_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- Replacement note:
+  - `MagneticStormCharlieSpRecover._create_dispatch_port()` and `SeedAdditionalAbilityTrigger._create_dispatch_port()` now replace the xhit SP refresh producers' raw `JudgeTools.find_event_list()` / `schedule_data.event_list.append(...)` publishing path.
+  - `tests/simulator/test_xhit_sp_refresh_dispatch.py` now proves both legacy queue bypass styles are blocked while preserving `simple_start()`, vanguard targeting, and `last_active_tick` semantics.
+- Compatibility kept:
+  - `schedule_data.event_list` is still owned by `LegacyEventListScheduleDispatchAdapter`, so the underlying planned-event queue and append semantics are unchanged.
+  - This slice only closes the xhit SP refresh raw-queue bypass; `SliceofTimeExtraResources`, `CannonRotor`, and later producers still use the old entry path.
+- Next:
+  - Reuse the same focused no-raw-queue regression shape for `US-003`, while preserving the mixed SP/decibel payload contract.
+---

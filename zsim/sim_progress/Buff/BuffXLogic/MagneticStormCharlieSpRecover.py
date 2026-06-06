@@ -1,3 +1,5 @@
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+
 from .. import Buff, JudgeTools, check_preparation
 
 
@@ -23,6 +25,9 @@ class MagneticStormCharlieSpRecover(Buff.BuffLogic):
 
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+
+    def _create_dispatch_port(self):
+        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
 
     def check_record_module(self):
         if self.equipper is None:
@@ -70,12 +75,11 @@ class MagneticStormCharlieSpRecover(Buff.BuffLogic):
         tick_now = JudgeTools.find_tick(sim_instance=self.buff_instance.sim_instance)
         self.buff_instance.simple_start(tick_now, self.record.sub_exist_buff_dict)
         energy_value = self.record.energy_value_dict[int(self.buff_instance.ft.refinement)]
-        event_list = JudgeTools.find_event_list(sim_instance=self.buff_instance.sim_instance)
         from zsim.sim_progress.data_struct import ScheduleRefreshData
 
         refresh_data = ScheduleRefreshData(
             sp_target=(self.record.char.NAME,),
             sp_value=energy_value,
         )
-        event_list.append(refresh_data)
+        self._create_dispatch_port().publish_scheduled(refresh_data)
         print("电磁暴3式回能触发！")

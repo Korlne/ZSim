@@ -1,5 +1,6 @@
 # 这是席德额外能力重击大招增伤无视电抗Buff的脚本
 from define import SEED_REPORT
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from .. import Buff, JudgeTools, check_preparation
 from ._buff_record_base_class import BuffRecordBaseClass as BRBC
@@ -24,6 +25,9 @@ class SeedAdditionalAbilityTrigger(Buff.BuffLogic):
 
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+
+    def _create_dispatch_port(self):
+        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
 
     def check_record_module(self):
         if self.buff_0 is None:
@@ -82,8 +86,7 @@ class SeedAdditionalAbilityTrigger(Buff.BuffLogic):
             sp_target=(vanguard.NAME,),
             sp_value=energy_value,
         )
-        event_list = self.buff_instance.sim_instance.schedule_data.event_list
-        event_list.append(refresh_data)
+        self._create_dispatch_port().publish_scheduled(refresh_data)
         self.record.last_active_tick = self.buff_instance.sim_instance.tick
         if SEED_REPORT:
             self.buff_instance.sim_instance.schedule_data.change_process_state()
