@@ -486,3 +486,15 @@
 - Next step:
   - Add this PRD's focused regressions to shared `implicit-events` validation, then sync final handoff docs without inventing a new migration target from comments or local lists.
 ---
+
+## 2026-06-07 01:27:19 - US-006
+- Files changed: `scripts/run_buff_refactor_validation.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `HIDDEN_HELPER_DISPATCH_TARGETS` and `HIDDEN_HELPER_DISPATCH_FOCUSED_TEST_TARGETS` replace the temporary progress-log instruction to add `test_breaking_leg_manager_dispatch.py` later; the shared `implicit-events` gate now covers this PRD's Yixuan classification regression and `BreakingLegManager` hidden-helper dispatch regression.
+  - No live path was replaced in this story; this only closes the shared validation blind spot after the `BreakingLegManager` dispatch migration.
+- Compatibility retained:
+  - `BreakingLegManager` remains published through `ScheduleDispatchPort`, Yixuan adrenaline events remain local `BaseAdrenalineEvent` objects, and existing dispatch adapter/runtime command boundaries are unchanged.
+  - No new raw `event_list`, `dynamic_buff`, or `exist_buff_dict` passthrough interface was introduced.
+- Next step:
+  - Continue with `US-007` handoff synchronization, recording the closed hidden-helper path and retained core dispatcher/requeue boundaries without inventing a new migration target.
+---
