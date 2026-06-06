@@ -275,3 +275,15 @@
 - 下一步：
   - 下一轮 PRD 继续停留在阶段 1，优先扫描剩余 one-off planned-event producer，并且只在确实暴露新 same-tick 协作时才沿用 `RuntimeCommandPort` 扩边界。
 ---
+
+## 2026-06-06 18:05:08 - US-001
+- Files: `zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py`, `tests/simulator/test_miyabi_core_skill_icefire_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- Replacement note:
+  - `MiyabiCoreSkill_IceFire._create_dispatch_port()` / `publish_scheduled(skill_node)` now replaces the Frostburn rising-edge follow-up `SkillNode` raw `JudgeTools.find_event_list()` / `event_list.append(skill_node)` path in `special_exit_logic()`.
+  - `tests/simulator/test_miyabi_core_skill_icefire_dispatch.py` locks the `publish -> special_resources(skill_node)` order and proves the same frostbite state does not publish twice.
+- Compatibility kept:
+  - `schedule_data.event_list` is still backed by `LegacyEventListScheduleDispatchAdapter`; underlying planned-event queue semantics are unchanged.
+  - This slice does not touch `special_hit_logic()` `MultiplierData` / `Calculator.RegularMul.cal_crit_rate(...)`, and it adds no same-tick write facade.
+- Next:
+  - Continue with `YixuanCinema1Trigger` lightning `SkillNode` routing while preserving LoadingMission and adrenaline recovery order.
+---

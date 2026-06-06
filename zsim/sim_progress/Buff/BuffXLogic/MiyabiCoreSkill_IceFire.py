@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 from zsim.sim_progress import Preload
 from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from .. import Buff, JudgeTools, check_preparation
 
@@ -36,6 +37,9 @@ class MiyabiCoreSkill_IceFire(Buff.BuffLogic):
 
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+
+    def _create_dispatch_port(self):
+        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
 
     def check_record_module(self):
         if self.buff_0 is None:
@@ -92,10 +96,9 @@ class MiyabiCoreSkill_IceFire(Buff.BuffLogic):
         self.record.last_frostbite = frostbite_now
         # print(f'当前tick，冰焰退出情况：{result}')
         if result:
-            event_list = JudgeTools.find_event_list(sim_instance=self.buff_instance.sim_instance)
             skill_obj = self.record.char.skills_dict["1091_Core_Passive"]
             skill_node = Preload.SkillNode(skill_obj, 0)
-            event_list.append(skill_node)
+            self._create_dispatch_port().publish_scheduled(skill_node)
             self.record.char.special_resources(skill_node)
         return result
 
