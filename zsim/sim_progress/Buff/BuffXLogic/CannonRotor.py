@@ -1,3 +1,5 @@
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+
 from .. import Buff, JudgeTools, check_preparation, find_tick
 
 
@@ -24,6 +26,9 @@ class CannonRotor(Buff.BuffLogic):
 
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+
+    def _create_dispatch_port(self):
+        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
 
     def check_record_module(self):
         if self.equipper is None:
@@ -71,7 +76,6 @@ class CannonRotor(Buff.BuffLogic):
     def special_hit_logic(self, **kwargs):
         self.check_record_module()
         self.get_prepared(equipper="加农转子", enemy=1, dynamic_buff_list=1, preload_data=1)
-        event_list = JudgeTools.find_event_list(sim_instance=self.buff_instance.sim_instance)
         from zsim.sim_progress.Preload.SkillsQueue import spawn_node
 
         whole_skill_tag = str(self.record.char.CID) + "_" + self.record.skill_tag
@@ -87,7 +91,7 @@ class CannonRotor(Buff.BuffLogic):
         mission.mission_start(find_tick(sim_instance=self.buff_instance.sim_instance))
         node.loading_mission = mission
 
-        event_list.append(node)
+        self._create_dispatch_port().publish_scheduled(node)
         self.buff_instance.simple_start(
             find_tick(sim_instance=self.buff_instance.sim_instance),
             self.record.sub_exist_buff_dict,
