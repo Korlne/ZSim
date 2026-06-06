@@ -1,5 +1,6 @@
 from zsim.define import HUGO_REPORT
 from zsim.sim_progress.Enemy import Enemy
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
 
@@ -47,6 +48,9 @@ class HugoCorePassiveTotalizeTrigger(Buff.BuffLogic):
 
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+
+    def _create_dispatch_port(self):
+        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
 
     def check_record_module(self):
         if self.buff_0 is None:
@@ -140,7 +144,6 @@ class HugoCorePassiveTotalizeTrigger(Buff.BuffLogic):
         elif self.record.active_signal == 0 and self.record.char.cinema != 6:
             raise ValueError(f"在非6画的情况下检测到了非法的触发信号：{self.record.active_signal}")
         """准备数据"""
-        event_list = JudgeTools.find_event_list(sim_instance=self.buff_instance.sim_instance)
         rest_tick = self.record.enemy.get_stun_rest_tick()
         ratio = 1000 + min(300, rest_tick) / 60 * 280 + min(600, max(rest_tick - 300, 0)) / 60 * 100
         if self.record.active_signal in [2, 6]:
@@ -218,7 +221,7 @@ class HugoCorePassiveTotalizeTrigger(Buff.BuffLogic):
         totalize_node.loading_mission.mission_start(
             find_tick(sim_instance=self.buff_instance.sim_instance)
         )
-        event_list.append(totalize_node)
+        self._create_dispatch_port().publish_scheduled(totalize_node)
 
         """失衡状态强制结算事件"""
         from zsim.sim_progress.data_struct import StunForcedTerminationEvent
@@ -250,6 +253,7 @@ class HugoCorePassiveTotalizeTrigger(Buff.BuffLogic):
 
         """2画以上的大招触发决算时，不结算失衡状态。"""
         if stun_event is not None:
+            event_list = JudgeTools.find_event_list(sim_instance=self.buff_instance.sim_instance)
             event_list.append(stun_event)
 
         """重置信号"""
