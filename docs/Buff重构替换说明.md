@@ -298,3 +298,36 @@
 - Next step:
   - Continue with `VivianDotTrigger` dot `SkillNode` routing while keeping planned-skill publishing separate from dot runtime registration.
 ---
+## 2026-06-06 19:55:44 - US-003
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py`, `tests/simulator/test_vivian_dot_trigger_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- Replacement note:
+  - `VivianDotTrigger._create_dispatch_port()` / `publish_scheduled(dot.skill_node_data)` now replaces the dot follow-up `SkillNode` raw `JudgeTools.find_event_list()` / `event_list.append(dot.skill_node_data)` path in `special_hit_logic()`.
+  - `tests/simulator/test_vivian_dot_trigger_dispatch.py` locks `dot.start(...) -> LoadingMission.mission_start(...) -> enemy.dynamic.dynamic_dot_list.append(dot) -> publish` ordering while raw queue lookup and append are disabled.
+- Compatibility retained:
+  - `schedule_data.event_list` is still backed by `LegacyEventListScheduleDispatchAdapter`; underlying planned-event queue append semantics are unchanged.
+  - Dot runtime registration still uses the existing `enemy.dynamic.dynamic_dot_list.append(dot)` path; this slice did not add a new facade or change `spawn_normal_dot("ViviansProphecy", ...)`.
+- Next step:
+  - Continue with `VivianCorePassiveTrigger` anomaly output routing while preserving the existing anomaly cloning and Calculator read path.
+---
+## 2026-06-06 21:06:06 - US-004
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py`, `tests/simulator/test_vivian_core_passive_trigger_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- Replacement note:
+  - `VivianCorePassiveTrigger._create_dispatch_port()` / `publish_scheduled(dirge_of_destiny_anomaly)` now replaces the `DirgeOfDestinyAnomaly` raw `JudgeTools.find_event_list()` / `event_list.append(dirge_of_destiny_anomaly)` path in `special_effect_logic()`.
+  - `tests/simulator/test_vivian_core_passive_trigger_dispatch.py` locks cloned anomaly settlement, `active_by="1331"` normalization, `anomaly_dmg_ratio`, and single gateway publish while raw queue lookup and append are disabled.
+- Compatibility retained:
+  - `schedule_data.event_list` is still backed by `LegacyEventListScheduleDispatchAdapter`; underlying planned-event queue append semantics are unchanged.
+  - Active anomaly cloning, `anomaly_settled()`, `MultiplierData`, and `Calculator.AnomalyMul.cal_ap(...)` remain the existing business path; this slice did not add a new same-tick write facade or change the Dirge formula.
+- Next step:
+  - Continue with `VivianCinema6Trigger`, preserving the no-anomaly resource branch while routing only the extra anomaly-output branch through the dispatch gateway.
+---
+## 2026-06-06 21:21:50 - US-005
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py`, `tests/simulator/test_vivian_cinema6_trigger_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- Replacement note:
+  - `VivianCinema6Trigger._create_dispatch_port()` / `publish_scheduled(dirge_of_destiny_anomaly)` now replaces the conditional extra `DirgeOfDestinyAnomaly` raw `JudgeTools.find_event_list()` / `event_list.append(dirge_of_destiny_anomaly)` path in `special_effect_logic()`.
+  - `tests/simulator/test_vivian_cinema6_trigger_dispatch.py` locks the publish and no-publish branches while raw queue lookup and append are disabled.
+- Compatibility retained:
+  - `schedule_data.event_list` is still backed by `LegacyEventListScheduleDispatchAdapter`; underlying planned-event queue append semantics are unchanged.
+  - Guard-feather consumption, `c1_counter` / `flight_feather` updates, active anomaly cloning, `anomaly_settled()`, `MultiplierData`, `Calculator.AnomalyMul.cal_ap(...)`, and the existing `feather_manager.update_myself(c6_signal=True)` resource path remain unchanged; this slice did not add a new same-tick write facade.
+- Next step:
+  - Continue with `Character/Yuzuha` cinema-6 team energy fan-out routing while preserving teammate target and 25-energy semantics.
+---

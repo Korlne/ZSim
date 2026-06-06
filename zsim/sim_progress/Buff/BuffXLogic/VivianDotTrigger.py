@@ -1,4 +1,5 @@
 from zsim.define import VIVIAN_REPORT
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
 
@@ -21,6 +22,9 @@ class VivianDotTrigger(Buff.BuffLogic):
 
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+
+    def _create_dispatch_port(self):
+        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
 
     def check_record_module(self):
         if self.buff_0 is None:
@@ -71,13 +75,12 @@ class VivianDotTrigger(Buff.BuffLogic):
 
         dot = spawn_normal_dot("ViviansProphecy", sim_instance=self.buff_instance.sim_instance)
         dot.start(find_tick(sim_instance=self.buff_instance.sim_instance))
-        event_list = JudgeTools.find_event_list(sim_instance=self.buff_instance.sim_instance)
         dot.skill_node_data.loading_mission = LoadingMission(dot.skill_node_data)
         dot.skill_node_data.loading_mission.mission_start(
             find_tick(sim_instance=self.buff_instance.sim_instance)
         )
         self.record.enemy.dynamic.dynamic_dot_list.append(dot)
-        event_list.append(dot.skill_node_data)
+        self._create_dispatch_port().publish_scheduled(dot.skill_node_data)
         if VIVIAN_REPORT:
             self.buff_instance.sim_instance.schedule_data.change_process_state()
             print("核心被动：薇薇安对敌人施加Dot——薇薇安的预言")

@@ -7,6 +7,7 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
 from zsim.sim_progress.ScheduledEvent.Calculator import (
     MultiplierData as Mul,
 )
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from .. import Buff, JudgeTools, check_preparation
 
@@ -47,6 +48,9 @@ class VivianCinema6Trigger(Buff.BuffLogic):
 
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+
+    def _create_dispatch_port(self):
+        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
 
     def check_record_module(self):
         if self.buff_0 is None:
@@ -134,7 +138,6 @@ class VivianCinema6Trigger(Buff.BuffLogic):
             if not copyed_anomaly.settled:
                 copyed_anomaly.anomaly_settled()
             # copyed_anomaly = self.record.last_update_anomaly
-            event_list = JudgeTools.find_event_list(sim_instance=self.buff_instance.sim_instance)
             mul_data = Mul(self.record.enemy, self.record.dynamic_buff_list, self.record.char)
             ap = Cal.AnomalyMul.cal_ap(mul_data)
             from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
@@ -160,7 +163,7 @@ class VivianCinema6Trigger(Buff.BuffLogic):
             #     dirge_of_destiny_anomaly.current_ndarray
             #     / dirge_of_destiny_anomaly.current_anomaly
             # )
-            event_list.append(dirge_of_destiny_anomaly)
+            self._create_dispatch_port().publish_scheduled(dirge_of_destiny_anomaly)
             if VIVIAN_REPORT:
                 self.buff_instance.sim_instance.schedule_data.change_process_state()
                 print(
