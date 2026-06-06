@@ -545,3 +545,14 @@
 - Next step:
   - Continue PRD-8 with the conditional producer story: close it as evidence-only unless a later scan names a concrete planned-event writer with payload and order constraints.
 ---
+
+## 2026-06-07 02:37:21 - US-004
+- Files changed: `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `PRD-8 US-004` replaces a potential conditional migration with explicit no-migration evidence: US-001 and US-003 found no concrete producer-level planned-event writer behind legacy discovery or `event_list=True`.
+  - No live path was replaced in this story; there was no file/function/event payload/order constraint to move through `ScheduleDispatchPort`.
+- Compatibility retained:
+  - `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` compatibility discovery, `LegacyEventListScheduleDispatchAdapter`, core Load/Schedule queue semantics, handler requeue, local event groups, and dot runtime registration remain unchanged.
+- Next step:
+  - Document the retained core dispatcher, handler requeue, local event-group, and dot runtime-registration false-positive boundaries in US-005.
+---
