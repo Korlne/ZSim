@@ -533,3 +533,15 @@
 - Next step:
   - Audit `check_preparation(..., event_list=True)` compatibility evidence in US-003, and only migrate code if a concrete producer-level planned-event writer is found.
 ---
+
+## 2026-06-07 02:29:00 - US-003
+- Files changed: `tests/simulator/test_check_preparation_event_list_compatibility.py`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_check_preparation_event_list_compatibility.py` prepares to replace ad hoc manual checks for `check_preparation(..., event_list=True)` with focused regression evidence that the branch only caches `record.event_list = find_event_list(...)`.
+  - No live path was replaced in this story; the slice proves there is no current producer-level planned-event writer behind `event_list=True`.
+- Compatibility retained:
+  - `Buff/JudgeTools/__init__.py` still supports the legacy `event_list` kwarg by caching the discovered queue on `record.event_list`.
+  - `BuffRecordBaseClass.event_list`, `FindMain.find_event_list(...)`, `LegacyEventListScheduleDispatchAdapter`, core Load/Schedule queue semantics, and handler requeue remain unchanged.
+- Next step:
+  - Continue PRD-8 with the conditional producer story: close it as evidence-only unless a later scan names a concrete planned-event writer with payload and order constraints.
+---
