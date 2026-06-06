@@ -579,3 +579,15 @@
 - Next step:
   - Synchronize PRD-8 final handoff docs in US-007, keeping `--legacy-runtime` / `--candidate-runtime` documented as report labels and avoiding invented migration stories when no concrete producer-level writer was found.
 ---
+
+## 2026-06-07 02:59:26 - US-007
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `PRD-8 US-007` final handoff entries replace stale wording that still presented PRD-8 as the next PRD; the long-lived docs now record completed guardrail coverage, deletion prerequisites for `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list`, and the no-new-producer conclusion.
+  - No live path was replaced in this story; this only synchronizes the phase-1 handoff after the legacy discovery guardrails entered `implicit-events`.
+- Compatibility retained:
+  - `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` remain as legacy discovery / compatibility cache until a later deletion slice proves no allowlist-external producer, config, or `event_list=True` path depends on them.
+  - `LegacyEventListScheduleDispatchAdapter`, core Load/Schedule appends, handler requeue, local Yixuan event groups, Alice dot runtime registration, and report-label runtime comparison flags remain unchanged.
+- Next step:
+  - Start the next phase-1 PRD from the guardrail evidence and deletion prerequisites; only add a producer migration story if a scan finds a concrete planned-event writer with payload, target, and order evidence.
+---

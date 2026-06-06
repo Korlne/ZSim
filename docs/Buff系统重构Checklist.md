@@ -118,8 +118,16 @@
 - [x] 复扫后没有在 `BuffXLogic` / `Character` / `BattleEventListener` / `EnemyUniqueMechanic` / `DecibelManager` 发现新的具体 producer-level raw scheduler writer；`AliceDotTriggerListener` dot runtime registration 不列入 planned-event backlog。
 - [x] `--legacy-runtime` / `--candidate-runtime` 继续只是报告标签，不是 live runtime switch；下一轮仍沿 [Buff重构方案.md](./Buff重构方案.md) 的阶段 1 路线推进。
 
+## 本轮 PRD-8 旧兼容发现口 / producer 守门收口状态（2026-06-07）
+
+- [x] `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 当前只承担 legacy discovery / compatibility cache：`FindMain.find_event_list(...)` 返回当前 `schedule_data.event_list`，`check_preparation(..., event_list=True)` 只缓存 `record.event_list`，不 append、不创建 planned-event payload。
+- [x] `tests/simulator/test_legacy_event_list_discovery_guardrail.py` 与 `tests/simulator/test_check_preparation_event_list_compatibility.py` 已纳入 `implicit-events` shared pytest 与 scoped mypy，守门新增生产 `find_event_list` 调用、`record.event_list` 读写、配置 / BuffXLogic `event_list=True` 入口。
+- [x] PRD-8 没有发现新的 producer-level planned-event writer；后续不得从注释、历史字符串、本地事件组、core Load/Schedule append、handler requeue 或 dot runtime registration 发明迁移故事。
+- [x] 删除 `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 前，必须先保持 guardrail 绿色，并确认没有生产 allowlist 外调用、没有 `record.event_list.append(...)` publisher、没有配置或 `BuffXLogic` 路径请求 `event_list=True`。
+- [x] `--legacy-runtime` / `--candidate-runtime` 继续只是报告标签，不是 live runtime switch；下一轮仍沿 [Buff重构方案.md](./Buff重构方案.md) 的阶段 1 路线推进，只有 phase-1 守门证据稳定后才进入 XLogic 全量分析。
+
 ## 当前默认下一步
 
-- [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的实现型 PRD，优先补 `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 旧兼容发现口的清理证据，或只在扫描发现新的具体 producer-level planned-event writer 时新增迁移故事；不再重开 `Yixuan` 本地事件组、`BreakingLegManager` hidden helper、`LoadDamageEvent` core spawn 或 `ScheduledEvent` handler requeue。
+- [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的实现型 PRD，基于 PRD-8 guardrail 证据继续准备 `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 删除前置；只在扫描发现新的具体 producer-level planned-event writer 时新增迁移故事，不再重开 `Yixuan` 本地事件组、`BreakingLegManager` hidden helper、`LoadDamageEvent` core spawn 或 `ScheduledEvent` handler requeue。
 - [ ] 仅在发现新的具体 same-tick 写路径仍依赖 legacy getter 时，继续把对应 handler / helper 收口到最小 `RuntimeCommandPort` / write facade，并把新增 focused 回归同步并入 `implicit-events` 共享 gate，不扩到 `Calculator` 全量迁移或旧容器删除。
 - [ ] 仅在 live simulator 真正消费 `config.buff_runtime.mode` 后，再把一致性 / benchmark 命令升级为真实 runtime switch 证据。
