@@ -6,12 +6,13 @@
 - 当前默认阶段仍为“基础设施解耦”。
 - Buff 系统现已明确要求采用事件驱动架构。
 - 阶段 1 当前实现基线已经落地：
-  - `ScheduleDispatchPort` 已接入 `SchedulePreload`、`QuickAssistSystem`、`UpdateAnomaly`、`BattleEventListener` 中的 `AliceDotTriggerListener`，以及代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` planned-event 链；剩余 raw `event_list` producer 主要收敛到其他 `BuffXLogic`、`BattleEventListener` 与 `Character` 旁路入口。
+  - `ScheduleDispatchPort` 已接入 `SchedulePreload`、`QuickAssistSystem`、`UpdateAnomaly`、`BattleEventListener` 中的 `AliceDotTriggerListener`、代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` planned-event 链，以及本轮收口的 `ElegantVanitySpRecover`、`LunarNoviluna`、`MagneticStormCharlieSpRecover`、`SeedAdditionalAbilityTrigger`、`SliceofTimeExtraResources`、`CannonRotor`、`YanagiPolarityDisorderTrigger`、`HugoCorePassiveTotalizeTrigger` 与 `DecibelManager`；剩余 raw `event_list` producer 现主要收敛到其他 one-off `BuffXLogic` 与 `Character` 旁路入口。
   - `BuffRuntimeReadPort` / `EventContext.buff_runtime_view` 已接入 `ScheduledEvent`，`anomaly`、`abloom`、`disorder`、`polarity_disorder` 与高风险 `SkillEventHandler` 主读路径已改用 runtime view。
   - `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 已接入 `ScheduledEvent` / `EventContext`；`SkillEventHandler` 的 `ScheduleBuffSettle()`、`update_anomaly()` 等同 tick 写边界已改走显式命令口，同时仍通过 adapter 保留 legacy 容器身份。
+  - `implicit-events` 共享验证入口现已同时覆盖 `test_schedule_dispatch.py`、上述 focused dispatch/runtime-boundary pytest，以及这些回归文件本身的 scoped mypy，不再只类型检查它们所命中的生产代码。
   - `scripts/run_buff_main_loop_consistency.py` 与 `scripts/run_buff_runtime_benchmark.py` 已是仓库内真实命令入口，不再是占位脚本。
   - `--legacy-runtime` / `--candidate-runtime` 仍只是报告标签；live simulator 还未消费 `config.buff_runtime.mode`。
-- 下一轮 Ralph PRD 仍应留在阶段 1，继续围绕“剩余 raw `event_list` bypass 收口 + 必要时扩展显式 same-tick write boundary”，而不是直接挑角色 XLogic 开始迁移。
+- 下一轮 Ralph PRD 仍应留在阶段 1，继续围绕“剩余 one-off raw `event_list` bypass 收口 + 必要时扩展显式 same-tick write boundary”，而不是直接挑角色 XLogic 开始迁移。
 - 下一轮路线仍然严格遵循 [Buff重构方案.md](./Buff重构方案.md) 中的阶段顺序，不回退到角色驱动式切片。
 
 ## 本文档的用途
@@ -24,22 +25,22 @@
 
 ### 下一轮 PRD 名称建议
 
-`Buff 重构 PRD-5：剩余计划事件旁路入口与相邻运行时边界收口`
+`Buff 重构 PRD-6：剩余 one-off planned-event producer 与 Character 旁路入口收口`
 
 ### 下一轮 PRD 的建议范围
 
-- 继续收口剩余计划事件直写入口，优先覆盖其他仍会直接感知 `event_list` 的 `BuffXLogic`、`BattleEventListener` 与 `Character` 旁路 producer，不再把已完成的代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` 样本重复作为主目标。
+- 继续收口剩余计划事件直写入口，优先覆盖其他仍会直接感知 `event_list` 的 one-off `BuffXLogic` 与 `Character` 旁路 producer；默认优先级可从 `MiyabiCoreSkill_IceFire`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger`、`VivianDotTrigger`、`YixuanCinema1Trigger`、`Character/Yuzuha/__init__.py` 与 `Character/Yixuan/AdrenalineManagerClass.py` 这组剩余样本开始，不再重开本轮已闭合的 producer batch。
 - 仅在发现其他具体 handler / helper 仍通过 legacy getter 承担 same-tick 写协作时，继续扩展 `RuntimeCommandPort` / write facade，减少读口与写边界双重职责继续泄露。
 - 如果本轮触达同 tick 写边界，沿用现有 `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 模式，而不是继续把 raw `dynamic_buff` / `exist_buff_dict` 深透传给新代码。
-- 除非 focused validation 暴露回归，否则不要重新打开已经闭合的 `SkillEventHandler` 代表性读写分层样本。
+- 除非 focused validation 暴露回归，否则不要重新打开已经闭合的 `SkillEventHandler` 代表性读写分层样本，也不要把已经收口的 xstart/xhit refresh、`CannonRotor`、`Yanagi`、`Hugo` 或 `DecibelManager` 批次重新当成主故事。
 - 保持 `Simulator` 仍做总流程编排，但不顺手扩大到 `UpdateAnomaly` 全量拆分、`Calculator` 全量迁移或 enemy debuff 单一事实源收口。
 
 ### 下一轮 PRD 的建议产物
 
-- 额外一组或多组改经 dispatch gateway 的非代表性 `BuffXLogic`、`BattleEventListener` 或 `Character` producer 样本。
+- 额外一组或多组改经 dispatch gateway 的剩余 one-off `BuffXLogic` 或 `Character` producer 样本。
 - 如有需要，再补一组沿用 `RuntimeCommandPort` 的相邻 handler / helper same-tick 写边界样本，而不是重新发明新的写门面。
 - 聚焦事件顺序、发布边界与同 tick 写语义的单元测试或 focused pytest。
-- 按实际触达面同步扩大 `implicit-events` typecheck profile 的目标文件，避免 scoped gate 漏掉新 callsite。
+- 按实际触达面同步扩大 `implicit-events` typecheck profile 的目标文件，并把新增 focused 回归文件本身纳入 scoped mypy，避免 gate 只类型检查生产模块。
 - 继续复用现有真实验证入口，而不是再引入新的占位脚本名。
 
 ### 下一轮 PRD 的非目标
@@ -65,6 +66,7 @@
 - 若触达生命周期容器或 runtime 写路径，追加：`uv run python scripts/run_buff_refactor_validation.py`
 - 若触达 `Calculator` seam，追加：`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads`
 - 若故事改动了验证命令契约、帮助文本或执行路径，补跑对应的 `--help` / focused pytest / 样例命令，而不是继续引用占位入口。
+- 上述验证命令应串行执行，不要并发跑多个 profile；它们会共享 sqlite `sessions` 数据与异步日志写线程，并发时容易制造假失败。
 
 ## 下一轮 PRD 开始前必须先看的文件
 

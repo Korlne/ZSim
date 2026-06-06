@@ -96,15 +96,15 @@
 - [x] 高风险 `SkillEventHandler` 已把 `Calculator` / `update_anomaly()` 的主 Buff 读口迁到 runtime view。
 - [ ] 其余 `BuffXLogic` / `BattleEventListener` / `Character` 旁路计划事件生产者，以及其他相邻同 tick runtime 写路径仍待后续阶段 1 切片推进。
 
-## 本轮代表性 producer / write-boundary PRD 收口状态（2026-06-06）
+## 本轮剩余 producer batch / shared-validation PRD 收口状态（2026-06-06）
 
-- [x] 代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` 计划事件链已改经 `ScheduleDispatchPort`，阶段 1 不再把这条样本链列为主缺口。
-- [x] `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 已落地，`SkillEventHandler` 的 `update_anomaly()` 与 `ScheduleBuffSettle()` 同 tick 写边界已改经显式命令边界。
-- [x] `implicit-events` 共享验证入口已覆盖代表性 producer、`SkillEventHandler` 与 `RuntimeCommandPort`，handoff 文档已同步记录验证命令与当前基线。
-- [ ] 阶段 1 剩余缺口仍是其他 `BuffXLogic`、`BattleEventListener`、`Character` 旁路 producer 的 raw `event_list` 写入口，以及尚未收口到显式命令边界的相邻高风险写路径。
+- [x] 代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` 计划事件链，以及本轮收口的 `ElegantVanitySpRecover`、`LunarNoviluna`、`MagneticStormCharlieSpRecover`、`SeedAdditionalAbilityTrigger`、`SliceofTimeExtraResources`、`CannonRotor`、`YanagiPolarityDisorderTrigger`、`HugoCorePassiveTotalizeTrigger` 与 `DecibelManager`，现都已改经 `ScheduleDispatchPort` 发布 planned event。
+- [x] `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 仍是本轮唯一沿用的 same-tick 显式写边界；`SkillEventHandler` 的 `update_anomaly()` 与 `ScheduleBuffSettle()` 同 tick 写边界保持走显式命令口，没有引入第二套 write facade。
+- [x] `implicit-events` 共享验证入口现已同时覆盖 `test_schedule_dispatch.py`、聚焦 dispatch/runtime-boundary pytest，以及这些 focused 回归文件本身的 scoped mypy，handoff 文档已同步记录验证命令与当前基线。
+- [ ] 阶段 1 剩余缺口已收敛为其他 one-off `BuffXLogic`、`Character` 旁路 producer 的 raw `event_list` 写入口，以及后续若继续暴露出来的相邻高风险 same-tick 写路径。
 
 ## 当前默认下一步
 
-- [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的实现型 PRD，优先收口其他 `BuffXLogic`、`BattleEventListener`、`Character` 旁路 producer 的旧直写入口，并保持 `event_list`、`listener_manager.broadcast_event()` 与 runtime command 三层语义分离。
-- [ ] 仅在发现其他具体 same-tick 写路径仍依赖 legacy getter 时，继续把对应 handler / helper 收口到最小 `RuntimeCommandPort` / write facade，不扩到 `Calculator` 全量迁移或旧容器删除。
+- [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的实现型 PRD，优先扫描其他 one-off `BuffXLogic` 与 `Character` 旁路 producer 的旧直写入口，不再重开本轮已闭合的 producer batch，并继续保持 `event_list`、`listener_manager.broadcast_event()` 与 runtime command 三层语义分离。
+- [ ] 仅在发现新的具体 same-tick 写路径仍依赖 legacy getter 时，继续把对应 handler / helper 收口到最小 `RuntimeCommandPort` / write facade，并把新增 focused 回归同步并入 `implicit-events` 共享 gate，不扩到 `Calculator` 全量迁移或旧容器删除。
 - [ ] 仅在 live simulator 真正消费 `config.buff_runtime.mode` 后，再把一致性 / benchmark 命令升级为真实 runtime switch 证据。

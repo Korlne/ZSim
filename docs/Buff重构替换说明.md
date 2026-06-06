@@ -243,3 +243,35 @@
 - 下一步：
   - 继续收口 `US-008` 的 `DecibelManager` planned-event 发布入口；Hugo 这条高风险 producer 的两条 planned-event 分支现已都闭合到 dispatch gateway。
 ---
+## 2026-06-06 15:45:40 - US-008
+- 本轮文件：`zsim/sim_progress/data_struct/DecibelManager/DecibelManagerClass.py`, `tests/simulator/test_decibel_manager_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- 替换说明：
+  - `DecibelManager._create_dispatch_port()` / `publish_scheduled(refresh_data)` 现在替换 `DecibelManager.add_decibel_to_char()` 对 `schedule_data.event_list.append(...)` 的喧响值刷新 planned-event 直写入口。
+  - `tests/simulator/test_decibel_manager_dispatch.py` 显式固定 major/minor 分组后的完整 fan-out 事件数与每个 payload，避免 gateway 迁移后只验证单个 recipient 的假阳性。
+- 兼容保留：
+  - `schedule_data.event_list` 仍由 `LegacyEventListScheduleDispatchAdapter` 承接，底层 planned-event 队列与 append 语义保持不变。
+  - 本轮只关闭相邻非 Buff producer `DecibelManager` 的 raw queue bypass，没有扩到新的 same-tick write facade 或 live runtime 路径替换。
+- 下一步：
+  - 继续收口 `US-009` 的 shared `implicit-events` 验证盲区，把 focused dispatch/runtime-boundary 回归文件本身也纳入共享 gate。
+---
+## 2026-06-06 13:52:21 - US-009
+- 本轮文件：`scripts/run_buff_refactor_validation.py`, `tests/simulator/test_schedule_dispatch.py`, `tests/simulator/test_xstart_sp_refresh_dispatch.py`, `tests/simulator/test_cannon_rotor_dispatch.py`, `tests/simulator/test_yanagi_polarity_disorder_dispatch.py`, `tests/simulator/test_skill_handler_runtime_view.py`, `tests/simulator/test_runtime_command_port.py`
+- 替换说明：
+  - `implicit-events` 共享 gate 现在会直接运行 `test_schedule_dispatch.py`，并对 focused dispatch/runtime-boundary 回归文件本身执行 scoped mypy，不再只类型检查它们命中的生产模块。
+  - 上述 focused harness 里的 fake-runtime override 现统一改成 `monkeypatch.setattr(...)` 或窄 `cast(...)` seam，替换会通过 pytest 但会被 mypy 视为 `method-assign` 的直接方法改写。
+- 兼容保留：
+  - 本轮没有新增 live runtime 路径替换；`ScheduleDispatchPort` 与 `RuntimeCommandPort` 仍通过 legacy adapters 承接旧队列与旧容器身份。
+  - 验证命令仍需串行执行；并发跑多个 `run_buff_refactor_validation.py` profile 会共享 sqlite `sessions` 数据与异步日志写线程，制造与迁移代码无关的假失败。
+- 下一步：
+  - 继续收口 `US-010` 的阶段 1 handoff 文档，把已闭合的 producer batch、共享验证基线与剩余 backlog 同步到 Ralph 工件。
+---
+## 2026-06-06 16:13:05 - US-010
+- 本轮文件：`docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- 替换说明：
+  - 阶段 1 handoff 文档现已明确记录本轮闭合的剩余 producer batch：`ElegantVanitySpRecover`、`LunarNoviluna`、`MagneticStormCharlieSpRecover`、`SeedAdditionalAbilityTrigger`、`SliceofTimeExtraResources`、`CannonRotor`、`YanagiPolarityDisorderTrigger`、`HugoCorePassiveTotalizeTrigger` 与 `DecibelManager`，替换此前仍把这些 callsite 当成待后续收口的旧表述。
+  - 文档现已同步写出 shared `implicit-events` 基线：不仅要跑 focused pytest，也要把 focused dispatch/runtime-boundary 回归文件本身纳入 scoped mypy；同时继续明确 `--legacy-runtime` / `--candidate-runtime` 在 live simulator 真正消费 `config.buff_runtime.mode` 前都只是报告标签。
+- 兼容保留：
+  - 本轮只是同步真实 handoff 基线，并没有宣布阶段 1 完成；剩余缺口仍是其他 one-off `BuffXLogic` / `Character` raw `event_list` producer，以及后续若继续暴露出来的 same-tick 高风险写路径。
+- 下一步：
+  - 下一轮 PRD 继续停留在阶段 1，优先扫描剩余 one-off planned-event producer，并且只在确实暴露新 same-tick 协作时才沿用 `RuntimeCommandPort` 扩边界。
+---
