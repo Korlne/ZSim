@@ -439,3 +439,15 @@
 - 下一步：
   - 下一轮继续按本分类推进：先锁定 `Yixuan` 本地事件组边界，再把 `BreakingLegManager` 的 `ScheduleRefreshData` 发布改经 `ScheduleDispatchPort`。
 ---
+
+## 2026-06-07 00:50:20 - US-002
+- 本轮文件：`tests/simulator/test_yixuan_adrenaline_manager_boundary.py`, `scripts/run_buff_refactor_validation.py`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- 替换说明：
+  - 本轮没有替换 live path；新增 focused regression 与 shared `implicit-events` gate 条目，准备替换后续 PRD 中把 `Character/Yixuan/AdrenalineManagerClass.py` 的本地 `event_list` 误判为 scheduler queue writer 的旧判断。
+  - `test_yixuan_adrenaline_manager_boundary.py` 用 fail-fast `schedule_data.event_list` 证明 `adrenaline_event_factory(...)` 只返回本地 `BaseAdrenalineEvent` 对象组，并保留 `AuricInkUndercurrent` 的 `additional_abililty_active` 过滤。
+- 兼容保留：
+  - `AdrenalineManagerClass.py` 生产代码未改动，`AdrenalineManager.broadcast()` / `refresh()` 的 runtime-manager 职责保持不变。
+  - 未新增 `ScheduleDispatchPort`、`RuntimeCommandPort` facade，也未暴露新的 raw `event_list` / `dynamic_buff` / `exist_buff_dict` passthrough。
+- 下一步：
+  - 继续把 `BreakingLegManager` 的 part-break `ScheduleRefreshData` 发布路径改经 `ScheduleDispatchPort`，不要重开 Yixuan adrenaline 本地事件组。
+---
