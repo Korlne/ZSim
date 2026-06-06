@@ -567,3 +567,15 @@
 - Next step:
   - Expand the shared `implicit-events` gate in US-006, then synchronize final handoff docs without inventing a migration target from retained false-positive boundaries.
 ---
+
+## 2026-06-07 02:54:03 - US-006
+- Files changed: `scripts/run_buff_refactor_validation.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `CHECK_PREPARATION_EVENT_LIST_COMPATIBILITY_FOCUSED_TEST_TARGETS` prepares to replace manual verification of `check_preparation(..., event_list=True)` compatibility with shared `implicit-events` pytest and scoped mypy coverage.
+  - No live path was replaced in this story; it only expands the validation boundary for PRD-8 legacy discovery guardrails.
+- Compatibility retained:
+  - `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` compatibility discovery, `LegacyEventListScheduleDispatchAdapter`, core Load/Schedule queue semantics, handler requeue, local event groups, and dot runtime registration remain unchanged.
+  - No new raw `event_list`, `dynamic_buff`, or `exist_buff_dict` passthrough interface was introduced.
+- Next step:
+  - Synchronize PRD-8 final handoff docs in US-007, keeping `--legacy-runtime` / `--candidate-runtime` documented as report labels and avoiding invented migration stories when no concrete producer-level writer was found.
+---
