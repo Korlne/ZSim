@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 import zsim.define as define_module
@@ -53,8 +54,8 @@ def test_elegant_vanity_sp_recover_publishes_after_simple_start_via_dispatch_por
         energy_value_dict={1: 5, 2: 5.5, 3: 6, 4: 6.5, 5: 7},
         char=SimpleNamespace(NAME="可琳"),
     )
-    logic.check_record_module = lambda: setattr(logic, "record", record)
-    logic.get_prepared = lambda **kwargs: None
+    monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
+    monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
     monkeypatch.setattr(
         elegant_module,
         "create_schedule_dispatch_port",
@@ -66,7 +67,7 @@ def test_elegant_vanity_sp_recover_publishes_after_simple_start_via_dispatch_por
         call_order.append(("simple_start", tick_now))
         assert target_sub_exist_buff_dict is sub_exist_buff_dict
 
-    buff_instance.simple_start = fake_simple_start
+    cast(Any, buff_instance).simple_start = fake_simple_start
 
     logic.special_start_logic()
 
@@ -96,8 +97,8 @@ def test_lunar_noviluna_preserves_publish_then_simple_start_order_via_dispatch_p
         enegy_value_map={1: 3, 2: 3.5, 3: 4, 4: 4.5, 5: 5},
         char=SimpleNamespace(NAME="露娜"),
     )
-    logic.check_record_module = lambda: setattr(logic, "record", record)
-    logic.get_prepared = lambda **kwargs: None
+    monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
+    monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
     monkeypatch.setattr(
         lunar_module,
         "create_schedule_dispatch_port",
@@ -110,7 +111,7 @@ def test_lunar_noviluna_preserves_publish_then_simple_start_order_via_dispatch_p
         assert tick_now == 31
         assert target_sub_exist_buff_dict is sub_exist_buff_dict
 
-    buff_instance.simple_start = fake_simple_start
+    cast(Any, buff_instance).simple_start = fake_simple_start
 
     logic.special_start_logic()
 

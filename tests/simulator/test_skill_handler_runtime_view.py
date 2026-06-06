@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 
@@ -77,17 +78,20 @@ def _build_skill_event_context(
         char_obj_list=[character],
         event_list=[],
     )
-    sim_instance = SimpleNamespace(
-        tick=10,
-        char_data=SimpleNamespace(char_obj_list=[character]),
-        listener_manager=SimpleNamespace(broadcast_event=lambda **kwargs: None),
+    sim_instance = cast(
+        Any,
+        SimpleNamespace(
+            tick=10,
+            char_data=SimpleNamespace(char_obj_list=[character]),
+            listener_manager=SimpleNamespace(broadcast_event=lambda **kwargs: None),
+        ),
     )
     context = EventContext(
         data=schedule_data,
         tick=10,
         enemy=enemy,
         buff_runtime_view=runtime_view,
-        runtime_command_port=runtime_command_port,
+        runtime_command_port=cast(Any, runtime_command_port),
         action_stack=SimpleNamespace(),
         sim_instance=sim_instance,
     )
@@ -232,10 +236,13 @@ def test_skill_handler_runtime_command_adapter_preserves_legacy_container_identi
         event_list=stale_event_list,
         dynamic_buff=legacy_dynamic_buff,
     )
-    sim_instance = SimpleNamespace(
-        tick=10,
-        char_data=SimpleNamespace(char_obj_list=[character]),
-        listener_manager=SimpleNamespace(broadcast_event=lambda **kwargs: None),
+    sim_instance = cast(
+        Any,
+        SimpleNamespace(
+            tick=10,
+            char_data=SimpleNamespace(char_obj_list=[character]),
+            listener_manager=SimpleNamespace(broadcast_event=lambda **kwargs: None),
+        ),
     )
     runtime_command_port = create_runtime_command_port(
         data=schedule_data,

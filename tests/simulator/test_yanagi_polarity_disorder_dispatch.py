@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 import zsim.define as define_module
@@ -92,8 +93,8 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
         get_active_anomaly_bar=lambda: active_anomaly_bar,
     )
     record.e_counter = {"update_from": "prev-hit", "count": 2}
-    logic.check_record_module = lambda: setattr(logic, "record", record)
-    logic.get_prepared = lambda **kwargs: None
+    monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
+    monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
     monkeypatch.setattr(
         yanagi_module,
         "create_schedule_dispatch_port",
@@ -132,7 +133,7 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
 
     monkeypatch.setattr("zsim.sim_progress.Update.spawn_output", fake_spawn_output)
 
-    assert logic.special_judge_logic(skill_node=loading_mission) is True
+    assert logic.special_judge_logic(skill_node=cast(Any, loading_mission)) is True
     assert record.polarity_disorder_update_signal is True
 
     logic.special_effect_logic(skill_node=skill_node)

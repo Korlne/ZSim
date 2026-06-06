@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -19,7 +19,7 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
     dynamic_buff = {"alpha": [object()], "enemy": [object()]}
     exist_buff_dict = {"alpha": {"buff": object()}, "enemy": {}}
     action_stack = SimpleNamespace()
-    sim_instance = SimpleNamespace()
+    sim_instance = cast(Any, SimpleNamespace())
     schedule_data = SimpleNamespace(
         event_list=stale_event_list,
         char_obj_list=char_obj_list,

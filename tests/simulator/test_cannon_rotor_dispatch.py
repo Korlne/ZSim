@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 import zsim.define as define_module
@@ -62,8 +63,8 @@ def test_cannon_rotor_publishes_follow_up_skill_node_via_dispatch_port(
         preload_data=SimpleNamespace(skills=[]),
         sub_exist_buff_dict=sub_exist_buff_dict,
     )
-    logic.check_record_module = lambda: setattr(logic, "record", record)
-    logic.get_prepared = lambda **kwargs: None
+    monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
+    monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
     monkeypatch.setattr(
         cannon_module,
         "create_schedule_dispatch_port",
@@ -103,8 +104,9 @@ def test_cannon_rotor_publishes_follow_up_skill_node_via_dispatch_port(
 
     assert call_order == ["mission_start", "publish", "simple_start"]
     assert len(dispatch_port.events) == 1
-    published_node = dispatch_port.events[0]
+    published_node = cast(Any, dispatch_port.events[0])
     assert published_node is spawned_skill
+    assert isinstance(published_node, SimpleNamespace)
     assert published_node.loading_mission is not None
     assert isinstance(published_node.loading_mission, LoadingMission)
     assert published_node.loading_mission.mission_node is published_node
