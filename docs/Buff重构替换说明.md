@@ -556,3 +556,14 @@
 - Next step:
   - Document the retained core dispatcher, handler requeue, local event-group, and dot runtime-registration false-positive boundaries in US-005.
 ---
+
+## 2026-06-07 02:44:28 - US-005
+- Files changed: `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `PRD-8 US-005` retained-boundary table replaces stale scan ambiguity that could classify `LoadDamageEvent`, `ScheduledEvent` handler requeue, Yixuan local event groups, or Alice dot runtime registration as new producer-level planned-event writers.
+  - No live path was replaced in this story; it only documents the retained dispatcher, requeue, local runtime manager, and runtime-registration boundaries.
+- Compatibility retained:
+  - Core Load/Schedule queue appends, damage-effect continuation, handler not-yet-executable requeue, `Character/Yixuan` local `BaseAdrenalineEvent` groups, Alice dot runtime registration, `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` compatibility discovery, and `LegacyEventListScheduleDispatchAdapter` remain unchanged.
+- Next step:
+  - Expand the shared `implicit-events` gate in US-006, then synchronize final handoff docs without inventing a migration target from retained false-positive boundaries.
+---

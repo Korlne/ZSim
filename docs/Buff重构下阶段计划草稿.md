@@ -14,6 +14,7 @@
   - `--legacy-runtime` / `--candidate-runtime` 仍只是报告标签；live simulator 还未消费 `config.buff_runtime.mode`。
   - 2026-06-07 `PRD-8 US-001` 复扫 raw queue 与旧发现口后，`JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 只剩 legacy discovery / compatibility cache 证据，`data_struct/schedule_dispatch.py` 只保留 adapter 取队列点，`ScheduledEvent` handler 的 `.event_list.append(...)` 仍是 not-yet-executable requeue；未在 `BuffXLogic`、`Character`、`BattleEventListener`、`EnemyUniqueMechanic` 或 `DecibelManager` 发现新的 producer-level planned-event writer。
   - 2026-06-07 `PRD-8 US-003` 用 focused pytest 锁定 `check_preparation(..., event_list=True)` 只缓存 `record.event_list = find_event_list(...)`，并用 AST / 结构化配置扫描确认 `BuffXLogic`、`zsim/config*.json` 与 `zsim/data` CSV / JSON / TOML 当前没有显式 `event_list=True` 生产入口；没有新的 producer-level planned-event writer 可迁移。
+  - 2026-06-07 `PRD-8 US-005` 已把 `LoadDamageEvent` Load-stage spawn / damage-effect continuation、`ScheduledEvent` handler requeue、`Character/Yixuan` 本地 `BaseAdrenalineEvent` 事件组与 `AliceDotTriggerListener` dot runtime registration 写入 retained-boundary 清单；这些路径后续只能由各自的 dispatcher / handler / runtime-state PRD 处理，不应被重新当成 Buff producer raw queue backlog。
 - 下一轮 Ralph PRD 仍应留在阶段 1，继续围绕真实剩余边界推进：优先补 `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 旧兼容发现口清理证据，或只在发现具体 producer-level planned-event writer 时收口；不要从注释、本地 list、core dispatcher append、handler requeue 或 `change_process_state()` 推断新迁移目标。
 - 下一轮路线仍然严格遵循 [Buff重构方案.md](./Buff重构方案.md) 中的阶段顺序，不回退到角色驱动式切片。
 
@@ -32,6 +33,7 @@
 ### 下一轮 PRD 的建议范围
 
 - `Character/Yixuan/AdrenalineManagerClass.py` 已确认是本地 `BaseAdrenalineEvent` 事件组，`EnemyUniqueMechanic/BreakingLegManager.py` part-break `ScheduleRefreshData` 已改经 `ScheduleDispatchPort`；`LoadDamageEvent` 的 Load-stage event spawn / damage-effect continuation 与 `ScheduledEvent` handler not-yet-executable append 均保留为 core dispatcher / requeue 语义。PRD-8 `US-001` 复扫未在 `BuffXLogic`、`Character`、`BattleEventListener`、`EnemyUniqueMechanic` 或 `DecibelManager` 发现新的具体 one-off raw scheduler writer。不再重开已闭合的 `MiyabiCoreSkill_IceFire`、`YixuanCinema1Trigger`、`VivianDotTrigger`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger`、`Character/Yuzuha` cinema-6 energy 分支及前序 xstart/xhit refresh、`CannonRotor`、`Yanagi`、`Hugo`、`DecibelManager`、`BreakingLegManager` 批次。
+- 后续扫描若命中 retained-boundary 清单中的表达式，应先按 `docs/旧Buff系统耦合审查结果.md` 的 `PRD-8 US-005` 表格分类：Load/Schedule dispatcher、damage-effect continuation、handler requeue、本地事件组或 dot runtime registration；只有出现新的文件 / 函数 / payload / target / 相对顺序证据时，才开 producer-level planned-event 迁移故事。
 - 当前源码扫描未在 `BattleEventListener` 目录发现直接 `JudgeTools.find_event_list()` / `schedule_data.event_list.append(...)` planned-event 写入；`AliceDotTriggerListener` 的 dot runtime registration 不应继续被写成 listener raw queue backlog。
 - 真实剩余 backlog 是后续在所有 producer 迁移稳定后收口 `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 旧兼容发现口，并继续守门新扫描中真正出现的 producer-level planned-event writer；当前没有可立即迁移的新 producer payload。
 - 仅在发现其他具体 handler / helper 仍通过 legacy getter 承担 same-tick 写协作时，继续扩展 `RuntimeCommandPort` / write facade，减少读口与写边界双重职责继续泄露。
