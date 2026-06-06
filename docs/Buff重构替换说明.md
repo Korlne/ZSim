@@ -463,3 +463,15 @@
 - 下一步：
   - 在 US-006 中把 `test_breaking_leg_manager_dispatch.py` 加入 shared `implicit-events` pytest 与 scoped mypy gate；后续 handoff 再同步旧审查表和下阶段计划。
 ---
+
+## 2026-06-07 01:09:56 - US-004
+- 本轮文件：`docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- 替换说明：
+  - 本轮只补充保留边界审计，没有替换新的 live path；`LoadDamageEvent` 的 Load-stage event spawn、`SkillEventHandler -> LoadDamageEvent` 的 damage-effect continuation，以及 `ScheduledEvent` handler 的 not-yet-executable requeue 语义继续保留。
+  - 新增文档结论用于替换后续 PRD 中“所有 `event_list.append(...)` 都是 raw queue bypass”的粗粒度判断，避免把 core dispatcher / requeue 入口误迁移为 producer publish path。
+- 兼容保留：
+  - `ScheduledEvent.select_processable_event()` 优先级排序、递归处理、handler requeue、`DamageEventJudge(...)` 与 dot continuation 的队列写入语义都未改动。
+  - 本轮没有新增 `ScheduleDispatchPort`、`RuntimeCommandPort` facade，也没有暴露新的 raw `event_list` / `dynamic_buff` / `exist_buff_dict` passthrough。
+- 下一步：
+  - 继续 US-005 的 post-migration backlog rescan，只把真实 producer-level planned-event writer 记录为后续迁移目标。
+---
