@@ -287,3 +287,14 @@
 - Next:
   - Continue with `YixuanCinema1Trigger` lightning `SkillNode` routing while preserving LoadingMission and adrenaline recovery order.
 ---
+## 2026-06-06 19:14:16 - US-002
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/YixuanCinema1Trigger.py`, `tests/simulator/test_yixuan_cinema1_dispatch.py`, `scripts/run_buff_refactor_validation.py`
+- Replacement note:
+  - `YixuanCinema1Trigger._create_dispatch_port()` / `publish_scheduled(lightning_strick_node)` now replaces the lightning `SkillNode` direct `schedule_data.event_list.append(lightning_strick_node)` path in `special_hit_logic()`.
+  - `tests/simulator/test_yixuan_cinema1_dispatch.py` locks `LoadingMission.mission_start(...) -> publish -> update_adrenaline(sp_value=5) -> simple_start(...)` ordering while raw queue append is disabled.
+- Compatibility retained:
+  - `schedule_data.event_list` is still backed by `LegacyEventListScheduleDispatchAdapter`; underlying planned-event queue append semantics are unchanged.
+  - `char.update_adrenaline(sp_value=5)` remains the existing Character resource recovery call; this slice did not add a second same-tick write facade or change `RuntimeCommandPort`.
+- Next step:
+  - Continue with `VivianDotTrigger` dot `SkillNode` routing while keeping planned-skill publishing separate from dot runtime registration.
+---

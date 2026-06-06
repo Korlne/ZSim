@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 from zsim.define import YIXUAN_REPORT
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from .. import Buff, JudgeTools, check_preparation
 
@@ -33,6 +34,9 @@ class YixuanCinema1Trigger(Buff.BuffLogic):
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
 
+    def _create_dispatch_port(self):
+        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
+
     def check_record_module(self):
         if self.buff_0 is None:
             self.buff_0 = JudgeTools.find_exist_buff_dict(
@@ -63,7 +67,6 @@ class YixuanCinema1Trigger(Buff.BuffLogic):
         preload_data: "PreloadData" = self.record.preload_data
         char: "Yixuan" = self.record.char
         simulator = self.buff_instance.sim_instance
-        event_list = simulator.schedule_data.event_list
         tick = simulator.tick
         # 处理落雷
         from zsim.sim_progress.Load import LoadingMission
@@ -77,7 +80,7 @@ class YixuanCinema1Trigger(Buff.BuffLogic):
         loading_mission = LoadingMission(mission=lightning_strick_node)
         loading_mission.mission_start(tick)
         lightning_strick_node.loading_mission = loading_mission
-        event_list.append(lightning_strick_node)
+        self._create_dispatch_port().publish_scheduled(lightning_strick_node)
 
         char.update_adrenaline(sp_value=self.record.adrenaline_value)
         self.buff_instance.simple_start(
