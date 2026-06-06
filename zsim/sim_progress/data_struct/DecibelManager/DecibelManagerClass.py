@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING, Any
 
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+
 if TYPE_CHECKING:
     from zsim.sim_progress.Character.character import Character
     from zsim.sim_progress.data_struct.single_hit import SingleHit
@@ -42,6 +44,9 @@ class Decibelmanager:
         self.enemy: "Enemy | None" = None
         self.game_state: dict[str, Any] = {}
 
+    def _create_dispatch_port(self):
+        return create_schedule_dispatch_port(sim_instance=self.sim_instance)
+
     def update(self, **kwargs):
         decibel_value, node, output_key = self.get_decibel_value(**kwargs)
         if decibel_value == 0:
@@ -62,8 +67,7 @@ class Decibelmanager:
         from zsim.sim_progress.data_struct import ScheduleRefreshData
 
         refresh_data = ScheduleRefreshData(decibel_target=(char_name,), decibel_value=decibel_value)
-        schedule_data: "ScheduleData" = self.sim_instance.game_state["schedule_data"]
-        schedule_data.event_list.append(refresh_data)
+        self._create_dispatch_port().publish_scheduled(refresh_data)
         # print(f"{char_name}因{self.REPORT_MAP[output_key]}获得了{decibel_value}点喧响值！")
 
     def get_decibel_value(
@@ -86,6 +90,7 @@ class Decibelmanager:
             node = single_hit.skill_node
         elif loading_mission is not None:
             node = loading_mission.mission_node
+        output_key: str | int
         if key is None:
             if node is None:
                 raise ValueError("DecibelManager的get_decibel_value函数中，node不能为空！")
@@ -122,7 +127,7 @@ class Decibelmanager:
         if node is None:
             raise ValueError("DecibelManager的split_char_list_by_cid函数中，node不能为空！")
         char_id = int(node.skill_tag.strip().split("_")[0])
-        char_dict = {"major": [], "minor": []}
+        char_dict: dict[str, list[str]] = {"major": [], "minor": []}
         if not self.char_obj_list:
             from zsim.sim_progress.Buff import find_char_list
 
