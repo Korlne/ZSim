@@ -927,3 +927,14 @@
 - Next step:
   - Continue with US-006 to add no-new-raw-runtime guardrails around `ScheduledEvent`, handler compatibility getters, and retained constructor setup.
 ---
+## 2026-06-07 18:16 - US-006
+- Files changed: `tests/simulator/test_buff_raw_container_guardrail.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `ScheduledEventRuntimeVisitor` guardrail prepares to replace unchecked `ScheduledEvent` / `event_handlers` raw runtime growth with AST-enforced allowlists and retained-reference ceilings.
+  - No live runtime path was replaced in this story; it adds guardrail coverage for raw `dynamic_buff`, `exist_buff_dict`, `loading_buff`, documented legacy getters, and runtime container passthroughs.
+- Compatibility retained:
+  - Public `ScheduledEvent(...)` constructor raw inputs remain retained compatibility boundaries.
+  - `BuffRuntimeReadPort` / `RuntimeCommandPort` adapter internals, documented `EventContext` / `BaseEventHandler` legacy getters, `ScheduledEvent.event_start()` `SPUpdateData` read, and runtime-view formula-boundary `dynamic_buff` keywords remain allowed only in named guardrail buckets.
+- Next step:
+  - Continue with US-007 to validate ScheduledEvent behavior, retained scheduler semantics, handler requeue, damage-effect continuation, and runtime command separation under the new guardrail coverage.
+---
