@@ -639,3 +639,15 @@
 - Next step:
   - Close the conditional producer story evidence-only unless a future scan finds a concrete `record.event_list.append(...)` or other producer-level planned-event writer with payload, target, and order evidence.
 ---
+
+## 2026-06-07 11:27:57 - US-005
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `PRD-9 US-005` closes the conditional producer migration gate with executable guardrail evidence instead of replacing a live producer path.
+  - No live path was replaced in this story; no concrete `record.event_list.append(...)` writer, event payload, target fan-out, or relative-order constraint was found.
+- Compatibility retained:
+  - `JudgeTools.find_event_list()` / `check_preparation(..., event_list=True)` / `BuffRecordBaseClass.event_list` remain legacy discovery / compatibility cache only.
+  - `LegacyEventListScheduleDispatchAdapter`, core Load/Schedule appends, damage-effect continuation, handler requeue, local event groups, dot runtime registration, and existing dispatch/runtime boundaries remain unchanged.
+- Next step:
+  - Continue with the same-tick write boundary story only if it finds a concrete legacy getter plus write collaboration; otherwise close it evidence-only without adding raw passthroughs.
+---
