@@ -866,3 +866,16 @@
 - Next step:
   - Start the next phase-1 PRD from `ScheduledEvent` / `EventContext` raw old-container exposure closure while keeping candidate blocks C/D/E available for later same-phase PRDs.
 ---
+
+## 2026-06-07 17:33 - US-001
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `PRD-12 US-001` prepares to replace loose phase-1 handoff routing with a story-level completion matrix over `ScheduledEvent`, `Update_Buff`, Calculator reads, anomaly/debuff/dot bypasses, guardrails, validation, and final handoff.
+  - No live runtime path was replaced in this story; it builds the boundary map and confirms which retained paths must remain compatibility-only or layer-specific for later stories.
+- Compatibility retained:
+  - `ScheduledEvent(...)`, `BuffLoadLoop()`, legacy `buff_add()`, legacy `KickOutBuff()`, handler requeue, damage-effect continuation, core Load/Schedule append, dot runtime registration, `BuffRuntimeReadPort`, `RuntimeCommandPort`, and `ScheduleDispatchPort` remain retained boundaries.
+  - Deleted `JudgeTools.find_event_list()`, `check_preparation(..., event_list=...)`, and `BuffRecordBaseClass.event_list` surfaces stay closed unless guardrails expose concrete new production evidence.
+  - Already completed planned-event producer batches remain closed and should not be reopened from historical text alone.
+- Next step:
+  - Continue with US-002 to audit `ScheduledEvent` / `EventContext` raw runtime exposure before narrowing compatibility getters or changing handler boundaries.
+---
