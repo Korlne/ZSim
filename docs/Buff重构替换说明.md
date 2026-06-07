@@ -1086,3 +1086,14 @@
 - Next step:
   - Continue with US-020 by adding bypass semantics tests that distinguish scheduled queue publish, listener broadcast, dot runtime registration, and runtime immediate writes, including the `BuffAddStrategy` facade-backed forced-write sample where practical.
 ---
+## 2026-06-07 21:42 - US-020
+- Files changed: `tests/simulator/test_bypass_layer_semantics.py`, `scripts/run_buff_refactor_validation.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `tests/simulator/test_bypass_layer_semantics.py` prepares to replace manual review of bypass-layer separation with focused regressions for scheduled queue publish, listener broadcast, handler requeue, dot runtime registration, `RuntimeCommandPort` same-tick writes, and `BuffAddStrategy` facade-backed forced writes.
+  - `scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events` now includes the bypass-layer semantics tests in both focused pytest and scoped mypy coverage.
+- Compatibility retained:
+  - No live simulator runtime path was replaced in this story; it adds semantics coverage around boundaries migrated or classified by US-017 through US-019.
+  - `ScheduleDispatchPort` remains the planned-event publish boundary, `listener_manager.broadcast_event()` remains synchronous broadcast, handler requeue remains retained scheduler behavior, dot runtime registration remains direct enemy runtime state, and `RuntimeCommandPort` / `LegacyBuffRuntimeFacade` remain same-tick runtime write boundaries.
+- Next step:
+  - Continue with US-021 by consolidating the phase-1 guardrail matrix across raw queue, raw runtime, lifecycle, Calculator-read, and anomaly / debuff / dot bypass coverage.
+---
