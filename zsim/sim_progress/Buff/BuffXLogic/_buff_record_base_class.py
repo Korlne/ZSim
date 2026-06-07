@@ -19,7 +19,6 @@ class BuffRecordBaseClass:
         self.enemy: "Enemy | None" = None
         self.equipper: "str | None" = None
         self.action_stack: "ActionStack | None" = None
-        self.event_list: list | None = None
         self.preload_data: "PreloadData | None" = None
         self.char_obj_list: "list[Character] | None" = None
         self.na_skill_level: "int | None" = None

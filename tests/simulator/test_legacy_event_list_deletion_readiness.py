@@ -21,14 +21,7 @@ EVENT_LIST_TRUE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-ALLOWED_PYTHON_FINDINGS: dict[tuple[str, str], set[str]] = {
-    (
-        "zsim/sim_progress/Buff/BuffXLogic/_buff_record_base_class.py",
-        "buff_record_event_list_access",
-    ): {
-        "self.event_list: list | None = None",
-    },
-}
+ALLOWED_PYTHON_FINDINGS: dict[tuple[str, str], set[str]] = {}
 
 
 @dataclass(frozen=True)
@@ -189,7 +182,7 @@ class LegacyEventListDeletionReadinessVisitor(ast.NodeVisitor):
         return {
             "find_event_list_import": "delete old discovery or migrate to ScheduleDispatchPort",
             "find_event_list_call": "delete old discovery or migrate to ScheduleDispatchPort",
-            "buff_record_event_list_access": "add allowlist, retain as boundary, or block deletion",
+            "buff_record_event_list_access": "delete BuffRecordBaseClass.event_list or document retained fallback",
             "record_event_list_append": "migrate to ScheduleDispatchPort",
             "event_list_preparation_request": "block deletion until this entry point is removed",
             "config_event_list_preparation_request": "block deletion until this entry point is removed",

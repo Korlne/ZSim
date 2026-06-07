@@ -239,13 +239,11 @@ def test_check_preparation_explicit_event_list_keyword_is_rejected(
             event_list=event_list,
         )
 
-    assert record.event_list is None
+    assert not hasattr(record, "event_list")
 
 
-def test_check_preparation_event_list_true_rejects_cached_queue_reuse() -> None:
+def test_check_preparation_event_list_true_does_not_create_cached_queue() -> None:
     record = BuffRecordBaseClass()
-    cached_event_list: list[object] = []
-    record.event_list = cached_event_list
     buff_0 = SimpleNamespace(history=SimpleNamespace(record=record))
     buff_instance = SimpleNamespace(sim_instance=object())
 
@@ -256,8 +254,7 @@ def test_check_preparation_event_list_true_rejects_cached_queue_reuse() -> None:
             event_list=True,
         )
 
-    assert record.event_list is cached_event_list
-    assert cached_event_list == []
+    assert not hasattr(record, "event_list")
 
 
 def test_buff_xlogic_does_not_request_event_list_preparation_cache() -> None:

@@ -712,3 +712,15 @@
 - Next step:
   - Continue with US-004 to remove or quarantine `BuffRecordBaseClass.event_list` without widening into unrelated Buff record state.
 ---
+
+## 2026-06-07 14:22 - US-004
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/_buff_record_base_class.py`, `tests/simulator/test_legacy_event_list_deletion_readiness.py`, `tests/simulator/test_check_preparation_event_list_compatibility.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `BuffRecordBaseClass.__init__` no longer initializes `self.event_list`, replacing the old record-level queue cache field with absence guarded by the focused deletion-readiness tests.
+  - `test_check_preparation_event_list_compatibility.py` now proves rejected `event_list` keywords do not recreate a record event-list cache.
+- Compatibility retained:
+  - `LegacyEventListScheduleDispatchAdapter(schedule_data.event_list)` remains the only allowed low-level scheduler queue touch point for dispatch-port publishing.
+  - Unrelated Buff record fields, old runtime containers, core Load/Schedule appends, handler requeue, local event groups, dot runtime registration, and existing dispatch/runtime boundaries are unchanged.
+- Next step:
+  - Continue with US-005 to tighten post-deletion guardrails around the deleted `find_event_list`, `event_list=True`, and `BuffRecordBaseClass.event_list` surfaces.
+---
