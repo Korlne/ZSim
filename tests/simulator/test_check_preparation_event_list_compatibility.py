@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import csv
 import importlib
+import inspect
 import json
 import tomllib
 from dataclasses import dataclass
@@ -68,6 +69,32 @@ def _call_name(func: ast.expr) -> str | None:
     if isinstance(func, ast.Attribute):
         return func.attr
     return None
+
+
+def _collect_check_preparation_cache_findings() -> list[str]:
+    source = inspect.getsource(judge_tools.check_preparation)
+    tree = ast.parse(source)
+    findings: list[str] = []
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "get"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "kwargs"
+            and node.args
+            and isinstance(node.args[0], ast.Constant)
+            and node.args[0].value == "event_list"
+        ):
+            findings.append(_source_for(source, node))
+        if (
+            isinstance(node, ast.Attribute)
+            and node.attr == "event_list"
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "record"
+        ):
+            findings.append(_source_for(source, node))
+    return findings
 
 
 def _may_request_event_list(value: ast.expr) -> bool:
@@ -188,16 +215,28 @@ def test_find_event_list_legacy_discovery_surface_is_deleted() -> None:
     assert not hasattr(judge_tools, "find_event_list")
 
 
-def test_check_preparation_event_list_true_is_rejected_without_queue_cache() -> None:
+def test_check_preparation_has_no_event_list_cache_branch() -> None:
+    findings = _collect_check_preparation_cache_findings()
+
+    assert not findings, (
+        "check_preparation still contains legacy event_list cache behavior:\n"
+        + "\n".join(f"- {finding}" for finding in findings)
+    )
+
+
+@pytest.mark.parametrize("event_list", [True, False])
+def test_check_preparation_explicit_event_list_keyword_is_rejected(
+    event_list: bool,
+) -> None:
     record = BuffRecordBaseClass()
     buff_0 = SimpleNamespace(history=SimpleNamespace(record=record))
     buff_instance = SimpleNamespace(sim_instance=object())
 
-    with pytest.raises(ValueError, match="event_list=True"):
+    with pytest.raises(ValueError, match="event_list"):
         judge_tools.check_preparation(
             buff_0=buff_0,
             buff_instance=buff_instance,
-            event_list=True,
+            event_list=event_list,
         )
 
     assert record.event_list is None
@@ -210,7 +249,7 @@ def test_check_preparation_event_list_true_rejects_cached_queue_reuse() -> None:
     buff_0 = SimpleNamespace(history=SimpleNamespace(record=record))
     buff_instance = SimpleNamespace(sim_instance=object())
 
-    with pytest.raises(ValueError, match="event_list=True"):
+    with pytest.raises(ValueError, match="event_list"):
         judge_tools.check_preparation(
             buff_0=buff_0,
             buff_instance=buff_instance,

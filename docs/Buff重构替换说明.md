@@ -700,3 +700,15 @@
 - Next step:
   - Continue with US-003 to remove or quarantine the remaining `event_list=True` keyword/cache surface without reintroducing raw queue discovery.
 ---
+
+## 2026-06-07 14:15 - US-003
+- Files changed: `zsim/sim_progress/Buff/JudgeTools/__init__.py`, `tests/simulator/test_check_preparation_event_list_compatibility.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `check_preparation(..., event_list=...)` now rejects the deleted keyword by presence, replacing the old `event_list = kwargs.get("event_list")` compatibility-cache branch and preventing `record.event_list` from being populated through preparation.
+  - No simulator runtime behavior was replaced in this story; this closes a legacy discovery/cache surface without changing planned-event dispatch semantics.
+- Compatibility retained:
+  - `LegacyEventListScheduleDispatchAdapter(schedule_data.event_list)` remains the only allowed low-level scheduler queue touch point for dispatch-port publishing.
+  - `BuffRecordBaseClass.event_list` remains as the next deletion target; unrelated Buff record fields and old runtime containers are unchanged.
+- Next step:
+  - Continue with US-004 to remove or quarantine `BuffRecordBaseClass.event_list` without widening into unrelated Buff record state.
+---

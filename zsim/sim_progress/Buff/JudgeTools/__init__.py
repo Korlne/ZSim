@@ -37,12 +37,17 @@ def check_preparation(
         raise ValueError("buff_0的record模块尚未初始化！！！")
     record = buff_0.history.record
 
+    if "event_list" in kwargs:
+        raise ValueError(
+            "check_preparation(..., event_list=...) 的旧 event_list 参数已删除；"
+            "计划事件发布请使用 ScheduleDispatchPort。"
+        )
+
     # 参数获取
     enemy = kwargs.get("enemy")
     sub_exist_buff_dict = kwargs.get("sub_exist_buff_dict")
     dynamic_buff_list = kwargs.get("dynamic_buff_list")
     action_stack = kwargs.get("action_stack")
-    event_list = kwargs.get("event_list")
     trigger_buff_0 = kwargs.get("trigger_buff_0")
     preload_data = kwargs.get("preload_data")
     char_obj_list = kwargs.get("char_obj_list")
@@ -92,11 +97,6 @@ def check_preparation(
     if action_stack:
         if record.action_stack is None:
             record.action_stack = find_stack(sim_instance=buff_instance.sim_instance)
-    if event_list:
-        raise ValueError(
-            "check_preparation(..., event_list=True) 的旧 event_list 发现口已删除；"
-            "计划事件发布请使用 ScheduleDispatchPort。"
-        )
     if trigger_buff_0:
         trigger_buff_0_handler(record, trigger_buff_0, buff_instance=buff_instance)
     if preload_data:
