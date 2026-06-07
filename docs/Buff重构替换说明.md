@@ -627,3 +627,15 @@
 - Next step:
   - Audit the `check_preparation(..., event_list=True)` branch as inactive compatibility cache and continue blocking deletion unless allowlist-external production entry points remain absent.
 ---
+
+## 2026-06-07 11:25:08 - US-004
+- Files changed: `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `PRD-9 US-004` prepares to replace broad manual interpretation of `check_preparation(..., event_list=True)` with explicit evidence that the branch is inactive compatibility cache only.
+  - No live path was replaced in this story; it only documents that `event_list=True` does not construct planned-event payloads, does not append, and currently has no explicit production entry point.
+- Compatibility retained:
+  - `JudgeTools.find_event_list()` / `check_preparation(..., event_list=True)` / `BuffRecordBaseClass.event_list` remain legacy discovery / compatibility cache.
+  - `LegacyEventListScheduleDispatchAdapter`, core Load/Schedule appends, damage-effect continuation, handler requeue, local event groups, dot runtime registration, and existing dispatch/runtime boundaries remain unchanged.
+- Next step:
+  - Close the conditional producer story evidence-only unless a future scan finds a concrete `record.event_list.append(...)` or other producer-level planned-event writer with payload, target, and order evidence.
+---
