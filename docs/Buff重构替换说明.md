@@ -1143,3 +1143,13 @@
 - Next step:
   - Start the next PRD from phase 2: XLogic full classification and reuse convergence, while using phase-1 guardrails only as blocker evidence if they fail.
 ---
+## 2026-06-08 00:08 - US-001
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - No live path was replaced in this audit-only story; it confirms that the current root `ScheduleBuffSettle(...)` production path remains behind `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` and prepares later guardrail/profile/doc-sync stories.
+- Compatibility retained:
+  - `SkillEventHandler` and `AnomalyEventHandler` still call `runtime_command_port.settle_buffs(...)`; `LegacyRuntimeCommandAdapter` still delegates to the legacy `ScheduleBuffSettle` implementation with old container identity.
+  - `.codex_worktrees/` direct-call findings are historical worktree evidence and are not treated as current production blocker evidence.
+- Next step:
+  - Continue with US-002 by adding raw-container guardrail coverage and a retained-boundary ceiling for `zsim/sim_progress/Buff/ScheduleBuffSettle.py`.
+---
