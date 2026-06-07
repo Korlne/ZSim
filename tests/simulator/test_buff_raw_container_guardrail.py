@@ -31,12 +31,15 @@ SCHEDULED_EVENT_RUNTIME_GUARDRAIL_FILES = (
 RAW_CONTAINER_NAMES = {
     "DYNAMIC_BUFF_DICT",
     "LOADING_BUFF_DICT",
+    "_enemy_debuff_mirror",
     "_dynamic_buff",
     "_dynamic_buff_dict",
     "_exist_buff_dict",
     "_loading_buff_dict",
     "dynamic_buff",
     "dynamic_buff_dict",
+    "dynamic_debuff_list",
+    "enemy_debuff_mirror",
     "exist_buff_dict",
     "existbuff_dict",
     "loading_buff",
@@ -47,11 +50,14 @@ RAW_CONTAINER_NAMES = {
 RAW_CONTAINER_ATTRS = {
     "DYNAMIC_BUFF_DICT",
     "LOADING_BUFF_DICT",
+    "_enemy_debuff_mirror",
     "_dynamic_buff",
     "_dynamic_buff_dict",
     "_exist_buff_dict",
     "_loading_buff_dict",
     "dynamic_buff",
+    "dynamic_debuff_list",
+    "enemy_debuff_mirror",
     "exist_buff_dict",
     "loading_buff",
 }
@@ -227,6 +233,8 @@ class RawContainerVisitor(ast.NodeVisitor):
 
     @staticmethod
     def _classification_for(container: str) -> str:
+        if "debuff_mirror" in container or container == "dynamic_debuff_list":
+            return "enemy debuff mirror old-container passthrough"
         if container in LEGACY_RUNTIME_GETTER_NAMES:
             return "compatibility-only legacy runtime getter"
         if "LOADING" in container or "loading" in container:
@@ -346,9 +354,17 @@ def _allowance_for(finding: Finding) -> str | None:
     if path == "zsim/sim_progress/Buff/BuffLoad.py":
         return "retained BuffLoadLoop trigger judgement and pending queue population"
     if path == "zsim/sim_progress/Buff/BuffAdd.py":
-        return "retained buff_add compatibility path"
+        if context == "buff_add":
+            return "legacy buff_add pending-to-active compatibility path"
+        if context == "add_debuff_to_enemy":
+            return "legacy buff_add enemy debuff mirror sync"
     if path == "zsim/sim_progress/Update/Update_Buff.py":
-        return "retained Update_Buff active-removal compatibility path"
+        if context == "update_time_related_effect":
+            return "retained Update_Buff time-effect compatibility wrapper"
+        if context == "update_buff":
+            return "retained Update_Buff active-store traversal and no-facade fallback"
+        if context == "KickOutBuff":
+            return "legacy KickOutBuff active-removal compatibility path"
     if path == "zsim/sim_progress/ScheduledEvent/__init__.py":
         return "retained ScheduledEvent raw-container boundary"
     if path == "zsim/sim_progress/ScheduledEvent/runtime_command.py":
@@ -431,22 +447,25 @@ def _scheduled_runtime_allowance_counts(findings: list[Finding]) -> Counter[str]
 
 
 EXPECTED_RETAINED_REFERENCE_CEILINGS = {
-    "core Load/Schedule/GlobalStats container ownership": 28,
-    "legacy facade adapter internals": 117,
-    "legacy facade construction": 10,
-    "retained BuffLoadLoop/ScheduledEvent main-loop boundary": 9,
-    "retained BuffLoadLoop trigger judgement and pending queue population": 66,
-    "retained buff_add compatibility path": 24,
-    "retained Update_Buff active-removal compatibility path": 27,
-    "retained ScheduledEvent raw-container boundary": 26,
-    "RuntimeCommandPort compatibility reads": 18,
+    "core Load/Schedule/GlobalStats container ownership": 16,
+    "legacy facade adapter internals": 59,
+    "legacy facade construction": 8,
+    "retained BuffLoadLoop/ScheduledEvent main-loop boundary": 4,
+    "retained BuffLoadLoop trigger judgement and pending queue population": 41,
+    "legacy buff_add pending-to-active compatibility path": 10,
+    "legacy buff_add enemy debuff mirror sync": 3,
+    "retained Update_Buff time-effect compatibility wrapper": 5,
+    "retained Update_Buff active-store traversal and no-facade fallback": 7,
+    "legacy KickOutBuff active-removal compatibility path": 5,
+    "retained ScheduledEvent raw-container boundary": 21,
+    "RuntimeCommandPort compatibility reads": 10,
 }
 
 EXPECTED_SCHEDULED_RUNTIME_REFERENCE_CEILINGS = {
     "retained ScheduledEvent constructor setup": 13,
     "runtime view / command adapter setup": 6,
     "retained SPUpdateData runtime read candidate": 2,
-    "runtime view / facade adapter internals": 51,
+    "runtime view / facade adapter internals": 63,
     "existing RuntimeCommandPort adapter reads": 10,
     "documented EventContext compatibility getters": 8,
     "documented BaseEventHandler compatibility getters": 8,
@@ -496,6 +515,22 @@ def test_raw_old_container_guardrail_failure_message_includes_triage_fields() ->
     assert "zsim/sim_progress/Buff/BuffXLogic/_fixture.py:2" in message
     assert "matched expression: sim_instance.global_stats.DYNAMIC_BUFF_DICT" in message
     assert "classification suggestion: active store old-container passthrough" in message
+    assert f"next action: {TRIAGE_NEXT_ACTION}" in message
+
+
+def test_raw_old_container_guardrail_classifies_enemy_debuff_mirror_passthrough() -> None:
+    source = (
+        "def spread(enemy):\n"
+        "    return handler(enemy.dynamic.dynamic_debuff_list)\n"
+    )
+    path = PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffXLogic" / "_fixture.py"
+    findings = _collect_findings_from_source(path, source)
+
+    assert len(findings) == 1
+    message = findings[0].message()
+    assert "zsim/sim_progress/Buff/BuffXLogic/_fixture.py:2" in message
+    assert "matched expression: enemy.dynamic.dynamic_debuff_list" in message
+    assert "classification suggestion: enemy debuff mirror old-container passthrough" in message
     assert f"next action: {TRIAGE_NEXT_ACTION}" in message
 
 

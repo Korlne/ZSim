@@ -970,3 +970,14 @@
 - Next step:
   - Continue with US-010 lifecycle raw-container guardrails so the new individual-settled facade command and retained direct compatibility paths are guarded against raw-container expansion.
 ---
+## 2026-06-07 18:53 - US-010
+- Files changed: `tests/simulator/test_buff_raw_container_guardrail.py`, `scripts/run_buff_refactor_validation.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_buff_raw_container_guardrail.py` prepares to replace manual lifecycle review for `enemy.dynamic.dynamic_debuff_list` and retained `Update_Buff` / `BuffAdd` old-container growth with AST-classified guardrails, context-specific allowances, and retained-reference ceilings.
+  - `scripts/run_buff_refactor_validation.py` now runs the raw-container guardrail in the default `lifecycle` validation profile as focused pytest and scoped mypy coverage.
+- Compatibility retained:
+  - No live simulator runtime path was replaced in this story; old containers remain the runtime source of truth behind `LegacyBuffRuntimeFacade`.
+  - `BuffLoadLoop()`, legacy `buff_add()`, legacy `KickOutBuff()`, no-facade `Update_Buff` fallbacks, and current enemy debuff mirror synchronization remain retained compatibility boundaries.
+- Next step:
+  - Continue with US-011 lifecycle validation and main-loop safety evidence before moving into the Calculator read block.
+---
