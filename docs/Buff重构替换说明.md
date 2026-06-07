@@ -1004,3 +1004,14 @@
 - Next step:
   - Continue with US-013 by designing a minimal attribute reader around the anomaly-mastery sample, then use `BranchBladeSongCritDamageBonus.special_judge_logic()` as the first low-risk XLogic migration candidate.
 ---
+## 2026-06-07 19:18 - US-013
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, `scripts/run_buff_refactor_validation.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `BuffAttributeReadContext` / `BuffAttributeReader` / `CalculatorBuffAttributeReader` prepares to replace ad hoc high-frequency `MultiplierData(...)` reads for the anomaly-mastery helper group.
+  - `_calculate_dynamic_statement()` centralizes the old dynamic Buff aggregation so `MultiplierData` remains a compatibility snapshot while the new reader can compute `read_anomaly_mastery()` without constructing that snapshot.
+- Compatibility retained:
+  - No live BuffXLogic callsite was migrated in this story; `BranchBladeSongCritDamageBonus.special_judge_logic()` still uses the retained `MultiplierData + Calculator.AnomalyMul.cal_am()` path.
+  - Calculator formulas, CalAnomaly formulas, read-then-write XLogic paths, event-producing XLogic paths, and `ScheduleDispatchPort` behavior remain unchanged.
+- Next step:
+  - Continue with US-014 by migrating the representative `BranchBladeSongCritDamageBonus.special_judge_logic()` read-only gate to the new attribute reader and retaining old-helper parity coverage.
+---

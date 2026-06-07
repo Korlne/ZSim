@@ -1,7 +1,8 @@
 from collections.abc import Mapping as MappingABC
+from dataclasses import dataclass
 import json
 from functools import lru_cache
-from typing import Any, Literal, Mapping, Sequence
+from typing import Any, Literal, Mapping, Protocol, Sequence
 
 import numpy as np
 
@@ -21,6 +22,71 @@ with open(
     encoding="utf-8-sig",
 ) as f:
     buff_effect_trans: dict = json.load(f)
+
+
+@dataclass(frozen=True, slots=True)
+class BuffAttributeReadContext:
+    """Buff 属性读取的最小输入上下文。"""
+
+    enemy: Enemy
+    active_buff_view: Mapping[str, Sequence[Any]]
+    character: Character | None = None
+    query_node: SkillNode | AnomalyBar | None = None
+
+
+class BuffAttributeReader(Protocol):
+    """高频属性读取接口，避免新读口直接依赖 MultiplierData 快照。"""
+
+    def read_anomaly_mastery(self, context: BuffAttributeReadContext) -> np.float64:
+        """读取异常掌控。"""
+        ...
+
+
+def _calculate_dynamic_statement(
+    enemy_obj: Enemy,
+    dynamic_buff: Mapping[str, Sequence[Any]],
+    character_obj: Character | None,
+    node: SkillNode | AnomalyBar | None,
+) -> dict:
+    char_name = character_obj.NAME if character_obj is not None else None
+    if char_name is None:
+        char_buff: Sequence[Any] = ()
+    else:
+        try:
+            char_buff = dynamic_buff[char_name]
+        except KeyError:
+            char_buff = ()
+            report_to_log(f"[WARNING] 动态Buff列表内没有角色 {char_name}", level=4)
+
+    try:
+        enemy_buff: Sequence[Any] = enemy_obj.dynamic.dynamic_debuff_list
+    except AttributeError:
+        report_to_log("[WARNING] self.enemy_obj 中找不到动态buff列表", level=4)
+        try:
+            enemy_buff = dynamic_buff["enemy"]
+        except KeyError:
+            report_to_log("[WARNING] dynamic_buff 中依然找不到动态buff列表", level=4)
+            enemy_buff = ()
+    enabled_buff = tuple(char_buff) + tuple(enemy_buff)
+    try:
+        dynamic_statement: dict = cal_buff_total_bonus(
+            enabled_buff=enabled_buff,
+            judge_obj=node,
+            sim_instance=enemy_obj.sim_instance,
+            char_name=char_name,
+        )
+    except TypeError as err:
+        raise TypeError(
+            f"参数错误！enabled_buff为{type(enabled_buff)}，node为{type(node)}"
+        ) from err
+    return dynamic_statement
+
+
+def _calculate_anomaly_mastery(static_statement: Any, dynamic_statement: Any) -> np.float64:
+    return np.float64(
+        static_statement.am * (1 + dynamic_statement.field_anomaly_mastery)
+        + dynamic_statement.anomaly_mastery
+    )
 
 
 class MultiplierData:
@@ -126,37 +192,12 @@ class MultiplierData:
         Returns:
             dict: 包含所有buff加成的字典
         """
-        if self.char_name is None:
-            char_buff: Sequence[Any] = ()
-        else:
-            try:
-                char_buff = dynamic_buff[self.char_name]
-            except KeyError:
-                char_buff = ()
-                report_to_log(f"[WARNING] 动态Buff列表内没有角色 {self.char_name}", level=4)
-
-        try:
-            enemy_buff: Sequence[Any] = self.enemy_obj.dynamic.dynamic_debuff_list
-        except AttributeError:
-            report_to_log("[WARNING] self.enemy_obj 中找不到动态buff列表", level=4)
-            try:
-                enemy_buff = dynamic_buff["enemy"]
-            except KeyError:
-                report_to_log("[WARNING] dynamic_buff 中依然找不到动态buff列表", level=4)
-                enemy_buff = ()
-        enabled_buff = tuple(char_buff) + tuple(enemy_buff)
-        try:
-            dynamic_statement: dict = cal_buff_total_bonus(
-                enabled_buff=enabled_buff,
-                judge_obj=node,
-                sim_instance=self.enemy_obj.sim_instance,
-                char_name=self.char_name,
-            )
-        except TypeError as err:
-            raise TypeError(
-                f"参数错误！enabled_buff为{type(enabled_buff)}，node为{type(node)}"
-            ) from err
-        return dynamic_statement
+        return _calculate_dynamic_statement(
+            self.enemy_obj,
+            dynamic_buff,
+            self.char_instance,
+            node,
+        )
 
     class StaticStatement:
         _instance_cache: dict[tuple | None, Any] = {}
@@ -472,6 +513,23 @@ class MultiplierData:
                     setattr(self, attr_name, getattr(self, attr_name) + value)
                 else:
                     raise KeyError(f"Invalid buff multiplier key: {CNkey}")
+
+
+class CalculatorBuffAttributeReader(BuffAttributeReader):
+    """基于现有 Calculator 聚合规则的属性读取适配器。"""
+
+    def read_anomaly_mastery(self, context: BuffAttributeReadContext) -> np.float64:
+        static_statement = getattr(context.character, "statement", None)
+        static = MultiplierData.StaticStatement(static_statement)
+        dynamic = MultiplierData.DynamicStatement(
+            _calculate_dynamic_statement(
+                context.enemy,
+                context.active_buff_view,
+                context.character,
+                context.query_node,
+            )
+        )
+        return _calculate_anomaly_mastery(static, dynamic)
 
 
 class Calculator:
@@ -1053,11 +1111,7 @@ class Calculator:
 
         @staticmethod
         def cal_am(data: MultiplierData) -> np.float64:
-            am = np.float64(
-                data.static.am * (1 + data.dynamic.field_anomaly_mastery)
-                + data.dynamic.anomaly_mastery
-            )
-            return am
+            return _calculate_anomaly_mastery(data.static, data.dynamic)
 
         @staticmethod
         def cal_anomaly_buildup(data: MultiplierData) -> np.float64:
