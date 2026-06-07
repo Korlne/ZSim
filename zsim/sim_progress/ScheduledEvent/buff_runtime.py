@@ -114,6 +114,10 @@ class BuffRuntimeFacade(ABC):
         """执行 Buff.end 并从旧 active 容器移除。"""
 
     @abstractmethod
+    def settle_individual_buff_stack(self, buff: "Buff", *, tick: int) -> None:
+        """结算层数独立 Buff 的过期 stack。"""
+
+    @abstractmethod
     def find_active_buff_by_index(self, beneficiary: str, buff_index: str) -> "Buff | None":
         """按 Buff index 查找激活 Buff。"""
 
@@ -199,6 +203,14 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         )
         if buff.ft.is_debuff:
             self._enemy_debuff_mirror.remove(buff)
+
+    def settle_individual_buff_stack(self, buff: "Buff", *, tick: int) -> None:
+        expired_stack_items = [
+            stack_item for stack_item in buff.dy.built_in_buff_box if stack_item[1] < tick
+        ]
+        for expired_stack_item in expired_stack_items:
+            buff.dy.built_in_buff_box.remove(expired_stack_item)
+        buff.dy.count = len(buff.dy.built_in_buff_box)
 
     def find_active_buff_by_index(self, beneficiary: str, buff_index: str) -> "Buff | None":
         return next(

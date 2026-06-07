@@ -959,3 +959,14 @@
 - Next step:
   - Continue with US-009 by selecting one coherent `Update_Buff.update_buff()` lifecycle internal to route through the existing runtime facade or a narrow lifecycle adapter, backed by focused tests.
 ---
+## 2026-06-07 18:43 - US-009
+- Files changed: `zsim/sim_progress/ScheduledEvent/buff_runtime.py`, `zsim/sim_progress/Update/Update_Buff.py`, `tests/simulator/test_buff_runtime_facade.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `BuffRuntimeFacade.settle_individual_buff_stack()` / `LegacyBuffRuntimeFacade.settle_individual_buff_stack()` replaces the live `Update_Buff.update_buff(..., runtime_facade=...)` direct `process_individual_buff()` call for individual-settled Buff stack cleanup.
+  - The focused lifecycle test now proves the individual-settled branch routes through the facade and still preserves stack cleanup, count refresh, and report timing.
+- Compatibility retained:
+  - No-facade `Update_Buff.update_buff()` callers still use legacy `process_individual_buff()` directly.
+  - `KickOutBuff()` remains the retained compatibility path for direct Buff ending, and anomaly bar expiration, dot expiration, Calculator formulas, complex `xexit()` formulas, and enemy debuff single-source-of-truth are unchanged.
+- Next step:
+  - Continue with US-010 lifecycle raw-container guardrails so the new individual-settled facade command and retained direct compatibility paths are guarded against raw-container expansion.
+---

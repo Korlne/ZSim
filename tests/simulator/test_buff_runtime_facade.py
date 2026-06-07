@@ -359,6 +359,14 @@ def test_update_buff_preserves_individual_settled_stack_cleanup(
         dynamic_buff_dict=dynamic_buff_dict,
         enemy_debuff_mirror=[],
     )
+    settle_calls: list[tuple[Any, int]] = []
+    original_settle = facade.settle_individual_buff_stack
+
+    def recording_settle(buff: Any, *, tick: int) -> None:
+        settle_calls.append((buff, tick))
+        original_settle(buff, tick=tick)
+
+    monkeypatch.setattr(facade, "settle_individual_buff_stack", recording_settle)
 
     Update_Buff.update_buff(
         dynamic_buff_dict,
@@ -368,6 +376,7 @@ def test_update_buff_preserves_individual_settled_stack_cleanup(
         runtime_facade=facade,
     )
 
+    assert settle_calls == [(stacked, 5)]
     assert dynamic_buff_dict["alpha"] == [stacked]
     assert stacked.dy.built_in_buff_box == [("live", 8)]
     assert stacked.dy.count == 1

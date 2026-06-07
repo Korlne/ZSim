@@ -77,7 +77,10 @@ def update_buff(
                         remove_buff_list.append(_)
                         continue
                     else:
-                        process_individual_buff(_, timetick)
+                        if runtime_facade is None:
+                            process_individual_buff(_, timetick)
+                        else:
+                            runtime_facade.settle_individual_buff_stack(_, tick=timetick)
                         # 先更新层数，再report。
                         report_buff_to_queue(
                             charname, timetick, _.ft.index, _.dy.count, True, level=4
