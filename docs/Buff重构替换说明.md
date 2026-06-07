@@ -615,3 +615,15 @@
 - Next step:
   - Add focused static deletion-readiness regression coverage so future deletion work no longer depends on manual checklist review.
 ---
+
+## 2026-06-07 11:17:24 - US-003
+- Files changed: `tests/simulator/test_legacy_event_list_deletion_readiness.py`, `scripts/run_buff_refactor_validation.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_legacy_event_list_deletion_readiness.py` prepares to replace manual deletion-readiness greps for `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` with AST and structured config/data regression coverage.
+  - No live path was replaced in this story; it only adds guardrail evidence and validation wiring for later deletion decisions.
+- Compatibility retained:
+  - `JudgeTools.find_event_list()` / `check_preparation(..., event_list=True)` / `BuffRecordBaseClass.event_list` remain legacy discovery / compatibility cache.
+  - `LegacyEventListScheduleDispatchAdapter`, core Load/Schedule appends, damage-effect continuation, handler requeue, local event groups, dot runtime registration, and existing dispatch/runtime boundaries remain unchanged.
+- Next step:
+  - Audit the `check_preparation(..., event_list=True)` branch as inactive compatibility cache and continue blocking deletion unless allowlist-external production entry points remain absent.
+---
