@@ -22,6 +22,7 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
     exist_buff_dict = {"alpha": {"buff": object()}, "enemy": {}}
     action_stack = SimpleNamespace()
     sim_instance = cast(Any, SimpleNamespace())
+    runtime_view = LegacyBuffRuntimeReadAdapter(dynamic_buff, exist_buff_dict)
     schedule_data = SimpleNamespace(
         event_list=stale_event_list,
         char_obj_list=char_obj_list,
@@ -32,6 +33,7 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
         exist_buff_dict=exist_buff_dict,
         action_stack=action_stack,
         sim_instance=sim_instance,
+        buff_runtime_view=runtime_view,
     )
     enemy = SimpleNamespace()
     skill_node = SimpleNamespace(skill_tag="1001_TEST")
@@ -56,6 +58,7 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
         captured["char_obj_list"] = char_obj_list
         captured["skill_node"] = skill_node
         captured["dynamic_buff_dict"] = dynamic_buff_dict
+        captured["buff_runtime_view"] = kwargs.get("buff_runtime_view")
         captured["sim_instance"] = sim_instance
 
     def _fake_schedule_buff_settle(
@@ -107,6 +110,13 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
     assert captured["char_obj_list"] is char_obj_list
     assert captured["skill_node"] is skill_node
     assert captured["dynamic_buff_dict"] is dynamic_buff
+    assert captured["buff_runtime_view"] is runtime_view
+    assert (
+        captured["buff_runtime_view"].get_legacy_dynamic_buff_dict() is dynamic_buff
+    )
+    assert (
+        captured["buff_runtime_view"].get_legacy_exist_buff_dict() is exist_buff_dict
+    )
     assert captured["sim_instance"] is sim_instance
     assert captured["settle_tick"] == 10
     assert captured["settle_exist_buff_dict"] is exist_buff_dict
@@ -251,6 +261,7 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
         captured["char_obj_list"] = char_obj_list_arg
         captured["skill_node"] = skill_node
         captured["dynamic_buff_dict"] = dynamic_buff_dict
+        captured["buff_runtime_view"] = kwargs.get("buff_runtime_view")
         captured["sim_instance"] = sim_instance
 
     monkeypatch.setattr(
@@ -300,4 +311,11 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
     assert captured["char_obj_list"] is char_obj_list
     assert captured["skill_node"] is skill_node
     assert captured["dynamic_buff_dict"] is dynamic_buff
+    assert isinstance(captured["buff_runtime_view"], LegacyBuffRuntimeReadAdapter)
+    assert (
+        captured["buff_runtime_view"].get_legacy_dynamic_buff_dict() is dynamic_buff
+    )
+    assert (
+        captured["buff_runtime_view"].get_legacy_exist_buff_dict() is exist_buff_dict
+    )
     assert captured["sim_instance"] is sim_instance

@@ -249,6 +249,7 @@ def test_skill_handler_runtime_command_adapter_preserves_legacy_container_identi
         exist_buff_dict=legacy_exist_buff_dict,
         action_stack=action_stack,
         sim_instance=sim_instance,
+        buff_runtime_view=runtime_view,
     )
     schedule_data.event_list = current_event_list
     context = EventContext(

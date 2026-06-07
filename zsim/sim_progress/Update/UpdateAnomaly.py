@@ -17,6 +17,7 @@ from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_disp
 if TYPE_CHECKING:
     from zsim.sim_progress.Buff import Buff
     from zsim.sim_progress.Preload import SkillNode
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
     from zsim.sim_progress.data_struct.schedule_dispatch import ScheduleDispatchPort
     from zsim.simulator.simulator_class import Simulator
 
@@ -119,6 +120,7 @@ def update_anomaly(
     sim_instance: "Simulator",
     skill_node: "SkillNode",
     dynamic_buff_dict: dict[str, list["Buff"]],
+    buff_runtime_view: "BuffRuntimeReadPort | None" = None,
     **kwargs,
 ):
     """
@@ -147,7 +149,10 @@ def update_anomaly(
             # 内置CD检测也通过之后，属性异常正式触发。现将需要更新的信息更新一下。
             sim_instance.decibel_manager.update(skill_node=skill_node, key="anomaly")
             bar.change_info_cause_active(
-                time_now, dynamic_buff_dict=dynamic_buff_dict, skill_node=skill_node
+                time_now,
+                dynamic_buff_dict=dynamic_buff_dict,
+                skill_node=skill_node,
+                buff_runtime_view=buff_runtime_view,
             )
             enemy.update_max_anomaly(element_type)
 

@@ -7,6 +7,7 @@ from zsim.sim_progress.Buff import ScheduleBuffSettle as legacy_schedule_buff_se
 from zsim.sim_progress.Update import update_anomaly as legacy_update_anomaly
 
 if TYPE_CHECKING:
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
     from zsim.sim_progress.Enemy import Enemy
     from zsim.sim_progress.Load import LoadingMission
     from zsim.sim_progress.Preload import SkillNode
@@ -52,11 +53,13 @@ class LegacyRuntimeCommandAdapter(RuntimeCommandPort):
         exist_buff_dict: dict,
         action_stack: "ActionStack",
         sim_instance: "Simulator",
+        buff_runtime_view: "BuffRuntimeReadPort | None" = None,
     ) -> None:
         self._data = data
         self._exist_buff_dict = exist_buff_dict
         self._action_stack = action_stack
         self._sim_instance = sim_instance
+        self._buff_runtime_view = buff_runtime_view
 
     def update_anomaly(
         self,
@@ -75,6 +78,7 @@ class LegacyRuntimeCommandAdapter(RuntimeCommandPort):
             self._data.char_obj_list,
             skill_node=skill_node,
             dynamic_buff_dict=self._data.dynamic_buff,
+            buff_runtime_view=self._buff_runtime_view,
             sim_instance=self._sim_instance,
         )
 
@@ -110,6 +114,7 @@ def create_runtime_command_port(
     exist_buff_dict: dict,
     action_stack: "ActionStack",
     sim_instance: "Simulator",
+    buff_runtime_view: "BuffRuntimeReadPort | None" = None,
 ) -> RuntimeCommandPort:
     """创建同 tick runtime 写侧命令入口。"""
     return LegacyRuntimeCommandAdapter(
@@ -117,6 +122,7 @@ def create_runtime_command_port(
         exist_buff_dict=exist_buff_dict,
         action_stack=action_stack,
         sim_instance=sim_instance,
+        buff_runtime_view=buff_runtime_view,
     )
 
 

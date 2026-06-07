@@ -21,6 +21,7 @@ from zsim.sim_progress.ScheduledEvent.event_handlers.handlers.disorder import (
 from zsim.sim_progress.ScheduledEvent.event_handlers.handlers.polarity_disorder import (
     PolarityDisorderEventHandler,
 )
+from zsim.sim_progress.anomaly_bar import AnomalyBar
 
 
 class _RuntimeViewProbe(BuffRuntimeReadPort):
@@ -34,12 +35,14 @@ class _RuntimeViewProbe(BuffRuntimeReadPort):
         self.legacy_dynamic_buff = dynamic_buff
         self.legacy_exist_buff_dict = exist_buff_dict
         self.allow_legacy = allow_legacy
+        self.active_buff_calls = 0
         self.active_view_calls = 0
         self.snapshot_view_calls = 0
         self.legacy_dynamic_calls = 0
         self.legacy_exist_calls = 0
 
     def get_active_buffs(self, beneficiary: str):
+        self.active_buff_calls += 1
         return self.active_buff_view.get(beneficiary, ())
 
     def get_active_buff_view(self):
@@ -90,6 +93,91 @@ def _build_context(
         sim_instance=sim_instance,
     )
     return context, broadcasts
+
+
+class _DurationBuffProbe:
+    def __init__(
+        self,
+        *,
+        index: str,
+        active: bool,
+        count: int,
+        effect_dct: dict[str, float],
+    ) -> None:
+        self.ft = SimpleNamespace(index=index)
+        self.dy = SimpleNamespace(active=active, count=count)
+        self.effect_dct = effect_dct
+
+
+class _FailFastLegacyDynamicBuff(dict):
+    def get(self, *args, **kwargs):
+        raise AssertionError("runtime view path should not read legacy dynamic_buff_dict")
+
+
+def _build_duration_bar() -> AnomalyBar:
+    bar = AnomalyBar(sim_instance=SimpleNamespace(), element_type=3)
+    bar.basic_max_duration = 600
+    bar.duration_buff_list = ["Buff-角色-丽娜-组队被动-延长感电"]
+    bar.duration_buff_key_list = [
+        "感电时间延长",
+        "所有异常时间延长百分比",
+    ]
+    return bar
+
+
+def test_anomaly_bar_duration_read_uses_runtime_view_without_legacy_dynamic_container():
+    target_index = "Buff-角色-丽娜-组队被动-延长感电"
+    matching_buff = _DurationBuffProbe(
+        index=target_index,
+        active=True,
+        count=2,
+        effect_dct={
+            "感电时间延长": 30,
+            "所有异常时间延长百分比": 0.1,
+        },
+    )
+    inactive_buff = _DurationBuffProbe(
+        index=target_index,
+        active=False,
+        count=99,
+        effect_dct={
+            "感电时间延长": 999,
+            "所有异常时间延长百分比": 9.9,
+        },
+    )
+    unrelated_buff = _DurationBuffProbe(
+        index="Buff-其他",
+        active=True,
+        count=99,
+        effect_dct={
+            "感电时间延长": 999,
+            "所有异常时间延长百分比": 9.9,
+        },
+    )
+    enemy_buffs = [matching_buff, inactive_buff, unrelated_buff]
+    skill_node = SimpleNamespace(skill_tag="1001_TEST")
+
+    legacy_bar = _build_duration_bar()
+    legacy_bar.change_info_cause_active(
+        10,
+        skill_node=skill_node,
+        dynamic_buff_dict={"enemy": enemy_buffs},
+    )
+
+    runtime_view = _RuntimeViewProbe({"enemy": enemy_buffs}, {}, allow_legacy=False)
+    runtime_bar = _build_duration_bar()
+    runtime_bar.change_info_cause_active(
+        10,
+        skill_node=skill_node,
+        dynamic_buff_dict=_FailFastLegacyDynamicBuff(),
+        buff_runtime_view=runtime_view,
+    )
+
+    assert runtime_bar.max_duration == legacy_bar.max_duration == 780
+    assert runtime_view.active_buff_calls == 1
+    assert runtime_view.active_view_calls == 0
+    assert runtime_view.legacy_dynamic_calls == 0
+    assert runtime_view.legacy_exist_calls == 0
 
 
 def test_abloom_handler_reads_active_buff_view_without_legacy_dynamic_container(

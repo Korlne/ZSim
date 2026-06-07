@@ -108,16 +108,18 @@ class ScheduledEvent:
 
     def _create_runtime_ports(self) -> _ScheduledEventRuntimePorts:
         """集中创建 Schedule 事件处理所需的 runtime 读写端口。"""
+        buff_runtime_view = create_buff_runtime_read_port(
+            dynamic_buff=self.data.dynamic_buff,
+            exist_buff_dict=self.exist_buff_dict,
+        )
         return _ScheduledEventRuntimePorts(
-            buff_runtime_view=create_buff_runtime_read_port(
-                dynamic_buff=self.data.dynamic_buff,
-                exist_buff_dict=self.exist_buff_dict,
-            ),
+            buff_runtime_view=buff_runtime_view,
             runtime_command_port=create_runtime_command_port(
                 data=self.data,
                 exist_buff_dict=self.exist_buff_dict,
                 action_stack=self.action_stack,
                 sim_instance=self.sim_instance,
+                buff_runtime_view=buff_runtime_view,
             ),
         )
 

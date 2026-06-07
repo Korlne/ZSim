@@ -1061,3 +1061,14 @@
 - Next step:
   - Continue with US-018 by migrating the `AnomalyBar.__get_max_duration()` read-only duration sample through an explicit read seam, while leaving `BuffAddStrategy` for US-019 write-boundary investigation.
 ---
+## 2026-06-07 20:13 - US-018
+- Files changed: `zsim/sim_progress/anomaly_bar/AnomalyBarClass.py`, `zsim/sim_progress/Update/UpdateAnomaly.py`, `zsim/sim_progress/ScheduledEvent/__init__.py`, `zsim/sim_progress/ScheduledEvent/runtime_command.py`, `tests/simulator/test_anomaly_handler_runtime_view.py`, `tests/simulator/test_runtime_command_port.py`, `tests/simulator/test_skill_handler_runtime_view.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `AnomalyBar.__get_max_duration()` now replaces the ScheduledEvent runtime-command path's direct enemy `dynamic_buff_dict` duration read with `BuffRuntimeReadPort.get_active_buffs("enemy")`.
+  - `ScheduledEvent._create_runtime_ports()` injects its existing read port into `LegacyRuntimeCommandAdapter`, avoiding a second raw-container adapter in the command boundary.
+- Compatibility retained:
+  - Direct legacy `update_anomaly(...)` calls without `buff_runtime_view` still use the old `dynamic_buff_dict["enemy"]` compatibility path.
+  - Anomaly formulas, `CalAnomaly` `MulData(...)`, `Shock` / Dot runtime registration, scheduled queue publish, listener broadcast, and runtime writes remain unchanged.
+- Next step:
+  - Continue with US-019 by investigating and classifying `BuffAddStrategy.buff_add_strategy()` / `let_buff_start()` write boundaries.
+---
