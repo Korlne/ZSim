@@ -981,3 +981,15 @@
 - Next step:
   - Continue with US-011 lifecycle validation and main-loop safety evidence before moving into the Calculator read block.
 ---
+## 2026-06-07 18:59 - US-011
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - This story does not replace a live Buff runtime path; it replaces unproven lifecycle confidence after US-009 / US-010 with focused lifecycle tests, full lifecycle validation, and one representative `run_buff_main_loop_consistency.py` JSON sample.
+  - The evidence confirms `LegacyBuffRuntimeFacade` lifecycle routing remains stable for the current main loop after active removal and individual-settled stack cleanup were routed through facade commands.
+- Compatibility retained:
+  - Old Buff containers remain the runtime source of truth behind `LegacyBuffRuntimeFacade`.
+  - `BuffLoadLoop()`, legacy `buff_add()`, legacy `KickOutBuff()`, no-facade `Update_Buff` fallbacks, anomaly bar expiration, dot expiration, and current enemy debuff mirror synchronization remain retained compatibility boundaries.
+  - `--legacy-runtime` / `--candidate-runtime` remain consistency report labels only; live simulator runtime mode was not wired in this story.
+- Next step:
+  - Continue with US-012 Calculator `MultiplierData` / `Mul` usage audit and keep lifecycle work closed unless a later validation profile exposes new production evidence.
+---
