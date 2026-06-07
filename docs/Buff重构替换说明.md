@@ -774,3 +774,16 @@
 - Next step:
   - Continue with US-002 to add the minimal legacy-backed Buff runtime facade while preserving old container object identity and keeping pending queue, active store, and enemy debuff mirror semantics separate.
 ---
+
+## 2026-06-07 15:26 - US-002
+- Files changed: `zsim/sim_progress/ScheduledEvent/buff_runtime.py`, `tests/simulator/test_buff_runtime_facade.py`, `scripts/run_buff_refactor_validation.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `LegacyBuffRuntimeFacade` prepares to replace direct old-container plumbing for `LoadData.exist_buff_dict`, `LoadData.LOADING_BUFF_DICT`, `GlobalStats.DYNAMIC_BUFF_DICT`, and `enemy.dynamic.dynamic_debuff_list` with explicit registry, pending queue, active store, and enemy mirror operations.
+  - `test_buff_runtime_facade.py` locks old-container object identity, pending queue drain/clear behavior, active store operations, beneficiary key preservation, and enemy debuff mirror sync before any live lifecycle callsite is migrated.
+- Compatibility retained:
+  - Old containers are still retained and no live main-loop lifecycle call path was routed through the facade in this iteration.
+  - `BuffRuntimeReadPort` remains read-only; `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` remain the same-tick write boundary for scheduled handlers.
+  - Compatibility identity access is limited to beneficiary/list-scoped `*_for_compat()` methods and is covered by focused tests.
+- Next step:
+  - Continue with US-003 to route one coherent `Simulator.main_loop()` Buff lifecycle boundary through `LegacyBuffRuntimeFacade` without changing phase order or ScheduleDispatchPort queue semantics.
+---

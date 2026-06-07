@@ -75,6 +75,158 @@ class LegacyBuffRuntimeReadAdapter(BuffRuntimeReadPort):
         return self._exist_buff_dict
 
 
+class BuffRuntimeFacade(ABC):
+    """旧 Buff 容器运行时写侧门面。"""
+
+    @abstractmethod
+    def get_registered_buff(self, beneficiary: str, buff_index: str) -> "Buff | None":
+        """读取旧模板注册表中的 Buff。"""
+
+    @abstractmethod
+    def get_registered_buff_view(self, beneficiary: str) -> Mapping[str, "Buff"]:
+        """读取旧模板注册表的只读视图。"""
+
+    @abstractmethod
+    def enqueue_pending_buff(self, beneficiary: str, buff: "Buff") -> None:
+        """写入本 tick 待激活 Buff 队列。"""
+
+    @abstractmethod
+    def drain_pending_buffs(self, beneficiary: str) -> list["Buff"]:
+        """按旧 pop 顺序清空并返回本 tick 待激活 Buff。"""
+
+    @abstractmethod
+    def clear_pending_buffs(self, beneficiary: str) -> None:
+        """清空本 tick 待激活 Buff 队列。"""
+
+    @abstractmethod
+    def append_active_buff(self, beneficiary: str, buff: "Buff") -> None:
+        """写入激活 Buff 容器。"""
+
+    @abstractmethod
+    def remove_active_buff(self, beneficiary: str, buff: "Buff") -> None:
+        """从激活 Buff 容器移除指定 Buff。"""
+
+    @abstractmethod
+    def find_active_buff_by_index(self, beneficiary: str, buff_index: str) -> "Buff | None":
+        """按 Buff index 查找激活 Buff。"""
+
+    @abstractmethod
+    def sync_enemy_debuff_mirror(self, buff: "Buff") -> None:
+        """按 Buff index 替换 enemy debuff 镜像并追加新 Buff。"""
+
+    @abstractmethod
+    def remove_enemy_debuff_mirror(self, buff: "Buff") -> None:
+        """按 Buff index 从 enemy debuff 镜像移除 Buff。"""
+
+    @abstractmethod
+    def get_pending_queue_for_compat(self, beneficiary: str) -> list["Buff"]:
+        """过渡期兼容入口，返回指定受益者的旧待激活队列。"""
+
+    @abstractmethod
+    def get_active_buffs_for_compat(self, beneficiary: str) -> list["Buff"]:
+        """过渡期兼容入口，返回指定受益者的旧激活 Buff 列表。"""
+
+    @abstractmethod
+    def get_enemy_debuff_mirror_for_compat(self) -> list["Buff"]:
+        """过渡期兼容入口，返回旧 enemy debuff 镜像列表。"""
+
+
+class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
+    """基于旧容器身份的 Buff runtime 门面。"""
+
+    def __init__(
+        self,
+        *,
+        exist_buff_dict: dict[str, dict[str, "Buff"]],
+        loading_buff_dict: dict[str, list["Buff"]],
+        dynamic_buff_dict: dict[str, list["Buff"]],
+        enemy_debuff_mirror: list["Buff"],
+    ) -> None:
+        self._exist_buff_dict = exist_buff_dict
+        self._loading_buff_dict = loading_buff_dict
+        self._dynamic_buff_dict = dynamic_buff_dict
+        self._enemy_debuff_mirror = enemy_debuff_mirror
+
+    def get_registered_buff(self, beneficiary: str, buff_index: str) -> "Buff | None":
+        return self._exist_buff_dict.get(beneficiary, {}).get(buff_index)
+
+    def get_registered_buff_view(self, beneficiary: str) -> Mapping[str, "Buff"]:
+        return MappingProxyType(dict(self._exist_buff_dict.get(beneficiary, {})))
+
+    def enqueue_pending_buff(self, beneficiary: str, buff: "Buff") -> None:
+        self._get_pending_queue(beneficiary).append(buff)
+
+    def drain_pending_buffs(self, beneficiary: str) -> list["Buff"]:
+        queue = self._get_pending_queue(beneficiary)
+        drained: list["Buff"] = []
+        while queue:
+            drained.append(queue.pop())
+        return drained
+
+    def clear_pending_buffs(self, beneficiary: str) -> None:
+        self._get_pending_queue(beneficiary).clear()
+
+    def append_active_buff(self, beneficiary: str, buff: "Buff") -> None:
+        self._get_active_buffs(beneficiary).append(buff)
+
+    def remove_active_buff(self, beneficiary: str, buff: "Buff") -> None:
+        self._get_active_buffs(beneficiary).remove(buff)
+
+    def find_active_buff_by_index(self, beneficiary: str, buff_index: str) -> "Buff | None":
+        return next(
+            (
+                active_buff
+                for active_buff in self._get_active_buffs(beneficiary)
+                if self._get_buff_index(active_buff) == buff_index
+            ),
+            None,
+        )
+
+    def sync_enemy_debuff_mirror(self, buff: "Buff") -> None:
+        existing_buff = self._find_enemy_debuff_mirror(buff)
+        if existing_buff is not None:
+            self._enemy_debuff_mirror.remove(existing_buff)
+        self._enemy_debuff_mirror.append(buff)
+
+    def remove_enemy_debuff_mirror(self, buff: "Buff") -> None:
+        existing_buff = self._find_enemy_debuff_mirror(buff)
+        if existing_buff is not None:
+            self._enemy_debuff_mirror.remove(existing_buff)
+
+    def get_pending_queue_for_compat(self, beneficiary: str) -> list["Buff"]:
+        # 兼容旧容器身份；仅供迁移期局部桥接，不是新的主契约。
+        return self._get_pending_queue(beneficiary)
+
+    def get_active_buffs_for_compat(self, beneficiary: str) -> list["Buff"]:
+        # 兼容旧容器身份；仅供迁移期局部桥接，不是新的主契约。
+        return self._get_active_buffs(beneficiary)
+
+    def get_enemy_debuff_mirror_for_compat(self) -> list["Buff"]:
+        # 兼容旧容器身份；仅供迁移期局部桥接，不是新的主契约。
+        return self._enemy_debuff_mirror
+
+    def _get_pending_queue(self, beneficiary: str) -> list["Buff"]:
+        return self._loading_buff_dict[beneficiary]
+
+    def _get_active_buffs(self, beneficiary: str) -> list["Buff"]:
+        return self._dynamic_buff_dict[beneficiary]
+
+    def _find_enemy_debuff_mirror(self, buff: "Buff") -> "Buff | None":
+        buff_index = self._get_buff_index(buff)
+        return next(
+            (
+                existing_buff
+                for existing_buff in self._enemy_debuff_mirror
+                if self._get_buff_index(existing_buff) == buff_index
+            ),
+            None,
+        )
+
+    @staticmethod
+    def _get_buff_index(buff: "Buff") -> str:
+        return buff.ft.index
+
+
 def create_buff_runtime_read_port(
     *,
     dynamic_buff: dict[str, list["Buff"]],
@@ -87,8 +239,27 @@ def create_buff_runtime_read_port(
     )
 
 
+def create_legacy_buff_runtime_facade(
+    *,
+    exist_buff_dict: dict[str, dict[str, "Buff"]],
+    loading_buff_dict: dict[str, list["Buff"]],
+    dynamic_buff_dict: dict[str, list["Buff"]],
+    enemy_debuff_mirror: list["Buff"],
+) -> BuffRuntimeFacade:
+    """创建旧 Buff 容器运行时门面，不复制或替换旧容器身份。"""
+    return LegacyBuffRuntimeFacade(
+        exist_buff_dict=exist_buff_dict,
+        loading_buff_dict=loading_buff_dict,
+        dynamic_buff_dict=dynamic_buff_dict,
+        enemy_debuff_mirror=enemy_debuff_mirror,
+    )
+
+
 __all__ = [
     "BuffRuntimeReadPort",
+    "BuffRuntimeFacade",
     "LegacyBuffRuntimeReadAdapter",
+    "LegacyBuffRuntimeFacade",
     "create_buff_runtime_read_port",
+    "create_legacy_buff_runtime_facade",
 ]
