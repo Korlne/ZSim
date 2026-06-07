@@ -1097,3 +1097,15 @@
 - Next step:
   - Continue with US-021 by consolidating the phase-1 guardrail matrix across raw queue, raw runtime, lifecycle, Calculator-read, and anomaly / debuff / dot bypass coverage.
 ---
+## 2026-06-07 21:52 - US-021
+- Files changed: `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `docs/旧Buff系统耦合审查结果.md` phase-1 guardrail matrix prepares to replace ad hoc cross-PRD review of deleted `event_list` surfaces, raw scheduler writes, raw old-container passthroughs, `ScheduledEvent` raw runtime getters, lifecycle containers, Calculator reads, and anomaly / debuff / dot bypasses.
+  - No live simulator runtime path was replaced in this story; it consolidates existing guardrail and validation evidence.
+- Compatibility retained:
+  - Old containers remain retained compatibility boundaries; the matrix only guards against boundary expansion.
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyBuffRuntimeFacade`, documented handler compatibility getters, listener broadcast, handler requeue, damage continuation, and dot runtime registration keep their existing semantics.
+  - `scripts/run_buff_refactor_validation.py` profile wiring was already aligned with the matrix, so no placeholder validation target was added.
+- Next step:
+  - Continue with US-022 by running the serial phase-1 validation profiles plus representative consistency and benchmark samples.
+---
