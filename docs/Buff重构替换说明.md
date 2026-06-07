@@ -676,3 +676,15 @@
 - Next step:
   - Start the next phase-1 PRD by executing or explicitly blocking legacy discovery deletion under the guardrails; only migrate a producer if a new scan finds concrete payload, target, and order evidence.
 ---
+
+## 2026-06-07 12:36 - US-001
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `PRD-10 US-001` confirms the deletion execution gate with focused guardrails and structured scans before any live deletion.
+  - No live runtime path was replaced in this story; it closes the current evidence gate and prepares `JudgeTools.find_event_list()` / `check_preparation(..., event_list=True)` / `BuffRecordBaseClass.event_list` for the later deletion or fallback stories.
+- Compatibility retained:
+  - `JudgeTools.find_event_list()` / `check_preparation(..., event_list=True)` / `BuffRecordBaseClass.event_list` remain legacy discovery / compatibility cache until the targeted deletion stories execute.
+  - `LegacyEventListScheduleDispatchAdapter`, core Load/Schedule appends, damage-effect continuation, handler requeue, local event groups, same-tick runtime command adapter access, and already-dispatched producer batches remain unchanged.
+- Next step:
+  - Proceed to US-002 to delete or explicitly close `JudgeTools.find_event_list()` discovery while keeping `data_struct/schedule_dispatch.py` adapter queue access outside the deletion target set.
+---
