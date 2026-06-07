@@ -993,3 +993,14 @@
 - Next step:
   - Continue with US-012 Calculator `MultiplierData` / `Mul` usage audit and keep lifecycle work closed unless a later validation profile exposes new production evidence.
 ---
+## 2026-06-07 19:07 - US-012
+- Files changed: `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The US-012 Calculator read inventory prepares to replace ad hoc `MultiplierData(...)` / `Mul(...)` audits with a current classified callsite map and one selected first migration sample.
+  - No live Calculator, BuffXLogic, anomaly, or scheduled-event path was replaced in this story.
+- Compatibility retained:
+  - `MultiplierData` remains the compatibility snapshot for Calculator, CalAnomaly, and old BuffXLogic readers.
+  - Existing formulas, Buff count writes, record writes, RNG gates, and `ScheduleDispatchPort` planned-event publishes remain unchanged.
+- Next step:
+  - Continue with US-013 by designing a minimal attribute reader around the anomaly-mastery sample, then use `BranchBladeSongCritDamageBonus.special_judge_logic()` as the first low-risk XLogic migration candidate.
+---
