@@ -29,6 +29,7 @@
 - [ ] 为基础设施解耦新增单元测试。
 - [ ] 为事件分发边界与事件顺序新增单元测试。
 - [x] 为主循环一致性与性能验证补齐真实命令入口。
+- [x] 为旧 `event_list` 发现口建立删除就绪清单、风险矩阵和 AST / 结构化数据 guardrail。
 
 ## 阶段 2：XLogic 全量分析与复用收敛
 
@@ -126,14 +127,21 @@
 - [x] 删除 `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 前，必须先保持 guardrail 绿色，并确认没有生产 allowlist 外调用、没有 `record.event_list.append(...)` publisher、没有配置或 `BuffXLogic` 路径请求 `event_list=True`。
 - [x] `--legacy-runtime` / `--candidate-runtime` 继续只是报告标签，不是 live runtime switch；下一轮仍沿 [Buff重构方案.md](./Buff重构方案.md) 的阶段 1 路线推进，只有 phase-1 守门证据稳定后才进入 XLogic 全量分析。
 
-## 本轮 PRD-9 same-tick 写边界补充状态（2026-06-07）
+## 本轮 PRD-9 旧兼容发现口删除前置 / same-tick 写边界收口状态（2026-06-07）
 
+- [x] PRD-9 已完成 post-PRD-8 复扫、删除就绪清单与风险矩阵：`JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 当前仍只承担 legacy discovery / compatibility cache，`data_struct/schedule_dispatch.py` adapter queue access 明确保留为 `ScheduleDispatchPort` 兼容语义，不是删除目标。
+- [x] `tests/simulator/test_legacy_event_list_deletion_readiness.py` 已纳入 `implicit-events` shared pytest 与 scoped mypy，守门 allowlist 外 `find_event_list` 调用、`record.event_list` / `BuffRecordBaseClass.event_list` 读写、`record.event_list.append(...)` publisher、BuffXLogic / config / data `event_list=True` 入口。
+- [x] PRD-9 没有发现新的 producer-level planned-event writer；`US-005` 已证据式关闭，后续只有在扫描给出文件、函数、事件类型、payload、target 和相对顺序证据时才新增 producer 迁移故事。
 - [x] `AnomalyEventHandler.handle()` 原本通过 legacy dynamic/exist getter 直调 `ScheduleBuffSettle(..., anomaly_bar=event)`；本轮已收口到 `RuntimeCommandPort.settle_buffs(..., anomaly_bar=event)`。
 - [x] `tests/simulator/test_anomaly_handler_runtime_view.py` 已阻断 handler 侧 legacy getter 访问，并断言 anomaly settle 写入走 `runtime_command_port`；`implicit-events` 验证通过。
 - [x] 本轮没有新增 raw `dynamic_buff`、`exist_buff_dict`、`sub_exist_buff_dict` 或 `event_list` passthrough，也没有引入第二套 write facade。
+- [x] `--legacy-runtime` / `--candidate-runtime` 继续只是 consistency / benchmark 报告标签，不是 live runtime switch。
+- [x] PRD-9 最终交接已同步到 [Buff重构下阶段计划草稿.md](./Buff重构下阶段计划草稿.md)、[旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md) 与 [Buff重构替换说明.md](./Buff重构替换说明.md)：删除就绪状态为“guardrail 绿色后可尝试删除或显式关闭旧发现口”，剩余阻塞是继续证明没有 allowlist 外生产调用、没有 `record.event_list.append(...)` publisher、没有 BuffXLogic / config / data `event_list=True` 入口。
+- [x] 下一轮默认入口仍属于阶段 1：优先执行旧兼容发现口删除 / 显式关闭；若删除条件不满足，继续 guardrail 与兼容 fallback；只有发现真实 producer-level planned-event writer 证据时才新增迁移故事。
 
 ## 当前默认下一步
 
-- [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的实现型 PRD，基于 PRD-8 guardrail 证据继续准备 `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 删除前置；只在扫描发现新的具体 producer-level planned-event writer 时新增迁移故事，不再重开 `Yixuan` 本地事件组、`BreakingLegManager` hidden helper、`LoadDamageEvent` core spawn 或 `ScheduledEvent` handler requeue。
+- [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的旧兼容发现口删除执行 PRD：在 PRD-9 guardrail 继续绿色的前提下尝试删除或显式关闭 `JudgeTools.find_event_list()`、`check_preparation(..., event_list=True)` 兼容缓存与 `BuffRecordBaseClass.event_list` 字段；若删除条件不满足，保留兼容 fallback 并记录阻塞原因。
+- [ ] 删除故事必须继续保留 `data_struct/schedule_dispatch.py` 的 `ScheduleDispatchPort` adapter queue access、core Load/Schedule dispatcher append、handler requeue、本地事件组与 dot runtime registration；只在扫描发现新的具体 producer-level planned-event writer 时新增迁移故事。
 - [ ] 仅在发现新的具体 same-tick 写路径仍依赖 legacy getter 时，继续把对应 handler / helper 收口到最小 `RuntimeCommandPort` / write facade；`SkillEventHandler` 与 `AnomalyEventHandler` 已闭合，不应从旧文本重新打开。
 - [ ] 仅在 live simulator 真正消费 `config.buff_runtime.mode` 后，再把一致性 / benchmark 命令升级为真实 runtime switch 证据。

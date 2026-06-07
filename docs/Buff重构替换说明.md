@@ -663,3 +663,16 @@
 - Next step:
   - Final PRD-9 handoff should state that the newly exposed anomaly same-tick write path is closed through `RuntimeCommandPort`; only add more runtime boundary work if a future scan finds another concrete legacy getter plus same-tick write collaboration.
 ---
+
+## 2026-06-07 11:43:27 - US-007
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `PRD-9 US-007` final handoff docs and Ralph artifacts prepare to replace manual deletion decisions for `JudgeTools.find_event_list()` / `check_preparation(..., event_list=True)` / `BuffRecordBaseClass.event_list` with the PRD-9 deletion-readiness checklist, risk matrix, and focused guardrails.
+  - No live path was replaced in this story; it only synchronizes that PRD-9 found no new producer-level planned-event writer and that the anomaly same-tick write collaboration is already closed through `RuntimeCommandPort`.
+- Compatibility retained:
+  - `JudgeTools.find_event_list()` / `check_preparation(..., event_list=True)` / `BuffRecordBaseClass.event_list` remain until the next deletion execution story proves the guardrails stay green or records a fallback blocker.
+  - `LegacyEventListScheduleDispatchAdapter`, core Load/Schedule appends, damage-effect continuation, handler requeue, local event groups, dot runtime registration, existing dispatch/runtime boundaries, and report-label runtime comparison flags remain unchanged.
+  - `--legacy-runtime` / `--candidate-runtime` remain report labels until live simulator code consumes `config.buff_runtime.mode`.
+- Next step:
+  - Start the next phase-1 PRD by executing or explicitly blocking legacy discovery deletion under the guardrails; only migrate a producer if a new scan finds concrete payload, target, and order evidence.
+---
