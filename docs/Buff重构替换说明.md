@@ -841,3 +841,16 @@
 - Next step:
   - Continue with US-007 lifecycle/main-loop validation and keep `--legacy-runtime` / `--candidate-runtime` documented as report labels unless a later story makes them live runtime switches.
 ---
+
+## 2026-06-07 16:07 - US-007
+- Files changed: `zsim/utils/main_loop_consistency.py`, `tests/simulator/test_main_loop_consistency.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `zsim.utils.main_loop_consistency` now replaces the previous validation blocker where consistency samples could fail before comparison when a valid `damage.csv` had a blank `is_anomaly` column; the fallback normalizes that report-only column to `False` and keeps the `team / stop_tick / total_damage / event_counts / buff_timeline / differences` JSON contract usable.
+  - This story validates the PRD-11 facade boundary rather than replacing another live runtime path; the tick sweep, pending activation, and active removal replacements from US-003 through US-005 remain the live facade-backed lifecycle changes.
+- Compatibility retained:
+  - Old containers remain the runtime source of truth behind `LegacyBuffRuntimeFacade`; no container deletion or broad XLogic migration happened in this story.
+  - `BuffRuntimeReadPort` remains read-only and `RuntimeCommandPort` remains the same-tick write boundary.
+  - `--legacy-runtime` / `--candidate-runtime` remain report labels, not live runtime switches.
+- Next step:
+  - Continue with US-008 to sync the handoff docs, record that old containers are still retained, and prepare the next phase-1 candidate pool.
+---

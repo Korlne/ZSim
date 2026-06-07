@@ -20,7 +20,7 @@ from zsim.define import config, results_dir
 from zsim.models.session.session_run import CommonCfg
 from zsim.simulator import Simulator
 from zsim.utils.process_buff_result import prepare_buff_data_and_cache
-from zsim.utils.process_dmg_result import prepare_dmg_data_and_cache
+from zsim.utils.process_dmg_result import prepare_dmg_data_and_cache, sort_df_by_UUID
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _BUFF_TIMELINE_SAMPLE_LIMIT = 20
@@ -97,16 +97,44 @@ def _summarize_event_counts(
     }
 
 
+def _load_damage_result_df(session_id: str) -> pl.DataFrame:
+    csv_file_path = Path(results_dir) / session_id / "damage.csv"
+    lf = pl.scan_csv(csv_file_path)
+    schema_names = lf.collect_schema().names()
+    lf = lf.rename({col: col.replace("\r", "").replace("\n", "").strip() for col in schema_names})
+    return lf.collect()
+
+
+def _normalize_consistency_damage_df(dmg_result_df: pl.DataFrame) -> pl.DataFrame:
+    if "is_anomaly" not in dmg_result_df.columns:
+        return dmg_result_df.with_columns(pl.lit(False).alias("is_anomaly"))
+    if dmg_result_df["is_anomaly"].is_null().all():
+        return dmg_result_df.with_columns(pl.lit(False).alias("is_anomaly"))
+    return dmg_result_df.with_columns(pl.col("is_anomaly").fill_null(False))
+
+
+def _prepare_damage_data_for_consistency(session_id: str) -> tuple[pl.DataFrame, pl.DataFrame]:
+    try:
+        dmg_data = prepare_dmg_data_and_cache(session_id)
+    except ValueError as exc:
+        if "is_anomaly" not in str(exc):
+            raise
+        dmg_data = None
+
+    if dmg_data is not None:
+        dmg_result_df = dmg_data["dmg_result_df"]
+        uuid_df = dmg_data["uuid_df"]
+        if not isinstance(dmg_result_df, pl.DataFrame) or not isinstance(uuid_df, pl.DataFrame):
+            raise RuntimeError(f"unexpected damage payload for session '{session_id}'")
+        return dmg_result_df, uuid_df
+
+    dmg_result_df = _normalize_consistency_damage_df(_load_damage_result_df(session_id))
+    uuid_df = sort_df_by_UUID(dmg_result_df)
+    return dmg_result_df, uuid_df
+
+
 def _load_runtime_snapshot(runtime_label: str, session_id: str) -> RuntimeSnapshot:
-    dmg_data = prepare_dmg_data_and_cache(session_id)
-    if dmg_data is None:
-        raise RuntimeError(f"no damage report was generated for session '{session_id}'")
-
-    dmg_result_df = dmg_data["dmg_result_df"]
-    uuid_df = dmg_data["uuid_df"]
-    if not isinstance(dmg_result_df, pl.DataFrame) or not isinstance(uuid_df, pl.DataFrame):
-        raise RuntimeError(f"unexpected damage payload for session '{session_id}'")
-
+    dmg_result_df, uuid_df = _prepare_damage_data_for_consistency(session_id)
     buff_timeline = asyncio.run(prepare_buff_data_and_cache(session_id)) or {}
     total_damage = round(float(uuid_df["dmg_expect_sum"].fill_null(0).sum()), 4)
     event_counts = _summarize_event_counts(dmg_result_df, uuid_df)
