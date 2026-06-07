@@ -724,3 +724,15 @@
 - Next step:
   - Continue with US-005 to tighten post-deletion guardrails around the deleted `find_event_list`, `event_list=True`, and `BuffRecordBaseClass.event_list` surfaces.
 ---
+
+## 2026-06-07 14:28 - US-005
+- Files changed: `tests/simulator/test_legacy_event_list_discovery_guardrail.py`, `tests/simulator/test_legacy_event_list_deletion_readiness.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_legacy_event_list_discovery_guardrail.py` now replaces the deleted `BuffRecordBaseClass.event_list` compatibility allowlist with absence enforcement and post-deletion triage output.
+  - `test_legacy_event_list_deletion_readiness.py` now classifies `find_event_list`, `event_list=True`, and `BuffRecordBaseClass.event_list` hits as deleted surfaces, documented fallback candidates, or deletion blockers.
+- Compatibility retained:
+  - `LegacyEventListScheduleDispatchAdapter(schedule_data.event_list)` remains the only allowed low-level scheduler queue touch point for dispatch-port publishing.
+  - No live simulator runtime path was changed; core Load/Schedule appends, handler requeue, local event groups, dot runtime registration, and existing dispatch/runtime boundaries are unchanged.
+- Next step:
+  - Continue with US-006 evidence triage; only migrate a producer or same-tick write path if concrete file, payload, target, order, or legacy getter evidence appears.
+---

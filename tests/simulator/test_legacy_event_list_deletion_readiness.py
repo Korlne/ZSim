@@ -169,21 +169,21 @@ class LegacyEventListDeletionReadinessVisitor(ast.NodeVisitor):
     @staticmethod
     def _classification_for(kind: str) -> str:
         return {
-            "find_event_list_import": "legacy discovery import outside deletion allowlist",
-            "find_event_list_call": "legacy discovery call outside compatibility cache",
-            "buff_record_event_list_access": "BuffRecordBaseClass.event_list cache access",
+            "find_event_list_import": "deleted legacy discovery import",
+            "find_event_list_call": "deleted legacy discovery call",
+            "buff_record_event_list_access": "deleted BuffRecordBaseClass.event_list cache access",
             "record_event_list_append": "producer-level planned-event writer through record.event_list",
-            "event_list_preparation_request": "BuffXLogic check_preparation event_list=True entry point",
-            "config_event_list_preparation_request": "config/data event_list=True entry point",
+            "event_list_preparation_request": "deleted BuffXLogic check_preparation event_list=True entry point",
+            "config_event_list_preparation_request": "deleted config/data event_list=True entry point",
         }[kind]
 
     @staticmethod
     def _next_action_for(kind: str) -> str:
         return {
-            "find_event_list_import": "delete old discovery or migrate to ScheduleDispatchPort",
-            "find_event_list_call": "delete old discovery or migrate to ScheduleDispatchPort",
-            "buff_record_event_list_access": "delete BuffRecordBaseClass.event_list or document retained fallback",
-            "record_event_list_append": "migrate to ScheduleDispatchPort",
+            "find_event_list_import": "delete old discovery or retain as documented fallback",
+            "find_event_list_call": "delete old discovery or retain as documented fallback",
+            "buff_record_event_list_access": "delete old discovery or retain as documented fallback",
+            "record_event_list_append": "migrate to ScheduleDispatchPort or block deletion",
             "event_list_preparation_request": "block deletion until this entry point is removed",
             "config_event_list_preparation_request": "block deletion until this entry point is removed",
         }[kind]
@@ -295,11 +295,13 @@ def _is_allowed_python_finding(finding: DeletionReadinessFinding) -> bool:
 
 
 def _kind_for_allowed_expression(finding: DeletionReadinessFinding) -> str:
-    if finding.classification_suggestion.startswith("legacy discovery import"):
+    if finding.classification_suggestion.startswith("deleted legacy discovery import"):
         return "find_event_list_import"
-    if finding.classification_suggestion.startswith("legacy discovery call"):
+    if finding.classification_suggestion.startswith("deleted legacy discovery call"):
         return "find_event_list_call"
-    if finding.classification_suggestion.startswith("BuffRecordBaseClass.event_list"):
+    if finding.classification_suggestion.startswith(
+        "deleted BuffRecordBaseClass.event_list"
+    ):
         return "buff_record_event_list_access"
     if finding.classification_suggestion.startswith("producer-level"):
         return "record_event_list_append"

@@ -8,32 +8,21 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PRODUCTION_ROOT = PROJECT_ROOT / "zsim" / "sim_progress"
 
-RECOMMENDED_NEXT_ACTION = (
-    "delete old discovery, migrate planned-event producers to ScheduleDispatchPort, "
-    "or retain only a documented non-publisher boundary"
-)
-
-ALLOWED_FINDINGS: dict[tuple[str, str], set[str]] = {
-    (
-        "zsim/sim_progress/Buff/BuffXLogic/_buff_record_base_class.py",
-        "buff_record_event_list_access",
-    ): {
-        "self.event_list: list | None = None",
-    },
-}
-
 
 @dataclass(frozen=True)
 class Finding:
     path: str
     line: int
     kind: str
-    expression: str
+    matched_expression: str
+    classification_suggestion: str
+    next_action: str
 
     def message(self) -> str:
         return (
-            f"{self.path}:{self.line}: {self.kind}: {self.expression} -> "
-            f"{RECOMMENDED_NEXT_ACTION}"
+            f"{self.path}:{self.line}: matched expression: {self.matched_expression}; "
+            f"classification suggestion: {self.classification_suggestion}; "
+            f"next action: {self.next_action}"
         )
 
 
@@ -82,7 +71,7 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
         if self._is_buff_record_event_list_access(node):
             self._add_finding(
                 line=node.lineno,
-                kind="buff_record_event_list_access",
+                kind=self._buff_record_event_list_kind(node),
                 expression=self._attribute_context(node),
             )
         self.generic_visit(node)
@@ -93,7 +82,9 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
                 path=self._relative_path(),
                 line=line,
                 kind=kind,
-                expression=self._normalize(expression),
+                matched_expression=self._normalize(expression),
+                classification_suggestion=self._classification_for(kind),
+                next_action=self._next_action_for(kind),
             )
         )
 
@@ -140,6 +131,18 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             return True
         return owner == "self" and self._class_stack[-1:] == ["BuffRecordBaseClass"]
 
+    def _buff_record_event_list_kind(self, node: ast.Attribute) -> str:
+        direct_parent = self._parents[-2] if len(self._parents) >= 2 else None
+        grandparent = self._parents[-3] if len(self._parents) >= 3 else None
+        if (
+            isinstance(direct_parent, ast.Attribute)
+            and direct_parent.value is node
+            and direct_parent.attr == "append"
+            and isinstance(grandparent, ast.Call)
+        ):
+            return "record_event_list_append"
+        return "buff_record_event_list_access"
+
     def _dotted_name(self, node: ast.AST) -> str | None:
         if isinstance(node, ast.Name):
             return node.id
@@ -149,6 +152,24 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
                 return node.attr
             return f"{owner}.{node.attr}"
         return None
+
+    @staticmethod
+    def _classification_for(kind: str) -> str:
+        return {
+            "find_event_list_import": "deleted legacy discovery import",
+            "find_event_list_call": "deleted legacy discovery call",
+            "buff_record_event_list_access": "deleted BuffRecordBaseClass.event_list cache access",
+            "record_event_list_append": "producer-level planned-event writer through record.event_list",
+        }[kind]
+
+    @staticmethod
+    def _next_action_for(kind: str) -> str:
+        return {
+            "find_event_list_import": "delete old discovery or retain as documented fallback",
+            "find_event_list_call": "delete old discovery or retain as documented fallback",
+            "buff_record_event_list_access": "delete old discovery or retain as documented fallback",
+            "record_event_list_append": "migrate to ScheduleDispatchPort or block deletion",
+        }[kind]
 
 
 def _production_python_files() -> list[Path]:
@@ -170,15 +191,10 @@ def _collect_findings() -> list[Finding]:
     return findings
 
 
-def _is_allowed(finding: Finding) -> bool:
-    return finding.expression in ALLOWED_FINDINGS.get((finding.path, finding.kind), set())
-
-
 def _assert_no_disallowed(findings: list[Finding]) -> None:
-    disallowed = [finding for finding in findings if not _is_allowed(finding)]
-    assert not disallowed, (
+    assert not findings, (
         "Legacy event-list discovery guardrail found disallowed production uses:\n"
-        + "\n".join(f"- {finding.message()}" for finding in disallowed)
+        + "\n".join(f"- {finding.message()}" for finding in findings)
     )
 
 
@@ -196,7 +212,49 @@ def test_buff_record_event_list_cache_has_no_new_production_uses() -> None:
     findings = [
         finding
         for finding in _collect_findings()
-        if finding.kind == "buff_record_event_list_access"
+        if finding.kind in {"buff_record_event_list_access", "record_event_list_append"}
     ]
 
     _assert_no_disallowed(findings)
+
+
+def test_guardrail_failure_message_includes_post_deletion_triage_fields() -> None:
+    source = "def publish(record, payload):\n    record.event_list.append(payload)\n"
+    path = PRODUCTION_ROOT / "Buff" / "BuffXLogic" / "_synthetic_guardrail_fixture.py"
+    tree = ast.parse(source)
+    visitor = LegacyEventListDiscoveryVisitor(path, source)
+    visitor.visit(tree)
+
+    assert len(visitor.findings) == 1
+    message = visitor.findings[0].message()
+    assert "zsim/sim_progress/Buff/BuffXLogic/_synthetic_guardrail_fixture.py:2" in message
+    assert "matched expression: record.event_list.append(payload)" in message
+    assert (
+        "classification suggestion: producer-level planned-event writer through record.event_list"
+        in message
+    )
+    assert "next action: migrate to ScheduleDispatchPort or block deletion" in message
+
+
+def test_deleted_buff_record_event_list_field_is_not_allowlisted() -> None:
+    source = (
+        "class BuffRecordBaseClass:\n"
+        "    def __init__(self):\n"
+        "        self.event_list: list | None = None\n"
+    )
+    path = (
+        PRODUCTION_ROOT
+        / "Buff"
+        / "BuffXLogic"
+        / "_synthetic_buff_record_base_class.py"
+    )
+    tree = ast.parse(source)
+    visitor = LegacyEventListDiscoveryVisitor(path, source)
+    visitor.visit(tree)
+
+    assert len(visitor.findings) == 1
+    assert visitor.findings[0].kind == "buff_record_event_list_access"
+    assert (
+        visitor.findings[0].classification_suggestion
+        == "deleted BuffRecordBaseClass.event_list cache access"
+    )
