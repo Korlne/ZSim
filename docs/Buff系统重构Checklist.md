@@ -171,10 +171,10 @@
 - [x] 阶段 1 验证证据已记录：`implicit-events`、`calculator-reads` 与默认 lifecycle validation profile 均通过；`青衣雷属性队` `stop-tick 120` consistency JSON 样本 `matches=true`，benchmark JSON 样本在复用 consistency damage-data fallback 后通过。
 - [x] `--legacy-runtime` / `--candidate-runtime` 继续只是 consistency / benchmark 报告标签，不是 live runtime switch；只有 live simulator 真正消费 `config.buff_runtime.mode` 后，才可把这些命令当真实 runtime 切换证据。
 - [x] 旧容器仍是 retained compatibility boundary：本阶段关闭的是基础设施扩散风险和代表性 facade / read / dispatch seam，不等同于删除 `exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT`、legacy `buff_add()`、legacy `KickOutBuff()` 或全部 `MultiplierData` 公式快照。
-- [ ] 阶段 2 尚未正式开始；下一 Ralph iteration 必须先完成 `US-024`，用本 checklist、旧耦合审查、验证结果和 handoff docs 声明阶段 1 closure 或输出 blocker package。
+- [x] `US-024` 已基于 completion matrix、guardrail matrix、serial validation 和 handoff docs 声明阶段 1 基础设施解耦关闭；阶段 2 可以作为下一轮 PRD 默认入口。
 
 ## 当前默认下一步
 
-- [ ] 当前 PRD 内的下一步是 `US-024`：复核阶段 1 completion matrix、guardrail matrix、serial validation 和 handoff 文档，声明阶段 1 closure 或列出 blocker package；不得在 `US-024` 之前启动阶段 2 PRD。
-- [ ] 若 `US-024` 声明 phase-1 closed，下一轮 PRD 应沿 [Buff重构方案.md](./Buff重构方案.md) 进入“阶段 2：XLogic 全量分析与复用收敛”，先做分类与复用清单，不直接进入阶段 3 替换。
-- [ ] 若 `US-024` 发现 blocker，下一轮 PRD 只处理 blocker package 中列出的具体文件、符号、失败测试、失败 guardrail 或验证命令；不得重开已删除的 `event_list` surface 或已闭合的 producer batch，除非 guardrail 给出新的生产证据。
+- [x] `US-024` 已完成 closure decision，没有输出 phase-1 blocker package；不得继续生成新的阶段 1 实现 PRD，除非 guardrail / validation 给出新的生产失败证据。
+- [ ] 下一轮默认 PRD 应沿 [Buff重构方案.md](./Buff重构方案.md) 进入“阶段 2：XLogic 全量分析与复用收敛”，先做全量分类、复用方法清单、记录对象清单、stat reader / event adapter / state sync 模式清单，不直接进入阶段 3 替换。
+- [ ] 若后续 validation 或 guardrail 重新暴露阶段 1 blocker，下一轮 PRD 只处理 blocker package 中列出的具体文件、符号、失败测试、失败 guardrail 或验证命令；不得重开已删除的 `event_list` surface 或已闭合的 producer batch，除非 guardrail 给出新的生产证据。

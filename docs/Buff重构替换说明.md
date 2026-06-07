@@ -1132,3 +1132,14 @@
 - Next step:
   - Continue with US-024 to declare phase-1 closure or produce a blocker package from the synchronized checklist, coupling review, validation records, and replacement notes.
 ---
+## 2026-06-07 22:25 - US-024
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The US-024 closure package replaces the open phase-1 closure / blocker decision with an evidence-backed phase-1 closed state and a phase-2 default PRD route.
+  - No live simulator runtime path was replaced in this story; it is a final decision, validation, and handoff slice.
+- Compatibility retained:
+  - Old containers remain retained compatibility boundaries: `exist_buff_dict`, `DYNAMIC_BUFF_DICT`, `LOADING_BUFF_DICT`, legacy `buff_add()`, legacy `KickOutBuff()`, Calculator / CalAnomaly `MultiplierData` formula snapshots, handler requeue, damage continuation, listener broadcast, and dot runtime registration are not deleted by phase-1 closure.
+  - `--legacy-runtime` / `--candidate-runtime` remain consistency / benchmark report labels only; no live runtime mode switch was wired.
+- Next step:
+  - Start the next PRD from phase 2: XLogic full classification and reuse convergence, while using phase-1 guardrails only as blocker evidence if they fail.
+---

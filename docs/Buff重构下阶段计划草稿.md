@@ -3,7 +3,7 @@
 ## 当前状态
 
 - 当前总路线已重置。
-- 当前默认阶段仍为“基础设施解耦”。
+- 当前默认阶段已进入“XLogic 全量分析与复用收敛”的 PRD 准备；阶段 1 基础设施解耦已由 `PRD-12 US-024` 关闭。
 - Buff 系统现已明确要求采用事件驱动架构。
 - 阶段 1 当前实现基线已经落地：
   - `ScheduleDispatchPort` 已接入 `SchedulePreload`、`QuickAssistSystem`、`UpdateAnomaly`、`BattleEventListener` 中的 `AliceDotTriggerListener`、代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` planned-event 链，以及已收口的 `ElegantVanitySpRecover`、`LunarNoviluna`、`MagneticStormCharlieSpRecover`、`SeedAdditionalAbilityTrigger`、`SliceofTimeExtraResources`、`CannonRotor`、`YanagiPolarityDisorderTrigger`、`HugoCorePassiveTotalizeTrigger`、`DecibelManager`、`MiyabiCoreSkill_IceFire`、`YixuanCinema1Trigger`、`VivianDotTrigger`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger`、`Character/Yuzuha` cinema-6 energy 分支与 `EnemyUniqueMechanic/BreakingLegManager` part-break refresh。
@@ -22,10 +22,10 @@
 - 2026-06-07 `PRD-11` 已完成旧容器隔离与 Buff runtime facade 扩展主体：`LegacyBuffRuntimeFacade` 以引用方式包住 `exist_buff_dict`、`LOADING_BUFF_DICT`、`DYNAMIC_BUFF_DICT` 与 `enemy.dynamic.dynamic_debuff_list`；`Simulator.main_loop()` 的 tick sweep / pending activation 和 live `Update_Buff` active removal 已走 facade，no-new-raw-container guardrail 与主循环一致性样本已通过。
 - PRD-11 没有删除旧容器，也没有把 `BuffRuntimeReadPort` 扩成写口；`RuntimeCommandPort` 仍是 scheduled handlers 的 same-tick 写边界，`--legacy-runtime` / `--candidate-runtime` 仍只是报告标签。
 - PRD-11 收口后，下一轮 Ralph PRD 仍应留在阶段 1，默认入口从旧容器 facade 主体扩展转向“`ScheduledEvent` 对 Buff runtime facade 的依赖收口”；除非 guardrail 暴露新的具体证据，不再围绕 `find_event_list` / `record.event_list` / `event_list=True` 或已完成的 facade 主体重复开薄切片。
-- 2026-06-07 `PRD-12 US-023` 已同步阶段 1 基础设施完成交接：候选块 B/C/D/E 均已有 audit、代表性实现或 guardrail / validation evidence，`implicit-events`、`calculator-reads` 与默认 lifecycle validation profile 均在 US-022 通过，`青衣雷属性队` `stop-tick 120` consistency / benchmark JSON 样本已记录。
-- PRD-12 handoff 不删除旧容器，也不把 sample CLI label 当 live runtime switch；`exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT`、legacy `buff_add()`、legacy `KickOutBuff()`、Calculator / CalAnomaly 公式快照、handler requeue、damage continuation、dot runtime registration 与 listener broadcast 都仍按各自 retained boundary 保留。
-- PRD-12 尚未完成最终 closure decision；当前默认下一 Ralph iteration 是 `US-024`，必须基于 checklist、旧耦合审查、guardrail matrix 与 serial validation 证据声明 phase-1 closed 或输出 blocker package。
-- 下一轮路线仍然严格遵循 [Buff重构方案.md](./Buff重构方案.md) 中的阶段顺序，不回退到角色驱动式切片，也不提前进入 XLogic 全量分析。
+- 2026-06-07 `PRD-12 US-024` 已完成阶段 1 closure decision：候选块 B/C/D/E 均已有 audit、代表性实现或 guardrail / validation evidence，`implicit-events`、`calculator-reads` 与默认 lifecycle validation profile 在 US-024 串行复跑通过，未输出 phase-1 blocker package。
+- PRD-12 closure 不删除旧容器，也不把 sample CLI label 当 live runtime switch；`exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT`、legacy `buff_add()`、legacy `KickOutBuff()`、Calculator / CalAnomaly 公式快照、handler requeue、damage continuation、dot runtime registration 与 listener broadcast 都仍按各自 retained boundary 保留。
+- 当前默认下一 Ralph PRD 应进入阶段 2：XLogic 全量分析与复用收敛。阶段 2 的第一轮只做分类、复用清单与风险矩阵，不直接进入阶段 3 的具体替换。
+- 下一轮路线仍然严格遵循 [Buff重构方案.md](./Buff重构方案.md) 中的阶段顺序，不回退到角色驱动式切片，也不把阶段 2 的分类工作直接升级成单个 XLogic 替换故事。
 
 ## 本文档的用途
 
@@ -44,32 +44,33 @@
 
 ## 当前默认下一步
 
-### 当前 PRD 内下一 Ralph iteration
+### 下一轮默认 Ralph PRD
 
-`US-024：Declare phase-1 closure or blocker package`
+`阶段 2：XLogic 全量分析与复用收敛`
 
-### US-024 的建议范围
+### 阶段 2 第一轮建议范围
 
-- 复核 `scripts/ralph/prd.json` 中 US-001 至 US-023 的 completion evidence、`scripts/ralph/progress.txt` validation records、本 checklist、旧耦合审查 guardrail matrix 与 replacement notes。
-- 复跑或引用已通过的 serial validation：`implicit-events`、`calculator-reads`、默认 lifecycle profile；不得在任一 required profile 失败时声明 phase-1 closed。
-- 确认 deleted `event_list` surface 没有回归，raw old-container passthrough 没有新增未分类扩散，`ScheduledEvent`、`Update_Buff`、Calculator read seam、anomaly / debuff / dot bypass 块均有 closed / retained compatibility / deferred phase-2 candidate / blocker 状态。
-- 如果所有阶段 1 基础设施项均 closed 或 retained compatibility，则在 handoff docs 中声明 phase 1 closed，并把下一 PRD 默认入口切到阶段 2 的 XLogic 全量分析与复用收敛。
-- 如果发现 blocker，则输出 blocker package：具体文件、符号、失败测试、失败 guardrail、失败 validation command、推荐下一 Ralph story；不要用泛化“继续阶段 1”替代 blocker 证据。
+- 从 `zsim/sim_progress/Buff/BuffXLogic/` 做全量分类，不从单个最近迁移样本直接进入替换。
+- 分类每个 XLogic 的主要耦合类型：属性读取、事件触发、count / record 写回、异常 / debuff / dot 旁路、`sim_instance` service-location、Calculator / CalAnomaly 公式快照、listener broadcast、scheduled publish、runtime immediate write。
+- 对每类耦合给出可复用方法、记录对象、stat reader、event adapter、state sync 模式或 handler / listener 模式候选。
+- 复核 `docs/旧Buff系统耦合审查结果.md`、`scripts/ralph/progress.txt` `## Codebase Patterns` 与现有 focused tests，确认哪些 phase-1 retained boundary 仍必须保留。
+- 产出 XLogic 优先级和风险矩阵，但不在第一轮直接批量替换 XLogic。
 
-### US-024 的建议产物
+### 阶段 2 第一轮建议产物
 
-- phase-1 closure statement 或 blocker package。
-- 下一 PRD 默认入口：phase 1 closed 时为“阶段 2：XLogic 全量分析与复用收敛”；未 closed 时为 blocker package 的最高优先级修复 / 验证故事。
-- handoff 明确旧容器仍保留，`--legacy-runtime` / `--candidate-runtime` 仍只是 report labels，后续 deletion / live runtime switch 不属于 phase-1 closure 自动结果。
-- replacement notes 和 progress log 记录最终 changed files、validation commands、known warnings 与下一步。
+- XLogic 全量分类表。
+- 可复用方法 / record / stat reader / event adapter / state sync 模式清单。
+- 高风险耦合桶与回归风险点。
+- 下一轮阶段 2 PRD 的候选池：可以按同一耦合类型、同一验证入口、同一回滚方式分组，而不是按最近发现的单个角色文件拆薄切片。
+- validation 计划：至少保留 `implicit-events` 和 `calculator-reads` 作为相关耦合块的守门入口；触达 lifecycle/runtime 写路径时继续追加默认 lifecycle profile。
 
-### US-024 的非目标
+### 阶段 2 第一轮非目标
 
-- 不做新的 live code migration。
-- 不删除旧 Buff 核心路径或旧容器字段。
-- 不把 retained compatibility path 改写成 closure blocker，除非 guardrail / validation 给出新的失败证据。
-- 不提前进入具体 XLogic 替换；phase 2 也应先做全量分类与复用收敛，不直接进入阶段 3。
-- 在 live simulator 真正消费 `config.buff_runtime.mode` 之前，不把 `--legacy-runtime` / `--candidate-runtime` 伪装成真实 runtime 开关。
+- 不删除旧容器，不删除 legacy `buff_add()` / `KickOutBuff()`，不删除 Calculator / CalAnomaly `MultiplierData` 公式快照。
+- 不把 `--legacy-runtime` / `--candidate-runtime` 当 live runtime switch。
+- 不把 listener broadcast、scheduled queue publish、dot runtime registration、runtime immediate write 合并成单一总线。
+- 不重开已删除 `event_list` surface 或已闭合的 producer batch，除非 guardrail / validation 给出新的生产证据。
+- 不直接进入阶段 3 的 XLogic 替换；第一轮阶段 2 先做分类与复用收敛。
 
 ## 已存在的真实验证入口
 
@@ -87,9 +88,9 @@
 - 若故事改动了验证命令契约、帮助文本或执行路径，补跑对应的 `--help` / focused pytest / 样例命令，而不是继续引用占位入口。
 - 上述验证命令应串行执行，不要并发跑多个 profile；它们会共享 sqlite `sessions` 数据与异步日志写线程，并发时容易制造假失败。
 
-## PRD-12 US-023 后的阶段 1 候选池状态
+## PRD-12 US-024 后的阶段 1 blocker 候选池状态
 
-PRD-12 已按候选块 B/C/D/E 完成阶段 1 基础设施收口样本、guardrail 与 validation evidence；下一步默认不是继续生成同阶段新实现 PRD，而是由 `US-024` 做 closure / blocker decision。以下候选池继续保留给复核和 blocker 定位：只有 guardrail、source scan 或 validation 给出新的生产证据时，才从相应块生成修复 PRD。
+PRD-12 已按候选块 B/C/D/E 完成阶段 1 基础设施收口样本、guardrail 与 validation evidence，并由 `US-024` 在 serial validation 通过后声明阶段 1 closed。以下候选池不再作为默认同阶段实现 backlog，只保留给 blocker 定位：只有 guardrail、source scan 或 validation 给出新的生产证据时，才从相应块生成修复 PRD。
 
 ### 候选块 A：旧容器隔离与 Buff runtime facade 扩展（PRD-11 已完成主体，PRD-12 复核保留）
 
@@ -108,7 +109,7 @@ PRD-12 已按候选块 B/C/D/E 完成阶段 1 基础设施收口样本、guardra
   - 旧容器对象身份仍保留；`BuffLoadLoop()` trigger judgement / pending queue population、`ScheduledEvent(...)` 构造 raw active/exist 参数、legacy `buff_add()` 与 legacy `KickOutBuff()` 仍是 retained compatibility boundary。
 - 可拆工作方向：
   - 后续只在 guardrail 发现新增 raw-container passthrough，或需要补齐 `BuffLoadLoop()` pending population 的更窄 facade 入口时，才回到本候选块。
-  - 不再把“再迁一个 main-loop callsite”当默认下一步；默认转向候选块 B 的 `ScheduledEvent` / `EventContext` 收口。
+  - 不再把“再迁一个 main-loop callsite”当默认下一步；阶段 2 默认只做 XLogic 全量分类，除非 guardrail 给出新的 phase-1 blocker 证据。
 - 必须保留：
   - 旧容器对象身份和现有 main loop 行为。
   - `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 作为 same-tick 写边界。
@@ -229,7 +230,7 @@ PRD-12 已按候选块 B/C/D/E 完成阶段 1 基础设施收口样本、guardra
 
 ## Phase 1 closed 后的下一轮调查提纲
 
-当 `US-024` 证据式声明“阶段一：基础设施解耦”已关闭后，下一轮 PRD 再切到“XLogic 全量分析与复用收敛”，调查重点如下：
+`US-024` 已证据式声明“阶段一：基础设施解耦”关闭，下一轮 PRD 切到“XLogic 全量分析与复用收敛”，调查重点如下：
 
 - 哪些 XLogic 只是属性读取问题。
 - 哪些 XLogic 可以直接映射到已有事件类型，哪些需要新增事件类型。
