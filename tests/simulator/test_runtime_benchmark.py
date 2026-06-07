@@ -4,8 +4,10 @@ from pathlib import Path
 from typing import Any
 from typing import Literal
 
+import polars as pl
 import pytest
 
+from zsim.utils import main_loop_consistency as mlc
 from zsim.utils import runtime_benchmark as rb
 from zsim.utils.runtime_benchmark import (
     RuntimeBenchmarkSnapshot,
@@ -182,6 +184,42 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
     assert report["candidate_runtime"] == "candidate-label"
     assert report["apl"] == "./override.toml"
     assert cleaned_sessions == ["101", "102"]
+
+
+def test_load_runtime_benchmark_snapshot_falls_back_for_blank_anomaly_column(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    raw_damage_df = pl.DataFrame(
+        {
+            "tick": [13],
+            "skill_tag": ["alpha"],
+            "element_type": [0],
+            "dmg_expect": [10.0],
+            "dmg_crit": [11.0],
+            "stun": [1.0],
+            "buildup": [0.0],
+            "is_anomaly": [None],
+            "is_disorder": [None],
+            "UUID": ["uuid-1"],
+        }
+    )
+
+    def raise_blank_anomaly(_: str):
+        raise ValueError("DataFrame 中缺少有效的列: is_anomaly")
+
+    async def fake_prepare_buff_data_and_cache(_: str):
+        return {}
+
+    monkeypatch.setattr(mlc, "prepare_dmg_data_and_cache", raise_blank_anomaly)
+    monkeypatch.setattr(mlc, "_load_damage_result_df", lambda _: raw_damage_df)
+    monkeypatch.setattr(rb, "prepare_buff_data_and_cache", fake_prepare_buff_data_and_cache)
+
+    snapshot = rb._load_runtime_benchmark_snapshot("facade", "101", 12.5)
+
+    assert snapshot.runtime_label == "facade"
+    assert snapshot.hotspots["simulator_run_ms"] == 12.5
+    assert snapshot.hotspots["damage_report_ms"] >= 0
+    assert snapshot.hotspots["buff_report_ms"] >= 0
 
 
 def test_script_entrypoint_runs_with_json_output(

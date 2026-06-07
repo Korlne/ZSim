@@ -17,10 +17,10 @@ from zsim.utils.main_loop_consistency import (
     PROJECT_ROOT,
     _build_session_id,
     _cleanup_result_artifacts,
+    _prepare_damage_data_for_consistency,
     _prepare_common_cfg,
 )
 from zsim.utils.process_buff_result import prepare_buff_data_and_cache
-from zsim.utils.process_dmg_result import prepare_dmg_data_and_cache
 
 
 @dataclass(frozen=True)
@@ -50,10 +50,8 @@ def _load_runtime_benchmark_snapshot(
     simulator_runtime_ms: float,
 ) -> RuntimeBenchmarkSnapshot:
     damage_started_at = time.perf_counter()
-    dmg_data = prepare_dmg_data_and_cache(session_id)
+    _prepare_damage_data_for_consistency(session_id)
     damage_report_ms = round((time.perf_counter() - damage_started_at) * 1000, 4)
-    if dmg_data is None:
-        raise RuntimeError(f"no damage report was generated for session '{session_id}'")
 
     buff_started_at = time.perf_counter()
     asyncio.run(prepare_buff_data_and_cache(session_id))

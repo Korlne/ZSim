@@ -1109,3 +1109,15 @@
 - Next step:
   - Continue with US-022 by running the serial phase-1 validation profiles plus representative consistency and benchmark samples.
 ---
+## 2026-06-07 22:07 - US-022
+- Files changed: `zsim/utils/runtime_benchmark.py`, `tests/simulator/test_runtime_benchmark.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `zsim.utils.runtime_benchmark._load_runtime_benchmark_snapshot()` now replaces its direct dependency on raw `prepare_dmg_data_and_cache()` success with the existing main-loop consistency damage-data fallback, so short benchmark samples with blank `is_anomaly` columns can still produce timing JSON.
+  - The US-022 validation record replaces phase-1 closure assumptions with serial profile results plus representative consistency and benchmark JSON evidence.
+- Compatibility retained:
+  - No live simulator runtime behavior, Buff formula, scheduled queue publish, listener broadcast, runtime command, or old-container ownership changed in this story.
+  - `--legacy-runtime` / `--candidate-runtime` remain report labels only; this story did not wire a live runtime mode switch.
+  - Old containers remain retained compatibility boundaries pending the handoff and closure stories.
+- Next step:
+  - Continue with US-023 by syncing the phase-1 handoff docs from the US-022 validation evidence, including the benchmark fallback fix and report-label limitation.
+---
