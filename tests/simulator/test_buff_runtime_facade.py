@@ -5,6 +5,7 @@ from typing import Any, cast
 
 import pytest
 
+from zsim.sim_progress.Buff.buff_class import Buff
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     BuffRuntimeFacade,
     LegacyBuffRuntimeFacade,
@@ -12,9 +13,24 @@ from zsim.sim_progress.ScheduledEvent.buff_runtime import (
 )
 
 
-class _BuffProbe:
-    def __init__(self, index: str) -> None:
-        self.ft = SimpleNamespace(index=index)
+class _BuffProbe(Buff):
+    def __init__(
+        self,
+        index: str,
+        *,
+        active: bool = True,
+        startticks: int = 1,
+        endticks: int = 2,
+        count: int = 1,
+        alltime: bool = False,
+    ) -> None:
+        self.ft = SimpleNamespace(index=index, alltime=alltime)
+        self.dy = SimpleNamespace(
+            active=active,
+            startticks=startticks,
+            endticks=endticks,
+            count=count,
+        )
 
 
 def _create_facade(
@@ -182,3 +198,101 @@ def test_legacy_buff_runtime_facade_tick_sweep_uses_wrapped_legacy_containers(
 
     assert result is dynamic_buff_dict
     assert calls == [(dynamic_buff_dict, 77, exist_buff_dict, enemy)]
+
+
+def test_legacy_buff_runtime_facade_activates_pending_buffs_in_old_pop_order() -> None:
+    first_pending = _BuffProbe("first")
+    second_pending = _BuffProbe("second")
+    loading_buff_dict: dict[str, list[Any]] = {"alpha": [first_pending, second_pending]}
+    dynamic_buff_dict: dict[str, list[Any]] = {"alpha": []}
+    facade = _create_facade(
+        exist_buff_dict={"alpha": {}},
+        loading_buff_dict=loading_buff_dict,
+        dynamic_buff_dict=dynamic_buff_dict,
+        enemy_debuff_mirror=[],
+    )
+
+    result = facade.activate_pending_buffs(timenow=10)
+
+    assert result is dynamic_buff_dict
+    assert loading_buff_dict["alpha"] == []
+    assert dynamic_buff_dict["alpha"] == [second_pending, first_pending]
+
+
+def test_legacy_buff_runtime_facade_skips_invalid_pending_buffs() -> None:
+    inactive = _BuffProbe("inactive", active=False)
+    zero_ticks = _BuffProbe("zero-ticks", startticks=0, endticks=0)
+    zero_count = _BuffProbe("zero-count", count=0)
+    valid = _BuffProbe("valid")
+    loading_buff_dict: dict[str, list[Any]] = {
+        "alpha": [inactive, zero_ticks, zero_count, valid],
+    }
+    dynamic_buff_dict: dict[str, list[Any]] = {"alpha": []}
+    facade = _create_facade(
+        exist_buff_dict={"alpha": {}},
+        loading_buff_dict=loading_buff_dict,
+        dynamic_buff_dict=dynamic_buff_dict,
+        enemy_debuff_mirror=[],
+    )
+
+    facade.activate_pending_buffs(timenow=10)
+
+    assert loading_buff_dict["alpha"] == []
+    assert dynamic_buff_dict["alpha"] == [valid]
+
+
+def test_legacy_buff_runtime_facade_replaces_non_alltime_active_buff_by_index() -> None:
+    existing_buff = _BuffProbe("same")
+    replacement_buff = _BuffProbe("same")
+    loading_buff_dict: dict[str, list[Any]] = {"alpha": [replacement_buff]}
+    dynamic_buff_dict: dict[str, list[Any]] = {"alpha": [existing_buff]}
+    facade = _create_facade(
+        exist_buff_dict={"alpha": {}},
+        loading_buff_dict=loading_buff_dict,
+        dynamic_buff_dict=dynamic_buff_dict,
+        enemy_debuff_mirror=[],
+    )
+
+    facade.activate_pending_buffs(timenow=10)
+
+    assert loading_buff_dict["alpha"] == []
+    assert dynamic_buff_dict["alpha"] == [replacement_buff]
+
+
+def test_legacy_buff_runtime_facade_skips_alltime_duplicate_without_removing_existing() -> None:
+    existing_buff = _BuffProbe("same")
+    alltime_duplicate = _BuffProbe("same", alltime=True)
+    loading_buff_dict: dict[str, list[Any]] = {"alpha": [alltime_duplicate]}
+    dynamic_buff_dict: dict[str, list[Any]] = {"alpha": [existing_buff]}
+    facade = _create_facade(
+        exist_buff_dict={"alpha": {}},
+        loading_buff_dict=loading_buff_dict,
+        dynamic_buff_dict=dynamic_buff_dict,
+        enemy_debuff_mirror=[],
+    )
+
+    facade.activate_pending_buffs(timenow=10)
+
+    assert loading_buff_dict["alpha"] == []
+    assert dynamic_buff_dict["alpha"] == [existing_buff]
+
+
+def test_legacy_buff_runtime_facade_replaces_enemy_debuff_mirror_on_activation() -> None:
+    old_enemy_buff = _BuffProbe("enemy-buff")
+    other_enemy_buff = _BuffProbe("other")
+    replacement_enemy_buff = _BuffProbe("enemy-buff")
+    loading_buff_dict: dict[str, list[Any]] = {"enemy": [replacement_enemy_buff]}
+    dynamic_buff_dict: dict[str, list[Any]] = {"enemy": [old_enemy_buff]}
+    enemy_debuff_mirror: list[Any] = [old_enemy_buff, other_enemy_buff]
+    facade = _create_facade(
+        exist_buff_dict={"enemy": {}},
+        loading_buff_dict=loading_buff_dict,
+        dynamic_buff_dict=dynamic_buff_dict,
+        enemy_debuff_mirror=enemy_debuff_mirror,
+    )
+
+    facade.activate_pending_buffs(timenow=10)
+
+    assert loading_buff_dict["enemy"] == []
+    assert dynamic_buff_dict["enemy"] == [replacement_enemy_buff]
+    assert enemy_debuff_mirror == [other_enemy_buff, replacement_enemy_buff]

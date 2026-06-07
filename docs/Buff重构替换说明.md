@@ -800,3 +800,16 @@
 - Next step:
   - Continue with US-004 to move pending-to-active activation semantics through the facade, including invalid pending Buff skip, replacement by `ft.index`, alltime duplicate behavior, pending queue drain, and enemy debuff mirror sync.
 ---
+
+## 2026-06-07 15:42 - US-004
+- Files changed: `zsim/sim_progress/ScheduledEvent/buff_runtime.py`, `zsim/simulator/simulator_class.py`, `tests/simulator/test_buff_runtime_facade.py`, `tests/simulator/test_simulator_buff_runtime_facade.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `LegacyBuffRuntimeFacade.activate_pending_buffs()` replaces `Simulator.main_loop()` activation phase's direct `buff_add(self.load_data.LOADING_BUFF_DICT, self.global_stats.DYNAMIC_BUFF_DICT, self.schedule_data.enemy)` raw-container assembly with a facade command.
+  - The facade command preserves pending queue drain order, invalid pending Buff skip, active replacement by `ft.index`, alltime duplicate skip, and enemy debuff mirror replacement against the same old container objects.
+- Compatibility retained:
+  - `BuffLoadLoop()` trigger judgement, `Buff.update(...)`, `update_to_buff_0()`, `ScheduledEvent(...)`, `DamageEventJudge(..., self.schedule_data.event_list, ...)`, and `ScheduleDispatchPort` queue semantics remain unchanged.
+  - The legacy `buff_add()` function is retained as an old compatibility path; old containers remain the runtime source of truth.
+  - `BuffRuntimeReadPort` remains read-only; `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` remain the same-tick write boundary for scheduled handlers.
+- Next step:
+  - Continue with US-005 to wrap active Buff expiration/removal semantics through the facade, including `KickOutBuff()` order and enemy debuff mirror removal.
+---

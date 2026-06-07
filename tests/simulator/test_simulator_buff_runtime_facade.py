@@ -13,13 +13,19 @@ class _RuntimeProbe:
     def __init__(self, order: list[str]) -> None:
         self._order = order
         self.calls: list[tuple[int, Any]] = []
+        self.activation_ticks: list[float] = []
 
     def update_time_related_effects(self, *, tick: int, enemy: Any) -> None:
         self.calls.append((tick, enemy))
         self._order.append(f"tick_sweep:{tick}")
 
+    def activate_pending_buffs(self, *, timenow: float) -> dict[str, list[Any]]:
+        self.activation_ticks.append(timenow)
+        self._order.append(f"activate_pending:{timenow}")
+        return {}
 
-def test_main_loop_routes_tick_sweep_through_buff_runtime_facade(
+
+def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     order: list[str] = []
@@ -45,11 +51,6 @@ def test_main_loop_routes_tick_sweep_through_buff_runtime_facade(
         simulator_class,
         "BuffLoadLoop",
         lambda *args, **kwargs: order.append("buff_load"),
-    )
-    monkeypatch.setattr(
-        simulator_class,
-        "buff_add",
-        lambda *args, **kwargs: order.append("buff_add"),
     )
     monkeypatch.setattr(
         simulator_class,
@@ -101,13 +102,14 @@ def test_main_loop_routes_tick_sweep_through_buff_runtime_facade(
     assert captured_factory_kwargs["dynamic_buff_dict"] is dynamic_buff_dict
     assert captured_factory_kwargs["enemy_debuff_mirror"] is enemy.dynamic.dynamic_debuff_list
     assert runtime.calls == [(0, enemy), (1, enemy)]
+    assert runtime.activation_ticks == [0]
     assert order == [
         "create_facade",
         "tick_sweep:0",
         "preload:0",
         "damage_judge",
         "buff_load",
-        "buff_add",
+        "activate_pending:0",
         "scheduled_init",
         "scheduled_start",
         "reset_processed_event",

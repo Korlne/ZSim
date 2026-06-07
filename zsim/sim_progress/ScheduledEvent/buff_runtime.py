@@ -120,6 +120,10 @@ class BuffRuntimeFacade(ABC):
         """按 Buff index 从 enemy debuff 镜像移除 Buff。"""
 
     @abstractmethod
+    def activate_pending_buffs(self, *, timenow: float) -> dict[str, list["Buff"]]:
+        """把本 tick 待激活 Buff 提升到旧 active 容器。"""
+
+    @abstractmethod
     def get_pending_queue_for_compat(self, beneficiary: str) -> list["Buff"]:
         """过渡期兼容入口，返回指定受益者的旧待激活队列。"""
 
@@ -200,6 +204,12 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         if existing_buff is not None:
             self._enemy_debuff_mirror.remove(existing_buff)
 
+    def activate_pending_buffs(self, *, timenow: float) -> dict[str, list["Buff"]]:
+        for beneficiary in self._loading_buff_dict:
+            for buff in self.drain_pending_buffs(beneficiary):
+                self._activate_pending_buff(beneficiary, buff)
+        return self._dynamic_buff_dict
+
     def get_pending_queue_for_compat(self, beneficiary: str) -> list["Buff"]:
         # 兼容旧容器身份；仅供迁移期局部桥接，不是新的主契约。
         return self._get_pending_queue(beneficiary)
@@ -239,6 +249,32 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
                 if self._get_buff_index(existing_buff) == buff_index
             ),
             None,
+        )
+
+    def _activate_pending_buff(self, beneficiary: str, buff: "Buff") -> None:
+        from zsim.sim_progress.Buff.buff_class import Buff
+
+        if not isinstance(buff, Buff):
+            raise ValueError(f"loading_buff_dict中的{buff}元素不是Buff类")
+        if self._should_skip_pending_buff(buff):
+            return
+
+        existing_buff = self.find_active_buff_by_index(beneficiary, buff.ft.index)
+        if existing_buff is not None:
+            if buff.ft.alltime:
+                return
+            self.remove_active_buff(beneficiary, existing_buff)
+
+        self.append_active_buff(beneficiary, buff)
+        if beneficiary == "enemy":
+            self.sync_enemy_debuff_mirror(buff)
+
+    @staticmethod
+    def _should_skip_pending_buff(buff: "Buff") -> bool:
+        return (
+            not buff.dy.active
+            or (buff.dy.startticks == 0 and buff.dy.endticks == 0)
+            or buff.dy.count == 0
         )
 
     @staticmethod

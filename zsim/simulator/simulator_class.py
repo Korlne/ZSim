@@ -5,10 +5,7 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel
 
 from zsim.define import config
-from zsim.sim_progress.Buff import (
-    BuffLoadLoop,
-    buff_add,
-)
+from zsim.sim_progress.Buff import BuffLoadLoop
 from zsim.sim_progress.Character.skill_class import Skill
 from zsim.sim_progress.data_struct import ActionStack, Decibelmanager, ListenerManger
 from zsim.sim_progress.Enemy import Enemy
@@ -265,12 +262,7 @@ class Simulator:
                 self.load_data.all_name_order_box,
                 sim_instance=self,
             )
-            buff_add(
-                self.tick,
-                self.load_data.LOADING_BUFF_DICT,
-                self.global_stats.DYNAMIC_BUFF_DICT,
-                self.schedule_data.enemy,
-            )
+            buff_runtime.activate_pending_buffs(timenow=self.tick)
 
             # Load.DamageEventJudge(tick, load_data.load_mission_dict, schedule_data.enemy, schedule_data.event_list, char_data.char_obj_list)
             # ScheduledEvent
