@@ -18,6 +18,7 @@ SCANNED_PRODUCTION_FILES = (
     PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffLoad.py",
     PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffAdd.py",
     PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffAddStrategy.py",
+    PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "ScheduleBuffSettle.py",
 )
 
 SCHEDULED_EVENT_DIR = PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent"
@@ -174,6 +175,127 @@ CALCULATOR_READ_NEXT_ACTION = (
     "migrate read-only usage to CalculatorBuffAttributeReader, retain as "
     "documented formula/compatibility snapshot, or block the story"
 )
+
+SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY = (
+    "legacy ScheduleBuffSettle command-adapter internals"
+)
+
+SCHEDULE_BUFF_SETTLE_RETAINED_SIGNATURES = {
+    (
+        "ScheduleBuffSettle",
+        "raw_container_parameter",
+        "ScheduleBuffSettle(..., exist_buff_dict, ...)",
+        "registry/template old-container passthrough",
+    ),
+    (
+        "ScheduleBuffSettle",
+        "raw_container_parameter",
+        "ScheduleBuffSettle(..., DYNAMIC_BUFF_DICT, ...)",
+        "active store old-container passthrough",
+    ),
+    (
+        "ScheduleBuffSettle",
+        "raw_container_name",
+        "sub_exist_buff_dict = exist_buff_dict[char_name]",
+        "registry/template old-container passthrough",
+    ),
+    (
+        "ScheduleBuffSettle",
+        "raw_container_name",
+        "exist_buff_dict[char_name]",
+        "registry/template old-container passthrough",
+    ),
+    (
+        "ScheduleBuffSettle",
+        "raw_container_name",
+        "sub_exist_buff_dict",
+        "registry/template old-container passthrough",
+    ),
+    (
+        "ScheduleBuffSettle",
+        "raw_container_name",
+        "DYNAMIC_BUFF_DICT",
+        "active store old-container passthrough",
+    ),
+    (
+        "process_schedule_on_field_buff",
+        "raw_container_parameter",
+        "process_schedule_on_field_buff(..., sub_exist_buff_dict, ...)",
+        "registry/template old-container passthrough",
+    ),
+    (
+        "process_schedule_on_field_buff",
+        "raw_container_parameter",
+        "process_schedule_on_field_buff(..., DYNAMIC_BUFF_DICT, ...)",
+        "active store old-container passthrough",
+    ),
+    (
+        "process_schedule_on_field_buff",
+        "raw_container_name",
+        "sub_exist_buff_dict",
+        "registry/template old-container passthrough",
+    ),
+    (
+        "process_schedule_on_field_buff",
+        "raw_container_name",
+        "DYNAMIC_BUFF_DICT",
+        "active store old-container passthrough",
+    ),
+    (
+        "process_schedule_backend_buff",
+        "raw_container_parameter",
+        "process_schedule_backend_buff(..., sub_exist_buff_dict, ...)",
+        "registry/template old-container passthrough",
+    ),
+    (
+        "process_schedule_backend_buff",
+        "raw_container_parameter",
+        "process_schedule_backend_buff(..., DYNAMIC_BUFF_DICT, ...)",
+        "active store old-container passthrough",
+    ),
+    (
+        "process_schedule_backend_buff",
+        "raw_container_name",
+        "sub_exist_buff_dict",
+        "registry/template old-container passthrough",
+    ),
+    (
+        "process_schedule_backend_buff",
+        "raw_container_name",
+        "DYNAMIC_BUFF_DICT",
+        "active store old-container passthrough",
+    ),
+    (
+        "add_schedule_buff",
+        "raw_container_parameter",
+        "add_schedule_buff(..., sub_exist_buff_dict, ...)",
+        "registry/template old-container passthrough",
+    ),
+    (
+        "add_schedule_buff",
+        "raw_container_parameter",
+        "add_schedule_buff(..., DYNAMIC_BUFF_DICT, ...)",
+        "active store old-container passthrough",
+    ),
+    (
+        "add_schedule_buff",
+        "raw_container_name",
+        "sub_exist_buff_dict",
+        "registry/template old-container passthrough",
+    ),
+    (
+        "add_schedule_buff",
+        "raw_container_name",
+        "DYNAMIC_BUFF_DICT[characters]",
+        "active store old-container passthrough",
+    ),
+    (
+        "add_schedule_buff",
+        "raw_container_attribute",
+        "enemy.dynamic.dynamic_debuff_list",
+        "enemy debuff mirror old-container passthrough",
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -557,6 +679,15 @@ def _allowance_for(finding: Finding) -> str | None:
             return "legacy buff_add pending-to-active compatibility path"
         if context == "add_debuff_to_enemy":
             return "legacy buff_add enemy debuff mirror sync"
+    if path == "zsim/sim_progress/Buff/ScheduleBuffSettle.py":
+        signature = (
+            context,
+            finding.kind,
+            finding.matched_expression,
+            finding.classification_suggestion,
+        )
+        if signature in SCHEDULE_BUFF_SETTLE_RETAINED_SIGNATURES:
+            return SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY
     if path == "zsim/sim_progress/Buff/BuffAddStrategy.py":
         if context == "_create_buff_add_runtime_facade":
             return "legacy BuffAddStrategy facade construction"
@@ -700,6 +831,7 @@ EXPECTED_RETAINED_REFERENCE_CEILINGS = {
     "retained BuffLoadLoop trigger judgement and pending queue population": 41,
     "legacy buff_add pending-to-active compatibility path": 10,
     "legacy buff_add enemy debuff mirror sync": 3,
+    SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY: 26,
     "legacy BuffAddStrategy facade construction": 8,
     "legacy BuffAddStrategy beneficiary selection registry read": 6,
     "legacy BuffAddStrategy template clone registry compatibility": 6,
@@ -800,6 +932,49 @@ def test_raw_old_container_guardrail_uses_ast_not_text_matching() -> None:
     path = PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffXLogic" / "_fixture.py"
 
     assert _collect_findings_from_source(path, source) == []
+
+
+def test_raw_old_container_guardrail_classifies_schedule_buff_settle_boundary() -> None:
+    findings = [
+        finding
+        for finding in _collect_findings()
+        if finding.path == "zsim/sim_progress/Buff/ScheduleBuffSettle.py"
+    ]
+    allowances = {_allowance_for(finding) for finding in findings}
+    classifications = {finding.classification_suggestion for finding in findings}
+
+    assert findings
+    assert allowances == {SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY}
+    assert "active store old-container passthrough" in classifications
+    assert "enemy debuff mirror old-container passthrough" in classifications
+    assert (
+        len(findings)
+        == EXPECTED_RETAINED_REFERENCE_CEILINGS[SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY]
+    )
+
+
+def test_raw_old_container_guardrail_blocks_new_schedule_buff_settle_raw_write() -> None:
+    source = (
+        "def unexpected_schedule_write(DYNAMIC_BUFF_DICT, buff):\n"
+        "    DYNAMIC_BUFF_DICT['enemy'].append(buff)\n"
+    )
+    path = (
+        PROJECT_ROOT
+        / "zsim"
+        / "sim_progress"
+        / "Buff"
+        / "ScheduleBuffSettle.py"
+    )
+    findings = _collect_findings_from_source(path, source)
+    disallowed = [finding for finding in findings if _allowance_for(finding) is None]
+
+    assert disallowed
+    write_finding = next(finding for finding in disallowed if finding.line == 2)
+    message = write_finding.message()
+    assert "zsim/sim_progress/Buff/ScheduleBuffSettle.py:2" in message
+    assert "matched expression: DYNAMIC_BUFF_DICT['enemy']" in message
+    assert "classification suggestion: active store old-container passthrough" in message
+    assert f"next action: {TRIAGE_NEXT_ACTION}" in message
 
 
 def test_raw_old_container_guardrail_classifies_buff_add_strategy_boundary() -> None:

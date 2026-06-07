@@ -1153,3 +1153,14 @@
 - Next step:
   - Continue with US-002 by adding raw-container guardrail coverage and a retained-boundary ceiling for `zsim/sim_progress/Buff/ScheduleBuffSettle.py`.
 ---
+## 2026-06-08 07:07 - US-002
+- Files changed: `tests/simulator/test_buff_raw_container_guardrail.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `tests/simulator/test_buff_raw_container_guardrail.py` prepares to replace manual review of `ScheduleBuffSettle.py` raw old-container writes with AST-classified retained signatures and the `legacy ScheduleBuffSettle command-adapter internals` reference ceiling.
+  - No live simulator runtime path was replaced in this story; it adds guardrail coverage around retained adapter internals.
+- Compatibility retained:
+  - Production `ScheduleBuffSettle.py` remains unchanged and still runs behind `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` with old container identity retained.
+  - Current `DYNAMIC_BUFF_DICT` active-store references, enemy debuff mirror interactions, and registry/template inputs are retained only through the named guardrail boundary and ceiling.
+- Next step:
+  - Continue with US-003 by wiring validation profile targets for `zsim/sim_progress/Buff/ScheduleBuffSettle.py`.
+---
