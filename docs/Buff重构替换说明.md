@@ -827,3 +827,17 @@
 - Next step:
   - Continue with US-006 to add no-new-raw-container guardrails for the new facade boundary while keeping documented retained boundaries narrow.
 ---
+
+## 2026-06-07 15:58 - US-006
+- Files changed: `tests/simulator/test_buff_raw_container_guardrail.py`, `scripts/run_buff_refactor_validation.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_buff_raw_container_guardrail.py` prepares to replace ad hoc review of new old-container passthroughs with an AST guardrail over the PRD-11 facade scope.
+  - The guardrail covers raw `DYNAMIC_BUFF_DICT`, `LOADING_BUFF_DICT`, `exist_buff_dict`, `ScheduleData.dynamic_buff`, and `ScheduleData.loading_buff` references by retained-boundary allowance and ceiling checks.
+  - No live simulator runtime path was replaced in this story; it adds a prevention boundary around the facade work already introduced by US-002 through US-005.
+- Compatibility retained:
+  - Old containers remain the runtime source of truth behind `LegacyBuffRuntimeFacade`.
+  - Retained allowances cover facade adapter internals, current facade construction, `BuffLoadLoop()` pending queue population, retained `buff_add()` / `Update_Buff` compatibility paths, `ScheduledEvent(...)`, core Load/Schedule/GlobalStats ownership, and `RuntimeCommandPort` compatibility reads.
+  - `BuffRuntimeReadPort` remains read-only and `RuntimeCommandPort` remains the same-tick write boundary; this story adds no new raw-container getter or write facade.
+- Next step:
+  - Continue with US-007 lifecycle/main-loop validation and keep `--legacy-runtime` / `--candidate-runtime` documented as report labels unless a later story makes them live runtime switches.
+---
