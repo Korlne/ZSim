@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Mapping, Sequence
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Buff import Buff
+    from zsim.sim_progress.Enemy import Enemy
 
 
 class BuffRuntimeReadPort(ABC):
@@ -130,6 +131,12 @@ class BuffRuntimeFacade(ABC):
     def get_enemy_debuff_mirror_for_compat(self) -> list["Buff"]:
         """过渡期兼容入口，返回旧 enemy debuff 镜像列表。"""
 
+    @abstractmethod
+    def update_time_related_effects(
+        self, *, tick: int, enemy: "Enemy"
+    ) -> dict[str, list["Buff"]]:
+        """执行本 tick 的时间相关 Buff runtime 扫描。"""
+
 
 class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
     """基于旧容器身份的 Buff runtime 门面。"""
@@ -204,6 +211,18 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
     def get_enemy_debuff_mirror_for_compat(self) -> list["Buff"]:
         # 兼容旧容器身份；仅供迁移期局部桥接，不是新的主契约。
         return self._enemy_debuff_mirror
+
+    def update_time_related_effects(
+        self, *, tick: int, enemy: "Enemy"
+    ) -> dict[str, list["Buff"]]:
+        from zsim.sim_progress.Update import Update_Buff
+
+        return Update_Buff.update_time_related_effect(
+            self._dynamic_buff_dict,
+            tick,
+            self._exist_buff_dict,
+            enemy,
+        )
 
     def _get_pending_queue(self, beneficiary: str) -> list["Buff"]:
         return self._loading_buff_dict[beneficiary]

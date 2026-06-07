@@ -144,3 +144,41 @@ def test_legacy_buff_runtime_facade_registry_view_is_read_only_snapshot() -> Non
     assert dict(registered_view) == {"registered": registered_buff}
     with pytest.raises(TypeError):
         cast(Any, registered_view)["another"] = _BuffProbe("another")
+
+
+def test_legacy_buff_runtime_facade_tick_sweep_uses_wrapped_legacy_containers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from zsim.sim_progress.Update import Update_Buff
+
+    exist_buff_dict: dict[str, dict[str, Any]] = {"alpha": {}}
+    loading_buff_dict: dict[str, list[Any]] = {"alpha": []}
+    dynamic_buff_dict: dict[str, list[Any]] = {"alpha": []}
+    enemy = SimpleNamespace()
+    calls: list[tuple[dict[str, list[Any]], int, dict[str, dict[str, Any]], Any]] = []
+
+    def fake_update_time_related_effect(
+        dynamic_buff: dict[str, list[Any]],
+        tick: int,
+        exist_buff: dict[str, dict[str, Any]],
+        received_enemy: Any,
+    ) -> dict[str, list[Any]]:
+        calls.append((dynamic_buff, tick, exist_buff, received_enemy))
+        return dynamic_buff
+
+    monkeypatch.setattr(
+        Update_Buff,
+        "update_time_related_effect",
+        fake_update_time_related_effect,
+    )
+    facade = _create_facade(
+        exist_buff_dict=exist_buff_dict,
+        loading_buff_dict=loading_buff_dict,
+        dynamic_buff_dict=dynamic_buff_dict,
+        enemy_debuff_mirror=[],
+    )
+
+    result = facade.update_time_related_effects(tick=77, enemy=cast(Any, enemy))
+
+    assert result is dynamic_buff_dict
+    assert calls == [(dynamic_buff_dict, 77, exist_buff_dict, enemy)]

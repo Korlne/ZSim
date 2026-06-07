@@ -17,7 +17,10 @@ from zsim.sim_progress.Preload import PreloadClass
 from zsim.sim_progress.RandomNumberGenerator import RNG
 from zsim.sim_progress.Report import start_report_threads, stop_report_threads
 from zsim.sim_progress.ScheduledEvent import ScheduledEvent as ScE
-from zsim.sim_progress.Update.Update_Buff import update_time_related_effect
+from zsim.sim_progress.ScheduledEvent.buff_runtime import (
+    BuffRuntimeFacade,
+    create_legacy_buff_runtime_facade,
+)
 from zsim.simulator.dataclasses import (
     CharacterData,
     GlobalStats,
@@ -192,6 +195,14 @@ class Simulator:
         # 监听器的初始化需要整个Simulator实例，因此在这里进行初始化
         self.load_data.buff_0_manager.initialize_buff_listener()
 
+    def _create_buff_runtime_facade(self) -> BuffRuntimeFacade:
+        return create_legacy_buff_runtime_facade(
+            exist_buff_dict=self.load_data.exist_buff_dict,
+            loading_buff_dict=self.load_data.LOADING_BUFF_DICT,
+            dynamic_buff_dict=self.global_stats.DYNAMIC_BUFF_DICT,
+            enemy_debuff_mirror=self.schedule_data.enemy.dynamic.dynamic_debuff_list,
+        )
+
     def main_loop(
         self, stop_tick: int = 10800, *, sim_cfg: SimCfg | None = None, use_api: bool = False
     ):
@@ -201,14 +212,13 @@ class Simulator:
         """
         if not use_api:
             self.cli_init_simulator(sim_cfg)
+        buff_runtime = self._create_buff_runtime_facade()
         while True:
             # Tick Update
             # report_to_log(f"[Update] Tick step to {tick}")
-            update_time_related_effect(
-                self.global_stats.DYNAMIC_BUFF_DICT,
-                self.tick,
-                self.load_data.exist_buff_dict,
-                self.schedule_data.enemy,
+            buff_runtime.update_time_related_effects(
+                tick=self.tick,
+                enemy=self.schedule_data.enemy,
             )
 
             # Preload
