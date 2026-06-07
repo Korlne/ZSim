@@ -854,3 +854,15 @@
 - Next step:
   - Continue with US-008 to sync the handoff docs, record that old containers are still retained, and prepare the next phase-1 candidate pool.
 ---
+
+## 2026-06-07 16:11 - US-008
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `PRD-11 US-008` replaces stale “PRD-11 is next” handoff wording with the completed old-container facade-expansion state and promotes the next default phase-1 PRD to `ScheduledEvent` / `EventContext` runtime facade dependency closure.
+  - No additional live runtime path was replaced in this story; it records the live replacements from US-003 through US-005 and the guardrail / validation evidence from US-006 through US-007.
+- Compatibility retained:
+  - Old containers remain the runtime source of truth behind `LegacyBuffRuntimeFacade`; `ScheduledEvent(...)`, `BuffLoadLoop()`, legacy `buff_add()`, legacy `KickOutBuff()`, core Load/Schedule append, handler requeue, and dot runtime registration remain documented retained boundaries.
+  - `BuffRuntimeReadPort` remains read-only, `RuntimeCommandPort` remains the same-tick write boundary, and `--legacy-runtime` / `--candidate-runtime` remain report labels rather than live runtime switches.
+- Next step:
+  - Start the next phase-1 PRD from `ScheduledEvent` / `EventContext` raw old-container exposure closure while keeping candidate blocks C/D/E available for later same-phase PRDs.
+---

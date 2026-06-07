@@ -20,7 +20,7 @@
 
 - [x] 完成阶段 1 的调查型 PRD，产出生命周期、事件模型、Calculator seam、验证入口与交接包。
 - [x] 为 Buff runtime 建立抽象接口与适配层。
-- [ ] 隔离 `exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT`。
+- [x] 为 `exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT` 建立第一层 legacy-backed runtime facade 隔离边界；旧容器对象身份仍保留，本项不等同于容器删除。
 - [ ] 建立事件驱动基础设施边界，明确事件对象、事件上下文、事件分发入口与订阅入口。
 - [ ] 让 `Simulator` 不再直接控制旧 Buff 运行细节。
 - [ ] 让 `ScheduledEvent` 改为依赖 Buff runtime facade。
@@ -150,9 +150,20 @@
 - [x] 本轮验证命令 `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events` 已通过：基础 simulator pytest、隔离队伍 pytest、48 个 focused `implicit-events` 回归与 68 个 scoped mypy target 均通过。
 - [x] `--legacy-runtime` / `--candidate-runtime` 继续只是 consistency / benchmark 报告标签，不是 live runtime switch；下一轮仍沿 [Buff重构方案.md](./Buff重构方案.md) 的阶段 1 路线推进。
 
+## 本轮 PRD-11 旧容器 runtime facade 扩展收口状态（2026-06-07）
+
+- [x] `zsim/sim_progress/ScheduledEvent/buff_runtime.py` 已新增 `BuffRuntimeFacade` / `LegacyBuffRuntimeFacade` / `create_legacy_buff_runtime_facade()`，按引用包住 `LoadData.exist_buff_dict`、`LoadData.LOADING_BUFF_DICT`、`GlobalStats.DYNAMIC_BUFF_DICT` 与 `enemy.dynamic.dynamic_debuff_list`，并区分 registry/template read、pending queue、active store、enemy debuff mirror sync 与 compatibility-only identity access。
+- [x] `Simulator.main_loop()` 的 tick sweep 与 pending-to-active activation 已改经 `LegacyBuffRuntimeFacade.update_time_related_effects()` / `activate_pending_buffs()`；主循环不再为这两个边界直接拼接 `DYNAMIC_BUFF_DICT` / `exist_buff_dict` / `LOADING_BUFF_DICT` / `enemy` 参数。
+- [x] `Update_Buff.update_buff(..., runtime_facade=...)` 在 live facade tick sweep 中把 active Buff 结束 / 移除委托给 `LegacyBuffRuntimeFacade.end_active_buff()`，保留 `Buff.end(...) -> active-list remove -> Buff end log -> enemy debuff mirror removal` 的旧顺序；`KickOutBuff()` 仍是 direct compatibility path。
+- [x] `tests/simulator/test_buff_raw_container_guardrail.py` 已纳入 `implicit-events` shared gate，阻断 PRD-11 facade scope 中新增或扩散 raw `DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT`、`exist_buff_dict`、`ScheduleData.dynamic_buff`、`ScheduleData.loading_buff` passthrough。
+- [x] 旧容器仍是 runtime source of truth：`BuffLoadLoop()` trigger judgement / pending queue population、`ScheduledEvent(...)` 构造时的 raw active/exist 参数、legacy `buff_add()`、legacy `KickOutBuff()`、core Load/Schedule append、handler requeue、dot runtime registration 与 `RuntimeCommandPort` compatibility reads 都是 retained boundary，不在 PRD-11 删除。
+- [x] `BuffRuntimeReadPort` 保持只读；`RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 仍是 scheduled handlers 的 same-tick 写边界，PRD-11 没有新增第二套 handler write facade。
+- [x] 验证通过：focused facade / simulator / guardrail / consistency pytest 均通过；`uv run python scripts/run_buff_main_loop_consistency.py --team "莱特火属性队" --stop-tick 600 --legacy-runtime "prd-10-baseline" --candidate-runtime "prd-11-facade" --json` 输出 `matches: true`、总伤 `646446.67` 且差异为空；`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events` 与 full `uv run python scripts/run_buff_refactor_validation.py` 均通过。
+- [x] `--legacy-runtime` / `--candidate-runtime` 继续只是 consistency / benchmark 报告标签，不是 live runtime switch；下一轮仍沿 [Buff重构方案.md](./Buff重构方案.md) 的阶段 1 路线推进。
+
 ## 当前默认下一步
 
-- [ ] 下一轮仍属于“阶段 1：基础设施解耦”，默认从 [Buff重构下阶段计划草稿.md](./Buff重构下阶段计划草稿.md) 的“旧容器隔离与 Buff runtime facade 扩展”候选块生成 Ralph PRD，优先包住 `exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT` 与 `Update_Buff` / `Simulator` 调用边界，而不是继续围绕已删除的 `event_list` 发现口开薄切片。
-- [ ] 若 PRD 生成器选择其他候选块，应仍从阶段 1 候选池中选择一个完整耦合块：`ScheduledEvent` facade 依赖收口、`Update_Buff` 生命周期结算边界、Calculator 属性读取 seam、或异常 / debuff / dot 旁路耦合；不得只因为旧文本命中 `event_list` 就重开已闭合 producer 批次。
-- [ ] 仅当 post-deletion guardrail 暴露新的具体生产证据时，才重新处理 `find_event_list`、`record.event_list`、`event_list=True` 或 producer-level planned-event writer；本轮没有遗留 fallback blocker。
+- [ ] 下一轮仍属于“阶段 1：基础设施解耦”，默认从 [Buff重构下阶段计划草稿.md](./Buff重构下阶段计划草稿.md) 的“`ScheduledEvent` 对 Buff runtime facade 的依赖收口”候选块生成 Ralph PRD，优先收窄 `ScheduledEvent` / `EventContext` raw `dynamic_buff`、`exist_buff_dict`、`loading_buff` 暴露面，而不是继续扩写主循环 facade 样本。
+- [ ] 若 PRD 生成器选择其他候选块，应仍从阶段 1 候选池中选择一个完整耦合块：`Update_Buff` 剩余生命周期内聚、Calculator 属性读取 seam、或异常 / debuff / dot 旁路耦合；不得只因为旧文本命中 `event_list` 就重开已闭合 producer 批次。
+- [ ] PRD-11 已完成旧容器 facade 主体扩展；后续只有在 guardrail 暴露具体新增 raw-container passthrough、或 source scan 发现新的生产文件 / 函数 / 写表达式 / payload / target / 顺序证据时，才重新处理旧容器或已删除 `event_list` surface。
 - [ ] 仅在 live simulator 真正消费 `config.buff_runtime.mode` 后，再把一致性 / benchmark 命令升级为真实 runtime switch 证据。
