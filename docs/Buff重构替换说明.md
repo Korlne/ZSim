@@ -1121,3 +1121,14 @@
 - Next step:
   - Continue with US-023 by syncing the phase-1 handoff docs from the US-022 validation evidence, including the benchmark fallback fix and report-label limitation.
 ---
+## 2026-06-07 22:13 - US-023
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The US-023 handoff docs replace stale PRD-11-era next-step guidance with the current PRD-12 phase-1 evidence map, validation outcomes, retained-boundary list, and `US-024` closure / blocker decision route.
+  - No live simulator runtime path was replaced in this story; it synchronizes handoff state after the US-022 validation and benchmark fallback evidence.
+- Compatibility retained:
+  - Old containers remain retained compatibility boundaries: `exist_buff_dict`, `DYNAMIC_BUFF_DICT`, `LOADING_BUFF_DICT`, legacy `buff_add()`, legacy `KickOutBuff()`, Calculator / CalAnomaly `MultiplierData` formula snapshots, handler requeue, damage continuation, listener broadcast, and dot runtime registration are not deleted by this handoff.
+  - `--legacy-runtime` / `--candidate-runtime` remain consistency / benchmark report labels only; no live runtime mode switch was wired.
+- Next step:
+  - Continue with US-024 to declare phase-1 closure or produce a blocker package from the synchronized checklist, coupling review, validation records, and replacement notes.
+---

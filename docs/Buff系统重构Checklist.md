@@ -21,13 +21,13 @@
 - [x] 完成阶段 1 的调查型 PRD，产出生命周期、事件模型、Calculator seam、验证入口与交接包。
 - [x] 为 Buff runtime 建立抽象接口与适配层。
 - [x] 为 `exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT` 建立第一层 legacy-backed runtime facade 隔离边界；旧容器对象身份仍保留，本项不等同于容器删除。
-- [ ] 建立事件驱动基础设施边界，明确事件对象、事件上下文、事件分发入口与订阅入口。
-- [ ] 让 `Simulator` 不再直接控制旧 Buff 运行细节。
-- [ ] 让 `ScheduledEvent` 改为依赖 Buff runtime facade。
-- [ ] 让 `Update_Buff` 改为依赖 Buff runtime facade。
-- [ ] 为 `Calculator` 建立属性读取接口，隔离 `MultiplierData` 直读。
-- [ ] 为基础设施解耦新增单元测试。
-- [ ] 为事件分发边界与事件顺序新增单元测试。
+- [x] 建立事件驱动基础设施边界，明确事件对象、事件上下文、事件分发入口与订阅入口。
+- [x] 让 `Simulator` 不再直接控制旧 Buff 运行细节；阶段 1 范围内已由 `LegacyBuffRuntimeFacade` 接管 tick sweep、pending activation、active removal 与 individual-settled stack cleanup，旧容器对象身份仍保留。
+- [x] 让 `ScheduledEvent` 改为依赖 Buff runtime facade；阶段 1 范围内已集中创建 runtime view / command port，并用 guardrail 收窄 raw runtime getter 扩散，构造兼容边界仍保留。
+- [x] 让 `Update_Buff` 改为依赖 Buff runtime facade；阶段 1 范围内 live main-loop lifecycle 分支已走 facade，`KickOutBuff()` 与 no-facade fallback 仍是 retained compatibility path。
+- [x] 为 `Calculator` 建立属性读取接口，隔离 `MultiplierData` 直读；`BuffAttributeReader` 已覆盖代表性 AM / AP 只读样本，`MultiplierData` 仍是公式与 retained XLogic compatibility snapshot。
+- [x] 为基础设施解耦新增单元测试。
+- [x] 为事件分发边界与事件顺序新增单元测试。
 - [x] 为主循环一致性与性能验证补齐真实命令入口。
 - [x] 为旧 `event_list` 发现口建立删除就绪清单、风险矩阵和 AST / 结构化数据 guardrail。
 - [x] 执行旧 `event_list` 发现口删除 / 显式关闭：`JudgeTools.find_event_list()`、`check_preparation(..., event_list=...)` 缓存分支与 `BuffRecordBaseClass.event_list` 已关闭，并由 post-deletion guardrail 守门。
@@ -161,9 +161,20 @@
 - [x] 验证通过：focused facade / simulator / guardrail / consistency pytest 均通过；`uv run python scripts/run_buff_main_loop_consistency.py --team "莱特火属性队" --stop-tick 600 --legacy-runtime "prd-10-baseline" --candidate-runtime "prd-11-facade" --json` 输出 `matches: true`、总伤 `646446.67` 且差异为空；`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events` 与 full `uv run python scripts/run_buff_refactor_validation.py` 均通过。
 - [x] `--legacy-runtime` / `--candidate-runtime` 继续只是 consistency / benchmark 报告标签，不是 live runtime switch；下一轮仍沿 [Buff重构方案.md](./Buff重构方案.md) 的阶段 1 路线推进。
 
+## 本轮 PRD-12 阶段 1 基础设施完成交接状态（2026-06-07）
+
+- [x] `ScheduledEvent` / `EventContext` raw runtime 暴露已完成 audit、compatibility getter 收窄、same-tick helper 处理、构造集中化与 no-new-raw-runtime guardrail；handler requeue、`LoadDamageEvent` damage-effect continuation、`SPUpdateData` 面板刷新读路径、`ScheduleDispatchPort` 队列语义、`RuntimeCommandPort` same-tick 写边界和 `BuffRuntimeReadPort` 只读语义均保留。
+- [x] `Update_Buff` lifecycle 块已完成 audit、active removal / individual-settled stack cleanup facade routing、raw-container guardrail 与 main-loop safety 验证；`KickOutBuff()`、no-facade fallback、anomaly expiration、dot expiration、enemy debuff mirror 单一事实源与公式语义仍是 retained compatibility / non-target。
+- [x] Calculator read seam 已完成 `MultiplierData` / alias usage inventory、`BuffAttributeReader` 最小接口、两个代表性 XLogic 只读样本与 `calculator-reads` guardrail/profile 覆盖；`MultiplierData` 仍保留给 Calculator / CalAnomaly 公式和 retained XLogic compatibility snapshot。
+- [x] anomaly / debuff / dot bypass 块已完成分类、`AnomalyBar.__get_max_duration()` runtime view 读口样本、`BuffAddStrategy` active-store / enemy-mirror facade 写入样本与 bypass-layer semantics tests；scheduled publish、listener broadcast、dot runtime registration 与 runtime immediate write 保持四层分离。
+- [x] phase-1 guardrail matrix 已同步到 [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md)，覆盖 deleted `event_list` surfaces、raw scheduler queue writes、raw old-container passthrough、`ScheduledEvent` raw runtime getter、lifecycle raw container、Calculator read seam 与 anomaly / debuff / dot bypass。
+- [x] 阶段 1 验证证据已记录：`implicit-events`、`calculator-reads` 与默认 lifecycle validation profile 均通过；`青衣雷属性队` `stop-tick 120` consistency JSON 样本 `matches=true`，benchmark JSON 样本在复用 consistency damage-data fallback 后通过。
+- [x] `--legacy-runtime` / `--candidate-runtime` 继续只是 consistency / benchmark 报告标签，不是 live runtime switch；只有 live simulator 真正消费 `config.buff_runtime.mode` 后，才可把这些命令当真实 runtime 切换证据。
+- [x] 旧容器仍是 retained compatibility boundary：本阶段关闭的是基础设施扩散风险和代表性 facade / read / dispatch seam，不等同于删除 `exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT`、legacy `buff_add()`、legacy `KickOutBuff()` 或全部 `MultiplierData` 公式快照。
+- [ ] 阶段 2 尚未正式开始；下一 Ralph iteration 必须先完成 `US-024`，用本 checklist、旧耦合审查、验证结果和 handoff docs 声明阶段 1 closure 或输出 blocker package。
+
 ## 当前默认下一步
 
-- [ ] 下一轮仍属于“阶段 1：基础设施解耦”，默认从 [Buff重构下阶段计划草稿.md](./Buff重构下阶段计划草稿.md) 的“`ScheduledEvent` 对 Buff runtime facade 的依赖收口”候选块生成 Ralph PRD，优先收窄 `ScheduledEvent` / `EventContext` raw `dynamic_buff`、`exist_buff_dict`、`loading_buff` 暴露面，而不是继续扩写主循环 facade 样本。
-- [ ] 若 PRD 生成器选择其他候选块，应仍从阶段 1 候选池中选择一个完整耦合块：`Update_Buff` 剩余生命周期内聚、Calculator 属性读取 seam、或异常 / debuff / dot 旁路耦合；不得只因为旧文本命中 `event_list` 就重开已闭合 producer 批次。
-- [ ] PRD-11 已完成旧容器 facade 主体扩展；后续只有在 guardrail 暴露具体新增 raw-container passthrough、或 source scan 发现新的生产文件 / 函数 / 写表达式 / payload / target / 顺序证据时，才重新处理旧容器或已删除 `event_list` surface。
-- [ ] 仅在 live simulator 真正消费 `config.buff_runtime.mode` 后，再把一致性 / benchmark 命令升级为真实 runtime switch 证据。
+- [ ] 当前 PRD 内的下一步是 `US-024`：复核阶段 1 completion matrix、guardrail matrix、serial validation 和 handoff 文档，声明阶段 1 closure 或列出 blocker package；不得在 `US-024` 之前启动阶段 2 PRD。
+- [ ] 若 `US-024` 声明 phase-1 closed，下一轮 PRD 应沿 [Buff重构方案.md](./Buff重构方案.md) 进入“阶段 2：XLogic 全量分析与复用收敛”，先做分类与复用清单，不直接进入阶段 3 替换。
+- [ ] 若 `US-024` 发现 blocker，下一轮 PRD 只处理 blocker package 中列出的具体文件、符号、失败测试、失败 guardrail 或验证命令；不得重开已删除的 `event_list` surface 或已闭合的 producer batch，除非 guardrail 给出新的生产证据。
