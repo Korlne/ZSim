@@ -948,3 +948,14 @@
 - Next step:
   - Continue PRD-12 with `Update_Buff` lifecycle coupling audit and keep old containers retained unless a later story proves a narrower facade-backed lifecycle migration.
 ---
+## 2026-06-07 18:32 - US-008
+- Files changed: `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `docs/旧Buff系统耦合审查结果.md` prepares to replace broad `Update_Buff` lifecycle ambiguity with a concrete inventory of facade-backed live paths, retained compatibility paths, lifecycle migration candidates, and anomaly / dot non-targets.
+  - No live runtime path was replaced in this story; it audits the remaining lifecycle coupling after PRD-11 active removal was routed through `LegacyBuffRuntimeFacade.end_active_buff()`.
+- Compatibility retained:
+  - Old Buff containers remain the runtime source of truth behind `LegacyBuffRuntimeFacade`.
+  - `KickOutBuff()` remains a retained direct compatibility path, and anomaly bar expiration, dot expiration, Calculator formulas, enemy debuff mirror single-source-of-truth, and complex `xexit()` formulas are not changed.
+- Next step:
+  - Continue with US-009 by selecting one coherent `Update_Buff.update_buff()` lifecycle internal to route through the existing runtime facade or a narrow lifecycle adapter, backed by focused tests.
+---
