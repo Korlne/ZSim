@@ -3,7 +3,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from zsim.sim_progress.Buff import ScheduleBuffSettle as legacy_schedule_buff_settle
+from zsim.sim_progress.Buff.ScheduleBuffSettle import (
+    ScheduleBuffSettle as legacy_schedule_buff_settle,
+)
 from zsim.sim_progress.Update import update_anomaly as legacy_update_anomaly
 
 if TYPE_CHECKING:
@@ -90,9 +92,7 @@ class LegacyRuntimeCommandAdapter(RuntimeCommandPort):
         skill_node: "SkillNode | LoadingMission | None" = None,
         anomaly_bar: "AnomalyBar | None" = None,
     ) -> None:
-        legacy_kwargs: dict[str, object] = {
-            "sim_instance": self._sim_instance,
-        }
+        legacy_kwargs: dict[str, object] = {}
         if skill_node is not None:
             legacy_kwargs["skill_node"] = skill_node
         if anomaly_bar is not None:
@@ -104,6 +104,7 @@ class LegacyRuntimeCommandAdapter(RuntimeCommandPort):
             enemy,
             self._data.dynamic_buff,
             self._action_stack,
+            sim_instance=self._sim_instance,
             **legacy_kwargs,
         )
 

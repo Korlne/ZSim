@@ -1164,3 +1164,14 @@
 - Next step:
   - Continue with US-003 by wiring validation profile targets for `zsim/sim_progress/Buff/ScheduleBuffSettle.py`.
 ---
+## 2026-06-08 07:26 - US-003
+- Files changed: `scripts/run_buff_refactor_validation.py`, `zsim/sim_progress/ScheduledEvent/runtime_command.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `scripts/run_buff_refactor_validation.py` prepares to replace manual confidence in retained `ScheduleBuffSettle.py` internals with explicit `lifecycle` and `implicit-events` scoped mypy coverage.
+  - No live simulator runtime path was replaced in this story; the `LegacyRuntimeCommandAdapter` import/call cleanup preserves the same `RuntimeCommandPort` same-tick write boundary while making the retained settle function checkable.
+- Compatibility retained:
+  - `SkillEventHandler` and `AnomalyEventHandler` still route settle writes through `runtime_command_port.settle_buffs(...)`.
+  - `ScheduleBuffSettle.py` still owns the retained legacy old-container settle implementation and keeps the keyword `sim_instance` handoff from the adapter.
+- Next step:
+  - Continue with US-004 by syncing the handoff docs and stale phase-1 checklist wording from the guardrail and validation evidence.
+---
