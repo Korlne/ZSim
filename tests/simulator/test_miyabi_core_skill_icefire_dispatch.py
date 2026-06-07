@@ -38,7 +38,9 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("MiyabiCoreSkill_IceFire should not read raw event_list")
 
-    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list)
+    monkeypatch.setattr(
+        JudgeTools, "find_event_list", fail_find_event_list, raising=False
+    )
 
 
 def test_miyabi_core_skill_icefire_publishes_follow_up_via_dispatch_port_once(

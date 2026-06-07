@@ -34,11 +34,6 @@ def find_exist_buff_dict(sim_instance: "Simulator" = None):
     return exist_buff_dict
 
 
-def find_event_list(sim_instance: "Simulator" = None):
-    event_list = sim_instance.schedule_data.event_list
-    return event_list
-
-
 def find_stack(sim_instance: "Simulator" = None):
     stack = sim_instance.load_data.action_stack
     return stack

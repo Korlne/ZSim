@@ -39,7 +39,9 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("YixuanCinema1Trigger should not read raw event_list")
 
-    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list)
+    monkeypatch.setattr(
+        JudgeTools, "find_event_list", fail_find_event_list, raising=False
+    )
 
 
 def test_yixuan_cinema1_publishes_lightning_after_loading_mission_via_dispatch_port(

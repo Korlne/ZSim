@@ -55,7 +55,9 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("YanagiPolarityDisorderTrigger should not read raw event_list")
 
-    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list)
+    monkeypatch.setattr(
+        JudgeTools, "find_event_list", fail_find_event_list, raising=False
+    )
 
 
 def _build_skill_node() -> SkillNode:

@@ -9,36 +9,16 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PRODUCTION_ROOT = PROJECT_ROOT / "zsim" / "sim_progress"
 
 RECOMMENDED_NEXT_ACTION = (
-    "migrate planned-event producers to ScheduleDispatchPort, retain core requeue only "
-    "inside Schedule/Load dispatchers, or add an explicit allowlist note for a legacy "
-    "compatibility use"
+    "delete old discovery, migrate planned-event producers to ScheduleDispatchPort, "
+    "or retain only a documented non-publisher boundary"
 )
 
 ALLOWED_FINDINGS: dict[tuple[str, str], set[str]] = {
-    (
-        "zsim/sim_progress/Buff/JudgeTools/__init__.py",
-        "find_event_list_import",
-    ): {
-        "from .FindMain import find_event_list",
-    },
-    (
-        "zsim/sim_progress/Buff/JudgeTools/__init__.py",
-        "find_event_list_call",
-    ): {
-        "find_event_list(sim_instance=buff_instance.sim_instance)",
-    },
     (
         "zsim/sim_progress/Buff/BuffXLogic/_buff_record_base_class.py",
         "buff_record_event_list_access",
     ): {
         "self.event_list: list | None = None",
-    },
-    (
-        "zsim/sim_progress/Buff/JudgeTools/__init__.py",
-        "buff_record_event_list_access",
-    ): {
-        "record.event_list is None",
-        "record.event_list = find_event_list(sim_instance=buff_instance.sim_instance)",
     },
 }
 

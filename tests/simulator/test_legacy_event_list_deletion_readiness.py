@@ -23,29 +23,10 @@ EVENT_LIST_TRUE_PATTERN = re.compile(
 
 ALLOWED_PYTHON_FINDINGS: dict[tuple[str, str], set[str]] = {
     (
-        "zsim/sim_progress/Buff/JudgeTools/__init__.py",
-        "find_event_list_import",
-    ): {
-        "from .FindMain import find_event_list",
-    },
-    (
-        "zsim/sim_progress/Buff/JudgeTools/__init__.py",
-        "find_event_list_call",
-    ): {
-        "find_event_list(sim_instance=buff_instance.sim_instance)",
-    },
-    (
         "zsim/sim_progress/Buff/BuffXLogic/_buff_record_base_class.py",
         "buff_record_event_list_access",
     ): {
         "self.event_list: list | None = None",
-    },
-    (
-        "zsim/sim_progress/Buff/JudgeTools/__init__.py",
-        "buff_record_event_list_access",
-    ): {
-        "record.event_list is None",
-        "record.event_list = find_event_list(sim_instance=buff_instance.sim_instance)",
     },
 }
 
@@ -206,8 +187,8 @@ class LegacyEventListDeletionReadinessVisitor(ast.NodeVisitor):
     @staticmethod
     def _next_action_for(kind: str) -> str:
         return {
-            "find_event_list_import": "add allowlist, retain as boundary, or block deletion",
-            "find_event_list_call": "migrate to ScheduleDispatchPort, retain as boundary, or add allowlist",
+            "find_event_list_import": "delete old discovery or migrate to ScheduleDispatchPort",
+            "find_event_list_call": "delete old discovery or migrate to ScheduleDispatchPort",
             "buff_record_event_list_access": "add allowlist, retain as boundary, or block deletion",
             "record_event_list_append": "migrate to ScheduleDispatchPort",
             "event_list_preparation_request": "block deletion until this entry point is removed",

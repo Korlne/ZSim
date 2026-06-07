@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import ast
 import csv
+import importlib
 import json
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, SupportsIndex
 
 import pytest
 
@@ -33,7 +33,7 @@ class EventListPreparationFinding:
     def message(self) -> str:
         return (
             f"{self.path}:{self.line}: {self.expression} -> "
-            "event_list=True is legacy discovery caching only; migrate planned-event "
+            "event_list=True is a deleted legacy discovery surface; migrate planned-event "
             "writers to ScheduleDispatchPort or add an explicit compatibility note"
         )
 
@@ -49,22 +49,6 @@ class ConfigEventListFinding:
             f"{self.path}:{self.location}: {self.value} -> "
             "Buff data/config must not request check_preparation(event_list=True)"
         )
-
-
-class _FailFastEventList(list[object]):
-    def __init__(self) -> None:
-        super().__init__()
-        self.append_calls = 0
-
-    def append(self, item: object) -> None:
-        self.append_calls += 1
-        raise AssertionError("check_preparation(event_list=True) must not append events")
-
-    def extend(self, items: Any) -> None:
-        raise AssertionError("check_preparation(event_list=True) must not create event payloads")
-
-    def insert(self, index: SupportsIndex, item: object) -> None:
-        raise AssertionError("check_preparation(event_list=True) must not create event payloads")
 
 
 def _relative_path(path: Path) -> str:
@@ -197,58 +181,44 @@ def _collect_config_event_list_findings() -> list[ConfigEventListFinding]:
     return findings
 
 
-def test_check_preparation_event_list_true_only_caches_legacy_queue(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_find_event_list_legacy_discovery_surface_is_deleted() -> None:
+    find_main = importlib.import_module("zsim.sim_progress.Buff.JudgeTools.FindMain")
+
+    assert not hasattr(find_main, "find_event_list")
+    assert not hasattr(judge_tools, "find_event_list")
+
+
+def test_check_preparation_event_list_true_is_rejected_without_queue_cache() -> None:
     record = BuffRecordBaseClass()
-    legacy_event_list = _FailFastEventList()
-    sim_instance = object()
     buff_0 = SimpleNamespace(history=SimpleNamespace(record=record))
-    buff_instance = SimpleNamespace(sim_instance=sim_instance)
-    lookup_calls: list[object] = []
+    buff_instance = SimpleNamespace(sim_instance=object())
 
-    def fake_find_event_list(*, sim_instance: object | None = None) -> list[object]:
-        lookup_calls.append(sim_instance)
-        return legacy_event_list
+    with pytest.raises(ValueError, match="event_list=True"):
+        judge_tools.check_preparation(
+            buff_0=buff_0,
+            buff_instance=buff_instance,
+            event_list=True,
+        )
 
-    monkeypatch.setattr(judge_tools, "find_event_list", fake_find_event_list)
-
-    result = judge_tools.check_preparation(
-        buff_0=buff_0,
-        buff_instance=buff_instance,
-        event_list=True,
-    )
-
-    assert result is None
-    assert lookup_calls == [sim_instance]
-    assert record.event_list is legacy_event_list
-    assert legacy_event_list == []
-    assert legacy_event_list.append_calls == 0
+    assert record.event_list is None
 
 
-def test_check_preparation_event_list_true_reuses_cached_queue_without_lookup(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_check_preparation_event_list_true_rejects_cached_queue_reuse() -> None:
     record = BuffRecordBaseClass()
-    cached_event_list = _FailFastEventList()
+    cached_event_list: list[object] = []
     record.event_list = cached_event_list
     buff_0 = SimpleNamespace(history=SimpleNamespace(record=record))
     buff_instance = SimpleNamespace(sim_instance=object())
 
-    def fail_find_event_list(*args: object, **kwargs: object) -> list[object]:
-        raise AssertionError("cached record.event_list should not trigger legacy lookup")
-
-    monkeypatch.setattr(judge_tools, "find_event_list", fail_find_event_list)
-
-    judge_tools.check_preparation(
-        buff_0=buff_0,
-        buff_instance=buff_instance,
-        event_list=True,
-    )
+    with pytest.raises(ValueError, match="event_list=True"):
+        judge_tools.check_preparation(
+            buff_0=buff_0,
+            buff_instance=buff_instance,
+            event_list=True,
+        )
 
     assert record.event_list is cached_event_list
     assert cached_event_list == []
-    assert cached_event_list.append_calls == 0
 
 
 def test_buff_xlogic_does_not_request_event_list_preparation_cache() -> None:

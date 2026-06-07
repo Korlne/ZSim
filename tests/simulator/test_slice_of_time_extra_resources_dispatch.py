@@ -38,7 +38,9 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("SliceofTimeExtraResources should not read raw event_list")
 
-    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list)
+    monkeypatch.setattr(
+        JudgeTools, "find_event_list", fail_find_event_list, raising=False
+    )
 
 
 def test_slice_of_time_extra_resources_publishes_mixed_refresh_via_dispatch_port(

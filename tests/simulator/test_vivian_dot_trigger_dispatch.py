@@ -61,7 +61,9 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("VivianDotTrigger should not read raw event_list")
 
-    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list)
+    monkeypatch.setattr(
+        JudgeTools, "find_event_list", fail_find_event_list, raising=False
+    )
 
 
 def test_vivian_dot_trigger_registers_dot_and_publishes_skill_node_via_dispatch_port(

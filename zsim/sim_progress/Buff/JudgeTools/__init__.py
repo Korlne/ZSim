@@ -9,7 +9,6 @@ from .FindMain import (
     find_char_list,
     find_dynamic_buff_list,
     find_enemy,
-    find_event_list,
     find_exist_buff_dict,
     find_init_data,  # noqa: F401,
     find_preload_data,
@@ -94,9 +93,10 @@ def check_preparation(
         if record.action_stack is None:
             record.action_stack = find_stack(sim_instance=buff_instance.sim_instance)
     if event_list:
-        # print('event_list放在record中很有可能不会随动！！注意！')
-        if record.event_list is None:
-            record.event_list = find_event_list(sim_instance=buff_instance.sim_instance)
+        raise ValueError(
+            "check_preparation(..., event_list=True) 的旧 event_list 发现口已删除；"
+            "计划事件发布请使用 ScheduleDispatchPort。"
+        )
     if trigger_buff_0:
         trigger_buff_0_handler(record, trigger_buff_0, buff_instance=buff_instance)
     if preload_data:

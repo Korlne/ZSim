@@ -688,3 +688,15 @@
 - Next step:
   - Proceed to US-002 to delete or explicitly close `JudgeTools.find_event_list()` discovery while keeping `data_struct/schedule_dispatch.py` adapter queue access outside the deletion target set.
 ---
+
+## 2026-06-07 12:47 - US-002
+- Files changed: `zsim/sim_progress/Buff/JudgeTools/FindMain.py`, `zsim/sim_progress/Buff/JudgeTools/__init__.py`, focused simulator guardrail/dispatch tests, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `JudgeTools.find_event_list()` and its package export are deleted, replacing the old raw `schedule_data.event_list` discovery helper with an explicit rejection in `check_preparation(..., event_list=True)`.
+  - Focused guardrails now treat any production `find_event_list` import or call as a deletion blocker instead of a compatibility allowlist.
+- Compatibility retained:
+  - `LegacyEventListScheduleDispatchAdapter(schedule_data.event_list)` remains the only allowed low-level scheduler queue touch point for dispatch-port publishing.
+  - `BuffRecordBaseClass.event_list` remains as the next deletion target; this story does not remove unrelated record fields or old runtime containers.
+- Next step:
+  - Continue with US-003 to remove or quarantine the remaining `event_list=True` keyword/cache surface without reintroducing raw queue discovery.
+---

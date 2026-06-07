@@ -21,7 +21,9 @@ def test_schedule_preload_event_factory_preserves_queue_order_without_raw_event_
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("schedule_preload_event_factory should publish via dispatch port")
 
-    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list)
+    monkeypatch.setattr(
+        JudgeTools, "find_event_list", fail_find_event_list, raising=False
+    )
 
     schedule_preload_event_factory(
         preload_tick_list=[11, 13],
