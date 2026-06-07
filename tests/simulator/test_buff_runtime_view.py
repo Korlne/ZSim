@@ -66,6 +66,12 @@ class _AccessorProbeHandler(BaseEventHandler):
     def read_exist_buff_dict(self, context):
         return self._get_context_exist_buff_dict(context)
 
+    def read_legacy_dynamic_buff(self, context):
+        return self._get_context_legacy_dynamic_buff(context)
+
+    def read_legacy_exist_buff_dict(self, context):
+        return self._get_context_legacy_exist_buff_dict(context)
+
     def read_runtime_active_buffs(self, context, beneficiary):
         return self._get_context_runtime_active_buffs(context, beneficiary)
 
@@ -130,10 +136,15 @@ def test_event_context_compatibility_getters_delegate_to_runtime_view():
     context = _build_context(runtime_view)
 
     assert context.get_buff_runtime_view() is runtime_view
-    assert context.get_dynamic_buff() is dynamic_buff
-    assert context.get_exist_buff_dict() is exist_buff_dict
+    assert context.get_legacy_dynamic_buff_dict() is dynamic_buff
+    assert context.get_legacy_exist_buff_dict() is exist_buff_dict
     assert runtime_view.dynamic_calls == 1
     assert runtime_view.exist_calls == 1
+
+    assert context.get_dynamic_buff() is dynamic_buff
+    assert context.get_exist_buff_dict() is exist_buff_dict
+    assert runtime_view.dynamic_calls == 2
+    assert runtime_view.exist_calls == 2
 
 
 def test_event_context_runtime_read_accessors_delegate_without_legacy_container_access():
@@ -162,10 +173,15 @@ def test_base_event_handler_compatibility_accessors_delegate_via_runtime_view():
     context = _build_context(runtime_view)
     handler = _AccessorProbeHandler()
 
-    assert handler.read_dynamic_buff(context) is dynamic_buff
-    assert handler.read_exist_buff_dict(context) is exist_buff_dict
+    assert handler.read_legacy_dynamic_buff(context) is dynamic_buff
+    assert handler.read_legacy_exist_buff_dict(context) is exist_buff_dict
     assert runtime_view.dynamic_calls == 1
     assert runtime_view.exist_calls == 1
+
+    assert handler.read_dynamic_buff(context) is dynamic_buff
+    assert handler.read_exist_buff_dict(context) is exist_buff_dict
+    assert runtime_view.dynamic_calls == 2
+    assert runtime_view.exist_calls == 2
 
 
 def test_base_event_handler_runtime_read_accessors_delegate_without_legacy_access():

@@ -892,3 +892,14 @@
 - Next step:
   - Continue with US-003 to narrow compatibility getter naming/comments/tests, then US-004 to handle the remaining `ScheduledEvent.update_anomaly_bar_after_skill_event()` write helper.
 ---
+## 2026-06-07 17:46 - US-003
+- Files changed: `zsim/sim_progress/ScheduledEvent/event_handlers/context.py`, `zsim/sim_progress/ScheduledEvent/event_handlers/base.py`, `tests/simulator/test_buff_runtime_view.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `EventContext.get_legacy_dynamic_buff_dict()` / `get_legacy_exist_buff_dict()` and `BaseEventHandler._get_context_legacy_dynamic_buff()` / `_get_context_legacy_exist_buff_dict()` replace the implicit old getter names as the documented compatibility boundary for raw old-container identity.
+  - No live runtime path was replaced in this story; it narrows the compatibility getter surface and keeps handler runtime reads on `BuffRuntimeReadPort` active / snapshot views.
+- Compatibility retained:
+  - `EventContext.get_dynamic_buff()` / `get_exist_buff_dict()` and `BaseEventHandler._get_context_dynamic_buff()` / `_get_context_exist_buff_dict()` remain old aliases, now typed and documented as compatibility-only shims.
+  - Old Buff containers remain retained behind the runtime read and command adapters; this story does not delete old containers or add a write API to `BuffRuntimeReadPort`.
+- Next step:
+  - Continue with US-004 to route or document `ScheduledEvent.update_anomaly_bar_after_skill_event()` through the existing `RuntimeCommandPort` same-tick write boundary.
+---

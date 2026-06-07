@@ -82,7 +82,7 @@ class BaseEventHandler(EventHandlerABC):
         return context.get_buff_runtime_view()
 
     def _get_context_runtime_command_port(self, context: EventContext) -> RuntimeCommandPort:
-        """浠庝笂涓嬫枃涓幏鍙?Buff runtime 鍐欏懡浠ゅ叆鍙?"""
+        """从上下文中获取 Buff runtime 写命令入口"""
         return context.get_runtime_command_port()
 
     def _get_context_runtime_active_buffs(
@@ -133,22 +133,30 @@ class BaseEventHandler(EventHandlerABC):
         """从上下文中获取所有受益者的 snapshot Buff 只读视图"""
         return self._get_context_runtime_exist_buff_snapshot_view(context)
 
-    def _get_context_legacy_dynamic_buff(self, context: EventContext):
-        """从上下文中获取兼容旧读写路径的动态 Buff 容器"""
-        # 兼容旧容器身份；仅供同 tick 写边界读取，不是新的主读口。
-        return self._get_context_buff_runtime_view(context).get_legacy_dynamic_buff_dict()
+    def _get_context_legacy_dynamic_buff(
+        self, context: EventContext
+    ) -> dict[str, list["Buff"]]:
+        """兼容专用：从上下文中获取旧 dynamic Buff 容器身份"""
+        # 仅供同 tick 写边界兼容旧容器身份；新 handler 应使用 runtime 只读视图。
+        return context.get_legacy_dynamic_buff_dict()
 
-    def _get_context_legacy_exist_buff_dict(self, context: EventContext):
-        """从上下文中获取兼容旧读写路径的旧 snapshot Buff 容器"""
-        # 兼容旧容器身份；仅供同 tick 写边界读取，不是新的主读口。
-        return self._get_context_buff_runtime_view(context).get_legacy_exist_buff_dict()
+    def _get_context_legacy_exist_buff_dict(
+        self, context: EventContext
+    ) -> dict[str, dict[str, "Buff"]]:
+        """兼容专用：从上下文中获取旧 exist Buff 容器身份"""
+        # 仅供同 tick 写边界兼容旧容器身份；新 handler 应使用 runtime 只读视图。
+        return context.get_legacy_exist_buff_dict()
 
-    def _get_context_dynamic_buff(self, context: EventContext):
-        """从上下文中获取兼容旧读写路径的动态 Buff 容器"""
+    def _get_context_dynamic_buff(
+        self, context: EventContext
+    ) -> dict[str, list["Buff"]]:
+        """兼容旧别名：新 handler 应使用 runtime active Buff 只读视图"""
         return self._get_context_legacy_dynamic_buff(context)
 
-    def _get_context_exist_buff_dict(self, context: EventContext):
-        """从上下文中获取兼容旧读写路径的已存在 buff 字典"""
+    def _get_context_exist_buff_dict(
+        self, context: EventContext
+    ) -> dict[str, dict[str, "Buff"]]:
+        """兼容旧别名：新 handler 应使用 runtime exist snapshot 只读视图"""
         return self._get_context_legacy_exist_buff_dict(context)
 
     def _get_context_action_stack(self, context: EventContext):

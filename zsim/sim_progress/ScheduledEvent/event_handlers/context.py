@@ -54,7 +54,7 @@ class EventContext:
         return self.buff_runtime_view
 
     def get_runtime_command_port(self) -> RuntimeCommandPort:
-        """鑾峰彇 Buff runtime 鍐欏懡浠ゅ叆鍙?"""
+        """获取 Buff runtime 写命令入口"""
         return self.runtime_command_port
 
     def get_runtime_active_buffs(self, beneficiary: str) -> Sequence["Buff"]:
@@ -89,15 +89,23 @@ class EventContext:
         """获取所有受益者的 snapshot Buff 只读视图"""
         return self.get_runtime_exist_buff_snapshot_view()
 
-    def get_dynamic_buff(self):
-        """获取兼容旧接口的动态 Buff 容器"""
-        # 兼容旧容器身份；仅供同 tick 写边界读取，不是新的主读口。
+    def get_legacy_dynamic_buff_dict(self) -> dict[str, list["Buff"]]:
+        """兼容专用：获取旧 dynamic Buff 容器身份"""
+        # 仅供同 tick 写边界兼容旧容器身份；新 handler 应使用 runtime 只读视图。
         return self.buff_runtime_view.get_legacy_dynamic_buff_dict()
 
-    def get_exist_buff_dict(self):
-        """获取兼容旧接口的旧 snapshot Buff 容器"""
-        # 兼容旧容器身份；仅供同 tick 写边界读取，不是新的主读口。
+    def get_legacy_exist_buff_dict(self) -> dict[str, dict[str, "Buff"]]:
+        """兼容专用：获取旧 exist Buff 容器身份"""
+        # 仅供同 tick 写边界兼容旧容器身份；新 handler 应使用 runtime 只读视图。
         return self.buff_runtime_view.get_legacy_exist_buff_dict()
+
+    def get_dynamic_buff(self) -> dict[str, list["Buff"]]:
+        """兼容旧别名：新 handler 应使用 runtime active Buff 只读视图"""
+        return self.get_legacy_dynamic_buff_dict()
+
+    def get_exist_buff_dict(self) -> dict[str, dict[str, "Buff"]]:
+        """兼容旧别名：新 handler 应使用 runtime exist snapshot 只读视图"""
+        return self.get_legacy_exist_buff_dict()
 
     def get_action_stack(self) -> ActionStack[SkillNode]:
         """获取动作栈"""
