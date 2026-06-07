@@ -938,3 +938,13 @@
 - Next step:
   - Continue with US-007 to validate ScheduledEvent behavior, retained scheduler semantics, handler requeue, damage-effect continuation, and runtime command separation under the new guardrail coverage.
 ---
+## 2026-06-07 18:26 - US-007
+- Files changed: `tests/simulator/test_scheduled_event_retained_semantics.py`, `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_scheduled_event_retained_semantics.py` prepares to replace undocumented assumptions about `ScheduledEvent` handler requeue, `LoadDamageEvent` damage-effect continuation, `SPUpdateData` refresh order, and `ScheduleDispatchPort` queue-only behavior with focused regression coverage.
+  - `scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events` now includes the retained-semantics test in shared pytest and scoped mypy targets.
+- Compatibility retained:
+  - No live simulator runtime path was replaced in this iteration; handler requeue, damage-effect continuation, `SPUpdateData(..., dynamic_buff=self.data.dynamic_buff)`, `RuntimeCommandPort`, and `ScheduleDispatchPort` semantics remain retained phase-1 boundaries.
+- Next step:
+  - Continue PRD-12 with `Update_Buff` lifecycle coupling audit and keep old containers retained unless a later story proves a narrower facade-backed lifecycle migration.
+---
