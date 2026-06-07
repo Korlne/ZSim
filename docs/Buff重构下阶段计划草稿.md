@@ -210,12 +210,17 @@
   - `zsim/sim_progress/ScheduledEvent/CalAnomaly.py`
 - 当前耦合：
   - `UpdateAnomaly` 已完成部分 planned-event dispatch 改造，但仍与异常状态、dot、Buff runtime 容器和 enemy debuff 镜像强耦合。
-  - `AnomalyBar` / `Shock` 等旁路仍会读取旧 Buff runtime 状态。
-  - `BuffAddStrategy` 仍是外部强制写入旧 Buff 运行态的公共入口。
+  - `UpdateAnomaly.update_anomaly()` 当前的 scheduled queue publish 已走 `ScheduleDispatchPort`，`spawn_output()` 的 `listener_manager.broadcast_event(...)` 仍是同步 listener broadcast，二者不得合并。
+  - `anomaly_effect_active()` 仍通过 `buff_add_strategy(...)` 写入异常附带 debuff，并直接维护 `enemy.dynamic.dynamic_dot_list` 完成 dot runtime registration。
+  - `AnomalyBar.change_info_cause_active()` / `__get_max_duration()` 从 `dynamic_buff_dict["enemy"]` 读取影响异常持续时间的 Buff，是当前默认只读迁移样本。
+  - `Shock.DotFeature.__post_init__()` 从 `sim_instance.load_data.exist_buff_dict["丽娜"]` 读取丽娜组队被动以决定感电持续时间，属于后续 dot 初始化 read-only 旁路。
+  - `CalAnomaly.__init__()` 的 `MulData(...)` 仍是 anomaly / disorder 公式内部，不作为本块第一迁移样本。
+  - `BuffAddStrategy` 仍是外部强制写入旧 Buff 运行态的公共入口，会 service-locate `exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`enemy` 并同步 enemy debuff mirror。
 - 可拆工作方向：
-  - 先做旁路读取 / 写入分类，不把 dot runtime registration 当 planned-event writer。
-  - 为 `AnomalyBar` 或 `Shock` 选择一个只读样本接入 runtime view / stat reader。
-  - 为 `BuffAddStrategy` 建立写入边界调查和最小 adapter 候选，但不一次性替换全部异常逻辑。
+  - US-017 已完成旁路读取 / 写入分类；后续故事应直接消费该清单，不把 dot runtime registration 当 planned-event writer，也不重开已迁到 `ScheduleDispatchPort` 的 `UpdateAnomaly` queue publish。
+  - 默认下一只读样本：将 `AnomalyBar.__get_max_duration()` 通过 `BuffRuntimeReadPort`、attribute reader 或等价显式读口接入，同时保持持续时间公式、enemy 状态和异常输出不变。
+  - 后续 dot 初始化样本可考虑 `Shock.DotFeature.__post_init__()`，但必须先证明 `sim_instance` 校验和 `max_duration` 结果完全兼容。
+  - 默认写边界调查目标：`BuffAddStrategy.buff_add_strategy()` / `let_buff_start()`，先分类 active store 写、pending queue 写、enemy debuff mirror sync、retained compatibility 和 migration candidate；若迁移过宽，先产出 adapter 候选与 guardrail。
   - 补 focused tests 区分 scheduled event、listener broadcast、runtime immediate write 三层语义。
 - 必须保留：
   - `listener_manager.broadcast_event()` 与 scheduled queue 的分层。

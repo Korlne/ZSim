@@ -1050,3 +1050,14 @@
 - Next step:
   - Continue with US-017 to audit anomaly, debuff, and dot bypass coupling while keeping Calculator-read guardrails in the `calculator-reads` validation profile.
 ---
+## 2026-06-07 19:58 - US-017
+- Files changed: `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The US-017 anomaly / debuff / dot bypass inventory prepares to replace ad hoc review of `UpdateAnomaly`, `AnomalyBar`, `Shock`, `BuffAddStrategy`, and `CalAnomaly` with classified runtime-read, runtime-write, scheduled-publish, listener-broadcast, dot-registration, and formula-internal boundaries.
+  - No live simulator path was replaced in this story; it is an audit and handoff slice only.
+- Compatibility retained:
+  - `UpdateAnomaly` scheduled queue publish remains through `ScheduleDispatchPort`; `listener_manager.broadcast_event()` remains synchronous listener broadcast; dot runtime registration remains `enemy.dynamic.dynamic_dot_list` state.
+  - `BuffAddStrategy` still writes the old active Buff store and enemy debuff mirror directly, and `CalAnomaly` still uses the retained `MulData(...)` formula snapshot.
+- Next step:
+  - Continue with US-018 by migrating the `AnomalyBar.__get_max_duration()` read-only duration sample through an explicit read seam, while leaving `BuffAddStrategy` for US-019 write-boundary investigation.
+---
