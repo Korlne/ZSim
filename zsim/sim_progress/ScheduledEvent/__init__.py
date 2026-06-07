@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from zsim.sim_progress import Buff
@@ -22,6 +23,8 @@ from .runtime_command import create_runtime_command_port
 if TYPE_CHECKING:
     from zsim.simulator.dataclasses import ScheduleData
     from zsim.simulator.simulator_class import Simulator
+    from .buff_runtime import BuffRuntimeReadPort
+    from .runtime_command import RuntimeCommandPort
 
 
 class ScConditionData:
@@ -32,6 +35,14 @@ class ScConditionData:
     def __init__(self):
         self.buff_list: list = []
         self.when_crit: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class _ScheduledEventRuntimePorts:
+    """ScheduledEvent 内部 runtime 读写端口组。"""
+
+    buff_runtime_view: "BuffRuntimeReadPort"
+    runtime_command_port: "RuntimeCommandPort"
 
 
 class ScheduledEvent:
@@ -73,16 +84,10 @@ class ScheduledEvent:
         self.data.loading_buff = loading_buff
         self.exist_buff_dict = exist_buff_dict
         self.enemy = self.data.enemy
-        self.buff_runtime_view = create_buff_runtime_read_port(
-            dynamic_buff=self.data.dynamic_buff,
-            exist_buff_dict=self.exist_buff_dict,
-        )
-        self.runtime_command_port = create_runtime_command_port(
-            data=self.data,
-            exist_buff_dict=self.exist_buff_dict,
-            action_stack=self.action_stack,
-            sim_instance=sim_instance,
-        )
+        self.sim_instance: Simulator = sim_instance
+        runtime_ports = self._create_runtime_ports()
+        self.buff_runtime_view = runtime_ports.buff_runtime_view
+        self.runtime_command_port = runtime_ports.runtime_command_port
 
         self.execute_tick_key_map = {
             SkillNode: "preload_tick",
@@ -90,7 +95,6 @@ class ScheduledEvent:
             SchedulePreload: "execute_tick",
             PolarizedAssaultEvent: "execute_tick",
         }
-        self.sim_instance: Simulator = sim_instance
         # 确保事件处理器已注册
         self._ensure_handlers_registered()
 
@@ -101,6 +105,21 @@ class ScheduledEvent:
             logging.info("事件处理器注册完成")
         else:
             logging.debug("事件处理器已经注册")
+
+    def _create_runtime_ports(self) -> _ScheduledEventRuntimePorts:
+        """集中创建 Schedule 事件处理所需的 runtime 读写端口。"""
+        return _ScheduledEventRuntimePorts(
+            buff_runtime_view=create_buff_runtime_read_port(
+                dynamic_buff=self.data.dynamic_buff,
+                exist_buff_dict=self.exist_buff_dict,
+            ),
+            runtime_command_port=create_runtime_command_port(
+                data=self.data,
+                exist_buff_dict=self.exist_buff_dict,
+                action_stack=self.action_stack,
+                sim_instance=self.sim_instance,
+            ),
+        )
 
     def _create_event_context(self) -> EventContext:
         """

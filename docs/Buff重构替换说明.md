@@ -915,3 +915,15 @@
 - Next step:
   - Continue with US-005 to centralize explicit `ScheduledEvent` construction of runtime view and command port without changing public `ScheduledEvent(...)` callsite behavior.
 ---
+## 2026-06-07 18:07 - US-005
+- Files changed: `zsim/sim_progress/ScheduledEvent/__init__.py`, `tests/simulator/test_runtime_command_port.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `_ScheduledEventRuntimePorts` and `ScheduledEvent._create_runtime_ports()` prepare to replace inline raw constructor setup with one explicit internal boundary for `BuffRuntimeReadPort` and `RuntimeCommandPort` creation.
+  - `tests/simulator/test_runtime_command_port.py` adds normal `ScheduledEvent(...)` construction coverage that replaces implicit confidence in port setup with adapter identity, event-list rebinding, and no-new-direct-raw-field assertions.
+- Compatibility retained:
+  - Public `ScheduledEvent(...)` arguments are unchanged, and the live `Simulator.main_loop()` `ScE(...)` callsite remains compatible.
+  - Old `dynamic_buff`, `exist_buff_dict`, and `loading_buff` constructor inputs are still retained compatibility boundaries; `RuntimeCommandPort` keeps old container identity inside `LegacyRuntimeCommandAdapter`.
+  - `ScheduleData.loading_buff` remains distinct from `LoadData.LOADING_BUFF_DICT`; no pending queue ownership wiring was inferred in this story.
+- Next step:
+  - Continue with US-006 to add no-new-raw-runtime guardrails around `ScheduledEvent`, handler compatibility getters, and retained constructor setup.
+---

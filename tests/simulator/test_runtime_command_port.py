@@ -4,6 +4,7 @@ from typing import Any, cast
 import pytest
 
 import zsim.sim_progress.ScheduledEvent as scheduled_event_module
+from zsim.sim_progress.ScheduledEvent.buff_runtime import LegacyBuffRuntimeReadAdapter
 from zsim.sim_progress.ScheduledEvent.runtime_command import (
     LegacyRuntimeCommandAdapter,
     create_runtime_command_port,
@@ -211,3 +212,92 @@ def test_scheduled_event_compat_helper_skips_runtime_command_when_not_triggered(
     scheduled_event.update_anomaly_bar_after_skill_event(event)
 
     assert runtime_command_port.calls == []
+
+
+def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    dynamic_buff = {"alpha": [object()], "enemy": []}
+    exist_buff_dict = {"alpha": {"buff": object()}, "enemy": {}}
+    loading_buff: dict[str, list[Any]] = {"alpha": []}
+    current_event_list: list[object] = []
+    char_obj_list = [SimpleNamespace(NAME="alpha")]
+    enemy = SimpleNamespace()
+    schedule_data = SimpleNamespace(
+        enemy=enemy,
+        event_list=["stale"],
+        char_obj_list=char_obj_list,
+    )
+    action_stack = SimpleNamespace()
+    sim_instance = cast(Any, SimpleNamespace(tick=10))
+    captured: dict[str, Any] = {}
+
+    def _fake_update_anomaly(
+        element_type,
+        target_enemy,
+        tick,
+        event_list,
+        char_obj_list_arg,
+        *,
+        skill_node,
+        dynamic_buff_dict,
+        sim_instance,
+        **kwargs,
+    ) -> None:
+        captured["element_type"] = element_type
+        captured["enemy"] = target_enemy
+        captured["tick"] = tick
+        captured["event_list"] = event_list
+        captured["char_obj_list"] = char_obj_list_arg
+        captured["skill_node"] = skill_node
+        captured["dynamic_buff_dict"] = dynamic_buff_dict
+        captured["sim_instance"] = sim_instance
+
+    monkeypatch.setattr(
+        scheduled_event_module.ScheduledEvent,
+        "_ensure_handlers_registered",
+        lambda self: None,
+    )
+    monkeypatch.setattr(runtime_command_module, "legacy_update_anomaly", _fake_update_anomaly)
+
+    scheduled_event = scheduled_event_module.ScheduledEvent(
+        dynamic_buff,
+        schedule_data,
+        10,
+        exist_buff_dict,
+        action_stack,
+        loading_buff=loading_buff,
+        sim_instance=sim_instance,
+    )
+    schedule_data.event_list = current_event_list
+    skill_node = SimpleNamespace(skill_tag="1001_TEST")
+
+    assert isinstance(scheduled_event.buff_runtime_view, LegacyBuffRuntimeReadAdapter)
+    assert isinstance(scheduled_event.runtime_command_port, LegacyRuntimeCommandAdapter)
+    assert scheduled_event.buff_runtime_view.get_legacy_dynamic_buff_dict() is dynamic_buff
+    assert scheduled_event.buff_runtime_view.get_legacy_exist_buff_dict() is exist_buff_dict
+    assert schedule_data.dynamic_buff is dynamic_buff
+    assert schedule_data.loading_buff is loading_buff
+    assert {
+        "dynamic_buff",
+        "loading_buff",
+        "_dynamic_buff",
+        "_exist_buff_dict",
+        "_loading_buff",
+    }.isdisjoint(vars(scheduled_event))
+
+    scheduled_event.runtime_command_port.update_anomaly(
+        element_type=3,
+        enemy=enemy,
+        tick=10,
+        skill_node=skill_node,
+    )
+
+    assert captured["element_type"] == 3
+    assert captured["enemy"] is enemy
+    assert captured["tick"] == 10
+    assert captured["event_list"] is current_event_list
+    assert captured["char_obj_list"] is char_obj_list
+    assert captured["skill_node"] is skill_node
+    assert captured["dynamic_buff_dict"] is dynamic_buff
+    assert captured["sim_instance"] is sim_instance
