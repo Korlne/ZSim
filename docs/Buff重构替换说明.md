@@ -591,3 +591,15 @@
 - Next step:
   - Start the next phase-1 PRD from the guardrail evidence and deletion prerequisites; only add a producer migration story if a scan finds a concrete planned-event writer with payload, target, and order evidence.
 ---
+
+## 2026-06-07 10:32:38 - US-001
+- Files changed: `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `PRD-9 US-001` post-PRD-8 rescan evidence prepares to replace deletion-prep assumptions with the current retained-boundary baseline for `JudgeTools.find_event_list()`, `BuffRecordBaseClass.event_list`, `schedule_data.event_list`, and `event_list.append(...)` hits.
+  - No live path was replaced in this story; it only confirms that no new producer-level planned-event writer re-entered scope after PRD-8.
+- Compatibility retained:
+  - `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` remain legacy discovery / compatibility cache only.
+  - `LegacyEventListScheduleDispatchAdapter`, core Load/Schedule appends, damage-effect continuation, handler requeue, Yixuan local event groups, dot runtime registration, and already-dispatched producer batches remain unchanged.
+- Next step:
+  - Write the deletion-readiness checklist and risk matrix, keeping `data_struct/schedule_dispatch.py` adapter queue access explicitly outside the deletion target set.
+---
