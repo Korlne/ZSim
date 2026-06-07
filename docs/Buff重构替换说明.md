@@ -1072,3 +1072,17 @@
 - Next step:
   - Continue with US-019 by investigating and classifying `BuffAddStrategy.buff_add_strategy()` / `let_buff_start()` write boundaries.
 ---
+## 2026-06-07 21:28 - US-019
+- Files changed: `zsim/sim_progress/Buff/BuffAddStrategy.py`, `tests/simulator/test_buff_add_strategy_runtime_facade.py`, `tests/simulator/test_buff_raw_container_guardrail.py`, `scripts/run_buff_refactor_validation.py`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `BuffAddStrategy.let_buff_start()` active-store replacement now replaces direct `DYNAMIC_BUFF_DICT` list remove / append with `BuffRuntimeFacade.find_active_buff_by_index()`, `remove_active_buff()`, and `append_active_buff()`.
+  - `BuffAddStrategy.let_buff_start()` enemy debuff mirror sync now replaces direct `enemy.dynamic.dynamic_debuff_list` remove / append with `BuffRuntimeFacade.sync_enemy_debuff_mirror()`.
+  - `test_buff_raw_container_guardrail.py` prepares to replace manual review of new `BuffAddStrategy` raw pending / active / enemy mirror writes with AST-classified allowances and retained-reference ceilings.
+- Compatibility retained:
+  - `buff_add_strategy()` remains a same-tick runtime write helper, not a planned-event publish; caller behavior from anomaly, listener, Character manager, and BuffXLogic paths remains unchanged.
+  - `exist_buff_dict` registry/template identity remains retained for beneficiary selection, Buff template copy, and `simple_start()` template-state writeback.
+  - `_create_buff_add_runtime_facade()` still service-locates old containers on demand; it does not cache facade instances across simulator state rebinding.
+  - `__check_buff_add_result()` remains an inactive diagnostic compatibility helper and is guarded as retained, not reopened as a live path.
+- Next step:
+  - Continue with US-020 by adding bypass semantics tests that distinguish scheduled queue publish, listener broadcast, dot runtime registration, and runtime immediate writes, including the `BuffAddStrategy` facade-backed forced-write sample where practical.
+---

@@ -17,6 +17,7 @@ SCANNED_PRODUCTION_FILES = (
     PROJECT_ROOT / "zsim" / "sim_progress" / "Update" / "Update_Buff.py",
     PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffLoad.py",
     PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffAdd.py",
+    PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffAddStrategy.py",
 )
 
 SCHEDULED_EVENT_DIR = PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent"
@@ -556,6 +557,17 @@ def _allowance_for(finding: Finding) -> str | None:
             return "legacy buff_add pending-to-active compatibility path"
         if context == "add_debuff_to_enemy":
             return "legacy buff_add enemy debuff mirror sync"
+    if path == "zsim/sim_progress/Buff/BuffAddStrategy.py":
+        if context == "_create_buff_add_runtime_facade":
+            return "legacy BuffAddStrategy facade construction"
+        if context in {"buff_add_strategy", "confirm_selected_character"}:
+            if finding.classification_suggestion == "registry/template old-container passthrough":
+                return "legacy BuffAddStrategy beneficiary selection registry read"
+        if context == "let_buff_start":
+            if finding.classification_suggestion == "registry/template old-container passthrough":
+                return "legacy BuffAddStrategy template clone registry compatibility"
+        if context == "__check_buff_add_result":
+            return "legacy BuffAddStrategy inactive diagnostic helper"
     if path == "zsim/sim_progress/Update/Update_Buff.py":
         if context == "update_time_related_effect":
             return "retained Update_Buff time-effect compatibility wrapper"
@@ -688,6 +700,10 @@ EXPECTED_RETAINED_REFERENCE_CEILINGS = {
     "retained BuffLoadLoop trigger judgement and pending queue population": 41,
     "legacy buff_add pending-to-active compatibility path": 10,
     "legacy buff_add enemy debuff mirror sync": 3,
+    "legacy BuffAddStrategy facade construction": 8,
+    "legacy BuffAddStrategy beneficiary selection registry read": 6,
+    "legacy BuffAddStrategy template clone registry compatibility": 6,
+    "legacy BuffAddStrategy inactive diagnostic helper": 7,
     "retained Update_Buff time-effect compatibility wrapper": 5,
     "retained Update_Buff active-store traversal and no-facade fallback": 7,
     "legacy KickOutBuff active-removal compatibility path": 5,
@@ -784,6 +800,47 @@ def test_raw_old_container_guardrail_uses_ast_not_text_matching() -> None:
     path = PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffXLogic" / "_fixture.py"
 
     assert _collect_findings_from_source(path, source) == []
+
+
+def test_raw_old_container_guardrail_classifies_buff_add_strategy_boundary() -> None:
+    findings = [
+        finding
+        for finding in _collect_findings()
+        if finding.path == "zsim/sim_progress/Buff/BuffAddStrategy.py"
+    ]
+    allowances = {_allowance_for(finding) for finding in findings}
+
+    assert "legacy BuffAddStrategy facade construction" in allowances
+    assert "legacy BuffAddStrategy beneficiary selection registry read" in allowances
+    assert "legacy BuffAddStrategy template clone registry compatibility" in allowances
+    assert all(
+        not (
+            finding.context == "let_buff_start"
+            and finding.classification_suggestion
+            in {
+                "active store old-container passthrough",
+                "enemy debuff mirror old-container passthrough",
+                "pending queue old-container passthrough",
+            }
+        )
+        for finding in findings
+    )
+
+
+def test_raw_old_container_guardrail_blocks_new_buff_add_strategy_pending_write() -> None:
+    source = (
+        "def let_buff_start(sim_instance, buff):\n"
+        "    sim_instance.load_data.LOADING_BUFF_DICT['enemy'].append(buff)\n"
+    )
+    path = PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffAddStrategy.py"
+    findings = _collect_findings_from_source(path, source)
+    disallowed = [finding for finding in findings if _allowance_for(finding) is None]
+
+    assert len(disallowed) == 1
+    message = disallowed[0].message()
+    assert "zsim/sim_progress/Buff/BuffAddStrategy.py:2" in message
+    assert "classification suggestion: pending queue old-container passthrough" in message
+    assert f"next action: {TRIAGE_NEXT_ACTION}" in message
 
 
 def test_scheduled_event_raw_runtime_access_stays_inside_allowlist() -> None:

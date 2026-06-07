@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from .buff_class import Buff
 
 if TYPE_CHECKING:
-    from zsim.sim_progress.Enemy import Enemy
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeFacade
     from zsim.simulator.simulator_class import Simulator
 
 
@@ -26,7 +26,7 @@ def buff_add_strategy(
     *added_buffs: str | Buff,
     benifit_list: list[str] | None = None,
     specified_count: int | float | None = None,
-    sim_instance: "Simulator" = None,
+    sim_instance: "Simulator | None" = None,
 ):
     """
     这个函数是暴力添加buff用的，比如霜寒、畏缩等debuff，
@@ -44,10 +44,9 @@ def buff_add_strategy(
     all_name_order_box = sim_instance.load_data.all_name_order_box
     # name_box = main_module.load_data.name_box
     # name_box_now = name_box + ['enemy']
-    enemy = sim_instance.schedule_data.enemy
     exist_buff_dict = sim_instance.load_data.exist_buff_dict
     tick = sim_instance.tick
-    DYNAMIC_BUFF_DICT = sim_instance.global_stats.DYNAMIC_BUFF_DICT
+    runtime_facade = _create_buff_add_runtime_facade(sim_instance)
     """
     将Buff名称、Buff实例转化为对应的Buff并且添加到DYNAMIC_BUFF_DICT或者其他地方。
     是在Load阶段以外暴力互动DYNAMIC_BUFF_DICT的通用方式。
@@ -68,26 +67,42 @@ def buff_add_strategy(
         # 针对每位受益人，都执行一次Buff添加
         for names in selected_characters:
             let_buff_start(
-                DYNAMIC_BUFF_DICT, buff_name, enemy, exist_buff_dict, names, specified_count, tick
+                runtime_facade,
+                buff_name,
+                exist_buff_dict,
+                names,
+                specified_count,
+                tick,
             )
     # __check_buff_add_result(buff_name, selected_characters, exist_buff_dict, DYNAMIC_BUFF_DICT, sim_instance)
 
 
+def _create_buff_add_runtime_facade(sim_instance: "Simulator") -> "BuffRuntimeFacade":
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import (
+        create_legacy_buff_runtime_facade,
+    )
+
+    return create_legacy_buff_runtime_facade(
+        exist_buff_dict=sim_instance.load_data.exist_buff_dict,
+        loading_buff_dict=sim_instance.load_data.LOADING_BUFF_DICT,
+        dynamic_buff_dict=sim_instance.global_stats.DYNAMIC_BUFF_DICT,
+        enemy_debuff_mirror=sim_instance.schedule_data.enemy.dynamic.dynamic_debuff_list,
+    )
+
+
 def let_buff_start(
-    DYNAMIC_BUFF_DICT: dict[str, list[Buff]],
+    runtime_facade: "BuffRuntimeFacade",
     buff_name: str,
-    enemy: "Enemy",
     exist_buff_dict: dict[str, dict[str, Buff]],
     names: str,
-    specified_count: int,
+    specified_count: int | float | None,
     tick: int,
 ):
     """
     这个函数是buff_add_strategy函数的添加Buff的核心业务函数。
     Args:
-        DYNAMIC_BUFF_DICT: dict: 动态Buff字典
+        runtime_facade: 同 tick Buff runtime 写侧门面
         buff_name: str: Buff名称
-        enemy: Character: 敌人
         exist_buff_dict: dict: 存在的Buff字典
         names: str: 受益者名称
         specified_count: int | float | None: 指定层数，非必要参数
@@ -119,34 +134,16 @@ def let_buff_start(
     elif not copyed_buff.ft.simple_effect_logic:
         # print(buff_new.ft.index)
         buff_new.logic.xeffect()
-    # 更新 DYNAMIC_BUFF_DICT
-    dynamic_buff_list = DYNAMIC_BUFF_DICT.get(names, [])
-    buff_existing_check = next(
-        (
-            existing_buff
-            for existing_buff in dynamic_buff_list
-            if existing_buff.ft.index == buff_new.ft.index
-        ),
-        None,
+    buff_existing_check = runtime_facade.find_active_buff_by_index(
+        names, buff_new.ft.index
     )
     if buff_existing_check:
-        dynamic_buff_list.remove(buff_existing_check)
+        runtime_facade.remove_active_buff(names, buff_existing_check)
     # print(f'强制添加Buff函数执行，本次为 {names} 添加的Buff为：{buff_new.ft.index}，激活状态为：{buff_new.dy.active}，开始时间为：{buff_new.dy.startticks}，结束时间为：{buff_new.dy.endticks}，层数：{buff_new.dy.count}')
-    dynamic_buff_list.append(buff_new)
+    runtime_facade.append_active_buff(names, buff_new)
     # 如果是敌人，更新动态 Debuff 列表
     if names == "enemy":
-        enemy_dynamic_debuff_list = enemy.dynamic.dynamic_debuff_list
-        debuff_existing_check = next(
-            (
-                existing_buff
-                for existing_buff in enemy_dynamic_debuff_list
-                if existing_buff.ft.index == buff_new.ft.index
-            ),
-            None,
-        )
-        if debuff_existing_check:
-            enemy_dynamic_debuff_list.remove(debuff_existing_check)
-        enemy_dynamic_debuff_list.append(buff_new)
+        runtime_facade.sync_enemy_debuff_mirror(buff_new)
 
 
 def get_selected_character(adding_buff_code, all_name_order_box, copyed_buff):
@@ -164,7 +161,7 @@ def confirm_selected_character(
     exist_buff_dict: dict[str, dict[str, Buff]],
     buff_name: str,
     all_name_order_box: dict[str, list[str]],
-    benifit_list: list[str] = None,
+    benifit_list: list[str] | None = None,
 ) -> list[str] | None:
     """
     确认选中的角色是否存在。

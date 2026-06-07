@@ -215,13 +215,13 @@
   - `AnomalyBar.change_info_cause_active()` / `__get_max_duration()` 从 `dynamic_buff_dict["enemy"]` 读取影响异常持续时间的 Buff，是当前默认只读迁移样本。
   - `Shock.DotFeature.__post_init__()` 从 `sim_instance.load_data.exist_buff_dict["丽娜"]` 读取丽娜组队被动以决定感电持续时间，属于后续 dot 初始化 read-only 旁路。
   - `CalAnomaly.__init__()` 的 `MulData(...)` 仍是 anomaly / disorder 公式内部，不作为本块第一迁移样本。
-  - `BuffAddStrategy` 仍是外部强制写入旧 Buff 运行态的公共入口，会 service-locate `exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`enemy` 并同步 enemy debuff mirror。
+  - `BuffAddStrategy` 仍是外部强制写入旧 Buff 运行态的公共入口；US-019 已把 active store replacement 与 enemy debuff mirror sync 迁到按需创建的 `LegacyBuffRuntimeFacade`，但受益人选择、模板 Buff 复制、`simple_start()` 模板回写和私有诊断 helper 仍保留旧 registry / container 兼容边界。
 - 可拆工作方向：
   - US-017 已完成旁路读取 / 写入分类；后续故事应直接消费该清单，不把 dot runtime registration 当 planned-event writer，也不重开已迁到 `ScheduleDispatchPort` 的 `UpdateAnomaly` queue publish。
   - 默认下一只读样本：将 `AnomalyBar.__get_max_duration()` 通过 `BuffRuntimeReadPort`、attribute reader 或等价显式读口接入，同时保持持续时间公式、enemy 状态和异常输出不变。
   - 后续 dot 初始化样本可考虑 `Shock.DotFeature.__post_init__()`，但必须先证明 `sim_instance` 校验和 `max_duration` 结果完全兼容。
-  - 默认写边界调查目标：`BuffAddStrategy.buff_add_strategy()` / `let_buff_start()`，先分类 active store 写、pending queue 写、enemy debuff mirror sync、retained compatibility 和 migration candidate；若迁移过宽，先产出 adapter 候选与 guardrail。
-  - 补 focused tests 区分 scheduled event、listener broadcast、runtime immediate write 三层语义。
+  - US-019 已完成默认写边界调查目标：`BuffAddStrategy.buff_add_strategy()` / `let_buff_start()` 当前分类为 no pending queue write、active store facade-backed same-tick write、enemy mirror facade-backed sync、registry/template retained compatibility、inactive diagnostic helper retained。后续不要再把该入口作为 raw `event_list` producer 迁移。
+  - 补 focused tests 区分 scheduled event、listener broadcast、dot runtime registration、runtime immediate write 四层语义，并纳入 `BuffAddStrategy` facade-backed 强制写入样本。
 - 必须保留：
   - `listener_manager.broadcast_event()` 与 scheduled queue 的分层。
   - dot runtime registration。
