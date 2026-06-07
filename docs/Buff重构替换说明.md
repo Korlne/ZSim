@@ -903,3 +903,15 @@
 - Next step:
   - Continue with US-004 to route or document `ScheduledEvent.update_anomaly_bar_after_skill_event()` through the existing `RuntimeCommandPort` same-tick write boundary.
 ---
+## 2026-06-07 17:58 - US-004
+- Files changed: `zsim/sim_progress/ScheduledEvent/__init__.py`, `tests/simulator/test_runtime_command_port.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `ScheduledEvent.update_anomaly_bar_after_skill_event()` now uses `self.runtime_command_port.update_anomaly(...)` instead of passing `self.data.event_list`, `self.data.char_obj_list`, `self.data.dynamic_buff`, and `self.sim_instance` directly to legacy `update_anomaly(...)`.
+  - Focused tests replace implicit compatibility confidence with explicit route / no-route coverage for the retained helper, including `LoadingMission.mission_start(...) -> get_last_hit() -> RuntimeCommandPort.update_anomaly(...)` order.
+- Compatibility retained:
+  - The helper remains a compatibility method and keeps its anomaly update decision logic.
+  - `RuntimeCommandPort` still delegates through `LegacyRuntimeCommandAdapter`, so current `ScheduleData.event_list` rebinding, `dynamic_buff`, `char_obj_list`, and `sim_instance` legacy identity remain inside the adapter.
+  - `SkillEventHandler` and `AnomalyEventHandler` were not re-migrated in this story; their existing runtime view / command-port paths remain unchanged.
+- Next step:
+  - Continue with US-005 to centralize explicit `ScheduledEvent` construction of runtime view and command port without changing public `ScheduledEvent(...)` callsite behavior.
+---

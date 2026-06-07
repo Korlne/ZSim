@@ -14,7 +14,6 @@ from zsim.sim_progress.data_struct import (
 )
 from zsim.sim_progress.Load.loading_mission import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
-from zsim.sim_progress.Update import update_anomaly
 
 from .buff_runtime import create_buff_runtime_read_port
 from .event_handlers import EventContext, event_handler_factory, register_all_handlers
@@ -287,15 +286,11 @@ class ScheduledEvent:
                 ):
                     should_update = True
         if should_update:
-            update_anomaly(
-                _node.element_type,
-                self.enemy,
-                self.tick,
-                self.data.event_list,
-                self.data.char_obj_list,
+            self.runtime_command_port.update_anomaly(
+                element_type=_node.element_type,
+                enemy=self.enemy,
+                tick=self.tick,
                 skill_node=_node,
-                dynamic_buff_dict=self.data.dynamic_buff,
-                sim_instance=self.sim_instance,
             )
 
     def solve_buff(self) -> None:

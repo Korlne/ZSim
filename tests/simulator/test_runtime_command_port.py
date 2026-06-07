@@ -3,6 +3,7 @@ from typing import Any, cast
 
 import pytest
 
+import zsim.sim_progress.ScheduledEvent as scheduled_event_module
 from zsim.sim_progress.ScheduledEvent.runtime_command import (
     LegacyRuntimeCommandAdapter,
     create_runtime_command_port,
@@ -114,3 +115,99 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
     assert captured["settle_sim_instance"] is sim_instance
     assert captured["settle_skill_node"] is skill_node
     assert "anomaly_bar" not in captured["settle_kwargs"]
+
+
+class _FakeSkillNode:
+    skill: SimpleNamespace
+    element_type: int
+    loading_mission: Any
+
+
+class _RuntimeCommandProbe:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict[str, object]]] = []
+
+    def update_anomaly(self, **kwargs) -> None:
+        self.calls.append(("update_anomaly", kwargs))
+
+    def settle_buffs(self, **kwargs) -> None:
+        self.calls.append(("settle_buffs", kwargs))
+
+
+def _build_scheduled_event_for_runtime_probe(
+    runtime_command_port: _RuntimeCommandProbe,
+) -> tuple[Any, SimpleNamespace]:
+    enemy = SimpleNamespace(name="enemy")
+    scheduled_event = cast(
+        Any,
+        scheduled_event_module.ScheduledEvent.__new__(scheduled_event_module.ScheduledEvent),
+    )
+    scheduled_event.runtime_command_port = runtime_command_port
+    scheduled_event.enemy = enemy
+    scheduled_event.tick = 10
+    scheduled_event.sim_instance = SimpleNamespace(tick=10)
+    return scheduled_event, enemy
+
+
+def test_scheduled_event_compat_helper_routes_update_anomaly_through_runtime_command(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    call_order: list[object] = []
+    runtime_command_port = _RuntimeCommandProbe()
+
+    original_update_anomaly = runtime_command_port.update_anomaly
+
+    def _record_update_anomaly(**kwargs) -> None:
+        call_order.append("update_anomaly")
+        original_update_anomaly(**kwargs)
+
+    class _FakeLoadingMission:
+        def __init__(self, mission_node: object) -> None:
+            self.mission_node = mission_node
+            self.hitted_count = 1
+
+        def mission_start(self, *, timenow: int) -> None:
+            call_order.append(("mission_start", timenow))
+
+        def get_last_hit(self) -> int:
+            call_order.append("get_last_hit")
+            return 10
+
+    monkeypatch.setattr(scheduled_event_module, "SkillNode", _FakeSkillNode)
+    monkeypatch.setattr(scheduled_event_module, "LoadingMission", _FakeLoadingMission)
+    monkeypatch.setattr(runtime_command_port, "update_anomaly", _record_update_anomaly)
+
+    scheduled_event, enemy = _build_scheduled_event_for_runtime_probe(runtime_command_port)
+    event = _FakeSkillNode()
+    event.skill = SimpleNamespace(anomaly_update_rule=None)
+    event.element_type = 3
+    event.loading_mission = None
+
+    scheduled_event.update_anomaly_bar_after_skill_event(event)
+
+    assert call_order == [("mission_start", 10), "get_last_hit", "update_anomaly"]
+    assert event.loading_mission is not None
+    assert len(runtime_command_port.calls) == 1
+    call_name, call_kwargs = runtime_command_port.calls[0]
+    assert call_name == "update_anomaly"
+    assert call_kwargs["element_type"] == 3
+    assert call_kwargs["enemy"] is enemy
+    assert call_kwargs["tick"] == 10
+    assert call_kwargs["skill_node"] is event
+
+
+def test_scheduled_event_compat_helper_skips_runtime_command_when_not_triggered(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    runtime_command_port = _RuntimeCommandProbe()
+    monkeypatch.setattr(scheduled_event_module, "SkillNode", _FakeSkillNode)
+
+    scheduled_event, _ = _build_scheduled_event_for_runtime_probe(runtime_command_port)
+    event = _FakeSkillNode()
+    event.skill = SimpleNamespace(anomaly_update_rule=[2])
+    event.element_type = 3
+    event.loading_mission = SimpleNamespace(hitted_count=1)
+
+    scheduled_event.update_anomaly_bar_after_skill_event(event)
+
+    assert runtime_command_port.calls == []
