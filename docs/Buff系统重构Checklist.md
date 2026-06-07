@@ -30,6 +30,7 @@
 - [ ] 为事件分发边界与事件顺序新增单元测试。
 - [x] 为主循环一致性与性能验证补齐真实命令入口。
 - [x] 为旧 `event_list` 发现口建立删除就绪清单、风险矩阵和 AST / 结构化数据 guardrail。
+- [x] 执行旧 `event_list` 发现口删除 / 显式关闭：`JudgeTools.find_event_list()`、`check_preparation(..., event_list=...)` 缓存分支与 `BuffRecordBaseClass.event_list` 已关闭，并由 post-deletion guardrail 守门。
 
 ## 阶段 2：XLogic 全量分析与复用收敛
 
@@ -139,9 +140,19 @@
 - [x] PRD-9 最终交接已同步到 [Buff重构下阶段计划草稿.md](./Buff重构下阶段计划草稿.md)、[旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md) 与 [Buff重构替换说明.md](./Buff重构替换说明.md)：删除就绪状态为“guardrail 绿色后可尝试删除或显式关闭旧发现口”，剩余阻塞是继续证明没有 allowlist 外生产调用、没有 `record.event_list.append(...)` publisher、没有 BuffXLogic / config / data `event_list=True` 入口。
 - [x] 下一轮默认入口仍属于阶段 1：优先执行旧兼容发现口删除 / 显式关闭；若删除条件不满足，继续 guardrail 与兼容 fallback；只有发现真实 producer-level planned-event writer 证据时才新增迁移故事。
 
+## 本轮 PRD-10 旧兼容发现口删除执行 / guardrail 收口状态（2026-06-07）
+
+- [x] `JudgeTools.find_event_list()` 已从 `FindMain.py` 删除，并从 `JudgeTools.__init__` 公共导出中移除；本轮没有保留生产 fallback，也没有新增 raw scheduler queue getter。
+- [x] `check_preparation(..., event_list=...)` 旧缓存分支已删除，显式传入 `event_list` 关键字会按 key presence 被拒绝，不再通过 truthy / falsy 值静默缓存 `record.event_list`。
+- [x] `BuffRecordBaseClass.event_list` 初始化字段已删除；guardrail 现在把任何新的 `record.event_list` 读写、`BuffRecordBaseClass.event_list` 访问或 `record.event_list.append(...)` publisher 视为删除后违规或需要显式 blocker 说明。
+- [x] `data_struct/schedule_dispatch.py` 的 `ScheduleDispatchPort` adapter queue access 仍是唯一允许的底层 scheduler queue 接触面；core Load/Schedule append、handler requeue、本地事件组、dot runtime registration、base runtime compatibility helpers 与 `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 语义保留。
+- [x] PRD-10 没有发现新的 producer-level planned-event writer，也没有发现新的 handler/helper same-tick legacy getter 加写入协作；本轮主要删除 / 关闭兼容发现面，没有替换 live simulator runtime path。
+- [x] 本轮验证命令 `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events` 已通过：基础 simulator pytest、隔离队伍 pytest、48 个 focused `implicit-events` 回归与 68 个 scoped mypy target 均通过。
+- [x] `--legacy-runtime` / `--candidate-runtime` 继续只是 consistency / benchmark 报告标签，不是 live runtime switch；下一轮仍沿 [Buff重构方案.md](./Buff重构方案.md) 的阶段 1 路线推进。
+
 ## 当前默认下一步
 
-- [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的旧兼容发现口删除执行 PRD：在 PRD-9 guardrail 继续绿色的前提下尝试删除或显式关闭 `JudgeTools.find_event_list()`、`check_preparation(..., event_list=True)` 兼容缓存与 `BuffRecordBaseClass.event_list` 字段；若删除条件不满足，保留兼容 fallback 并记录阻塞原因。
-- [ ] 删除故事必须继续保留 `data_struct/schedule_dispatch.py` 的 `ScheduleDispatchPort` adapter queue access、core Load/Schedule dispatcher append、handler requeue、本地事件组与 dot runtime registration；只在扫描发现新的具体 producer-level planned-event writer 时新增迁移故事。
-- [ ] 仅在发现新的具体 same-tick 写路径仍依赖 legacy getter 时，继续把对应 handler / helper 收口到最小 `RuntimeCommandPort` / write facade；`SkillEventHandler` 与 `AnomalyEventHandler` 已闭合，不应从旧文本重新打开。
+- [ ] 下一轮仍属于“阶段 1：基础设施解耦”，默认从 [Buff重构下阶段计划草稿.md](./Buff重构下阶段计划草稿.md) 的“旧容器隔离与 Buff runtime facade 扩展”候选块生成 Ralph PRD，优先包住 `exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT` 与 `Update_Buff` / `Simulator` 调用边界，而不是继续围绕已删除的 `event_list` 发现口开薄切片。
+- [ ] 若 PRD 生成器选择其他候选块，应仍从阶段 1 候选池中选择一个完整耦合块：`ScheduledEvent` facade 依赖收口、`Update_Buff` 生命周期结算边界、Calculator 属性读取 seam、或异常 / debuff / dot 旁路耦合；不得只因为旧文本命中 `event_list` 就重开已闭合 producer 批次。
+- [ ] 仅当 post-deletion guardrail 暴露新的具体生产证据时，才重新处理 `find_event_list`、`record.event_list`、`event_list=True` 或 producer-level planned-event writer；本轮没有遗留 fallback blocker。
 - [ ] 仅在 live simulator 真正消费 `config.buff_runtime.mode` 后，再把一致性 / benchmark 命令升级为真实 runtime switch 证据。

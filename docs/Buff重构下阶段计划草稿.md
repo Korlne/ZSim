@@ -17,9 +17,10 @@
   - 2026-06-07 `PRD-8 US-003` 用 focused pytest 锁定 `check_preparation(..., event_list=True)` 只缓存 `record.event_list = find_event_list(...)`，并用 AST / 结构化配置扫描确认 `BuffXLogic`、`zsim/config*.json` 与 `zsim/data` CSV / JSON / TOML 当前没有显式 `event_list=True` 生产入口；没有新的 producer-level planned-event writer 可迁移。
   - 2026-06-07 `PRD-8 US-005` 已把 `LoadDamageEvent` Load-stage spawn / damage-effect continuation、`ScheduledEvent` handler requeue、`Character/Yixuan` 本地 `BaseAdrenalineEvent` 事件组与 `AliceDotTriggerListener` dot runtime registration 写入 retained-boundary 清单；这些路径后续只能由各自的 dispatcher / handler / runtime-state PRD 处理，不应被重新当成 Buff producer raw queue backlog。
   - 2026-06-07 `PRD-9 US-006` 已把 `AnomalyEventHandler.handle()` 中通过 legacy getter 直调 `ScheduleBuffSettle(..., anomaly_bar=event)` 的 same-tick 写协作收口到 `RuntimeCommandPort.settle_buffs(...)`，focused pytest 已阻断 handler 再访问 legacy getter。
-- 2026-06-07 `PRD-9` 已完成旧兼容发现口删除就绪清单、风险矩阵与 focused deletion-readiness guardrail：`JudgeTools.find_event_list()`、`check_preparation(..., event_list=True)` / `record.event_list` 与 `BuffRecordBaseClass.event_list` 的删除条件、保留理由、回归风险和 fallback 策略已经写入审查文档；`data_struct/schedule_dispatch.py` adapter queue access 明确保留为 `ScheduleDispatchPort` 兼容语义。
-- PRD-9 收口后，下一轮 Ralph PRD 仍应留在阶段 1，默认入口从“继续准备删除前置”推进到“执行旧兼容发现口删除或显式关闭兼容分支，并在 guardrail 失败时保留 fallback / 阻塞记录”；只有发现具体 producer-level planned-event writer 时才新增迁移故事，不要从注释、本地 list、core dispatcher append、handler requeue 或 `change_process_state()` 推断新迁移目标。
-- 下一轮路线仍然严格遵循 [Buff重构方案.md](./Buff重构方案.md) 中的阶段顺序，不回退到角色驱动式切片。
+- 2026-06-07 `PRD-10` 已执行旧兼容发现口删除 / 显式关闭：`JudgeTools.find_event_list()` 已删除并移除公共导出，`check_preparation(..., event_list=...)` 已按 key presence 拒绝旧关键字，`BuffRecordBaseClass.event_list` 初始化字段已删除；post-deletion guardrail 现在对这些 deleted surfaces 执行 absence / blocker 守门。
+- PRD-10 没有保留删除 blocker 或生产 fallback，也没有发现新的 producer-level planned-event writer 或新的 handler/helper same-tick legacy getter 加写入协作；`data_struct/schedule_dispatch.py` adapter queue access 仍是 `ScheduleDispatchPort` 兼容语义下唯一允许的底层队列触点。
+- PRD-10 收口后，下一轮 Ralph PRD 仍应留在阶段 1，默认入口从旧 `event_list` 发现口清理转向“旧容器隔离与 Buff runtime facade 扩展”；除非 post-deletion guardrail 暴露新的具体证据，不再围绕 `find_event_list` / `record.event_list` / `event_list=True` 重开薄切片。
+- 下一轮路线仍然严格遵循 [Buff重构方案.md](./Buff重构方案.md) 中的阶段顺序，不回退到角色驱动式切片，也不提前进入 XLogic 全量分析。
 
 ## 本文档的用途
 
@@ -27,30 +28,36 @@
 - 为下一轮 `scripts/ralph/prd.json` 提供调查清单和切片边界。
 - 避免 PRD 方向重新漂移回“看到一个 XLogic 就改一个”的模式。
 
+## PRD 取材原则
+
+- 本文档不强制规定 PRD 的固定 story 结构；`prd` skill 和 `ralph` skill 可以继续按它们自己的格式生成 Markdown PRD 与 `scripts/ralph/prd.json`。
+- 本文档必须给 PRD 生成器提供足够大的候选池，而不是只描述一个最小安全下一步。每次更新“当前默认下一步”时，都要同时保留后续同阶段候选块，避免自动循环在完成一个窄切片后只能继续生成很薄的 PRD。
+- 每个候选块都应写清：候选文件 / 符号、当前已知耦合、可以拆出的 Ralph-sized 工作方向、必须保留的边界、验证入口和不应触碰的非目标。
+- PRD 可以只选择其中一个连贯耦合块，但不应只因为找到第一个安全 callsite 就停止扩展；同一耦合块内具有相同风险面、相同验证入口、相同回滚方式的工作，应优先作为一组后续 story 候选提供给 PRD 生成器。
+- 如果当前默认 PRD 只是删除收尾或 guardrail 收口，本文档仍要写出“该 PRD 完成后立即可进入的下一组阶段 1 候选块”。只有文档证据显示阶段 1 已无安全候选块时，才切到阶段 2 的 XLogic 全量分析。
+- 后续 PRD 不需要为了填充数量发明迁移目标；但应该主动从 checklist 未完成项、旧耦合审查分组和现有测试缺口中提取可验证的实现候选，而不是只沿用上一轮最后一句“下一步”。
+
 ## 当前默认下一轮实现型 PRD 草稿
 
 ### 下一轮 PRD 名称建议
 
-`Buff 重构 PRD-10：旧兼容发现口删除执行与 phase-1 guardrail 延续`
+`Buff 重构 PRD-11：旧容器隔离与 Buff runtime facade 扩展`
 
 ### 下一轮 PRD 的建议范围
 
-- `Character/Yixuan/AdrenalineManagerClass.py` 已确认是本地 `BaseAdrenalineEvent` 事件组，`EnemyUniqueMechanic/BreakingLegManager.py` part-break `ScheduleRefreshData` 已改经 `ScheduleDispatchPort`；`LoadDamageEvent` 的 Load-stage event spawn / damage-effect continuation 与 `ScheduledEvent` handler not-yet-executable append 均保留为 core dispatcher / requeue 语义。PRD-8 `US-001` 复扫未在 `BuffXLogic`、`Character`、`BattleEventListener`、`EnemyUniqueMechanic` 或 `DecibelManager` 发现新的具体 one-off raw scheduler writer。不再重开已闭合的 `MiyabiCoreSkill_IceFire`、`YixuanCinema1Trigger`、`VivianDotTrigger`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger`、`Character/Yuzuha` cinema-6 energy 分支及前序 xstart/xhit refresh、`CannonRotor`、`Yanagi`、`Hugo`、`DecibelManager`、`BreakingLegManager` 批次。
-- 后续扫描若命中 retained-boundary 清单中的表达式，应先按 `docs/旧Buff系统耦合审查结果.md` 的 `PRD-8 US-005` 表格分类：Load/Schedule dispatcher、damage-effect continuation、handler requeue、本地事件组或 dot runtime registration；只有出现新的文件 / 函数 / payload / target / 相对顺序证据时，才开 producer-level planned-event 迁移故事。
-- 当前源码扫描未在 `BattleEventListener` 目录发现直接 `JudgeTools.find_event_list()` / `schedule_data.event_list.append(...)` planned-event 写入；`AliceDotTriggerListener` 的 dot runtime registration 不应继续被写成 listener raw queue backlog。
-- 真实剩余 backlog 是在 PRD-9 guardrail 持续绿色后执行 `JudgeTools.find_event_list()`、`check_preparation(..., event_list=True)` 兼容缓存与 `BuffRecordBaseClass.event_list` 的删除 / 显式关闭；若删除条件不满足，下一轮应记录具体 blocker、保留兼容 fallback，并继续由 guardrail 禁止新误用。当前没有可立即迁移的新 producer payload，不应为了填充 migration story 而发明 payload / target / order 证据。
-- 删除旧兼容发现口前，必须至少确认：`test_legacy_event_list_discovery_guardrail.py`、`test_legacy_event_list_deletion_readiness.py` 与 `test_check_preparation_event_list_compatibility.py` 在 shared gate 中持续通过；生产代码没有 allowlist 外 `find_event_list` 调用或 `record.event_list` 发布；BuffXLogic、配置与数据加载路径没有 `event_list=True` 入口；`data_struct/schedule_dispatch.py` 的 adapter 取队列点仍是唯一允许的底层队列接触面。
-- `SkillEventHandler` 与 `AnomalyEventHandler` 的 same-tick settle / anomaly 写协作已闭合到 `RuntimeCommandPort`；仅在发现其他具体 handler / helper 仍通过 legacy getter 承担 same-tick 写协作时，继续扩展同一个 command port，不新增第二套 write facade。
-- 如果本轮触达同 tick 写边界，沿用现有 `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 模式，而不是继续把 raw `dynamic_buff` / `exist_buff_dict` 深透传给新代码。
-- 除非 focused validation 暴露回归，否则不要重新打开已经闭合的 `SkillEventHandler` 代表性读写分层样本，也不要把已经收口的 xstart/xhit refresh、`CannonRotor`、`Yanagi`、`Hugo` 或 `DecibelManager` 批次重新当成主故事。
-- 保持 `Simulator` 仍做总流程编排，但不顺手扩大到 `UpdateAnomaly` 全量拆分、`Calculator` 全量迁移或 enemy debuff 单一事实源收口。
+- 默认从下方“PRD-10 完成后的阶段 1 候选池”中的候选块 A 取材：`zsim/simulator/dataclasses.py`、`zsim/simulator/simulator_class.py`、`zsim/sim_progress/Buff/Buff0Manager/Buff0ManagerClass.py`、`zsim/sim_progress/Buff/BuffLoad.py`、`zsim/sim_progress/Buff/BuffAdd.py`、`zsim/sim_progress/Update/Update_Buff.py` 与 `zsim/sim_progress/ScheduledEvent/buff_runtime.py`。
+- Ralph-sized 工作应先包住旧容器身份和调用边界：为 `exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT`、`ScheduleData.dynamic_buff` 建立更明确的 runtime facade / adapter 方法，逐步减少 `Simulator.main_loop()` 与 `Update_Buff.update_buff(...)` 对旧容器参数的直接拼接。
+- 本轮不是旧容器删除 PRD；必须保留旧容器对象身份、`Buff.end(...)` 副作用、enemy debuff 镜像现状、`RuntimeCommandPort` same-tick 写边界与 `BuffRuntimeReadPort` 只读语义。
+- 若 PRD 生成器改选候选块 B/C/D/E，也应选择一个完整阶段 1 耦合块并写清候选文件、边界、focused tests 与验证入口；不要只围绕已删除的 `event_list` 发现口继续生成薄 PRD。
+- `JudgeTools.find_event_list()`、`check_preparation(..., event_list=...)` 与 `BuffRecordBaseClass.event_list` 已在 PRD-10 删除 / 关闭；仅当 post-deletion guardrail 给出新的生产文件、函数、旧写表达式、payload、target 或 blocker 证据时，才重新处理这些 surface。
+- `--legacy-runtime` / `--candidate-runtime` 当前仍只是 consistency / benchmark 报告标签；live simulator 还没有消费 `config.buff_runtime.mode`。
 
 ### 下一轮 PRD 的建议产物
 
-- 只有在新扫描发现具体 producer-level planned-event writer 时，才新增 dispatch gateway 迁移样本，并先记录文件、函数、事件类型、payload 与相对顺序。
-- 旧兼容发现口删除执行结果，包括删除 / 显式关闭了哪些兼容面、哪些 allowlist 或 fallback 必须保留、删除风险如何被 guardrail 覆盖，以及必须继续保留的 `ScheduleDispatchPort` adapter 语义。
+- 旧容器责任清单与最小 runtime facade / adapter API 草案，明确哪些路径只是 read view，哪些路径属于 same-tick command，哪些路径仍是 retained legacy container identity。
+- `Simulator` / `BuffLoad` / `BuffAdd` / `Update_Buff` 中一个可验证的最小调用边界收口样本，优先用 focused tests 固定旧容器身份、结束 / 移除顺序与 enemy debuff 镜像副作用。
+- no-new-raw-container guardrail 或 focused audit，防止新代码绕开 facade 新增 raw `DYNAMIC_BUFF_DICT` / `LOADING_BUFF_DICT` / `exist_buff_dict` passthrough。
 - 如未来扫描发现新的相邻 handler / helper same-tick 写边界样本，沿用 `RuntimeCommandPort` 处理；不要重新发明新的写门面，也不要从已闭合的 `SkillEventHandler` / `AnomalyEventHandler` 文本重新开故事。
-- 聚焦事件顺序、发布边界与同 tick 写语义的单元测试或 focused pytest。
 - 按实际触达面同步扩大 `implicit-events` typecheck profile 的目标文件，并把新增 focused 回归文件本身纳入 scoped mypy，避免 gate 只类型检查生产模块。
 - 继续复用现有真实验证入口，而不是再引入新的占位脚本名。
 
@@ -78,6 +85,138 @@
 - 若触达 `Calculator` seam，追加：`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads`
 - 若故事改动了验证命令契约、帮助文本或执行路径，补跑对应的 `--help` / focused pytest / 样例命令，而不是继续引用占位入口。
 - 上述验证命令应串行执行，不要并发跑多个 profile；它们会共享 sqlite `sessions` 数据与异步日志写线程，并发时容易制造假失败。
+
+## PRD-10 完成后的阶段 1 候选池
+
+旧兼容发现口删除 / 显式关闭完成后，默认不要继续围绕 `event_list` 发现口重复开小 PRD；除非 guardrail 暴露新证据，否则下一轮应从以下阶段 1 候选块中选一个连贯块生成更完整的 Ralph backlog。
+
+### 候选块 A：旧容器隔离与 Buff runtime facade 扩展
+
+- 候选文件 / 符号：
+  - `zsim/simulator/dataclasses.py`
+  - `zsim/simulator/simulator_class.py`
+  - `zsim/sim_progress/Buff/Buff0Manager/Buff0ManagerClass.py`
+  - `zsim/sim_progress/Buff/BuffLoad.py`
+  - `zsim/sim_progress/Buff/BuffAdd.py`
+  - `zsim/sim_progress/Update/Update_Buff.py`
+  - `zsim/sim_progress/ScheduledEvent/buff_runtime.py`
+  - `tests/simulator/test_buff_runtime_view.py`
+  - `tests/simulator/test_runtime_command_port.py`
+- 当前耦合：
+  - `LoadData.exist_buff_dict`、`LoadData.LOADING_BUFF_DICT`、`ScheduleData.dynamic_buff` 与 `GlobalStats.DYNAMIC_BUFF_DICT` 仍直接暴露旧 Buff 容器。
+  - `Simulator.main_loop()` 仍直接把 `exist_buff_dict`、`LOADING_BUFF_DICT`、`DYNAMIC_BUFF_DICT` 传给 Buff load / add / update 路径。
+  - `Update_Buff.update_buff(...)` 仍直接迭代和修改 `DYNAMIC_BUFF_DICT`，并通过 `exist_buff_dict` 找回旧 `Buff0`。
+- 可拆工作方向：
+  - 为旧容器读写建立更明确的 runtime facade / adapter 方法，先包住现有身份，不直接删除容器。
+  - 让 `Simulator` 的调用点逐步依赖 facade 或 adapter，而不是到处拼接旧容器参数。
+  - 为 `Update_Buff` 增加最小运行时入口，使结束、移除、enemy debuff 镜像更新可以被 focused tests 锁住。
+  - 补 guardrail，防止新代码绕开 facade 新增 raw `DYNAMIC_BUFF_DICT` / `LOADING_BUFF_DICT` / `exist_buff_dict` passthrough。
+- 必须保留：
+  - 旧容器对象身份和现有 main loop 行为。
+  - `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 作为 same-tick 写边界。
+  - 已有 `BuffRuntimeReadPort` 的只读语义，不把它扩成任意写口。
+- 验证入口：
+  - `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`
+  - 触达 main loop / lifecycle 写路径时追加 `uv run python scripts/run_buff_refactor_validation.py`
+  - 视改动补充 `tests/simulator/test_buff_runtime_view.py`、`tests/simulator/test_runtime_command_port.py` 或新的 focused pytest。
+
+### 候选块 B：`ScheduledEvent` 对 Buff runtime facade 的依赖收口
+
+- 候选文件 / 符号：
+  - `zsim/sim_progress/ScheduledEvent/__init__.py`
+  - `zsim/sim_progress/ScheduledEvent/event_handlers/context.py`
+  - `zsim/sim_progress/ScheduledEvent/event_handlers/base.py`
+  - `zsim/sim_progress/ScheduledEvent/event_handlers/handlers/*.py`
+  - `zsim/sim_progress/ScheduledEvent/buff_runtime.py`
+  - `zsim/sim_progress/ScheduledEvent/runtime_command.py`
+  - `tests/simulator/test_skill_handler_runtime_view.py`
+  - `tests/simulator/test_anomaly_handler_runtime_view.py`
+- 当前耦合：
+  - 代表性 `SkillEventHandler` / `AnomalyEventHandler` 主路径已改走 runtime view / command port，但 `ScheduledEvent` 仍在构造和上下文层知道旧 `dynamic_buff`、`exist_buff_dict`、`loading_buff`。
+  - handler 层仍需要复扫是否存在新的 legacy getter 读写协作样本，但不能从已闭合文本重复开故事。
+- 可拆工作方向：
+  - 收窄 `EventContext` 中 legacy getter 的使用范围，要求新 handler 默认通过 runtime view / command port。
+  - 为剩余 handler 建立 focused audit / guardrail，分类 retained requeue、damage-effect continuation、runtime read、same-tick write。
+  - 把 handler 的 no-raw-runtime 约束纳入 `implicit-events` scoped mypy / pytest。
+  - 只在发现具体同 tick 写协作时，沿用 `RuntimeCommandPort` 迁移；不要新增第二套 facade。
+- 必须保留：
+  - handler requeue 的 `.event_list.append(...)` 语义。
+  - `LoadDamageEvent` damage-effect continuation。
+  - `ScheduleDispatchPort` 与 listener broadcast 的分层边界。
+- 验证入口：
+  - `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`
+  - 触达 handler 行为时补对应 focused pytest，断言不访问 legacy getter 或只访问明确 allowlist。
+
+### 候选块 C：`Update_Buff` 生命周期结算边界
+
+- 候选文件 / 符号：
+  - `zsim/sim_progress/Update/Update_Buff.py`
+  - `zsim/sim_progress/Buff/BuffAdd.py`
+  - `zsim/sim_progress/Buff/buff_class.py`
+  - `zsim/simulator/simulator_class.py`
+  - `tests/simulator/` 下新增或扩展生命周期 focused tests。
+- 当前耦合：
+  - `Update_Buff` 直接遍历旧动态 Buff 容器，直接移除过期 Buff，并同步 enemy debuff 镜像。
+  - `buff.end(...)` 与 `DYNAMIC_BUFF_DICT[charname].remove(buff)` 的顺序和副作用仍靠旧函数内部约定。
+- 可拆工作方向：
+  - 先抽出最小 settle / expire adapter，锁定 `end -> remove -> enemy debuff mirror` 的顺序。
+  - 用 focused tests 覆盖过期、未过期、enemy debuff、普通角色 Buff 四类行为。
+  - 让主循环调用边界更接近 runtime facade，而不是直接传三个旧容器。
+  - 给新增路径加 no-new-raw-container guardrail。
+- 必须保留：
+  - `Buff.end(...)` 的旧行为和 count / state sync 副作用。
+  - enemy debuff 镜像现状；本候选块不做单一事实源收口。
+- 验证入口：
+  - `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`
+  - 若改主循环生命周期调用，追加全量 `uv run python scripts/run_buff_refactor_validation.py`。
+
+### 候选块 D：Calculator 属性读取 seam
+
+- 候选文件 / 符号：
+  - `zsim/sim_progress/ScheduledEvent/Calculator.py`
+  - 直接构造 `MultiplierData(...)` 或 `MultiplierData as Mul` 的 `zsim/sim_progress/Buff/BuffXLogic/*.py`
+  - `tests/simulator/test_skill_handler_runtime_view.py`
+  - `tests/simulator/test_vivian_core_passive_trigger_dispatch.py`
+  - `tests/simulator/test_vivian_cinema6_trigger_dispatch.py`
+- 当前耦合：
+  - `Calculator.MultiplierData` 仍直接聚合 enemy、dynamic buff 与 char。
+  - 多个 XLogic 直接构造 `MultiplierData(...)` 或别名 `Mul(...)`，这类路径是属性读取 seam，不应误判为 planned-event producer。
+- 可拆工作方向：
+  - 先生成最新 `MultiplierData` / `Mul` 使用清单，按“只读属性”“读取后写回 record / buff”“同时触发事件”分类。
+  - 建立最小 stat reader / attribute reader 接口草案，并选代表性只读 XLogic 做迁移样本。
+  - focused tests 断言迁移后不再直接依赖 raw `dynamic_buff_list`，但保持公式输入字段一致。
+  - 将 `calculator-reads` profile 的真实目标文件和测试文件补齐，避免只写文档不进 gate。
+- 必须保留：
+  - 公式和数值语义不在本候选块里重写。
+  - 不把属性读取 seam 和 planned-event dispatch seam 混成一个事件总线。
+- 验证入口：
+  - `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads`
+  - 若同时触达 implicit event handler，则追加 `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`。
+
+### 候选块 E：异常 / debuff / dot 旁路耦合
+
+- 候选文件 / 符号：
+  - `zsim/sim_progress/Update/UpdateAnomaly.py`
+  - `zsim/sim_progress/anomaly_bar/AnomalyBarClass.py`
+  - `zsim/sim_progress/Dot/Dots/Shock.py`
+  - `zsim/sim_progress/Buff/BuffAddStrategy.py`
+  - `zsim/sim_progress/ScheduledEvent/CalAnomaly.py`
+- 当前耦合：
+  - `UpdateAnomaly` 已完成部分 planned-event dispatch 改造，但仍与异常状态、dot、Buff runtime 容器和 enemy debuff 镜像强耦合。
+  - `AnomalyBar` / `Shock` 等旁路仍会读取旧 Buff runtime 状态。
+  - `BuffAddStrategy` 仍是外部强制写入旧 Buff 运行态的公共入口。
+- 可拆工作方向：
+  - 先做旁路读取 / 写入分类，不把 dot runtime registration 当 planned-event writer。
+  - 为 `AnomalyBar` 或 `Shock` 选择一个只读样本接入 runtime view / stat reader。
+  - 为 `BuffAddStrategy` 建立写入边界调查和最小 adapter 候选，但不一次性替换全部异常逻辑。
+  - 补 focused tests 区分 scheduled event、listener broadcast、runtime immediate write 三层语义。
+- 必须保留：
+  - `listener_manager.broadcast_event()` 与 scheduled queue 的分层。
+  - dot runtime registration。
+  - enemy debuff 镜像现状，除非另开单独事实源收口 PRD。
+- 验证入口：
+  - `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`
+  - 触达异常 / dot 计算结果时追加 main loop consistency 样例命令，至少覆盖一个相关 team / stop tick。
 
 ## 下一轮 PRD 开始前必须先看的文件
 

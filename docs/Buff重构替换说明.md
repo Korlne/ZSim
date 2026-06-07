@@ -748,3 +748,16 @@
 - Next step:
   - Continue with US-007 final handoff docs; state that PRD-10 removed or closed compatibility discovery surfaces and did not expand producer/runtime migration scope.
 ---
+
+## 2026-06-07 14:38 - US-007
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `PRD-10 US-007` final handoff docs replace stale pre-deletion wording with the completed deletion state for `JudgeTools.find_event_list()`, `check_preparation(..., event_list=...)`, and `BuffRecordBaseClass.event_list`.
+  - No live simulator runtime path was replaced in this story; PRD-10 removed or closed compatibility discovery/cache surfaces and tightened guardrails instead of changing scheduler dispatch or runtime write behavior.
+- Compatibility retained:
+  - `LegacyEventListScheduleDispatchAdapter(schedule_data.event_list)` remains the only allowed low-level scheduler queue touch point for dispatch-port publishing.
+  - Core Load/Schedule appends, handler requeue, local event groups, dot runtime registration, base runtime compatibility helpers, and existing `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` semantics remain unchanged.
+  - `--legacy-runtime` / `--candidate-runtime` remain report labels until live simulator code consumes `config.buff_runtime.mode`.
+- Next step:
+  - Start the next phase-1 PRD from the old-container isolation / Buff runtime facade candidate block; only reopen deleted `event_list` surfaces or producer migration if post-deletion guardrails expose concrete production evidence.
+---
