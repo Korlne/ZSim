@@ -1039,3 +1039,14 @@
 - Next step:
   - Continue with US-016 by adding calculator-read guardrails and profile coverage for remaining direct `MultiplierData(...)`, `MultiplierData as Mul`, and raw `dynamic_buff_list` read surfaces.
 ---
+## 2026-06-07 19:51 - US-016
+- Files changed: `tests/simulator/test_buff_raw_container_guardrail.py`, `scripts/run_buff_refactor_validation.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `CalculatorReadVisitor` prepares to replace manual review of new direct `MultiplierData(...)` / alias `Mul(...)` / raw `dynamic_buff_list` attribute-read surfaces with an AST guardrail over the selected `calculator-reads` scope.
+  - `scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads` now runs the calculator guardrail as focused pytest and scoped mypy coverage.
+- Compatibility retained:
+  - No live Calculator, BuffXLogic, anomaly, scheduled queue, listener broadcast, or runtime command path was replaced in this story; it adds boundary guardrails only.
+  - `MultiplierData` remains the compatibility snapshot for Calculator formulas and retained XLogic reads, with current ceilings of 1 Calculator formula snapshot, 25 retained XLogic compatibility findings, and 2 migrated attribute-reader inputs.
+- Next step:
+  - Continue with US-017 to audit anomaly, debuff, and dot bypass coupling while keeping Calculator-read guardrails in the `calculator-reads` validation profile.
+---

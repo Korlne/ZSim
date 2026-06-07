@@ -28,6 +28,94 @@ SCHEDULED_EVENT_RUNTIME_GUARDRAIL_FILES = (
     *sorted(EVENT_HANDLERS_DIR.rglob("*.py")),
 )
 
+CALCULATOR_READ_GUARDRAIL_FILES = (
+    PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent" / "Calculator.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "AliceAdditionalAbilityApBonus.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "BranchBladeSongCritDamageBonus.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "LighterAdditionalAbility_IceFireBonus.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "MiyabiCoreSkill_IceFire.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "QingYiAdditionalAbilityStunConvertToATK.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "CannonRotor.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "TriggerAdditionalAbilityStunBonus.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "WoodpeckerElectroSet4_NA.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "WoodpeckerElectroSet4_E_EX.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "WoodpeckerElectroSet4_CA.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "YuzuhaAdditionalAbilityAnomalyDmgBonus.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "YuzuhaAdditionalAbilityAnomalyBuildupBonus.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "Soldier0AnbyCoreSkillCritDMGBonus.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "TimeweaverDisorderDmgMul.py",
+)
+
 RAW_CONTAINER_NAMES = {
     "DYNAMIC_BUFF_DICT",
     "LOADING_BUFF_DICT",
@@ -79,6 +167,11 @@ SCHEDULED_RUNTIME_ATTRS = RAW_CONTAINER_ATTRS | LEGACY_RUNTIME_GETTER_NAMES
 TRIAGE_NEXT_ACTION = (
     "migrate to an explicit facade/runtime port, retain as documented "
     "compatibility, or block the story"
+)
+
+CALCULATOR_READ_NEXT_ACTION = (
+    "migrate read-only usage to CalculatorBuffAttributeReader, retain as "
+    "documented formula/compatibility snapshot, or block the story"
 )
 
 
@@ -307,6 +400,94 @@ class ScheduledEventRuntimeVisitor(RawContainerVisitor):
         self.generic_visit(node)
 
 
+class CalculatorReadVisitor(RawContainerVisitor):
+    def __init__(self, path: Path, source: str) -> None:
+        super().__init__(path, source)
+        self._multiplier_aliases = {"MultiplierData"}
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._function_stack.append(node.name)
+        try:
+            self.generic_visit(node)
+        finally:
+            self._function_stack.pop()
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._function_stack.append(node.name)
+        try:
+            self.generic_visit(node)
+        finally:
+            self._function_stack.pop()
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        module = node.module or ""
+        if module.endswith("Calculator"):
+            for alias in node.names:
+                if alias.name == "MultiplierData":
+                    self._multiplier_aliases.add(alias.asname or alias.name)
+        self.generic_visit(node)
+
+    def visit_Call(self, node: ast.Call) -> None:
+        if self._is_multiplier_constructor(node.func):
+            self._add_calculator_finding(
+                line=node.lineno,
+                kind="calculator_multiplier_snapshot",
+                expression=self._source_for(node),
+                classification_suggestion="direct MultiplierData compatibility snapshot",
+            )
+        self.generic_visit(node)
+
+    def visit_Name(self, node: ast.Name) -> None:
+        if node.id == "dynamic_buff_list" and isinstance(node.ctx, ast.Load):
+            self._add_calculator_finding(
+                line=node.lineno,
+                kind="calculator_dynamic_buff_list_read",
+                expression=self._expression_context(node),
+                classification_suggestion="raw dynamic_buff_list attribute-read input",
+            )
+        self.generic_visit(node)
+
+    def visit_Attribute(self, node: ast.Attribute) -> None:
+        if node.attr == "dynamic_buff_list" and isinstance(node.ctx, ast.Load):
+            self._add_calculator_finding(
+                line=node.lineno,
+                kind="calculator_dynamic_buff_list_read",
+                expression=self._expression_context(node),
+                classification_suggestion="raw dynamic_buff_list attribute-read input",
+            )
+        self.generic_visit(node)
+
+    def visit_keyword(self, node: ast.keyword) -> None:
+        self.generic_visit(node)
+
+    def _is_multiplier_constructor(self, func: ast.AST) -> bool:
+        if isinstance(func, ast.Name):
+            return func.id in self._multiplier_aliases
+        if isinstance(func, ast.Attribute):
+            return func.attr in self._multiplier_aliases
+        return False
+
+    def _add_calculator_finding(
+        self,
+        *,
+        line: int,
+        kind: str,
+        expression: str,
+        classification_suggestion: str,
+    ) -> None:
+        self.findings.append(
+            Finding(
+                path=self._relative_path(),
+                line=line,
+                kind=kind,
+                matched_expression=self._normalize(expression),
+                classification_suggestion=classification_suggestion,
+                next_action=CALCULATOR_READ_NEXT_ACTION,
+                context=self._context(),
+            )
+        )
+
+
 def _collect_findings_from_source(path: Path, source: str) -> list[Finding]:
     tree = ast.parse(source, filename=str(path))
     visitor = RawContainerVisitor(path, source)
@@ -336,6 +517,23 @@ def _collect_scheduled_runtime_findings() -> list[Finding]:
     for path in SCHEDULED_EVENT_RUNTIME_GUARDRAIL_FILES:
         source = path.read_text(encoding="utf-8")
         findings.extend(_collect_scheduled_runtime_findings_from_source(path, source))
+    return findings
+
+
+def _collect_calculator_read_findings_from_source(
+    path: Path, source: str
+) -> list[Finding]:
+    tree = ast.parse(source, filename=str(path))
+    visitor = CalculatorReadVisitor(path, source)
+    visitor.visit(tree)
+    return visitor.findings
+
+
+def _collect_calculator_read_findings() -> list[Finding]:
+    findings: list[Finding] = []
+    for path in CALCULATOR_READ_GUARDRAIL_FILES:
+        source = path.read_text(encoding="utf-8")
+        findings.extend(_collect_calculator_read_findings_from_source(path, source))
     return findings
 
 
@@ -428,6 +626,33 @@ def _scheduled_runtime_allowance_for(finding: Finding) -> str | None:
     return None
 
 
+def _calculator_read_allowance_for(finding: Finding) -> str | None:
+    path = finding.path
+    context = finding.context
+
+    if path == "zsim/sim_progress/ScheduledEvent/Calculator.py":
+        if (
+            context == "Calculator.__init__"
+            and finding.kind == "calculator_multiplier_snapshot"
+        ):
+            return "Calculator formula snapshot construction"
+
+    if path in {
+        "zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritDamageBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/TimeweaverDisorderDmgMul.py",
+    }:
+        if (
+            context.endswith(".special_judge_logic")
+            and finding.kind == "calculator_dynamic_buff_list_read"
+        ):
+            return "migrated attribute-reader active_buff_view input"
+
+    if path.startswith("zsim/sim_progress/Buff/BuffXLogic/"):
+        return "retained XLogic compatibility snapshot read"
+
+    return None
+
+
 def _allowance_counts(findings: list[Finding]) -> Counter[str]:
     counts: Counter[str] = Counter()
     for finding in findings:
@@ -441,6 +666,15 @@ def _scheduled_runtime_allowance_counts(findings: list[Finding]) -> Counter[str]
     counts: Counter[str] = Counter()
     for finding in findings:
         allowance = _scheduled_runtime_allowance_for(finding)
+        if allowance is not None:
+            counts[allowance] += 1
+    return counts
+
+
+def _calculator_read_allowance_counts(findings: list[Finding]) -> Counter[str]:
+    counts: Counter[str] = Counter()
+    for finding in findings:
+        allowance = _calculator_read_allowance_for(finding)
         if allowance is not None:
             counts[allowance] += 1
     return counts
@@ -471,6 +705,12 @@ EXPECTED_SCHEDULED_RUNTIME_REFERENCE_CEILINGS = {
     "documented BaseEventHandler compatibility getters": 8,
     "runtime view passed to Calculator formula boundary": 3,
     "runtime view passed to anomaly formula boundary": 4,
+}
+
+EXPECTED_CALCULATOR_READ_REFERENCE_CEILINGS = {
+    "Calculator formula snapshot construction": 1,
+    "migrated attribute-reader active_buff_view input": 2,
+    "retained XLogic compatibility snapshot read": 25,
 }
 
 
@@ -625,3 +865,110 @@ def test_scheduled_event_raw_runtime_guardrail_uses_ast_not_text_matching() -> N
     )
 
     assert _collect_scheduled_runtime_findings_from_source(path, source) == []
+
+
+def test_calculator_read_surfaces_stay_inside_allowlist() -> None:
+    findings = _collect_calculator_read_findings()
+    disallowed = [
+        finding
+        for finding in findings
+        if _calculator_read_allowance_for(finding) is None
+    ]
+
+    assert not disallowed, (
+        "Calculator-read guardrail found disallowed production uses:\n"
+        + "\n".join(f"- {finding.message()}" for finding in disallowed)
+    )
+
+
+def test_calculator_read_retained_counts_do_not_expand() -> None:
+    findings = _collect_calculator_read_findings()
+    counts = _calculator_read_allowance_counts(findings)
+    expanded = {
+        allowance: count
+        for allowance, count in counts.items()
+        if count > EXPECTED_CALCULATOR_READ_REFERENCE_CEILINGS[allowance]
+    }
+
+    assert not expanded, (
+        "Calculator-read guardrail found widened retained references:\n"
+        + "\n".join(
+            f"- {allowance}: {count} > "
+            f"{EXPECTED_CALCULATOR_READ_REFERENCE_CEILINGS[allowance]}"
+            for allowance, count in sorted(expanded.items())
+        )
+    )
+
+
+def test_calculator_read_guardrail_failure_message_includes_triage_fields() -> None:
+    source = (
+        "from .Calculator import MultiplierData as MulData\n"
+        "def read(record, enemy, char):\n"
+        "    return MulData(enemy, record.dynamic_buff_list, char)\n"
+    )
+    path = (
+        PROJECT_ROOT
+        / "zsim"
+        / "sim_progress"
+        / "Buff"
+        / "BuffXLogic"
+        / "_calculator_read_fixture.py"
+    )
+    findings = _collect_calculator_read_findings_from_source(path, source)
+
+    assert len(findings) == 2
+    messages = [finding.message() for finding in findings]
+    assert any(
+        "zsim/sim_progress/Buff/BuffXLogic/_calculator_read_fixture.py:3"
+        in message
+        and "matched expression: MulData(enemy, record.dynamic_buff_list, char)"
+        in message
+        and "classification suggestion: direct MultiplierData compatibility snapshot"
+        in message
+        and f"next action: {CALCULATOR_READ_NEXT_ACTION}" in message
+        for message in messages
+    )
+    assert any(
+        "matched expression: record.dynamic_buff_list" in message
+        and "classification suggestion: raw dynamic_buff_list attribute-read input"
+        in message
+        and f"next action: {CALCULATOR_READ_NEXT_ACTION}" in message
+        for message in messages
+    )
+
+
+def test_calculator_read_guardrail_uses_ast_not_text_matching() -> None:
+    source = (
+        "def clean():\n"
+        "    '''MultiplierData(...) Mul(...) dynamic_buff_list'''\n"
+        "    # Planned-event producer notes are not Calculator read evidence.\n"
+        "    return None\n"
+    )
+    path = (
+        PROJECT_ROOT
+        / "zsim"
+        / "sim_progress"
+        / "Buff"
+        / "BuffXLogic"
+        / "_calculator_read_fixture.py"
+    )
+
+    assert _collect_calculator_read_findings_from_source(path, source) == []
+
+
+def test_calculator_read_guardrail_does_not_flag_dispatch_only_producer() -> None:
+    source = (
+        "from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port\n"
+        "def publish(schedule_data, payload):\n"
+        "    create_schedule_dispatch_port(schedule_data).publish(payload)\n"
+    )
+    path = (
+        PROJECT_ROOT
+        / "zsim"
+        / "sim_progress"
+        / "Buff"
+        / "BuffXLogic"
+        / "_dispatch_fixture.py"
+    )
+
+    assert _collect_calculator_read_findings_from_source(path, source) == []
