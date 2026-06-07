@@ -1026,3 +1026,16 @@
 - Next step:
   - Continue with US-015 by selecting the next low-risk XLogic attribute-read user from the US-012 inventory now that the BranchBladeSong gate is already migrated.
 ---
+## 2026-06-07 19:39 - US-015
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `zsim/sim_progress/Buff/BuffXLogic/TimeweaverDisorderDmgMul.py`, `tests/simulator/test_buff_attribute_reader.py`, `scripts/run_buff_refactor_validation.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `CalculatorBuffAttributeReader.read_anomaly_proficiency()` prepares to replace ad hoc `MultiplierData(...)` / `MultiplierData as Mul` AP reads with a single-attribute reader seam.
+  - `TimeweaverDisorderDmgMul.special_judge_logic()` now replaces its alias `Mul(...) + Calculator.AnomalyMul.cal_ap()` threshold read with `BuffAttributeReadContext` and `CalculatorBuffAttributeReader.read_anomaly_proficiency()`.
+  - Focused tests compare the migrated gate against the old helper path for below-threshold, exactly-threshold, and above-threshold anomaly proficiency inputs, and assert the migrated gate no longer directly imports or constructs `MultiplierData` / `Mul(...)`.
+- Compatibility retained:
+  - `MultiplierData` remains the compatibility snapshot for Calculator formulas, CalAnomaly formulas, read-then-write XLogic paths, remaining alias AP writeback paths, RNG trigger gates, and event-producing XLogic paths.
+  - The migrated Timeweaver path remains read-only; no formula value, record write, Buff writeback, scheduled queue publish, listener broadcast, or runtime command behavior changed.
+  - `TimeweaverDisorderDmgMul.special_judge_logic()` keeps the old direct comparison return shape, which may be `np.bool_`.
+- Next step:
+  - Continue with US-016 by adding calculator-read guardrails and profile coverage for remaining direct `MultiplierData(...)`, `MultiplierData as Mul`, and raw `dynamic_buff_list` read surfaces.
+---

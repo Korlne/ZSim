@@ -41,6 +41,10 @@ class BuffAttributeReader(Protocol):
         """读取异常掌控。"""
         ...
 
+    def read_anomaly_proficiency(self, context: BuffAttributeReadContext) -> np.float64:
+        """读取异常精通。"""
+        ...
+
 
 def _calculate_dynamic_statement(
     enemy_obj: Enemy,
@@ -86,6 +90,15 @@ def _calculate_anomaly_mastery(static_statement: Any, dynamic_statement: Any) ->
     return np.float64(
         static_statement.am * (1 + dynamic_statement.field_anomaly_mastery)
         + dynamic_statement.anomaly_mastery
+    )
+
+
+def _calculate_anomaly_proficiency(
+    static_statement: Any, dynamic_statement: Any
+) -> np.float64:
+    return np.float64(
+        static_statement.ap * (1 + dynamic_statement.field_anomaly_proficiency)
+        + dynamic_statement.anomaly_proficiency
     )
 
 
@@ -519,6 +532,17 @@ class CalculatorBuffAttributeReader(BuffAttributeReader):
     """基于现有 Calculator 聚合规则的属性读取适配器。"""
 
     def read_anomaly_mastery(self, context: BuffAttributeReadContext) -> np.float64:
+        static, dynamic = self._build_statements(context)
+        return _calculate_anomaly_mastery(static, dynamic)
+
+    def read_anomaly_proficiency(
+        self, context: BuffAttributeReadContext
+    ) -> np.float64:
+        static, dynamic = self._build_statements(context)
+        return _calculate_anomaly_proficiency(static, dynamic)
+
+    @staticmethod
+    def _build_statements(context: BuffAttributeReadContext) -> tuple[Any, Any]:
         static_statement = getattr(context.character, "statement", None)
         static = MultiplierData.StaticStatement(static_statement)
         dynamic = MultiplierData.DynamicStatement(
@@ -529,7 +553,7 @@ class CalculatorBuffAttributeReader(BuffAttributeReader):
                 context.query_node,
             )
         )
-        return _calculate_anomaly_mastery(static, dynamic)
+        return static, dynamic
 
 
 class Calculator:

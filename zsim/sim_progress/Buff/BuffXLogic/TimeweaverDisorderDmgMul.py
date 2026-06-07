@@ -1,3 +1,8 @@
+from zsim.sim_progress.ScheduledEvent.Calculator import (
+    BuffAttributeReadContext,
+    CalculatorBuffAttributeReader,
+)
+
 from .. import Buff, JudgeTools, check_preparation
 
 
@@ -42,15 +47,13 @@ class TimeweaverDisorderDmgMul(Buff.BuffLogic):
         """时流贤者的精通AP检查相关Buff的核心逻辑。"""
         self.check_record_module()
         self.get_prepared(equipper="时流贤者", preload_data=1, dynamic_buff_list=1, enemy=1)
-        from zsim.sim_progress.ScheduledEvent.Calculator import (
-            Calculator as Cal,
-        )
-        from zsim.sim_progress.ScheduledEvent.Calculator import (
-            MultiplierData as Mul,
-        )
 
-        mul_data = Mul(self.record.enemy, self.record.dynamic_buff_list, self.record.char)
-        ap = Cal.AnomalyMul.cal_ap(mul_data)
+        context = BuffAttributeReadContext(
+            enemy=self.record.enemy,
+            active_buff_view=self.record.dynamic_buff_list,
+            character=self.record.char,
+        )
+        ap = CalculatorBuffAttributeReader().read_anomaly_proficiency(context)
         return ap >= 375
 
     def special_exit_logic(self, **kwargs):
