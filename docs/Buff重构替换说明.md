@@ -879,3 +879,16 @@
 - Next step:
   - Continue with US-002 to audit `ScheduledEvent` / `EventContext` raw runtime exposure before narrowing compatibility getters or changing handler boundaries.
 ---
+
+## 2026-06-07 17:41 - US-002
+- Files changed: `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `PRD-12 US-002` does not replace a live runtime path; it prepares the `ScheduledEvent` block by classifying retained raw old-container exposure, compatibility getter reachability, and already-closed handler read/write boundaries.
+  - The audit confirms `SkillEventHandler` and `AnomalyEventHandler` already use `BuffRuntimeReadPort` for active Buff reads and `RuntimeCommandPort` for same-tick writes, so later stories should not reopen those migrated paths without new production evidence.
+- Compatibility retained:
+  - `ScheduledEvent(...)` still accepts raw `dynamic_buff`, `exist_buff_dict`, and `loading_buff` for constructor compatibility.
+  - `EventContext.get_dynamic_buff()` / `get_exist_buff_dict()` and `BaseEventHandler._get_context_dynamic_buff()` / `_get_context_exist_buff_dict()` remain compatibility-only identity getters through `BuffRuntimeReadPort.get_legacy_*()`.
+  - `ScheduledEvent.event_start()` still reads `ScheduleData.dynamic_buff` for `SPUpdateData`, and `ScheduledEvent.update_anomaly_bar_after_skill_event()` remains the next same-tick helper to route or document.
+- Next step:
+  - Continue with US-003 to narrow compatibility getter naming/comments/tests, then US-004 to handle the remaining `ScheduledEvent.update_anomaly_bar_after_skill_event()` write helper.
+---
