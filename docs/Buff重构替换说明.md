@@ -603,3 +603,15 @@
 - Next step:
   - Write the deletion-readiness checklist and risk matrix, keeping `data_struct/schedule_dispatch.py` adapter queue access explicitly outside the deletion target set.
 ---
+
+## 2026-06-07 11:09:30 - US-002
+- Files changed: `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `PRD-9 US-002` deletion-readiness checklist prepares to replace ad hoc deletion decisions for `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` with explicit responsibility, blocker, verification, risk, and fallback criteria.
+  - No live path was replaced in this story; it only documents deletion conditions and keeps `data_struct/schedule_dispatch.py` adapter queue access outside the deletion target set.
+- Compatibility retained:
+  - `JudgeTools.find_event_list()` / `check_preparation(..., event_list=True)` / `BuffRecordBaseClass.event_list` remain legacy discovery / compatibility cache until guardrails prove deletion-safe.
+  - `LegacyEventListScheduleDispatchAdapter`, core Load/Schedule appends, damage-effect continuation, handler requeue, local event groups, dot runtime registration, and existing dispatch/runtime boundaries remain unchanged.
+- Next step:
+  - Add focused static deletion-readiness regression coverage so future deletion work no longer depends on manual checklist review.
+---
