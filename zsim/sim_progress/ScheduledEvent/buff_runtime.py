@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Mapping, Sequence
 
+from zsim.sim_progress.Report import report_to_log
+
 if TYPE_CHECKING:
     from zsim.sim_progress.Buff import Buff
     from zsim.sim_progress.Enemy import Enemy
@@ -108,6 +110,10 @@ class BuffRuntimeFacade(ABC):
         """从激活 Buff 容器移除指定 Buff。"""
 
     @abstractmethod
+    def end_active_buff(self, beneficiary: str, buff: "Buff", *, tick: int) -> None:
+        """执行 Buff.end 并从旧 active 容器移除。"""
+
+    @abstractmethod
     def find_active_buff_by_index(self, beneficiary: str, buff_index: str) -> "Buff | None":
         """按 Buff index 查找激活 Buff。"""
 
@@ -183,6 +189,17 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
     def remove_active_buff(self, beneficiary: str, buff: "Buff") -> None:
         self._get_active_buffs(beneficiary).remove(buff)
 
+    def end_active_buff(self, beneficiary: str, buff: "Buff", *, tick: int) -> None:
+        sub_exist_buff_dict = self._exist_buff_dict[beneficiary]
+        buff.end(tick, sub_exist_buff_dict)
+        self.remove_active_buff(beneficiary, buff)
+        report_to_log(
+            f"[Buff END]:{tick}:{beneficiary} 的 {buff.ft.index} 结束，已从动态列表移除",
+            level=4,
+        )
+        if buff.ft.is_debuff:
+            self._enemy_debuff_mirror.remove(buff)
+
     def find_active_buff_by_index(self, beneficiary: str, buff_index: str) -> "Buff | None":
         return next(
             (
@@ -232,6 +249,7 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
             tick,
             self._exist_buff_dict,
             enemy,
+            runtime_facade=self,
         )
 
     def _get_pending_queue(self, beneficiary: str) -> list["Buff"]:

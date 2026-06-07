@@ -813,3 +813,17 @@
 - Next step:
   - Continue with US-005 to wrap active Buff expiration/removal semantics through the facade, including `KickOutBuff()` order and enemy debuff mirror removal.
 ---
+
+## 2026-06-07 15:51 - US-005
+- Files changed: `zsim/sim_progress/ScheduledEvent/buff_runtime.py`, `zsim/sim_progress/Update/Update_Buff.py`, `tests/simulator/test_buff_runtime_facade.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `LegacyBuffRuntimeFacade.end_active_buff()` replaces the live facade tick sweep's direct `KickOutBuff(DYNAMIC_BUFF_DICT, buff, beneficiary, enemy, sub_exist_buff_dict, tick)` removal step with an explicit active-removal command.
+  - `Update_Buff.update_buff(..., runtime_facade=...)` now delegates only active removals through the facade, preserving `Buff.end(...)`, active-list removal, Buff end logging, and exact enemy debuff mirror removal order.
+- Compatibility retained:
+  - The legacy `KickOutBuff()` function remains for direct compatibility callers without a facade.
+  - Old `DYNAMIC_BUFF_DICT`, `exist_buff_dict`, and `enemy.dynamic.dynamic_debuff_list` object identities remain the runtime source of truth behind the facade.
+  - `BuffRuntimeReadPort` remains read-only; `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` remain the same-tick write boundary for scheduled handlers.
+  - Anomaly expiration, dot expiration, `BuffLoadLoop()` trigger judgement, `Buff.update(...)`, `update_to_buff_0()`, `ScheduledEvent(...)`, `DamageEventJudge(..., self.schedule_data.event_list, ...)`, and `ScheduleDispatchPort` queue semantics remain unchanged.
+- Next step:
+  - Continue with US-006 to add no-new-raw-container guardrails for the new facade boundary while keeping documented retained boundaries narrow.
+---

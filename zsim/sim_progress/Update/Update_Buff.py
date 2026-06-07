@@ -1,22 +1,43 @@
+from typing import TYPE_CHECKING
+
 from zsim.sim_progress.Buff import Buff
 from zsim.sim_progress.Dot import BaseDot
 from zsim.sim_progress.Enemy import Enemy
 from zsim.sim_progress.Report import report_buff_to_queue, report_to_log
 
+if TYPE_CHECKING:
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeFacade
+
 
 def update_time_related_effect(
-    DYNAMIC_BUFF_DICT: dict, timetick, exist_buff_dict: dict, enemy: Enemy
+    DYNAMIC_BUFF_DICT: dict,
+    timetick,
+    exist_buff_dict: dict,
+    enemy: Enemy,
+    runtime_facade: "BuffRuntimeFacade | None" = None,
 ):
     """
     更新一些和时间相关的效果，异常条、Buff、Dot
     """
     update_anomaly_bar(timetick, enemy)
-    update_buff(DYNAMIC_BUFF_DICT, enemy, exist_buff_dict, timetick)
+    update_buff(
+        DYNAMIC_BUFF_DICT,
+        enemy,
+        exist_buff_dict,
+        timetick,
+        runtime_facade=runtime_facade,
+    )
     update_dot(enemy, timetick)
     return DYNAMIC_BUFF_DICT
 
 
-def update_buff(DYNAMIC_BUFF_DICT, enemy, exist_buff_dict, timetick):
+def update_buff(
+    DYNAMIC_BUFF_DICT,
+    enemy,
+    exist_buff_dict,
+    timetick,
+    runtime_facade: "BuffRuntimeFacade | None" = None,
+):
     """
     该函数用于更新当前正处于活跃状态的Buff，
     并且根据时间或是其他规则判断这些Buff是否应该结束。
@@ -77,16 +98,19 @@ def update_buff(DYNAMIC_BUFF_DICT, enemy, exist_buff_dict, timetick):
 
         else:
             # 统一执行KickOut函数，移除buff
-            sub_exist_buff_dict = exist_buff_dict[charname]
             for removed_buff in remove_buff_list:
-                KickOutBuff(
-                    DYNAMIC_BUFF_DICT,
-                    removed_buff,
-                    charname,
-                    enemy,
-                    sub_exist_buff_dict,
-                    timetick,
-                )
+                if runtime_facade is None:
+                    sub_exist_buff_dict = exist_buff_dict[charname]
+                    KickOutBuff(
+                        DYNAMIC_BUFF_DICT,
+                        removed_buff,
+                        charname,
+                        enemy,
+                        sub_exist_buff_dict,
+                        timetick,
+                    )
+                else:
+                    runtime_facade.end_active_buff(charname, removed_buff, tick=timetick)
 
 
 def process_individual_buff(_, timetick):

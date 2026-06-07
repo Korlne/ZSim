@@ -23,14 +23,76 @@ class _BuffProbe(Buff):
         endticks: int = 2,
         count: int = 1,
         alltime: bool = False,
+        simple_exit_logic: bool = True,
+        individual_settled: bool = False,
+        is_debuff: bool = False,
+        built_in_buff_box: list[tuple[str, int]] | None = None,
+        xexit_result: bool | None = None,
+        events: list[str] | None = None,
     ) -> None:
-        self.ft = SimpleNamespace(index=index, alltime=alltime)
+        self.ft = SimpleNamespace(
+            index=index,
+            alltime=alltime,
+            simple_exit_logic=simple_exit_logic,
+            individual_settled=individual_settled,
+            is_debuff=is_debuff,
+        )
         self.dy = SimpleNamespace(
             active=active,
             startticks=startticks,
             endticks=endticks,
             count=count,
+            built_in_buff_box=list(built_in_buff_box or []),
         )
+        self.history = SimpleNamespace()
+        self.logic = SimpleNamespace(xexit=self._xexit)
+        self._xexit_result = xexit_result
+        self.xexit_calls: list[str] = []
+        self.end_calls: list[tuple[int, dict[str, Any]]] = []
+        self._events = events
+
+    def _xexit(self, *, beneficiary: str) -> bool:
+        self.xexit_calls.append(beneficiary)
+        return bool(self._xexit_result)
+
+    def end(self, timenow: int, exist_buff_dict: dict[str, Any]) -> None:
+        self.end_calls.append((timenow, exist_buff_dict))
+        if self._events is not None:
+            self._events.append(f"end:{self.ft.index}:{timenow}")
+        self.dy.active = False
+        self.dy.count = 0
+        self.dy.built_in_buff_box = []
+
+
+class _TrackingList(list[Any]):
+    def __init__(self, values: list[Any], events: list[str], label: str) -> None:
+        super().__init__(values)
+        self._events = events
+        self._label = label
+
+    def remove(self, value: Any) -> None:
+        self._events.append(f"{self._label}.remove:{value.ft.index}")
+        super().remove(value)
+
+
+def _capture_update_reports(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[list[tuple[tuple[Any, ...], dict[str, Any]]], list[tuple[str, int]]]:
+    from zsim.sim_progress.ScheduledEvent import buff_runtime
+    from zsim.sim_progress.Update import Update_Buff
+
+    buff_reports: list[tuple[tuple[Any, ...], dict[str, Any]]] = []
+    log_reports: list[tuple[str, int]] = []
+
+    def fake_report_buff_to_queue(*args: Any, **kwargs: Any) -> None:
+        buff_reports.append((args, kwargs))
+
+    def fake_report_to_log(message: str, *, level: int) -> None:
+        log_reports.append((message, level))
+
+    monkeypatch.setattr(Update_Buff, "report_buff_to_queue", fake_report_buff_to_queue)
+    monkeypatch.setattr(buff_runtime, "report_to_log", fake_report_to_log)
+    return buff_reports, log_reports
 
 
 def _create_facade(
@@ -171,15 +233,25 @@ def test_legacy_buff_runtime_facade_tick_sweep_uses_wrapped_legacy_containers(
     loading_buff_dict: dict[str, list[Any]] = {"alpha": []}
     dynamic_buff_dict: dict[str, list[Any]] = {"alpha": []}
     enemy = SimpleNamespace()
-    calls: list[tuple[dict[str, list[Any]], int, dict[str, dict[str, Any]], Any]] = []
+    calls: list[
+        tuple[
+            dict[str, list[Any]],
+            int,
+            dict[str, dict[str, Any]],
+            Any,
+            BuffRuntimeFacade | None,
+        ]
+    ] = []
 
     def fake_update_time_related_effect(
         dynamic_buff: dict[str, list[Any]],
         tick: int,
         exist_buff: dict[str, dict[str, Any]],
         received_enemy: Any,
+        *,
+        runtime_facade: BuffRuntimeFacade | None = None,
     ) -> dict[str, list[Any]]:
-        calls.append((dynamic_buff, tick, exist_buff, received_enemy))
+        calls.append((dynamic_buff, tick, exist_buff, received_enemy, runtime_facade))
         return dynamic_buff
 
     monkeypatch.setattr(
@@ -197,7 +269,183 @@ def test_legacy_buff_runtime_facade_tick_sweep_uses_wrapped_legacy_containers(
     result = facade.update_time_related_effects(tick=77, enemy=cast(Any, enemy))
 
     assert result is dynamic_buff_dict
-    assert calls == [(dynamic_buff_dict, 77, exist_buff_dict, enemy)]
+    assert calls == [(dynamic_buff_dict, 77, exist_buff_dict, enemy, facade)]
+
+
+def test_update_buff_expired_simple_buff_uses_facade_active_removal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from zsim.sim_progress.Update import Update_Buff
+
+    _, log_reports = _capture_update_reports(monkeypatch)
+    events: list[str] = []
+    expired = _BuffProbe("expired", endticks=5, events=events)
+    active_buffs = _TrackingList([expired], events, "active")
+    exist_buff_dict: dict[str, dict[str, Any]] = {"alpha": {"expired": _BuffProbe("expired")}}
+    dynamic_buff_dict: dict[str, list[Any]] = {"alpha": active_buffs}
+    facade = _create_facade(
+        exist_buff_dict=exist_buff_dict,
+        loading_buff_dict={"alpha": []},
+        dynamic_buff_dict=dynamic_buff_dict,
+        enemy_debuff_mirror=[],
+    )
+
+    Update_Buff.update_buff(
+        dynamic_buff_dict,
+        SimpleNamespace(),
+        exist_buff_dict,
+        6,
+        runtime_facade=facade,
+    )
+
+    assert expired.end_calls == [(6, exist_buff_dict["alpha"])]
+    assert active_buffs == []
+    assert events == ["end:expired:6", "active.remove:expired"]
+    assert log_reports == [
+        ("[Buff END]:6:alpha 的 expired 结束，已从动态列表移除", 4),
+    ]
+
+
+def test_update_buff_reports_non_expired_and_alltime_buffs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from zsim.sim_progress.Update import Update_Buff
+
+    buff_reports, log_reports = _capture_update_reports(monkeypatch)
+    active = _BuffProbe("active", endticks=10)
+    alltime = _BuffProbe("alltime", alltime=True, endticks=1)
+    exist_buff_dict: dict[str, dict[str, Any]] = {"alpha": {}}
+    dynamic_buff_dict: dict[str, list[Any]] = {"alpha": [active, alltime]}
+    facade = _create_facade(
+        exist_buff_dict=exist_buff_dict,
+        loading_buff_dict={"alpha": []},
+        dynamic_buff_dict=dynamic_buff_dict,
+        enemy_debuff_mirror=[],
+    )
+
+    Update_Buff.update_buff(
+        dynamic_buff_dict,
+        SimpleNamespace(),
+        exist_buff_dict,
+        5,
+        runtime_facade=facade,
+    )
+
+    assert dynamic_buff_dict["alpha"] == [active, alltime]
+    assert buff_reports == [
+        (("alpha", 5, "active", 1, True), {"level": 4}),
+        (("alpha", 5, "alltime", 1, True), {"level": 4}),
+    ]
+    assert log_reports == []
+
+
+def test_update_buff_preserves_individual_settled_stack_cleanup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from zsim.sim_progress.Update import Update_Buff
+
+    buff_reports, log_reports = _capture_update_reports(monkeypatch)
+    stacked = _BuffProbe(
+        "stacked",
+        count=2,
+        individual_settled=True,
+        built_in_buff_box=[("expired", 4), ("live", 8)],
+    )
+    exist_buff_dict: dict[str, dict[str, Any]] = {"alpha": {}}
+    dynamic_buff_dict: dict[str, list[Any]] = {"alpha": [stacked]}
+    facade = _create_facade(
+        exist_buff_dict=exist_buff_dict,
+        loading_buff_dict={"alpha": []},
+        dynamic_buff_dict=dynamic_buff_dict,
+        enemy_debuff_mirror=[],
+    )
+
+    Update_Buff.update_buff(
+        dynamic_buff_dict,
+        SimpleNamespace(),
+        exist_buff_dict,
+        5,
+        runtime_facade=facade,
+    )
+
+    assert dynamic_buff_dict["alpha"] == [stacked]
+    assert stacked.dy.built_in_buff_box == [("live", 8)]
+    assert stacked.dy.count == 1
+    assert buff_reports == [(("alpha", 5, "stacked", 1, True), {"level": 4})]
+    assert log_reports == []
+
+
+def test_update_buff_preserves_complex_xexit_true_and_false_branches(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from zsim.sim_progress.Update import Update_Buff
+
+    buff_reports, log_reports = _capture_update_reports(monkeypatch)
+    events: list[str] = []
+    stay = _BuffProbe("stay", simple_exit_logic=False, xexit_result=False)
+    leave = _BuffProbe("leave", simple_exit_logic=False, xexit_result=True, events=events)
+    active_buffs = _TrackingList([stay, leave], events, "active")
+    exist_buff_dict: dict[str, dict[str, Any]] = {"alpha": {"leave": _BuffProbe("leave")}}
+    dynamic_buff_dict: dict[str, list[Any]] = {"alpha": active_buffs}
+    facade = _create_facade(
+        exist_buff_dict=exist_buff_dict,
+        loading_buff_dict={"alpha": []},
+        dynamic_buff_dict=dynamic_buff_dict,
+        enemy_debuff_mirror=[],
+    )
+
+    Update_Buff.update_buff(
+        dynamic_buff_dict,
+        SimpleNamespace(),
+        exist_buff_dict,
+        9,
+        runtime_facade=facade,
+    )
+
+    assert stay.xexit_calls == ["alpha"]
+    assert leave.xexit_calls == ["alpha"]
+    assert active_buffs == [stay]
+    assert leave.end_calls == [(9, exist_buff_dict["alpha"])]
+    assert buff_reports == [(("alpha", 9, "stay", 1, True), {"level": 4})]
+    assert log_reports == [
+        ("[Buff END]:9:alpha 的 leave 结束，已从动态列表移除", 4),
+    ]
+
+
+def test_update_buff_removes_enemy_debuff_mirror_through_facade(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from zsim.sim_progress.Update import Update_Buff
+
+    _, log_reports = _capture_update_reports(monkeypatch)
+    events: list[str] = []
+    expired_debuff = _BuffProbe("debuff", endticks=2, is_debuff=True, events=events)
+    other_debuff = _BuffProbe("other", is_debuff=True)
+    active_buffs = _TrackingList([expired_debuff], events, "active")
+    enemy_debuff_mirror = _TrackingList([expired_debuff, other_debuff], events, "mirror")
+    exist_buff_dict: dict[str, dict[str, Any]] = {"enemy": {"debuff": _BuffProbe("debuff")}}
+    dynamic_buff_dict: dict[str, list[Any]] = {"enemy": active_buffs}
+    facade = _create_facade(
+        exist_buff_dict=exist_buff_dict,
+        loading_buff_dict={"enemy": []},
+        dynamic_buff_dict=dynamic_buff_dict,
+        enemy_debuff_mirror=enemy_debuff_mirror,
+    )
+
+    Update_Buff.update_buff(
+        dynamic_buff_dict,
+        SimpleNamespace(),
+        exist_buff_dict,
+        3,
+        runtime_facade=facade,
+    )
+
+    assert active_buffs == []
+    assert enemy_debuff_mirror == [other_debuff]
+    assert events == ["end:debuff:3", "active.remove:debuff", "mirror.remove:debuff"]
+    assert log_reports == [
+        ("[Buff END]:3:enemy 的 debuff 结束，已从动态列表移除", 4),
+    ]
 
 
 def test_legacy_buff_runtime_facade_activates_pending_buffs_in_old_pop_order() -> None:
