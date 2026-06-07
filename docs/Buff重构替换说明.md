@@ -761,3 +761,16 @@
 - Next step:
   - Start the next phase-1 PRD from the old-container isolation / Buff runtime facade candidate block; only reopen deleted `event_list` surfaces or producer migration if post-deletion guardrails expose concrete production evidence.
 ---
+
+## 2026-06-07 15:18 - US-001
+- Files changed: `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `PRD-11 US-001` confirms the old-container ownership matrix and prepares the next facade stories to wrap `exist_buff_dict`, `LOADING_BUFF_DICT`, `DYNAMIC_BUFF_DICT`, `ScheduleData.dynamic_buff`, `ScheduleData.loading_buff`, and `enemy.dynamic.dynamic_debuff_list`.
+  - No live runtime path was replaced in this story; it builds the evidence boundary for the upcoming minimal legacy-backed Buff runtime facade.
+- Compatibility retained:
+  - Old container identities are still retained; `BuffRuntimeReadPort` remains read-only and `RuntimeCommandPort` remains the same-tick write boundary.
+  - Deleted `JudgeTools.find_event_list()`, `record.event_list`, `BuffRecordBaseClass.event_list`, and `event_list=True` surfaces remain closed unless post-deletion guardrails report concrete production evidence.
+  - Already-migrated planned-event producer batches remain on `ScheduleDispatchPort`; this story does not reopen them.
+- Next step:
+  - Continue with US-002 to add the minimal legacy-backed Buff runtime facade while preserving old container object identity and keeping pending queue, active store, and enemy debuff mirror semantics separate.
+---
