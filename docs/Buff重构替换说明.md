@@ -736,3 +736,15 @@
 - Next step:
   - Continue with US-006 evidence triage; only migrate a producer or same-tick write path if concrete file, payload, target, order, or legacy getter evidence appears.
 ---
+
+## 2026-06-07 14:33 - US-006
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `PRD-10 US-006` closes the conditional producer or same-tick migration gate evidence-only instead of replacing a live simulator path.
+  - No concrete producer-level planned-event writer was found with old write expression, event type, payload fields, target fan-out, and relative-order evidence; no new handler/helper same-tick legacy getter plus write collaboration was found.
+- Compatibility retained:
+  - `LegacyEventListScheduleDispatchAdapter(schedule_data.event_list)` remains the only allowed low-level scheduler queue touch point for dispatch-port publishing.
+  - Core Load damage-effect continuation, handler requeue, local event groups, base runtime compatibility helpers, and existing `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` semantics remain unchanged.
+- Next step:
+  - Continue with US-007 final handoff docs; state that PRD-10 removed or closed compatibility discovery surfaces and did not expand producer/runtime migration scope.
+---
