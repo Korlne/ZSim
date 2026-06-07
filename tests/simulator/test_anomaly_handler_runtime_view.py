@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -65,7 +66,10 @@ class _RuntimeViewProbe(BuffRuntimeReadPort):
         return self.legacy_exist_buff_dict
 
 
-def _build_context(runtime_view: BuffRuntimeReadPort) -> tuple[EventContext, list[dict]]:
+def _build_context(
+    runtime_view: BuffRuntimeReadPort,
+    runtime_command_port: Any = None,
+) -> tuple[EventContext, list[dict]]:
     broadcasts: list[dict] = []
     enemy = SimpleNamespace(
         dynamic=SimpleNamespace(get_status=lambda: {}),
@@ -81,7 +85,7 @@ def _build_context(runtime_view: BuffRuntimeReadPort) -> tuple[EventContext, lis
         tick=10,
         enemy=enemy,
         buff_runtime_view=runtime_view,
-        runtime_command_port=SimpleNamespace(),
+        runtime_command_port=runtime_command_port or SimpleNamespace(),
         action_stack=SimpleNamespace(),
         sim_instance=sim_instance,
     )
@@ -158,7 +162,7 @@ def test_disorder_family_handlers_read_runtime_view_without_legacy_dynamic_conta
     assert broadcasts
 
 
-def test_anomaly_handler_reads_runtime_view_and_limits_legacy_access_to_settle_boundary(
+def test_anomaly_handler_uses_runtime_command_port_for_settle_boundary(
     monkeypatch: pytest.MonkeyPatch,
 ):
     legacy_dynamic_buff = {"alpha": [object()], "enemy": [object()]}
@@ -166,10 +170,22 @@ def test_anomaly_handler_reads_runtime_view_and_limits_legacy_access_to_settle_b
     runtime_view = _RuntimeViewProbe(
         legacy_dynamic_buff,
         legacy_exist_buff_dict,
-        allow_legacy=True,
+        allow_legacy=False,
     )
-    context, _ = _build_context(runtime_view)
     captured: dict[str, object] = {}
+
+    class _RuntimeCommandPortProbe:
+        def update_anomaly(self, **kwargs) -> None:
+            raise AssertionError("anomaly handler should not issue update_anomaly")
+
+        def settle_buffs(self, *, tick, enemy, skill_node=None, anomaly_bar=None) -> None:
+            captured["settle_tick"] = tick
+            captured["settle_enemy"] = enemy
+            captured["settle_skill_node"] = skill_node
+            captured["settle_anomaly_bar"] = anomaly_bar
+
+    runtime_command_port = _RuntimeCommandPortProbe()
+    context, _ = _build_context(runtime_view, runtime_command_port=runtime_command_port)
 
     class _FakeCalculator:
         def __init__(self, *, dynamic_buff, **kwargs) -> None:
@@ -178,21 +194,7 @@ def test_anomaly_handler_reads_runtime_view_and_limits_legacy_access_to_settle_b
         def cal_anomaly_dmg(self):
             return 34.56
 
-    def _fake_schedule_settle(
-        tick,
-        exist_buff_dict,
-        enemy,
-        dynamic_buff,
-        action_stack,
-        sim_instance,
-        **kwargs,
-    ) -> None:
-        captured["settle_tick"] = tick
-        captured["settle_exist_buff_dict"] = exist_buff_dict
-        captured["settle_dynamic_buff"] = dynamic_buff
-
     monkeypatch.setattr(anomaly_module, "CalAnomaly", _FakeCalculator)
-    monkeypatch.setattr(anomaly_module, "ScheduleBuffSettle", _fake_schedule_settle)
     monkeypatch.setattr(anomaly_module.Report, "report_dmg_result", lambda **kwargs: None)
 
     handler = AnomalyEventHandler()
@@ -202,8 +204,10 @@ def test_anomaly_handler_reads_runtime_view_and_limits_legacy_access_to_settle_b
     handler.handle(event, context)
 
     assert captured["dynamic_buff"] is runtime_view.active_buff_view
-    assert captured["settle_exist_buff_dict"] is legacy_exist_buff_dict
-    assert captured["settle_dynamic_buff"] is legacy_dynamic_buff
+    assert captured["settle_tick"] == 10
+    assert captured["settle_enemy"] is context.enemy
+    assert captured["settle_skill_node"] is None
+    assert captured["settle_anomaly_bar"] is event
     assert runtime_view.active_view_calls == 1
-    assert runtime_view.legacy_dynamic_calls == 1
-    assert runtime_view.legacy_exist_calls == 1
+    assert runtime_view.legacy_dynamic_calls == 0
+    assert runtime_view.legacy_exist_calls == 0

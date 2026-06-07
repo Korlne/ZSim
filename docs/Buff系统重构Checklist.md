@@ -99,7 +99,7 @@
 ## 本轮剩余 producer batch / shared-validation PRD 收口状态（2026-06-06）
 
 - [x] 代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` 计划事件链，以及本轮收口的 `ElegantVanitySpRecover`、`LunarNoviluna`、`MagneticStormCharlieSpRecover`、`SeedAdditionalAbilityTrigger`、`SliceofTimeExtraResources`、`CannonRotor`、`YanagiPolarityDisorderTrigger`、`HugoCorePassiveTotalizeTrigger` 与 `DecibelManager`，现都已改经 `ScheduleDispatchPort` 发布 planned event。
-- [x] `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 仍是本轮唯一沿用的 same-tick 显式写边界；`SkillEventHandler` 的 `update_anomaly()` 与 `ScheduleBuffSettle()` 同 tick 写边界保持走显式命令口，没有引入第二套 write facade。
+- [x] `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 仍是本轮唯一沿用的 same-tick 显式写边界；`SkillEventHandler` 的 `update_anomaly()` / `ScheduleBuffSettle()` 与 `AnomalyEventHandler` 的 `ScheduleBuffSettle(..., anomaly_bar=event)` 同 tick 写边界保持走显式命令口，没有引入第二套 write facade。
 - [x] `implicit-events` 共享验证入口现已同时覆盖 `test_schedule_dispatch.py`、聚焦 dispatch/runtime-boundary pytest，以及这些 focused 回归文件本身的 scoped mypy，handoff 文档已同步记录验证命令与当前基线。
 - [ ] 阶段 1 剩余缺口已收敛为其他 one-off `BuffXLogic`、`Character` 旁路 producer 的 raw `event_list` 写入口、可能隐藏的 listener/helper 发布入口，以及后续若继续暴露出来的相邻高风险 same-tick 写路径。
 
@@ -126,8 +126,14 @@
 - [x] 删除 `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 前，必须先保持 guardrail 绿色，并确认没有生产 allowlist 外调用、没有 `record.event_list.append(...)` publisher、没有配置或 `BuffXLogic` 路径请求 `event_list=True`。
 - [x] `--legacy-runtime` / `--candidate-runtime` 继续只是报告标签，不是 live runtime switch；下一轮仍沿 [Buff重构方案.md](./Buff重构方案.md) 的阶段 1 路线推进，只有 phase-1 守门证据稳定后才进入 XLogic 全量分析。
 
+## 本轮 PRD-9 same-tick 写边界补充状态（2026-06-07）
+
+- [x] `AnomalyEventHandler.handle()` 原本通过 legacy dynamic/exist getter 直调 `ScheduleBuffSettle(..., anomaly_bar=event)`；本轮已收口到 `RuntimeCommandPort.settle_buffs(..., anomaly_bar=event)`。
+- [x] `tests/simulator/test_anomaly_handler_runtime_view.py` 已阻断 handler 侧 legacy getter 访问，并断言 anomaly settle 写入走 `runtime_command_port`；`implicit-events` 验证通过。
+- [x] 本轮没有新增 raw `dynamic_buff`、`exist_buff_dict`、`sub_exist_buff_dict` 或 `event_list` passthrough，也没有引入第二套 write facade。
+
 ## 当前默认下一步
 
 - [ ] 启动下一轮仍属于“阶段 1：基础设施解耦”的实现型 PRD，基于 PRD-8 guardrail 证据继续准备 `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 删除前置；只在扫描发现新的具体 producer-level planned-event writer 时新增迁移故事，不再重开 `Yixuan` 本地事件组、`BreakingLegManager` hidden helper、`LoadDamageEvent` core spawn 或 `ScheduledEvent` handler requeue。
-- [ ] 仅在发现新的具体 same-tick 写路径仍依赖 legacy getter 时，继续把对应 handler / helper 收口到最小 `RuntimeCommandPort` / write facade，并把新增 focused 回归同步并入 `implicit-events` 共享 gate，不扩到 `Calculator` 全量迁移或旧容器删除。
+- [ ] 仅在发现新的具体 same-tick 写路径仍依赖 legacy getter 时，继续把对应 handler / helper 收口到最小 `RuntimeCommandPort` / write facade；`SkillEventHandler` 与 `AnomalyEventHandler` 已闭合，不应从旧文本重新打开。
 - [ ] 仅在 live simulator 真正消费 `config.buff_runtime.mode` 后，再把一致性 / benchmark 命令升级为真实 runtime switch 证据。

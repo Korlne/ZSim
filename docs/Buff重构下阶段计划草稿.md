@@ -8,7 +8,7 @@
 - 阶段 1 当前实现基线已经落地：
   - `ScheduleDispatchPort` 已接入 `SchedulePreload`、`QuickAssistSystem`、`UpdateAnomaly`、`BattleEventListener` 中的 `AliceDotTriggerListener`、代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` planned-event 链，以及已收口的 `ElegantVanitySpRecover`、`LunarNoviluna`、`MagneticStormCharlieSpRecover`、`SeedAdditionalAbilityTrigger`、`SliceofTimeExtraResources`、`CannonRotor`、`YanagiPolarityDisorderTrigger`、`HugoCorePassiveTotalizeTrigger`、`DecibelManager`、`MiyabiCoreSkill_IceFire`、`YixuanCinema1Trigger`、`VivianDotTrigger`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger`、`Character/Yuzuha` cinema-6 energy 分支与 `EnemyUniqueMechanic/BreakingLegManager` part-break refresh。
   - `BuffRuntimeReadPort` / `EventContext.buff_runtime_view` 已接入 `ScheduledEvent`，`anomaly`、`abloom`、`disorder`、`polarity_disorder` 与高风险 `SkillEventHandler` 主读路径已改用 runtime view。
-  - `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 已接入 `ScheduledEvent` / `EventContext`；`SkillEventHandler` 的 `ScheduleBuffSettle()`、`update_anomaly()` 等同 tick 写边界已改走显式命令口，同时仍通过 adapter 保留 legacy 容器身份。
+  - `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 已接入 `ScheduledEvent` / `EventContext`；`SkillEventHandler` 的 `ScheduleBuffSettle()`、`update_anomaly()` 以及 `AnomalyEventHandler` 的 `ScheduleBuffSettle(..., anomaly_bar=event)` 同 tick 写边界已改走显式命令口，同时仍通过 adapter 保留 legacy 容器身份。
   - `implicit-events` 共享验证入口现已同时覆盖 `test_schedule_dispatch.py`、上述 focused dispatch/runtime-boundary pytest，以及这些回归文件本身的 scoped mypy，不再只类型检查它们所命中的生产代码。
   - `scripts/run_buff_main_loop_consistency.py` 与 `scripts/run_buff_runtime_benchmark.py` 已是仓库内真实命令入口，不再是占位脚本。
   - `--legacy-runtime` / `--candidate-runtime` 仍只是报告标签；live simulator 还未消费 `config.buff_runtime.mode`。
@@ -16,6 +16,7 @@
   - 2026-06-07 `PRD-8 US-002` / `US-006` 已把 `tests/simulator/test_legacy_event_list_discovery_guardrail.py` 纳入 `implicit-events` shared pytest 与 scoped mypy；新增生产 `find_event_list` 调用、`BuffRecordBaseClass.event_list` / `record.event_list` 访问都必须通过 AST guardrail 或显式 allowlist 说明。
   - 2026-06-07 `PRD-8 US-003` 用 focused pytest 锁定 `check_preparation(..., event_list=True)` 只缓存 `record.event_list = find_event_list(...)`，并用 AST / 结构化配置扫描确认 `BuffXLogic`、`zsim/config*.json` 与 `zsim/data` CSV / JSON / TOML 当前没有显式 `event_list=True` 生产入口；没有新的 producer-level planned-event writer 可迁移。
   - 2026-06-07 `PRD-8 US-005` 已把 `LoadDamageEvent` Load-stage spawn / damage-effect continuation、`ScheduledEvent` handler requeue、`Character/Yixuan` 本地 `BaseAdrenalineEvent` 事件组与 `AliceDotTriggerListener` dot runtime registration 写入 retained-boundary 清单；这些路径后续只能由各自的 dispatcher / handler / runtime-state PRD 处理，不应被重新当成 Buff producer raw queue backlog。
+  - 2026-06-07 `PRD-9 US-006` 已把 `AnomalyEventHandler.handle()` 中通过 legacy getter 直调 `ScheduleBuffSettle(..., anomaly_bar=event)` 的 same-tick 写协作收口到 `RuntimeCommandPort.settle_buffs(...)`，focused pytest 已阻断 handler 再访问 legacy getter。
 - PRD-8 收口后，下一轮 Ralph PRD 仍应留在阶段 1，继续围绕真实剩余边界推进：基于 guardrail 证据准备 `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 删除前置，或只在发现具体 producer-level planned-event writer 时收口；不要从注释、本地 list、core dispatcher append、handler requeue 或 `change_process_state()` 推断新迁移目标。
 - 下一轮路线仍然严格遵循 [Buff重构方案.md](./Buff重构方案.md) 中的阶段顺序，不回退到角色驱动式切片。
 
@@ -38,7 +39,7 @@
 - 当前源码扫描未在 `BattleEventListener` 目录发现直接 `JudgeTools.find_event_list()` / `schedule_data.event_list.append(...)` planned-event 写入；`AliceDotTriggerListener` 的 dot runtime registration 不应继续被写成 listener raw queue backlog。
 - 真实剩余 backlog 是后续在 PRD-8 guardrail 稳定后收口 `JudgeTools.find_event_list()` / `BuffRecordBaseClass.event_list` 旧兼容发现口，并继续守门新扫描中真正出现的 producer-level planned-event writer；当前没有可立即迁移的新 producer payload，不应为了填充 migration story 而发明 payload / target / order 证据。
 - 删除旧兼容发现口前，必须至少确认：`test_legacy_event_list_discovery_guardrail.py` 与 `test_check_preparation_event_list_compatibility.py` 在 shared gate 中持续通过；生产代码没有 allowlist 外 `find_event_list` 调用或 `record.event_list` 发布；BuffXLogic、配置与数据加载路径没有 `event_list=True` 入口；`data_struct/schedule_dispatch.py` 的 adapter 取队列点仍是唯一允许的底层队列接触面。
-- 仅在发现其他具体 handler / helper 仍通过 legacy getter 承担 same-tick 写协作时，继续扩展 `RuntimeCommandPort` / write facade，减少读口与写边界双重职责继续泄露。
+- `SkillEventHandler` 与 `AnomalyEventHandler` 的 same-tick settle / anomaly 写协作已闭合到 `RuntimeCommandPort`；仅在发现其他具体 handler / helper 仍通过 legacy getter 承担 same-tick 写协作时，继续扩展同一个 command port，不新增第二套 write facade。
 - 如果本轮触达同 tick 写边界，沿用现有 `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 模式，而不是继续把 raw `dynamic_buff` / `exist_buff_dict` 深透传给新代码。
 - 除非 focused validation 暴露回归，否则不要重新打开已经闭合的 `SkillEventHandler` 代表性读写分层样本，也不要把已经收口的 xstart/xhit refresh、`CannonRotor`、`Yanagi`、`Hugo` 或 `DecibelManager` 批次重新当成主故事。
 - 保持 `Simulator` 仍做总流程编排，但不顺手扩大到 `UpdateAnomaly` 全量拆分、`Calculator` 全量迁移或 enemy debuff 单一事实源收口。
@@ -47,7 +48,7 @@
 
 - 只有在新扫描发现具体 producer-level planned-event writer 时，才新增 dispatch gateway 迁移样本，并先记录文件、函数、事件类型、payload 与相对顺序。
 - 旧兼容发现口删除前置清单，包括现有 allowlist、删除风险、兼容回退策略，以及必须保留的 `ScheduleDispatchPort` adapter 语义。
-- 如有需要，再补一组沿用 `RuntimeCommandPort` 的相邻 handler / helper same-tick 写边界样本，而不是重新发明新的写门面。
+- 如未来扫描发现新的相邻 handler / helper same-tick 写边界样本，沿用 `RuntimeCommandPort` 处理；不要重新发明新的写门面，也不要从已闭合的 `SkillEventHandler` / `AnomalyEventHandler` 文本重新开故事。
 - 聚焦事件顺序、发布边界与同 tick 写语义的单元测试或 focused pytest。
 - 按实际触达面同步扩大 `implicit-events` typecheck profile 的目标文件，并把新增 focused 回归文件本身纳入 scoped mypy，避免 gate 只类型检查生产模块。
 - 继续复用现有真实验证入口，而不是再引入新的占位脚本名。

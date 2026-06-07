@@ -651,3 +651,15 @@
 - Next step:
   - Continue with the same-tick write boundary story only if it finds a concrete legacy getter plus write collaboration; otherwise close it evidence-only without adding raw passthroughs.
 ---
+
+## 2026-06-07 11:36:46 - US-006
+- Files changed: `zsim/sim_progress/ScheduledEvent/event_handlers/handlers/anomaly.py`, `tests/simulator/test_anomaly_handler_runtime_view.py`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `AnomalyEventHandler.handle() -> runtime_command_port.settle_buffs(..., anomaly_bar=event)` replaces the old `AnomalyEventHandler -> _get_context_legacy_dynamic_buff() / _get_context_legacy_exist_buff_dict() -> ScheduleBuffSettle(..., anomaly_bar=event)` same-tick Buff settle collaboration.
+  - `tests/simulator/test_anomaly_handler_runtime_view.py` now prepares future handler cleanup by proving anomaly settle writes use the explicit command boundary and no longer touch legacy getters in the handler.
+- Compatibility retained:
+  - `RuntimeCommandPort` still delegates through `LegacyRuntimeCommandAdapter`, so old `dynamic_buff`, `exist_buff_dict`, `action_stack`, `sim_instance`, and `ScheduleBuffSettle(..., anomaly_bar=event)` semantics remain inside the adapter.
+  - `JudgeTools.find_event_list()` / `check_preparation(..., event_list=True)` / `BuffRecordBaseClass.event_list`, `LegacyEventListScheduleDispatchAdapter`, core Load/Schedule appends, damage-effect continuation, handler requeue, local event groups, and dot runtime registration remain unchanged.
+- Next step:
+  - Final PRD-9 handoff should state that the newly exposed anomaly same-tick write path is closed through `RuntimeCommandPort`; only add more runtime boundary work if a future scan finds another concrete legacy getter plus same-tick write collaboration.
+---

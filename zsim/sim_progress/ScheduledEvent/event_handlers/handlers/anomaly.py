@@ -7,7 +7,6 @@ from zsim.sim_progress.anomaly_bar import AnomalyBar as AnB
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
     NewAnomaly,
 )
-from zsim.sim_progress.Buff import ScheduleBuffSettle
 
 from ...CalAnomaly import CalAnomaly
 from ..base import BaseEventHandler
@@ -37,9 +36,7 @@ class AnomalyEventHandler(BaseEventHandler):
 
         enemy = self._get_context_enemy(context)
         active_buff_view = self._get_context_active_buff_view(context)
-        legacy_dynamic_buff = self._get_context_legacy_dynamic_buff(context)
-        legacy_exist_buff_dict = self._get_context_legacy_exist_buff_dict(context)
-        action_stack = self._get_context_action_stack(context)
+        runtime_command_port = self._get_context_runtime_command_port(context)
         sim_instance = self._get_context_sim_instance(context)
         tick = self._get_context_tick(context)
 
@@ -67,12 +64,8 @@ class AnomalyEventHandler(BaseEventHandler):
         )
 
         # 处理buff结算
-        ScheduleBuffSettle(
-            tick,
-            legacy_exist_buff_dict,
-            enemy,
-            legacy_dynamic_buff,
-            action_stack,
+        runtime_command_port.settle_buffs(
+            tick=tick,
+            enemy=enemy,
             anomaly_bar=event,
-            sim_instance=sim_instance,
         )
