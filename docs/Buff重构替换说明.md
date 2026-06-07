@@ -1015,3 +1015,14 @@
 - Next step:
   - Continue with US-014 by migrating the representative `BranchBladeSongCritDamageBonus.special_judge_logic()` read-only gate to the new attribute reader and retaining old-helper parity coverage.
 ---
+## 2026-06-07 19:28 - US-014
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritDamageBonus.py`, `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `BranchBladeSongCritDamageBonus.special_judge_logic()` now replaces its ad hoc `MultiplierData(...) + Calculator.AnomalyMul.cal_am()` read with `BuffAttributeReadContext` and `CalculatorBuffAttributeReader.read_anomaly_mastery()`.
+  - The focused test compares the migrated gate against the old helper path for below-threshold, exactly-threshold, and above-threshold anomaly mastery inputs.
+- Compatibility retained:
+  - `MultiplierData` remains the compatibility snapshot for Calculator formulas, CalAnomaly formulas, remaining read-then-write XLogic paths, alias read paths, RNG trigger gates, and event-producing XLogic paths.
+  - The migrated path remains read-only; no formula value, record write, Buff writeback, scheduler publish, listener broadcast, or runtime command behavior changed.
+- Next step:
+  - Continue with US-015 by selecting the next low-risk XLogic attribute-read user from the US-012 inventory now that the BranchBladeSong gate is already migrated.
+---

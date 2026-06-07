@@ -1,4 +1,7 @@
-from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
+from zsim.sim_progress.ScheduledEvent.Calculator import (
+    BuffAttributeReadContext,
+    CalculatorBuffAttributeReader,
+)
 
 from .. import Buff, JudgeTools, check_preparation
 
@@ -45,10 +48,12 @@ class BranchBladeSongCritDamageBonus(Buff.BuffLogic):
     def special_judge_logic(self, **kwargs):
         self.check_record_module()
         self.get_prepared(equipper="折枝剑歌", enemy=1, dynamic_buff_list=1)
-        mul_data = MultiplierData(
-            self.record.enemy, self.record.dynamic_buff_list, self.record.char
+        context = BuffAttributeReadContext(
+            enemy=self.record.enemy,
+            active_buff_view=self.record.dynamic_buff_list,
+            character=self.record.char,
         )
-        am = Calculator.AnomalyMul.cal_am(mul_data)
+        am = CalculatorBuffAttributeReader().read_anomaly_mastery(context)
         if am >= 115:
             return True
         return False
