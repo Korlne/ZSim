@@ -1709,3 +1709,14 @@
 - Next step:
   - Continue with US-004 by wiring the focused P2-C trigger-state test file and helper typing target into `implicit-events`, before migrating the first pure count gates.
 ---
+## 2026-06-08 20:10 +08:00 - US-004
+- Files changed: `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `TRIGGER_STATE_READ_ONLY_TARGETS` and `TRIGGER_STATE_READ_ONLY_FOCUSED_TEST_TARGETS` prepare the shared `implicit-events` gate to replace ad hoc direct runs of the P2-C trigger-state helper and focused test.
+  - This story only wires validation coverage; it does not replace live XLogic behavior.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, `JudgeTools.find_exist_buff_dict(...)`, direct `record.trigger_buff_0.dy.*` reads in current XLogic files, and old template Buff identity in `history.record.trigger_buff_0`.
+  - `BuffRuntimeReadPort` remains read-only and separate from this old-template trigger-state helper; `RuntimeCommandPort`, `ScheduleDispatchPort`, listener broadcast, dot runtime registration, raw queue deletion boundaries, lifecycle validation, and Calculator formulas remain untouched.
+- Next step:
+  - Continue with US-005 by migrating only `FlamemakerShakerApBonus.py` and `SpectralGazeImpactBonus.py` pure count gates through `read_trigger_buff_state(...)` while preserving no-write branch semantics.
+---
