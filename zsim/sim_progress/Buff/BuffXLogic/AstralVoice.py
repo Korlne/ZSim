@@ -96,5 +96,5 @@ class AstralVoice(Buff.BuffLogic):
         )
         tick_now = find_tick(sim_instance=self.buff_instance.sim_instance)
         self.buff_instance.simple_start(tick_now, self.record.sub_exist_buff_dict)
-        self.buff_instance.dy.count = self.record.trigger_buff_0.dy.count
+        self.buff_instance.dy.count = read_trigger_buff_state(self.record).count
         self.buff_instance.update_to_buff_0(self.buff_0)

@@ -1778,3 +1778,14 @@
 - Next step:
   - Continue with US-010 by migrating only `AstralVoice.special_effect_logic(...)` count reads through the same read-only helper while preserving its current state-sync order.
 ---
+## 2026-06-08 21:06 +08:00 - US-010
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/AstralVoice.py`, `tests/simulator/test_trigger_state_read_only_gates.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `AstralVoice.special_effect_logic(...)` replaces the direct old-template `record.trigger_buff_0.dy.count` chain with `read_trigger_buff_state(self.record).count` while preserving the existing `get_prepared(equipper="静听嘉音", trigger_buff_0=(...), sub_exist_buff_dict=1)` lookup.
+  - `tests/simulator/test_trigger_state_read_only_gates.py` now covers trigger counts `0`, `5`, and `99`, retained lazy record identity, retained old trigger template identity, retained `record.sub_exist_buff_dict`, and old template identity passed to `update_to_buff_0(...)`.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, `JudgeTools.find_exist_buff_dict(...)`, `simple_start(...)`, current `dy.count` mirror write, `update_to_buff_0(self.buff_0)`, and old equipment-owner `buff_0` identity in `history.record`.
+  - `BuffRuntimeReadPort` remains read-only and has no write API; `RuntimeCommandPort`, `ScheduleDispatchPort`, listener broadcast, dot runtime registration, raw queue deletion boundaries, Calculator formulas, and the remaining un-migrated `trigger_buff_0=` pool remain unchanged.
+- Next step:
+  - Continue with US-011 by adding the migrated P2-C source guardrail for the exact completed migrated file set, without scanning the remaining un-migrated trigger-state pool.
+---

@@ -98,7 +98,7 @@ class _BuffTemplate:
 class _CurrentBuffProbe:
     def __init__(self, *, index: str, operator: str = "operator") -> None:
         self.ft = SimpleNamespace(index=index, operator=operator)
-        self.dy = _CurrentBuffDynamicState()
+        self.dy: Any = _CurrentBuffDynamicState()
         runtime_command_port = _FailFastRuntimeCommandPort()
         self.sim_instance = SimpleNamespace(
             tick=100,
@@ -120,6 +120,34 @@ class _CurrentBuffProbe:
 
     def update_to_buff_0(self, *args: object, **kwargs: object) -> None:
         raise AssertionError("pure trigger-state gates must not call update_to_buff_0")
+
+
+class _EffectCurrentBuffDynamicState:
+    def __init__(self, events: list[tuple[str, tuple[object, ...]]]) -> None:
+        self._count = 0.0
+        self._events = events
+
+    @property
+    def count(self) -> float:
+        return self._count
+
+    @count.setter
+    def count(self, value: float) -> None:
+        self._count = value
+        self._events.append(("set_count", (value,)))
+
+
+class _AstralVoiceEffectBuffProbe(_CurrentBuffProbe):
+    def __init__(self, *, index: str, operator: str = "operator") -> None:
+        self.effect_events: list[tuple[str, tuple[object, ...]]] = []
+        super().__init__(index=index, operator=operator)
+        self.dy = _EffectCurrentBuffDynamicState(self.effect_events)
+
+    def simple_start(self, *args: object, **kwargs: object) -> None:
+        self.effect_events.append(("simple_start", args))
+
+    def update_to_buff_0(self, *args: object, **kwargs: object) -> None:
+        self.effect_events.append(("update_to_buff_0", args))
 
 
 @dataclass(frozen=True)
@@ -215,6 +243,45 @@ def _make_astral_voice_gate(
         count=7,
         equipper_name="静听嘉音",
         current_operator="静听嘉音",
+    )
+
+
+def _make_astral_voice_effect_gate(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    count: float,
+) -> _GateFixture:
+    current_index = "Buff-驱动盘-静听嘉音-全队增伤"
+    trigger_index = "Buff-驱动盘-静听嘉音-嘉音"
+    current_buff = _AstralVoiceEffectBuffProbe(
+        index=current_index,
+        operator="静听嘉音",
+    )
+    current_template = _BuffTemplate(index=current_index)
+    trigger_template = _BuffTemplate(
+        index=trigger_index,
+        active=True,
+        count=count,
+    )
+    exist_buff_dict = {
+        "静听嘉音": {
+            current_index: current_template,
+            trigger_index: trigger_template,
+        }
+    }
+    current_buff.sim_instance.load_data.exist_buff_dict = exist_buff_dict
+    _install_lookup_fakes(
+        monkeypatch,
+        exist_buff_dict=exist_buff_dict,
+        equipper_name="静听嘉音",
+    )
+
+    return _GateFixture(
+        logic=AstralVoice(current_buff),
+        current_buff=current_buff,
+        current_template=current_template,
+        trigger_template=trigger_template,
+        exist_buff_dict=exist_buff_dict,
     )
 
 
@@ -367,7 +434,7 @@ def test_trigger_state_helper_requires_prepared_trigger_record() -> None:
         ),
         pytest.param(
             "AstralVoice.py",
-            ("record.trigger_buff_0.dy.active",),
+            ("record.trigger_buff_0.dy.active", "record.trigger_buff_0.dy.count"),
             id="astral-voice",
         ),
     ],
@@ -578,6 +645,45 @@ def test_astral_voice_judge_gate_branches_are_read_only(
 
     assert fixture.logic.special_judge_logic(skill_node=skill_node) is expected
     _assert_astral_voice_judge_no_writes(fixture)
+
+
+@pytest.mark.parametrize(
+    "count",
+    [
+        pytest.param(0, id="zero-count"),
+        pytest.param(5, id="normal-count"),
+        pytest.param(99, id="high-count"),
+    ],
+)
+def test_astral_voice_effect_count_mirror_uses_trigger_state_helper(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    count: float,
+) -> None:
+    fixture = _make_astral_voice_effect_gate(monkeypatch, count=count)
+
+    fixture.logic.special_effect_logic()
+
+    _assert_lazy_record_and_trigger_identity(fixture)
+    assert fixture.logic.record.sub_exist_buff_dict is fixture.exist_buff_dict["静听嘉音"]
+    assert fixture.current_buff.dy.count == count
+    assert fixture.current_buff.sim_instance.schedule_data.event_list == []
+    current_buff = cast(_AstralVoiceEffectBuffProbe, fixture.current_buff)
+    assert current_buff.effect_events == [
+        ("simple_start", (100, fixture.exist_buff_dict["静听嘉音"])),
+        ("set_count", (count,)),
+        ("update_to_buff_0", (fixture.current_template,)),
+    ]
+
+
+def test_astral_voice_effect_count_mirror_keeps_runtime_boundaries_out_of_scope() -> None:
+    source = (_BUFF_XLOGIC_ROOT / "AstralVoice.py").read_text(encoding="utf-8")
+
+    assert "BuffRuntimeReadPort" not in source
+    assert "RuntimeCommandPort" not in source
+    assert "ScheduleDispatchPort" not in source
+    assert "publish_scheduled" not in source
+    assert "listener_manager.broadcast_event" not in source
 
 
 @pytest.mark.parametrize(
