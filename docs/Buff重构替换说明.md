@@ -1882,3 +1882,14 @@
 - Next step:
   - Continue with US-006 by inspecting and extending fan-out / multi-publish / priority parity coverage only where P2-D root-workspace gaps remain.
 ---
+## 2026-06-08 23:25 +08:00 - US-006
+- Files changed: `tests/simulator/test_decibel_manager_dispatch.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_decibel_manager_dispatch.py` prepares to replace manual fan-out / adapter-rebinding review for `Decibelmanager` by asserting inactive-generation / unsupported-trigger no-publish branches and real on-demand dispatch rebinding after `schedule_data.event_list` replacement.
+  - This story strengthens focused parity coverage only; no live fan-out, multi-publish, priority sorting, or scheduled-publish production behavior was replaced in this iteration.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Decibelmanager`, `Character/Yuzuha`, `HugoCorePassiveTotalizeTrigger`, `BreakingLegManager`, `VivianCorePassiveTrigger`, and `VivianCinema6Trigger` continue using their existing `_create_dispatch_port(...)` / `create_schedule_dispatch_port(...)` publish paths.
+  - Scheduler priority sorting, handler requeue behavior, core Load/Schedule appends, listener broadcast, dot runtime registration, runtime command writes, old containers, and Calculator / CalAnomaly formula snapshots remain unchanged.
+- Next step:
+  - Continue with US-007 by adding exact-file P2-D scheduled-publish source guardrails and validation-profile wiring, using the migrated producer set and retained boundaries recorded in US-001 through US-006.
+---
