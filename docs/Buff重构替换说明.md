@@ -1698,3 +1698,14 @@
 - Next step:
   - Continue with US-003 by adding the narrow production read-only trigger-state helper and rerunning the focused gate tests before migrating any XLogic file.
 ---
+## 2026-06-08 20:03 +08:00 - US-003
+- Files changed: `zsim/sim_progress/Buff/JudgeTools/TriggerState.py`, `zsim/sim_progress/Buff/JudgeTools/__init__.py`, `tests/simulator/test_trigger_state_read_only_gates.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `zsim/sim_progress/Buff/JudgeTools/TriggerState.py` prepares to replace direct `record.trigger_buff_0.dy.active` / `.dy.count` / `.dy.built_in_buff_box` read chains with immutable `TriggerBuffState` snapshots.
+  - `tests/simulator/test_trigger_state_read_only_gates.py` now exercises the production helper after the existing `check_preparation(..., trigger_buff_0=...)` lookup path, without migrating live XLogic behavior yet.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, `JudgeTools.find_exist_buff_dict(...)`, direct `record.trigger_buff_0.dy.*` reads in current XLogic files, and old template Buff identity in `history.record.trigger_buff_0`.
+  - `BuffRuntimeReadPort` remains read-only and separate from this old-template trigger-state helper; `RuntimeCommandPort`, `ScheduleDispatchPort`, listener broadcast, dot runtime registration, raw queue deletion boundaries, and Calculator formulas remain untouched.
+- Next step:
+  - Continue with US-004 by wiring the focused P2-C trigger-state test file and helper typing target into `implicit-events`, before migrating the first pure count gates.
+---

@@ -11,6 +11,7 @@ import zsim.define as define_module
 sys.modules.setdefault("define", define_module)
 
 from zsim.sim_progress.Buff import JudgeTools
+from zsim.sim_progress.Buff.JudgeTools import read_trigger_buff_state
 from zsim.sim_progress.Buff.BuffXLogic.CordisGerminaSNAAndQIgnoreDefense import (
     CordisGerminaSNAAndQIgnoreDefense,
 )
@@ -229,6 +230,53 @@ def _assert_lazy_record_and_trigger_identity(fixture: _GateFixture) -> None:
     assert logic.buff_0 is fixture.current_template
     assert logic.record is fixture.current_template.history.record
     assert logic.record.trigger_buff_0 is fixture.trigger_template
+    trigger_state = read_trigger_buff_state(logic.record)
+    assert trigger_state.active is fixture.trigger_template.dy.active
+    assert trigger_state.count == fixture.trigger_template.dy.count
+    assert trigger_state.built_in_buff_box == tuple(
+        fixture.trigger_template.dy.built_in_buff_box
+    )
+
+
+def test_trigger_state_helper_public_api_is_read_only(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_equipment_gate(
+        monkeypatch,
+        logic_type=FlamemakerShakerApBonus,
+        current_index="Buff-驱动盘-灼心摇壶-异常精通提高",
+        trigger_index="Buff-驱动盘-灼心摇壶-增伤",
+        active=True,
+        count=5,
+        built_in_buff_box=(("start", "end"),),
+    )
+    fixture.logic.check_record_module()
+    fixture.logic.get_prepared(
+        equipper="灼心摇壶",
+        trigger_buff_0=("equipper", "灼心摇壶-增伤"),
+    )
+
+    trigger_state = read_trigger_buff_state(fixture.logic.record)
+
+    assert trigger_state.active is True
+    assert trigger_state.count == 5
+    assert trigger_state.built_in_buff_box == (("start", "end"),)
+    for mutating_name in (
+        "simple_start",
+        "update_to_buff_0",
+        "publish",
+        "runtime_command_port",
+        "schedule_dispatch_port",
+    ):
+        assert not hasattr(trigger_state, mutating_name)
+    with pytest.raises(AttributeError):
+        trigger_state.count = 6  # type: ignore[misc]
+    assert fixture.logic.record.trigger_buff_0 is fixture.trigger_template
+
+
+def test_trigger_state_helper_requires_prepared_trigger_record() -> None:
+    with pytest.raises(ValueError, match="trigger_buff_0"):
+        read_trigger_buff_state(SimpleNamespace(trigger_buff_0=None))
 
 
 @pytest.mark.parametrize(
