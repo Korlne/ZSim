@@ -1362,3 +1362,14 @@
 - Next step:
   - 继续 US-006，迁移 `AliceAdditionalAbilityApBonus.py` 到 helper + AM reader，同时保持当前 AM count formula、max-count clamp 和 state-sync order。
 ---
+## 2026-06-08 12:25 +08:00 - US-006
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py`, `tests/simulator/test_buff_attribute_state_sync.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `AliceAdditionalAbilityApBonus.special_judge_logic()` now replaces its direct `MultiplierData(...)` / `Calculator.AnomalyMul.cal_am(...)` AM read with `create_anomaly_attribute_read_context(...)` and `CalculatorBuffAttributeReader().read_anomaly_mastery(...)`.
+  - `tests/simulator/test_buff_attribute_state_sync.py` now prepares the remaining P2-A migrations by using the old `MultiplierData(...)` path as a count oracle while driving migrated XLogic through the reader path.
+- Compatibility retained:
+  - Alice `get_prepared(char_CID=1401, sub_exist_buff_dict=1, enemy=1, dynamic_buff_list=1)`, AM threshold, `(am - 140) * trans_ratio`, old `buff_0` identity, and `simple_start(..., no_count=1) -> dy.count -> update_to_buff_0(...)` order remain covered.
+  - `Calculator.AnomalyMul.cal_am(...)`, `MultiplierData`, Calculator / CalAnomaly formulas, phase-1 dispatch/runtime boundaries, scheduled publish, listener broadcast, and old-container deletion remain retained outside this story.
+- Next step:
+  - 继续 US-007，按同一 reader-oracle + state-sync order 模式迁移 `YuzuhaAdditionalAbilityAnomalyBuildupBonus.py`，并保留 YUZUHA report / process-state behavior。
+---

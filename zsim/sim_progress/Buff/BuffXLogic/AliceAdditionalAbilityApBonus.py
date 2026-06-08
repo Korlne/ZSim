@@ -1,3 +1,8 @@
+from zsim.sim_progress.ScheduledEvent.Calculator import (
+    CalculatorBuffAttributeReader,
+    create_anomaly_attribute_read_context,
+)
+
 from .. import Buff, JudgeTools, check_preparation
 from ._buff_record_base_class import BuffRecordBaseClass as BRBC
 
@@ -39,14 +44,12 @@ class AliceAdditionalAbilityApBonus(Buff.BuffLogic):
         assert self.record.dynamic_buff_list is not None, "动态Buff列表未初始化"
         assert self.record.sub_exist_buff_dict is not None, "子存在Buff字典未初始化"
 
-        from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
-
-        mul_data = MultiplierData(
-            enemy_obj=self.record.enemy,
-            dynamic_buff=self.record.dynamic_buff_list,
-            character_obj=self.record.char,
+        context = create_anomaly_attribute_read_context(
+            enemy=self.record.enemy,
+            active_buff_view=self.record.dynamic_buff_list,
+            character=self.record.char,
         )
-        am = Calculator.AnomalyMul.cal_am(mul_data)
+        am = CalculatorBuffAttributeReader().read_anomaly_mastery(context)
         if am < 140:
             return
         count = (am - 140) * self.record.trans_ratio
