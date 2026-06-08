@@ -1472,3 +1472,14 @@
 - Next step:
   - Continue with US-002 by adding P2-B reader parity fixtures for impact, full crit rate, personal crit rate, and personal crit damage before production XLogic migrations.
 ---
+## 2026-06-08 16:13 +08:00 - US-002
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_buff_attribute_reader.py` now prepares to replace future direct P2-B `MultiplierData(...)` impact / crit reads by pinning test-only reader-seam parity against retained `Calculator.StunMul.cal_imp(...)`, `Calculator.RegularMul.cal_crit_rate(...)`, `Calculator.RegularMul.cal_personal_crit_rate(...)`, and `Calculator.RegularMul.cal_personal_crit_dmg(...)` snapshots.
+  - This story builds the boundary test harness only; no live `BuffXLogic` path or production `CalculatorBuffAttributeReader` method is replaced yet.
+- Compatibility retained:
+  - Existing AM/AP reader tests, migrated P2-A XLogic paths, Calculator / CalAnomaly formula snapshots, `MultiplierData`, `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime-state, old containers, and state-sync behavior remain unchanged.
+  - Full crit rate keeps `crit_rate_received_increase`; personal crit rate and personal crit damage keep received crit fields excluded.
+- Next step:
+  - Continue with US-003 by adding narrow production `CalculatorBuffAttributeReader` wrappers for impact, full crit rate, personal crit rate, and personal crit damage using the parity fixtures added here.
+---
