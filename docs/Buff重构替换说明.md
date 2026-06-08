@@ -1823,3 +1823,14 @@
 - Next step:
   - Generate the next phase-2 PRD from [Buff重构方案.md](./Buff重构方案.md), defaulting to P2-D scheduled publish ordering / adapter parity while preserving P2-E dot runtime-state, P2-F BuffAddStrategy facade-write design, direct simulator context helpers, phase-3 formula snapshots, retained compatibility rows, and blocker-only phase-1 reopen rules.
 ---
+## 2026-06-08 22:38 +08:00 - US-001
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `scripts/ralph/progress.txt` now prepares to replace ad hoc P2-D scope selection with root-workspace source evidence, CodeGraph navigation terms, payload-family classification, retained boundaries, and focused-test directions for scheduled publish ordering / adapter parity.
+  - This story is evidence and scope setup only; it does not replace a live `BuffXLogic`, `UpdateAnomaly`, dispatch adapter, listener, dot runtime, runtime command, or Calculator path.
+- Compatibility retained:
+  - All existing scheduled publishers continue through their current `ScheduleDispatchPort` paths, and old retained boundaries remain unchanged: listener broadcast, dot runtime registration/removal, runtime immediate writes, `RuntimeCommandPort`, old containers, Calculator / CalAnomaly formula snapshots, and completed P2-A / P2-B / P2-C guardrails.
+  - `ScheduleDispatchPort` remains queue-only, with raw queue access retained only inside `LegacyEventListScheduleDispatchAdapter`.
+- Next step:
+  - Continue with US-002 by adding adapter creation / event-list rebinding coverage and verifying P2-D producers create dispatch ports on demand rather than caching stale queue adapters.
+---
