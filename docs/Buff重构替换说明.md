@@ -1592,3 +1592,15 @@
 - Next step:
   - Continue with US-012 by migrating `MiyabiCoreSkill_IceFire.py` through `CalculatorBuffAttributeReader.read_full_crit_rate(...)` while preserving IceFire state, old-count adjustment, and dispatch behavior.
 ---
+## 2026-06-08 17:59 +08:00 - US-012
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py`, `tests/simulator/test_full_crit_event_adjacent_reader.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `MiyabiCoreSkill_IceFire.py` now replaces its direct `MultiplierData(...)` / `Calculator.RegularMul.cal_crit_rate(...)` full-crit count read with `create_anomaly_attribute_read_context(...)` and `CalculatorBuffAttributeReader.read_full_crit_rate(...)`.
+  - The focused full-crit event-adjacent test now guards Miyabi against reintroducing the direct full-crit Calculator snapshot path and pins judge gates plus maxcount cap behavior.
+- Compatibility retained:
+  - Miyabi `special_judge_logic(...)` SkillNode / element / frostburn-debuff gates, `special_exit_logic(...)` frostbite edge detection, dispatch publish behavior, `get_prepared(...)` arguments, old `buff_0` identity, and `simple_start(...) -> old-count decrement -> read_full_crit_rate(...) -> dy.count -> update_to_buff_0(...)` order remain preserved.
+  - The retained Calculator formula snapshot still owns `Calculator.RegularMul.cal_crit_rate(...)`; Woodpecker variants remain on their old full-crit paths until their own stories run.
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime-state, same-tick runtime writes, old-container deletion boundaries, and phase-1 raw queue deletion work remain unchanged.
+- Next step:
+  - Continue with US-013 by migrating `WoodpeckerElectroSet4_NA.py` through `CalculatorBuffAttributeReader.read_full_crit_rate(...)` while preserving SkillNode/RNG gate behavior.
+---

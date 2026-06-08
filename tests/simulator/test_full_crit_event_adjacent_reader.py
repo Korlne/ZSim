@@ -14,7 +14,7 @@ sys.modules.setdefault("define", define_module)
 import zsim.sim_progress.Buff.BuffXLogic.MiyabiCoreSkill_IceFire as miyabi_module
 import zsim.sim_progress.ScheduledEvent.Calculator as calculator_module
 
-from zsim.sim_progress.Buff import JudgeTools
+from zsim.sim_progress.Buff import Buff as BuffClass, JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.CannonRotor import CannonRotor
 from zsim.sim_progress.Buff.BuffXLogic.MiyabiCoreSkill_IceFire import (
     MiyabiCoreSkill_IceFire,
@@ -503,6 +503,159 @@ def test_miyabi_icefire_full_crit_read_keeps_old_count_adjustment_order(
     assert active_buff.dy.count == pytest.approx(65.0)
     assert buff_0.dy.count == pytest.approx(65.0)
     assert active_buff.sim_instance.schedule_data.event_list == []
+
+
+@pytest.mark.parametrize(
+    ("skill_node", "debuff_list", "expected"),
+    [
+        pytest.param(None, [], False, id="no-skill-node"),
+        pytest.param(
+            {"element_type": 3},
+            [],
+            False,
+            id="wrong-element",
+        ),
+        pytest.param(
+            {"element_type": 5},
+            [],
+            True,
+            id="no-frostburn-debuff",
+        ),
+        pytest.param(
+            {"element_type": 5},
+            ["frostburn"],
+            False,
+            id="frostburn-debuff",
+        ),
+    ],
+)
+def test_miyabi_icefire_judge_gates_skill_element_and_debuff(
+    monkeypatch: pytest.MonkeyPatch,
+    skill_node: dict[str, int] | None,
+    debuff_list: list[str],
+    expected: bool,
+) -> None:
+    fixture = _make_full_crit_fixture(name="雅", cid=1091, crit_rate=0.3)
+    frostburn_debuff = object.__new__(BuffClass)
+    frostburn_debuff.ft = SimpleNamespace(index="Buff-角色-雅-核心被动-霜灼")
+    dynamic_debuff_list = [
+        frostburn_debuff if debuff == "frostburn" else debuff
+        for debuff in debuff_list
+    ]
+    fixture.enemy.dynamic.dynamic_debuff_list = dynamic_debuff_list
+    active_buff = _StateSyncBuffProbe(
+        index="miyabi-icefire",
+        tick=72,
+        calls=[],
+        initial_count=12.0,
+    )
+    logic = MiyabiCoreSkill_IceFire(active_buff)
+    logic.record = SimpleNamespace(char=fixture.char, enemy=fixture.enemy)
+    get_prepared_calls: list[dict[str, object]] = []
+    monkeypatch.setattr(logic, "check_record_module", lambda: None)
+    monkeypatch.setattr(
+        logic,
+        "get_prepared",
+        lambda **kwargs: get_prepared_calls.append(kwargs),
+    )
+    node = (
+        None
+        if skill_node is None
+        else _make_skill_node(
+            char_name=fixture.char.NAME,
+            cid=fixture.char.CID,
+            trigger_buff_level=0,
+            element_type=skill_node["element_type"],
+        )
+    )
+
+    assert logic.special_judge_logic(skill_node=node) is expected
+    assert get_prepared_calls == [{"char_CID": 1091, "enemy": 1, "action_stack": 1}]
+    assert active_buff.sim_instance.schedule_data.event_list == []
+
+
+def test_miyabi_icefire_full_crit_count_caps_at_buff_maxcount(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[Any, ...]] = []
+    active_buff = _StateSyncBuffProbe(
+        index="miyabi-icefire",
+        tick=73,
+        calls=calls,
+        initial_count=12.0,
+        step=3.0,
+        maxcount=70.0,
+    )
+    fixture = _make_full_crit_fixture(
+        name="雅",
+        cid=1091,
+        crit_rate=0.35,
+        sim_instance=active_buff.sim_instance,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        {
+            "固定暴击率": 0.2,
+            "局内暴击率": 0.15,
+            "被暴击几率增加": 0.4,
+        },
+        call_log=calls,
+    )
+    reader_full, reader_personal, old_full = (
+        _full_crit_reader_personal_and_legacy_values(fixture)
+    )
+    assert reader_full == pytest.approx(old_full)
+    assert reader_full == pytest.approx(1.1)
+    assert reader_personal == pytest.approx(0.7)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=3)
+
+    MultiplierData.mul_data_cache.clear()
+    aggregation_calls.clear()
+    calls.clear()
+    buff_0 = SimpleNamespace(
+        dy=SimpleNamespace(count=12.0),
+        ft=SimpleNamespace(maxcount=70.0, step=3.0),
+    )
+    logic = MiyabiCoreSkill_IceFire(active_buff)
+    logic.record = SimpleNamespace(
+        char=fixture.char,
+        enemy=fixture.enemy,
+        dynamic_buff_list=fixture.active_buff_view,
+        sub_exist_buff_dict={active_buff.ft.index: buff_0},
+    )
+    logic.buff_0 = buff_0
+    monkeypatch.setattr(logic, "check_record_module", lambda: None)
+    monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
+    monkeypatch.setattr(
+        JudgeTools,
+        "find_tick",
+        lambda *, sim_instance: sim_instance.tick,
+    )
+
+    logic.special_hit_logic()
+
+    assert calls == [
+        ("simple_start", 73, False, 12.0, buff_0),
+        ("dy.count", 15.0),
+        ("dy.count", 12.0),
+        ("attribute_read",),
+        ("dy.count", 70.0),
+        ("update_to_buff_0", buff_0, 70.0),
+    ]
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+    assert active_buff.dy.count == pytest.approx(70.0)
+    assert buff_0.dy.count == pytest.approx(70.0)
+    assert active_buff.sim_instance.schedule_data.event_list == []
+
+
+def test_miyabi_icefire_full_crit_hit_uses_reader_seam_source() -> None:
+    source = inspect.getsource(MiyabiCoreSkill_IceFire.special_hit_logic)
+
+    assert "MultiplierData" not in source
+    assert "RegularMul" not in source
+    assert "cal_crit_rate" not in source
+    assert "create_anomaly_attribute_read_context" in source
+    assert "read_full_crit_rate" in source
 
 
 @pytest.mark.parametrize("variant", _WOODPECKER_VARIANTS)

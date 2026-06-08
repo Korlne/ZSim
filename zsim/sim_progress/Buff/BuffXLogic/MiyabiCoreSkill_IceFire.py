@@ -1,7 +1,10 @@
 from typing import TYPE_CHECKING
 
 from zsim.sim_progress import Preload
-from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
+from zsim.sim_progress.ScheduledEvent.Calculator import (
+    CalculatorBuffAttributeReader,
+    create_anomaly_attribute_read_context,
+)
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from .. import Buff, JudgeTools, check_preparation
@@ -110,15 +113,17 @@ class MiyabiCoreSkill_IceFire(Buff.BuffLogic):
         """
         self.check_record_module()
         self.get_prepared(char_CID=1091, enemy=1, dynamic_buff_list=1, sub_exist_buff_dict=1)
-        enemy = self.record.enemy
-        dynamic_buff = self.record.dynamic_buff_list
         tick_now = JudgeTools.find_tick(sim_instance=self.buff_instance.sim_instance)
         buff_i = self.buff_instance
         buff_i.simple_start(tick_now, self.record.sub_exist_buff_dict)
         buff_i.dy.count -= buff_i.ft.step
 
-        mul_data = MultiplierData(enemy, dynamic_buff, self.record.char)
-        crit_rate = Calculator.RegularMul.cal_crit_rate(mul_data)
+        context = create_anomaly_attribute_read_context(
+            enemy=self.record.enemy,
+            active_buff_view=self.record.dynamic_buff_list,
+            character=self.record.char,
+        )
+        crit_rate = CalculatorBuffAttributeReader().read_full_crit_rate(context)
         count = min(crit_rate, 0.8) * 100
 
         # print(crit_rate, count)
