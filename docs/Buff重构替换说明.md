@@ -1834,3 +1834,14 @@
 - Next step:
   - Continue with US-002 by adding adapter creation / event-list rebinding coverage and verifying P2-D producers create dispatch ports on demand rather than caching stale queue adapters.
 ---
+## 2026-06-08 22:48 +08:00 - US-002
+- Files changed: `tests/simulator/test_schedule_dispatch.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_schedule_dispatch.py` prepares to replace manual adapter-boundary review with focused coverage for `create_schedule_dispatch_port(...)` binding to the current `schedule_data.event_list`, rebinding after list replacement, and the queue-only public API surface.
+  - This story adds dispatch adapter coverage only; it does not replace a live producer path or change `ScheduleDispatchPort` / `LegacyEventListScheduleDispatchAdapter` production behavior.
+- Compatibility retained:
+  - Old paths still retained in this iteration: all P2-D producers still create dispatch ports through their existing local `_create_dispatch_port(...)` / direct `create_schedule_dispatch_port(...)` calls, and raw queue access remains internal to `LegacyEventListScheduleDispatchAdapter`.
+  - Scheduler priority sorting, handler requeue behavior, core Load/Schedule appends, listener broadcast, dot runtime registration, runtime command writes, old containers, and Calculator / CalAnomaly formula snapshots remain unchanged.
+- Next step:
+  - Continue with US-003 by adding resource-refresh payload parity coverage for the P2-D resource refresh family while reusing the adapter rebinding baseline from `test_schedule_dispatch.py`.
+---
