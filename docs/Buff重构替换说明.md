@@ -2066,3 +2066,15 @@
 - Next step:
   - Continue with US-013 final handoff docs, marking P2-E state and promoting the next same-phase pool item without collapsing the candidate pool.
 ---
+## 2026-06-09 04:42 +08:00 - US-013
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - Final P2-E handoff docs now replace stale “P2-E is next” planning with completed guarded-scope evidence for `DotRuntimeStateAdapter`, `DotInitializationReadContext`, Vivian dot gates, `UpdateAnomaly` dot replacement / removal, Shock duration initialization, exact-file P2-E guardrails, and serial `implicit-events` validation.
+  - The next default same-phase PRD is promoted to P2-F BuffAddStrategy caller / facade-write design while retaining P2-G direct simulator context helpers, P2-D / P2-E guarded maintenance, phase-3 formula snapshots, retained compatibility, and blocker-only phase-1 reopen rows.
+- Compatibility retained:
+  - Scheduled follow-up publish remains on `ScheduleDispatchPort`; runtime dot registration / replacement / removal remains runtime state; Buff / Debuff writes remain on existing `buff_add_strategy(...)` / `LegacyBuffRuntimeFacade` paths.
+  - `RuntimeCommandPort`, `BuffRuntimeReadPort` read-only semantics, listener broadcast, old containers, `LoadDamageEvent`, `Update_Buff.update_dot()`, Alice dot listener retained paths, Calculator, and CalAnomaly formulas remain unchanged.
+  - No new old-coupling review update was needed; this handoff story found no new coupling beyond the guarded P2-E file set and retained P2-F / P2-G candidates.
+- Next step:
+  - Generate the next phase-2 PRD from [Buff重构方案.md](./Buff重构方案.md), defaulting to P2-F BuffAddStrategy caller / facade-write design while preserving the broader same-phase pool.
+---
