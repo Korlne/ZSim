@@ -1944,6 +1944,45 @@ def test_soldier0_anby_personal_crit_damage_simple_start_precedes_read_order(
     assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
 
 
+def test_soldier0_anby_personal_crit_damage_keeps_uncapped_high_count(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_soldier0_anby_personal_crit_damage_state_sync_case(
+        monkeypatch,
+        static_crit_damage=2.0,
+        field_crit_damage=0.5,
+        flat_crit_damage=0.5,
+        received_crit_damage=1.0,
+    )
+
+    assert case.logic.special_judge_logic() is True
+    case.logic.special_hit_logic()
+
+    assert case.expected_old_count == pytest.approx(90.0)
+    assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
+    assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
+    assert case.calls == [
+        ("simple_start", 930, True, case.initial_count, case.buff_0),
+        ("attribute_read",),
+        ("dy.count", case.expected_old_count),
+        ("update_to_buff_0", case.buff_0, case.expected_old_count),
+    ]
+
+
+def test_soldier0_anby_personal_crit_damage_uses_reader_not_multiplier_data_alias() -> None:
+    source = Path(
+        "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCoreSkillCritDMGBonus.py"
+    ).read_text(encoding="utf-8")
+
+    assert "MultiplierData" not in source
+    assert "MultiplierData as Mul" not in source
+    assert "Mul(" not in source
+    assert "Calculator.RegularMul.cal_personal_crit_dmg" not in source
+    assert "Cal.RegularMul.cal_personal_crit_dmg" not in source
+    assert "create_anomaly_attribute_read_context" in source
+    assert "read_personal_crit_damage" in source
+
+
 def test_alice_additional_ability_uses_reader_not_multiplier_data() -> None:
     source = Path(
         "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py"

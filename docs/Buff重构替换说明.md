@@ -1554,3 +1554,15 @@
 - Next step:
   - Continue with US-009 by migrating `Soldier0AnbyCoreSkillCritDMGBonus.py` through `read_personal_crit_damage(...)` while preserving its existing simple-start-before-read order.
 ---
+## 2026-06-08 17:24 +08:00 - US-009
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCoreSkillCritDMGBonus.py`, `tests/simulator/test_buff_attribute_state_sync.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `Soldier0AnbyCoreSkillCritDMGBonus.py` now replaces its direct `MultiplierData as Mul` / `Calculator.RegularMul.cal_personal_crit_dmg(...)` personal crit-damage read with `create_anomaly_attribute_read_context(...)` and `CalculatorBuffAttributeReader.read_personal_crit_damage(...)`.
+  - The focused state-sync test now guards this migrated file against reintroducing the direct personal crit damage Calculator snapshot path.
+- Compatibility retained:
+  - Soldier0 Anby `special_judge_logic(...)` silver-star gate, `get_prepared(...)` arguments, `JudgeTools.find_tick(...)`, `crit_dmg * 0.3 * 100` count formula, uncapped high-count behavior, old `buff_0` identity, and `simple_start(..., no_count=1) -> read_personal_crit_damage(...) -> dy.count -> update_to_buff_0(...)` order remain preserved.
+  - The retained Calculator formula snapshot still owns `Calculator.RegularMul.cal_personal_crit_dmg(...)`; event-adjacent full-crit P2-B candidates remain on their old paths until their own stories run.
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime-state, same-tick runtime writes, and old-container deletion boundaries remain unchanged.
+- Next step:
+  - Continue with US-010 by adding full crit event-adjacent test harness coverage for `CannonRotor.py`, `MiyabiCoreSkill_IceFire.py`, and `WoodpeckerElectroSet4_*` before production full-crit migrations.
+---
