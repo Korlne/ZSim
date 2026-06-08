@@ -1960,3 +1960,15 @@
 - Next step:
   - Continue with US-004 by adding Shock dot duration initialization coverage before introducing any initialization read helper / adapter.
 ---
+## 2026-06-09 03:27 +08:00 - US-004
+- Files changed: `tests/simulator/test_dot_runtime_initialization.py`, `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_dot_runtime_initialization.py` prepares to replace manual Shock dot duration review by pinning the existing `sim_instance is None` `ValueError`, no-`丽娜` `600`, `丽娜` without passive `600`, and `丽娜` with `Buff-角色-丽娜-组队被动-延长感电` `780` outcomes.
+  - `scripts/run_buff_refactor_validation.py` now includes the Shock duration initialization focused test in the `implicit-events` focused pytest and scoped mypy profiles.
+  - This story strengthens focused parity coverage only; no live `Shock.DotFeature.__post_init__()`, dot initialization helper, dispatch adapter, listener, runtime command, old-container, Calculator, or CalAnomaly behavior was replaced in this iteration.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Shock.DotFeature.__post_init__()` still directly reads `sim_instance.init_data.name_box` and `sim_instance.load_data.exist_buff_dict["丽娜"]` to choose Shock duration.
+  - `ScheduleDispatchPort`, `enemy.dynamic.dynamic_dot_list`, listener broadcast, `RuntimeCommandPort`, `BuffRuntimeReadPort`, old containers beyond the documented Rina passive read, and Calculator / CalAnomaly formula snapshots remain unchanged.
+- Next step:
+  - Continue with US-005 by adding `UpdateAnomaly.anomaly_effect_active(...)` dot replacement and debuff-separation focused coverage before introducing any dot runtime-state helper / adapter.
+---
