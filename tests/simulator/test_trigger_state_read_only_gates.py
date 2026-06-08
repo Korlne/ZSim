@@ -13,6 +13,7 @@ sys.modules.setdefault("define", define_module)
 
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.JudgeTools import read_trigger_buff_state
+from zsim.sim_progress.Buff.BuffXLogic.AstralVoice import AstralVoice
 from zsim.sim_progress.Buff.BuffXLogic.CordisGerminaSNAAndQIgnoreDefense import (
     CordisGerminaSNAAndQIgnoreDefense,
 )
@@ -28,6 +29,8 @@ from zsim.sim_progress.Buff.BuffXLogic.SpectralGazeImpactBonus import (
 from zsim.sim_progress.Buff.BuffXLogic.YangiCinema1ApBonus import (
     YangiCinema1ApBonus,
 )
+from zsim.sim_progress.Load import LoadingMission
+from zsim.sim_progress.Preload import SkillNode
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _BUFF_XLOGIC_ROOT = _PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffXLogic"
@@ -166,8 +169,9 @@ def _make_equipment_gate(
     count: float,
     built_in_buff_box: Sequence[object] = (),
     equipper_name: str = "测试装备者",
+    current_operator: str = "operator",
 ) -> _GateFixture:
-    current_buff = _CurrentBuffProbe(index=current_index)
+    current_buff = _CurrentBuffProbe(index=current_index, operator=current_operator)
     current_template = _BuffTemplate(index=current_index)
     trigger_template = _BuffTemplate(
         index=trigger_index,
@@ -195,6 +199,48 @@ def _make_equipment_gate(
         trigger_template=trigger_template,
         exist_buff_dict=exist_buff_dict,
     )
+
+
+def _make_astral_voice_gate(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    active: bool,
+) -> _GateFixture:
+    return _make_equipment_gate(
+        monkeypatch,
+        logic_type=AstralVoice,
+        current_index="Buff-驱动盘-静听嘉音-全队增伤",
+        trigger_index="Buff-驱动盘-静听嘉音-嘉音",
+        active=active,
+        count=7,
+        equipper_name="静听嘉音",
+        current_operator="静听嘉音",
+    )
+
+
+def _make_astral_voice_skill_node(
+    *,
+    trigger_buff_level: int,
+    mission_state: str | None,
+) -> SkillNode:
+    skill = cast(
+        Any,
+        SimpleNamespace(
+            skill_tag="test_astral_voice_support",
+            char_name="静听嘉音",
+            hit_times=1,
+            labels=None,
+            ticks=1,
+            tick_list=[],
+            trigger_buff_level=trigger_buff_level,
+        ),
+    )
+    skill_node = SkillNode(skill, preload_tick=100)
+    loading_mission = LoadingMission(skill_node)
+    loading_mission.mission_dict = {}
+    if mission_state is not None:
+        loading_mission.mission_dict[100] = mission_state
+    return skill_node
 
 
 def _make_yanagi_gate(
@@ -243,6 +289,16 @@ def _assert_lazy_record_and_trigger_identity(fixture: _GateFixture) -> None:
     assert trigger_state.built_in_buff_box == tuple(
         fixture.trigger_template.dy.built_in_buff_box
     )
+
+
+def _assert_astral_voice_judge_no_writes(fixture: _GateFixture) -> None:
+    _assert_lazy_record_and_trigger_identity(fixture)
+    assert (
+        fixture.logic.record.action_stack
+        is fixture.current_buff.sim_instance.load_data.action_stack
+    )
+    assert fixture.current_buff.dy.count == 0.0
+    assert fixture.current_buff.sim_instance.schedule_data.event_list == []
 
 
 def test_trigger_state_helper_public_api_is_read_only(
@@ -452,6 +508,71 @@ def test_cordis_germina_tuple_box_gate_reads_without_tuple_sync(
     assert fixture.current_template.dy.count == 0.0
     assert fixture.trigger_template.dy.built_in_buff_box == trigger_box
     assert len(fixture.trigger_template.dy.built_in_buff_box) == box_length
+
+
+def test_astral_voice_judge_returns_false_without_skill_node(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_astral_voice_gate(monkeypatch, active=True)
+
+    assert fixture.logic.special_judge_logic() is False
+    _assert_astral_voice_judge_no_writes(fixture)
+
+
+@pytest.mark.parametrize(
+    "input_kind",
+    [
+        pytest.param("skill-node", id="skill-node"),
+        pytest.param("loading-mission", id="loading-mission"),
+    ],
+)
+def test_astral_voice_judge_normalizes_skill_node_inputs_without_writes(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    input_kind: str,
+) -> None:
+    fixture = _make_astral_voice_gate(monkeypatch, active=True)
+    skill_node = _make_astral_voice_skill_node(
+        trigger_buff_level=7,
+        mission_state="start",
+    )
+    judge_input: SkillNode | LoadingMission
+    if input_kind == "loading-mission":
+        assert skill_node.loading_mission is not None
+        judge_input = skill_node.loading_mission
+    else:
+        judge_input = skill_node
+
+    assert fixture.logic.special_judge_logic(skill_node=judge_input) is True
+    _assert_astral_voice_judge_no_writes(fixture)
+
+
+@pytest.mark.parametrize(
+    ("active", "trigger_buff_level", "mission_state", "expected"),
+    [
+        pytest.param(False, 7, "start", False, id="inactive-trigger"),
+        pytest.param(True, 6, "start", False, id="wrong-trigger-level"),
+        pytest.param(True, 7, "hit", False, id="mission-not-start"),
+        pytest.param(True, 7, None, False, id="missing-tick-state"),
+        pytest.param(True, 7, "start", True, id="active-level-seven-start"),
+    ],
+)
+def test_astral_voice_judge_gate_branches_are_read_only(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    active: bool,
+    trigger_buff_level: int,
+    mission_state: str | None,
+    expected: bool,
+) -> None:
+    fixture = _make_astral_voice_gate(monkeypatch, active=active)
+    skill_node = _make_astral_voice_skill_node(
+        trigger_buff_level=trigger_buff_level,
+        mission_state=mission_state,
+    )
+
+    assert fixture.logic.special_judge_logic(skill_node=skill_node) is expected
+    _assert_astral_voice_judge_no_writes(fixture)
 
 
 @pytest.mark.parametrize(

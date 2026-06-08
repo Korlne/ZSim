@@ -1755,3 +1755,14 @@
 - Next step:
   - Continue with US-008 by adding `AstralVoice.special_judge_logic(...)` no-write coverage before migrating that judge gate.
 ---
+## 2026-06-08 20:47 +08:00 - US-008
+- Files changed: `tests/simulator/test_trigger_state_read_only_gates.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_trigger_state_read_only_gates.py` prepares the `AstralVoice.special_judge_logic(...)` migration by adding no-write coverage for `skill_node is None`, production `SkillNode` and `LoadingMission` normalization, inactive trigger, non-7 trigger level, non-start mission state, missing mission tick state, and the active level-7 start branch.
+  - This story only adds focused coverage; it does not replace live `AstralVoice.py` behavior yet.
+- Compatibility retained:
+  - `AstralVoice.py` remains unchanged: the judge gate still reads old-template `record.trigger_buff_0.dy.active`, and `special_effect_logic(...)` still owns the intentional `simple_start(...)` / current `dy.count` / `update_to_buff_0(...)` count-mirror path for a later story.
+  - Old paths still retained in this iteration: `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, `JudgeTools.find_exist_buff_dict(...)`, old template Buff identity in `history.record.trigger_buff_0`, `BuffRuntimeReadPort` read-only semantics, and separate `RuntimeCommandPort` / `ScheduleDispatchPort` write boundaries.
+- Next step:
+  - Continue with US-009 by migrating only `AstralVoice.special_judge_logic(...)` active-state reads through `read_trigger_buff_state(...)` while keeping `special_effect_logic(...)` unchanged until US-010.
+---
