@@ -71,7 +71,12 @@ def test_dot_runtime_state_adapter_finds_registers_and_prevents_duplicates() -> 
 
     assert snapshot == (existing_dot,)
     assert adapter.find_by_index("Shock") is existing_dot
+    assert adapter.find_active_by_index("Shock") is None
     assert adapter.find_by_index("Ignite") is None
+    assert adapter.find_active_by_index("Ignite") is None
+
+    existing_dot.dy.active = True
+    assert adapter.find_active_by_index("Shock") is existing_dot
 
     duplicate_dot = _FakeDot(index="Shock", label="duplicate")
     assert adapter.register_if_absent(duplicate_dot) is False

@@ -27,6 +27,12 @@ class DotRuntimeStateAdapter:
                 return dot
         return None
 
+    def find_active_by_index(self, dot_index: str | None) -> Dot | None:
+        for dot in self.snapshot():
+            if dot.ft.index == dot_index and dot.dy.active:
+                return dot
+        return None
+
     def register(self, dot: Dot) -> None:
         self._dot_list.append(dot)
 

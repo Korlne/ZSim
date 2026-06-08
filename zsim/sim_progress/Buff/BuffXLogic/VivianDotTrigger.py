@@ -1,4 +1,5 @@
 from zsim.define import VIVIAN_REPORT
+from zsim.sim_progress.Dot.runtime_state import DotRuntimeStateAdapter
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
@@ -67,8 +68,9 @@ class VivianDotTrigger(Buff.BuffLogic):
         """xjudge放行后，直接生成dot。但是如果dot已经存在，就不重复生成。"""
         self.check_record_module()
         self.get_prepared(char_CID=1361, enemy=1)
+        dot_runtime_state = DotRuntimeStateAdapter.from_enemy(self.record.enemy)
         # 如果敌人身上已经存在这个dot，直接不执行
-        if self.record.enemy.find_dot("ViviansProphecy") is not None:
+        if dot_runtime_state.find_active_by_index("ViviansProphecy") is not None:
             return
         from zsim.sim_progress.Load import LoadingMission
         from zsim.sim_progress.Update.UpdateAnomaly import spawn_normal_dot
@@ -79,7 +81,7 @@ class VivianDotTrigger(Buff.BuffLogic):
         dot.skill_node_data.loading_mission.mission_start(
             find_tick(sim_instance=self.buff_instance.sim_instance)
         )
-        self.record.enemy.dynamic.dynamic_dot_list.append(dot)
+        dot_runtime_state.register(dot)
         self._create_dispatch_port().publish_scheduled(dot.skill_node_data)
         if VIVIAN_REPORT:
             self.buff_instance.sim_instance.schedule_data.change_process_state()

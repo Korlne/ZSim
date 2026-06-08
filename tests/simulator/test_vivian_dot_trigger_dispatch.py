@@ -40,8 +40,8 @@ class _RecordingDispatchPort:
 
 
 class _RecordingDotList(list):
-    def __init__(self, call_order: list[str]) -> None:
-        super().__init__()
+    def __init__(self, call_order: list[str], items: list[object] | None = None) -> None:
+        super().__init__(items or [])
         self._call_order = call_order
 
     def append(self, item):
@@ -61,6 +61,7 @@ def _fail_listener_broadcast(**kwargs) -> None:
 class _FakeViviansProphecy:
     def __init__(self, skill_node_data: SkillNode, call_order: list[str]) -> None:
         self.ft = SimpleNamespace(index="ViviansProphecy")
+        self.dy = SimpleNamespace(active=True)
         self.skill_node_data = skill_node_data
         self.started_at: int | None = None
         self._call_order = call_order
@@ -68,6 +69,12 @@ class _FakeViviansProphecy:
     def start(self, timenow: int) -> None:
         self._call_order.append("dot_start")
         self.started_at = timenow
+
+
+class _PresenceDot:
+    def __init__(self, *, active: bool) -> None:
+        self.ft = SimpleNamespace(index="ViviansProphecy")
+        self.dy = SimpleNamespace(active=active)
 
 
 def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -100,13 +107,13 @@ def test_vivian_dot_trigger_registers_dot_and_publishes_skill_node_via_dispatch_
     )
     logic = VivianDotTrigger(buff_instance)
 
-    dynamic_dot_list = _RecordingDotList(call_order)
+    inactive_dot = _PresenceDot(active=False)
+    dynamic_dot_list = _RecordingDotList(call_order, [inactive_dot])
     enemy = SimpleNamespace(
         dynamic=SimpleNamespace(dynamic_dot_list=dynamic_dot_list),
     )
-    enemy.find_dot = lambda dot_index: next(
-        (dot for dot in enemy.dynamic.dynamic_dot_list if dot.ft.index == dot_index),
-        None,
+    enemy.find_dot = lambda dot_index: (_ for _ in ()).throw(
+        AssertionError("VivianDotTrigger should use DotRuntimeStateAdapter")
     )
     record = VivianDotTriggerRecord()
     record.enemy = enemy
@@ -159,7 +166,7 @@ def test_vivian_dot_trigger_registers_dot_and_publishes_skill_node_via_dispatch_
 
     assert call_order == ["dot_start", "mission_start", "register_dot", "publish"]
     assert spawn_calls == ["ViviansProphecy"]
-    assert dynamic_dot_list == [fake_dot]
+    assert dynamic_dot_list == [inactive_dot, fake_dot]
     assert fake_dot.started_at == 96
     assert len(dispatch_port.events) == 1
     published_node = cast(Any, dispatch_port.events[0])
@@ -180,7 +187,7 @@ def test_vivian_dot_trigger_registers_dot_and_publishes_skill_node_via_dispatch_
     logic.special_hit_logic()
 
     assert spawn_calls == ["ViviansProphecy"]
-    assert dynamic_dot_list == [fake_dot]
+    assert dynamic_dot_list == [inactive_dot, fake_dot]
     assert len(dispatch_port.events) == 1
     assert call_order == ["dot_start", "mission_start", "register_dot", "publish"]
 
@@ -210,15 +217,16 @@ def test_vivian_dot_trigger_record_uses_existing_buff_template(
 
 
 @pytest.mark.parametrize(
-    ("existing_dot", "expected"),
+    ("existing_dot_active", "expected"),
     [
-        (object(), True),
+        (True, True),
+        (False, False),
         (None, False),
     ],
 )
 def test_vivian_cinema1_debuff_judges_by_vivians_prophecy_presence(
     monkeypatch: pytest.MonkeyPatch,
-    existing_dot: object | None,
+    existing_dot_active: bool | None,
     expected: bool,
 ) -> None:
     schedule_data = SimpleNamespace(
@@ -238,13 +246,18 @@ def test_vivian_cinema1_debuff_judges_by_vivians_prophecy_presence(
     logic = VivianCinema1Debuff(buff_instance)
     record = VVivianCinema1DebuffRecord()
     record.char = SimpleNamespace(NAME="薇薇安")
-    find_dot_calls: list[str] = []
+    dynamic_dot_list = (
+        [_PresenceDot(active=existing_dot_active)]
+        if existing_dot_active is not None
+        else []
+    )
 
-    def find_dot(dot_index: str) -> object | None:
-        find_dot_calls.append(dot_index)
-        return existing_dot
-
-    record.enemy = SimpleNamespace(find_dot=find_dot)
+    record.enemy = SimpleNamespace(
+        dynamic=SimpleNamespace(dynamic_dot_list=dynamic_dot_list),
+        find_dot=lambda dot_index: (_ for _ in ()).throw(
+            AssertionError("VivianCinema1Debuff should use DotRuntimeStateAdapter")
+        ),
+    )
     prepared_calls: list[dict[str, object]] = []
 
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
@@ -252,7 +265,6 @@ def test_vivian_cinema1_debuff_judges_by_vivians_prophecy_presence(
     _block_legacy_event_lookup(monkeypatch)
 
     assert logic.special_judge_logic() is expected
-    assert find_dot_calls == ["ViviansProphecy"]
     assert prepared_calls == [{"char_CID": 1331, "enemy": 1}]
     assert schedule_data.event_list == []
 

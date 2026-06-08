@@ -1,3 +1,5 @@
+from zsim.sim_progress.Dot.runtime_state import DotRuntimeStateAdapter
+
 from .. import Buff, JudgeTools, check_preparation
 
 
@@ -32,7 +34,8 @@ class VivianCinema1Debuff(Buff.BuffLogic):
         """检测到敌人身上有薇薇安的预言Dot就放行"""
         self.check_record_module()
         self.get_prepared(char_CID=1331, enemy=1)
-        if self.record.enemy.find_dot("ViviansProphecy"):
+        dot_runtime_state = DotRuntimeStateAdapter.from_enemy(self.record.enemy)
+        if dot_runtime_state.find_active_by_index("ViviansProphecy") is not None:
             return True
         else:
             return False

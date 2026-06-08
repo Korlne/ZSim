@@ -2005,3 +2005,15 @@
 - Next step:
   - Continue with US-008 by migrating Vivian dot runtime-state callers to the helper while preserving dot start, `LoadingMission.mission_start(...)`, runtime registration, then scheduled publish order.
 ---
+## 2026-06-09 04:02 +08:00 - US-008
+- Files changed: `zsim/sim_progress/Dot/runtime_state.py`, `zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py`, `zsim/sim_progress/Buff/BuffXLogic/VivianCinema1Debuff.py`, `tests/simulator/test_dot_runtime_state_adapter.py`, `tests/simulator/test_vivian_dot_trigger_dispatch.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `DotRuntimeStateAdapter.find_active_by_index(...)` replaces `enemy.find_dot("ViviansProphecy")` active-presence reads for migrated Vivian dot gates without changing inactive-dot behavior.
+  - `VivianDotTrigger.special_hit_logic(...)` now replaces direct runtime-list append with `dot_runtime_state.register(dot)` while retaining caller-owned dot creation, `dot.start(...)`, `LoadingMission.mission_start(...)`, and `ScheduleDispatchPort.publish_scheduled(dot.skill_node_data)` ordering.
+  - `VivianCinema1Debuff.special_judge_logic(...)` now uses the dot runtime-state helper for its cinema-1 presence gate.
+- Compatibility retained:
+  - Scheduled follow-up publish remains on `ScheduleDispatchPort`; dot runtime registration is not converted into scheduled backlog, listener broadcast, runtime command writes, old-container writes, `BuffRuntimeReadPort` writes, Calculator, and CalAnomaly formulas remain unchanged.
+  - Old paths still retained in this iteration: `UpdateAnomaly.anomaly_effect_active(...)`, `remove_dots_cause_disorder(...)`, `Shock.DotFeature.__post_init__()`, `LoadDamageEvent`, `Update_Buff.update_dot()`, and Alice dot listener callsites keep their current runtime-dot paths.
+- Next step:
+  - Continue with US-009 by migrating `UpdateAnomaly` dot replacement / removal callers to the helper while preserving `buff_add_strategy(...)`, freeze follow-up scheduled publish, process-state/report ordering, and removal semantics.
+---
