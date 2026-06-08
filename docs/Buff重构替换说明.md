@@ -1340,3 +1340,14 @@
 - Next step:
   - 继续 US-004，把 `tests/simulator/test_buff_attribute_state_sync.py` 接入 `calculator-reads` validation profile，避免后续 reader 迁移绕过顺序测试。
 ---
+## 2026-06-08 12:08 +08:00 - US-004
+- Files changed: `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `calculator-reads` validation profile now prepares to replace unguarded P2-A reader migration runs with a combined reader parity + computed count state-sync order validation slice.
+  - 本故事只调整验证入口；没有替换 live `BuffXLogic` 路径，也没有新增生产 reader helper、dispatch adapter、runtime write facade 或 Calculator formula。
+- Compatibility retained:
+  - `tests/simulator/test_buff_attribute_reader.py` 与 `tests/simulator/test_buff_raw_container_guardrail.py` 保持在 `calculator-reads` focused pytest 中；base simulator、isolated teams、implicit-events profile 与既有 mypy targets 保留。
+  - P2-A 六个 AM/AP 文件的 direct `MultiplierData(...)` / `Mul(...)` 读取、`simple_start(..., no_count=1) -> dy.count -> update_to_buff_0(...)` 顺序、phase-1 dispatch/runtime boundaries 均未改变。
+- Next step:
+  - 继续 US-005，决定是否引入窄 AM/AP reader context helper；后续迁移应通过 `calculator-reads` profile 同时覆盖 reader parity 和 state-sync order。
+---
