@@ -1732,3 +1732,15 @@
 - Next step:
   - Continue with US-006 by migrating only `SharpenedStingerAnomalyBuildupBonus.py` through the same read-only trigger-state helper and adding its focused count samples.
 ---
+## 2026-06-08 20:27 +08:00 - US-006
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/SharpenedStingerAnomalyBuildupBonus.py`, `tests/simulator/test_trigger_state_read_only_gates.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `SharpenedStingerAnomalyBuildupBonus.special_judge_logic(...)` replaces its direct `record.trigger_buff_0.dy.count` chain with `read_trigger_buff_state(self.record).count` after the existing `get_prepared(equipper="淬锋钳刺", preload_data=1, trigger_buff_0=(...))` lookup.
+  - `tests/simulator/test_trigger_state_read_only_gates.py` now covers count `0`, `2`, `3`, and `4`, inverse `special_exit_logic(...)`, lazy record identity, old trigger template identity, retained preload record, no-write behavior, and root-only source assertion for this migrated file.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, `JudgeTools.find_exist_buff_dict(...)`, and old template Buff identity in `history.record.trigger_buff_0`.
+  - Pure gate behavior remains no-write: no `simple_start(...)`, no current `dy.count` mutation, no `update_to_buff_0(...)`, no scheduled publish, and no runtime command writes.
+  - `BuffRuntimeReadPort`, `RuntimeCommandPort`, `ScheduleDispatchPort`, listener broadcast, dot runtime registration, raw queue deletion boundaries, Calculator formulas, P2-B migrated files, and the broader un-migrated `trigger_buff_0=` pool remain unchanged.
+- Next step:
+  - Continue with US-007 by migrating only `CordisGerminaSNAAndQIgnoreDefense.py` tuple-box read-only gate through the helper, without adding tuple-box pruning, rebuild, derived count sync, or template sync behavior.
+---

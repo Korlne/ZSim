@@ -19,6 +19,9 @@ from zsim.sim_progress.Buff.BuffXLogic.CordisGerminaSNAAndQIgnoreDefense import 
 from zsim.sim_progress.Buff.BuffXLogic.FlamemakerShakerApBonus import (
     FlamemakerShakerApBonus,
 )
+from zsim.sim_progress.Buff.BuffXLogic.SharpenedStingerAnomalyBuildupBonus import (
+    SharpenedStingerAnomalyBuildupBonus,
+)
 from zsim.sim_progress.Buff.BuffXLogic.SpectralGazeImpactBonus import (
     SpectralGazeImpactBonus,
 )
@@ -296,6 +299,11 @@ def test_trigger_state_helper_requires_prepared_trigger_record() -> None:
             ("record.trigger_buff_0.dy.active", "record.trigger_buff_0.dy.count"),
             id="spectral-gaze",
         ),
+        pytest.param(
+            "SharpenedStingerAnomalyBuildupBonus.py",
+            ("record.trigger_buff_0.dy.count",),
+            id="sharpened-stinger",
+        ),
     ],
 )
 def test_migrated_pure_count_gate_sources_use_trigger_state_helper(
@@ -367,6 +375,41 @@ def test_spectral_gaze_equipment_trigger_exact_count_gate_is_read_only(
 
     assert fixture.logic.special_judge_logic() is expected
     _assert_lazy_record_and_trigger_identity(fixture)
+    assert fixture.current_buff.dy.count == 0.0
+
+
+@pytest.mark.parametrize(
+    ("count", "expected"),
+    [
+        pytest.param(0, False, id="zero"),
+        pytest.param(2, False, id="below-threshold"),
+        pytest.param(3, True, id="equals-threshold"),
+        pytest.param(4, False, id="above-threshold"),
+    ],
+)
+def test_sharpened_stinger_count_gate_is_read_only(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    count: float,
+    expected: bool,
+) -> None:
+    fixture = _make_equipment_gate(
+        monkeypatch,
+        logic_type=SharpenedStingerAnomalyBuildupBonus,
+        current_index="Buff-武器-精1淬锋钳刺-属性异常积蓄效率提升",
+        trigger_index="Buff-武器-精1淬锋钳刺-猎意",
+        equipper_name="淬锋钳刺",
+        active=True,
+        count=count,
+    )
+
+    assert fixture.logic.special_judge_logic() is expected
+    assert fixture.logic.special_exit_logic() is (not expected)
+    _assert_lazy_record_and_trigger_identity(fixture)
+    assert (
+        fixture.logic.record.preload_data
+        is fixture.current_buff.sim_instance.preload.preload_data
+    )
     assert fixture.current_buff.dy.count == 0.0
 
 
