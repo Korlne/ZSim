@@ -12,6 +12,10 @@ sys.modules.setdefault("define", define_module)
 import zsim.sim_progress.Buff.BuffXLogic.VivianDotTrigger as vivian_module
 
 from zsim.sim_progress.Buff import JudgeTools
+from zsim.sim_progress.Buff.BuffXLogic.VivianCinema1Debuff import (
+    VVivianCinema1DebuffRecord,
+    VivianCinema1Debuff,
+)
 from zsim.sim_progress.Buff.BuffXLogic.VivianDotTrigger import (
     VivianDotTrigger,
     VivianDotTriggerRecord,
@@ -22,7 +26,7 @@ from zsim.sim_progress.Preload import SkillNode
 
 class _FailFastEventList(list):
     def append(self, item):
-        raise AssertionError("VivianDotTrigger should publish via dispatch port")
+        raise AssertionError("Vivian dot tests should not append raw scheduled events")
 
 
 class _RecordingDispatchPort:
@@ -47,11 +51,11 @@ class _RecordingDotList(list):
 
 class _ForbiddenRuntimeCommandPort:
     def update_anomaly(self, **kwargs):
-        raise AssertionError("VivianDotTrigger should not issue runtime commands")
+        raise AssertionError("Vivian dot tests should not issue runtime commands")
 
 
 def _fail_listener_broadcast(**kwargs) -> None:
-    raise AssertionError("VivianDotTrigger should not broadcast listener events")
+    raise AssertionError("Vivian dot tests should not broadcast listener events")
 
 
 class _FakeViviansProphecy:
@@ -179,3 +183,99 @@ def test_vivian_dot_trigger_registers_dot_and_publishes_skill_node_via_dispatch_
     assert dynamic_dot_list == [fake_dot]
     assert len(dispatch_port.events) == 1
     assert call_order == ["dot_start", "mission_start", "register_dot", "publish"]
+
+
+def test_vivian_dot_trigger_record_uses_existing_buff_template(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sim_instance = SimpleNamespace()
+    buff_instance = SimpleNamespace(
+        sim_instance=sim_instance,
+        ft=SimpleNamespace(index="Buff-角色-薇薇安-核心被动-Dot触发器"),
+    )
+    buff_0 = SimpleNamespace(history=SimpleNamespace(record=None))
+
+    def fake_find_exist_buff_dict(*, sim_instance: object):
+        assert sim_instance is buff_instance.sim_instance
+        return {"薇薇安": {buff_instance.ft.index: buff_0}}
+
+    monkeypatch.setattr(JudgeTools, "find_exist_buff_dict", fake_find_exist_buff_dict)
+
+    logic = VivianDotTrigger(buff_instance)
+    logic.check_record_module()
+
+    assert logic.buff_0 is buff_0
+    assert isinstance(buff_0.history.record, VivianDotTriggerRecord)
+    assert logic.record is buff_0.history.record
+
+
+@pytest.mark.parametrize(
+    ("existing_dot", "expected"),
+    [
+        (object(), True),
+        (None, False),
+    ],
+)
+def test_vivian_cinema1_debuff_judges_by_vivians_prophecy_presence(
+    monkeypatch: pytest.MonkeyPatch,
+    existing_dot: object | None,
+    expected: bool,
+) -> None:
+    schedule_data = SimpleNamespace(
+        event_list=_FailFastEventList(),
+        change_process_state=lambda: None,
+    )
+    sim_instance = SimpleNamespace(
+        tick=96,
+        schedule_data=schedule_data,
+        listener_manager=SimpleNamespace(broadcast_event=_fail_listener_broadcast),
+        runtime_command_port=_ForbiddenRuntimeCommandPort(),
+    )
+    buff_instance = SimpleNamespace(
+        sim_instance=sim_instance,
+        ft=SimpleNamespace(index="Buff-角色-薇薇安-影画1-预言增伤"),
+    )
+    logic = VivianCinema1Debuff(buff_instance)
+    record = VVivianCinema1DebuffRecord()
+    record.char = SimpleNamespace(NAME="薇薇安")
+    find_dot_calls: list[str] = []
+
+    def find_dot(dot_index: str) -> object | None:
+        find_dot_calls.append(dot_index)
+        return existing_dot
+
+    record.enemy = SimpleNamespace(find_dot=find_dot)
+    prepared_calls: list[dict[str, object]] = []
+
+    monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
+    monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: prepared_calls.append(kwargs))
+    _block_legacy_event_lookup(monkeypatch)
+
+    assert logic.special_judge_logic() is expected
+    assert find_dot_calls == ["ViviansProphecy"]
+    assert prepared_calls == [{"char_CID": 1331, "enemy": 1}]
+    assert schedule_data.event_list == []
+
+
+def test_vivian_cinema1_debuff_record_uses_existing_buff_template(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sim_instance = SimpleNamespace()
+    buff_instance = SimpleNamespace(
+        sim_instance=sim_instance,
+        ft=SimpleNamespace(index="Buff-角色-薇薇安-影画1-预言增伤"),
+    )
+    buff_0 = SimpleNamespace(history=SimpleNamespace(record=None))
+
+    def fake_find_exist_buff_dict(*, sim_instance: object):
+        assert sim_instance is buff_instance.sim_instance
+        return {"薇薇安": {buff_instance.ft.index: buff_0}}
+
+    monkeypatch.setattr(JudgeTools, "find_exist_buff_dict", fake_find_exist_buff_dict)
+
+    logic = VivianCinema1Debuff(buff_instance)
+    logic.check_record_module()
+
+    assert logic.buff_0 is buff_0
+    assert isinstance(buff_0.history.record, VVivianCinema1DebuffRecord)
+    assert logic.record is buff_0.history.record

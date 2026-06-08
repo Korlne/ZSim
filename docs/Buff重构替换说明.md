@@ -1949,3 +1949,14 @@
 - Next step:
   - Continue with US-003 by adding Vivian dot presence and registration focused coverage before adding a dot runtime-state helper / adapter.
 ---
+## 2026-06-09 03:19 +08:00 - US-003
+- Files changed: `tests/simulator/test_vivian_dot_trigger_dispatch.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_vivian_dot_trigger_dispatch.py` prepares to replace manual Vivian dot-layer review by asserting registration order, duplicate no-publish behavior, `VivianCinema1Debuff.special_judge_logic(...)` dot presence true / false branches, and old record/template identity preservation.
+  - This story strengthens focused parity coverage only; no live `VivianDotTrigger`, `VivianCinema1Debuff`, dot runtime-state helper, dispatch adapter, listener, runtime command, old-container, Calculator, or CalAnomaly behavior was replaced in this iteration.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `VivianDotTrigger.special_hit_logic(...)` still creates and starts the dot, starts `LoadingMission`, appends to `enemy.dynamic.dynamic_dot_list`, then publishes dot `skill_node_data` through `ScheduleDispatchPort`.
+  - `VivianCinema1Debuff.special_judge_logic(...)` remains a pure `enemy.find_dot("ViviansProphecy")` presence gate; listener broadcast, runtime command writes, raw scheduler queue writes, `RuntimeCommandPort`, `BuffRuntimeReadPort`, old containers, and formula snapshots remain unchanged.
+- Next step:
+  - Continue with US-004 by adding Shock dot duration initialization coverage before introducing any initialization read helper / adapter.
+---
