@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Callable, Sequence, cast
 
@@ -24,6 +25,9 @@ from zsim.sim_progress.Buff.BuffXLogic.SpectralGazeImpactBonus import (
 from zsim.sim_progress.Buff.BuffXLogic.YangiCinema1ApBonus import (
     YangiCinema1ApBonus,
 )
+
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_BUFF_XLOGIC_ROOT = _PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffXLogic"
 
 
 class _FailFastEventList(list[object]):
@@ -277,6 +281,33 @@ def test_trigger_state_helper_public_api_is_read_only(
 def test_trigger_state_helper_requires_prepared_trigger_record() -> None:
     with pytest.raises(ValueError, match="trigger_buff_0"):
         read_trigger_buff_state(SimpleNamespace(trigger_buff_0=None))
+
+
+@pytest.mark.parametrize(
+    ("file_name", "forbidden_chains"),
+    [
+        pytest.param(
+            "FlamemakerShakerApBonus.py",
+            ("record.trigger_buff_0.dy.active", "record.trigger_buff_0.dy.count"),
+            id="flamemaker",
+        ),
+        pytest.param(
+            "SpectralGazeImpactBonus.py",
+            ("record.trigger_buff_0.dy.active", "record.trigger_buff_0.dy.count"),
+            id="spectral-gaze",
+        ),
+    ],
+)
+def test_migrated_pure_count_gate_sources_use_trigger_state_helper(
+    *,
+    file_name: str,
+    forbidden_chains: Sequence[str],
+) -> None:
+    source = (_BUFF_XLOGIC_ROOT / file_name).read_text(encoding="utf-8")
+
+    assert "read_trigger_buff_state" in source
+    for chain in forbidden_chains:
+        assert chain not in source
 
 
 @pytest.mark.parametrize(

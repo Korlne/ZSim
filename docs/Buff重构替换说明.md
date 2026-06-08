@@ -1720,3 +1720,15 @@
 - Next step:
   - Continue with US-005 by migrating only `FlamemakerShakerApBonus.py` and `SpectralGazeImpactBonus.py` pure count gates through `read_trigger_buff_state(...)` while preserving no-write branch semantics.
 ---
+## 2026-06-08 20:18 +08:00 - US-005
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/FlamemakerShakerApBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/SpectralGazeImpactBonus.py`, `tests/simulator/test_trigger_state_read_only_gates.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `FlamemakerShakerApBonus.special_judge_logic(...)` and `SpectralGazeImpactBonus.special_judge_logic(...)` replace direct `record.trigger_buff_0.dy.active` / `.dy.count` chains with `read_trigger_buff_state(self.record)` snapshots after the existing `get_prepared(..., trigger_buff_0=...)` lookup.
+  - `tests/simulator/test_trigger_state_read_only_gates.py` now includes root-only source assertions for those two migrated files, preparing the later migrated P2-C guardrail without scanning the remaining trigger-state pool.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, `JudgeTools.find_exist_buff_dict(...)`, and old template Buff identity in `history.record.trigger_buff_0`.
+  - Pure gate branches remain no-write: no `simple_start(...)`, no current `dy.count` mutation, no `update_to_buff_0(...)`, no scheduled publish, and no runtime command writes.
+  - `SpectralGazeImpactBonus.xexit`, `BuffRuntimeReadPort`, `RuntimeCommandPort`, `ScheduleDispatchPort`, listener broadcast, dot runtime registration, raw queue deletion boundaries, Calculator formulas, and the broader un-migrated `trigger_buff_0=` pool remain unchanged.
+- Next step:
+  - Continue with US-006 by migrating only `SharpenedStingerAnomalyBuildupBonus.py` through the same read-only trigger-state helper and adding its focused count samples.
+---
