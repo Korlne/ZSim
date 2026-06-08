@@ -1643,3 +1643,17 @@
 - Next step:
   - Continue with US-016 by adding the migrated P2-B source guardrail across the completed impact / crit reader files while keeping retained Calculator snapshots and non-migrated future buckets out of scope.
 ---
+## 2026-06-08 18:39 +08:00 - US-016
+- Files changed: `tests/simulator/test_migrated_p2b_reader_guardrail.py`, `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_migrated_p2b_reader_guardrail.py` replaces the remaining unguarded source surface for the nine migrated P2-B impact / crit reader files by blocking direct `MultiplierData` imports, `MultiplierData(...)` / `Mul(...)`, and direct `Calculator.StunMul.cal_imp(...)`, `Calculator.RegularMul.cal_crit_rate(...)`, `Calculator.RegularMul.cal_personal_crit_rate(...)`, `Calculator.RegularMul.cal_personal_crit_dmg(...)`, or `Cal.*` alias reads.
+  - `MIGRATED_P2B_READER_GUARDRAIL_FOCUSED_TEST_TARGETS` wires this guardrail into both `calculator-reads` focused pytest and mypy.
+  - This story adds a source guardrail only; no live `BuffXLogic` behavior or Calculator formula snapshot was replaced.
+- Compatibility retained:
+  - The guardrail scans only the nine root migrated P2-B files and excludes `.codex_worktrees/`.
+  - Retained formula snapshots in `zsim/sim_progress/ScheduledEvent/Calculator.py` and `zsim/sim_progress/ScheduledEvent/CalAnomaly.py` remain allowed.
+  - Non-migrated phase-2 candidates such as `BranchBladeSongCritDamageBonus.py`, `Soldier0AnbyCoreSkillDMGBonus.py`, and `TimeweaverDisorderDmgMul.py` remain out of scope until their own PRDs run.
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime-state, same-tick runtime writes, old-container deletion boundaries, and phase-1 raw queue deletion work remain unchanged.
+- Next step:
+  - Continue with US-017 by running serial final validation and behavior-sample evidence for the completed P2-B package before handoff docs are updated in US-018.
+---
