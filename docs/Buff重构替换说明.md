@@ -1483,3 +1483,15 @@
 - Next step:
   - Continue with US-003 by adding narrow production `CalculatorBuffAttributeReader` wrappers for impact, full crit rate, personal crit rate, and personal crit damage using the parity fixtures added here.
 ---
+## 2026-06-08 16:22 +08:00 - US-003
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `CalculatorBuffAttributeReader` now prepares to replace future direct P2-B `MultiplierData(...)` impact / crit reads with `read_impact(...)`, `read_full_crit_rate(...)`, `read_personal_crit_rate(...)`, and `read_personal_crit_damage(...)`.
+  - The new reader methods wrap retained Calculator snapshot formulas through the existing `BuffAttributeReadContext` / `_build_statements(...)` shape and a minimal `_build_formula_snapshot(...)`; no live `BuffXLogic` path is migrated in this story.
+  - `tests/simulator/test_buff_attribute_reader.py` now exercises the production reader methods for P2-B parity instead of direct test-only Calculator calls.
+- Compatibility retained:
+  - `create_anomaly_attribute_read_context(...)`, AM/AP reader behavior, existing migrated P2-A files, `MultiplierData`, `Calculator.StunMul`, `Calculator.RegularMul`, `CalAnomaly`, `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime-state, old containers, and state-sync behavior remain unchanged.
+  - Full crit rate still includes `crit_rate_received_increase`; personal crit rate and personal crit damage still exclude received crit fields.
+- Next step:
+  - Continue with US-004 by adding P2-B state-sync order coverage before migrating Lighter, QingYi, Trigger, or Soldier0 Anby production writeback files.
+---

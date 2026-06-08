@@ -103,15 +103,7 @@ def _make_attribute_read_fixture(
 
 
 def _reader_snapshot_data(context: BuffAttributeReadContext) -> MultiplierData:
-    static, dynamic = CalculatorBuffAttributeReader._build_statements(context)
-    return cast(
-        MultiplierData,
-        SimpleNamespace(
-            static=static,
-            dynamic=dynamic,
-            judge_node=context.query_node,
-        ),
-    )
+    return CalculatorBuffAttributeReader._build_formula_snapshot(context)
 
 
 def _legacy_multiplier_data(fixture: _AttributeReadFixture) -> MultiplierData:
@@ -399,7 +391,7 @@ def test_p2b_parity_fixture_matches_old_impact_helper(
         },
     )
 
-    reader_value = Calculator.StunMul.cal_imp(_reader_snapshot_data(fixture.context))
+    reader_value = CalculatorBuffAttributeReader().read_impact(fixture.context)
     old_value = _legacy_impact_oracle(fixture)
 
     assert reader_value == pytest.approx(old_value)
@@ -463,9 +455,9 @@ def test_p2b_parity_fixture_matches_old_full_and_personal_crit_rate_helpers(
         },
     )
 
-    reader_data = _reader_snapshot_data(fixture.context)
-    reader_full = Calculator.RegularMul.cal_crit_rate(reader_data)
-    reader_personal = Calculator.RegularMul.cal_personal_crit_rate(reader_data)
+    reader = CalculatorBuffAttributeReader()
+    reader_full = reader.read_full_crit_rate(fixture.context)
+    reader_personal = reader.read_personal_crit_rate(fixture.context)
     old_full = _legacy_full_crit_rate_oracle(fixture)
     old_personal = _legacy_personal_crit_rate_oracle(fixture)
 
@@ -474,7 +466,7 @@ def test_p2b_parity_fixture_matches_old_full_and_personal_crit_rate_helpers(
     assert reader_full == pytest.approx(expected_full)
     assert reader_personal == pytest.approx(expected_personal)
     assert reader_full - reader_personal == pytest.approx(received_crit_rate)
-    _assert_aggregation_calls(aggregation_calls, fixture)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=3)
 
 
 def test_p2b_full_crit_rate_includes_received_bonus_but_personal_excludes(
@@ -495,14 +487,14 @@ def test_p2b_full_crit_rate_includes_received_bonus_but_personal_excludes(
         },
     )
 
-    reader_data = _reader_snapshot_data(fixture.context)
-    full_crit_rate = Calculator.RegularMul.cal_crit_rate(reader_data)
-    personal_crit_rate = Calculator.RegularMul.cal_personal_crit_rate(reader_data)
+    reader = CalculatorBuffAttributeReader()
+    full_crit_rate = reader.read_full_crit_rate(fixture.context)
+    personal_crit_rate = reader.read_personal_crit_rate(fixture.context)
 
     assert full_crit_rate == pytest.approx(0.6)
     assert personal_crit_rate == pytest.approx(0.35)
     assert full_crit_rate - personal_crit_rate == pytest.approx(0.25)
-    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=2)
 
 
 @pytest.mark.parametrize(
@@ -558,8 +550,10 @@ def test_p2b_parity_fixture_matches_old_personal_crit_damage_helper(
         },
     )
 
+    reader_value = CalculatorBuffAttributeReader().read_personal_crit_damage(
+        fixture.context
+    )
     reader_data = _reader_snapshot_data(fixture.context)
-    reader_value = Calculator.RegularMul.cal_personal_crit_dmg(reader_data)
     old_value = _legacy_personal_crit_damage_oracle(fixture)
 
     assert reader_value == pytest.approx(old_value)
@@ -567,7 +561,7 @@ def test_p2b_parity_fixture_matches_old_personal_crit_damage_helper(
     assert cast(Any, reader_data).dynamic.received_crit_dmg_bonus == pytest.approx(
         received_crit_damage
     )
-    _assert_aggregation_calls(aggregation_calls, fixture)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=3)
 
 
 def test_p2b_personal_crit_damage_excludes_received_crit_damage_bonus(
@@ -588,12 +582,14 @@ def test_p2b_personal_crit_damage_excludes_received_crit_damage_bonus(
         },
     )
 
+    personal_crit_damage = CalculatorBuffAttributeReader().read_personal_crit_damage(
+        fixture.context
+    )
     reader_data = _reader_snapshot_data(fixture.context)
-    personal_crit_damage = Calculator.RegularMul.cal_personal_crit_dmg(reader_data)
 
     assert personal_crit_damage == pytest.approx(1.0)
     assert cast(Any, reader_data).dynamic.received_crit_dmg_bonus == pytest.approx(0.4)
-    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=2)
 
 
 @pytest.mark.parametrize(

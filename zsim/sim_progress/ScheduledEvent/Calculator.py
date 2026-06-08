@@ -2,7 +2,7 @@ from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass
 import json
 from functools import lru_cache
-from typing import Any, Literal, Mapping, Protocol, Sequence
+from typing import Any, Literal, Mapping, Protocol, Sequence, cast
 
 import numpy as np
 
@@ -34,6 +34,15 @@ class BuffAttributeReadContext:
     query_node: SkillNode | AnomalyBar | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class _CalculatorReadSnapshot:
+    """承载保留 Calculator 公式所需的最小快照字段。"""
+
+    static: Any
+    dynamic: Any
+    judge_node: SkillNode | AnomalyBar | None
+
+
 def create_anomaly_attribute_read_context(
     *,
     enemy: Enemy,
@@ -60,6 +69,22 @@ class BuffAttributeReader(Protocol):
 
     def read_anomaly_proficiency(self, context: BuffAttributeReadContext) -> np.float64:
         """读取异常精通。"""
+        ...
+
+    def read_impact(self, context: BuffAttributeReadContext) -> float:
+        """读取冲击力。"""
+        ...
+
+    def read_full_crit_rate(self, context: BuffAttributeReadContext) -> float:
+        """读取完整暴击率，包含受暴击概率增加。"""
+        ...
+
+    def read_personal_crit_rate(self, context: BuffAttributeReadContext) -> float:
+        """读取个人实时暴击率。"""
+        ...
+
+    def read_personal_crit_damage(self, context: BuffAttributeReadContext) -> float:
+        """读取个人实时暴击伤害。"""
         ...
 
 
@@ -557,6 +582,34 @@ class CalculatorBuffAttributeReader(BuffAttributeReader):
     ) -> np.float64:
         static, dynamic = self._build_statements(context)
         return _calculate_anomaly_proficiency(static, dynamic)
+
+    def read_impact(self, context: BuffAttributeReadContext) -> float:
+        data = self._build_formula_snapshot(context)
+        return Calculator.StunMul.cal_imp(data)
+
+    def read_full_crit_rate(self, context: BuffAttributeReadContext) -> float:
+        data = self._build_formula_snapshot(context)
+        return Calculator.RegularMul.cal_crit_rate(data)
+
+    def read_personal_crit_rate(self, context: BuffAttributeReadContext) -> float:
+        data = self._build_formula_snapshot(context)
+        return Calculator.RegularMul.cal_personal_crit_rate(data)
+
+    def read_personal_crit_damage(self, context: BuffAttributeReadContext) -> float:
+        data = self._build_formula_snapshot(context)
+        return Calculator.RegularMul.cal_personal_crit_dmg(data)
+
+    @staticmethod
+    def _build_formula_snapshot(context: BuffAttributeReadContext) -> MultiplierData:
+        static, dynamic = CalculatorBuffAttributeReader._build_statements(context)
+        return cast(
+            MultiplierData,
+            _CalculatorReadSnapshot(
+                static=static,
+                dynamic=dynamic,
+                judge_node=context.query_node,
+            ),
+        )
 
     @staticmethod
     def _build_statements(context: BuffAttributeReadContext) -> tuple[Any, Any]:
