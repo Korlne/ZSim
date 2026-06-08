@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import sys
 from dataclasses import dataclass
 from types import SimpleNamespace
@@ -404,6 +405,16 @@ def test_cannon_rotor_full_crit_gate_includes_received_bonus_without_publish(
     ]
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
     assert fixture.sim_instance.schedule_data.event_list == []
+
+
+def test_cannon_rotor_full_crit_gate_uses_reader_seam_source() -> None:
+    source = inspect.getsource(CannonRotor.special_judge_logic)
+
+    assert "MultiplierData" not in source
+    assert "RegularMul" not in source
+    assert "cal_crit_rate" not in source
+    assert "create_anomaly_attribute_read_context" in source
+    assert "read_full_crit_rate" in source
 
 
 def test_miyabi_icefire_full_crit_read_keeps_old_count_adjustment_order(

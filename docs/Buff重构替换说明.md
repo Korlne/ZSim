@@ -1579,3 +1579,16 @@
 - Next step:
   - Continue with US-011 by migrating `CannonRotor.py` through `CalculatorBuffAttributeReader.read_full_crit_rate(...)` while preserving its RNG gate and scheduled publish behavior.
 ---
+## 2026-06-08 17:51 +08:00 - US-011
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py`, `tests/simulator/test_full_crit_event_adjacent_reader.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `CannonRotor.py` now replaces its direct `MultiplierData(...)` / `Calculator.RegularMul.cal_crit_rate(...)` full-crit gate with `create_anomaly_attribute_read_context(...)` and `CalculatorBuffAttributeReader.read_full_crit_rate(...)`.
+  - The focused full-crit event-adjacent test now guards CannonRotor against reintroducing the direct full-crit Calculator snapshot path.
+- Compatibility retained:
+  - CannonRotor `special_judge_logic(...)` SkillNode gate, `get_prepared(...)` arguments, RNG threshold result, full-crit received-bonus semantics, no-publish judge branch, and aggregation shape remain preserved.
+  - CannonRotor `special_hit_logic(...)`, `_create_dispatch_port(...)`, `ScheduleDispatchPort.publish_scheduled(...)`, payload fields, and `LoadingMission.mission_start(...) -> publish_scheduled(...) -> simple_start(...)` order remain unchanged.
+  - The retained Calculator formula snapshot still owns `Calculator.RegularMul.cal_crit_rate(...)`; Miyabi IceFire and Woodpecker variants remain on their old full-crit paths until their own stories run.
+  - `RuntimeCommandPort`, listener broadcast, dot runtime-state, same-tick runtime writes, old-container deletion boundaries, and phase-1 raw queue deletion work remain unchanged.
+- Next step:
+  - Continue with US-012 by migrating `MiyabiCoreSkill_IceFire.py` through `CalculatorBuffAttributeReader.read_full_crit_rate(...)` while preserving IceFire state, old-count adjustment, and dispatch behavior.
+---
