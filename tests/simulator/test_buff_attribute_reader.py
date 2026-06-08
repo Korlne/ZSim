@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 import inspect
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any, Sequence, cast
 
 import pytest
 
@@ -20,6 +21,17 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
     MultiplierData,
 )
 
+_AggregationCall = tuple[tuple[object, ...], object | None, object, str | None]
+
+
+@dataclass(frozen=True)
+class _AttributeReadFixture:
+    context: BuffAttributeReadContext
+    active_buff_view: dict[str, list[object]]
+    enemy: SimpleNamespace
+    char: SimpleNamespace
+    expected_enabled_buff: tuple[object, ...]
+
 
 def _make_character(
     *, name: str = "折枝剑歌", am: float = 0.0, ap: float = 0.0
@@ -28,38 +40,47 @@ def _make_character(
     return SimpleNamespace(NAME=name, CID=1301, level=60, statement=statement)
 
 
-def _make_enemy(enemy_debuff: object) -> SimpleNamespace:
+def _make_enemy(enemy_debuffs: Sequence[object] = ()) -> SimpleNamespace:
     return SimpleNamespace(
         dynamic=SimpleNamespace(
-            dynamic_debuff_list=[enemy_debuff],
+            dynamic_debuff_list=list(enemy_debuffs),
             dynamic_dot_list=[],
         ),
         sim_instance=SimpleNamespace(marker="sim"),
     )
 
 
-@pytest.mark.parametrize(
-    ("static_am", "field_am", "flat_am", "expected"),
-    [
-        (100.0, 0.10, 5.0, 115.0),
-        (115.0, 0.0, 0.0, 115.0),
-        (80.0, 0.25, 10.0, 110.0),
-    ],
-)
-def test_attribute_reader_matches_old_anomaly_mastery_helper(
+def _make_attribute_read_fixture(
+    *,
+    name: str = "折枝剑歌",
+    am: float = 0.0,
+    ap: float = 0.0,
+    char_buff_count: int = 1,
+    enemy_debuff_count: int = 1,
+) -> _AttributeReadFixture:
+    char_buffs = tuple(object() for _ in range(char_buff_count))
+    enemy_debuffs = tuple(object() for _ in range(enemy_debuff_count))
+    char = _make_character(name=name, am=am, ap=ap)
+    enemy = _make_enemy(enemy_debuffs)
+    active_buff_view = {char.NAME: list(char_buffs)}
+    return _AttributeReadFixture(
+        context=BuffAttributeReadContext(
+            enemy=cast(Any, enemy),
+            active_buff_view=active_buff_view,
+            character=cast(Any, char),
+        ),
+        active_buff_view=active_buff_view,
+        enemy=enemy,
+        char=char,
+        expected_enabled_buff=char_buffs + enemy_debuffs,
+    )
+
+
+def _patch_buff_aggregation(
     monkeypatch: pytest.MonkeyPatch,
-    static_am: float,
-    field_am: float,
-    flat_am: float,
-    expected: float,
-) -> None:
-    MultiplierData.mul_data_cache.clear()
-    char_buff = object()
-    enemy_debuff = object()
-    char = _make_character(am=static_am)
-    enemy = _make_enemy(enemy_debuff)
-    active_buff_view = {char.NAME: [char_buff]}
-    aggregation_calls: list[tuple[tuple[object, ...], object | None, object, str | None]] = []
+    dynamic_statement: dict[str, float],
+) -> list[_AggregationCall]:
+    aggregation_calls: list[_AggregationCall] = []
 
     def fake_cal_buff_total_bonus(
         *,
@@ -69,44 +90,86 @@ def test_attribute_reader_matches_old_anomaly_mastery_helper(
         char_name: str | None,
     ) -> dict[str, float]:
         aggregation_calls.append((enabled_buff, judge_obj, sim_instance, char_name))
-        return {
-            "局内异常掌控": field_am,
-            "固定异常掌控": flat_am,
-        }
+        return dict(dynamic_statement)
 
     monkeypatch.setattr(
         calculator_module,
         "cal_buff_total_bonus",
         fake_cal_buff_total_bonus,
     )
+    return aggregation_calls
 
-    context = BuffAttributeReadContext(
-        enemy=cast(Any, enemy),
-        active_buff_view=active_buff_view,
-        character=cast(Any, char),
+
+@pytest.mark.parametrize(
+    (
+        "static_am",
+        "field_am",
+        "flat_am",
+        "char_buff_count",
+        "enemy_debuff_count",
+        "expected",
+    ),
+    [
+        pytest.param(115.0, 0.0, 0.0, 1, 1, 115.0, id="baseline"),
+        pytest.param(100.0, 0.15, 0.0, 1, 1, 115.0, id="percentage-buff"),
+        pytest.param(100.0, 0.0, 15.0, 1, 1, 115.0, id="flat-buff"),
+        pytest.param(115.0, 0.0, 0.0, 0, 0, 115.0, id="no-buff"),
+    ],
+)
+def test_attribute_reader_matches_old_anomaly_mastery_helper(
+    monkeypatch: pytest.MonkeyPatch,
+    static_am: float,
+    field_am: float,
+    flat_am: float,
+    char_buff_count: int,
+    enemy_debuff_count: int,
+    expected: float,
+) -> None:
+    MultiplierData.mul_data_cache.clear()
+    fixture = _make_attribute_read_fixture(
+        am=static_am,
+        char_buff_count=char_buff_count,
+        enemy_debuff_count=enemy_debuff_count,
     )
-    reader_value = CalculatorBuffAttributeReader().read_anomaly_mastery(context)
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        {
+            "局内异常掌控": field_am,
+            "固定异常掌控": flat_am,
+        },
+    )
+
+    reader_value = CalculatorBuffAttributeReader().read_anomaly_mastery(fixture.context)
 
     old_data = MultiplierData(
-        cast(Any, enemy),
-        active_buff_view,
-        cast(Any, char),
+        cast(Any, fixture.enemy),
+        fixture.active_buff_view,
+        cast(Any, fixture.char),
     )
     old_value = Calculator.AnomalyMul.cal_am(old_data)
 
     assert reader_value == pytest.approx(old_value)
     assert reader_value == pytest.approx(expected)
     assert aggregation_calls == [
-        ((char_buff, enemy_debuff), None, enemy.sim_instance, char.NAME),
-        ((char_buff, enemy_debuff), None, enemy.sim_instance, char.NAME),
+        (
+            fixture.expected_enabled_buff,
+            None,
+            fixture.enemy.sim_instance,
+            fixture.char.NAME,
+        ),
+        (
+            fixture.expected_enabled_buff,
+            None,
+            fixture.enemy.sim_instance,
+            fixture.char.NAME,
+        ),
     ]
 
 
 def test_attribute_reader_keeps_query_node_optional(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    char = _make_character(am=90.0)
-    enemy = _make_enemy(object())
+    fixture = _make_attribute_read_fixture(am=90.0, enemy_debuff_count=0)
 
     def fake_cal_buff_total_bonus(**kwargs: object) -> dict[str, float]:
         assert kwargs["judge_obj"] is None
@@ -118,23 +181,25 @@ def test_attribute_reader_keeps_query_node_optional(
         fake_cal_buff_total_bonus,
     )
 
-    context = BuffAttributeReadContext(
-        enemy=cast(Any, enemy),
-        active_buff_view={},
-        character=cast(Any, char),
-    )
-
-    assert CalculatorBuffAttributeReader().read_anomaly_mastery(context) == pytest.approx(
-        90.0
-    )
+    assert CalculatorBuffAttributeReader().read_anomaly_mastery(
+        fixture.context
+    ) == pytest.approx(90.0)
 
 
 @pytest.mark.parametrize(
-    ("static_ap", "field_ap", "flat_ap", "expected"),
+    (
+        "static_ap",
+        "field_ap",
+        "flat_ap",
+        "char_buff_count",
+        "enemy_debuff_count",
+        "expected",
+    ),
     [
-        (300.0, 0.20, 15.0, 375.0),
-        (375.0, 0.0, 0.0, 375.0),
-        (240.0, 0.25, 50.0, 350.0),
+        pytest.param(375.0, 0.0, 0.0, 1, 1, 375.0, id="baseline"),
+        pytest.param(300.0, 0.25, 0.0, 1, 1, 375.0, id="percentage-buff"),
+        pytest.param(300.0, 0.0, 75.0, 1, 1, 375.0, id="flat-buff"),
+        pytest.param(375.0, 0.0, 0.0, 0, 0, 375.0, id="no-buff"),
     ],
 )
 def test_attribute_reader_matches_old_anomaly_proficiency_helper(
@@ -142,54 +207,51 @@ def test_attribute_reader_matches_old_anomaly_proficiency_helper(
     static_ap: float,
     field_ap: float,
     flat_ap: float,
+    char_buff_count: int,
+    enemy_debuff_count: int,
     expected: float,
 ) -> None:
     MultiplierData.mul_data_cache.clear()
-    char_buff = object()
-    enemy_debuff = object()
-    char = _make_character(name="时流贤者", ap=static_ap)
-    enemy = _make_enemy(enemy_debuff)
-    active_buff_view = {char.NAME: [char_buff]}
-    aggregation_calls: list[tuple[tuple[object, ...], object | None, object, str | None]] = []
-
-    def fake_cal_buff_total_bonus(
-        *,
-        enabled_buff: tuple[object, ...],
-        judge_obj: object | None,
-        sim_instance: object,
-        char_name: str | None,
-    ) -> dict[str, float]:
-        aggregation_calls.append((enabled_buff, judge_obj, sim_instance, char_name))
-        return {
+    fixture = _make_attribute_read_fixture(
+        name="时流贤者",
+        ap=static_ap,
+        char_buff_count=char_buff_count,
+        enemy_debuff_count=enemy_debuff_count,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        {
             "局内异常精通": field_ap,
             "固定异常精通": flat_ap,
-        }
-
-    monkeypatch.setattr(
-        calculator_module,
-        "cal_buff_total_bonus",
-        fake_cal_buff_total_bonus,
+        },
     )
 
-    context = BuffAttributeReadContext(
-        enemy=cast(Any, enemy),
-        active_buff_view=active_buff_view,
-        character=cast(Any, char),
+    reader_value = CalculatorBuffAttributeReader().read_anomaly_proficiency(
+        fixture.context
     )
-    reader_value = CalculatorBuffAttributeReader().read_anomaly_proficiency(context)
 
     old_data = MultiplierData(
-        cast(Any, enemy),
-        active_buff_view,
-        cast(Any, char),
+        cast(Any, fixture.enemy),
+        fixture.active_buff_view,
+        cast(Any, fixture.char),
     )
     old_value = Calculator.AnomalyMul.cal_ap(old_data)
 
     assert reader_value == pytest.approx(old_value)
     assert reader_value == pytest.approx(expected)
     assert aggregation_calls == [
-        ((char_buff, enemy_debuff), None, enemy.sim_instance, char.NAME),
-        ((char_buff, enemy_debuff), None, enemy.sim_instance, char.NAME),
+        (
+            fixture.expected_enabled_buff,
+            None,
+            fixture.enemy.sim_instance,
+            fixture.char.NAME,
+        ),
+        (
+            fixture.expected_enabled_buff,
+            None,
+            fixture.enemy.sim_instance,
+            fixture.char.NAME,
+        ),
     ]
 
 
@@ -209,30 +271,13 @@ def test_branch_blade_song_gate_uses_attribute_reader_with_old_helper_parity(
     expected_gate: bool,
 ) -> None:
     MultiplierData.mul_data_cache.clear()
-    char_buff = object()
-    enemy_debuff = object()
-    char = _make_character(am=static_am)
-    enemy = _make_enemy(enemy_debuff)
-    active_buff_view = {char.NAME: [char_buff]}
-    aggregation_calls: list[tuple[tuple[object, ...], object | None, object, str | None]] = []
-
-    def fake_cal_buff_total_bonus(
-        *,
-        enabled_buff: tuple[object, ...],
-        judge_obj: object | None,
-        sim_instance: object,
-        char_name: str | None,
-    ) -> dict[str, float]:
-        aggregation_calls.append((enabled_buff, judge_obj, sim_instance, char_name))
-        return {
+    fixture = _make_attribute_read_fixture(am=static_am)
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        {
             "局内异常掌控": field_am,
             "固定异常掌控": flat_am,
-        }
-
-    monkeypatch.setattr(
-        calculator_module,
-        "cal_buff_total_bonus",
-        fake_cal_buff_total_bonus,
+        },
     )
 
     logic = cast(
@@ -240,9 +285,9 @@ def test_branch_blade_song_gate_uses_attribute_reader_with_old_helper_parity(
         BranchBladeSongCritDamageBonus.__new__(BranchBladeSongCritDamageBonus),
     )
     logic.record = SimpleNamespace(
-        enemy=enemy,
-        dynamic_buff_list=active_buff_view,
-        char=char,
+        enemy=fixture.enemy,
+        dynamic_buff_list=fixture.active_buff_view,
+        char=fixture.char,
     )
     get_prepared_calls: list[dict[str, object]] = []
     logic.check_record_module = lambda: None
@@ -250,9 +295,9 @@ def test_branch_blade_song_gate_uses_attribute_reader_with_old_helper_parity(
 
     reader_gate = logic.special_judge_logic()
     old_data = MultiplierData(
-        cast(Any, enemy),
-        active_buff_view,
-        cast(Any, char),
+        cast(Any, fixture.enemy),
+        fixture.active_buff_view,
+        cast(Any, fixture.char),
     )
     old_gate = Calculator.AnomalyMul.cal_am(old_data) >= 115
 
@@ -262,8 +307,18 @@ def test_branch_blade_song_gate_uses_attribute_reader_with_old_helper_parity(
         {"equipper": "折枝剑歌", "enemy": 1, "dynamic_buff_list": 1}
     ]
     assert aggregation_calls == [
-        ((char_buff, enemy_debuff), None, enemy.sim_instance, char.NAME),
-        ((char_buff, enemy_debuff), None, enemy.sim_instance, char.NAME),
+        (
+            fixture.expected_enabled_buff,
+            None,
+            fixture.enemy.sim_instance,
+            fixture.char.NAME,
+        ),
+        (
+            fixture.expected_enabled_buff,
+            None,
+            fixture.enemy.sim_instance,
+            fixture.char.NAME,
+        ),
     ]
 
 
@@ -283,30 +338,13 @@ def test_timeweaver_disorder_gate_uses_attribute_reader_with_old_helper_parity(
     expected_gate: bool,
 ) -> None:
     MultiplierData.mul_data_cache.clear()
-    char_buff = object()
-    enemy_debuff = object()
-    char = _make_character(name="时流贤者", ap=static_ap)
-    enemy = _make_enemy(enemy_debuff)
-    active_buff_view = {char.NAME: [char_buff]}
-    aggregation_calls: list[tuple[tuple[object, ...], object | None, object, str | None]] = []
-
-    def fake_cal_buff_total_bonus(
-        *,
-        enabled_buff: tuple[object, ...],
-        judge_obj: object | None,
-        sim_instance: object,
-        char_name: str | None,
-    ) -> dict[str, float]:
-        aggregation_calls.append((enabled_buff, judge_obj, sim_instance, char_name))
-        return {
+    fixture = _make_attribute_read_fixture(name="时流贤者", ap=static_ap)
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        {
             "局内异常精通": field_ap,
             "固定异常精通": flat_ap,
-        }
-
-    monkeypatch.setattr(
-        calculator_module,
-        "cal_buff_total_bonus",
-        fake_cal_buff_total_bonus,
+        },
     )
 
     logic = cast(
@@ -314,9 +352,9 @@ def test_timeweaver_disorder_gate_uses_attribute_reader_with_old_helper_parity(
         TimeweaverDisorderDmgMul.__new__(TimeweaverDisorderDmgMul),
     )
     logic.record = SimpleNamespace(
-        enemy=enemy,
-        dynamic_buff_list=active_buff_view,
-        char=char,
+        enemy=fixture.enemy,
+        dynamic_buff_list=fixture.active_buff_view,
+        char=fixture.char,
     )
     get_prepared_calls: list[dict[str, object]] = []
     logic.check_record_module = lambda: None
@@ -324,9 +362,9 @@ def test_timeweaver_disorder_gate_uses_attribute_reader_with_old_helper_parity(
 
     reader_gate = logic.special_judge_logic()
     old_data = MultiplierData(
-        cast(Any, enemy),
-        active_buff_view,
-        cast(Any, char),
+        cast(Any, fixture.enemy),
+        fixture.active_buff_view,
+        cast(Any, fixture.char),
     )
     old_gate = Calculator.AnomalyMul.cal_ap(old_data) >= 375
 
@@ -340,6 +378,16 @@ def test_timeweaver_disorder_gate_uses_attribute_reader_with_old_helper_parity(
         {"equipper": "时流贤者", "preload_data": 1, "dynamic_buff_list": 1, "enemy": 1}
     ]
     assert aggregation_calls == [
-        ((char_buff, enemy_debuff), None, enemy.sim_instance, char.NAME),
-        ((char_buff, enemy_debuff), None, enemy.sim_instance, char.NAME),
+        (
+            fixture.expected_enabled_buff,
+            None,
+            fixture.enemy.sim_instance,
+            fixture.char.NAME,
+        ),
+        (
+            fixture.expected_enabled_buff,
+            None,
+            fixture.enemy.sim_instance,
+            fixture.char.NAME,
+        ),
     ]

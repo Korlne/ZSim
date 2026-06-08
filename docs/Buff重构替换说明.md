@@ -1318,3 +1318,14 @@
 - Next step:
   - 继续 US-002，扩展 AM/AP reader parity test fixtures；不要在 parity/order tests 之前编辑生产 XLogic。
 ---
+## 2026-06-08 11:54 +08:00 - US-002
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_buff_attribute_reader.py` 新增可复用 reader parity fixture，准备替换六个 P2-A 文件中 direct `MultiplierData(...)` / `Mul(...)` AM/AP 读取前的测试基线。
+  - 本故事只扩展测试夹具与 parity 覆盖，没有替换 live `BuffXLogic` 路径，也没有新增生产 `BuffAttributeReader` 方法。
+- Compatibility retained:
+  - `BranchBladeSongCritDamageBonus` 与 `TimeweaverDisorderDmgMul` 的现有 reader-backed sample coverage 保持通过。
+  - `Calculator.AnomalyMul.cal_am(...)`、`Calculator.AnomalyMul.cal_ap(...)`、`MultiplierData`、`CalAnomaly` 公式、phase-1 dispatch/runtime boundaries 均保留。
+- Next step:
+  - 继续 US-003，添加 computed count state-sync 顺序测试，锁定 `simple_start(..., no_count=1) -> dy.count -> update_to_buff_0(...)` 后再迁移生产 XLogic。
+---
