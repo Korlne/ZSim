@@ -24,6 +24,18 @@ from zsim.sim_progress.Buff.BuffXLogic.JaneCoreSkillStrikeCritRateBonus import (
 from zsim.sim_progress.Buff.BuffXLogic.JanePassionStateAPTransToATK import (
     JanePassionStateAPTransToATK,
 )
+from zsim.sim_progress.Buff.BuffXLogic.LighterAdditionalAbility_IceFireBonus import (
+    LighterExtraSkill_IceFireBonus,
+)
+from zsim.sim_progress.Buff.BuffXLogic.QingYiAdditionalAbilityStunConvertToATK import (
+    QingYiAdditionalAbilityStunConvertToATK,
+)
+from zsim.sim_progress.Buff.BuffXLogic.Soldier0AnbyCoreSkillCritDMGBonus import (
+    Soldier0AnbyCoreSkillCritDMGBonus,
+)
+from zsim.sim_progress.Buff.BuffXLogic.TriggerAdditionalAbilityStunBonus import (
+    TriggerAdditionalAbilityStunBonus,
+)
 from zsim.sim_progress.Buff.BuffXLogic.YuzuhaAdditionalAbilityAnomalyBuildupBonus import (
     YuzuhaAdditionalAbilityAnomalyBuildupBonus,
 )
@@ -36,9 +48,16 @@ _AggregationCall = tuple[tuple[object, ...], object | None, object, str | None]
 
 
 class _DynamicCountRecorder:
-    def __init__(self, calls: list[tuple[Any, ...]], initial_count: float) -> None:
+    def __init__(
+        self,
+        calls: list[tuple[Any, ...]],
+        initial_count: float,
+        *,
+        label: str = "dy.count",
+    ) -> None:
         self._calls = calls
         self._count = initial_count
+        self._label = label
 
     @property
     def count(self) -> float:
@@ -46,7 +65,7 @@ class _DynamicCountRecorder:
 
     @count.setter
     def count(self, value: float) -> None:
-        self._calls.append(("dy.count", value))
+        self._calls.append((self._label, value))
         self._count = value
 
 
@@ -59,8 +78,9 @@ class _StateSyncBuffProbe:
         calls: list[tuple[Any, ...]],
         initial_count: float,
         maxcount: float = 999.0,
+        step: float = 1.0,
     ) -> None:
-        self.ft = SimpleNamespace(index=index, maxcount=maxcount)
+        self.ft = SimpleNamespace(index=index, maxcount=maxcount, step=step)
         self.dy = _DynamicCountRecorder(calls, initial_count)
         self._calls = calls
         self.sim_instance = SimpleNamespace(
@@ -90,7 +110,8 @@ class _StateSyncBuffProbe:
             )
         )
         if not no_count:
-            self.dy.count = self.dy.count + 1
+            self.dy.count = min(self.dy.count + self.ft.step, self.ft.maxcount)
+            cast(Any, sub_exist_buff_dict[self.ft.index]).dy.count = self.dy.count
 
     def update_to_buff_0(self, buff_0: object) -> None:
         self._calls.append(("update_to_buff_0", buff_0, self.dy.count))
@@ -161,6 +182,20 @@ class _JanePassionStateSyncCase:
     initial_count: float
 
 
+@dataclass(frozen=True)
+class _P2BStateSyncCase:
+    logic: Any
+    active_buff: _StateSyncBuffProbe
+    buff_0: Any
+    calls: list[tuple[Any, ...]]
+    get_prepared_calls: list[dict[str, object]]
+    aggregation_calls: list[_AggregationCall]
+    expected_enabled_buff: tuple[object, ...]
+    expected_old_count: float
+    initial_count: float
+    expected_real_count: float | None = None
+
+
 def _make_alice_character(*, am: float) -> SimpleNamespace:
     statement = SimpleNamespace(statement={"AM": am}, AM=am)
     return SimpleNamespace(NAME="Alice", CID=1401, level=60, statement=statement)
@@ -174,6 +209,27 @@ def _make_yuzuha_character(*, am: float, cinema: int) -> SimpleNamespace:
 def _make_jane_character(*, ap: float) -> SimpleNamespace:
     statement = SimpleNamespace(statement={"AP": ap}, AP=ap)
     return SimpleNamespace(NAME="Jane", CID=1261, level=60, statement=statement)
+
+
+def _make_p2b_character(
+    *,
+    name: str,
+    cid: int,
+    imp: float = 0.0,
+    crit_rate: float = 0.0,
+    crit_damage: float = 0.0,
+) -> SimpleNamespace:
+    statement_values = {
+        "AM": 0.0,
+        "AP": 0.0,
+        "IMP": imp,
+        "CRIT_rate": crit_rate,
+        "CRIT_damage": crit_damage,
+    }
+    statement = SimpleNamespace(statement=statement_values)
+    for attr_name, value in statement_values.items():
+        setattr(statement, attr_name, value)
+    return SimpleNamespace(NAME=name, CID=cid, level=60, statement=statement)
 
 
 def _make_enemy(
@@ -193,6 +249,9 @@ def _make_enemy(
 def _patch_buff_aggregation(
     monkeypatch: pytest.MonkeyPatch,
     dynamic_statement: dict[str, float],
+    *,
+    call_log: list[tuple[Any, ...]] | None = None,
+    call_label: str = "attribute_read",
 ) -> list[_AggregationCall]:
     aggregation_calls: list[_AggregationCall] = []
 
@@ -203,6 +262,8 @@ def _patch_buff_aggregation(
         sim_instance: object,
         char_name: str | None,
     ) -> dict[str, float]:
+        if call_log is not None:
+            call_log.append((call_label,))
         aggregation_calls.append((enabled_buff, judge_obj, sim_instance, char_name))
         return dict(dynamic_statement)
 
@@ -299,6 +360,113 @@ def _old_jane_passion_state_atk_count(
     )
     ap = Calculator.AnomalyMul.cal_ap(mul_data)
     return float(floor(max(ap - 120, 0)))
+
+
+def _old_impact_value(
+    *,
+    enemy: SimpleNamespace,
+    dynamic_buff_list: dict[str, list[object]],
+    char: SimpleNamespace,
+) -> float:
+    MultiplierData.mul_data_cache.clear()
+    mul_data = MultiplierData(
+        cast(Any, enemy),
+        dynamic_buff_list,
+        cast(Any, char),
+    )
+    return float(Calculator.StunMul.cal_imp(mul_data))
+
+
+def _old_personal_crit_rate_value(
+    *,
+    enemy: SimpleNamespace,
+    dynamic_buff_list: dict[str, list[object]],
+    char: SimpleNamespace,
+) -> float:
+    MultiplierData.mul_data_cache.clear()
+    mul_data = MultiplierData(
+        cast(Any, enemy),
+        dynamic_buff_list,
+        cast(Any, char),
+    )
+    return float(Calculator.RegularMul.cal_personal_crit_rate(mul_data))
+
+
+def _old_personal_crit_damage_value(
+    *,
+    enemy: SimpleNamespace,
+    dynamic_buff_list: dict[str, list[object]],
+    char: SimpleNamespace,
+) -> float:
+    MultiplierData.mul_data_cache.clear()
+    mul_data = MultiplierData(
+        cast(Any, enemy),
+        dynamic_buff_list,
+        cast(Any, char),
+    )
+    return float(Calculator.RegularMul.cal_personal_crit_dmg(mul_data))
+
+
+def _old_lighter_count(
+    *,
+    enemy: SimpleNamespace,
+    dynamic_buff_list: dict[str, list[object]],
+    char: SimpleNamespace,
+    initial_real_count: float,
+    step: float,
+) -> tuple[float, float]:
+    real_count = min(initial_real_count + step, 100)
+    stun_value = _old_impact_value(
+        enemy=enemy,
+        dynamic_buff_list=dynamic_buff_list,
+        char=char,
+    )
+    fake_count_delta = max((stun_value - 170) / 10, 0)
+    count = min(real_count + real_count / 5 * fake_count_delta, 300)
+    return float(count), float(real_count)
+
+
+def _old_qingyi_count(
+    *,
+    enemy: SimpleNamespace,
+    dynamic_buff_list: dict[str, list[object]],
+    char: SimpleNamespace,
+    maxcount: float,
+) -> float:
+    stun_value = _old_impact_value(
+        enemy=enemy,
+        dynamic_buff_list=dynamic_buff_list,
+        char=char,
+    )
+    return float(min((stun_value - 120) * 6, maxcount))
+
+
+def _old_trigger_personal_crit_rate_count(
+    *,
+    enemy: SimpleNamespace,
+    dynamic_buff_list: dict[str, list[object]],
+    char: SimpleNamespace,
+) -> float:
+    crit_rate = _old_personal_crit_rate_value(
+        enemy=enemy,
+        dynamic_buff_list=dynamic_buff_list,
+        char=char,
+    )
+    return float(min(max(crit_rate - 0.4, 0) / 0.01 * 1.5, 75))
+
+
+def _old_soldier0_anby_personal_crit_damage_count(
+    *,
+    enemy: SimpleNamespace,
+    dynamic_buff_list: dict[str, list[object]],
+    char: SimpleNamespace,
+) -> float:
+    crit_damage = _old_personal_crit_damage_value(
+        enemy=enemy,
+        dynamic_buff_list=dynamic_buff_list,
+        char=char,
+    )
+    return float(crit_damage * 0.3 * 100)
 
 
 def _make_alice_state_sync_case(
@@ -647,6 +815,337 @@ def _make_jane_passion_state_sync_case(
         expected_old_count=expected_old_count,
         initial_count=initial_count,
     )
+
+
+def _make_buff_0(
+    calls: list[tuple[Any, ...]],
+    *,
+    initial_count: float,
+    step: float,
+    record_count_writes: bool = False,
+) -> SimpleNamespace:
+    dy: object
+    if record_count_writes:
+        dy = _DynamicCountRecorder(
+            calls,
+            initial_count,
+            label="buff_0.dy.count",
+        )
+    else:
+        dy = SimpleNamespace(count=initial_count)
+    return SimpleNamespace(
+        dy=dy,
+        ft=SimpleNamespace(step=step),
+        history=SimpleNamespace(record=None),
+    )
+
+
+def _make_lighter_impact_state_sync_case(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    static_imp: float,
+    field_imp: float = 0.0,
+    flat_imp: float = 0.0,
+    initial_count: float = 20.0,
+    initial_real_count: float = 10.0,
+    step: float = 5.0,
+    maxcount: float = 300.0,
+) -> _P2BStateSyncCase:
+    calls: list[tuple[Any, ...]] = []
+    active_buff = _StateSyncBuffProbe(
+        index="lighter-additional-ability-ice-fire",
+        tick=900,
+        calls=calls,
+        initial_count=initial_count,
+        maxcount=maxcount,
+        step=step,
+    )
+    char_buff = object()
+    enemy_debuff = object()
+    char = _make_p2b_character(name="莱特", cid=1161, imp=static_imp)
+    enemy = _make_enemy(
+        sim_instance=active_buff.sim_instance,
+        enemy_debuffs=(enemy_debuff,),
+    )
+    dynamic_buff_list = {char.NAME: [char_buff]}
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        {
+            "局内冲击力%": field_imp,
+            "固定冲击力": flat_imp,
+        },
+        call_log=calls,
+    )
+    buff_0 = _make_buff_0(calls, initial_count=initial_count, step=step)
+    sub_exist_buff_dict = {active_buff.ft.index: buff_0}
+
+    logic = cast(Any, object.__new__(LighterExtraSkill_IceFireBonus))
+    logic.buff_instance = active_buff
+    logic.buff_0 = buff_0
+    logic.record = SimpleNamespace(
+        enemy=enemy,
+        dynamic_buff_list=dynamic_buff_list,
+        char=char,
+        sub_exist_buff_dict=sub_exist_buff_dict,
+        real_count=initial_real_count,
+    )
+    logic.check_record_module = lambda: None
+
+    get_prepared_calls: list[dict[str, object]] = []
+    logic.get_prepared = lambda **kwargs: get_prepared_calls.append(kwargs)
+    expected_old_count, expected_real_count = _old_lighter_count(
+        enemy=enemy,
+        dynamic_buff_list=dynamic_buff_list,
+        char=char,
+        initial_real_count=initial_real_count,
+        step=step,
+    )
+    MultiplierData.mul_data_cache.clear()
+    calls.clear()
+    return _P2BStateSyncCase(
+        logic=logic,
+        active_buff=active_buff,
+        buff_0=buff_0,
+        calls=calls,
+        get_prepared_calls=get_prepared_calls,
+        aggregation_calls=aggregation_calls,
+        expected_enabled_buff=(char_buff, enemy_debuff),
+        expected_old_count=expected_old_count,
+        initial_count=initial_count,
+        expected_real_count=expected_real_count,
+    )
+
+
+def _make_qingyi_impact_state_sync_case(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    static_imp: float,
+    field_imp: float = 0.0,
+    flat_imp: float = 0.0,
+    initial_count: float = 35.0,
+    step: float = 1.0,
+    maxcount: float = 600.0,
+) -> _P2BStateSyncCase:
+    calls: list[tuple[Any, ...]] = []
+    active_buff = _StateSyncBuffProbe(
+        index="qingyi-additional-ability-stun-convert-atk",
+        tick=910,
+        calls=calls,
+        initial_count=initial_count,
+        maxcount=maxcount,
+        step=step,
+    )
+    char_buff = object()
+    enemy_debuff = object()
+    char = _make_p2b_character(name="青衣", cid=1251, imp=static_imp)
+    enemy = _make_enemy(
+        sim_instance=active_buff.sim_instance,
+        enemy_debuffs=(enemy_debuff,),
+    )
+    dynamic_buff_list = {char.NAME: [char_buff]}
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        {
+            "局内冲击力%": field_imp,
+            "固定冲击力": flat_imp,
+        },
+        call_log=calls,
+    )
+    buff_0 = _make_buff_0(
+        calls,
+        initial_count=initial_count,
+        step=step,
+        record_count_writes=True,
+    )
+    sub_exist_buff_dict = {active_buff.ft.index: buff_0}
+
+    logic = cast(Any, object.__new__(QingYiAdditionalAbilityStunConvertToATK))
+    logic.buff_instance = active_buff
+    logic.buff_0 = buff_0
+    logic.record = SimpleNamespace(
+        enemy=enemy,
+        dynamic_buff_list=dynamic_buff_list,
+        char=char,
+        sub_exist_buff_dict=sub_exist_buff_dict,
+    )
+    logic.check_record_module = lambda: None
+
+    get_prepared_calls: list[dict[str, object]] = []
+    logic.get_prepared = lambda **kwargs: get_prepared_calls.append(kwargs)
+    expected_old_count = _old_qingyi_count(
+        enemy=enemy,
+        dynamic_buff_list=dynamic_buff_list,
+        char=char,
+        maxcount=maxcount,
+    )
+    MultiplierData.mul_data_cache.clear()
+    calls.clear()
+    return _P2BStateSyncCase(
+        logic=logic,
+        active_buff=active_buff,
+        buff_0=buff_0,
+        calls=calls,
+        get_prepared_calls=get_prepared_calls,
+        aggregation_calls=aggregation_calls,
+        expected_enabled_buff=(char_buff, enemy_debuff),
+        expected_old_count=expected_old_count,
+        initial_count=initial_count,
+    )
+
+
+def _make_trigger_personal_crit_rate_state_sync_case(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    static_crit_rate: float,
+    field_crit_rate: float = 0.0,
+    flat_crit_rate: float = 0.0,
+    received_crit_rate: float = 0.0,
+    initial_count: float = 12.0,
+) -> _P2BStateSyncCase:
+    calls: list[tuple[Any, ...]] = []
+    active_buff = _StateSyncBuffProbe(
+        index="trigger-additional-ability-stun-bonus",
+        tick=920,
+        calls=calls,
+        initial_count=initial_count,
+    )
+    char_buff = object()
+    enemy_debuff = object()
+    char = _make_p2b_character(name="扳机", cid=1361, crit_rate=static_crit_rate)
+    enemy = _make_enemy(
+        sim_instance=active_buff.sim_instance,
+        enemy_debuffs=(enemy_debuff,),
+    )
+    dynamic_buff_list = {char.NAME: [char_buff]}
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        {
+            "局内暴击率": field_crit_rate,
+            "固定暴击率": flat_crit_rate,
+            "被暴击几率增加": received_crit_rate,
+        },
+        call_log=calls,
+    )
+    buff_0 = _make_buff_0(calls, initial_count=initial_count, step=1.0)
+    sub_exist_buff_dict = {active_buff.ft.index: buff_0}
+
+    logic = cast(Any, object.__new__(TriggerAdditionalAbilityStunBonus))
+    logic.buff_instance = active_buff
+    logic.buff_0 = buff_0
+    logic.record = SimpleNamespace(
+        enemy=enemy,
+        dynamic_buff_list=dynamic_buff_list,
+        char=char,
+        sub_exist_buff_dict=sub_exist_buff_dict,
+    )
+    logic.check_record_module = lambda: None
+
+    get_prepared_calls: list[dict[str, object]] = []
+    logic.get_prepared = lambda **kwargs: get_prepared_calls.append(kwargs)
+    expected_old_count = _old_trigger_personal_crit_rate_count(
+        enemy=enemy,
+        dynamic_buff_list=dynamic_buff_list,
+        char=char,
+    )
+    MultiplierData.mul_data_cache.clear()
+    calls.clear()
+    return _P2BStateSyncCase(
+        logic=logic,
+        active_buff=active_buff,
+        buff_0=buff_0,
+        calls=calls,
+        get_prepared_calls=get_prepared_calls,
+        aggregation_calls=aggregation_calls,
+        expected_enabled_buff=(char_buff, enemy_debuff),
+        expected_old_count=expected_old_count,
+        initial_count=initial_count,
+    )
+
+
+def _make_soldier0_anby_personal_crit_damage_state_sync_case(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    static_crit_damage: float,
+    field_crit_damage: float = 0.0,
+    flat_crit_damage: float = 0.0,
+    received_crit_damage: float = 0.0,
+    trigger_active: bool = True,
+    initial_count: float = 15.0,
+) -> _P2BStateSyncCase:
+    calls: list[tuple[Any, ...]] = []
+    active_buff = _StateSyncBuffProbe(
+        index="soldier0-anby-core-skill-crit-dmg-bonus",
+        tick=930,
+        calls=calls,
+        initial_count=initial_count,
+    )
+    char_buff = object()
+    enemy_debuff = object()
+    char = _make_p2b_character(
+        name="零号·安比",
+        cid=1381,
+        crit_damage=static_crit_damage,
+    )
+    enemy = _make_enemy(
+        sim_instance=active_buff.sim_instance,
+        enemy_debuffs=(enemy_debuff,),
+    )
+    dynamic_buff_list = {char.NAME: [char_buff]}
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        {
+            "局内暴击伤害": field_crit_damage,
+            "固定暴击伤害": flat_crit_damage,
+            "受暴击伤害增加": received_crit_damage,
+        },
+        call_log=calls,
+    )
+    buff_0 = _make_buff_0(calls, initial_count=initial_count, step=1.0)
+    trigger_buff_0 = SimpleNamespace(dy=SimpleNamespace(active=trigger_active))
+    sub_exist_buff_dict = {active_buff.ft.index: buff_0}
+
+    logic = cast(Any, object.__new__(Soldier0AnbyCoreSkillCritDMGBonus))
+    logic.buff_instance = active_buff
+    logic.buff_0 = buff_0
+    logic.record = SimpleNamespace(
+        enemy=enemy,
+        dynamic_buff_list=dynamic_buff_list,
+        char=char,
+        sub_exist_buff_dict=sub_exist_buff_dict,
+        trigger_buff_0=trigger_buff_0,
+    )
+    logic.check_record_module = lambda: None
+
+    get_prepared_calls: list[dict[str, object]] = []
+    logic.get_prepared = lambda **kwargs: get_prepared_calls.append(kwargs)
+    expected_old_count = _old_soldier0_anby_personal_crit_damage_count(
+        enemy=enemy,
+        dynamic_buff_list=dynamic_buff_list,
+        char=char,
+    )
+    MultiplierData.mul_data_cache.clear()
+    calls.clear()
+    return _P2BStateSyncCase(
+        logic=logic,
+        active_buff=active_buff,
+        buff_0=buff_0,
+        calls=calls,
+        get_prepared_calls=get_prepared_calls,
+        aggregation_calls=aggregation_calls,
+        expected_enabled_buff=(char_buff, enemy_debuff),
+        expected_old_count=expected_old_count,
+        initial_count=initial_count,
+    )
+
+
+def _trigger_skill_node(
+    *,
+    skill_tag: str = "1361",
+    labels: dict[str, object] | None = None,
+) -> SimpleNamespace:
+    if labels is None:
+        labels = {"aftershock_attack": object()}
+    return SimpleNamespace(skill_tag=skill_tag, skill=SimpleNamespace(labels=labels))
 
 
 def test_count_state_sync_preserves_simple_start_assignment_update_order(
@@ -1163,6 +1662,248 @@ def test_jane_passion_state_higher_ap_count_parity_and_order(
     ]
     assert case.calls == [
         ("simple_start", 840, True, case.initial_count, case.buff_0),
+        ("dy.count", case.expected_old_count),
+        ("update_to_buff_0", case.buff_0, case.expected_old_count),
+    ]
+    assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
+    assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
+
+
+def test_lighter_impact_state_sync_keeps_base_count_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_lighter_impact_state_sync_case(
+        monkeypatch,
+        static_imp=160.0,
+        initial_real_count=0.0,
+    )
+
+    case.logic.special_hit_logic()
+
+    assert case.expected_real_count == pytest.approx(5.0)
+    assert case.expected_old_count == pytest.approx(5.0)
+    assert case.logic.record.real_count == pytest.approx(case.expected_real_count)
+    assert case.get_prepared_calls == [
+        {"char_CID": 1161, "enemy": 1, "dynamic_buff_list": 1, "sub_exist_buff_dict": 1}
+    ]
+    assert case.aggregation_calls == [
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "莱特"),
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "莱特"),
+    ]
+    assert case.calls == [
+        ("simple_start", 900, False, case.initial_count, case.buff_0),
+        ("dy.count", case.initial_count + case.active_buff.ft.step),
+        ("attribute_read",),
+        ("dy.count", case.expected_old_count),
+        ("update_to_buff_0", case.buff_0, case.expected_old_count),
+    ]
+    assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
+    assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
+
+
+def test_lighter_impact_state_sync_keeps_high_impact_cap_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_lighter_impact_state_sync_case(
+        monkeypatch,
+        static_imp=1000.0,
+        initial_real_count=95.0,
+    )
+
+    case.logic.special_hit_logic()
+
+    assert case.expected_real_count == pytest.approx(100.0)
+    assert case.expected_old_count == pytest.approx(300.0)
+    assert case.logic.record.real_count == pytest.approx(case.expected_real_count)
+    assert case.calls == [
+        ("simple_start", 900, False, case.initial_count, case.buff_0),
+        ("dy.count", case.initial_count + case.active_buff.ft.step),
+        ("attribute_read",),
+        ("dy.count", case.expected_old_count),
+        ("update_to_buff_0", case.buff_0, case.expected_old_count),
+    ]
+    assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
+    assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
+
+
+def test_qingyi_impact_state_sync_keeps_old_count_adjustment_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_qingyi_impact_state_sync_case(
+        monkeypatch,
+        static_imp=150.0,
+    )
+
+    case.logic.special_hit_logic()
+
+    assert case.expected_old_count == pytest.approx(180.0)
+    assert case.get_prepared_calls == [
+        {"char_CID": 1251, "enemy": 1, "dynamic_buff_list": 1, "sub_exist_buff_dict": 1}
+    ]
+    assert case.aggregation_calls == [
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "青衣"),
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "青衣"),
+    ]
+    assert case.calls == [
+        ("simple_start", 910, False, case.initial_count, case.buff_0),
+        ("dy.count", case.initial_count + case.active_buff.ft.step),
+        ("buff_0.dy.count", case.initial_count + case.active_buff.ft.step),
+        ("buff_0.dy.count", case.initial_count),
+        ("attribute_read",),
+        ("dy.count", case.expected_old_count),
+        ("update_to_buff_0", case.buff_0, case.expected_old_count),
+        ("buff_0.dy.count", case.expected_old_count),
+    ]
+    assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
+    assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
+
+
+def test_qingyi_impact_state_sync_keeps_maxcount_cap_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_qingyi_impact_state_sync_case(
+        monkeypatch,
+        static_imp=200.0,
+        maxcount=120.0,
+    )
+
+    case.logic.special_hit_logic()
+
+    assert case.expected_old_count == pytest.approx(120.0)
+    assert case.calls == [
+        ("simple_start", 910, False, case.initial_count, case.buff_0),
+        ("dy.count", case.initial_count + case.active_buff.ft.step),
+        ("buff_0.dy.count", case.initial_count + case.active_buff.ft.step),
+        ("buff_0.dy.count", case.initial_count),
+        ("attribute_read",),
+        ("dy.count", case.expected_old_count),
+        ("update_to_buff_0", case.buff_0, case.expected_old_count),
+        ("buff_0.dy.count", case.expected_old_count),
+    ]
+    assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
+    assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
+
+
+def test_trigger_personal_crit_rate_inactive_gate_skips_state_sync_and_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_trigger_personal_crit_rate_state_sync_case(
+        monkeypatch,
+        static_crit_rate=0.8,
+    )
+    case.aggregation_calls.clear()
+
+    result = case.logic.special_judge_logic(skill_node=_trigger_skill_node(labels={}))
+
+    assert result is False
+    assert case.get_prepared_calls == [{"char_CID": 1361}]
+    assert case.aggregation_calls == []
+    assert case.calls == []
+    assert case.active_buff.dy.count == pytest.approx(case.initial_count)
+    assert case.buff_0.dy.count == pytest.approx(case.initial_count)
+
+
+def test_trigger_personal_crit_rate_read_precedes_simple_start_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_trigger_personal_crit_rate_state_sync_case(
+        monkeypatch,
+        static_crit_rate=0.55,
+        field_crit_rate=0.05,
+        received_crit_rate=0.4,
+    )
+
+    assert case.logic.special_judge_logic(skill_node=_trigger_skill_node()) is True
+    case.logic.special_hit_logic()
+
+    assert case.expected_old_count == pytest.approx(30.0)
+    assert case.get_prepared_calls == [
+        {"char_CID": 1361},
+        {"char_CID": 1361, "sub_exist_buff_dict": 1, "enemy": 1, "dynamic_buff_list": 1},
+    ]
+    assert case.aggregation_calls == [
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "扳机"),
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "扳机"),
+    ]
+    assert case.calls == [
+        ("attribute_read",),
+        ("simple_start", 920, True, case.initial_count, case.buff_0),
+        ("dy.count", case.expected_old_count),
+        ("update_to_buff_0", case.buff_0, case.expected_old_count),
+    ]
+    assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
+    assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
+
+
+def test_trigger_personal_crit_rate_keeps_count_cap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_trigger_personal_crit_rate_state_sync_case(
+        monkeypatch,
+        static_crit_rate=1.2,
+    )
+
+    case.logic.special_hit_logic()
+
+    assert case.expected_old_count == pytest.approx(75.0)
+    assert case.calls == [
+        ("attribute_read",),
+        ("simple_start", 920, True, case.initial_count, case.buff_0),
+        ("dy.count", case.expected_old_count),
+        ("update_to_buff_0", case.buff_0, case.expected_old_count),
+    ]
+    assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
+    assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
+
+
+def test_soldier0_anby_personal_crit_damage_inactive_gate_skips_state_sync_and_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_soldier0_anby_personal_crit_damage_state_sync_case(
+        monkeypatch,
+        static_crit_damage=0.8,
+        trigger_active=False,
+    )
+    case.aggregation_calls.clear()
+
+    result = case.logic.special_judge_logic()
+
+    assert result is False
+    assert case.get_prepared_calls == [
+        {"char_CID": 1381, "trigger_buff_0": ("零号·安比", "Buff-角色-零号·安比-银星触发器")}
+    ]
+    assert case.aggregation_calls == []
+    assert case.calls == []
+    assert case.active_buff.dy.count == pytest.approx(case.initial_count)
+    assert case.buff_0.dy.count == pytest.approx(case.initial_count)
+
+
+def test_soldier0_anby_personal_crit_damage_simple_start_precedes_read_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_soldier0_anby_personal_crit_damage_state_sync_case(
+        monkeypatch,
+        static_crit_damage=0.5,
+        field_crit_damage=0.2,
+        flat_crit_damage=0.3,
+        received_crit_damage=0.4,
+    )
+
+    assert case.logic.special_judge_logic() is True
+    case.logic.special_hit_logic()
+
+    assert case.expected_old_count == pytest.approx(30.0)
+    assert case.get_prepared_calls == [
+        {"char_CID": 1381, "trigger_buff_0": ("零号·安比", "Buff-角色-零号·安比-银星触发器")},
+        {"char_CID": 1381, "dynamic_buff_list": 1, "enemy": 1, "sub_exist_buff_dict": 1},
+    ]
+    assert case.aggregation_calls == [
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "零号·安比"),
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "零号·安比"),
+    ]
+    assert case.calls == [
+        ("simple_start", 930, True, case.initial_count, case.buff_0),
+        ("attribute_read",),
         ("dy.count", case.expected_old_count),
         ("update_to_buff_0", case.buff_0, case.expected_old_count),
     ]

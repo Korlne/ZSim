@@ -1495,3 +1495,14 @@
 - Next step:
   - Continue with US-004 by adding P2-B state-sync order coverage before migrating Lighter, QingYi, Trigger, or Soldier0 Anby production writeback files.
 ---
+## 2026-06-08 16:38 +08:00 - US-004
+- Files changed: `tests/simulator/test_buff_attribute_state_sync.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_buff_attribute_state_sync.py` now prepares to replace future direct P2-B impact / personal crit read-then-writeback paths by pinning current Lighter, QingYi, Trigger, and Soldier0 Anby count formulas, aggregation shape, old `buff_0` identity, inactive gates, and state-sync order.
+  - This story builds the state-sync harness only; no live `BuffXLogic` path is migrated yet.
+- Compatibility retained:
+  - Direct `MultiplierData(...)` / Calculator calls remain in `LighterAdditionalAbility_IceFireBonus.py`, `QingYiAdditionalAbilityStunConvertToATK.py`, `TriggerAdditionalAbilityStunBonus.py`, and `Soldier0AnbyCoreSkillCritDMGBonus.py` until their migration stories run.
+  - Calculator / CalAnomaly formula snapshots, full-vs-personal crit semantics, `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime-state, old containers, and phase-1 boundaries remain unchanged.
+- Next step:
+  - Continue with US-005 by confirming P2-B focused tests remain wired into `calculator-reads`, then migrate Lighter impact read-through in US-006 using the pinned order harness.
+---
