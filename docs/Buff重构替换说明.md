@@ -1373,3 +1373,14 @@
 - Next step:
   - 继续 US-007，按同一 reader-oracle + state-sync order 模式迁移 `YuzuhaAdditionalAbilityAnomalyBuildupBonus.py`，并保留 YUZUHA report / process-state behavior。
 ---
+## 2026-06-08 12:34 +08:00 - US-007
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyBuildupBonus.py`, `tests/simulator/test_buff_attribute_state_sync.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `YuzuhaAdditionalAbilityAnomalyBuildupBonus.special_hit_logic()` now replaces its direct `MultiplierData(...)` / `Calculator.AnomalyMul.cal_am(...)` AM read with `create_anomaly_attribute_read_context(...)` and `CalculatorBuffAttributeReader().read_anomaly_mastery(...)`.
+  - `tests/simulator/test_buff_attribute_state_sync.py` now covers Yuzuha buildup below-threshold no-op, cinema 0 ratio, cinema 1+ capped ratio, aggregation shape, old `buff_0` identity, and `simple_start(..., no_count=1) -> dy.count -> update_to_buff_0(...)` order.
+- Compatibility retained:
+  - Yuzuha buildup `get_prepared(char_CID=1411, sub_exist_buff_dict=1, enemy=1, dynamic_buff_list=1)`, `cinema_1_ratio` initialization, `am < 100` early return, `min(am - 100, 100) * cinema_1_ratio`, and current no-report/process-state behavior remain covered.
+  - `Calculator.AnomalyMul.cal_am(...)`, `MultiplierData`, Calculator / CalAnomaly formulas, phase-1 dispatch/runtime boundaries, scheduled publish, listener broadcast, and old-container deletion remain retained outside this story.
+- Next step:
+  - 继续 US-008，迁移 `YuzuhaAdditionalAbilityAnomalyDmgBonus.py` 到同一 AM reader + state-sync pattern，并保留该 sibling 当前的 `YUZUHA_REPORT` / `schedule_data.change_process_state()` 行为。
+---
