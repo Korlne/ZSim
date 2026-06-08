@@ -1439,3 +1439,14 @@
 - Next step:
   - 继续 US-013，串行运行最终 focused validation / behavior sample decision，并把结果记录到 Ralph progress；不要把 P2-A guardrail 扩展成 P2-B crit / impact reader work。
 ---
+## 2026-06-08 14:31 +08:00 - US-013
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - This validation-only iteration does not replace live XLogic behavior; it validates the migrated P2-A AM/AP reader + computed count state-sync surface through direct focused pytest plus the `calculator-reads` and `implicit-events` validation profiles.
+  - The behavior sample decision prepares final handoff by proving current registered teams do not include Alice, Yuzuha/柚叶, or Jane/简, so no main-loop behavior sample was run in this story.
+- Compatibility retained:
+  - The six migrated P2-A files, reader/context helper, state-sync order tests, source guardrail, Calculator / CalAnomaly formula snapshots, phase-1 dispatch/runtime boundaries, scheduled publish, listener broadcast, same-tick runtime write, and old-container deletion remain unchanged in this validation story.
+  - Current registered teams remain `青衣雷属性队`, `席德大安比队`, `莱特火属性队`, and `薇薇安物理队`; future behavior samples should use a real registered Alice/Yuzuha/Jane fixture when one exists.
+- Next step:
+  - 继续 US-014，更新 handoff docs 和 next candidate pool，保留 P2-B through P2-F 候选块，不要把下一阶段计划收窄成单一路径。
+---
