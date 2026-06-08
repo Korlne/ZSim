@@ -735,6 +735,59 @@ def test_woodpecker_full_crit_gate_pins_rng_and_trigger_level(
     assert fixture.sim_instance.schedule_data.event_list == []
 
 
+def test_woodpecker_ca_full_crit_gate_reads_before_rng(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    MultiplierData.mul_data_cache.clear()
+    fixture = _make_full_crit_fixture(name="啄木鸟测试", cid=1301, crit_rate=0.2)
+    calls: list[tuple[Any, ...]] = []
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        {
+            "固定暴击率": 0.05,
+            "局内暴击率": 0.05,
+            "被暴击几率增加": 0.2,
+        },
+        call_log=calls,
+    )
+
+    def random_float() -> float:
+        calls.append(("random_float",))
+        return 0.45
+
+    def fail_simple_start(*args: object, **kwargs: object) -> None:
+        raise AssertionError("Woodpecker CA full crit gate should not start state")
+
+    fixture.sim_instance.rng_instance = SimpleNamespace(random_float=random_float)
+    buff_instance = SimpleNamespace(
+        ft=SimpleNamespace(index="woodpecker-electro"),
+        sim_instance=fixture.sim_instance,
+        simple_start=fail_simple_start,
+    )
+    logic = WoodpeckerElectroSet4_CA(buff_instance)
+    logic.record = SimpleNamespace(
+        char=fixture.char,
+        enemy=fixture.enemy,
+        dynamic_buff_list=fixture.active_buff_view,
+        action_stack=[],
+    )
+    monkeypatch.setattr(logic, "check_record_module", lambda: None)
+    monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
+
+    result = logic.special_judge_logic(
+        skill_node=_make_skill_node(
+            char_name=fixture.char.NAME,
+            cid=fixture.char.CID,
+            trigger_buff_level=4,
+        )
+    )
+
+    assert result is True
+    assert calls == [("attribute_read",), ("random_float",)]
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+    assert fixture.sim_instance.schedule_data.event_list == []
+
+
 @pytest.mark.parametrize("variant", _WOODPECKER_VARIANTS)
 def test_woodpecker_full_crit_gate_skips_rng_and_state_sync_on_wrong_actor(
     monkeypatch: pytest.MonkeyPatch,
@@ -806,6 +859,11 @@ def test_woodpecker_full_crit_gate_skips_rng_and_state_sync_on_wrong_actor(
             "E_EX",
             id="WoodpeckerElectroSet4_E_EX",
         ),
+        pytest.param(
+            WoodpeckerElectroSet4_CA,
+            "CA",
+            id="WoodpeckerElectroSet4_CA",
+        ),
     ],
 )
 def test_migrated_woodpecker_full_crit_gate_skips_rng_and_state_sync_without_skill_node(
@@ -876,6 +934,17 @@ def test_woodpecker_na_full_crit_gate_uses_reader_seam_source() -> None:
 def test_woodpecker_e_ex_full_crit_gate_uses_reader_seam_source() -> None:
     module_source = inspect.getsource(sys.modules[WoodpeckerElectroSet4_E_EX.__module__])
     method_source = inspect.getsource(WoodpeckerElectroSet4_E_EX.special_judge_logic)
+
+    assert "MultiplierData" not in module_source
+    assert "RegularMul" not in module_source
+    assert "cal_crit_rate" not in module_source
+    assert "create_anomaly_attribute_read_context" in method_source
+    assert "read_full_crit_rate" in method_source
+
+
+def test_woodpecker_ca_full_crit_gate_uses_reader_seam_source() -> None:
+    module_source = inspect.getsource(sys.modules[WoodpeckerElectroSet4_CA.__module__])
+    method_source = inspect.getsource(WoodpeckerElectroSet4_CA.special_judge_logic)
 
     assert "MultiplierData" not in module_source
     assert "RegularMul" not in module_source

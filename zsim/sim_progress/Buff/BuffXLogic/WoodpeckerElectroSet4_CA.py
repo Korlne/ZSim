@@ -2,6 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from zsim.sim_progress.ScheduledEvent.Calculator import (
+    CalculatorBuffAttributeReader,
+    create_anomaly_attribute_read_context,
+)
+
 from .. import Buff, JudgeTools, check_preparation
 
 if TYPE_CHECKING:
@@ -60,15 +65,15 @@ class WoodpeckerElectroSet4_CA(Buff.BuffLogic):
             return False
         if str(self.record.char.CID) not in skill_node.skill_tag:
             return False
-        from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
-
-        mul_data = MultiplierData(
-            self.record.enemy, self.record.dynamic_buff_list, self.record.char
+        context = create_anomaly_attribute_read_context(
+            enemy=self.record.enemy,
+            active_buff_view=self.record.dynamic_buff_list,
+            character=self.record.char,
         )
         if skill_node.skill.trigger_buff_level == 4:
+            cric_rate = CalculatorBuffAttributeReader().read_full_crit_rate(context)
             rng: RNG = self.buff_instance.sim_instance.rng_instance
             normalized_value = rng.random_float()
-            cric_rate = Calculator.RegularMul.cal_crit_rate(mul_data)
             if normalized_value <= cric_rate:
                 return True
             else:

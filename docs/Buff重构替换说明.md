@@ -1630,3 +1630,16 @@
 - Next step:
   - Continue with US-015 by migrating `WoodpeckerElectroSet4_CA.py` through `CalculatorBuffAttributeReader.read_full_crit_rate(...)` while preserving CA trigger level `4` and RNG gate behavior.
 ---
+
+## 2026-06-08 18:30 +08:00 - US-015
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/WoodpeckerElectroSet4_CA.py`, `tests/simulator/test_full_crit_event_adjacent_reader.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `WoodpeckerElectroSet4_CA.py` now replaces its direct `MultiplierData(...)` / `Calculator.RegularMul.cal_crit_rate(...)` full-crit gate with `create_anomaly_attribute_read_context(...)` and `CalculatorBuffAttributeReader.read_full_crit_rate(...)`.
+  - The focused full-crit event-adjacent test now guards the CA module against reintroducing direct full-crit Calculator snapshot imports or calls, covers the no-SkillNode no-RNG/no-state-sync branch, and pins the reader aggregation before RNG.
+- Compatibility retained:
+  - CA `special_judge_logic(...)` preparation arguments, SkillNode / LoadingMission normalization, character tag gate, trigger level `4`, full-crit received-bonus semantics, RNG threshold result, no-publish behavior, and aggregation shape remain preserved.
+  - The retained Calculator formula snapshot still owns `Calculator.RegularMul.cal_crit_rate(...)`; P2-B source guardrail consolidation remains for US-016.
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime-state, same-tick runtime writes, old-container deletion boundaries, and phase-1 raw queue deletion work remain unchanged.
+- Next step:
+  - Continue with US-016 by adding the migrated P2-B source guardrail across the completed impact / crit reader files while keeping retained Calculator snapshots and non-migrated future buckets out of scope.
+---
