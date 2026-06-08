@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from ..JudgeTools import read_trigger_buff_state
 from ._buff_record_base_class import BuffRecordBaseClass as Brbc
 
 
@@ -38,11 +39,9 @@ class CordisGerminaSNAAndQIgnoreDefense(Buff.BuffLogic):
         self.check_record_module()
         self.get_prepared(equipper="机巧心种", trigger_buff_0=("equipper", "机巧心种-电属性增伤"))
         assert self.record is not None
-        assert self.record.trigger_buff_0 is not None
-        result = len(self.record.trigger_buff_0.dy.built_in_buff_box) == 2
+        trigger_state = read_trigger_buff_state(self.record)
+        result = len(trigger_state.built_in_buff_box) == 2
         return result
 
     def special_exit_logic(self, **kwargs):
-        self.check_record_module()
-        self.get_prepared(equipper="机巧心种", trigger_buff_0=("equipper", "机巧心种-电属性增伤"))
-        return not self.xjudge
+        return not self.special_judge_logic(**kwargs)

@@ -1744,3 +1744,14 @@
 - Next step:
   - Continue with US-007 by migrating only `CordisGerminaSNAAndQIgnoreDefense.py` tuple-box read-only gate through the helper, without adding tuple-box pruning, rebuild, derived count sync, or template sync behavior.
 ---
+## 2026-06-08 20:38 +08:00 - US-007
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/CordisGerminaSNAAndQIgnoreDefense.py`, `tests/simulator/test_trigger_state_read_only_gates.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `CordisGerminaSNAAndQIgnoreDefense.special_judge_logic(...)` replaces the direct `record.trigger_buff_0.dy.built_in_buff_box` chain with `read_trigger_buff_state(self.record).built_in_buff_box` after the existing `get_prepared(equipper="机巧心种", trigger_buff_0=(...))` lookup.
+  - `tests/simulator/test_trigger_state_read_only_gates.py` now locks tuple-box lengths `0`, `1`, `2`, and `3`, inverse `special_exit_logic(...)`, lazy record identity, old trigger template identity, no tuple-box sync, and the root-only source assertion for this migrated file.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, `JudgeTools.find_exist_buff_dict(...)`, and old template Buff identity in `history.record.trigger_buff_0`.
+  - This story does not add tuple-box pruning, tuple-box rebuild, derived count sync, template sync helper behavior, `BuffRuntimeReadPort` write APIs, scheduled publish, listener broadcast, runtime command writes, raw queue deletion, or Calculator formula changes.
+- Next step:
+  - Continue with US-008 by adding `AstralVoice.special_judge_logic(...)` no-write coverage before migrating that judge gate.
+---

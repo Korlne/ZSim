@@ -304,9 +304,14 @@ def test_trigger_state_helper_requires_prepared_trigger_record() -> None:
             ("record.trigger_buff_0.dy.count",),
             id="sharpened-stinger",
         ),
+        pytest.param(
+            "CordisGerminaSNAAndQIgnoreDefense.py",
+            ("record.trigger_buff_0.dy.built_in_buff_box",),
+            id="cordis-germina",
+        ),
     ],
 )
-def test_migrated_pure_count_gate_sources_use_trigger_state_helper(
+def test_migrated_trigger_state_gate_sources_use_trigger_state_helper(
     *,
     file_name: str,
     forbidden_chains: Sequence[str],
@@ -428,6 +433,7 @@ def test_cordis_germina_tuple_box_gate_reads_without_tuple_sync(
     box_length: int,
     expected: bool,
 ) -> None:
+    trigger_box = tuple(object() for _ in range(box_length))
     fixture = _make_equipment_gate(
         monkeypatch,
         logic_type=CordisGerminaSNAAndQIgnoreDefense,
@@ -435,12 +441,16 @@ def test_cordis_germina_tuple_box_gate_reads_without_tuple_sync(
         trigger_index="Buff-音擎-机巧心种-电属性增伤",
         active=True,
         count=0,
-        built_in_buff_box=tuple(object() for _ in range(box_length)),
+        built_in_buff_box=trigger_box,
     )
 
     assert fixture.logic.special_judge_logic() is expected
+    assert fixture.logic.special_exit_logic() is (not expected)
     _assert_lazy_record_and_trigger_identity(fixture)
     assert fixture.current_buff.dy.count == 0.0
+    assert fixture.current_template.dy.built_in_buff_box == ()
+    assert fixture.current_template.dy.count == 0.0
+    assert fixture.trigger_template.dy.built_in_buff_box == trigger_box
     assert len(fixture.trigger_template.dy.built_in_buff_box) == box_length
 
 
