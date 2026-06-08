@@ -1938,3 +1938,14 @@
 - Next step:
   - Continue with US-002 by auditing existing dot coverage and defining a minimal dot runtime-state contract before adding helper / adapter production code.
 ---
+## 2026-06-09 03:10 +08:00 - US-002
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - This audit-only story prepares a minimal P2-E dot runtime-state contract to replace manual reasoning about `dynamic_dot_list` read / find, register, replace, remove, and snapshot responsibilities before any production helper is introduced.
+  - No live `BuffXLogic`, `UpdateAnomaly`, `Dot`, dispatch adapter, listener, runtime command, facade, old-container, Calculator, or CalAnomaly behavior was replaced in this iteration.
+- Compatibility retained:
+  - Old paths still retained in this iteration: Vivian dot registration still mutates `enemy.dynamic.dynamic_dot_list`, Shock duration still reads the documented Rina passive inputs, UpdateAnomaly dot replacement / removal still mutates runtime dot state, Vivian and freeze follow-up scheduled payloads still publish through `ScheduleDispatchPort`, and debuff writes still route through `buff_add_strategy(...)`.
+  - P2-A / P2-B / P2-C / P2-D completed buckets, phase-1 raw queue deletion, old-container deletion, listener broadcast, `RuntimeCommandPort`, `BuffRuntimeReadPort` read-only semantics, direct simulator context candidates, and Calculator / CalAnomaly formula snapshots remain unchanged.
+- Next step:
+  - Continue with US-003 by adding Vivian dot presence and registration focused coverage before adding a dot runtime-state helper / adapter.
+---
