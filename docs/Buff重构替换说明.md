@@ -1801,3 +1801,14 @@
 - Next step:
   - Continue with US-012 by running serial validation / behavior-sample decision and recording whether registered representative teams exist; do not broaden the P2-C guardrail beyond migrated files.
 ---
+## 2026-06-08 21:23 +08:00 - US-012
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - This story is validation-only: `implicit-events` validation and one registered main-loop consistency sample validate the completed P2-C helper / migrated files / guardrail package, but no live `BuffXLogic` path is replaced in this iteration.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, `JudgeTools.find_exist_buff_dict(...)`, old template Buff identity in `history.record.trigger_buff_0`, and the migrated-file-only P2-C source guardrail.
+  - `BuffRuntimeReadPort` remains read-only; no `RuntimeCommandPort`, `ScheduleDispatchPort`, listener broadcast, dot runtime registration, raw queue deletion, Calculator formula, or default lifecycle behavior was changed.
+  - Registered sample evidence: `席德大安比队` with `机巧心种` + `索魂影眸` matched total damage, event counts, and buff timeline exactly between the two report labels.
+- Next step:
+  - Continue with US-013 final handoff docs: mark P2-C validated/guarded completion evidence, record that no old-coupling review update was needed unless new evidence appears, and promote the next same-phase default from the retained phase-2 pool.
+---
