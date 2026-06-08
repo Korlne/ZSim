@@ -1916,3 +1916,14 @@
 - Next step:
   - Continue with US-009 final handoff docs, promoting the next same-phase pool without reopening P2-D production behavior or broadening the P2-D guardrail beyond migrated scheduled-publish files.
 ---
+## 2026-06-08 23:50 +08:00 - US-009
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - Final handoff docs now replace stale “P2-D is next” planning with completed P2-D scheduled publish ordering / adapter parity evidence, serial validation summaries, behavior-sample skip rationale, and a concrete next default PRD: P2-E dot runtime-state / initialization.
+  - This story updates planning and handoff state only; it does not replace additional live `BuffXLogic`, `UpdateAnomaly`, dispatch adapter, listener, dot runtime, runtime command, or Calculator behavior.
+- Compatibility retained:
+  - P2-D migrated producers, exact-file source guardrail, focused dispatch tests, `ScheduleDispatchPort` queue-only semantics, listener broadcast, dot runtime registration/removal, runtime immediate writes, `RuntimeCommandPort`, old containers, Calculator / CalAnomaly formula snapshots, P2-E / P2-F / direct context candidates, and blocker-only phase-1 reopen rules remain unchanged.
+  - No new old-coupling review update was needed; root-workspace evidence found no new coupling beyond existing P2-D completion and retained P2-E/P2-F/direct-context pool entries.
+- Next step:
+  - Generate the next phase-2 PRD from [Buff重构方案.md](./Buff重构方案.md), defaulting to P2-E dot runtime-state / initialization while preserving P2-F BuffAddStrategy facade-write design, direct simulator context helpers, P2-D guarded maintenance, phase-3 formula snapshots, retained compatibility rows, and blocker-only phase-1 reopen rules.
+---

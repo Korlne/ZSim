@@ -223,6 +223,7 @@
 - [x] P2-A “AM/AP reader + computed count state-sync family” 已完成；后续不再把六个已迁移文件当默认实现 backlog，除非 source guardrail 或 validation 给出具体回归证据。
 - [x] P2-B “crit / impact reader family package” 已完成；后续不再把九个已迁移 impact / crit 文件当默认实现 backlog，除非 source guardrail、focused test 或 validation 给出具体回归证据。
 - [x] P2-C “trigger-state read-only gates” 已完成；后续不再把五个已迁移 trigger-state 文件当默认实现 backlog，除非 P2-C source guardrail、focused no-write / count-mirror tests、`implicit-events` 或 behavior sample 给出具体回归证据。
-- [ ] 下一轮默认 PRD 应沿 [Buff重构方案.md](./Buff重构方案.md) 继续留在阶段 2，优先选择 “scheduled publish ordering / adapter parity” 作为 P2-D payload / target / priority / order focused test 包，而不是单文件薄切片或阶段 3 全面替换。
-- [ ] 同阶段候选池必须继续保留 dot runtime-state / initialization、BuffAddStrategy caller / facade-write design、direct simulator context helpers 与 phase-3-only formula snapshot replacement，避免 PRD 生成器只沿上一个文件继续。
+- [x] P2-D “scheduled publish ordering / adapter parity” 已完成 guarded scope：adapter rebinding、resource refresh payload / order、`SkillNode` / `LoadingMission` order、stateful anomaly / dot layer separation、fan-out / multi-publish parity 与 exact-file source guardrail 已由 focused tests、`test_migrated_p2d_scheduled_publish_guardrail.py` 和 `implicit-events` 串行验证覆盖；后续不再把 P2-D 当默认 backlog，除非 guardrail / validation 给出具体回归证据。
+- [ ] 下一轮默认 PRD 应沿 [Buff重构方案.md](./Buff重构方案.md) 继续留在阶段 2，优先选择 “dot runtime-state / initialization” 作为 P2-E dot duration / replacement / removal focused test 与 runtime-state adapter 设计包，而不是把 dot runtime registration 误归入 planned-event backlog。
+- [ ] 同阶段候选池必须继续保留 BuffAddStrategy caller / facade-write design、direct simulator context helpers、P2-D guarded maintenance 与 phase-3-only formula snapshot replacement，避免 PRD 生成器只沿上一个文件继续。
 - [ ] 若后续 validation 或 guardrail 重新暴露阶段 1 blocker，下一轮 PRD 只处理 blocker package 中列出的具体文件、符号、失败测试、失败 guardrail 或验证命令；不得重开已删除的 `event_list` surface 或已闭合的 producer batch，除非 guardrail 给出新的生产证据。
