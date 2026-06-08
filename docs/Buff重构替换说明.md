@@ -1275,3 +1275,14 @@
 - Next step:
   - Continue with US-007 by classifying anomaly, debuff, dot, and formula-bypass couplings without collapsing scheduled publish, listener broadcast, dot runtime registration, and runtime immediate write into one boundary.
 ---
+## 2026-06-08 10:32 +08:00 - US-007
+- Files changed: `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `docs/BuffXLogic阶段2全量分类与复用矩阵.md` now prepares to replace loose anomaly / debuff / dot bypass backlog wording with layer-separated buckets for enemy anomaly-state gates, disorder / polarity outputs, freeze / frost / anomaly-debuff state, dot runtime registration / presence, `BuffAddStrategy` same-tick writes, and Calculator / CalAnomaly formula snapshots.
+  - No live BuffXLogic, UpdateAnomaly, Dot, Calculator, runtime port, facade, listener, or validation path was replaced in this story; it produces phase-2 classification evidence only.
+- Compatibility retained:
+  - `UpdateAnomaly` scheduled publish stays on `ScheduleDispatchPort`; listener broadcast, dot runtime registration / removal, runtime immediate write, `AnomalyBar` runtime-view reads, and `BuffAddStrategy` facade-backed writes remain separate boundaries.
+  - `Shock.DotFeature`, `CalAnomaly`, old enemy dynamic state, old container identity, `MultiplierData` snapshots, and enemy debuff mirror semantics remain retained compatibility / future classification candidates.
+- Next step:
+  - Continue with US-008 by producing the reusable pattern catalog and risk matrix from the completed US-001 through US-007 classification buckets, without turning dot runtime registration or formula snapshots into immediate replacement work.
+---

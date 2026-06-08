@@ -630,6 +630,77 @@ rg -n "buff_add\(|KickOutBuff\(" zsim/sim_progress/Buff/BuffXLogic --glob '*.py'
 - 可优先形成 future read-port stories 的是 trigger-state reads、dynamic snapshot / attribute-reader paths 和部分 direct context reads；必须留在 adapter-internal 的是 pending queue、active store lifecycle, enemy mirror write sync, retained `buff_add()` / `KickOutBuff()` and `ScheduleBuffSettle` command-adapter internals.
 - No live runtime path or XLogic behavior was replaced in this story. Existing `RuntimeCommandPort` remains the sole same-tick write boundary, `BuffRuntimeReadPort` remains read-only, and `LegacyBuffRuntimeFacade` continues to retain old container identity by reference.
 
+## US-007 anomaly / debuff / dot / formula bypass 分类
+
+本节只补阶段 2 分类证据，不改动 `BuffXLogic`、`UpdateAnomaly`、Dot、Calculator、runtime port、guardrail 或验证脚本。分类仍是非排他的：同一个 XLogic 可以同时命中 anomaly gate、scheduled publish、record/state-sync、formula snapshot 或 runtime service-location。
+
+### Root-workspace scan evidence
+
+以下命令均在根工作区执行，路径限定在 `zsim/sim_progress/Buff/BuffXLogic`，不读取 `.codex_worktrees/` 历史副本：
+
+```powershell
+rg --files zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -l "anomaly|Anomaly|异常|紊乱|disorder|Disorder|polarity|Polarity|极性紊乱" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -l "enemy\.dynamic\.(is_under_anomaly|get_active_anomaly|get_active_anomaly_bar|assault|burn|shock|frozen|frostbite|frost_frostbite|corruption|stun|dynamic_debuff_list|dynamic_dot_list)" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -l "dot|Dot|find_dot|spawn_normal_dot|dynamic_dot_list|dynamic_dot" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -l "debuff|Debuff|dynamic_debuff_list" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -l "buff_add_strategy|BuffAddStrategy" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -l "Cal\.AnomalyMul|Calculator\.AnomalyMul|AnomalyMul|cal_am\(|cal_ap\(|current_ndarray|anomaly_dmg_ratio|MulData|MultiplierData" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -l "publish_scheduled|create_schedule_dispatch_port|ScheduleDispatchPort|spawn_output|LoadingMission|schedule_priority|preload_tick" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+```
+
+| scan bucket | files | matching lines | classification use |
+| --- | ---: | ---: | --- |
+| full root-workspace XLogic census | 149 | - | Baseline file count; `__init__.py` excluded. |
+| anomaly / disorder / polarity terms | 30 | 216 | Anomaly gates, disorder records, polarity disorder output, anomaly formula / AP / AM terms. |
+| `enemy.dynamic.*` state reads | 23 | 42 | Runtime enemy-state gates: anomaly flags, stun/freeze flags, active anomaly lookup, dot/debuff lists. |
+| dot terms | 2 | 18 | `VivianDotTrigger` runtime dot registration and `VivianCinema1Debuff` dot presence gate. |
+| debuff terms | 6 | 15 | Anomaly debuff exit / enemy debuff mirror read candidates. |
+| `buff_add_strategy` | 6 | 18 | Same-tick forced Buff / Debuff write callsites. |
+| anomaly formula / snapshot terms | 18 | 45 | AP / AM / anomaly ratio reads and copied-anomaly formula candidates. |
+| scheduled-publish terms | 43 | 108 | Already-migrated event publishers and ordering-sensitive trigger samples; not all are anomaly/dot bypasses. |
+
+### CodeGraph boundary evidence
+
+- Query terms used: `US-007 Classify Anomaly Debuff Dot Formula Bypass Couplings`, `BuffAddStrategy`, `UpdateAnomaly`, `AnomalyBar`, `Shock.DotFeature`, `DotFeature`, `CalAnomaly`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `implicit-events`, `calculator-reads`.
+- `BuffAddStrategy.buff_add_strategy(...)` now creates `LegacyBuffRuntimeFacade` on demand and `let_buff_start(...)` uses the facade for active-store replacement and `sync_enemy_debuff_mirror(...)`; template lookup through `exist_buff_dict` remains retained compatibility.
+- `UpdateAnomaly.update_anomaly(...)` creates `ScheduleDispatchPort` per call and publishes `new_anomaly`, `disorder`, and freeze follow-up payloads through `_publish_scheduled_event(...)`; `spawn_output(...)` keeps listener broadcast separate from scheduled publish.
+- `anomaly_effect_active(...)` still routes accompanying debuff through `buff_add_strategy(...)` and accompanying dot through `spawn_anomaly_dot(...)` plus direct `enemy.dynamic.dynamic_dot_list` replacement / append.
+- `remove_dots_cause_disorder(...)` still iterates and removes `enemy.dynamic.dynamic_dot_list`; only the freeze follow-up anomaly data is scheduled through the dispatch port.
+- `RuntimeCommandPort.update_anomaly(...)` delegates to legacy `update_anomaly(...)` through `LegacyRuntimeCommandAdapter`, carrying `ScheduleData.event_list`, `char_obj_list`, `dynamic_buff`, `buff_runtime_view`, and `sim_instance` inside the one same-tick command boundary.
+- `AnomalyBar.change_info_cause_active(...)` passes `buff_runtime_view` into `__get_max_duration(...)`; `__get_duration_enemy_buffs(...)` prefers `buff_runtime_view.get_active_buffs("enemy")` and falls back to legacy `dynamic_buff_dict["enemy"]`.
+- `Shock.DotFeature.__post_init__()` still reads `sim_instance.init_data.name_box` and `sim_instance.load_data.exist_buff_dict["丽娜"]` to decide Shock duration. This is a dot initialization read candidate, not a phase-1 blocker.
+- `CalAnomaly.__init__()` consumes settled `AnomalyBar.current_ndarray`, constructs `MulData(...)`, and calls Calculator multiplier helpers. It remains a formula snapshot classification target, not an implementation target in this PRD.
+- CodeGraph again surfaced `.codex_worktrees/` duplicates; they are historical navigation evidence only and are excluded from the root-workspace counts above.
+
+### Bypass buckets
+
+| bucket | representative files / symbols | 当前行为证据 | retained boundary / future candidate | validation need / non-goal |
+| --- | --- | --- | --- | --- |
+| Enemy anomaly-state gates | `ElectroLipGlossAtkAndDmgBonus.py`, `JaneAdditionalAbilityPhyBuildupBonus.py`, `MarcatoDesireAtkBonus.py`, `TimeweaverApBonus.py`, `WeepingGeminiApBonus.py`, `HailstormShrineIceBonus.py`, `MiyabiAdditionalAbility_IgnoreIceRes.py` | Reads `enemy.dynamic.is_under_anomaly()`, per-element flags, or edge-detected anomaly maps to allow / deny Buff behavior. | Future read-only enemy-state helper or `BuffRuntimeReadPort`-adjacent view where source proves active Buff reads; keep direct enemy state distinct from Buff container reads. | `implicit-events`; add focused no-op / publish / count branch tests before extraction. Do not treat gates as scheduled publishers. |
+| Disorder / polarity disorder outputs | `YanagiPolarityDisorderTrigger.py`, `AlicePolarizedAssaultTrigger.py`, `VivianCorePassiveTrigger.py`, `VivianCinema6Trigger.py` | Copies active `AnomalyBar`, may settle snapshot, constructs `PolarityDisorder` / copied anomaly output, then publishes through `_create_dispatch_port().publish_scheduled(...)`. | Existing `ScheduleDispatchPort` for scheduled payloads; formula / AP reads remain Calculator snapshot candidates. | `implicit-events` plus file-specific dispatch tests such as `test_yanagi_polarity_disorder_dispatch.py`, `test_alice_polarized_assault_trigger_dispatch.py`, `test_vivian_core_passive_trigger_dispatch.py`, `test_vivian_cinema6_trigger_dispatch.py`. Do not reopen raw queue discovery surfaces. |
+| Freeze / frost / anomaly-debuff state | `AnomalyDebuffExitJudge.py`, `BranchBladeSongCritRateBonus.py`, `PolarMetalFreezeBonus.py`, `MiyabiCoreSkill_FrostBurn.py`, `MiyabiCoreSkill_IceFire.py`, `LinaAdditionalSkillEleDMGBonus.py` | Reads `enemy.dynamic.frozen`, `frostbite`, `frost_frostbite`, `shock`, or `dynamic_debuff_list`; some files edge-detect state changes before exiting / activating Buffs. | Runtime enemy-state read helper candidate; enemy debuff mirror writes stay adapter-internal through `LegacyBuffRuntimeFacade`. | `implicit-events`; focused edge-detection tests before replacement. Do not attempt enemy debuff single-source-of-truth cleanup in this PRD. |
+| Dot runtime registration / dot presence | `VivianDotTrigger.py`, `VivianCinema1Debuff.py`, `UpdateAnomaly.anomaly_effect_active(...)`, `remove_dots_cause_disorder(...)`, `Shock.DotFeature.__post_init__()` | `VivianDotTrigger` starts a dot, appends it to `enemy.dynamic.dynamic_dot_list`, then publishes dot `skill_node_data`; `UpdateAnomaly` replaces / appends anomaly dots and removes dots during disorder; `Shock.DotFeature` reads Rina passive from old template data to adjust duration. | Dot runtime-state / initialization adapter candidate; scheduled publish remains separate and already uses `ScheduleDispatchPort` where applicable. | `implicit-events`; dot behavior changes need focused dot tests and, for duration / tick behavior, main-loop consistency samples. Dot runtime registration is not planned-event backlog. |
+| Forced Buff / Debuff same-tick writes | `HugoCorePassiveTotalizeTrigger.py`, `RoaringRideBuffTrigger.py`, `SeedBesiegeBonusTrigger.py`, `SeedCinema2BesiegeIgnoreDefenceTrigger.py`, `SeedCinema4Trigger.py`, `SeedDirectStrikeTrigger.py`, `UpdateAnomaly.anomaly_effect_active(...)` | Calls `buff_add_strategy(...)`; current implementation builds `LegacyBuffRuntimeFacade`, replaces existing active Buff via facade, appends active Buff, and syncs enemy mirror through facade for `enemy`. | Existing `LegacyBuffRuntimeFacade` / runtime write boundary; registry / template identity retained in `exist_buff_dict`. | `implicit-events` and raw-container guardrail; default lifecycle profile only if lifecycle wiring changes. Do not add a second write facade or convert same-tick writes into scheduled publish. |
+| Formula / anomaly snapshot reads | `CalAnomaly.py`, `Calculator.py`, `AliceAdditionalAbilityApBonus.py`, `JaneCinema1APTransToDmgBonus.py`, `JaneCoreSkillStrikeCritRateBonus.py`, `JanePassionStateAPTransToATK.py`, `VivianCorePassiveTrigger.py`, `VivianCinema6Trigger.py`, `YuzuhaAdditionalAbilityAnomaly*.py` | `CalAnomaly` reads settled `current_ndarray` and `MulData`; XLogic reads AP / AM or anomaly ratio before count/state sync or copied anomaly publish. | Retained `FORMULA_SNAPSHOT` plus future `BuffAttributeReader` helper-family expansion. | `calculator-reads` for formula/read helper changes; add `implicit-events` when the same story changes scheduled publish or anomaly output. Do not rewrite Calculator / CalAnomaly formula internals in this classification PRD. |
+
+### Follow-up anomaly / dot PRD groups
+
+| candidate group | candidate files / symbols | Ralph-sized direction | retained boundaries | validation entrypoints | non-goals |
+| --- | --- | --- | --- | --- | --- |
+| Enemy anomaly-state read helpers | `ElectroLipGlossAtkAndDmgBonus.py`, `JaneAdditionalAbilityPhyBuildupBonus.py`, `MiyabiAdditionalAbility_IgnoreIceRes.py`, `HailstormShrineIceBonus.py`, `WeepingGeminiApBonus.py` | Start from read-only gates and edge detection; design a small enemy-state read context only after focused tests prove current tick / previous tick behavior. | Existing enemy dynamic flags and record fields. | `implicit-events` plus file-specific gate tests. | No scheduled publish migration, no enemy debuff SSoT cleanup. |
+| Dot runtime-state / initialization reads | `VivianDotTrigger.py`, `VivianCinema1Debuff.py`, `Shock.DotFeature.__post_init__()` | Separate dot presence, dot registration, dot duration initialization, and scheduled dot follow-up publish. | `enemy.dynamic.dynamic_dot_list` remains runtime dot state; `ScheduleDispatchPort` remains scheduled payload boundary. | `implicit-events`; dot duration changes need main-loop consistency sample. | Dot runtime registration is not raw queue backlog. |
+| BuffAddStrategy caller classification | `HugoCorePassiveTotalizeTrigger.py`, `RoaringRideBuffTrigger.py`, `Seed*Trigger.py`, `UpdateAnomaly.anomaly_effect_active(...)` | Keep caller taxonomy and, if later replacing, test active-store replacement, enemy mirror sync, selected-target fan-out, and no pending queue writes. | `LegacyBuffRuntimeFacade` active / mirror writes, old template registry identity, one same-tick write boundary. | `implicit-events`, `test_buff_add_strategy_runtime_facade.py`, `test_buff_raw_container_guardrail.py`; lifecycle profile only for lifecycle changes. | No new write facade, no deletion of legacy `buff_add()` / `KickOutBuff()`. |
+| Anomaly formula / copied-output reads | `CalAnomaly.py`, `VivianCorePassiveTrigger.py`, `VivianCinema6Trigger.py`, `YanagiPolarityDisorderTrigger.py`, AM / AP XLogic files | Group by helper family and output semantics: AP / AM parity, copied anomaly ratio, polarity disorder ratio, then state-sync order where needed. | `MultiplierData`, `CalAnomaly`, scheduled publish ordering, old active Buff snapshots. | `calculator-reads`; add `implicit-events` when output payload publish changes. | No full formula rewrite and no phase-3 XLogic replacement in this PRD. |
+
+### US-007 结论
+
+- Anomaly / debuff / dot bypass work must continue to classify by runtime layer first: scheduled queue publish, listener broadcast, dot runtime registration / removal, runtime immediate write, formula snapshot, and enemy-state read are separate axes.
+- `UpdateAnomaly` scheduled publish is already on `ScheduleDispatchPort`; `spawn_output()` listener broadcast, `anomaly_effect_active()` debuff write, dot runtime registration, `RuntimeCommandPort` same-tick command writes, `AnomalyBar` runtime-view read sample, and `BuffAddStrategy` facade-backed writes remain distinct retained boundaries.
+- `Shock.DotFeature` and `CalAnomaly` are valid phase-2 classification targets, but neither is a phase-1 blocker or a live replacement target for this story.
+- Dot runtime registration must not be reclassified as planned-event backlog, and enemy debuff single-source-of-truth cleanup remains out of scope.
+- No production behavior, validation wiring, Calculator formula, runtime port, facade, listener, or Dot implementation changed in this story.
+
 ## 后续填写占位
 
-`US-007` 之后应基于上面的 runtime/service-location 表继续分类 anomaly / debuff / dot bypass，再补复用模式目录、风险矩阵和下一轮 PRD 候选池。不要把 runtime read、facade-internal lifecycle、direct simulator context 或 state-sync buckets 直接当成阶段 3 替换清单。
+`US-008` 应基于 US-001 到 US-007 的分类结果补复用模式目录、风险矩阵和下一轮 PRD 候选池。不要把 anomaly / debuff / dot runtime registration、formula snapshots、facade-internal lifecycle 或 direct enemy-state gates 直接当成阶段 3 替换清单。
