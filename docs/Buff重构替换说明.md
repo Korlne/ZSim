@@ -1870,3 +1870,15 @@
 - Next step:
   - Continue with US-005 by adding stateful anomaly / dot scheduled publish coverage while keeping scheduled payloads separate from listener broadcast, dot runtime registration, and same-tick runtime writes.
 ---
+## 2026-06-08 23:13 +08:00 - US-005
+- Files changed: `tests/simulator/test_update_anomaly_dispatch.py`, `tests/simulator/test_alice_dot_trigger_dispatch.py`, `tests/simulator/test_vivian_dot_trigger_dispatch.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_update_anomaly_dispatch.py` prepares to replace manual `UpdateAnomaly` stateful publish-layer review by asserting synchronous anomaly / disorder listener broadcasts happen before scheduled publishes, exact anomaly / disorder payload fields are retained, and freeze follow-up publish happens before runtime dot ending/removal.
+  - `tests/simulator/test_alice_dot_trigger_dispatch.py` and `tests/simulator/test_vivian_dot_trigger_dispatch.py` prepare to replace manual dot-layer review by asserting dot runtime registration/removal remains on `enemy.dynamic.dynamic_dot_list`, while only the intended anomaly payload or `SkillNode` is published through `ScheduleDispatchPort`.
+  - This story strengthens focused parity coverage only; no live `UpdateAnomaly`, `BattleEventListener`, or `BuffXLogic` stateful-dot producer behavior was replaced in this iteration.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `UpdateAnomaly.update_anomaly(...)`, `AliceDotTriggerListener.listener_active(...)`, and `VivianDotTrigger.special_hit_logic(...)` still use their existing on-demand `create_schedule_dispatch_port(...)` / `_create_dispatch_port()` publish paths.
+  - Listener broadcast remains synchronous, dot runtime registration/removal remains a direct `dynamic_dot_list` mutation, runtime immediate writes remain outside scheduled-publish parity tests, and Scheduler priority sorting, handler requeue behavior, old containers, `RuntimeCommandPort`, and Calculator / CalAnomaly formula snapshots remain unchanged.
+- Next step:
+  - Continue with US-006 by inspecting and extending fan-out / multi-publish / priority parity coverage only where P2-D root-workspace gaps remain.
+---

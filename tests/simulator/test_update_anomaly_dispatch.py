@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import numpy as np
 
+from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 from zsim.sim_progress.Dot.BaseDot import Dot
 from zsim.sim_progress.Update.UpdateAnomaly import (
     remove_dots_cause_disorder,
@@ -19,32 +20,60 @@ class _FailFastEventList(list):
 
 
 class _RecordingEventList(list):
+    def __init__(self, call_order: list[tuple[str, object]] | None = None) -> None:
+        super().__init__()
+        self._call_order = call_order
+
     def append(self, item):
+        if self._call_order is not None:
+            self._call_order.append(("publish", item))
         super().append(item)
 
 
+class _ForbiddenRuntimeCommandPort:
+    def update_anomaly(self, **kwargs):
+        raise AssertionError("scheduled-publish parity tests should not issue runtime commands")
+
+
 class _FakeDot(Dot):
-    def __init__(self, *, index: str, anomaly_data=None):
+    def __init__(
+        self,
+        *,
+        index: str,
+        anomaly_data=None,
+        call_order: list[tuple[str, object]] | None = None,
+    ):
         super().__init__(bar=None, sim_instance=None)
         self.ft.index = index
         self.ft.max_effect_times = 30
         self.anomaly_data = anomaly_data
         self.ended_at: int | None = None
+        self._call_order = call_order
 
     def end(self, timenow: int):
+        if self._call_order is not None:
+            self._call_order.append(("dot_end", self.ft.index))
         self.ended_at = timenow
         super().end(timenow)
 
 
-def _build_sim_instance(event_list):
+def _build_sim_instance(
+    event_list,
+    call_order: list[tuple[str, object]] | None = None,
+):
+    def broadcast_event(**kwargs):
+        if call_order is not None:
+            call_order.append(("broadcast", kwargs["signal"]))
+
     return SimpleNamespace(
         tick=10,
         schedule_data=SimpleNamespace(
             event_list=event_list,
             change_process_state=lambda: None,
         ),
-        listener_manager=SimpleNamespace(broadcast_event=lambda **kwargs: None),
+        listener_manager=SimpleNamespace(broadcast_event=broadcast_event),
         decibel_manager=SimpleNamespace(update=lambda **kwargs: None),
+        runtime_command_port=_ForbiddenRuntimeCommandPort(),
     )
 
 
@@ -103,14 +132,15 @@ def _build_skill_node(*, element_type: int, char_name: str = "alpha", skill_tag:
 
 
 def test_update_anomaly_publishes_new_anomaly_via_dispatch_port_without_raw_queue_append():
+    call_order: list[tuple[str, object]] = []
     legacy_event_list = _FailFastEventList()
-    sim_instance = _build_sim_instance(legacy_event_list)
+    sim_instance = _build_sim_instance(legacy_event_list, call_order)
     enemy = _build_enemy(sim_instance)
     enemy.anomaly_bars_dict[1] = _build_anomaly_bar(sim_instance, element_type=1)
     skill_node = _build_skill_node(element_type=1)
     chars = [SimpleNamespace(special_resources=lambda *args, **kwargs: None)]
 
-    recording_queue = _RecordingEventList()
+    recording_queue = _RecordingEventList(call_order)
     sim_instance.schedule_data.event_list = recording_queue
 
     update_anomaly(
@@ -125,13 +155,19 @@ def test_update_anomaly_publishes_new_anomaly_via_dispatch_port_without_raw_queu
     )
 
     assert len(recording_queue) == 1
-    assert recording_queue[0].element_type == 1
-    assert recording_queue[0].activated_by is skill_node
+    published = recording_queue[0]
+    assert call_order == [("broadcast", LBS.ANOMALY), ("publish", published)]
+    assert published.element_type == 1
+    assert published.activated_by is skill_node
+    assert published.is_disorder is False
+    assert published.schedule_priority == 999
+    assert not hasattr(published, "execute_tick")
 
 
 def test_update_anomaly_preserves_new_anomaly_then_disorder_order_via_dispatch_port():
+    call_order: list[tuple[str, object]] = []
     legacy_event_list = _FailFastEventList()
-    sim_instance = _build_sim_instance(legacy_event_list)
+    sim_instance = _build_sim_instance(legacy_event_list, call_order)
     enemy = _build_enemy(sim_instance)
     current_bar = _build_anomaly_bar(sim_instance, element_type=1)
     previous_bar = _build_anomaly_bar(sim_instance, element_type=3)
@@ -141,9 +177,15 @@ def test_update_anomaly_preserves_new_anomaly_then_disorder_order_via_dispatch_p
     enemy.dynamic.active_anomaly_bar_dict[3] = previous_bar
     setattr(enemy.dynamic, enemy.trans_anomaly_effect_to_str[3], True)
     skill_node = _build_skill_node(element_type=1)
-    chars = [SimpleNamespace(special_resources=lambda *args, **kwargs: None)]
+    chars = [
+        SimpleNamespace(
+            special_resources=lambda anomaly: call_order.append(
+                ("special_resources", anomaly)
+            )
+        )
+    ]
 
-    recording_queue = _RecordingEventList()
+    recording_queue = _RecordingEventList(call_order)
     sim_instance.schedule_data.event_list = recording_queue
 
     update_anomaly(
@@ -158,22 +200,40 @@ def test_update_anomaly_preserves_new_anomaly_then_disorder_order_via_dispatch_p
     )
 
     assert len(recording_queue) == 2
-    assert recording_queue[0].element_type == 1
-    assert recording_queue[0].is_disorder is False
-    assert recording_queue[1].element_type == 3
-    assert recording_queue[1].is_disorder is True
+    new_anomaly = recording_queue[0]
+    disorder = recording_queue[1]
+    assert call_order == [
+        ("broadcast", LBS.ANOMALY),
+        ("broadcast", LBS.DISORDER_SPAWN),
+        ("publish", new_anomaly),
+        ("special_resources", disorder),
+        ("publish", disorder),
+    ]
+    assert new_anomaly.element_type == 1
+    assert new_anomaly.activated_by is skill_node
+    assert new_anomaly.is_disorder is False
+    assert new_anomaly.schedule_priority == 999
+    assert disorder.element_type == 3
+    assert disorder.activated_by is skill_node
+    assert disorder.is_disorder is True
+    assert disorder.schedule_priority == 999
 
 
 def test_remove_dots_cause_disorder_publishes_freeze_follow_up_via_dispatch_port():
+    call_order: list[tuple[str, object]] = []
     legacy_event_list = _FailFastEventList()
     sim_instance = _build_sim_instance(legacy_event_list)
     enemy = _build_enemy(sim_instance)
     anomaly_event = SimpleNamespace(marker="freeze-follow-up")
-    freeze_dot = _FakeDot(index="Freez", anomaly_data=anomaly_event)
+    freeze_dot = _FakeDot(
+        index="Freez",
+        anomaly_data=anomaly_event,
+        call_order=call_order,
+    )
     freeze_dot.dy.effect_times = 1
     enemy.dynamic.dynamic_dot_list.append(freeze_dot)
 
-    recording_queue = _RecordingEventList()
+    recording_queue = _RecordingEventList(call_order)
     sim_instance.schedule_data.event_list = recording_queue
     disorder = SimpleNamespace(accompany_dot="Shock")
 
@@ -185,6 +245,7 @@ def test_remove_dots_cause_disorder_publishes_freeze_follow_up_via_dispatch_port
     )
 
     assert recording_queue == [anomaly_event]
+    assert call_order == [("publish", anomaly_event), ("dot_end", "Freez")]
     assert freeze_dot.ended_at == 10
     assert enemy.dynamic.dynamic_dot_list == []
     assert enemy.dynamic.frozen is False

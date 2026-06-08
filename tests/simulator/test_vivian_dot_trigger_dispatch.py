@@ -45,6 +45,15 @@ class _RecordingDotList(list):
         super().append(item)
 
 
+class _ForbiddenRuntimeCommandPort:
+    def update_anomaly(self, **kwargs):
+        raise AssertionError("VivianDotTrigger should not issue runtime commands")
+
+
+def _fail_listener_broadcast(**kwargs) -> None:
+    raise AssertionError("VivianDotTrigger should not broadcast listener events")
+
+
 class _FakeViviansProphecy:
     def __init__(self, skill_node_data: SkillNode, call_order: list[str]) -> None:
         self.ft = SimpleNamespace(index="ViviansProphecy")
@@ -75,7 +84,12 @@ def test_vivian_dot_trigger_registers_dot_and_publishes_skill_node_via_dispatch_
         event_list=_FailFastEventList(),
         change_process_state=lambda: None,
     )
-    sim_instance = SimpleNamespace(tick=96, schedule_data=schedule_data)
+    sim_instance = SimpleNamespace(
+        tick=96,
+        schedule_data=schedule_data,
+        listener_manager=SimpleNamespace(broadcast_event=_fail_listener_broadcast),
+        runtime_command_port=_ForbiddenRuntimeCommandPort(),
+    )
     buff_instance = SimpleNamespace(
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="Buff-角色-薇薇安-核心被动-Dot触发器"),

@@ -18,10 +18,13 @@ class _FailFastEventList(list):
 
 
 class _RecordingDispatchPort:
-    def __init__(self) -> None:
+    def __init__(self, call_order: list[str] | None = None) -> None:
         self.events: list[object] = []
+        self._call_order = call_order
 
     def publish_scheduled(self, event: object) -> None:
+        if self._call_order is not None:
+            self._call_order.append("publish")
         self.events.append(event)
 
 
@@ -34,28 +37,63 @@ class _FakeAnomalyBar:
 
 
 class _FakeDot(Dot):
-    def __init__(self, *, index: str, anomaly_data: object) -> None:
+    def __init__(
+        self,
+        *,
+        index: str,
+        anomaly_data: object,
+        call_order: list[str] | None = None,
+    ) -> None:
         super().__init__(bar=None, sim_instance=None)
         self.ft.index = index
         self.ft.max_duration = 60
         self.anomaly_data = anomaly_data
         self.started_at: int | None = None
         self.ended_at: int | None = None
+        self._call_order = call_order
 
     def start(self, timenow: int):
+        if self._call_order is not None:
+            self._call_order.append("start_new_dot")
         self.started_at = timenow
         super().start(timenow)
 
     def end(self, timenow: int):
+        if self._call_order is not None:
+            self._call_order.append("end_old_dot")
         self.ended_at = timenow
         super().end(timenow)
 
 
-def _build_listener(*, event_list):
+class _RecordingDotList(list):
+    def __init__(self, call_order: list[str]) -> None:
+        super().__init__()
+        self._call_order = call_order
+
+    def append(self, item):
+        self._call_order.append("register_dot")
+        super().append(item)
+
+    def remove(self, item):
+        self._call_order.append("remove_old_dot")
+        super().remove(item)
+
+
+class _ForbiddenRuntimeCommandPort:
+    def update_anomaly(self, **kwargs):
+        raise AssertionError("Alice dot listener should not issue runtime commands")
+
+
+def _build_listener(*, event_list, call_order: list[str] | None = None):
+    dynamic_dot_list = _RecordingDotList(call_order) if call_order is not None else []
+
+    def fail_broadcast(**kwargs):
+        raise AssertionError("Alice dot listener should not broadcast listener events")
+
     enemy = SimpleNamespace(
         dynamic=SimpleNamespace(
             assault=True,
-            dynamic_dot_list=[],
+            dynamic_dot_list=dynamic_dot_list,
         ),
         anomaly_bars_dict={0: _FakeAnomalyBar()},
     )
@@ -67,6 +105,8 @@ def _build_listener(*, event_list):
             change_process_state=lambda: None,
         ),
         char_data=SimpleNamespace(find_char_obj=lambda CID: SimpleNamespace(CID=CID, NAME="Alice")),
+        listener_manager=SimpleNamespace(broadcast_event=fail_broadcast),
+        runtime_command_port=_ForbiddenRuntimeCommandPort(),
     )
     return AliceDotTriggerListener(listener_id="Alice_5", sim_instance=sim_instance), sim_instance, enemy
 
@@ -74,12 +114,25 @@ def _build_listener(*, event_list):
 def test_alice_dot_trigger_listener_publishes_dot_anomaly_via_dispatch_port(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    dispatch_port = _RecordingDispatchPort()
-    listener, sim_instance, enemy = _build_listener(event_list=_FailFastEventList())
-    previous_dot = _FakeDot(index="AliceCoreSkillAssaultDot", anomaly_data=SimpleNamespace(tag="old"))
+    call_order: list[str] = []
+    dispatch_port = _RecordingDispatchPort(call_order)
+    listener, sim_instance, enemy = _build_listener(
+        event_list=_FailFastEventList(),
+        call_order=call_order,
+    )
+    previous_dot = _FakeDot(
+        index="AliceCoreSkillAssaultDot",
+        anomaly_data=SimpleNamespace(tag="old"),
+        call_order=call_order,
+    )
     enemy.dynamic.dynamic_dot_list.append(previous_dot)
+    call_order.clear()
     published_bar = SimpleNamespace(tag="new")
-    replacement_dot = _FakeDot(index="AliceCoreSkillAssaultDot", anomaly_data=published_bar)
+    replacement_dot = _FakeDot(
+        index="AliceCoreSkillAssaultDot",
+        anomaly_data=published_bar,
+        call_order=call_order,
+    )
     received_bar: dict[str, _FakeAnomalyBar] = {}
 
     def fake_create_dispatch_port(*, sim_instance):
@@ -105,6 +158,13 @@ def test_alice_dot_trigger_listener_publishes_dot_anomaly_via_dispatch_port(
     assert replacement_dot.started_at == sim_instance.tick
     assert enemy.dynamic.dynamic_dot_list == [replacement_dot]
     assert dispatch_port.events == [published_bar]
+    assert call_order == [
+        "start_new_dot",
+        "end_old_dot",
+        "remove_old_dot",
+        "register_dot",
+        "publish",
+    ]
     assert sim_instance.schedule_data.event_list == []
     assert received_bar["value"] is not enemy.anomaly_bars_dict[0]
     assert received_bar["value"].settled is True
