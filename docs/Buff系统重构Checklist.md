@@ -34,13 +34,13 @@
 
 ## 阶段 2：XLogic 全量分析与复用收敛
 
-- [ ] 输出 XLogic 全量分类结果。
-- [ ] 输出可复用方法清单。
-- [ ] 输出可复用记录对象清单。
-- [ ] 输出可复用 stat reader / event adapter / state sync 模式清单。
-- [ ] 输出可复用事件类型 / 事件处理器 / 事件订阅模式清单。
-- [ ] 明确 XLogic 替换优先级。
-- [ ] 明确高风险耦合桶和回归风险点。
+- [x] 输出 XLogic 全量分类结果。
+- [x] 输出可复用方法清单。
+- [x] 输出可复用记录对象清单。
+- [x] 输出可复用 stat reader / event adapter / state sync 模式清单。
+- [x] 输出可复用事件类型 / 事件处理器 / 事件订阅模式清单。
+- [x] 明确 XLogic 替换优先级。
+- [x] 明确高风险耦合桶和回归风险点。
 
 ## 阶段 3：XLogic 全面替换
 
@@ -176,8 +176,21 @@
 - [x] 该 gap-closure PRD 不替换 live runtime path，不删除旧容器，不重开已删除的 `event_list` surface，不重启已闭合的 producer batch，也不合并 listener broadcast / scheduled queue / runtime write 分层；完整 closure 后默认路线仍返回阶段 2。
 - [x] gap-closure final validation 已通过：`implicit-events` profile 基础 `2 passed`、隔离队伍 `3 passed`、focused `105 passed`、mypy `76 source files` clean；默认 lifecycle profile 基础 `2 passed`、隔离队伍 `3 passed`、focused raw-container guardrail `18 passed`、mypy `9 source files` clean。root-workspace scan 未新增 production raw `event_list` producer 或 handler/helper direct `ScheduleBuffSettle(...)` caller，阶段 2 仍是下一轮默认入口。
 
+## 本轮阶段 2 XLogic 全量分类与复用收敛 PRD 收口状态（2026-06-08）
+
+- [x] [BuffXLogic阶段2全量分类与复用矩阵.md](./BuffXLogic阶段2全量分类与复用矩阵.md) 已输出非排他分类 schema、149 个 root-workspace `BuffXLogic` census、infrastructure / leaf 分离、逐文件 class / record / public method 元数据和可复现扫描命令。
+- [x] 已分类 Calculator / 属性读取、事件触发 / scheduled publish、record / count / state-sync、runtime container / service-location、anomaly / debuff / dot / formula bypass 等耦合桶；`.codex_worktrees/` 仅作为历史证据，未作为生产 blocker。
+- [x] 可复用方法 / stat reader 方向已收敛为 `BuffAttributeReader` helper family：AM / AP 已有代表样本，impact、full crit rate、personal crit rate、personal crit damage 是后续候选，不在本 PRD 删除 `MultiplierData` / `MulData` / CalAnomaly 公式快照。
+- [x] 可复用记录对象与 state-sync 模式已记录：`check_record_module()` / `get_prepared(...)`、record lazy init、trigger-state read、computed count writeback、`dy.count`、`built_in_buff_box` tuple sync、ledger / cooldown state、`update_to_buff_0(...)` template sync。
+- [x] event adapter / handler / listener 模式已记录：`ScheduleDispatchPort` queue-only publish、handler runtime-view reads、`RuntimeCommandPort` same-tick writes、listener broadcast 同步分层、dot runtime registration / removal 分层；不把这些合并成一个事件总线。
+- [x] 优先级与高风险矩阵已输出：默认下一 phase-2 PRD 是 AM/AP reader + computed count state-sync family；crit / impact reader、trigger-state read-only gate、scheduled publish ordering parity、dot runtime-state、BuffAddStrategy facade-write 作为同阶段候选池保留。
+- [x] 本 PRD 没有替换 live XLogic、runtime port、facade、dispatch adapter、listener、Dot 或 validation wiring；它只完成分类、复用设计与 handoff 同步。
+- [x] 验证基线：`implicit-events` 与 `calculator-reads` profiles 在分类 stories 中均已串行通过；US-009 final validation 继续复跑这两个入口。
+
 ## 当前默认下一步
 
 - [x] `US-024` 已完成 closure decision，没有输出 phase-1 blocker package；不得继续生成新的阶段 1 实现 PRD，除非 guardrail / validation 给出新的生产失败证据。
-- [ ] 下一轮默认 PRD 应沿 [Buff重构方案.md](./Buff重构方案.md) 进入“阶段 2：XLogic 全量分析与复用收敛”，先做全量分类、复用方法清单、记录对象清单、stat reader / event adapter / state sync 模式清单，不直接进入阶段 3 替换。
+- [x] 阶段 2 第一轮“全量分类、复用方法 / 记录对象 / stat reader / event adapter / state sync / handler / listener pattern 清单与风险矩阵”已完成；后续不再把“做全量分类”当默认下一步。
+- [ ] 下一轮默认 PRD 应沿 [Buff重构方案.md](./Buff重构方案.md) 继续留在阶段 2，优先选择 “AM/AP reader + computed count state-sync family” 作为复用设计与 focused test 包，而不是单文件薄切片或阶段 3 全面替换。
+- [ ] 同阶段候选池必须继续保留 crit / impact reader family、trigger-state read-only gates、scheduled publish ordering parity、dot runtime-state / initialization、BuffAddStrategy caller / facade-write design 与 phase-3-only formula snapshot replacement，避免 PRD 生成器只沿上一个文件继续。
 - [ ] 若后续 validation 或 guardrail 重新暴露阶段 1 blocker，下一轮 PRD 只处理 blocker package 中列出的具体文件、符号、失败测试、失败 guardrail 或验证命令；不得重开已删除的 `event_list` surface 或已闭合的 producer batch，除非 guardrail 给出新的生产证据。

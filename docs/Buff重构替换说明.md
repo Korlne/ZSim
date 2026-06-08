@@ -1297,3 +1297,14 @@
 - Next step:
   - Continue with US-009 final validation and handoff doc sync, preserving the ranked phase-2 candidate pool and recommending the AM/AP reader + computed count state-sync family as the default next PRD seed unless validation exposes a concrete blocker.
 ---
+## 2026-06-08 10:47 +08:00 - US-009
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - This PRD replaces stale handoff wording that still treated phase-2 full classification as the next task with completed classification status, a synced coupling-review summary, and a concrete next default PRD: AM/AP reader + computed count state-sync.
+  - No live `BuffXLogic`, Calculator, CalAnomaly, runtime port, facade, dispatch adapter, listener, Dot, guardrail, validation wiring, or simulator behavior was replaced in this PRD; it produces classification and handoff artifacts only.
+- Compatibility retained:
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()`, legacy `KickOutBuff()`, Calculator / CalAnomaly formula snapshots, listener broadcast, dot runtime registration, and deleted raw queue surfaces remain separate retained boundaries.
+  - The next-stage plan preserves a broad phase-2 candidate pool rather than collapsing to a single follow-up file.
+- Next step:
+  - Generate the next phase-2 PRD from the ranked pool, defaulting to the AM/AP reader + computed count state-sync family with `calculator-reads` validation and focused state-sync order tests.
+---
