@@ -400,6 +400,69 @@ rg -n "cal_am\(|cal_ap\(|cal_imp\(|cal_crit_rate\(|cal_personal_crit_rate\(|cal_
 - 后续实现型 PRD 必须区分 read-only gate 与 read-then-writeback。后者需要同时覆盖 record / count / state-sync 顺序，不能只替换 `MultiplierData(...)` 表达式。
 - 事件相邻属性读取样本只在本节归入 helper bucket；`LoadingMission`、`SkillNode`、dispatch payload、publish order 和 listener / runtime 分层留给 US-004。
 
+## US-004 事件触发 / scheduled publish 分类
+
+本节只分类事件触发与计划发布耦合，不编辑 XLogic、handler、adapter 或验证脚本。分类仍为非排他：同一文件可同时属于 `EVENT_TRIGGER`、`SCHEDULED_PUBLISH`、`RECORD_COUNT_SYNC`、`ATTR_READ`、`BYPASS_ANOMALY_DOT_DEBUFF` 和 `RETAINED_COMPAT_ONLY`。
+
+### 可复现扫描命令
+
+```powershell
+rg --files zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "create_schedule_dispatch_port|publish_scheduled|ScheduleDispatchPort" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "schedule_preload_event_factory|SchedulePreload" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "event_list" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "find_event_list|record\.event_list|BuffRecordBaseClass\.event_list|event_list\s*\.append|check_preparation\([^\n]*event_list|event_list=True" zsim/sim_progress/Buff/BuffXLogic zsim/sim_progress/Buff/JudgeTools zsim/sim_progress/Buff --glob '*.py' --glob '!__init__.py'
+rg -n "LoadingMission|SkillNode|preload_tick|schedule_priority" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "change_process_state" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+```
+
+### 扫描计数
+
+| 扫描项 | files | lines | matches | 结论 |
+| --- | ---: | ---: | ---: | --- |
+| baseline BuffXLogic files | 149 | n/a | n/a | 继续使用 US-002 root-workspace census，排除 `.codex_worktrees/`。 |
+| direct dispatch publish terms | 14 | 45 | 45 | 这些是已迁移 `ScheduleDispatchPort` 生产者或 helper 引用，不作为 raw queue backlog。 |
+| `schedule_preload_event_factory` / `SchedulePreload` | 2 | 4 | 4 | `SeedCinema6Trigger.py`、`YuzuhaCinema6SheelTrigger.py` 通过工厂构造 `SchedulePreload`，工厂内部走 dispatch port。 |
+| `event_list` text | 4 | 4 | 4 | 仅剩 docstring / 注释旧措辞：`AlicePolarizedAssaultTrigger.py`、`VivianCoattackTrigger.py`、`YanagiPolarityDisorderTrigger.py`、`YixuanCinema1Trigger.py`。 |
+| deleted raw surfaces | 0 | 0 | 0 | 未发现 root-workspace production `find_event_list`、`record.event_list`、`event_list.append(...)` 或 `event_list=True` 复开证据。 |
+| trigger timing terms | 60 | 190 | 197 | 多数是 `SkillNode` / `LoadingMission` / `preload_tick` 触发门禁，需按语义分类，不等同 scheduled publish。 |
+| report process-state helper | 22 | 34 | 34 | `change_process_state()` 是 report / debug 状态更新，不是计划事件发布或 runtime write facade。 |
+
+### CodeGraph 导航证据
+
+- Query seed：`US-004 Classify Event Trigger And Scheduled-Publish Couplings`、`ScheduleDispatchPort`、`create_schedule_dispatch_port`、`publish_scheduled`、`LoadingMission`、`SkillNode`、`preload_tick`、`schedule_priority`、`AlicePolarizedAssaultTrigger`、`CannonRotor`、`HugoCorePassiveTotalizeTrigger`、`MiyabiCoreSkill_IceFire`、`VivianDotTrigger`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger`、`YanagiPolarityDisorderTrigger`、`YixuanCinema1Trigger`、`ScheduleRefreshData`、`PolarizedAssaultEvent`、`StunForcedTerminationEvent`、`DirgeOfDestinyAnomaly`、`PolarityDisorder`、`SchedulePreload`、`schedule_preload_event_factory`。
+- Boundary findings：`ScheduleDispatchPort.publish_scheduled(...)` remains queue-only; `create_schedule_dispatch_port(...)` creates a fresh adapter from current `sim_instance` / `schedule_data` and keeps raw `schedule_data.event_list` hidden inside `LegacyEventListScheduleDispatchAdapter`.
+- `codegraph_callers("publish_scheduled")` found the 14 root BuffXLogic direct publishers plus adjacent non-Buff producers (`BreakingLegManager.update_decibel(...)`, `DecibelManager.add_decibel_to_char(...)`); `.codex_worktrees/` duplicates were treated as historical navigation evidence only.
+- Representative source/callee inspection confirmed ordering-sensitive samples: `CannonRotor`, `HugoCorePassiveTotalizeTrigger`, `YixuanCinema1Trigger`, and `VivianDotTrigger` call `LoadingMission.mission_start(...)` or prepare runtime dot state before publish; `YanagiPolarityDisorderTrigger` clears the record signal after publish; `AlicePolarizedAssaultTrigger` clears `trigger_origin` after publish.
+- Nearby payload source confirms timing / priority fields: `SkillNode.preload_tick` drives skill scheduling, `LoadingMission` expands hit/start/end windows, `PolarizedAssaultEvent` sets `execute_tick` and `schedule_priority = 998`, `StunForcedTerminationEvent` sets `execute_tick` and `schedule_priority = 999`, copied anomaly payloads inherit `AnomalyBar.schedule_priority = 999`, and `SchedulePreload.execute_tick` is created from the factory's `preload_tick_list`.
+
+### Scheduled publish buckets
+
+| bucket | files / symbols | expected payload | target / fan-out | timing / priority evidence | retained boundary / validation |
+| --- | --- | --- | --- | --- | --- |
+| Direct `SkillNode` publish for extra attacks | `CannonRotor.py` `special_hit_logic`、`MiyabiCoreSkill_IceFire.py` `special_exit_logic`、`VivianDotTrigger.py` `special_hit_logic`、`YixuanCinema1Trigger.py` `special_hit_logic`、`HugoCorePassiveTotalizeTrigger.py` `special_hit_logic` | `SkillNode` produced by `spawn_node(...)` or dot-owned `skill_node_data` | Scheduled queue to skill handler / preload execution; target is the generated extra attack node. | Current tick or node `preload_tick`; `CannonRotor`、`Hugo`、`Yixuan`、`VivianDot` preserve `LoadingMission.mission_start(...)` before `publish_scheduled(...)`. | Already migrated to `ScheduleDispatchPort`; validate with `implicit-events` and focused tests `test_cannon_rotor_dispatch.py`、`test_miyabi_core_skill_icefire_dispatch.py`、`test_vivian_dot_trigger_dispatch.py`、`test_yixuan_cinema1_dispatch.py`、`test_hugo_totalize_dispatch.py`. |
+| Scheduled resource refresh | `ElegantVanitySpRecover.py`、`LunarNoviluna.py`、`MagneticStormCharlieSpRecover.py`、`SeedAdditionalAbilityTrigger.py`、`SliceofTimeExtraResources.py` | `ScheduleRefreshData(sp_target, sp_value, decibel_target, decibel_value)` | Refresh handler updates named character SP / decibel targets. | Payload has no custom `schedule_priority`; queue order remains adapter append order and handler semantics. `ElegantVanitySpRecover` keeps `simple_start(...)` before publish. | Already migrated to `ScheduleDispatchPort`; validate with `implicit-events`, especially `test_xstart_sp_refresh_dispatch.py`、`test_xhit_sp_refresh_dispatch.py`、`test_slice_of_time_extra_resources_dispatch.py`. |
+| Copied anomaly / anomaly event publish | `AlicePolarizedAssaultTrigger.py`、`YanagiPolarityDisorderTrigger.py`、`VivianCorePassiveTrigger.py`、`VivianCinema6Trigger.py` | `PolarizedAssaultEvent`、`PolarityDisorder` from `spawn_output(...)`、`DirgeOfDestinyAnomaly` | Scheduled anomaly / polarized-assault handlers; later listener broadcast remains inside event or handler layer, not the XLogic publish layer. | Alice publishes `execute_tick=tick`, `schedule_priority=998`; Yanagi and Vivian publish copied anomaly payloads that retain anomaly priority semantics. | Already migrated to `ScheduleDispatchPort`; keep Calculator/AP formula snapshots untouched. Validate with `implicit-events` focused tests for Alice, Yanagi, Vivian core passive, Vivian cinema 6. |
+| Hugo forced stun termination side payload | `HugoCorePassiveTotalizeTrigger.py` after totalize `SkillNode` publish | Optional `StunForcedTerminationEvent(enemy, feed_back_ratio, execute_tick=tick, event_source="雨果")` | Scheduled event handler terminates / restores enemy stun state. | `schedule_priority=999`; published after the totalize `SkillNode`, preserving source order when the event exists. | Same `ScheduleDispatchPort` boundary; validate with `test_hugo_totalize_dispatch.py` and `implicit-events`. |
+| Factory-backed `SchedulePreload` publish | `SeedCinema6Trigger.py`、`YuzuhaCinema6SheelTrigger.py` via `schedule_preload_event_factory(...)` | `SchedulePreload(preload_tick, skill_tag, preload_data, apl_priority, active_generation)` created inside factory | Factory publishes through `create_schedule_dispatch_port(...)`; target is later `PreloadData.external_add_skill(...)` in `SchedulePreload.execute_myself()`. | `execute_tick` comes from `preload_tick_list`; factory rejects past ticks. Seed publishes three same-tick events; Yuzuha publishes one same-tick event after charge gate. | Retained factory helper already uses dispatch port; future work should add focused coverage before changing it. Validate with `implicit-events`; do not rewrite into raw queue append. |
+
+### Trigger-only / retained local event groups
+
+| bucket | files / examples | expected payload | target / fan-out | timing / order evidence | validation / non-goal |
+| --- | --- | --- | --- | --- | --- |
+| `SkillNode` / `LoadingMission` trigger gates with no scheduled publish | 60 timing-term files, including `AstralVoice.py`、`FlightOfFancy.py`、`FlamemakerShakerDmgBonus.py`、`MagneticStormAlphaAMBonus.py`、`MagneticStormBravoApBonus.py`、`WoodpeckerElectroSet4_*.py`、`ShadowHarmony4.py`、`TriggerAfterShockTrigger.py`、`DawnsBloom4SetTriggerNADmgBonus.py`、`HeartstringNocturne.py`、`PhaethonsMelody.py`、`StreetSuperstar.py`、`QingmingBirdcageCompanion*.py`、`YixuanCinema2StunTimeLimitBonus.py`、`YixuanCinema4Tranquility.py`、`YuzuhaSugarBurst*.py` | Usually no scheduled payload; result is local Buff `simple_start(...)`, `dy.count`, record signal, listener state, or `update_to_buff_0(...)`. | Own Buff state or record state; no fan-out into schedule queue. | Uses current tick, `preload_tick`, `is_hit_now(...)`, first-hit / last-hit windows, or `LoadingMission.mission_node`. | Classify for US-005 state-sync or later helper PRDs. Do not treat as planned-event backlog without concrete `publish_scheduled(...)` / factory source evidence. |
+| Direct local preload injection | `VivianCoattackTrigger.py` `special_effect_logic` | `input_tuple = (coattack_skill_tag, False, 0)` | Direct `preload_data.external_add_skill(...)`, not `ScheduleDispatchPort`. | Current source has old `eventlist` docstring wording but no `event_list.append(...)`; report branch calls `change_process_state()`. | Retained local preload boundary; later PRD must decide whether to wrap this separately. Not a raw queue producer in this story. |
+| Dot runtime registration plus scheduled skill publish | `VivianDotTrigger.py` | Runtime dot object appended to `enemy.dynamic.dynamic_dot_list`; then dot `skill_node_data` is published. | Runtime dot state and scheduled skill queue are separate layers. | `dot.start(tick)` and `dynamic_dot_list.append(dot)` occur before `publish_scheduled(dot.skill_node_data)`. | Keep dot runtime registration separate from scheduled publish; validate with `test_vivian_dot_trigger_dispatch.py` and later anomaly/dot classification. |
+| Report / process-state helpers | 22 files with `change_process_state()` | None | Debug/report process-state update only. | Usually gated by `*_REPORT` flags after local mutation or publish. | Do not map to listener broadcast, runtime immediate write, or scheduled publish. |
+| Deleted raw queue surfaces | No root-workspace matches for `find_event_list` / `record.event_list` / `BuffRecordBaseClass.event_list` / `event_list.append(...)` / `event_list=True` | None | None | `event_list` hits are only comments/docstrings in four files. | Do not reopen deleted `JudgeTools.find_event_list()`, `check_preparation(..., event_list=...)`, `BuffRecordBaseClass.event_list`, or `record.event_list.append(...)` surfaces unless future guardrails expose file/function/event/payload/target/order evidence. |
+
+### US-004 结论
+
+- Already-closed scheduled publishers remain closed and dispatch-port-backed; no new root-workspace raw queue producer was found.
+- Scheduled queue publish, same-tick runtime write, listener broadcast, report-state mutation, local preload injection, and dot runtime registration remain separate classification buckets.
+- Event-trigger follow-up work should be grouped by semantic payload and ordering constraint: extra `SkillNode` publish, resource refresh, anomaly / copied anomaly payload, `SchedulePreload` factory, and trigger-only state-sync gates.
+- Future implementation PRDs must preserve source order before replacing any callsite: examples include `LoadingMission.mission_start(...)` before publish, dot runtime registration before skill publish, and `publish_scheduled(...)` before later local state reset where the current file does that.
+
 ## 后续填写占位
 
-`US-004` 之后应基于上面的 census 表按事件语义、state-sync 模式和验证入口继续补细分矩阵、复用模式目录、风险矩阵和下一轮 PRD 候选池。不要把本节粗桶直接当成阶段 3 替换清单。
+`US-005` 之后应基于上面的 census 表按 state-sync 模式和验证入口继续补细分矩阵、复用模式目录、风险矩阵和下一轮 PRD 候选池。不要把本节粗桶直接当成阶段 3 替换清单。

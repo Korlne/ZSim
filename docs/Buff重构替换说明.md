@@ -1242,3 +1242,14 @@
 - Next step:
   - Continue with US-004 by classifying event trigger and scheduled-publish couplings while keeping event ordering separate from Calculator-read helper buckets.
 ---
+## 2026-06-08 09:59 +08:00 - US-004
+- Files changed: `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `docs/BuffXLogic阶段2全量分类与复用矩阵.md` now replaces loose event-trigger backlog wording with event-semantic buckets for direct `ScheduleDispatchPort` publishers, factory-backed `SchedulePreload`, trigger-only `SkillNode` / `LoadingMission` gates, local preload injection, dot runtime registration, report helpers, and deleted raw queue surfaces.
+  - No live BuffXLogic, scheduled-event handler, listener, or runtime path was replaced in this story; it produces phase-2 classification evidence only.
+- Compatibility retained:
+  - Existing `ScheduleDispatchPort` publishers, `schedule_preload_event_factory(...)`, `LoadingMission.mission_start(...)` ordering, `ScheduleRefreshData`, copied-anomaly payloads, `StunForcedTerminationEvent`, dot runtime registration, local `preload_data.external_add_skill(...)`, listener broadcast, and runtime write boundaries remain unchanged.
+  - Deleted `JudgeTools.find_event_list()`, `check_preparation(..., event_list=...)`, `BuffRecordBaseClass.event_list`, and `record.event_list.append(...)` surfaces stay closed; root-workspace scans found no production raw queue reopen evidence.
+- Next step:
+  - Continue with US-005 by classifying record, count, and state-sync patterns without converting event-trigger buckets into implementation targets prematurely.
+---
