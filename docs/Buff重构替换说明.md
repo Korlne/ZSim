@@ -1461,3 +1461,14 @@
 - Next step:
   - 生成下一轮 Ralph PRD 时继续沿 [Buff重构方案.md](./Buff重构方案.md) 的阶段 2 路线，默认从 P2-B crit / impact reader family package 取材，并保留 P2-C through P2-F 候选块。
 ---
+## 2026-06-08 16:02 +08:00 - US-001
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `scripts/ralph/progress.txt` now prepares P2-B `crit / impact reader family` work by replacing loose next-step context with a concrete source-evidence note, query terms, candidate file groups, required tests, retained boundaries, and non-goals.
+  - No live `BuffXLogic`, Calculator, CalAnomaly, dispatch adapter, runtime port, listener, dot runtime-state, validation script, or simulator behavior was replaced in this story.
+- Compatibility retained:
+  - `MultiplierData`, Calculator / CalAnomaly formula snapshots, old `buff_0` identity, old containers, legacy `buff_add()` / `KickOutBuff()`, `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime registration, and same-tick runtime write boundaries remain unchanged.
+  - P2-C trigger-state gates, P2-D scheduled publish ordering, P2-E dot runtime-state, P2-F BuffAddStrategy facade-write design, phase-3 formula snapshot replacement, and blocker-only phase-1 reopen rules remain available.
+- Next step:
+  - Continue with US-002 by adding P2-B reader parity fixtures for impact, full crit rate, personal crit rate, and personal crit damage before production XLogic migrations.
+---
