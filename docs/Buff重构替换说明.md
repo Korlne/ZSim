@@ -1857,3 +1857,16 @@
 - Next step:
   - Continue with US-004 by adding `SkillNode` / `LoadingMission` publish order parity coverage for the P2-D scheduled publish family, without reopening resource-refresh production behavior.
 ---
+## 2026-06-08 23:07 +08:00 - US-004
+- Files changed: `tests/simulator/test_cannon_rotor_dispatch.py`, `tests/simulator/test_yixuan_cinema1_dispatch.py`, `tests/simulator/test_yanagi_polarity_disorder_dispatch.py`, `tests/simulator/test_hugo_totalize_dispatch.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_cannon_rotor_dispatch.py` and `tests/simulator/test_yixuan_cinema1_dispatch.py` prepare to replace manual SkillNode publish-order review by asserting failed judge branches do not publish and by retaining exact `LoadingMission.mission_start(...) -> publish_scheduled(...)` payload identity/order coverage.
+  - `tests/simulator/test_yanagi_polarity_disorder_dispatch.py` prepares to replace manual polarity-disorder publish/reset review by asserting publish happens while `polarity_disorder_update_signal` is still set, then the signal and counter reset, plus a no-anomaly no-publish branch.
+  - `tests/simulator/test_hugo_totalize_dispatch.py` prepares to replace manual totalize multi-publish review by asserting totalize node / optional stun event publish before `active_signal` reset and the active-signal `0` no-scheduled-publish branch.
+  - This story strengthens focused parity coverage only; no live `BuffXLogic` SkillNode / LoadingMission producer behavior was replaced in this iteration.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `CannonRotor`, `YixuanCinema1Trigger`, `YanagiPolarityDisorderTrigger`, and `HugoCorePassiveTotalizeTrigger` still publish through their existing `_create_dispatch_port(...)` / `create_schedule_dispatch_port(...)` paths.
+  - Scheduler priority sorting, handler requeue behavior, core Load/Schedule appends, listener broadcast, dot runtime registration, runtime command writes, old containers, and Calculator / CalAnomaly formula snapshots remain unchanged.
+- Next step:
+  - Continue with US-005 by adding stateful anomaly / dot scheduled publish coverage while keeping scheduled payloads separate from listener broadcast, dot runtime registration, and same-tick runtime writes.
+---

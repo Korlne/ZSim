@@ -14,6 +14,7 @@ import zsim.sim_progress.Buff.BuffXLogic.CannonRotor as cannon_module
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.CannonRotor import CannonRotor
 from zsim.sim_progress.Load import LoadingMission
+from zsim.sim_progress.Preload import SkillNode
 
 
 class _FailFastEventList(list):
@@ -115,4 +116,53 @@ def test_cannon_rotor_publishes_follow_up_skill_node_via_dispatch_port(
     assert published_node.loading_mission.mission_active_state is True
     assert published_node.loading_mission.mission_start_tick == 45
     assert published_node.loading_mission.mission_dict[45.0] == "start"
+    assert schedule_data.event_list == []
+
+
+def test_cannon_rotor_judge_blocks_other_character_without_publish(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    schedule_data = SimpleNamespace(event_list=_FailFastEventList())
+    sim_instance = SimpleNamespace(tick=45, schedule_data=schedule_data)
+
+    def fail_simple_start(*args, **kwargs) -> None:
+        raise AssertionError("CannonRotor failed judge should not start buff state")
+
+    buff_instance = SimpleNamespace(
+        sim_instance=sim_instance,
+        ft=SimpleNamespace(index="Buff-音擎-加农转子"),
+        simple_start=fail_simple_start,
+    )
+    logic = CannonRotor(buff_instance)
+    record = SimpleNamespace(
+        char=SimpleNamespace(NAME="Cannon User"),
+        enemy=object(),
+        dynamic_buff_list=object(),
+        sub_exist_buff_dict={"cannon-rotor": object()},
+    )
+    monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
+    monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
+
+    def fail_create_dispatch_port(*, sim_instance):
+        raise AssertionError("CannonRotor failed judge should not publish")
+
+    monkeypatch.setattr(
+        cannon_module,
+        "create_schedule_dispatch_port",
+        fail_create_dispatch_port,
+    )
+    _block_legacy_event_lookup(monkeypatch)
+
+    other_skill = SimpleNamespace(
+        skill_tag="1101_CannonRotorAdditionalDamage",
+        char_name="Other Character",
+        hit_times=1,
+        labels=None,
+        ticks=12,
+        tick_list=[0],
+        heavy_attack=False,
+    )
+    skill_node = SkillNode(other_skill, 45)
+
+    assert logic.special_judge_logic(skill_node=skill_node) is False
     assert schedule_data.event_list == []

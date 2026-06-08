@@ -139,3 +139,41 @@ def test_yixuan_cinema1_publishes_lightning_after_loading_mission_via_dispatch_p
     assert published_node.loading_mission.mission_dict[92] == "hit"
     assert char.adrenaline == 25
     assert schedule_data.event_list == []
+
+
+def test_yixuan_cinema1_judge_blocks_yixuan_skill_without_publish(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    schedule_data = SimpleNamespace(event_list=_FailFastEventList())
+    sim_instance = SimpleNamespace(tick=81, schedule_data=schedule_data)
+    buff_instance = SimpleNamespace(
+        sim_instance=sim_instance,
+        ft=SimpleNamespace(index="Buff-角色-仪玄-影画1"),
+    )
+    logic = YixuanCinema1Trigger(buff_instance)
+    monkeypatch.setattr(logic, "check_record_module", lambda: None)
+    monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
+
+    def fail_create_dispatch_port(*, sim_instance):
+        raise AssertionError("YixuanCinema1Trigger failed judge should not publish")
+
+    monkeypatch.setattr(
+        yixuan_module,
+        "create_schedule_dispatch_port",
+        fail_create_dispatch_port,
+    )
+    _block_legacy_event_lookup(monkeypatch)
+
+    yixuan_skill = SimpleNamespace(
+        skill_tag="1371_E_EX",
+        char_name="仪玄",
+        hit_times=1,
+        labels=None,
+        ticks=12,
+        tick_list=[0],
+        heavy_attack=False,
+    )
+    skill_node = SkillNode(yixuan_skill, 81)
+
+    assert logic.special_judge_logic(skill_node=skill_node) is False
+    assert schedule_data.event_list == []

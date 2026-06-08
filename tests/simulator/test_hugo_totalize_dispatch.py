@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Callable
 
 import pytest
 import zsim.define as define_module
@@ -31,10 +31,13 @@ class _RecordingDispatchPort:
     def __init__(self, call_order: list[str]) -> None:
         self.call_order = call_order
         self.events: list[Any] = []
+        self.on_publish: Callable[[object], None] | None = None
 
     def publish_scheduled(self, event: object) -> None:
         self.call_order.append("publish")
         self.events.append(event)
+        if self.on_publish is not None:
+            self.on_publish(event)
 
 
 def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -72,6 +75,10 @@ def _build_hugo_harness(
         get_stun_rest_tick=lambda: rest_tick,
     )
     record.preload_data = SimpleNamespace(skills=[])
+    publish_signal_states: list[int | None] = []
+    dispatch_port.on_publish = lambda event: publish_signal_states.append(
+        record.active_signal
+    )
     return SimpleNamespace(
         call_order=call_order,
         dispatch_port=dispatch_port,
@@ -79,6 +86,7 @@ def _build_hugo_harness(
         sim_instance=sim_instance,
         logic=logic,
         record=record,
+        publish_signal_states=publish_signal_states,
     )
 
 
@@ -190,6 +198,7 @@ def test_hugo_totalize_node_publishes_via_dispatch_port_before_any_raw_queue_acc
     assert published_node.loading_mission.mission_active_state is True
     assert published_node.loading_mission.mission_start_tick == 88
     assert published_node.loading_mission.mission_dict[88.0] == "start"
+    assert harness.publish_signal_states == [2]
     assert harness.schedule_data.event_list == []
     assert harness.record.active_signal is None
 
@@ -220,6 +229,7 @@ def test_hugo_stun_event_publishes_via_dispatch_port_when_branch_conditions_matc
     assert published_stun_event.enemy is harness.record.enemy
     assert published_stun_event.feed_back_ratio == 0.25
     assert published_stun_event.execute_tick == 88
+    assert harness.publish_signal_states == [2, 2]
     assert harness.schedule_data.event_list == []
     assert harness.record.active_signal is None
 
@@ -246,5 +256,26 @@ def test_hugo_cinema_two_ultimate_keeps_stun_event_skipped_after_gateway_migrati
     ]
     assert len(harness.dispatch_port.events) == 1
     assert harness.dispatch_port.events[0] is harness.spawned_skill
+    assert harness.publish_signal_states == [6]
+    assert harness.schedule_data.event_list == []
+    assert harness.record.active_signal is None
+
+
+def test_hugo_active_signal_zero_resets_without_scheduled_publish(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    harness = _build_hugo_harness(active_signal=0, cinema=6, enemy_stun=False)
+    _patch_hugo_dependencies(monkeypatch, harness)
+
+    harness.logic.special_hit_logic()
+
+    assert harness.call_order == [harness.record.abyss_reverb_buff_index]
+    assert [buff_index for buff_index, _ in harness.buff_add_calls] == [
+        harness.record.abyss_reverb_buff_index,
+    ]
+    assert harness.buff_add_calls[0][1]["sim_instance"] is harness.sim_instance
+    assert harness.buff_add_calls[0][1]["benifit_list"] == ["雨果"]
+    assert harness.dispatch_port.events == []
+    assert harness.publish_signal_states == []
     assert harness.schedule_data.event_list == []
     assert harness.record.active_signal is None

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any, Callable, cast
 
 import pytest
 import zsim.define as define_module
@@ -26,13 +26,20 @@ class _FailFastEventList(list):
 
 
 class _RecordingDispatchPort:
-    def __init__(self, call_order: list[str]) -> None:
+    def __init__(
+        self,
+        call_order: list[str],
+        on_publish: Callable[[object], None] | None = None,
+    ) -> None:
         self.events: list[object] = []
         self._call_order = call_order
+        self._on_publish = on_publish
 
     def publish_scheduled(self, event: object) -> None:
         self._call_order.append("publish")
         self.events.append(event)
+        if self._on_publish is not None:
+            self._on_publish(event)
 
 
 class _FakeAnomalyBar:
@@ -79,7 +86,13 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
     monkeypatch: pytest.MonkeyPatch,
 ):
     call_order: list[str] = []
-    dispatch_port = _RecordingDispatchPort(call_order)
+    signal_states: list[tuple[str, bool]] = []
+    dispatch_port = _RecordingDispatchPort(
+        call_order,
+        on_publish=lambda event: signal_states.append(
+            ("publish", record.polarity_disorder_update_signal)
+        ),
+    )
     active_anomaly_bar = _FakeAnomalyBar(marker="active-anomaly", settled=False)
     schedule_data = SimpleNamespace(event_list=_FailFastEventList())
     sim_instance = SimpleNamespace(tick=41, schedule_data=schedule_data)
@@ -120,6 +133,7 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
         sim_instance,
     ):
         call_order.append("spawn_output")
+        signal_states.append(("spawn_output", record.polarity_disorder_update_signal))
         spawn_calls.extend(
             [
                 ("mode_number", mode_number),
@@ -154,6 +168,45 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
         ("marker", "active-anomaly"),
     ]
     assert call_order == ["spawn_output", "publish"]
+    assert signal_states == [("spawn_output", True), ("publish", True)]
     assert record.e_counter == {"update_from": "", "count": 0}
     assert record.polarity_disorder_update_signal is False
     assert record.polarity_disorder_basic_dmg_ratio == 0.2
+
+
+def test_yanagi_polarity_disorder_judge_resets_counter_without_publish_when_no_anomaly(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    call_order: list[str] = []
+    dispatch_port = _RecordingDispatchPort(call_order)
+    schedule_data = SimpleNamespace(event_list=_FailFastEventList())
+    sim_instance = SimpleNamespace(tick=41, schedule_data=schedule_data)
+    buff_instance = SimpleNamespace(
+        sim_instance=sim_instance,
+        ft=SimpleNamespace(index="yanagi-trigger"),
+    )
+    logic = YanagiPolarityDisorderTrigger(buff_instance)
+    record = YanagiPolarityDisorderTriggerRecord()
+    record.char = SimpleNamespace(cinema=2)
+    record.enemy = SimpleNamespace(dynamic=SimpleNamespace(is_under_anomaly=lambda: False))
+    record.e_counter = {"update_from": "prev-hit", "count": 2}
+    monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
+    monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
+    monkeypatch.setattr(
+        yanagi_module,
+        "create_schedule_dispatch_port",
+        lambda *, sim_instance: dispatch_port,
+    )
+    monkeypatch.setattr(yanagi_module, "find_tick", lambda *, sim_instance: sim_instance.tick)
+    _block_legacy_event_lookup(monkeypatch)
+
+    skill_node = _build_skill_node()
+    loading_mission = LoadingMission(skill_node)
+    loading_mission.mission_start(skill_node.preload_tick, report=False)
+
+    assert logic.special_judge_logic(skill_node=cast(Any, loading_mission)) is False
+    assert call_order == []
+    assert dispatch_port.events == []
+    assert schedule_data.event_list == []
+    assert record.e_counter == {"update_from": "", "count": 0}
+    assert record.polarity_disorder_update_signal is False
