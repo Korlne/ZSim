@@ -1566,3 +1566,16 @@
 - Next step:
   - Continue with US-010 by adding full crit event-adjacent test harness coverage for `CannonRotor.py`, `MiyabiCoreSkill_IceFire.py`, and `WoodpeckerElectroSet4_*` before production full-crit migrations.
 ---
+## 2026-06-08 17:41 +08:00 - US-010
+- Files changed: `tests/simulator/test_full_crit_event_adjacent_reader.py`, `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_full_crit_event_adjacent_reader.py` now prepares to replace future direct full-crit `MultiplierData(...)` / `Calculator.RegularMul.cal_crit_rate(...)` paths by pinning reader parity and current event-adjacent branch behavior for `CannonRotor.py`, `MiyabiCoreSkill_IceFire.py`, and `WoodpeckerElectroSet4_*`.
+  - `FULL_CRIT_EVENT_ADJACENT_FOCUSED_TEST_TARGETS` wires this harness into both `calculator-reads` and `implicit-events` focused pytest / mypy profiles.
+  - This story builds the full-crit event-adjacent harness only; no live `BuffXLogic` path is migrated yet.
+- Compatibility retained:
+  - Direct full-crit Calculator reads remain in CannonRotor, Miyabi IceFire, and Woodpecker variants until US-011 through US-015 migrate those files.
+  - CannonRotor `LoadingMission.mission_start(...) -> publish_scheduled(...) -> simple_start(...)` ordering and Miyabi exit dispatch ordering remain covered by the existing dispatch tests.
+  - Full crit rate still includes `crit_rate_received_increase`; personal crit rate remains distinct. `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime-state, same-tick runtime writes, old-container deletion boundaries, and Calculator formula snapshots remain unchanged.
+- Next step:
+  - Continue with US-011 by migrating `CannonRotor.py` through `CalculatorBuffAttributeReader.read_full_crit_rate(...)` while preserving its RNG gate and scheduled publish behavior.
+---
