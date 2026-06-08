@@ -17,7 +17,6 @@
   - 本轮仍保留的旧路径、旧容器或旧副作用
 - 下一步：
   - 下一轮应继续收口的旧路径
----
 ```
 
 ## 2026-06-05 - 调查型 PRD 收口基线
@@ -1416,4 +1415,15 @@
   - This remains AP-reader work, not full/personal crit-reader work; Calculator / CalAnomaly formula snapshots, phase-1 dispatch/runtime boundaries, scheduled publish, listener broadcast, same-tick runtime write, and old-container deletion remain unchanged.
 - Next step:
   - 继续 US-011，迁移 `JanePassionStateAPTransToATK.py` 到 AP reader seam，同时保留狂热状态 trigger gate、`floor(max(ap - 120, 0))` floor 行为和 state-sync order。
+---
+## 2026-06-08 14:12 +08:00 - US-011
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/JanePassionStateAPTransToATK.py`, `tests/simulator/test_buff_attribute_state_sync.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `JanePassionStateAPTransToATK.special_hit_logic()` now replaces its direct `MultiplierData as Mul` / `Mul(...)` / `Cal.AnomalyMul.cal_ap(...)` AP read with `create_anomaly_attribute_read_context(...)` and `CalculatorBuffAttributeReader().read_anomaly_proficiency(...)`.
+  - `tests/simulator/test_buff_attribute_state_sync.py` now covers Jane passion-state inactive trigger gate, AP under 120, fractional AP above 120, higher AP count parity, aggregation shape, old `buff_0` identity, and `simple_start(..., no_count=1) -> dy.count -> update_to_buff_0(...)` order.
+- Compatibility retained:
+  - Jane passion-state `special_judge_logic()` trigger gate, hit-path `get_prepared(...)` arguments, `find_tick(...)`, `floor(max(ap - 120, 0))`, and state-sync order remain covered.
+  - This remains AP-reader work for AP-to-ATK count writeback; Calculator / CalAnomaly formula snapshots, phase-1 dispatch/runtime boundaries, scheduled publish, listener broadcast, same-tick runtime write, and old-container deletion remain unchanged.
+- Next step:
+  - 继续 US-012，为六个已迁移的 P2-A AM/AP 文件添加 source guardrail，防止 direct `MultiplierData(...)` / `Mul(...)` / `Calculator.AnomalyMul.cal_am/cal_ap(...)` 读口回流，同时保留 P2-B crit / impact reader 候选池。
 ---
