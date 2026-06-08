@@ -1506,3 +1506,15 @@
 - Next step:
   - Continue with US-005 by confirming P2-B focused tests remain wired into `calculator-reads`, then migrate Lighter impact read-through in US-006 using the pinned order harness.
 ---
+## 2026-06-08 16:44 +08:00 - US-005
+- Files changed: `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `CALCULATOR_ATTRIBUTE_READER_FOCUSED_TEST_TARGETS` replaces the inline reader focused-test path inside `calculator-reads`, making `tests/simulator/test_buff_attribute_reader.py` a named shared validation target for both pytest and mypy.
+  - This story wires the P2-B validation boundary only; no live `BuffXLogic` path, Calculator formula, or event/runtime boundary was replaced.
+- Compatibility retained:
+  - `tests/simulator/test_buff_attribute_reader.py`, `tests/simulator/test_buff_attribute_state_sync.py`, raw-container guardrails, migrated AM/AP guardrails, and existing `calculator-reads` / `implicit-events` validation behavior remain covered.
+  - Direct P2-B `MultiplierData(...)` / Calculator reads remain in Lighter, QingYi, Trigger, Soldier0 Anby, and event-adjacent full-crit candidates until their migration stories run.
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime-state, same-tick runtime write, old containers, and Calculator / CalAnomaly formula snapshots remain unchanged.
+- Next step:
+  - Continue with US-006 by migrating `LighterAdditionalAbility_IceFireBonus.py` to `read_impact(...)` while preserving the US-004-pinned count/state-sync order.
+---
