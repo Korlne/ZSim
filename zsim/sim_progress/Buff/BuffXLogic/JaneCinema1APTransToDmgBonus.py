@@ -1,8 +1,6 @@
 from zsim.sim_progress.ScheduledEvent.Calculator import (
-    Calculator as Cal,
-)
-from zsim.sim_progress.ScheduledEvent.Calculator import (
-    MultiplierData as Mul,
+    CalculatorBuffAttributeReader,
+    create_anomaly_attribute_read_context,
 )
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
@@ -59,8 +57,12 @@ class JaneCinema1APTransToDmgBonus(Buff.BuffLogic):
             enemy=1,
             sub_exist_buff_dict=1,
         )
-        mul_data = Mul(self.record.enemy, self.record.dynamic_buff_list, self.record.char)
-        ap = Cal.AnomalyMul.cal_ap(mul_data)
+        context = create_anomaly_attribute_read_context(
+            enemy=self.record.enemy,
+            active_buff_view=self.record.dynamic_buff_list,
+            character=self.record.char,
+        )
+        ap = CalculatorBuffAttributeReader().read_anomaly_proficiency(context)
         count = min(ap * 0.1, self.buff_instance.ft.maxcount)
         tick = find_tick(sim_instance=self.buff_instance.sim_instance)
         self.buff_instance.simple_start(tick, self.record.sub_exist_buff_dict, no_count=1)

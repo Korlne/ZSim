@@ -14,6 +14,9 @@ from zsim.sim_progress.Buff.BuffXLogic import (
 from zsim.sim_progress.Buff.BuffXLogic.AliceAdditionalAbilityApBonus import (
     AliceAdditionalAbilityApBonus,
 )
+from zsim.sim_progress.Buff.BuffXLogic.JaneCinema1APTransToDmgBonus import (
+    JaneCinema1APTransToDmgBonus,
+)
 from zsim.sim_progress.Buff.BuffXLogic.YuzuhaAdditionalAbilityAnomalyBuildupBonus import (
     YuzuhaAdditionalAbilityAnomalyBuildupBonus,
 )
@@ -112,6 +115,19 @@ class _YuzuhaStateSyncCase:
     expected_cinema_1_ratio: float
 
 
+@dataclass(frozen=True)
+class _JaneCinema1StateSyncCase:
+    logic: Any
+    active_buff: _StateSyncBuffProbe
+    buff_0: Any
+    calls: list[tuple[Any, ...]]
+    get_prepared_calls: list[dict[str, object]]
+    aggregation_calls: list[_AggregationCall]
+    expected_enabled_buff: tuple[object, ...]
+    expected_old_count: float
+    initial_count: float
+
+
 def _make_alice_character(*, am: float) -> SimpleNamespace:
     statement = SimpleNamespace(statement={"AM": am}, AM=am)
     return SimpleNamespace(NAME="Alice", CID=1401, level=60, statement=statement)
@@ -120,6 +136,11 @@ def _make_alice_character(*, am: float) -> SimpleNamespace:
 def _make_yuzuha_character(*, am: float, cinema: int) -> SimpleNamespace:
     statement = SimpleNamespace(statement={"AM": am}, AM=am)
     return SimpleNamespace(NAME="Yuzuha", CID=1411, cinema=cinema, level=60, statement=statement)
+
+
+def _make_jane_character(*, ap: float) -> SimpleNamespace:
+    statement = SimpleNamespace(statement={"AP": ap}, AP=ap)
+    return SimpleNamespace(NAME="Jane", CID=1261, level=60, statement=statement)
 
 
 def _make_enemy(
@@ -196,6 +217,23 @@ def _old_yuzuha_additional_ability_count(
     if am < 100:
         return None
     return float(min(am - 100, 100) * cinema_1_ratio)
+
+
+def _old_jane_cinema1_damage_count(
+    *,
+    enemy: SimpleNamespace,
+    dynamic_buff_list: dict[str, list[object]],
+    char: SimpleNamespace,
+    maxcount: float,
+) -> float:
+    MultiplierData.mul_data_cache.clear()
+    mul_data = MultiplierData(
+        cast(Any, enemy),
+        dynamic_buff_list,
+        cast(Any, char),
+    )
+    ap = Calculator.AnomalyMul.cal_ap(mul_data)
+    return float(min(ap * 0.1, maxcount))
 
 
 def _make_alice_state_sync_case(
@@ -339,6 +377,76 @@ def _make_yuzuha_state_sync_case(
         expected_enabled_buff=(char_buff, enemy_debuff),
         expected_old_count=expected_old_count,
         expected_cinema_1_ratio=expected_cinema_1_ratio,
+    )
+
+
+def _make_jane_cinema1_state_sync_case(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    static_ap: float,
+    trigger_active: bool = True,
+    field_ap: float = 0.0,
+    flat_ap: float = 0.0,
+    initial_count: float = 77.0,
+    maxcount: float = 999.0,
+) -> _JaneCinema1StateSyncCase:
+    calls: list[tuple[Any, ...]] = []
+    active_buff = _StateSyncBuffProbe(
+        index="jane-cinema1-ap-trans-dmg",
+        tick=800,
+        calls=calls,
+        initial_count=initial_count,
+        maxcount=maxcount,
+    )
+    char_buff = object()
+    enemy_debuff = object()
+    char = _make_jane_character(ap=static_ap)
+    enemy = _make_enemy(
+        sim_instance=active_buff.sim_instance,
+        enemy_debuffs=(enemy_debuff,),
+    )
+    dynamic_buff_list = {char.NAME: [char_buff]}
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        {
+            "局内异常精通": field_ap,
+            "固定异常精通": flat_ap,
+        },
+    )
+    buff_0 = SimpleNamespace(dy=SimpleNamespace(count=initial_count))
+    trigger_buff_0 = SimpleNamespace(dy=SimpleNamespace(active=trigger_active))
+    sub_exist_buff_dict = {active_buff.ft.index: buff_0}
+
+    logic = cast(Any, object.__new__(JaneCinema1APTransToDmgBonus))
+    logic.buff_instance = active_buff
+    logic.buff_0 = buff_0
+    logic.record = SimpleNamespace(
+        enemy=enemy,
+        dynamic_buff_list=dynamic_buff_list,
+        char=char,
+        trigger_buff_0=trigger_buff_0,
+        sub_exist_buff_dict=sub_exist_buff_dict,
+    )
+    logic.check_record_module = lambda: None
+
+    get_prepared_calls: list[dict[str, object]] = []
+    logic.get_prepared = lambda **kwargs: get_prepared_calls.append(kwargs)
+    expected_old_count = _old_jane_cinema1_damage_count(
+        enemy=enemy,
+        dynamic_buff_list=dynamic_buff_list,
+        char=char,
+        maxcount=maxcount,
+    )
+    return _JaneCinema1StateSyncCase(
+        logic=logic,
+        active_buff=active_buff,
+        buff_0=buff_0,
+        calls=calls,
+        get_prepared_calls=get_prepared_calls,
+        aggregation_calls=aggregation_calls,
+        expected_enabled_buff=(char_buff, enemy_debuff),
+        expected_old_count=expected_old_count,
+        initial_count=initial_count,
     )
 
 
@@ -593,6 +701,88 @@ def test_yuzuha_damage_reader_path_keeps_cinema_one_plus_cap_and_report(
     assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
 
 
+def test_jane_cinema1_inactive_trigger_gate_skips_writeback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_jane_cinema1_state_sync_case(
+        monkeypatch,
+        static_ap=200.0,
+        trigger_active=False,
+    )
+    case.aggregation_calls.clear()
+
+    result = case.logic.special_judge_logic()
+
+    assert result is False
+    assert case.get_prepared_calls == [
+        {"char_CID": 1261, "trigger_buff_0": ("简", "Buff-角色-简-狂热状态触发器")}
+    ]
+    assert case.aggregation_calls == []
+    assert case.calls == []
+    assert case.active_buff.dy.count == pytest.approx(case.initial_count)
+    assert case.buff_0.dy.count == pytest.approx(case.initial_count)
+
+
+def test_jane_cinema1_active_trigger_count_parity_and_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_jane_cinema1_state_sync_case(
+        monkeypatch,
+        static_ap=200.0,
+    )
+
+    assert case.logic.special_judge_logic() is True
+    case.logic.special_hit_logic()
+
+    assert case.expected_old_count == pytest.approx(20.0)
+    assert case.get_prepared_calls == [
+        {"char_CID": 1261, "trigger_buff_0": ("简", "Buff-角色-简-狂热状态触发器")},
+        {
+            "char_CID": 1261,
+            "trigger_buff_0": ("简", "Buff-角色-简-狂热状态触发器"),
+            "dynamic_buff_list": 1,
+            "enemy": 1,
+            "sub_exist_buff_dict": 1,
+        },
+    ]
+    assert case.aggregation_calls == [
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Jane"),
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Jane"),
+    ]
+    assert case.calls == [
+        ("simple_start", 800, True, case.initial_count, case.buff_0),
+        ("dy.count", case.expected_old_count),
+        ("update_to_buff_0", case.buff_0, case.expected_old_count),
+    ]
+    assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
+    assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
+
+
+def test_jane_cinema1_reader_path_keeps_maxcount_cap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_jane_cinema1_state_sync_case(
+        monkeypatch,
+        static_ap=1500.0,
+        maxcount=100.0,
+    )
+
+    case.logic.special_hit_logic()
+
+    assert case.expected_old_count == pytest.approx(100.0)
+    assert case.aggregation_calls == [
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Jane"),
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Jane"),
+    ]
+    assert case.calls == [
+        ("simple_start", 800, True, case.initial_count, case.buff_0),
+        ("dy.count", case.expected_old_count),
+        ("update_to_buff_0", case.buff_0, case.expected_old_count),
+    ]
+    assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
+    assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
+
+
 def test_alice_additional_ability_uses_reader_not_multiplier_data() -> None:
     source = Path(
         "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py"
@@ -628,3 +818,15 @@ def test_yuzuha_additional_ability_damage_uses_shared_reader_pattern() -> None:
         assert "Calculator.AnomalyMul.cal_am" not in source
         assert "create_anomaly_attribute_read_context" in source
         assert "read_anomaly_mastery" in source
+
+
+def test_jane_cinema1_uses_reader_not_multiplier_data_alias() -> None:
+    source = Path(
+        "zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py"
+    ).read_text(encoding="utf-8")
+
+    assert "MultiplierData as Mul" not in source
+    assert "Mul(" not in source
+    assert "Calculator.AnomalyMul.cal_ap" not in source
+    assert "create_anomaly_attribute_read_context" in source
+    assert "read_anomaly_proficiency" in source

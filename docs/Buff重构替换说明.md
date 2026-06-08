@@ -1395,3 +1395,14 @@
 - Next step:
   - 继续 US-009，迁移 `JaneCinema1APTransToDmgBonus.py` 到 AP reader seam，同时保留 trigger gate、`find_tick(...)`、AP damage count formula 和 state-sync order。
 ---
+## 2026-06-08 12:54 +08:00 - US-009
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py`, `tests/simulator/test_buff_attribute_state_sync.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `JaneCinema1APTransToDmgBonus.special_hit_logic()` now replaces its direct `MultiplierData as Mul` / `Mul(...)` / `Calculator.AnomalyMul.cal_ap(...)` AP read with `create_anomaly_attribute_read_context(...)` and `CalculatorBuffAttributeReader().read_anomaly_proficiency(...)`.
+  - `tests/simulator/test_buff_attribute_state_sync.py` now covers Jane cinema-1 inactive trigger gate, active AP count parity, maxcount cap behavior, aggregation shape, old `buff_0` identity, and `simple_start(..., no_count=1) -> dy.count -> update_to_buff_0(...)` order.
+- Compatibility retained:
+  - Jane cinema-1 `special_judge_logic()` trigger gate, hit-path `get_prepared(...)` arguments, `find_tick(...)`, `min(ap * 0.1, self.buff_instance.ft.maxcount)`, and state-sync order remain covered.
+  - `JaneCoreSkillStrikeCritRateBonus.py` and `JanePassionStateAPTransToATK.py` still retain their direct AP alias reads for their later stories; Calculator / CalAnomaly formula snapshots and phase-1 dispatch/runtime boundaries remain unchanged.
+- Next step:
+  - 继续 US-010，迁移 `JaneCoreSkillStrikeCritRateBonus.py` 到 AP reader seam，同时明确它是 AP-reader work，不是 full/personal crit-reader work。
+---
