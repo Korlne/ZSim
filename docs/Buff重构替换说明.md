@@ -1667,3 +1667,14 @@
 - Next step:
   - Continue with US-018 by updating handoff docs and promoting the next same-phase candidate pool without narrowing future phase-2 work to the last migrated P2-B files.
 ---
+## 2026-06-08 18:51 +08:00 - US-018
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - Handoff docs now replace stale “P2-B is next” planning with completed P2-B impact / crit reader evidence, file-specific migration status, validation summaries, behavior-sample evidence, and a concrete next default PRD: P2-C trigger-state read-only gates.
+  - `scripts/ralph/progress.txt` records the US-018 preflight query terms and closure learnings so future PRD generation can promote the same-phase pool from evidence rather than the last migrated file.
+- Compatibility retained:
+  - P2-B migrated files, reader/context helpers, source guardrails, retained Calculator / CalAnomaly formula snapshots, `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime-state, same-tick runtime writes, old-container deletion boundaries, and non-migrated P2-C/P2-D/P2-E/P2-F candidates remain unchanged.
+  - P2-C is promoted only as the next default planning route; this story does not replace live XLogic behavior or add a write API to `BuffRuntimeReadPort`.
+- Next step:
+  - Generate the next phase-2 PRD from [Buff重构方案.md](./Buff重构方案.md), defaulting to P2-C trigger-state read-only gates while preserving P2-D scheduled publish ordering, P2-E dot runtime-state, P2-F BuffAddStrategy facade-write design, phase-3 formula snapshots, retained compatibility rows, and blocker-only phase-1 reopen rules.
+---
