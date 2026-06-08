@@ -2041,3 +2041,16 @@
 - Next step:
   - Continue with US-011 by adding exact-file P2-E guardrails for migrated Vivian, UpdateAnomaly, Shock initialization, and validation wiring without broadening into P2-F / P2-G candidates.
 ---
+## 2026-06-09 04:28 +08:00 - US-011
+- Files changed: `tests/simulator/test_migrated_p2e_dot_runtime_guardrail.py`, `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_migrated_p2e_dot_runtime_guardrail.py` replaces manual migrated P2-E source scans with an exact-file AST guardrail for Vivian dot gates, `UpdateAnomaly` dot replacement / removal, `DotRuntimeStateAdapter`, `DotInitializationReadContext`, and `Shock.DotFeature`.
+  - `scripts/run_buff_refactor_validation.py` now includes the P2-E source guardrail in the `implicit-events` focused pytest and scoped mypy profiles.
+  - This story builds guardrail coverage and profile wiring only; it does not replace additional live production behavior.
+- Compatibility retained:
+  - Vivian dot `skill_node_data` and freeze `_dot.anomaly_data` remain the documented scheduled follow-up payloads; dot registration / replacement / removal remains runtime state and is not converted into scheduled backlog.
+  - `RuntimeCommandPort`, `BuffRuntimeReadPort` read-only semantics, listener broadcast, `buff_add_strategy(...)`, old containers, `LoadDamageEvent`, `Update_Buff.update_dot()`, Alice dot listener retained paths, Calculator, and CalAnomaly formulas remain unchanged.
+  - No new old-coupling review update was needed; root source evidence found no new coupling beyond the guarded migrated P2-E file set.
+- Next step:
+  - Continue with US-012 by recording the serial validation summary and behavior-sample decision without broadening into P2-F / P2-G candidates or final handoff docs.
+---
