@@ -1208,3 +1208,14 @@
 - Next step:
   - Start the next PRD from phase 2: XLogic full classification and reuse convergence, unless new guardrail, validation, or root-workspace source-scan evidence exposes a concrete phase-1 production blocker.
 ---
+## 2026-06-08 09:30 +08:00 - US-001
+- Files changed: `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `docs/BuffXLogic阶段2全量分类与复用矩阵.md` prepares to replace ad hoc phase-2 XLogic scans with a non-exclusive classification schema covering attribute reads, event triggers, record/count sync, anomaly / debuff / dot bypasses, service-location, formula snapshots, listener broadcast, scheduled publish, runtime immediate writes, and retained compatibility-only cases.
+  - No live simulator runtime path or XLogic behavior was replaced in this story; it establishes the intake schema and boundary rules for later census and classification stories.
+- Compatibility retained:
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, and `LegacyBuffRuntimeFacade` keep their current phase-1 retained boundaries.
+  - Old containers, legacy `buff_add()`, legacy `KickOutBuff()`, Calculator / CalAnomaly `MultiplierData` snapshots, handler requeue, Load-stage continuation, listener broadcast, dot runtime registration, and `.codex_worktrees/` historical evidence treatment are unchanged.
+- Next step:
+  - Continue with US-002 by recomputing the full root-workspace `BuffXLogic` census and filling stable file / class / method metadata into the phase-2 matrix.
+---
