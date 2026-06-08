@@ -1893,3 +1893,15 @@
 - Next step:
   - Continue with US-007 by adding exact-file P2-D scheduled-publish source guardrails and validation-profile wiring, using the migrated producer set and retained boundaries recorded in US-001 through US-006.
 ---
+## 2026-06-08 23:32 +08:00 - US-007
+- Files changed: `tests/simulator/test_migrated_p2d_scheduled_publish_guardrail.py`, `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_migrated_p2d_scheduled_publish_guardrail.py` prepares to replace manual source review for the P2-D migrated scheduled-publish producer set by blocking raw queue access, legacy event-list discovery, event-list preparation requests, and stale cached dispatch adapters.
+  - `scripts/run_buff_refactor_validation.py` now includes the P2-D migrated-source guardrail in the implicit-events focused pytest and mypy profiles.
+  - This story adds source guardrail coverage only; no live scheduled-publish producer behavior or dispatch adapter behavior was replaced in this iteration.
+- Compatibility retained:
+  - Old paths still retained in this iteration: all P2-D producers keep their existing on-demand `_create_dispatch_port(...)` / `create_schedule_dispatch_port(...)` publish paths.
+  - Core `ScheduleDispatchPort` adapter internals, `SchedulePreload`, listener broadcast, dot runtime registration/removal, runtime immediate writes, local Character event groups, old containers, and Calculator / CalAnomaly formula snapshots remain unchanged.
+- Next step:
+  - Continue with US-008 by running serial validation and recording the behavior-sample decision; if no production behavior changed, focused parity and the new exact-file source guardrail are the relevant evidence.
+---
