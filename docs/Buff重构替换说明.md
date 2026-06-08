@@ -1219,3 +1219,15 @@
 - Next step:
   - Continue with US-002 by recomputing the full root-workspace `BuffXLogic` census and filling stable file / class / method metadata into the phase-2 matrix.
 ---
+## 2026-06-08 09:40 +08:00 - US-002
+- Files changed: `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `docs/BuffXLogic阶段2全量分类与复用矩阵.md` now replaces stale partial BuffXLogic scans with a root-workspace 149-module census, reproducible `rg` pattern counts, infrastructure / leaf separation, per-file class / record / method metadata, and already-migrated scheduled-publisher samples.
+  - No live simulator runtime path or XLogic behavior was replaced in this story; it prepares later phase-2 classification and reuse-design stories.
+- Compatibility retained:
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, and `LegacyBuffRuntimeFacade` keep their phase-1 retained boundaries.
+  - Existing `MultiplierData` / Calculator snapshots, old containers, record/count writebacks, listener broadcast, dot runtime registration, and migrated dispatch publishers are unchanged.
+  - `.codex_worktrees/` remains historical navigation evidence only unless a future story explicitly audits archived worktrees.
+- Next step:
+  - Continue with US-003 by classifying Calculator and attribute-read couplings from the census, using helper-family groups rather than a one-file replacement slice.
+---
