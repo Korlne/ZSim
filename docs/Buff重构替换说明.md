@@ -1688,3 +1688,13 @@
 - Next step:
   - Continue with US-002 by adding focused trigger-state read-only gate tests before introducing or migrating a production helper.
 ---
+## 2026-06-08 19:54 +08:00 - US-002
+- Files changed: `tests/simulator/test_trigger_state_read_only_gates.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_trigger_state_read_only_gates.py` prepares to replace ad hoc direct old-template trigger-state assertions with a focused read-only contract for `active`, `count`, `built_in_buff_box`, lazy `history.record`, and retained old `buff_0` identity.
+  - This story only adds the focused test boundary; it does not replace live XLogic behavior or introduce the production helper yet.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, `JudgeTools.find_exist_buff_dict(...)`, direct `record.trigger_buff_0.dy.*` reads in current XLogic files, `BuffRuntimeReadPort` read-only semantics, and separate `RuntimeCommandPort` / `ScheduleDispatchPort` write boundaries.
+- Next step:
+  - Continue with US-003 by adding the narrow production read-only trigger-state helper and rerunning the focused gate tests before migrating any XLogic file.
+---
