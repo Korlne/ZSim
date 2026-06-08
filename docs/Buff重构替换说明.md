@@ -2054,3 +2054,15 @@
 - Next step:
   - Continue with US-012 by recording the serial validation summary and behavior-sample decision without broadening into P2-F / P2-G candidates or final handoff docs.
 ---
+## 2026-06-09 04:33 +08:00 - US-012
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - This validation / decision story does not replace additional live production behavior; it records the serial P2-E `implicit-events` validation result and behavior-sample skip rationale after `DotRuntimeStateAdapter`, `DotInitializationReadContext`, and exact-file P2-E guardrails are already in place.
+  - The validation profile evidence prepares final handoff to replace manual release readiness review for P2-E dot runtime-state / initialization.
+- Compatibility retained:
+  - Scheduled follow-up publish remains on `ScheduleDispatchPort`; dot registration / replacement / removal remains runtime state; Buff / Debuff writes remain on existing `buff_add_strategy(...)` / facade paths.
+  - `RuntimeCommandPort`, `BuffRuntimeReadPort` read-only semantics, listener broadcast, old containers, `LoadDamageEvent`, `Update_Buff.update_dot()`, Alice dot listener retained paths, Calculator, and CalAnomaly formulas remain unchanged.
+  - No main-loop consistency sample was run because no live duration / tick / runtime semantic change was introduced in this story; focused parity tests and source guardrails remain the compatibility evidence.
+- Next step:
+  - Continue with US-013 final handoff docs, marking P2-E state and promoting the next same-phase pool item without collapsing the candidate pool.
+---
