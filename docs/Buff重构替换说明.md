@@ -1329,3 +1329,14 @@
 - Next step:
   - 继续 US-003，添加 computed count state-sync 顺序测试，锁定 `simple_start(..., no_count=1) -> dy.count -> update_to_buff_0(...)` 后再迁移生产 XLogic。
 ---
+## 2026-06-08 12:01 +08:00 - US-003
+- Files changed: `tests/simulator/test_buff_attribute_state_sync.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_buff_attribute_state_sync.py` 新增 test-only computed count state-sync order harness，准备在后续迁移六个 P2-A AM/AP read-then-writeback 文件前替换“无顺序保护”的测试空白。
+  - 本故事只新增测试边界，没有替换 live `BuffXLogic` 路径；`AliceAdditionalAbilityApBonus.special_judge_logic()` 仅在测试中通过 fake Buff probe 验证当前顺序。
+- Compatibility retained:
+  - `AliceAdditionalAbilityApBonus.py` 的 direct `MultiplierData(...)` / `Calculator.AnomalyMul.cal_am(...)` 读取、AM 阈值、`get_prepared(...)` 参数、old `buff_0` identity、`simple_start(..., no_count=1) -> dy.count -> update_to_buff_0(...)` 顺序均保留。
+  - `ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、Calculator / CalAnomaly formula snapshots、raw queue deletion边界均未改变。
+- Next step:
+  - 继续 US-004，把 `tests/simulator/test_buff_attribute_state_sync.py` 接入 `calculator-reads` validation profile，避免后续 reader 迁移绕过顺序测试。
+---
