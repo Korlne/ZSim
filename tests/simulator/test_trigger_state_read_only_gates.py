@@ -365,6 +365,11 @@ def test_trigger_state_helper_requires_prepared_trigger_record() -> None:
             ("record.trigger_buff_0.dy.built_in_buff_box",),
             id="cordis-germina",
         ),
+        pytest.param(
+            "AstralVoice.py",
+            ("record.trigger_buff_0.dy.active",),
+            id="astral-voice",
+        ),
     ],
 )
 def test_migrated_trigger_state_gate_sources_use_trigger_state_helper(

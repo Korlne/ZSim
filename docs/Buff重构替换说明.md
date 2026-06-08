@@ -1766,3 +1766,15 @@
 - Next step:
   - Continue with US-009 by migrating only `AstralVoice.special_judge_logic(...)` active-state reads through `read_trigger_buff_state(...)` while keeping `special_effect_logic(...)` unchanged until US-010.
 ---
+## 2026-06-08 20:56 +08:00 - US-009
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/AstralVoice.py`, `tests/simulator/test_trigger_state_read_only_gates.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `AstralVoice.special_judge_logic(...)` replaces the direct old-template `record.trigger_buff_0.dy.active` chain with `read_trigger_buff_state(self.record).active` after the existing `get_prepared(equipper="静听嘉音", trigger_buff_0=(...), action_stack=1)` lookup.
+  - `tests/simulator/test_trigger_state_read_only_gates.py` now includes the root-only `AstralVoice.py` source assertion in the migrated P2-C trigger-state gate set.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, `JudgeTools.find_exist_buff_dict(...)`, action-stack preparation, `SkillNode` / `LoadingMission` normalization, `mission_dict[tick] == "start"` semantics, and old equipment-owner `buff_0` identity in `history.record`.
+  - `AstralVoice.special_effect_logic(...)` remains unchanged for US-010: `simple_start(...)`, current `dy.count` mirror from `record.trigger_buff_0.dy.count`, and `update_to_buff_0(self.buff_0)` still run in the old order.
+  - `BuffRuntimeReadPort`, `RuntimeCommandPort`, `ScheduleDispatchPort`, listener broadcast, dot runtime registration, raw queue deletion boundaries, Calculator formulas, and the remaining un-migrated `trigger_buff_0=` pool remain unchanged.
+- Next step:
+  - Continue with US-010 by migrating only `AstralVoice.special_effect_logic(...)` count reads through the same read-only helper while preserving its current state-sync order.
+---

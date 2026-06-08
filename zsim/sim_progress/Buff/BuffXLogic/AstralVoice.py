@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation, find_tick
+from ..JudgeTools import read_trigger_buff_state
 
 
 class AstralVoiceRecord:
@@ -63,6 +64,7 @@ class AstralVoice(Buff.BuffLogic):
             action_stack=1,
         )
         tick_now = JudgeTools.find_tick(sim_instance=self.buff_instance.sim_instance)
+        trigger_state = read_trigger_buff_state(self.record)
 
         skill_node = kwargs.get("skill_node", None)
         if skill_node is None:
@@ -74,7 +76,7 @@ class AstralVoice(Buff.BuffLogic):
             pass
         elif isinstance(skill_node, LoadingMission):
             skill_node = skill_node.mission_node
-        if self.record.trigger_buff_0.dy.active and skill_node.skill.trigger_buff_level == 7:
+        if trigger_state.active and skill_node.skill.trigger_buff_level == 7:
             if skill_node.loading_mission.mission_dict.get(tick_now, None) == "start":
                 return True
             else:
