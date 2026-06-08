@@ -1657,3 +1657,13 @@
 - Next step:
   - Continue with US-017 by running serial final validation and behavior-sample evidence for the completed P2-B package before handoff docs are updated in US-018.
 ---
+## 2026-06-08 18:46 +08:00 - US-017
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - This validation-only iteration does not replace live XLogic behavior; it validates the completed P2-B impact / crit reader family through direct focused pytest, `calculator-reads`, `implicit-events`, and one registered-team main-loop consistency sample.
+  - `莱特火属性队` sample evidence covers an existing Lighter / Trigger route and matched baseline vs candidate outputs at stop tick 600.
+- Compatibility retained:
+  - The nine migrated P2-B files, reader/context helpers, source guardrail, retained Calculator formula snapshots, `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime-state, same-tick runtime writes, old-container deletion boundaries, and non-migrated P2-C/P2-D/P2-E/P2-F candidates remain unchanged.
+- Next step:
+  - Continue with US-018 by updating handoff docs and promoting the next same-phase candidate pool without narrowing future phase-2 work to the last migrated P2-B files.
+---
