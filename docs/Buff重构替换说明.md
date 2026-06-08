@@ -2029,3 +2029,15 @@
 - Next step:
   - Continue with US-010 by deciding whether Shock duration initialization needs an explicit read helper, backed by the existing duration parity tests and without touching scheduled publish, runtime writes, dynamic dot registration, Calculator, or CalAnomaly.
 ---
+## 2026-06-09 04:17 +08:00 - US-010
+- Files changed: `zsim/sim_progress/Dot/initialization.py`, `zsim/sim_progress/Dot/Dots/Shock.py`, `tests/simulator/test_dot_runtime_initialization.py`, `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `DotInitializationReadContext` replaces the open-coded `Shock.DotFeature.__post_init__()` reads of `sim_instance.init_data.name_box` and `sim_instance.load_data.exist_buff_dict` with an explicit Shock dot initialization read boundary.
+  - `Shock.DotFeature.__post_init__()` now uses the helper for Rina passive presence while retaining the same `ValueError`, name-box / exist-buff reference exposure, and `600` / `780` duration decisions.
+  - `tests/simulator/test_dot_runtime_initialization.py` now proves helper parity and scans the migrated method plus helper for scheduled publish, listener broadcast, runtime command, `BuffRuntimeReadPort`, Calculator, CalAnomaly, and runtime dot-list leaks.
+- Compatibility retained:
+  - Scheduled publish remains on `ScheduleDispatchPort`; runtime dot registration / removal stays with `DotRuntimeStateAdapter` callsites; Buff / Debuff writes remain on existing `buff_add_strategy(...)` / facade paths; listener broadcast, `RuntimeCommandPort`, Calculator, and CalAnomaly formulas remain unchanged.
+  - Old compatibility retained in this iteration: `Shock.DotFeature.__post_init__()` still depends on the existing Rina buff container when `丽娜` is present, and no old containers are deleted.
+- Next step:
+  - Continue with US-011 by adding exact-file P2-E guardrails for migrated Vivian, UpdateAnomaly, Shock initialization, and validation wiring without broadening into P2-F / P2-G candidates.
+---

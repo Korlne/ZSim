@@ -6,6 +6,10 @@ from typing import NoReturn
 
 import pytest
 
+from zsim.sim_progress.Dot.initialization import (
+    DotInitializationReadContext,
+    RINA_SHOCK_DURATION_EXTENSION_BUFF_INDEX,
+)
 from zsim.sim_progress.Dot.Dots.Shock import Shock
 
 
@@ -78,22 +82,54 @@ def test_shock_dot_duration_defaults_to_600_when_rina_passive_is_absent():
 
 
 def test_shock_dot_duration_extends_to_780_when_rina_passive_exists():
-    passive_index = "Buff-角色-丽娜-组队被动-延长感电"
     passive_marker = object()
     sim_instance = _build_sim_instance(
         name_box=["丽娜", "安比"],
-        exist_buff_dict={"丽娜": {passive_index: passive_marker}},
+        exist_buff_dict={
+            "丽娜": {RINA_SHOCK_DURATION_EXTENSION_BUFF_INDEX: passive_marker},
+        },
     )
 
     feature = Shock.DotFeature(sim_instance=sim_instance)
 
     assert feature.max_duration == 780
     assert feature.char_name_box == ["丽娜", "安比"]
-    assert feature.exist_buff_dict == {"丽娜": {passive_index: passive_marker}}
+    assert feature.exist_buff_dict == {
+        "丽娜": {RINA_SHOCK_DURATION_EXTENSION_BUFF_INDEX: passive_marker},
+    }
+
+
+def test_dot_initialization_read_context_preserves_old_sim_instance_reads():
+    passive_marker = object()
+    name_box = ["丽娜", "安比"]
+    exist_buff_dict = {"丽娜": {RINA_SHOCK_DURATION_EXTENSION_BUFF_INDEX: passive_marker}}
+    sim_instance = _build_sim_instance(name_box=name_box, exist_buff_dict=exist_buff_dict)
+
+    read_context = DotInitializationReadContext.from_sim_instance(sim_instance)
+
+    assert read_context.name_box is name_box
+    assert read_context.exist_buff_dict is exist_buff_dict
+    assert read_context.has_rina_shock_duration_extension() is True
+
+
+def test_dot_initialization_read_context_reports_absent_rina_passive():
+    sim_instance = _build_sim_instance(
+        name_box=["丽娜", "安比"],
+        exist_buff_dict={"丽娜": {}},
+    )
+
+    read_context = DotInitializationReadContext.from_sim_instance(sim_instance)
+
+    assert read_context.has_rina_shock_duration_extension() is False
 
 
 def test_shock_dot_duration_initialization_stays_in_read_only_layer():
-    source = inspect.getsource(Shock.DotFeature.__post_init__)
+    source = "\n".join(
+        [
+            inspect.getsource(Shock.DotFeature.__post_init__),
+            inspect.getsource(DotInitializationReadContext),
+        ]
+    )
 
     forbidden_terms = [
         "ScheduleDispatchPort",
@@ -104,6 +140,7 @@ def test_shock_dot_duration_initialization_stays_in_read_only_layer():
         "broadcast_event",
         "RuntimeCommandPort",
         "runtime_command",
+        "BuffRuntimeReadPort",
         "Calculator",
         "CalAnomaly",
     ]
