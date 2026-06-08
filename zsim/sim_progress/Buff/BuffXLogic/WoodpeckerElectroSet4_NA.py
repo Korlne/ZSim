@@ -1,5 +1,8 @@
 from zsim.sim_progress.RandomNumberGenerator import RNG
-from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
+from zsim.sim_progress.ScheduledEvent.Calculator import (
+    CalculatorBuffAttributeReader,
+    create_anomaly_attribute_read_context,
+)
 
 from .. import Buff, JudgeTools, check_preparation
 
@@ -56,11 +59,13 @@ class WoodpeckerElectroSet4_NA(Buff.BuffLogic):
             return False
         if str(self.record.char.CID) not in skill_node.skill_tag:
             return False
-        mul_data = MultiplierData(
-            self.record.enemy, self.record.dynamic_buff_list, self.record.char
+        context = create_anomaly_attribute_read_context(
+            enemy=self.record.enemy,
+            active_buff_view=self.record.dynamic_buff_list,
+            character=self.record.char,
         )
         if skill_node.skill.trigger_buff_level == 0:
-            cric_rate = Calculator.RegularMul.cal_crit_rate(mul_data)
+            cric_rate = CalculatorBuffAttributeReader().read_full_crit_rate(context)
             rng: RNG = self.buff_instance.sim_instance.rng_instance
             normalized_value = rng.random_float()
             if normalized_value <= cric_rate:

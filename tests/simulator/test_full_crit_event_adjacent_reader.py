@@ -791,3 +791,64 @@ def test_woodpecker_full_crit_gate_skips_rng_and_state_sync_on_wrong_actor(
         {"equipper": "啄木鸟电音", "enemy": 1, "dynamic_buff_list": 1, "action_stack": 1}
     ]
     assert fixture.sim_instance.schedule_data.event_list == []
+
+
+def test_woodpecker_na_full_crit_gate_skips_rng_and_state_sync_without_skill_node(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    MultiplierData.mul_data_cache.clear()
+    fixture = _make_full_crit_fixture(name="啄木鸟测试", cid=1301, crit_rate=0.2)
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        {
+            "固定暴击率": 0.05,
+            "局内暴击率": 0.05,
+            "被暴击几率增加": 0.2,
+        },
+    )
+    rng = _FakeRng([0.0])
+    fixture.sim_instance.rng_instance = rng
+
+    def fail_simple_start(*args: object, **kwargs: object) -> None:
+        raise AssertionError("Woodpecker NA no SkillNode branch should not start state")
+
+    buff_instance = SimpleNamespace(
+        ft=SimpleNamespace(index="woodpecker-electro"),
+        sim_instance=fixture.sim_instance,
+        simple_start=fail_simple_start,
+    )
+    logic = WoodpeckerElectroSet4_NA(buff_instance)
+    logic.record = SimpleNamespace(
+        char=fixture.char,
+        enemy=fixture.enemy,
+        dynamic_buff_list=fixture.active_buff_view,
+        action_stack=[],
+    )
+    get_prepared_calls: list[dict[str, object]] = []
+    monkeypatch.setattr(logic, "check_record_module", lambda: None)
+    monkeypatch.setattr(
+        logic,
+        "get_prepared",
+        lambda **kwargs: get_prepared_calls.append(kwargs),
+    )
+
+    result = logic.special_judge_logic(skill_node=None)
+
+    assert result is False
+    assert rng.calls == []
+    assert aggregation_calls == []
+    assert get_prepared_calls == [
+        {"equipper": "啄木鸟电音", "enemy": 1, "dynamic_buff_list": 1, "action_stack": 1}
+    ]
+    assert fixture.sim_instance.schedule_data.event_list == []
+
+
+def test_woodpecker_na_full_crit_gate_uses_reader_seam_source() -> None:
+    module_source = inspect.getsource(sys.modules[WoodpeckerElectroSet4_NA.__module__])
+    method_source = inspect.getsource(WoodpeckerElectroSet4_NA.special_judge_logic)
+
+    assert "MultiplierData" not in module_source
+    assert "RegularMul" not in module_source
+    assert "cal_crit_rate" not in module_source
+    assert "create_anomaly_attribute_read_context" in method_source
+    assert "read_full_crit_rate" in method_source
