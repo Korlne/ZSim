@@ -793,8 +793,25 @@ def test_woodpecker_full_crit_gate_skips_rng_and_state_sync_on_wrong_actor(
     assert fixture.sim_instance.schedule_data.event_list == []
 
 
-def test_woodpecker_na_full_crit_gate_skips_rng_and_state_sync_without_skill_node(
+@pytest.mark.parametrize(
+    ("logic_type", "variant_name"),
+    [
+        pytest.param(
+            WoodpeckerElectroSet4_NA,
+            "NA",
+            id="WoodpeckerElectroSet4_NA",
+        ),
+        pytest.param(
+            WoodpeckerElectroSet4_E_EX,
+            "E_EX",
+            id="WoodpeckerElectroSet4_E_EX",
+        ),
+    ],
+)
+def test_migrated_woodpecker_full_crit_gate_skips_rng_and_state_sync_without_skill_node(
     monkeypatch: pytest.MonkeyPatch,
+    logic_type: type[Any],
+    variant_name: str,
 ) -> None:
     MultiplierData.mul_data_cache.clear()
     fixture = _make_full_crit_fixture(name="啄木鸟测试", cid=1301, crit_rate=0.2)
@@ -810,14 +827,16 @@ def test_woodpecker_na_full_crit_gate_skips_rng_and_state_sync_without_skill_nod
     fixture.sim_instance.rng_instance = rng
 
     def fail_simple_start(*args: object, **kwargs: object) -> None:
-        raise AssertionError("Woodpecker NA no SkillNode branch should not start state")
+        raise AssertionError(
+            f"Woodpecker {variant_name} no SkillNode branch should not start state"
+        )
 
     buff_instance = SimpleNamespace(
         ft=SimpleNamespace(index="woodpecker-electro"),
         sim_instance=fixture.sim_instance,
         simple_start=fail_simple_start,
     )
-    logic = WoodpeckerElectroSet4_NA(buff_instance)
+    logic = logic_type(buff_instance)
     logic.record = SimpleNamespace(
         char=fixture.char,
         enemy=fixture.enemy,
@@ -846,6 +865,17 @@ def test_woodpecker_na_full_crit_gate_skips_rng_and_state_sync_without_skill_nod
 def test_woodpecker_na_full_crit_gate_uses_reader_seam_source() -> None:
     module_source = inspect.getsource(sys.modules[WoodpeckerElectroSet4_NA.__module__])
     method_source = inspect.getsource(WoodpeckerElectroSet4_NA.special_judge_logic)
+
+    assert "MultiplierData" not in module_source
+    assert "RegularMul" not in module_source
+    assert "cal_crit_rate" not in module_source
+    assert "create_anomaly_attribute_read_context" in method_source
+    assert "read_full_crit_rate" in method_source
+
+
+def test_woodpecker_e_ex_full_crit_gate_uses_reader_seam_source() -> None:
+    module_source = inspect.getsource(sys.modules[WoodpeckerElectroSet4_E_EX.__module__])
+    method_source = inspect.getsource(WoodpeckerElectroSet4_E_EX.special_judge_logic)
 
     assert "MultiplierData" not in module_source
     assert "RegularMul" not in module_source

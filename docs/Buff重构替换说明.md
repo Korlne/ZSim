@@ -1617,3 +1617,16 @@
 - Next step:
   - Continue with US-014 by migrating `WoodpeckerElectroSet4_E_EX.py` through `CalculatorBuffAttributeReader.read_full_crit_rate(...)` while preserving E/EX trigger level `2` and RNG gate behavior.
 ---
+
+## 2026-06-08 18:18 +08:00 - US-014
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/WoodpeckerElectroSet4_E_EX.py`, `tests/simulator/test_full_crit_event_adjacent_reader.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `WoodpeckerElectroSet4_E_EX.py` now replaces its direct `MultiplierData(...)` / `Calculator.RegularMul.cal_crit_rate(...)` full-crit gate with `create_anomaly_attribute_read_context(...)` and `CalculatorBuffAttributeReader.read_full_crit_rate(...)`.
+  - The focused full-crit event-adjacent test now guards the E/EX module against reintroducing direct full-crit Calculator snapshot imports or calls and pins the no-SkillNode no-RNG/no-state-sync branch.
+- Compatibility retained:
+  - E/EX `special_judge_logic(...)` preparation arguments, SkillNode / LoadingMission normalization, character tag gate, trigger level `2`, full-crit received-bonus semantics, RNG threshold result, no-publish behavior, and aggregation shape remain preserved.
+  - The retained Calculator formula snapshot still owns `Calculator.RegularMul.cal_crit_rate(...)`; `WoodpeckerElectroSet4_CA.py` remains on its old direct full-crit path until US-015.
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime-state, same-tick runtime writes, old-container deletion boundaries, and phase-1 raw queue deletion work remain unchanged.
+- Next step:
+  - Continue with US-015 by migrating `WoodpeckerElectroSet4_CA.py` through `CalculatorBuffAttributeReader.read_full_crit_rate(...)` while preserving CA trigger level `4` and RNG gate behavior.
+---
