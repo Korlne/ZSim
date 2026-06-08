@@ -1994,3 +1994,14 @@
 - Next step:
   - Continue with US-007 by introducing the dot runtime-state helper / adapter against the locked removal / replacement behavior before migrating production callsites.
 ---
+## 2026-06-09 04:01 +08:00 - US-007
+- Files changed: `zsim/sim_progress/Dot/runtime_state.py`, `zsim/sim_progress/Dot/__init__.py`, `tests/simulator/test_dot_runtime_state_adapter.py`, `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `DotRuntimeStateAdapter` prepares to replace open-coded `enemy.dynamic.dynamic_dot_list` search, duplicate-safe registration, same-index replacement, removal, and iteration-snapshot responsibilities in selected P2-E callsites.
+  - `tests/simulator/test_dot_runtime_state_adapter.py` replaces manual helper-boundary review by proving raw-list parity for duplicate prevention, replacement order, removal order, safe snapshots, and no scheduled publish / listener broadcast / runtime-command side effects.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `VivianDotTrigger`, `VivianCinema1Debuff`, `UpdateAnomaly.anomaly_effect_active(...)`, `remove_dots_cause_disorder(...)`, `Shock.DotFeature.__post_init__()`, `LoadDamageEvent`, `Update_Buff.update_dot()`, and Alice dot listener callsites still use their existing runtime-dot paths.
+  - Scheduled follow-up publish remains on `ScheduleDispatchPort`; Buff / Debuff writes remain on existing `buff_add_strategy(...)` / facade paths; listener broadcast, `RuntimeCommandPort`, old containers, Calculator, and CalAnomaly formulas remain unchanged.
+- Next step:
+  - Continue with US-008 by migrating Vivian dot runtime-state callers to the helper while preserving dot start, `LoadingMission.mission_start(...)`, runtime registration, then scheduled publish order.
+---
