@@ -3,6 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 import numpy as np
+import pytest
 
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 from zsim.sim_progress.Dot.BaseDot import Dot
@@ -56,6 +57,34 @@ class _FailFastDotRuntimeList(list):
 
     def remove(self, item):
         raise AssertionError("debuff-only anomaly effects should not remove runtime dots")
+
+
+class _RecordingDotDynamicState:
+    def __init__(
+        self,
+        call_order: list[tuple[str, object]],
+        *,
+        effect_times: int = 0,
+        ready: bool | None = True,
+    ) -> None:
+        object.__setattr__(self, "_call_order", call_order)
+        object.__setattr__(self, "_recording_enabled", False)
+        self.active = True
+        self.count = 0
+        self.start_ticks = 0
+        self.last_effect_ticks = 0
+        self.ready = ready
+        self.effect_times = effect_times
+        object.__setattr__(self, "_recording_enabled", True)
+
+    def __setattr__(self, name: str, value: object) -> None:
+        if getattr(self, "_recording_enabled", False) and name in {
+            "ready",
+            "last_effect_ticks",
+            "effect_times",
+        }:
+            self._call_order.append((f"dy_{name}", value))
+        object.__setattr__(self, name, value)
 
 
 class _ForbiddenListenerManager:
@@ -376,22 +405,27 @@ def test_anomaly_effect_active_debuff_branch_uses_existing_buff_add_path(
     assert enemy.dynamic.dynamic_dot_list == []
 
 
-def test_remove_dots_cause_disorder_publishes_freeze_follow_up_via_dispatch_port():
+@pytest.mark.parametrize("dot_index", ["Freez", "Freezdot"])
+def test_remove_dots_cause_disorder_publishes_freeze_follow_up_via_dispatch_port(
+    dot_index,
+):
     call_order: list[tuple[str, object]] = []
-    legacy_event_list = _FailFastEventList()
-    sim_instance = _build_sim_instance(legacy_event_list)
+    recording_queue = _RecordingEventList(call_order)
+    sim_instance = _build_sim_instance(recording_queue)
     enemy = _build_enemy(sim_instance)
     anomaly_event = SimpleNamespace(marker="freeze-follow-up")
     freeze_dot = _FakeDot(
-        index="Freez",
+        index=dot_index,
         anomaly_data=anomaly_event,
         call_order=call_order,
     )
-    freeze_dot.dy.effect_times = 1
-    enemy.dynamic.dynamic_dot_list.append(freeze_dot)
-
-    recording_queue = _RecordingEventList(call_order)
-    sim_instance.schedule_data.event_list = recording_queue
+    freeze_dot.dy = _RecordingDotDynamicState(call_order, effect_times=1)
+    enemy.dynamic.dynamic_dot_list = _RecordingDotRuntimeList(call_order, [freeze_dot])
+    enemy.dynamic.frozen = True
+    enemy.dynamic.frostbite = True
+    sim_instance.schedule_data.change_process_state = lambda: call_order.append(
+        ("change_process_state", None)
+    )
     disorder = SimpleNamespace(accompany_dot="Shock")
 
     remove_dots_cause_disorder(
@@ -402,8 +436,69 @@ def test_remove_dots_cause_disorder_publishes_freeze_follow_up_via_dispatch_port
     )
 
     assert recording_queue == [anomaly_event]
-    assert call_order == [("publish", anomaly_event), ("dot_end", "Freez")]
+    assert call_order == [
+        ("publish", anomaly_event),
+        ("dy_ready", False),
+        ("dy_last_effect_ticks", 10),
+        ("dy_effect_times", 2),
+        ("dot_end", dot_index),
+        ("dot_remove", dot_index),
+        ("change_process_state", None),
+    ]
+    assert freeze_dot.dy.ready is False
+    assert freeze_dot.dy.last_effect_ticks == 10
+    assert freeze_dot.dy.effect_times == 2
     assert freeze_dot.ended_at == 10
     assert enemy.dynamic.dynamic_dot_list == []
     assert enemy.dynamic.frozen is False
     assert enemy.dynamic.frostbite is False
+
+
+def test_remove_dots_cause_disorder_removes_matching_non_freeze_dot_without_publish():
+    call_order: list[tuple[str, object]] = []
+    sim_instance = _build_sim_instance(_FailFastEventList())
+    sim_instance.schedule_data.change_process_state = lambda: call_order.append(
+        ("change_process_state", None)
+    )
+    enemy = _build_enemy(sim_instance)
+    unrelated_dot = _FakeDot(index="Ignite", call_order=call_order)
+    removed_dot = _FakeDot(index="Shock", call_order=call_order)
+    enemy.dynamic.dynamic_dot_list = _RecordingDotRuntimeList(
+        call_order,
+        [unrelated_dot, removed_dot],
+    )
+    disorder = SimpleNamespace(accompany_dot="Shock")
+
+    remove_dots_cause_disorder(
+        disorder,
+        enemy,
+        create_schedule_dispatch_port(sim_instance=sim_instance),
+        23,
+    )
+
+    assert removed_dot.ended_at == 23
+    assert unrelated_dot.ended_at is None
+    assert enemy.dynamic.dynamic_dot_list == [unrelated_dot]
+    assert call_order == [
+        ("dot_end", "Shock"),
+        ("dot_remove", "Shock"),
+        ("change_process_state", None),
+    ]
+
+
+def test_remove_dots_cause_disorder_rejects_invalid_runtime_dot_entry():
+    sim_instance = _build_sim_instance(_FailFastEventList())
+    sim_instance.schedule_data.change_process_state = lambda: (_ for _ in ()).throw(
+        AssertionError("invalid dot entries should not update process state")
+    )
+    enemy = _build_enemy(sim_instance)
+    enemy.dynamic.dynamic_dot_list = [object()]
+    disorder = SimpleNamespace(accompany_dot="Shock")
+
+    with pytest.raises(TypeError, match="不是DOT类"):
+        remove_dots_cause_disorder(
+            disorder,
+            enemy,
+            create_schedule_dispatch_port(sim_instance=sim_instance),
+            23,
+        )

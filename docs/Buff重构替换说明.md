@@ -1983,3 +1983,14 @@
 - Next step:
   - Continue with US-006 by adding `remove_dots_cause_disorder(...)` non-freeze removal, freeze mutation, process-state, and invalid-entry coverage before introducing the dot runtime-state helper / adapter.
 ---
+## 2026-06-09 03:45 +08:00 - US-006
+- Files changed: `tests/simulator/test_update_anomaly_dispatch.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_update_anomaly_dispatch.py` prepares to replace manual `remove_dots_cause_disorder(...)` dot removal review by pinning non-freeze runtime-list removal, freeze / freeze-dot follow-up scheduled publish, freeze dot dynamic-state updates, `change_process_state()` side effects, and invalid-entry `TypeError` behavior.
+  - This story strengthens focused parity coverage only; no live `UpdateAnomaly`, dot runtime-state helper, dispatch adapter, listener, runtime command, old-container, Calculator, or CalAnomaly behavior was replaced in this iteration.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `remove_dots_cause_disorder(...)` still mutates `enemy.dynamic.dynamic_dot_list` directly for dot removal, and only freeze / freeze-dot follow-up anomaly data publishes through `ScheduleDispatchPort`.
+  - Listener broadcast, same-tick runtime writes, `RuntimeCommandPort`, `BuffRuntimeReadPort`, old containers, `LoadDamageEvent`, `Update_Buff.update_dot()`, handler requeue, damage-effect continuation, `CalAnomaly`, and anomaly formulas remain unchanged.
+- Next step:
+  - Continue with US-007 by introducing the dot runtime-state helper / adapter against the locked removal / replacement behavior before migrating production callsites.
+---
