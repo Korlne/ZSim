@@ -1175,3 +1175,14 @@
 - Next step:
   - Continue with US-004 by syncing the handoff docs and stale phase-1 checklist wording from the guardrail and validation evidence.
 ---
+## 2026-06-08 08:07 - US-004
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - Handoff docs now replace stale 2026-06-05 / 2026-06-06 phase-1 backlog wording with historical/superseded status tied to `PRD-12 US-024` and the current guardrail evidence.
+  - `docs/旧Buff系统耦合审查结果.md` records `ScheduleBuffSettle.py` raw old-container coverage under `legacy ScheduleBuffSettle command-adapter internals`; this prepares to replace manual review of retained settle internals, not a live runtime path.
+- Compatibility retained:
+  - `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` still own the same-tick settle write boundary, and `ScheduleBuffSettle.py` remains the retained adapter-internal legacy implementation.
+  - Deleted `event_list` surfaces, closed producer batches, old-container ownership, listener broadcast, scheduled queue publish, and runtime write layers are not reopened or unified by this doc-sync story.
+- Next step:
+  - Continue with US-005 by documenting `.codex_worktrees` audit hygiene without mutating historical worktrees.
+---

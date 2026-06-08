@@ -96,14 +96,14 @@
 - [x] 更新 [Buff重构下阶段计划草稿.md](./Buff重构下阶段计划草稿.md)、[Buff重构替换说明.md](./Buff重构替换说明.md) 与 [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md)，同步阶段 1 当前基线。
 - [x] `UpdateAnomaly` 计划事件发布路径与 `BattleEventListener` 中 `AliceDotTriggerListener` 样本已改经 dispatch gateway，当前不再把这两条入口列为阶段 1 主缺口。
 - [x] 高风险 `SkillEventHandler` 已把 `Calculator` / `update_anomaly()` 的主 Buff 读口迁到 runtime view。
-- [ ] 其余 `BuffXLogic` / `Character` 旁路计划事件生产者、可能隐藏在 listener helper 中的发布入口，以及其他相邻同 tick runtime 写路径仍待后续阶段 1 切片推进。
+- [x] 这条 2026-06-05 阶段 1 backlog 已被后续 `PRD-8` 至 `PRD-12 US-024` 的复扫、删除发现口、guardrail / validation evidence 与 closure decision 覆盖；当前作为历史记录保留，不再是 active 阶段 1 backlog。只有 guardrail / validation / root-workspace source scan 给出新的生产证据时，才重新开窄 blocker PRD。
 
 ## 本轮剩余 producer batch / shared-validation PRD 收口状态（2026-06-06）
 
 - [x] 代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` 计划事件链，以及本轮收口的 `ElegantVanitySpRecover`、`LunarNoviluna`、`MagneticStormCharlieSpRecover`、`SeedAdditionalAbilityTrigger`、`SliceofTimeExtraResources`、`CannonRotor`、`YanagiPolarityDisorderTrigger`、`HugoCorePassiveTotalizeTrigger` 与 `DecibelManager`，现都已改经 `ScheduleDispatchPort` 发布 planned event。
 - [x] `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 仍是本轮唯一沿用的 same-tick 显式写边界；`SkillEventHandler` 的 `update_anomaly()` / `ScheduleBuffSettle()` 与 `AnomalyEventHandler` 的 `ScheduleBuffSettle(..., anomaly_bar=event)` 同 tick 写边界保持走显式命令口，没有引入第二套 write facade。
 - [x] `implicit-events` 共享验证入口现已同时覆盖 `test_schedule_dispatch.py`、聚焦 dispatch/runtime-boundary pytest，以及这些 focused 回归文件本身的 scoped mypy，handoff 文档已同步记录验证命令与当前基线。
-- [ ] 阶段 1 剩余缺口已收敛为其他 one-off `BuffXLogic`、`Character` 旁路 producer 的 raw `event_list` 写入口、可能隐藏的 listener/helper 发布入口，以及后续若继续暴露出来的相邻高风险 same-tick 写路径。
+- [x] 这条 2026-06-06 阶段 1 剩余 producer / helper backlog 已被 `PRD-12 US-024` 显式 supersede：已闭合的 producer batch 和已删除的 `event_list` surface 不作为默认后续工作。若后续 guardrail / validation / root-workspace source scan 发现具体生产失败证据，再按失败文件、符号和验证入口开窄 blocker PRD。
 
 ## 本轮 remaining bypass producers runtime-boundary PRD 收口状态（2026-06-06）
 
@@ -172,6 +172,8 @@
 - [x] `--legacy-runtime` / `--candidate-runtime` 继续只是 consistency / benchmark 报告标签，不是 live runtime switch；只有 live simulator 真正消费 `config.buff_runtime.mode` 后，才可把这些命令当真实 runtime 切换证据。
 - [x] 旧容器仍是 retained compatibility boundary：本阶段关闭的是基础设施扩散风险和代表性 facade / read / dispatch seam，不等同于删除 `exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT`、legacy `buff_add()`、legacy `KickOutBuff()` 或全部 `MultiplierData` 公式快照。
 - [x] `US-024` 已基于 completion matrix、guardrail matrix、serial validation 和 handoff docs 声明阶段 1 基础设施解耦关闭；阶段 2 可以作为下一轮 PRD 默认入口。
+- [x] 2026-06-08 gap-closure guardrail evidence 已补齐 `zsim/sim_progress/Buff/ScheduleBuffSettle.py` raw old-container guardrail 覆盖，并将其纳入 `lifecycle` 与 `implicit-events` scoped mypy targets；当前旧容器写入只按 `legacy ScheduleBuffSettle command-adapter internals` retained boundary 和 ceiling 保留。
+- [x] 该 gap-closure PRD 不替换 live runtime path，不删除旧容器，不重开已删除的 `event_list` surface，不重启已闭合的 producer batch，也不合并 listener broadcast / scheduled queue / runtime write 分层；完整 closure 后默认路线仍返回阶段 2。
 
 ## 当前默认下一步
 
