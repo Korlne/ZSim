@@ -1678,3 +1678,13 @@
 - Next step:
   - Generate the next phase-2 PRD from [Buff重构方案.md](./Buff重构方案.md), defaulting to P2-C trigger-state read-only gates while preserving P2-D scheduled publish ordering, P2-E dot runtime-state, P2-F BuffAddStrategy facade-write design, phase-3 formula snapshots, retained compatibility rows, and blocker-only phase-1 reopen rules.
 ---
+## 2026-06-08 19:46 +08:00 - US-001
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `scripts/ralph/progress.txt` P2-C working note prepares to replace loose trigger-state planning with root-workspace source evidence, current `trigger_buff_0=` pool classification, CodeGraph query evidence, retained boundary list, focused-test requirements, and validation outcomes.
+  - This story only builds planning evidence; it does not replace live XLogic behavior yet.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, old template Buff identity in `history.record.trigger_buff_0`, `BuffRuntimeReadPort` read-only semantics, `RuntimeCommandPort` as the only same-tick write boundary, and `ScheduleDispatchPort` queue-only semantics.
+- Next step:
+  - Continue with US-002 by adding focused trigger-state read-only gate tests before introducing or migrating a production helper.
+---
