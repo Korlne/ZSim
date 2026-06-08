@@ -1264,3 +1264,14 @@
 - Next step:
   - Continue with US-006 by classifying runtime container and service-location couplings without adding a second write facade or expanding `BuffRuntimeReadPort` into writes.
 ---
+## 2026-06-08 10:24 +08:00 - US-006
+- Files changed: `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `docs/BuffXLogic阶段2全量分类与复用矩阵.md` now prepares to replace loose runtime-container backlog wording with buckets for static registry lookup, runtime read snapshots, same-tick command writes, facade-internal pending / active / enemy-mirror writes, direct simulator service context, and retained compatibility false positives.
+  - No live BuffXLogic, runtime port, lifecycle, facade, or validation path was replaced in this story; it produces phase-2 classification evidence only.
+- Compatibility retained:
+  - Old `exist_buff_dict`, `LOADING_BUFF_DICT`, `DYNAMIC_BUFF_DICT`, enemy debuff mirror, legacy `buff_add()`, legacy `KickOutBuff()`, retained `ScheduleBuffSettle.py`, and `MultiplierData` formula snapshots remain unchanged.
+  - `RuntimeCommandPort` remains the only same-tick write boundary, `BuffRuntimeReadPort` remains read-only, and `LegacyBuffRuntimeFacade` continues to retain old container identity by reference.
+- Next step:
+  - Continue with US-007 by classifying anomaly, debuff, dot, and formula-bypass couplings without collapsing scheduled publish, listener broadcast, dot runtime registration, and runtime immediate write into one boundary.
+---

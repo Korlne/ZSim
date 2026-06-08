@@ -554,6 +554,82 @@ rg -n "record\.[A-Za-z_][A-Za-z0-9_]*\.dy\.(count|built_in_buff_box|active|ready
 - `simple_exit(...)` has no root-workspace BuffXLogic callsite in this scan; exit/lifecycle refactor should stay out of this PRD unless a future story supplies concrete source evidence.
 - Existing phase-1 retained boundaries remain unchanged: no old container deletion, no second runtime write facade, no `BuffRuntimeReadPort` write expansion, no reopened raw queue surfaces, and no live XLogic behavior replacement.
 
+## US-006 runtime container / service-location 分类
+
+本节只分类 `sim_instance`、`JudgeTools.find_*`、旧 runtime 容器和 service-location 耦合；不编辑 `BuffXLogic`、runtime ports、facade、lifecycle 或 validation wiring。分类仍为非排他：同一文件可同时属于 `SERVICE_LOCATION`、`ATTR_READ`、`RECORD_COUNT_SYNC`、`RUNTIME_IMMEDIATE_WRITE` 或 retained compatibility。
+
+### 可复现扫描命令
+
+```powershell
+rg --files zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "sim_instance" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "JudgeTools\.find_|find_exist_buff_dict|find_sub_exist_buff_dict|find_dynamic_buff_list|find_loading_buff_dict|find_char_from_|find_tick|find_stack|find_preload_data|find_enemy" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "exist_buff_dict|sub_exist_buff_dict|dynamic_buff_list|DYNAMIC_BUFF_DICT|LOADING_BUFF_DICT|dynamic_buff|loading_buff" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "BuffRuntimeReadPort|LegacyBuffRuntimeFacade|RuntimeCommandPort|LegacyRuntimeCommandAdapter" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "buff_add\(|KickOutBuff\(" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+```
+
+### 扫描计数
+
+根工作区扫描结果如下；`.codex_worktrees/` 仍按阶段 2 规则视为历史证据，不进入生产分类计数。
+
+| pattern | files | lines | matches | 分类含义 |
+| --- | ---: | ---: | ---: | --- |
+| root `BuffXLogic` files excluding `__init__.py` | 149 | - | - | US-006 的生产取证全集。 |
+| `sim_instance` | 148 | 421 | 747 | 几乎全部 XLogic 仍从 Buff 实例 service-locate runtime 上下文；后续需按触达面拆分，不可整体替换。 |
+| `JudgeTools.find_*` / exported helper terms | 148 | 323 | 323 | `check_record_module()`、`check_preparation(...)` 和直接 helper 调用仍是旧上下文定位主路径。 |
+| old container terms | 144 | 355 | 380 | 多数是 record 字段、`check_preparation(...)` 参数和 Calculator 输入，不等价于 raw container write。 |
+| runtime boundary names in BuffXLogic | 0 | 0 | 0 | `BuffXLogic` 当前未直接依赖 `RuntimeCommandPort` / `BuffRuntimeReadPort` 名称；边界仍在 handler / simulator / facade 层。 |
+| direct `buff_add()` / `KickOutBuff()` in BuffXLogic | 0 | 0 | 0 | 未发现 XLogic 直接调用 legacy lifecycle helpers；它们仍是 retained lifecycle / facade internals。 |
+| `find_exist_buff_dict` | 142 | 142 | 142 | 模板 Buff registry 身份定位，通常用于 `buff_0` / `history.record` 懒初始化。 |
+| `find_dynamic_buff_list` | 1 | 1 | 1 | 直接 helper 只剩 `IceJadeTeaPotExtraDMGBonus.py`；更多 dynamic reads 通过 `check_preparation(dynamic_buff_list=1)`。 |
+| `dynamic_buff_list=1` | 20 | 21 | 21 | Calculator / reader snapshot 输入，优先归 `BuffRuntimeReadPort` 或 attribute reader parity 候选。 |
+| `sub_exist_buff_dict=1` | 46 | 47 | 47 | `simple_start(...)` / template sync 所需旧模板子字典，继续标记为 old registry compatibility。 |
+| `trigger_buff_0=` | 21 | 42 | 42 | 读取旧模板 Buff 的动态状态；后续可按 trigger-state read-port helper 分类。 |
+| direct `sim_instance.tick` | 24 | 37 | 37 | 当前 tick read；通常属于显式 context 候选，不是 runtime write。 |
+| direct `sim_instance.schedule_data` | 22 | 36 | 36 | 主要是 `enemy`、report `change_process_state()`、已迁移 dispatch 创建和 local runtime state；需按语义分类。 |
+| direct `sim_instance.preload` / `char_data` | 6 | 6 | 6 | local preload / character service-location；不归入 Buff old-container facade。 |
+| `listener_manager` / `rng_instance` | 9 | 10 | 10 | listener broadcast / RNG service 仍是独立 service boundary，不应映射到 runtime container helper。 |
+| uppercase `DYNAMIC_BUFF_DICT` / `LOADING_BUFF_DICT` in BuffXLogic | 0 | 0 | 0 | XLogic 不直接按全局容器名访问 active / pending store。 |
+
+### CodeGraph 导航证据
+
+- Query seed：`US-006 Classify Runtime Container And Service-Location Couplings`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`BuffRuntimeReadPort`、`LegacyBuffRuntimeFacade`、`BuffAddStrategy`、`buff_add`、`KickOutBuff`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT`、`exist_buff_dict`、`sub_exist_buff_dict`、`dynamic_buff_list`、`JudgeTools.find_*`、`check_preparation`、`BasicComplexBuffClass`、`AliceAdditionalAbilityApBonus`、`IceJadeTeaPotExtraDMGBonus`、`YuzuhaHardCandyShotTrigger`。
+- `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 仍是 same-tick command boundary：`update_anomaly(...)` 委托 `legacy_update_anomaly(...)` 并传入当前 `ScheduleData.event_list`、`dynamic_buff`、`BuffRuntimeReadPort` 和 `sim_instance`；`settle_buffs(...)` 委托 retained `ScheduleBuffSettle`，并保留旧 `exist_buff_dict`、`dynamic_buff`、`action_stack` 和 `sim_instance` 身份。
+- `BuffRuntimeReadPort` 仍是只读主契约：active Buff view / exist snapshot 是推荐读口；`get_legacy_dynamic_buff_dict()` / `get_legacy_exist_buff_dict()` 是同 tick 兼容读取，不是新写 API。
+- `LegacyBuffRuntimeFacade` 按引用包住 `exist_buff_dict`、`LOADING_BUFF_DICT`、`DYNAMIC_BUFF_DICT` 和 `enemy.dynamic.dynamic_debuff_list`；`activate_pending_buffs(...)`、`_activate_pending_buff(...)`、`update_time_related_effects(...)` 证明 pending queue、active store、enemy mirror 和 lifecycle tick sweep 当前都在 adapter / facade 内保留旧容器身份。
+- `JudgeTools.FindMain` 仍直接读取 `sim_instance.schedule_data.enemy`、`sim_instance.global_stats.DYNAMIC_BUFF_DICT`、`sim_instance.load_data.exist_buff_dict`、`sim_instance.load_data.action_stack`、`sim_instance.preload.preload_data` 和 `sim_instance.tick`；`check_preparation(...)` 是 leaf XLogic 的主 service-location 转发层。
+- Representative XLogic source confirms拆分：`AliceAdditionalAbilityApBonus` 通过 `check_preparation(..., sub_exist_buff_dict=1, enemy=1, dynamic_buff_list=1)` 读 runtime snapshot 并写 count/state；`YuzuhaHardCandyShotTrigger` 直接使用 `sim_instance.preload.preload_data` 做占用检查后执行 local Character action；`IceJadeTeaPotExtraDMGBonus` 是少数直接 `find_dynamic_buff_list(...)` 样本。
+- CodeGraph again surfaced `.codex_worktrees/` historical duplicates for runtime and XLogic symbols; root-workspace `rg` counts above exclude them and no blocker conclusion depends on archived worktree evidence.
+
+### Runtime / service-location buckets
+
+| bucket | representative files / symbols | 当前行为证据 | 现有边界 / 未来候选 | 验证建议 / 非目标 |
+| --- | --- | --- | --- | --- |
+| Static registry / template identity lookup | `BasicComplexBuffClass.py`、`_char_buff_mod.py`、`_euipment_buff_mod.py`、142 files with `find_exist_buff_dict` | `check_record_module()` finds `buff_0` in `load_data.exist_buff_dict` and stores `history.record`; `sub_exist_buff_dict=1` supplies `simple_start(...)` / `update_to_buff_0(...)` identity. | Retained compatibility helper first; later typed record/context helper may hide lookup shape but must keep old `buff_0` identity. | Focused tests should patch `JudgeTools.find_exist_buff_dict(...)`; do not delete old templates or `update_to_buff_0(...)` in phase-2 classification. |
+| Runtime read snapshot for formulas and trigger gates | `AliceAdditionalAbilityApBonus.py`、`Jane*.py`、`LighterAdditionalAbility_IceFireBonus.py`、`TriggerAdditionalAbilityStunBonus.py`、`Soldier0AnbyCoreSkillCritDMGBonus.py`、`IceJadeTeaPotExtraDMGBonus.py` | `dynamic_buff_list=1` or direct `find_dynamic_buff_list(...)` feeds Calculator / reader snapshot; `trigger_buff_0` reads old template Buff state. | Future `BuffRuntimeReadPort` read stories or `BuffAttributeReader` parity helpers; keep read-only contract. | `calculator-reads` for formula parity; add state-sync focused tests when count/writeback follows. Do not expand `BuffRuntimeReadPort` into writes. |
+| Runtime immediate write / lifecycle command boundary | `RuntimeCommandPort.update_anomaly(...)`、`RuntimeCommandPort.settle_buffs(...)`、`LegacyRuntimeCommandAdapter` | Same-tick writes still call legacy `update_anomaly` / `ScheduleBuffSettle` behind one command port, carrying old container identity inside the adapter. | Existing `RuntimeCommandPort` only; no second write facade. | `implicit-events`; default lifecycle profile only when implementation touches lifecycle wiring. No XLogic replacement in this story. |
+| Pending queue / active store facade internals | `LegacyBuffRuntimeFacade.activate_pending_buffs(...)`、`_activate_pending_buff(...)`、`update_time_related_effects(...)`、legacy `buff_add()` / `KickOutBuff()` | Main loop already routes tick sweep and pending activation through facade commands; old `LOADING_BUFF_DICT` and `DYNAMIC_BUFF_DICT` remain source-of-truth containers behind the facade. | Adapter-internal until old containers are removed; future stories can add guardrails or focused facade tests, not XLogic direct writes. | Do not expose new raw queue/container passthroughs; do not treat retained `buff_add()` / `KickOutBuff()` definitions as BuffXLogic backlog. |
+| Direct simulator service context | `YuzuhaHardCandyShotTrigger.py`、`YuzuhaCinema4QuickAssistTrigger.py`、`YuzuhaCinema6SheelTrigger.py`、report-only `change_process_state()` files、RNG trigger files | XLogic reads `tick`, `preload.preload_data`, `char_data.find_next_char_obj(...)`, `schedule_data.enemy`, `listener_manager`, or `rng_instance` for local gates and side effects. | Explicit context object, listener gateway, RNG/context helper, or retained compatibility helper depending on service; not `LegacyBuffRuntimeFacade` by default. | Classify by concrete service. Do not collapse local preload, listener broadcast, RNG, report state, scheduled publish, and runtime write into one boundary. |
+| Enemy mirror / debuff runtime state | `LegacyBuffRuntimeFacade.sync_enemy_debuff_mirror(...)`、`remove_enemy_debuff_mirror(...)`、debuff XLogic such as `AnomalyDebuffExitJudge.py` | Enemy debuff mirror remains a runtime active-store mirror; `find_enemy(...)` / `schedule_data.enemy` reads in XLogic are usually runtime read or bypass classification, not planned-event publish. | Adapter-internal enemy mirror for writes; `BuffRuntimeReadPort.get_active_buffs("enemy")` for future reads where possible. | Leave enemy debuff single-source-of-truth cleanup out of this PRD; US-007 classifies anomaly/debuff/dot bypasses separately. |
+| Retained compatibility / false-positive buckets | uppercase `DYNAMIC_BUFF_DICT` / `LOADING_BUFF_DICT` hits in BuffXLogic = 0; direct `buff_add()` / `KickOutBuff()` in BuffXLogic = 0; runtime boundary names in BuffXLogic = 0 | Current leaf XLogic does not directly call lifecycle helpers or the new runtime boundaries by name. | Keep legacy lifecycle helpers and old containers documented as retained compatibility; future implementation PRDs should start from concrete source evidence, not name-only backlog. | Do not delete old containers, legacy `buff_add()`, legacy `KickOutBuff()`, retained `MultiplierData`, or retained `ScheduleBuffSettle.py` semantics in phase-2 classification. |
+
+### Follow-up runtime / service-location PRD groups
+
+| candidate group | candidate files / symbols | Ralph-sized work direction | retained boundaries | validation entrypoints | non-goals |
+| --- | --- | --- | --- | --- | --- |
+| Trigger-state read-port candidates | `AstralVoice.py`、`FlamemakerShakerApBonus.py`、`CordisGerminaSNAAndQIgnoreDefense.py`、21 files with `trigger_buff_0=` | Design read-only helper / runtime-view access for old trigger Buff state, starting with pure gates before read-then-writeback files. | Old `exist_buff_dict` identity and `BuffRuntimeReadPort` read-only contract. | `implicit-events` plus focused no-write gate tests. | No write API on `BuffRuntimeReadPort`; no old container deletion. |
+| Dynamic snapshot + attribute reader buckets | `AliceAdditionalAbilityApBonus.py`、`YuzuhaAdditionalAbilityAnomaly*.py`、`Jane*.py`、`IceJadeTeaPotExtraDMGBonus.py` | Pair `BuffRuntimeReadPort` snapshot shape with `BuffAttributeReader` parity for formula-read paths, then keep count/state sync in the same tested story only when writeback is adjacent. | `MultiplierData` formula snapshots, old active Buff container identity, state-sync ordering. | `calculator-reads`; add focused state-sync pytest for writeback variants. | Do not migrate event producers or lifecycle facade in the same PRD. |
+| Direct simulator context extraction | `YuzuhaHardCandyShotTrigger.py`、`YuzuhaCinema4QuickAssistTrigger.py`、`YuzuhaCinema6SheelTrigger.py`、RNG trigger files | Classify and wrap direct `tick` / preload / char-data / RNG services with explicit context only after branch tests cover no-op vs action branches. | Local preload semantics, Character resource/actions, listener/report/RNG separation. | `implicit-events` plus file-specific focused tests. | Not a `LegacyBuffRuntimeFacade` replacement and not scheduled-publish backlog unless source publishes payloads. |
+| Facade-internal lifecycle guardrails | `LegacyBuffRuntimeFacade`、`RuntimeCommandPort`、`Update_Buff.update_time_related_effect(...)`、legacy `buff_add()` / `KickOutBuff()` | Add or refine guardrails / tests only if future code attempts new raw container access; current XLogic census has no direct calls. | Old containers remain source of truth behind facade; one `RuntimeCommandPort` write boundary. | `implicit-events`; default validation only if lifecycle wiring changes. | Do not create a second write facade or promote legacy getters to general write APIs. |
+
+### US-006 结论
+
+- Runtime / service-location 分类必须先区分 static lookup、runtime read snapshot、runtime immediate write、template / registry identity、pending queue、active store、enemy mirror sync 和 direct simulator service context；这些不是一个可一次性替换的耦合面。
+- `BuffXLogic` 当前没有直接引用 `RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`BuffRuntimeReadPort`、`LegacyBuffRuntimeFacade`、`buff_add()` 或 `KickOutBuff()`；后续 PRD 不应从这些名字制造 XLogic backlog。
+- 可优先形成 future read-port stories 的是 trigger-state reads、dynamic snapshot / attribute-reader paths 和部分 direct context reads；必须留在 adapter-internal 的是 pending queue、active store lifecycle, enemy mirror write sync, retained `buff_add()` / `KickOutBuff()` and `ScheduleBuffSettle` command-adapter internals.
+- No live runtime path or XLogic behavior was replaced in this story. Existing `RuntimeCommandPort` remains the sole same-tick write boundary, `BuffRuntimeReadPort` remains read-only, and `LegacyBuffRuntimeFacade` continues to retain old container identity by reference.
+
 ## 后续填写占位
 
-`US-006` 之后应基于上面的 census 表继续分类 runtime container / service-location buckets，再补 anomaly / debuff / dot bypass、复用模式目录、风险矩阵和下一轮 PRD 候选池。不要把本节 state-sync buckets 直接当成阶段 3 替换清单。
+`US-007` 之后应基于上面的 runtime/service-location 表继续分类 anomaly / debuff / dot bypass，再补复用模式目录、风险矩阵和下一轮 PRD 候选池。不要把 runtime read、facade-internal lifecycle、direct simulator context 或 state-sync buckets 直接当成阶段 3 替换清单。
