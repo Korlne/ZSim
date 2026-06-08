@@ -17,6 +17,9 @@ from zsim.sim_progress.Buff.BuffXLogic.AliceAdditionalAbilityApBonus import (
 from zsim.sim_progress.Buff.BuffXLogic.JaneCinema1APTransToDmgBonus import (
     JaneCinema1APTransToDmgBonus,
 )
+from zsim.sim_progress.Buff.BuffXLogic.JaneCoreSkillStrikeCritRateBonus import (
+    JaneCoreSkillStrikeCritRateBonus,
+)
 from zsim.sim_progress.Buff.BuffXLogic.YuzuhaAdditionalAbilityAnomalyBuildupBonus import (
     YuzuhaAdditionalAbilityAnomalyBuildupBonus,
 )
@@ -117,6 +120,19 @@ class _YuzuhaStateSyncCase:
 
 @dataclass(frozen=True)
 class _JaneCinema1StateSyncCase:
+    logic: Any
+    active_buff: _StateSyncBuffProbe
+    buff_0: Any
+    calls: list[tuple[Any, ...]]
+    get_prepared_calls: list[dict[str, object]]
+    aggregation_calls: list[_AggregationCall]
+    expected_enabled_buff: tuple[object, ...]
+    expected_old_count: float
+    initial_count: float
+
+
+@dataclass(frozen=True)
+class _JaneCoreSkillCritRateStateSyncCase:
     logic: Any
     active_buff: _StateSyncBuffProbe
     buff_0: Any
@@ -234,6 +250,22 @@ def _old_jane_cinema1_damage_count(
     )
     ap = Calculator.AnomalyMul.cal_ap(mul_data)
     return float(min(ap * 0.1, maxcount))
+
+
+def _old_jane_core_skill_crit_rate_count(
+    *,
+    enemy: SimpleNamespace,
+    dynamic_buff_list: dict[str, list[object]],
+    char: SimpleNamespace,
+) -> float:
+    MultiplierData.mul_data_cache.clear()
+    mul_data = MultiplierData(
+        cast(Any, enemy),
+        dynamic_buff_list,
+        cast(Any, char),
+    )
+    ap = Calculator.AnomalyMul.cal_ap(mul_data)
+    return float(min(40 + ap * 0.16, 100))
 
 
 def _make_alice_state_sync_case(
@@ -438,6 +470,73 @@ def _make_jane_cinema1_state_sync_case(
         maxcount=maxcount,
     )
     return _JaneCinema1StateSyncCase(
+        logic=logic,
+        active_buff=active_buff,
+        buff_0=buff_0,
+        calls=calls,
+        get_prepared_calls=get_prepared_calls,
+        aggregation_calls=aggregation_calls,
+        expected_enabled_buff=(char_buff, enemy_debuff),
+        expected_old_count=expected_old_count,
+        initial_count=initial_count,
+    )
+
+
+def _make_jane_core_skill_crit_rate_state_sync_case(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    static_ap: float,
+    trigger_active: bool = True,
+    field_ap: float = 0.0,
+    flat_ap: float = 0.0,
+    initial_count: float = 55.0,
+) -> _JaneCoreSkillCritRateStateSyncCase:
+    calls: list[tuple[Any, ...]] = []
+    active_buff = _StateSyncBuffProbe(
+        index="jane-core-skill-strike-crit-rate",
+        tick=820,
+        calls=calls,
+        initial_count=initial_count,
+    )
+    char_buff = object()
+    enemy_debuff = object()
+    char = _make_jane_character(ap=static_ap)
+    enemy = _make_enemy(
+        sim_instance=active_buff.sim_instance,
+        enemy_debuffs=(enemy_debuff,),
+    )
+    dynamic_buff_list = {char.NAME: [char_buff]}
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        {
+            "局内异常精通": field_ap,
+            "固定异常精通": flat_ap,
+        },
+    )
+    buff_0 = SimpleNamespace(dy=SimpleNamespace(count=initial_count))
+    trigger_buff_0 = SimpleNamespace(dy=SimpleNamespace(active=trigger_active))
+    sub_exist_buff_dict = {active_buff.ft.index: buff_0}
+
+    logic = cast(Any, object.__new__(JaneCoreSkillStrikeCritRateBonus))
+    logic.buff_instance = active_buff
+    logic.buff_0 = buff_0
+    logic.record = SimpleNamespace(
+        enemy=enemy,
+        dynamic_buff_list=dynamic_buff_list,
+        char=char,
+        trigger_buff_0=trigger_buff_0,
+        sub_exist_buff_dict=sub_exist_buff_dict,
+    )
+    logic.check_record_module = lambda: None
+
+    get_prepared_calls: list[dict[str, object]] = []
+    logic.get_prepared = lambda **kwargs: get_prepared_calls.append(kwargs)
+    expected_old_count = _old_jane_core_skill_crit_rate_count(
+        enemy=enemy,
+        dynamic_buff_list=dynamic_buff_list,
+        char=char,
+    )
+    return _JaneCoreSkillCritRateStateSyncCase(
         logic=logic,
         active_buff=active_buff,
         buff_0=buff_0,
@@ -783,6 +882,87 @@ def test_jane_cinema1_reader_path_keeps_maxcount_cap(
     assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
 
 
+def test_jane_core_skill_crit_rate_inactive_trigger_gate_skips_writeback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_jane_core_skill_crit_rate_state_sync_case(
+        monkeypatch,
+        static_ap=200.0,
+        trigger_active=False,
+    )
+    case.aggregation_calls.clear()
+
+    result = case.logic.special_judge_logic()
+
+    assert result is False
+    assert case.get_prepared_calls == [
+        {"char_CID": 1261, "trigger_buff_0": ("enemy", "Buff-角色-简-核心被动-啮咬触发器")}
+    ]
+    assert case.aggregation_calls == []
+    assert case.calls == []
+    assert case.active_buff.dy.count == pytest.approx(case.initial_count)
+    assert case.buff_0.dy.count == pytest.approx(case.initial_count)
+
+
+def test_jane_core_skill_crit_rate_active_trigger_count_parity_and_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_jane_core_skill_crit_rate_state_sync_case(
+        monkeypatch,
+        static_ap=200.0,
+    )
+
+    assert case.logic.special_judge_logic() is True
+    case.logic.special_hit_logic()
+
+    assert case.expected_old_count == pytest.approx(72.0)
+    assert case.get_prepared_calls == [
+        {"char_CID": 1261, "trigger_buff_0": ("enemy", "Buff-角色-简-核心被动-啮咬触发器")},
+        {
+            "char_CID": 1261,
+            "trigger_buff_0": ("enemy", "Buff-角色-简-核心被动-啮咬触发器"),
+            "dynamic_buff_list": 1,
+            "enemy": 1,
+            "sub_exist_buff_dict": 1,
+        },
+    ]
+    assert case.aggregation_calls == [
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Jane"),
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Jane"),
+    ]
+    assert case.calls == [
+        ("simple_start", 820, True, case.initial_count, case.buff_0),
+        ("dy.count", case.expected_old_count),
+        ("update_to_buff_0", case.buff_0, case.expected_old_count),
+    ]
+    assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
+    assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
+
+
+def test_jane_core_skill_crit_rate_reader_path_keeps_formula_cap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_jane_core_skill_crit_rate_state_sync_case(
+        monkeypatch,
+        static_ap=500.0,
+    )
+
+    case.logic.special_hit_logic()
+
+    assert case.expected_old_count == pytest.approx(100.0)
+    assert case.aggregation_calls == [
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Jane"),
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Jane"),
+    ]
+    assert case.calls == [
+        ("simple_start", 820, True, case.initial_count, case.buff_0),
+        ("dy.count", case.expected_old_count),
+        ("update_to_buff_0", case.buff_0, case.expected_old_count),
+    ]
+    assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
+    assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
+
+
 def test_alice_additional_ability_uses_reader_not_multiplier_data() -> None:
     source = Path(
         "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py"
@@ -827,6 +1007,19 @@ def test_jane_cinema1_uses_reader_not_multiplier_data_alias() -> None:
 
     assert "MultiplierData as Mul" not in source
     assert "Mul(" not in source
+    assert "Calculator.AnomalyMul.cal_ap" not in source
+    assert "create_anomaly_attribute_read_context" in source
+    assert "read_anomaly_proficiency" in source
+
+
+def test_jane_core_skill_crit_rate_uses_reader_not_multiplier_data_alias() -> None:
+    source = Path(
+        "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritRateBonus.py"
+    ).read_text(encoding="utf-8")
+
+    assert "MultiplierData as Mul" not in source
+    assert "Mul(" not in source
+    assert "Cal.AnomalyMul.cal_ap" not in source
     assert "Calculator.AnomalyMul.cal_ap" not in source
     assert "create_anomaly_attribute_read_context" in source
     assert "read_anomaly_proficiency" in source

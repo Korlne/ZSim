@@ -1406,3 +1406,14 @@
 - Next step:
   - 继续 US-010，迁移 `JaneCoreSkillStrikeCritRateBonus.py` 到 AP reader seam，同时明确它是 AP-reader work，不是 full/personal crit-reader work。
 ---
+## 2026-06-08 14:04 +08:00 - US-010
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritRateBonus.py`, `tests/simulator/test_buff_attribute_state_sync.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `JaneCoreSkillStrikeCritRateBonus.special_hit_logic()` now replaces its direct `MultiplierData as Mul` / `Mul(...)` / `Cal.AnomalyMul.cal_ap(...)` AP read with `create_anomaly_attribute_read_context(...)` and `CalculatorBuffAttributeReader().read_anomaly_proficiency(...)`.
+  - `tests/simulator/test_buff_attribute_state_sync.py` now covers Jane core crit-rate inactive trigger gate, active AP count parity, formula cap behavior, aggregation shape, old `buff_0` identity, and `simple_start(..., no_count=1) -> dy.count -> update_to_buff_0(...)` order.
+- Compatibility retained:
+  - Jane core crit-rate `special_judge_logic()` trigger gate, hit-path `get_prepared(...)` arguments, `find_tick(...)`, `min(40 + ap * 0.16, 100)`, and state-sync order remain covered.
+  - This remains AP-reader work, not full/personal crit-reader work; Calculator / CalAnomaly formula snapshots, phase-1 dispatch/runtime boundaries, scheduled publish, listener broadcast, same-tick runtime write, and old-container deletion remain unchanged.
+- Next step:
+  - 继续 US-011，迁移 `JanePassionStateAPTransToATK.py` 到 AP reader seam，同时保留狂热状态 trigger gate、`floor(max(ap - 120, 0))` floor 行为和 state-sync order。
+---
