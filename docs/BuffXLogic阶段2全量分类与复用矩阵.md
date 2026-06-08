@@ -463,6 +463,97 @@ rg -n "change_process_state" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --g
 - Event-trigger follow-up work should be grouped by semantic payload and ordering constraint: extra `SkillNode` publish, resource refresh, anomaly / copied anomaly payload, `SchedulePreload` factory, and trigger-only state-sync gates.
 - Future implementation PRDs must preserve source order before replacing any callsite: examples include `LoadingMission.mission_start(...)` before publish, dot runtime registration before skill publish, and `publish_scheduled(...)` before later local state reset where the current file does that.
 
+## US-005 record / count / state-sync 分类
+
+本节只分类 `history.record`、record 字段、`dy.count`、`built_in_buff_box`、`simple_start(...)` 和 `update_to_buff_0(...)` 相关状态同步模式；不编辑 XLogic、Buff lifecycle、runtime port、Calculator 或 scheduled-event 生产行为。分类仍为非排他：同一文件可同时属于 `ATTR_READ`、`EVENT_TRIGGER`、`RECORD_COUNT_SYNC`、`SERVICE_LOCATION`、`SCHEDULED_PUBLISH` 或 retained compatibility。
+
+### 可复现扫描命令
+
+```powershell
+rg --files zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "^class\s+\w+Record\b" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "history\.record" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "def\s+check_record_module\b|check_record_module\(" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "def\s+get_prepared\b|get_prepared\(" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "\bdy\.count\b" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "\bdy\.count\s*[-+*/]?=" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "built_in_buff_box" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "simple_start\(" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "simple_exit\(" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "update_to_buff_0\(" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "cooldown|last_tick|last_update|last_active_tick|startticks|endticks|active_tick_box|update_info_box|counter|c4_counter|e_counter" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "record\.[A-Za-z_][A-Za-z0-9_]*\.dy\.(count|built_in_buff_box|active|ready)|trigger_buff_0\.dy\.(count|built_in_buff_box|active|ready)" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+```
+
+### 扫描计数
+
+根工作区扫描结果如下；`.codex_worktrees/` 仍按阶段 2 规则视为历史证据，不进入生产分类计数。
+
+| pattern | files | lines | matches | 分类含义 |
+| --- | ---: | ---: | ---: | --- |
+| root `BuffXLogic` files excluding `__init__.py` | 149 | - | - | US-005 的生产取证全集。 |
+| `^class\s+\w+Record\b` | 138 | 138 | 138 | 大多数 leaf XLogic 有自定义 record class，record 复用设计不能只看单个模板。 |
+| `history\.record` | 142 | 427 | 427 | record 懒初始化与 `self.record = self.buff_0.history.record` 是主流兼容模式。 |
+| `check_record_module` | 142 | 344 | 344 | record / template 定位入口，通常经 `JudgeTools.find_exist_buff_dict(...)` 找 `buff_0`。 |
+| `get_prepared` | 142 | 344 | 344 | `check_preparation(...)` 转发入口，用于补齐 char、enemy、sub dict、action stack、trigger buff 等上下文。 |
+| `dy.count` read/write | 37 | 54 | 58 | 包含 read-only trigger buff gates、直接 count assignment 和旧 count 调整。 |
+| `dy.count` assignment | 33 | 46 | 46 | 需要 state-sync 顺序验证的核心候选。 |
+| `built_in_buff_box` | 5 | 8 | 8 | 包含 tuple-box 写回、读取 gate 和历史注释，不等价于统一替换面。 |
+| `simple_start(...)` | 43 | 49 | 49 | 主要 lifecycle 激活入口，后续 helper 必须保留与 count / tuple-box 的相对顺序。 |
+| `simple_exit(...)` | 0 | 0 | 0 | 当前 BuffXLogic 根工作区没有直接调用；退出语义不作为 US-005 替换目标。 |
+| `update_to_buff_0(...)` | 32 | 32 | 32 | 模板 Buff 回写锚点，仍依赖旧 `buff_0` 身份。 |
+| cooldown / last-tick / counter state | 34 | 181 | 205 | record 中的限频、去重、持续时间、计数器和信号字段。 |
+
+### CodeGraph 导航证据
+
+- Query seed：`US-005 Classify Record, Count, And State-Sync Patterns`、`history.record`、`record`、`dy.count`、`built_in_buff_box`、`simple_start`、`simple_exit`、`update_to_buff_0`、`check_record_module`、`get_prepared`、`BuffRecordBaseClass`、`BasicComplexBuffClass`、`AstraYaoCorePassiveAtkBonus`、`KaboomTheCannon`、`SeveredInnocenceCritDMGBonus`、`SteamOven`。
+- `BasicComplexBuffClass.check_record_module(...)` 是共享模板样本：按 `char_name` 经 `JudgeTools.find_exist_buff_dict(...)` 定位 `buff_0`，懒创建 `RECORD_CLASS()`，然后绑定 `self.record`。
+- `_buff_record_base_class.BuffRecordBaseClass.check_cd(...)` 只用 `cd` 与 `last_active_tick` 判断就绪，是 record-state helper 的最小限频样本；它不触达 scheduled publish 或 runtime write。
+- Representative source inspection confirmed state-sync order samples:
+  - `AstraYaoCorePassiveAtkBonus.special_start_logic()` 先用 `update_info_box` 防同 tick 重复，随后 `simple_start(...)`、写 `startticks` / `endticks`、写 `dy.count`、更新 `record.update_info_box`，最后 `update_to_buff_0(...)`。
+  - `KaboomTheCannon.special_hit_logic()` 先更新并清理 `record.active_char_dict`，再 `simple_start(..., not_count=True)`，把 active character tick list 写入 `dy.built_in_buff_box`，最后回写 `buff_0`。
+  - `SeveredInnocenceCritDMGBonus.special_start_logic()` 先消费 `record.update_signal` 并刷新 `record.active_tick_box`，再 `simple_start(..., no_count=1)`，重建 `dy.built_in_buff_box`，写 `dy.count = len(...)`，最后 `update_to_buff_0(...)`。
+  - `SteamOven.special_effect_logic()` 先按 action / energy 更新 `record.E_EX_started`、`record.last_update_count` 和 `record.last_update_tick`，再 `simple_start(...)`、写 `dy.count`、回写 `buff_0`。
+- CodeGraph 同样命中 `.codex_worktrees/` 历史副本；这些结果只作为导航提醒，root-workspace `rg` 与当前源码才是本节分类依据。
+
+### State-sync buckets
+
+| bucket | representative files / symbols | 当前行为证据 | 复用候选 | 验证建议 / 非目标 |
+| --- | --- | --- | --- | --- |
+| Record initialization and context prep | `BasicComplexBuffClass.py`、`_char_buff_mod.py`、`_euipment_buff_mod.py`、大多数 leaf `check_record_module()` / `get_prepared()` | 142 files hit `history.record` / `check_record_module`; record 创建通常绑定旧 `buff_0.history.record`，上下文由 `check_preparation(...)` 补齐。 | Record initialization helper 或 typed record/context base；先收敛初始化模板，不替换旧容器身份。 | 后续 focused tests 应 patch `JudgeTools.find_exist_buff_dict(...)` / `check_preparation(...)`，证明 record 懒创建和 context 字段不漂移；不复开 `event_list=True`。 |
+| Pure record / trigger-buff reads | `AstralVoice.py`、`FlamemakerShakerApBonus.py`、`CordisGerminaSNAAndQIgnoreDefense.py`、`SpectralGazeImpactBonus.py`、`SharpenedStingerAnomalyBuildupBonus.py`、`YangiCinema1ApBonus.py` | 读取 `record.trigger_buff_0.dy.active`、`.dy.count` 或 `.dy.built_in_buff_box` 决定 gate；通常不直接写当前 Buff count。 | Future read-port / trigger-state reader candidate；保持与 `BuffRuntimeReadPort` 只读语义一致。 | 先按 read-only gate 归类，不与写回 helper 混在同一实现故事；不把读 gate 改成 scheduled publish。 |
+| Computed count writeback | `AliceAdditionalAbilityApBonus.py`、`JaneCinema1APTransToDmgBonus.py`、`JaneCoreSkillStrikeCritRateBonus.py`、`JanePassionStateAPTransToATK.py`、`LighterAdditionalAbility_IceFireBonus.py`、`QingYiAdditionalAbilityStunConvertToATK.py`、`TriggerAdditionalAbilityStunBonus.py`、`Soldier0AnbyCoreSkillCritDMGBonus.py`、`YuzuhaAdditionalAbilityAnomaly*.py` | Attribute / formula result is converted into `count`; current order normally includes `simple_start(..., no_count=1)` before `dy.count = count`, then `update_to_buff_0(...)`。 | State-sync helper paired with `BuffAttributeReader` parity, grouped by helper family rather than by role file. | Later tests must assert formula parity plus `simple_start(...) -> dy.count -> update_to_buff_0(...)` order; do not only replace `MultiplierData(...)` expression. |
+| Incremental / old-count adjustment | `LinaCoreSkillPenRatioBonus.py`、`LighterUniqueSkillStunBonus.py`、`MiyabiCoreSkill_IceFire.py`、`QingYiCoreSkillStunDMGBonus.py`、`QingYiCoreSkillExtraStunBonus.py`、`FlamemakerShakerDmgBonus.py` | Several files call `simple_start(...)`, then adjust old `buff_0.dy.count` or current `dy.count` before final count assignment and template sync. | Count-adjustment helper with explicit old-count snapshot and final clamp. | High risk: tests must pin whether old `buff_0.dy.count` is decremented before recomputing current `dy.count`; no lifecycle-wide refactor in phase-2 classification stories. |
+| `built_in_buff_box` tuple sync | `KaboomTheCannon.py`、`SeveredInnocenceCritDMGBonus.py`、`WeepingGeminiApBonus.py` plus read-only `CordisGerminaSNAAndQIgnoreDefense.py` and comment-only `SteamOven.py` | Active windows are stored as list/tuple boxes; some files write `dy.built_in_buff_box`, some only read trigger buff boxes or document expected shape. | Tuple-box state-sync helper that owns pruning, rebuild, count derivation, and template sync separately from simple count assignment. | Later focused tests should verify expired window pruning, tuple payload shape, derived `dy.count`, and no accidental conversion of read-only gates into writers. |
+| Timing / cooldown / per-target ledger state | `AstraYaoCorePassiveAtkBonus.py`、`SteamOven.py`、`YuzuhaHardCandyShotTrigger.py`、`SeedCinema6Trigger.py`、`SliceofTimeExtraResources.py`、`YixuanCinema4Tranquility.py`、`YanagiPolarityDisorderTrigger.py` | 34 files hit cooldown / last-tick / counter terms; patterns include `update_info_box`, `last_update_tick`, `last_active_tick`, `active_tick_box`, `e_counter`, `c4_counter`, and trigger signals. | Ledger / cooldown helper candidates, likely separate from count formula helpers because ordering and reset semantics differ. | Pin no-publish and publish-adjacent branches separately. `YanagiPolarityDisorderTrigger` record reset after publish remains event/anomaly ordering evidence from US-004, not a state-only replacement target. |
+| Template sync writeback | 32 files with `update_to_buff_0(...)`; examples above plus `AstraYaoCorePassiveAtkBonus.py`、`SteamOven.py`、`SeveredInnocenceCritDMGBonus.py` | Current Buff instance writes dynamic fields, then `update_to_buff_0(...)` copies them back to old template Buff identity. | Template-sync helper around final writeback only after state value parity is locked. | Retain old `exist_buff_dict` / `buff_0` identity; do not replace old containers, `buff_add()`, `KickOutBuff()`, or lifecycle settle semantics here. |
+
+### High-risk ordering constraints
+
+| constraint | source evidence | later test shape |
+| --- | --- | --- |
+| `simple_start(...)` before manual `dy.count` write | `AliceAdditionalAbilityApBonus.py`、`Jane*.py`、`YuzuhaAdditionalAbility*.py`、`AstraYaoCorePassiveAtkBonus.py`、`SteamOven.py` | Spy or fake Buff should assert start call precedes count assignment and `update_to_buff_0(...)`; for no-count variants, assert `simple_start(..., no_count=1)` remains unchanged. |
+| Old count snapshot/decrement before recompute | `LinaCoreSkillPenRatioBonus.py`、`LighterUniqueSkillStunBonus.py`、`MiyabiCoreSkill_IceFire.py`、`QingYiCoreSkillStunDMGBonus.py` | Tests should seed `buff_0.dy.count` and assert decrement / clamp semantics before final template sync. |
+| Record ledger update around state write | `AstraYaoCorePassiveAtkBonus.py` updates `record.update_info_box` after current Buff end/count fields; `SteamOven.py` updates record counters before `simple_start(...)` and count write. | Separate same-tick no-op branch from update branch; assert record ledger state and Buff state both match old behavior. |
+| Tuple-box rebuild before derived count | `SeveredInnocenceCritDMGBonus.py` rebuilds `dy.built_in_buff_box` from `active_tick_box` before `dy.count = len(...)`; `KaboomTheCannon.py` writes active tick windows without explicit `dy.count` assignment. | Focused tests should assert tuple box payload and derived / implicit count behavior, not only active flag. |
+| Event ordering remains outside state-sync helper | `CannonRotor` / `Hugo` / `Yixuan` `mission_start(...) -> publish` and `Yanagi` reset-after-publish were classified in US-004. | Do not fold scheduled publish order into a generic record helper; event PRDs keep `ScheduleDispatchPort` tests. |
+
+### Follow-up state-sync PRD groups
+
+| candidate group | candidate files / symbols | Ralph-sized work direction | retained boundaries | validation entrypoints | non-goals |
+| --- | --- | --- | --- | --- | --- |
+| AM/AP computed count state-sync | `AliceAdditionalAbilityApBonus.py`、`YuzuhaAdditionalAbilityAnomalyBuildupBonus.py`、`YuzuhaAdditionalAbilityAnomalyDmgBonus.py`、`JaneCinema1APTransToDmgBonus.py`、`JaneCoreSkillStrikeCritRateBonus.py`、`JanePassionStateAPTransToATK.py` | Pair existing AM/AP `BuffAttributeReader` parity with a focused state-sync harness for count writeback. | `MultiplierData` formula snapshot, old `buff_0` identity, `simple_start(..., no_count=1)` and `update_to_buff_0(...)` order. | `calculator-reads` plus new focused count/state pytest. | Do not delete `MultiplierData`; do not migrate scheduled publishers in the same PRD. |
+| Tuple-box state helper | `KaboomTheCannon.py`、`SeveredInnocenceCritDMGBonus.py`、`WeepingGeminiApBonus.py` | Design tuple-box helper for active window pruning / rebuild and derived count, then migrate one coherent bucket after tests exist. | `built_in_buff_box` payload shape and template sync. | `implicit-events` plus focused tuple-box pytest. | Do not treat read-only `CordisGerminaSNAAndQIgnoreDefense.py` as a writer. |
+| Incremental old-count adjustment | `LinaCoreSkillPenRatioBonus.py`、`LighterUniqueSkillStunBonus.py`、`MiyabiCoreSkill_IceFire.py`、`QingYiCoreSkillStunDMGBonus.py`、`QingYiCoreSkillExtraStunBonus.py` | Isolate old-count snapshot / decrement / clamp behavior before proposing helper extraction. | Calculator formula snapshots, stun/anomaly runtime state, old `buff_0` count semantics. | `calculator-reads` where formulas are touched; otherwise focused state-sync pytest plus `implicit-events`. | Do not rewrite full lifecycle settle or runtime write facade. |
+| Ledger / cooldown helpers | `AstraYaoCorePassiveAtkBonus.py`、`SteamOven.py`、`YuzuhaHardCandyShotTrigger.py`、`SeedCinema6Trigger.py`、`SliceofTimeExtraResources.py`、`YixuanCinema4Tranquility.py` | Classify and test per-target ledgers, last-tick gates, cooldown counters, and no-duplicate same-tick branches before extraction. | Existing `check_record_module()` / `get_prepared()` context, record field names, report-only `change_process_state()`. | `implicit-events`; add branch-focused pytest for no-op vs update. | Do not generalize event publish, dot runtime registration, or listener broadcast into this helper. |
+
+### US-005 结论
+
+- Record/count/state-sync patterns are broad enough to require reusable helper design before replacement: record initialization, pure trigger-state reads, computed count writes, incremental count adjustment, tuple-box sync, ledger/cooldown state, and template sync are separate buckets.
+- `simple_start(...)` / `dy.count` / `update_to_buff_0(...)` ordering is the main compatibility risk for later implementation stories; source evidence shows multiple variants, so one generic helper should not be introduced until focused tests pin each variant.
+- `simple_exit(...)` has no root-workspace BuffXLogic callsite in this scan; exit/lifecycle refactor should stay out of this PRD unless a future story supplies concrete source evidence.
+- Existing phase-1 retained boundaries remain unchanged: no old container deletion, no second runtime write facade, no `BuffRuntimeReadPort` write expansion, no reopened raw queue surfaces, and no live XLogic behavior replacement.
+
 ## 后续填写占位
 
-`US-005` 之后应基于上面的 census 表按 state-sync 模式和验证入口继续补细分矩阵、复用模式目录、风险矩阵和下一轮 PRD 候选池。不要把本节粗桶直接当成阶段 3 替换清单。
+`US-006` 之后应基于上面的 census 表继续分类 runtime container / service-location buckets，再补 anomaly / debuff / dot bypass、复用模式目录、风险矩阵和下一轮 PRD 候选池。不要把本节 state-sync buckets 直接当成阶段 3 替换清单。

@@ -1253,3 +1253,14 @@
 - Next step:
   - Continue with US-005 by classifying record, count, and state-sync patterns without converting event-trigger buckets into implementation targets prematurely.
 ---
+## 2026-06-08 10:09 +08:00 - US-005
+- Files changed: `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `docs/BuffXLogic阶段2全量分类与复用矩阵.md` now prepares to replace loose record/count backlog wording with state-sync buckets for record initialization, pure trigger-buff reads, computed count writeback, incremental old-count adjustment, `built_in_buff_box` tuple sync, ledger/cooldown state, and template `update_to_buff_0(...)` sync.
+  - No live BuffXLogic, Buff lifecycle, Calculator, scheduled-event, listener, or runtime path was replaced in this story; it produces phase-2 classification evidence only.
+- Compatibility retained:
+  - Old `buff_0` / `exist_buff_dict` identity, `check_record_module()` / `get_prepared(...)`, `simple_start(...)`, `dy.count`, `dy.built_in_buff_box`, and `update_to_buff_0(...)` semantics remain unchanged.
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, deleted raw queue surfaces, listener broadcast, dot runtime registration, and Calculator / CalAnomaly snapshots remain separate retained boundaries.
+- Next step:
+  - Continue with US-006 by classifying runtime container and service-location couplings without adding a second write facade or expanding `BuffRuntimeReadPort` into writes.
+---
