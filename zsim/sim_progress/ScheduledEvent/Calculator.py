@@ -34,6 +34,23 @@ class BuffAttributeReadContext:
     query_node: SkillNode | AnomalyBar | None = None
 
 
+def create_anomaly_attribute_read_context(
+    *,
+    enemy: Enemy,
+    active_buff_view: Mapping[str, Sequence[Any]],
+    character: Character | None = None,
+    query_node: SkillNode | AnomalyBar | None = None,
+) -> BuffAttributeReadContext:
+    """为 AM/AP reader 构造最小读取上下文。"""
+
+    return BuffAttributeReadContext(
+        enemy=enemy,
+        active_buff_view=active_buff_view,
+        character=character,
+        query_node=query_node,
+    )
+
+
 class BuffAttributeReader(Protocol):
     """高频属性读取接口，避免新读口直接依赖 MultiplierData 快照。"""
 

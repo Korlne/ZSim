@@ -19,6 +19,7 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
     Calculator,
     CalculatorBuffAttributeReader,
     MultiplierData,
+    create_anomaly_attribute_read_context,
 )
 
 _AggregationCall = tuple[tuple[object, ...], object | None, object, str | None]
@@ -64,7 +65,7 @@ def _make_attribute_read_fixture(
     enemy = _make_enemy(enemy_debuffs)
     active_buff_view = {char.NAME: list(char_buffs)}
     return _AttributeReadFixture(
-        context=BuffAttributeReadContext(
+        context=create_anomaly_attribute_read_context(
             enemy=cast(Any, enemy),
             active_buff_view=active_buff_view,
             character=cast(Any, char),
@@ -74,6 +75,26 @@ def _make_attribute_read_fixture(
         char=char,
         expected_enabled_buff=char_buffs + enemy_debuffs,
     )
+
+
+def test_create_anomaly_attribute_read_context_preserves_inputs() -> None:
+    char = _make_character(am=115.0, ap=375.0)
+    enemy = _make_enemy()
+    active_buff_view = {char.NAME: [object()]}
+    query_node = SimpleNamespace(marker="node")
+
+    context = create_anomaly_attribute_read_context(
+        enemy=cast(Any, enemy),
+        active_buff_view=active_buff_view,
+        character=cast(Any, char),
+        query_node=cast(Any, query_node),
+    )
+
+    assert isinstance(context, BuffAttributeReadContext)
+    assert context.enemy is enemy
+    assert context.active_buff_view is active_buff_view
+    assert context.character is char
+    assert context.query_node is query_node
 
 
 def _patch_buff_aggregation(
@@ -301,6 +322,10 @@ def test_branch_blade_song_gate_uses_attribute_reader_with_old_helper_parity(
     )
     old_gate = Calculator.AnomalyMul.cal_am(old_data) >= 115
 
+    source = inspect.getsource(BranchBladeSongCritDamageBonus.special_judge_logic)
+    assert "MultiplierData" not in source
+    assert "Mul(" not in source
+    assert "read_anomaly_mastery" in source
     assert reader_gate == old_gate
     assert reader_gate is expected_gate
     assert get_prepared_calls == [

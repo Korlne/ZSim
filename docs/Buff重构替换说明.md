@@ -1351,3 +1351,14 @@
 - Next step:
   - 继续 US-005，决定是否引入窄 AM/AP reader context helper；后续迁移应通过 `calculator-reads` profile 同时覆盖 reader parity 和 state-sync order。
 ---
+## 2026-06-08 12:15 +08:00 - US-005
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `create_anomaly_attribute_read_context(...)` prepares to replace repeated manual `BuffAttributeReadContext(...)` construction for P2-A AM/AP reader migrations without adding new `BuffAttributeReader` methods or hiding count formulas.
+  - `tests/simulator/test_buff_attribute_reader.py` now uses the helper in its parity fixture and asserts the existing `BranchBladeSongCritDamageBonus` / `TimeweaverDisorderDmgMul` reader-backed samples do not recreate direct `MultiplierData` reads.
+- Compatibility retained:
+  - `CalculatorBuffAttributeReader.read_anomaly_mastery(...)` / `read_anomaly_proficiency(...)`, `Calculator.AnomalyMul.cal_am(...)`, `Calculator.AnomalyMul.cal_ap(...)`, `MultiplierData`, and `CalAnomaly` formula snapshots remain unchanged.
+  - This story only builds a narrow context boundary and test coverage; no live P2-A `BuffXLogic` path, `simple_start(..., no_count=1) -> dy.count -> update_to_buff_0(...)` order, `ScheduleDispatchPort`, `RuntimeCommandPort`, or old-container deletion boundary changed.
+- Next step:
+  - 继续 US-006，迁移 `AliceAdditionalAbilityApBonus.py` 到 helper + AM reader，同时保持当前 AM count formula、max-count clamp 和 state-sync order。
+---
