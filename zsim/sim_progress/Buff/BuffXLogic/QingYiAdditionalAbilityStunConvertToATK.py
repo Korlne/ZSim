@@ -1,4 +1,7 @@
-from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
+from zsim.sim_progress.ScheduledEvent.Calculator import (
+    CalculatorBuffAttributeReader,
+    create_anomaly_attribute_read_context,
+)
 
 from .. import Buff, JudgeTools, check_preparation
 
@@ -47,10 +50,12 @@ class QingYiAdditionalAbilityStunConvertToATK(Buff.BuffLogic):
         tick_now = JudgeTools.find_tick(sim_instance=self.buff_instance.sim_instance)
         self.buff_instance.simple_start(tick_now, self.record.sub_exist_buff_dict)
         self.buff_0.dy.count -= self.buff_0.ft.step
-        mul_data = MultiplierData(
-            self.record.enemy, self.record.dynamic_buff_list, self.record.char
+        context = create_anomaly_attribute_read_context(
+            enemy=self.record.enemy,
+            active_buff_view=self.record.dynamic_buff_list,
+            character=self.record.char,
         )
-        stun_value = Calculator.StunMul.cal_imp(mul_data)
+        stun_value = CalculatorBuffAttributeReader().read_impact(context)
         count = min((stun_value - 120) * 6, self.buff_instance.ft.maxcount)
         self.buff_instance.dy.count = count
         self.buff_instance.update_to_buff_0(self.buff_0)

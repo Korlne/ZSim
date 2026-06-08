@@ -1530,3 +1530,15 @@
 - Next step:
   - Continue with US-007 by migrating `QingYiAdditionalAbilityStunConvertToATK.py` through `read_impact(...)` while preserving its old-`buff_0` adjustment order.
 ---
+## 2026-06-08 17:01 +08:00 - US-007
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/QingYiAdditionalAbilityStunConvertToATK.py`, `tests/simulator/test_buff_attribute_state_sync.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `QingYiAdditionalAbilityStunConvertToATK.py` now replaces its direct `MultiplierData(...)` / `Calculator.StunMul.cal_imp(...)` impact read with `create_anomaly_attribute_read_context(...)` and `CalculatorBuffAttributeReader.read_impact(...)`.
+  - The focused state-sync test now guards this migrated file against reintroducing the direct impact Calculator snapshot path.
+- Compatibility retained:
+  - QingYi `get_prepared(...)` arguments, `(stun_value - 120) * 6` formula, maxcount cap, old `buff_0` identity, and `simple_start(...) -> old buff_0 decrement -> read_impact(...) -> dy.count -> update_to_buff_0(...)` order remain preserved.
+  - The retained Calculator formula snapshot still owns `Calculator.StunMul.cal_imp(...)`; Trigger, Soldier0 Anby, and event-adjacent full-crit P2-B candidates remain on their old paths until their own stories run.
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime-state, same-tick runtime writes, and old-container deletion boundaries remain unchanged.
+- Next step:
+  - Continue with US-008 by migrating `TriggerAdditionalAbilityStunBonus.py` through `read_personal_crit_rate(...)` while preserving aftershock gates and count writeback order.
+---
