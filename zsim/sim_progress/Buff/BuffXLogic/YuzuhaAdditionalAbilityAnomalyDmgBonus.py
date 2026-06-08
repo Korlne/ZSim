@@ -1,3 +1,8 @@
+from zsim.sim_progress.ScheduledEvent.Calculator import (
+    CalculatorBuffAttributeReader,
+    create_anomaly_attribute_read_context,
+)
+
 from ....define import YUZUHA_REPORT
 from .. import Buff, JudgeTools, check_preparation
 
@@ -37,12 +42,13 @@ class YuzuhaAdditionalAbilityAnomalyDmgBonus(Buff.BuffLogic):
         self.get_prepared(char_CID=1411, sub_exist_buff_dict=1, enemy=1, dynamic_buff_list=1)
         if self.record.cinema_1_ratio is None:
             self.record.cinema_1_ratio = 1 if self.record.char.cinema < 1 else 1.3
-        from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
 
-        mul_data = MultiplierData(
-            self.record.enemy, self.record.dynamic_buff_list, self.record.char
+        context = create_anomaly_attribute_read_context(
+            enemy=self.record.enemy,
+            active_buff_view=self.record.dynamic_buff_list,
+            character=self.record.char,
         )
-        am = Calculator.AnomalyMul.cal_am(mul_data)
+        am = CalculatorBuffAttributeReader().read_anomaly_mastery(context)
         if am < 100:
             return
         count = min(am - 100, 100) * self.record.cinema_1_ratio

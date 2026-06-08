@@ -8,11 +8,17 @@ from typing import Any, Sequence, cast
 import pytest
 
 import zsim.sim_progress.ScheduledEvent.Calculator as calculator_module
+from zsim.sim_progress.Buff.BuffXLogic import (
+    YuzuhaAdditionalAbilityAnomalyDmgBonus as yuzuha_dmg_module,
+)
 from zsim.sim_progress.Buff.BuffXLogic.AliceAdditionalAbilityApBonus import (
     AliceAdditionalAbilityApBonus,
 )
 from zsim.sim_progress.Buff.BuffXLogic.YuzuhaAdditionalAbilityAnomalyBuildupBonus import (
     YuzuhaAdditionalAbilityAnomalyBuildupBonus,
+)
+from zsim.sim_progress.Buff.BuffXLogic.YuzuhaAdditionalAbilityAnomalyDmgBonus import (
+    YuzuhaAdditionalAbilityAnomalyDmgBonus,
 )
 from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
 
@@ -46,8 +52,16 @@ class _StateSyncBuffProbe:
     ) -> None:
         self.ft = SimpleNamespace(index=index, maxcount=maxcount)
         self.dy = _DynamicCountRecorder(calls, initial_count)
-        self.sim_instance = SimpleNamespace(tick=tick)
         self._calls = calls
+        self.sim_instance = SimpleNamespace(
+            tick=tick,
+            schedule_data=SimpleNamespace(
+                change_process_state=self._change_process_state
+            ),
+        )
+
+    def _change_process_state(self) -> None:
+        self._calls.append(("change_process_state",))
 
     def simple_start(
         self,
@@ -165,7 +179,7 @@ def _old_alice_count(
     return float((am - 140) * trans_ratio)
 
 
-def _old_yuzuha_buildup_count(
+def _old_yuzuha_additional_ability_count(
     *,
     enemy: SimpleNamespace,
     dynamic_buff_list: dict[str, list[object]],
@@ -260,13 +274,16 @@ def _make_yuzuha_state_sync_case(
     *,
     static_am: float,
     cinema: int,
+    logic_cls: type[Any] = YuzuhaAdditionalAbilityAnomalyBuildupBonus,
+    buff_index: str = "yuzuha-additional-ability-anomaly-buildup",
+    report_enabled: bool | None = None,
     field_am: float = 0.0,
     flat_am: float = 0.0,
     initial_count: float = 88.0,
 ) -> _YuzuhaStateSyncCase:
     calls: list[tuple[Any, ...]] = []
     active_buff = _StateSyncBuffProbe(
-        index="yuzuha-additional-ability-anomaly-buildup",
+        index=buff_index,
         tick=700,
         calls=calls,
         initial_count=initial_count,
@@ -289,13 +306,10 @@ def _make_yuzuha_state_sync_case(
     buff_0 = SimpleNamespace(dy=SimpleNamespace(count=initial_count))
     sub_exist_buff_dict = {active_buff.ft.index: buff_0}
     expected_cinema_1_ratio = 1.0 if cinema < 1 else 1.3
+    if report_enabled is not None:
+        monkeypatch.setattr(yuzuha_dmg_module, "YUZUHA_REPORT", report_enabled)
 
-    logic = cast(
-        Any,
-        YuzuhaAdditionalAbilityAnomalyBuildupBonus.__new__(
-            YuzuhaAdditionalAbilityAnomalyBuildupBonus
-        ),
-    )
+    logic = cast(Any, object.__new__(logic_cls))
     logic.buff_instance = active_buff
     logic.buff_0 = buff_0
     logic.record = SimpleNamespace(
@@ -309,7 +323,7 @@ def _make_yuzuha_state_sync_case(
 
     get_prepared_calls: list[dict[str, object]] = []
     logic.get_prepared = lambda **kwargs: get_prepared_calls.append(kwargs)
-    expected_old_count = _old_yuzuha_buildup_count(
+    expected_old_count = _old_yuzuha_additional_ability_count(
         enemy=enemy,
         dynamic_buff_list=dynamic_buff_list,
         char=char,
@@ -485,6 +499,100 @@ def test_yuzuha_buildup_reader_path_matches_old_count_for_cinema_one_plus_cap(
     assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
 
 
+def test_yuzuha_damage_skips_writeback_below_am_threshold(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_yuzuha_state_sync_case(
+        monkeypatch,
+        static_am=99.99,
+        cinema=0,
+        logic_cls=YuzuhaAdditionalAbilityAnomalyDmgBonus,
+        buff_index="yuzuha-additional-ability-anomaly-dmg",
+        report_enabled=True,
+    )
+
+    result = case.logic.special_hit_logic()
+
+    assert result is None
+    assert case.expected_old_count is None
+    assert case.logic.record.cinema_1_ratio == pytest.approx(case.expected_cinema_1_ratio)
+    assert case.get_prepared_calls == [
+        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1, "dynamic_buff_list": 1}
+    ]
+    assert case.aggregation_calls == [
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
+    ]
+    assert case.calls == []
+    assert case.active_buff.dy.count == pytest.approx(88.0)
+    assert case.buff_0.dy.count == pytest.approx(88.0)
+
+
+def test_yuzuha_damage_reader_path_matches_old_count_for_cinema_zero_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_yuzuha_state_sync_case(
+        monkeypatch,
+        static_am=145.0,
+        cinema=0,
+        logic_cls=YuzuhaAdditionalAbilityAnomalyDmgBonus,
+        buff_index="yuzuha-additional-ability-anomaly-dmg",
+        report_enabled=False,
+    )
+
+    case.logic.special_hit_logic()
+
+    assert case.expected_old_count == pytest.approx(45.0)
+    assert case.logic.record.cinema_1_ratio == pytest.approx(1.0)
+    assert case.get_prepared_calls == [
+        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1, "dynamic_buff_list": 1}
+    ]
+    assert case.aggregation_calls == [
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
+    ]
+    assert case.calls == [
+        ("simple_start", 700, True, 88.0, case.buff_0),
+        ("dy.count", case.expected_old_count),
+        ("update_to_buff_0", case.buff_0, case.expected_old_count),
+    ]
+    assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
+    assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
+
+
+def test_yuzuha_damage_reader_path_keeps_cinema_one_plus_cap_and_report(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_yuzuha_state_sync_case(
+        monkeypatch,
+        static_am=250.0,
+        cinema=1,
+        logic_cls=YuzuhaAdditionalAbilityAnomalyDmgBonus,
+        buff_index="yuzuha-additional-ability-anomaly-dmg",
+        report_enabled=True,
+    )
+
+    case.logic.special_hit_logic()
+
+    assert case.expected_old_count == pytest.approx(130.0)
+    assert case.logic.record.cinema_1_ratio == pytest.approx(1.3)
+    assert case.get_prepared_calls == [
+        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1, "dynamic_buff_list": 1}
+    ]
+    assert case.aggregation_calls == [
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
+        (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
+    ]
+    assert case.calls == [
+        ("simple_start", 700, True, 88.0, case.buff_0),
+        ("dy.count", case.expected_old_count),
+        ("update_to_buff_0", case.buff_0, case.expected_old_count),
+        ("change_process_state",),
+    ]
+    assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
+    assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
+
+
 def test_alice_additional_ability_uses_reader_not_multiplier_data() -> None:
     source = Path(
         "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py"
@@ -505,3 +613,18 @@ def test_yuzuha_buildup_uses_reader_not_multiplier_data() -> None:
     assert "Calculator.AnomalyMul.cal_am" not in source
     assert "create_anomaly_attribute_read_context" in source
     assert "read_anomaly_mastery" in source
+
+
+def test_yuzuha_additional_ability_damage_uses_shared_reader_pattern() -> None:
+    buildup_source = Path(
+        "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyBuildupBonus.py"
+    ).read_text(encoding="utf-8")
+    damage_source = Path(
+        "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyDmgBonus.py"
+    ).read_text(encoding="utf-8")
+
+    for source in (buildup_source, damage_source):
+        assert "MultiplierData" not in source
+        assert "Calculator.AnomalyMul.cal_am" not in source
+        assert "create_anomaly_attribute_read_context" in source
+        assert "read_anomaly_mastery" in source

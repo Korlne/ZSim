@@ -1384,3 +1384,14 @@
 - Next step:
   - 继续 US-008，迁移 `YuzuhaAdditionalAbilityAnomalyDmgBonus.py` 到同一 AM reader + state-sync pattern，并保留该 sibling 当前的 `YUZUHA_REPORT` / `schedule_data.change_process_state()` 行为。
 ---
+## 2026-06-08 12:43 +08:00 - US-008
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyDmgBonus.py`, `tests/simulator/test_buff_attribute_state_sync.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `YuzuhaAdditionalAbilityAnomalyDmgBonus.special_hit_logic()` now replaces its direct `MultiplierData(...)` / `Calculator.AnomalyMul.cal_am(...)` AM read with `create_anomaly_attribute_read_context(...)` and `CalculatorBuffAttributeReader().read_anomaly_mastery(...)`.
+  - `tests/simulator/test_buff_attribute_state_sync.py` now covers the damage sibling's below-threshold no-op, cinema 0 ratio, cinema 1+ capped ratio, report/process-state ordering, and shared reader-backed AM source pattern.
+- Compatibility retained:
+  - Yuzuha damage `get_prepared(char_CID=1411, sub_exist_buff_dict=1, enemy=1, dynamic_buff_list=1)`, `cinema_1_ratio` initialization, `am < 100` early return, `min(am - 100, 100) * cinema_1_ratio`, old `buff_0` identity, and `simple_start(..., no_count=1) -> dy.count -> update_to_buff_0(...)` order remain covered.
+  - `YUZUHA_REPORT` still gates `schedule_data.change_process_state()` after explicit `update_to_buff_0(...)`; Calculator / CalAnomaly formula snapshots and phase-1 dispatch/runtime boundaries remain retained outside this story.
+- Next step:
+  - 继续 US-009，迁移 `JaneCinema1APTransToDmgBonus.py` 到 AP reader seam，同时保留 trigger gate、`find_tick(...)`、AP damage count formula 和 state-sync order。
+---
