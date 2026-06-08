@@ -1308,3 +1308,13 @@
 - Next step:
   - Generate the next phase-2 PRD from the ranked pool, defaulting to the AM/AP reader + computed count state-sync family with `calculator-reads` validation and focused state-sync order tests.
 ---
+## 2026-06-08 11:45 +08:00 - US-001
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - 本故事只建立 `P2-A AM/AP reader + computed count state-sync` 证据边界和 Ralph 工作说明，没有替换 live `BuffXLogic` 路径。
+  - 后续 `BuffAttributeReadContext` / `CalculatorBuffAttributeReader` 迁移入口将准备替换六个 P2-A 文件中的 direct `MultiplierData` / `Mul(...)` AM/AP 读取职责。
+- Compatibility retained:
+  - `MultiplierData` / `CalAnomaly` formula snapshot、old `buff_0` identity、`simple_start(..., no_count=1) -> dy.count -> update_to_buff_0(...)` 顺序、phase-1 dispatch/runtime boundaries 均保留。
+- Next step:
+  - 继续 US-002，扩展 AM/AP reader parity test fixtures；不要在 parity/order tests 之前编辑生产 XLogic。
+---
