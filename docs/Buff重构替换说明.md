@@ -1905,3 +1905,14 @@
 - Next step:
   - Continue with US-008 by running serial validation and recording the behavior-sample decision; if no production behavior changed, focused parity and the new exact-file source guardrail are the relevant evidence.
 ---
+## 2026-06-08 23:44 +08:00 - US-008
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - This validation-only story does not replace live scheduled-publish behavior; it validates the completed P2-D focused tests, exact-file guardrail, and implicit-events wiring through one serial `run_buff_refactor_validation.py --typecheck-profile implicit-events` run.
+  - The behavior sample is intentionally skipped because this P2-D PRD changed tests, guardrails, validation wiring, docs, and Ralph artifacts only; no production scheduled-publish order changed.
+- Compatibility retained:
+  - Old paths still retained in this iteration: all P2-D producers keep their existing on-demand `_create_dispatch_port(...)` / `create_schedule_dispatch_port(...)` publish paths.
+  - `ScheduleDispatchPort` queue-only semantics, core adapter internals, listener broadcast, dot runtime registration/removal, runtime immediate writes, `RuntimeCommandPort`, old containers, and Calculator / CalAnomaly formula snapshots remain unchanged.
+- Next step:
+  - Continue with US-009 final handoff docs, promoting the next same-phase pool without reopening P2-D production behavior or broadening the P2-D guardrail beyond migrated scheduled-publish files.
+---
