@@ -1542,3 +1542,15 @@
 - Next step:
   - Continue with US-008 by migrating `TriggerAdditionalAbilityStunBonus.py` through `read_personal_crit_rate(...)` while preserving aftershock gates and count writeback order.
 ---
+## 2026-06-08 17:10 +08:00 - US-008
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/TriggerAdditionalAbilityStunBonus.py`, `tests/simulator/test_buff_attribute_state_sync.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `TriggerAdditionalAbilityStunBonus.py` now replaces its direct `MultiplierData(...)` / `Calculator.RegularMul.cal_personal_crit_rate(...)` personal crit-rate read with `create_anomaly_attribute_read_context(...)` and `CalculatorBuffAttributeReader.read_personal_crit_rate(...)`.
+  - The focused state-sync test now guards this migrated file against reintroducing the direct personal crit Calculator snapshot path.
+- Compatibility retained:
+  - Trigger `special_judge_logic(...)` aftershock gate, `get_prepared(...)` arguments, `find_tick(...)`, `min(max(crit_rate - 0.4, 0) / 0.01 * 1.5, 75)` formula, old `buff_0` identity, and `read_personal_crit_rate(...) -> simple_start(..., no_count=1) -> dy.count -> update_to_buff_0(...)` order remain preserved.
+  - The retained Calculator formula snapshot still owns `Calculator.RegularMul.cal_personal_crit_rate(...)`; Soldier0 Anby and event-adjacent full-crit P2-B candidates remain on their old paths until their own stories run.
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime-state, same-tick runtime writes, and old-container deletion boundaries remain unchanged.
+- Next step:
+  - Continue with US-009 by migrating `Soldier0AnbyCoreSkillCritDMGBonus.py` through `read_personal_crit_damage(...)` while preserving its existing simple-start-before-read order.
+---

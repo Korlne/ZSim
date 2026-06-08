@@ -1878,6 +1878,17 @@ def test_trigger_personal_crit_rate_keeps_count_cap(
     assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
 
 
+def test_trigger_personal_crit_rate_uses_reader_not_multiplier_data() -> None:
+    source = Path(
+        "zsim/sim_progress/Buff/BuffXLogic/TriggerAdditionalAbilityStunBonus.py"
+    ).read_text(encoding="utf-8")
+
+    assert "MultiplierData" not in source
+    assert "Calculator.RegularMul.cal_personal_crit_rate" not in source
+    assert "create_anomaly_attribute_read_context" in source
+    assert "read_personal_crit_rate" in source
+
+
 def test_soldier0_anby_personal_crit_damage_inactive_gate_skips_state_sync_and_read(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
