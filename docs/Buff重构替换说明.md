@@ -1286,3 +1286,14 @@
 - Next step:
   - Continue with US-008 by producing the reusable pattern catalog and risk matrix from the completed US-001 through US-007 classification buckets, without turning dot runtime registration or formula snapshots into immediate replacement work.
 ---
+## 2026-06-08 10:40 +08:00 - US-008
+- Files changed: `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `docs/BuffXLogic阶段2全量分类与复用矩阵.md` now prepares to replace loose phase-2 follow-up planning with a reusable pattern catalog, risk matrix, ranked candidate pool, and CodeGraph cross-check notes for reader, record, event adapter, state-sync, handler, listener, facade-write, dot-runtime and validation patterns.
+  - No live BuffXLogic, Calculator, CalAnomaly, dispatch, runtime port, facade, listener, Dot, guardrail, or validation behavior was replaced in this story; it produces phase-2 design evidence only.
+- Compatibility retained:
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()`, legacy `KickOutBuff()`, `MultiplierData` / `MulData`, Calculator / CalAnomaly formula snapshots, listener broadcast, dot runtime registration, and deleted raw queue surfaces remain separate retained boundaries.
+  - `.codex_worktrees/` CodeGraph hits remain historical navigation evidence only unless explicitly audited.
+- Next step:
+  - Continue with US-009 final validation and handoff doc sync, preserving the ranked phase-2 candidate pool and recommending the AM/AP reader + computed count state-sync family as the default next PRD seed unless validation exposes a concrete blocker.
+---
