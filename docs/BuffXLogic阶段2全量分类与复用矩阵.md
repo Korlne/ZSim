@@ -328,6 +328,78 @@ US-002 粗桶用于 census 定位，不等同于 US-003 之后的最终非排他
 | YuzuhaTanukiWishAtkBonus.py | leaf | YuzuhaTanukiWishAtkBonus | YuzuhaTanukiWishAtkBonusRecord | xhit->special_hit_logic | check_record_module, get_prepared, special_hit_logic | Buff.BuffLogic | SERVICE_LOCATION, OLD_CONTAINER, RECORD_COUNT_SYNC |
 | ZanshinHerbCase.py | leaf | ZanshinHerbCase | ZanshinHerbCaseRecord | xjudge->special_judge_logic | check_record_module, get_prepared, special_judge_logic | Buff.BuffLogic | SERVICE_LOCATION, OLD_CONTAINER, RECORD_COUNT_SYNC |
 
+## US-003 Calculator / 属性读取分类
+
+生成时间：2026-06-08 09:49 +08:00。本节只分类 `Calculator` 与属性读取耦合，不改动任何 XLogic 生产行为，不新增 `BuffAttributeReader` 方法，也不替换现有 `MultiplierData` / `CalAnomaly` 公式快照。
+
+### 可复现扫描命令
+
+```powershell
+rg -n "MultiplierData\s*\(" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "MultiplierData\s+as\s+Mul" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "\bMul\s*\(" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "\bMulData\s*\(" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "dynamic_buff_list" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+rg -n "cal_am\(|cal_ap\(|cal_imp\(|cal_crit_rate\(|cal_personal_crit_rate\(|cal_personal_crit_dmg\(|CalculatorBuffAttributeReader|BuffAttributeReadContext" zsim/sim_progress/Buff/BuffXLogic --glob '*.py' --glob '!__init__.py'
+```
+
+根工作区扫描结果如下；`.codex_worktrees/` 仍按阶段 2 规则视为历史证据，不进入生产分类计数。
+
+| 模式 | 命中文件数 | match 数 | US-003 结论 |
+| --- | ---: | ---: | --- |
+| `MultiplierData\s*\(` | 11 | 11 | 仍有直接兼容快照构造；按 helper family 分类，不按单个角色拆薄。 |
+| `MultiplierData\s+as\s+Mul` | 7 | 7 | 别名入口仍需要 guardrail / 后续 PRD 覆盖；不能只搜字面 `MultiplierData(`。 |
+| `\bMul\s*\(` | 7 | 7 | 别名构造多为 read-then-writeback，迁移时必须保留 `simple_start(...)` / `dy.count` / `update_to_buff_0(...)` 顺序。 |
+| `\bMulData\s*\(` | 0 | 0 | `BuffXLogic` 当前没有根工作区 `MulData(...)`；`CalAnomaly` 内部 `MulData` 仍是公式快照，留给 US-007 / later classification。 |
+| `dynamic_buff_list` | 27 | 70 | 包含属性读取输入、旧容器 service-location、record 字段和已迁移 reader 的 `active_buff_view` 输入；最终分类必须看源码上下文。 |
+
+### CodeGraph 导航证据
+
+- Query seed：`US-003 Classify Calculator And Attribute-Read Couplings`、`MultiplierData`、`Mul`、`MulData`、`dynamic_buff_list`、`BuffAttributeReader`、`Calculator`、`CalAnomaly`、`AliceAdditionalAbilityApBonus`、`JaneCinema1APTransToDmgBonus`、`JanePassionStateAPTransToATK`、`LinaCoreSkillPenRatioBonus`、`TimeweaverDisorderDmgMul`、`TriggerAdditionalAbilityStunBonus`、`Soldier0AnbyCoreSkillCritDMGBonus`。
+- `MultiplierData.get_buff_bonus(...)` 在根工作区 `Calculator.py` 通过 `_calculate_dynamic_statement(...)` 聚合角色 active buff view 与 enemy debuff view，再产出 `DynamicStatement`；这是 retained compatibility snapshot，不在 US-003 删除。
+- `BuffAttributeReader` / `CalculatorBuffAttributeReader` 当前只覆盖 `read_anomaly_mastery(...)` 与 `read_anomaly_proficiency(...)`；`BranchBladeSongCritDamageBonus` 和 `TimeweaverDisorderDmgMul` 是已迁移 reader-backed 只读样本。
+- `Calculator.AnomalyMul.cal_am(...)` 已委托 `_calculate_anomaly_mastery(...)`；`cal_ap(...)`、`cal_imp(...)`、`cal_crit_rate(...)`、`cal_personal_crit_rate(...)`、`cal_personal_crit_dmg(...)` 仍是 `MultiplierData` snapshot helper。
+- Representative XLogic evidence confirms the non-exclusive split: `AliceAdditionalAbilityApBonus` / `YuzuhaAdditionalAbility*` read AM then write `dy.count`; `Jane*` alias paths read AP then write count/state; `TriggerAdditionalAbilityStunBonus` and `Soldier0AnbyCoreSkillCritDMGBonus` read crit helpers then write count/state.
+- CodeGraph again surfaced `.codex_worktrees/` duplicates for Calculator and XLogic symbols. Those are historical navigation evidence only; root-workspace source and focused validation remain the compatibility basis.
+
+### Helper Family 分类
+
+| helper family | 当前入口 | root-workspace 调用点 / 状态 | 分类 | 后续复用候选 | 默认验证入口 |
+| --- | --- | --- | --- | --- | --- |
+| 异常掌控 AM | `Calculator.AnomalyMul.cal_am(...)` / `read_anomaly_mastery(...)` | `BranchBladeSongCritDamageBonus.py` 已迁移 reader-backed 只读门禁；`AliceAdditionalAbilityApBonus.py`、`YuzuhaAdditionalAbilityAnomalyBuildupBonus.py`、`YuzuhaAdditionalAbilityAnomalyDmgBonus.py` 仍构造 `MultiplierData(...)` 后写回 count/state。 | `ATTR_READ` + read-only gate 或 `RECORD_COUNT_SYNC`。 | 保留 `read_anomaly_mastery(...)`；后续 PRD 先批量处理 AM read-then-writeback state-sync，而不是重写公式。 | `calculator-reads`；触达 count/state 顺序时加 focused pytest。 |
+| 异常精通 AP | `Calculator.AnomalyMul.cal_ap(...)` / `read_anomaly_proficiency(...)` | `TimeweaverDisorderDmgMul.py` 已迁移 reader-backed 只读门禁；`JaneCinema1APTransToDmgBonus.py`、`JaneCoreSkillStrikeCritRateBonus.py`、`JanePassionStateAPTransToATK.py` 仍是 alias `Mul(...)` read-then-writeback；`VivianCorePassiveTrigger.py`、`VivianCinema6Trigger.py` 读 AP 后伴随已迁移 dispatch publish。 | `ATTR_READ` + read-only gate、`RECORD_COUNT_SYNC` 或 `SCHEDULED_PUBLISH`。 | 继续复用 `read_anomaly_proficiency(...)`；事件伴随样本留给 US-004 分类顺序和 payload。 | `calculator-reads`；Vivian / dispatch 伴随路径加 `implicit-events`。 |
+| 冲击力 IMP | `Calculator.StunMul.cal_imp(...)` | `LighterAdditionalAbility_IceFireBonus.py`、`QingYiAdditionalAbilityStunConvertToATK.py` 直接 `MultiplierData(...)` 后按冲击力换算 count / 攻击力层数。 | `ATTR_READ` + `RECORD_COUNT_SYNC`。 | 新增 `read_impact(...)` 的候选 helper，但本 PRD 不实现；迁移前先锁定 count 公式和 `simple_start(...)` 相对顺序。 | `calculator-reads` + later focused state-sync pytest。 |
+| 全量暴击率 | `Calculator.RegularMul.cal_crit_rate(...)` | `CannonRotor.py`、`MiyabiCoreSkill_IceFire.py`、`WoodpeckerElectroSet4_NA.py`、`WoodpeckerElectroSet4_E_EX.py`、`WoodpeckerElectroSet4_CA.py` 仍经 `MultiplierData(...)`。 | `ATTR_READ` + event trigger / RNG gate；部分文件同时是已迁移 scheduled publish 样本。 | 新增 `read_full_crit_rate(...)` 候选 helper；不得与个人暴击率合并，因为全量暴击率包含 `crit_rate_received_increase`。 | `calculator-reads`；事件伴随样本由 US-004 加 `implicit-events`。 |
+| 个人暴击率 | `Calculator.RegularMul.cal_personal_crit_rate(...)` | `TriggerAdditionalAbilityStunBonus.py` 直接读取个人暴击率后写 `dy.count`；`JaneCoreSkillStrikeCritRateBonus.py` 是 AP-to-crit-rate count 写回，不是直接 personal crit helper。 | `ATTR_READ` + `RECORD_COUNT_SYNC`。 | 新增 `read_personal_crit_rate(...)` 候选 helper；迁移时验证不包含 `crit_rate_received_increase`。 | `calculator-reads` + focused count/state pytest。 |
+| 个人暴击伤害 | `Calculator.RegularMul.cal_personal_crit_dmg(...)` | `Soldier0AnbyCoreSkillCritDMGBonus.py` alias `Mul(...)` 后读取个人暴伤并写 `dy.count`。 | `ATTR_READ` + `RECORD_COUNT_SYNC`。 | 新增 `read_personal_crit_damage(...)` 候选 helper；先保持 `simple_start(...)` 在读取前执行的当前顺序证据。 | `calculator-reads` + focused count/state pytest。 |
+| CalAnomaly / formula internals | `CalAnomaly`、`MultiplierData` / `MulData` formula snapshots | `BuffXLogic` 本轮未发现 `MulData(...)`，但 `CalAnomaly` 和完整 Calculator 公式仍保留兼容快照。 | `FORMULA_SNAPSHOT` + `RETAINED_COMPAT_ONLY`。 | 不作为 US-003 / first replacement target；后续只做分类或公式专项 PRD。 | `calculator-reads`；公式专项再加 anomaly focused tests。 |
+
+### 只读门禁与读后写回边界
+
+| 分组 | 文件 / 符号 | 当前行为证据 | 后续约束 |
+| --- | --- | --- | --- |
+| 已迁移 reader-backed 只读门禁 | `BranchBladeSongCritDamageBonus.special_judge_logic()`、`TimeweaverDisorderDmgMul.special_judge_logic()` | 构造 `BuffAttributeReadContext`，调用 `CalculatorBuffAttributeReader.read_anomaly_mastery(...)` / `read_anomaly_proficiency(...)`。 | 作为 parity 样本保留；后续扩 helper 时复用测试形态，不回退到新 `MultiplierData(...)`。 |
+| retained 只读 / trigger gate | `WoodpeckerElectroSet4_*`、部分 full crit rate gate | 读取全量暴击率后按 RNG / SkillNode 条件触发，不应和 count 写回样本混为一组。 | US-004 继续检查触发顺序；US-003 只把它们放入 full crit rate helper bucket。 |
+| read-then-writeback | `AliceAdditionalAbilityApBonus.py`、`YuzuhaAdditionalAbilityAnomaly*.py`、`Jane*.py`、`LighterAdditionalAbility_IceFireBonus.py`、`QingYiAdditionalAbilityStunConvertToATK.py`、`TriggerAdditionalAbilityStunBonus.py`、`Soldier0AnbyCoreSkillCritDMGBonus.py` | 读取 helper 结果后执行或围绕 `simple_start(...)`、`dy.count`、`update_to_buff_0(...)`、record 字段写回。 | 未来 PRD 必须同时验证 reader parity 和 state-sync 顺序；不要只替换 read expression。 |
+| event-adjacent read | `CannonRotor.py`、`MiyabiCoreSkill_IceFire.py`、`VivianCorePassiveTrigger.py`、`VivianCinema6Trigger.py` | 属性读取与已迁移 `ScheduleDispatchPort` producer 或本地触发语义相邻。 | 保留 scheduled publish / listener / runtime write 分层；事件分类归 US-004，不在属性读取 PRD 中重开 raw queue backlog。 |
+
+### Follow-up PRD 分组
+
+| 候选组 | 候选文件 / 符号 | Ralph-sized 工作方向 | 保留边界 | 验证入口 | 非目标 |
+| --- | --- | --- | --- | --- | --- |
+| AM/AP reader parity expansion | `AliceAdditionalAbilityApBonus.py`、`YuzuhaAdditionalAbilityAnomalyBuildupBonus.py`、`YuzuhaAdditionalAbilityAnomalyDmgBonus.py`、`JaneCinema1APTransToDmgBonus.py`、`JaneCoreSkillStrikeCritRateBonus.py`、`JanePassionStateAPTransToATK.py` | 先抽可复用 attribute reader call + state-sync harness，批量验证 AM/AP 读取等价和 count 写回顺序。 | `MultiplierData` 公式快照、old containers、`simple_start(...)` / `dy.count` / `update_to_buff_0(...)` 顺序。 | `calculator-reads` + focused state-sync pytest。 | 不删除 `MultiplierData`，不重写 Jane / Yuzuha 公式，不顺手迁移 event producers。 |
+| Impact reader candidate | `LighterAdditionalAbility_IceFireBonus.py`、`QingYiAdditionalAbilityStunConvertToATK.py`、`Calculator.StunMul.cal_imp(...)` | 设计 `read_impact(...)` parity helper，并把两个 count/writeback 样本作为一组。 | `StunMul` formula snapshot 和 count 换算公式。 | `calculator-reads` + focused count pytest。 | 不重写完整 stun formula，不改 lifecycle runtime write path。 |
+| Crit reader candidates | `CannonRotor.py`、`MiyabiCoreSkill_IceFire.py`、`WoodpeckerElectroSet4_*`、`TriggerAdditionalAbilityStunBonus.py`、`Soldier0AnbyCoreSkillCritDMGBonus.py` | 分开设计 `read_full_crit_rate(...)`、`read_personal_crit_rate(...)`、`read_personal_crit_damage(...)`，并用代表样本证明全量 / 个人暴击语义差异。 | `crit_rate_received_increase` 只属于 full crit rate；scheduled publish 样本保持 `ScheduleDispatchPort`。 | `calculator-reads`; event-adjacent files add `implicit-events` in US-004. | 不把 crit helper PRD 做成一个单文件 Trigger / Soldier 薄切片。 |
+| Formula snapshot classification | `zsim/sim_progress/ScheduledEvent/Calculator.py`、`zsim/sim_progress/ScheduledEvent/CalAnomaly.py` | 只记录 Calculator / CalAnomaly formula internals 和 `MultiplierData.get_buff_bonus()` 聚合责任，等 reader helper 稳定后再评估收缩。 | `FORMULA_SNAPSHOT` / retained compatibility only。 | `calculator-reads`; formula behavior changes require dedicated focused tests. | 不在阶段 2 classification PRD 中替换完整伤害 / 异常公式。 |
+
+### US-003 结论
+
+- 属性读取分类仍是非排他的：一个 XLogic 可同时属于 `ATTR_READ`、`RECORD_COUNT_SYNC`、`EVENT_TRIGGER`、`SCHEDULED_PUBLISH` 和 `SERVICE_LOCATION`。
+- 当前可复用方向应按 helper family 分组，而不是按角色文件排序：AM/AP 已有 reader-backed 样本，impact / full crit / personal crit rate / personal crit damage 是下一批候选。
+- `Calculator` / `CalAnomaly` 内部公式快照和 `MultiplierData.get_buff_bonus()` 聚合层继续标记为 `FORMULA_SNAPSHOT` / `RETAINED_COMPAT_ONLY`；本故事不删除、不重写。
+- 后续实现型 PRD 必须区分 read-only gate 与 read-then-writeback。后者需要同时覆盖 record / count / state-sync 顺序，不能只替换 `MultiplierData(...)` 表达式。
+- 事件相邻属性读取样本只在本节归入 helper bucket；`LoadingMission`、`SkillNode`、dispatch payload、publish order 和 listener / runtime 分层留给 US-004。
+
 ## 后续填写占位
 
-`US-003` 之后应基于上面的 census 表按 helper family、事件语义、state-sync 模式和验证入口继续补细分矩阵、复用模式目录、风险矩阵和下一轮 PRD 候选池。不要把本节粗桶直接当成阶段 3 替换清单。
+`US-004` 之后应基于上面的 census 表按事件语义、state-sync 模式和验证入口继续补细分矩阵、复用模式目录、风险矩阵和下一轮 PRD 候选池。不要把本节粗桶直接当成阶段 3 替换清单。

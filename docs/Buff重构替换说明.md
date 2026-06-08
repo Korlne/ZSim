@@ -1231,3 +1231,14 @@
 - Next step:
   - Continue with US-003 by classifying Calculator and attribute-read couplings from the census, using helper-family groups rather than a one-file replacement slice.
 ---
+## 2026-06-08 09:49 +08:00 - US-003
+- Files changed: `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `docs/BuffXLogic阶段2全量分类与复用矩阵.md` now replaces loose Calculator-read backlog wording with helper-family classification for AM / AP / impact / full crit rate / personal crit rate / personal crit damage, including read-only gate vs read-then-writeback boundaries.
+  - No live Calculator, CalAnomaly, BuffXLogic, scheduled-event, listener, or runtime path was replaced in this story; it produces phase-2 classification evidence only.
+- Compatibility retained:
+  - `MultiplierData`, `MultiplierData as Mul`, Calculator / CalAnomaly formula snapshots, old dynamic Buff aggregation, old containers, record/count writebacks, and migrated `ScheduleDispatchPort` publishers are unchanged.
+  - Existing `BuffAttributeReader` coverage remains limited to AM / AP representative samples; impact and crit helper candidates are documented but not implemented in this story.
+- Next step:
+  - Continue with US-004 by classifying event trigger and scheduled-publish couplings while keeping event ordering separate from Calculator-read helper buckets.
+---
