@@ -1789,3 +1789,15 @@
 - Next step:
   - Continue with US-011 by adding the migrated P2-C source guardrail for the exact completed migrated file set, without scanning the remaining un-migrated trigger-state pool.
 ---
+## 2026-06-08 21:15 +08:00 - US-011
+- Files changed: `tests/simulator/test_migrated_p2c_trigger_state_guardrail.py`, `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_migrated_p2c_trigger_state_guardrail.py` replaces manual review of the completed migrated P2-C trigger-state source surface by AST-blocking direct `record.trigger_buff_0.dy.active`, `.dy.count`, and `.dy.built_in_buff_box` chains in the exact migrated root file set.
+  - `MIGRATED_P2C_TRIGGER_STATE_GUARDRAIL_FOCUSED_TEST_TARGETS` wires the guardrail into `implicit-events` focused pytest and scoped mypy.
+  - This story adds a source guardrail only; no live `BuffXLogic` behavior was replaced.
+- Compatibility retained:
+  - The guardrail scans only root `FlamemakerShakerApBonus.py`, `SpectralGazeImpactBonus.py`, `SharpenedStingerAnomalyBuildupBonus.py`, `CordisGerminaSNAAndQIgnoreDefense.py`, and `AstralVoice.py`, excluding `.codex_worktrees/`.
+  - Remaining un-migrated `trigger_buff_0=` files, P2-A/P2-B migrated files, Calculator / CalAnomaly formula snapshots, `BuffAddStrategy`, `BuffRuntimeReadPort`, `RuntimeCommandPort`, `ScheduleDispatchPort`, listener broadcast, dot runtime registration, raw queue deletion boundaries, and old template Buff identity remain unchanged.
+- Next step:
+  - Continue with US-012 by running serial validation / behavior-sample decision and recording whether registered representative teams exist; do not broaden the P2-C guardrail beyond migrated files.
+---
