@@ -12,6 +12,7 @@ from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
 )
 from zsim.sim_progress.Buff.BuffAddStrategy import buff_add_strategy
 from zsim.sim_progress.Dot.BaseDot import Dot
+from zsim.sim_progress.Dot.runtime_state import DotRuntimeStateAdapter
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 if TYPE_CHECKING:
@@ -103,11 +104,8 @@ def anomaly_effect_active(
             element_type, timenow, bar=new_anomaly, sim_instance=sim_instance
         )
         if new_dot:
-            for dots in enemy.dynamic.dynamic_dot_list[:]:
-                if dots.ft.index == new_dot.ft.index:
-                    dots.end(timenow)
-                    enemy.dynamic.dynamic_dot_list.remove(dots)
-            enemy.dynamic.dynamic_dot_list.append(new_dot)
+            dot_runtime_state = DotRuntimeStateAdapter.from_enemy(enemy)
+            dot_runtime_state.replace_by_index(new_dot, timenow)
             # event_list.append(new_dot)
 
 
@@ -273,8 +271,9 @@ def remove_dots_cause_disorder(disorder, enemy, dispatch_port, time_now):
     """
     该函数只负责移除dot。
     """
+    dot_runtime_state = DotRuntimeStateAdapter.from_enemy(enemy)
     remove_dots_list = []
-    for dots in enemy.dynamic.dynamic_dot_list:
+    for dots in dot_runtime_state.snapshot():
         if not isinstance(dots, Dot):
             raise TypeError(f"{dots}不是DOT类！")
         if dots.ft.index in ["Freez", "Freezdot"] or dots.ft.index == disorder.accompany_dot:
@@ -290,12 +289,12 @@ def remove_dots_cause_disorder(disorder, enemy, dispatch_port, time_now):
                 _dot.dy.last_effect_ticks = time_now
                 _dot.dy.effect_times += 1
                 _dot.end(time_now)
-                enemy.dynamic.dynamic_dot_list.remove(_dot)
+                dot_runtime_state.remove_all([_dot])
                 enemy.dynamic.frozen = False
                 enemy.dynamic.frostbite = False
             else:
                 _dot.end(time_now)
-                enemy.dynamic.dynamic_dot_list.remove(_dot)
+                dot_runtime_state.remove_all([_dot])
             sim_instance.schedule_data.change_process_state()
             print(f"因紊乱而强行移除Dot {_dot.ft.index}")
 

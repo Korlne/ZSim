@@ -7,6 +7,7 @@ import pytest
 
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 from zsim.sim_progress.Dot.BaseDot import Dot
+from zsim.sim_progress.Dot.runtime_state import DotRuntimeStateAdapter
 from zsim.sim_progress.Update import UpdateAnomaly as update_anomaly_module
 from zsim.sim_progress.Update.UpdateAnomaly import (
     anomaly_effect_active,
@@ -57,6 +58,37 @@ class _FailFastDotRuntimeList(list):
 
     def remove(self, item):
         raise AssertionError("debuff-only anomaly effects should not remove runtime dots")
+
+
+class _RecordingDotRuntimeStateAdapter(DotRuntimeStateAdapter):
+    def __init__(
+        self,
+        dynamic_state,
+        helper_calls: list[tuple[str, object]],
+    ) -> None:
+        super().__init__(dynamic_state)
+        self._helper_calls = helper_calls
+
+    def replace_by_index(self, dot: Dot, timenow: int) -> tuple[Dot, ...]:
+        self._helper_calls.append(("replace_by_index", dot, timenow))
+        return super().replace_by_index(dot, timenow)
+
+    def remove_all(self, dots) -> tuple[Dot, ...]:
+        dots_tuple = tuple(dots)
+        self._helper_calls.append(("remove_all", dots_tuple))
+        return super().remove_all(dots_tuple)
+
+
+def _record_dot_runtime_state_adapter(monkeypatch, helper_calls):
+    def recording_from_enemy(cls, enemy):
+        helper_calls.append(("from_enemy", enemy))
+        return _RecordingDotRuntimeStateAdapter(enemy.dynamic, helper_calls)
+
+    monkeypatch.setattr(
+        update_anomaly_module.DotRuntimeStateAdapter,
+        "from_enemy",
+        classmethod(recording_from_enemy),
+    )
 
 
 class _RecordingDotDynamicState:
@@ -285,6 +317,7 @@ def test_anomaly_effect_active_replaces_same_index_dot_without_scheduled_publish
     monkeypatch,
 ):
     call_order: list[tuple[str, object]] = []
+    helper_calls: list[tuple[str, object]] = []
     sim_instance = _build_sim_instance(_FailFastEventList())
     sim_instance.listener_manager = _ForbiddenListenerManager()
     enemy = _build_enemy(sim_instance)
@@ -307,6 +340,7 @@ def test_anomaly_effect_active_replaces_same_index_dot_without_scheduled_publish
         "spawn_anomaly_dot",
         fake_spawn_anomaly_dot,
     )
+    _record_dot_runtime_state_adapter(monkeypatch, helper_calls)
 
     anomaly_effect_active(
         SimpleNamespace(accompany_debuff=None, accompany_dot="Shock"),
@@ -318,6 +352,10 @@ def test_anomaly_effect_active_replaces_same_index_dot_without_scheduled_publish
     )
 
     assert spawn_calls == [(3, 77, new_anomaly, sim_instance)]
+    assert helper_calls == [
+        ("from_enemy", enemy),
+        ("replace_by_index", new_dot, 77),
+    ]
     assert old_dot.ended_at == 77
     assert enemy.dynamic.dynamic_dot_list == [unrelated_dot, new_dot]
     assert enemy.dynamic.dynamic_dot_list.count(new_dot) == 1
@@ -345,6 +383,15 @@ def test_anomaly_effect_active_spawn_false_leaves_runtime_dot_list_unchanged(
         update_anomaly_module,
         "spawn_anomaly_dot",
         lambda *args, **kwargs: False,
+    )
+    monkeypatch.setattr(
+        update_anomaly_module.DotRuntimeStateAdapter,
+        "from_enemy",
+        classmethod(
+            lambda *args, **kwargs: (_ for _ in ()).throw(
+                AssertionError("spawn-false anomaly effects should not create dot helper")
+            )
+        ),
     )
 
     anomaly_effect_active(
@@ -408,8 +455,10 @@ def test_anomaly_effect_active_debuff_branch_uses_existing_buff_add_path(
 @pytest.mark.parametrize("dot_index", ["Freez", "Freezdot"])
 def test_remove_dots_cause_disorder_publishes_freeze_follow_up_via_dispatch_port(
     dot_index,
+    monkeypatch,
 ):
     call_order: list[tuple[str, object]] = []
+    helper_calls: list[tuple[str, object]] = []
     recording_queue = _RecordingEventList(call_order)
     sim_instance = _build_sim_instance(recording_queue)
     enemy = _build_enemy(sim_instance)
@@ -427,6 +476,7 @@ def test_remove_dots_cause_disorder_publishes_freeze_follow_up_via_dispatch_port
         ("change_process_state", None)
     )
     disorder = SimpleNamespace(accompany_dot="Shock")
+    _record_dot_runtime_state_adapter(monkeypatch, helper_calls)
 
     remove_dots_cause_disorder(
         disorder,
@@ -436,6 +486,10 @@ def test_remove_dots_cause_disorder_publishes_freeze_follow_up_via_dispatch_port
     )
 
     assert recording_queue == [anomaly_event]
+    assert helper_calls == [
+        ("from_enemy", enemy),
+        ("remove_all", (freeze_dot,)),
+    ]
     assert call_order == [
         ("publish", anomaly_event),
         ("dy_ready", False),
@@ -454,8 +508,11 @@ def test_remove_dots_cause_disorder_publishes_freeze_follow_up_via_dispatch_port
     assert enemy.dynamic.frostbite is False
 
 
-def test_remove_dots_cause_disorder_removes_matching_non_freeze_dot_without_publish():
+def test_remove_dots_cause_disorder_removes_matching_non_freeze_dot_without_publish(
+    monkeypatch,
+):
     call_order: list[tuple[str, object]] = []
+    helper_calls: list[tuple[str, object]] = []
     sim_instance = _build_sim_instance(_FailFastEventList())
     sim_instance.schedule_data.change_process_state = lambda: call_order.append(
         ("change_process_state", None)
@@ -468,6 +525,7 @@ def test_remove_dots_cause_disorder_removes_matching_non_freeze_dot_without_publ
         [unrelated_dot, removed_dot],
     )
     disorder = SimpleNamespace(accompany_dot="Shock")
+    _record_dot_runtime_state_adapter(monkeypatch, helper_calls)
 
     remove_dots_cause_disorder(
         disorder,
@@ -477,6 +535,10 @@ def test_remove_dots_cause_disorder_removes_matching_non_freeze_dot_without_publ
     )
 
     assert removed_dot.ended_at == 23
+    assert helper_calls == [
+        ("from_enemy", enemy),
+        ("remove_all", (removed_dot,)),
+    ]
     assert unrelated_dot.ended_at is None
     assert enemy.dynamic.dynamic_dot_list == [unrelated_dot]
     assert call_order == [

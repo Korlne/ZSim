@@ -2017,3 +2017,15 @@
 - Next step:
   - Continue with US-009 by migrating `UpdateAnomaly` dot replacement / removal callers to the helper while preserving `buff_add_strategy(...)`, freeze follow-up scheduled publish, process-state/report ordering, and removal semantics.
 ---
+## 2026-06-09 04:10 +08:00 - US-009
+- Files changed: `zsim/sim_progress/Update/UpdateAnomaly.py`, `tests/simulator/test_update_anomaly_dispatch.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `UpdateAnomaly.anomaly_effect_active(...)` now replaces open-coded same-index runtime-dot `end(...)`, removal, and append with `DotRuntimeStateAdapter.replace_by_index(...)` after `spawn_anomaly_dot(...)` returns a new dot.
+  - `remove_dots_cause_disorder(...)` now replaces open-coded selected runtime-dot removal with `DotRuntimeStateAdapter.remove_all(...)` while keeping freeze follow-up scheduled publish and dot dynamic-state mutations caller-owned.
+  - `tests/simulator/test_update_anomaly_dispatch.py` now records helper calls for replacement and freeze / non-freeze removal, so focused tests cover both helper use and the old behavior ordering.
+- Compatibility retained:
+  - `buff_add_strategy(...)` remains the existing same-tick Debuff write path; scheduled follow-up payloads remain on `ScheduleDispatchPort`; listener broadcast, `RuntimeCommandPort`, old containers, `BuffRuntimeReadPort` write boundaries, `CalAnomaly`, anomaly formulas, `LoadDamageEvent`, and `Update_Buff.update_dot()` remain unchanged.
+  - Old paths still retained in this iteration: `Shock.DotFeature.__post_init__()`, `LoadDamageEvent`, `Update_Buff.update_dot()`, Alice dot listener callsites, and final P2-E source guardrails / handoff docs are left for later stories.
+- Next step:
+  - Continue with US-010 by deciding whether Shock duration initialization needs an explicit read helper, backed by the existing duration parity tests and without touching scheduled publish, runtime writes, dynamic dot registration, Calculator, or CalAnomaly.
+---
