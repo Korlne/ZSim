@@ -1450,3 +1450,14 @@
 - Next step:
   - 继续 US-014，更新 handoff docs 和 next candidate pool，保留 P2-B through P2-F 候选块，不要把下一阶段计划收窄成单一路径。
 ---
+## 2026-06-08 14:36 +08:00 - US-014
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - Handoff docs now replace stale “P2-A is next” planning with completed P2-A evidence and promote P2-B `crit / impact reader family package` as the next same-phase default PRD candidate.
+  - `docs/BuffXLogic阶段2全量分类与复用矩阵.md` now marks the six P2-A AM/AP read-then-writeback files as migrated through the reader seam and guarded by focused parity / order / source tests.
+- Compatibility retained:
+  - No production XLogic, Calculator / CalAnomaly formula snapshot, `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime-state, old-container deletion, or same-tick runtime write boundary changed in this handoff story.
+  - P2-B through P2-F, phase-3 formula snapshot replacement, retained compatibility rows, and blocker-only phase-1 reopen rules remain in the next-stage candidate pool.
+- Next step:
+  - 生成下一轮 Ralph PRD 时继续沿 [Buff重构方案.md](./Buff重构方案.md) 的阶段 2 路线，默认从 P2-B crit / impact reader family package 取材，并保留 P2-C through P2-F 候选块。
+---

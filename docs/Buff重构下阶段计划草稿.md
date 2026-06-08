@@ -3,7 +3,7 @@
 ## 当前状态
 
 - 当前总路线已重置。
-- 当前默认阶段已进入“XLogic 全量分析与复用收敛”的 PRD 准备；阶段 1 基础设施解耦已由 `PRD-12 US-024` 关闭。
+- 当前默认阶段仍在阶段 2；阶段 1 基础设施解耦已由 `PRD-12 US-024` 关闭，阶段 2 全量分类与 P2-A AM/AP reader + computed count state-sync package 已完成。
 - Buff 系统现已明确要求采用事件驱动架构。
 - 阶段 1 当前实现基线已经落地：
   - `ScheduleDispatchPort` 已接入 `SchedulePreload`、`QuickAssistSystem`、`UpdateAnomaly`、`BattleEventListener` 中的 `AliceDotTriggerListener`、代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` planned-event 链，以及已收口的 `ElegantVanitySpRecover`、`LunarNoviluna`、`MagneticStormCharlieSpRecover`、`SeedAdditionalAbilityTrigger`、`SliceofTimeExtraResources`、`CannonRotor`、`YanagiPolarityDisorderTrigger`、`HugoCorePassiveTotalizeTrigger`、`DecibelManager`、`MiyabiCoreSkill_IceFire`、`YixuanCinema1Trigger`、`VivianDotTrigger`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger`、`Character/Yuzuha` cinema-6 energy 分支与 `EnemyUniqueMechanic/BreakingLegManager` part-break refresh。
@@ -29,7 +29,7 @@
 - 本 blocker PRD 已完整关闭，默认路线返回阶段 2；只有新的 guardrail / validation / root-workspace source scan 证据暴露 phase-1 production blocker 时，才回到阶段 1 窄修复。
 - 阶段 1 / 阶段 2 的源码复扫必须把 `.codex_worktrees/` 视为本地历史 worktree 快照并默认排除；除非明确审计归档分支，不能把其中的 CodeGraph / `rg` 命中当作当前生产 blocker。最终 blocker 结论必须回到根工作区源码、focused tests 和 validation profiles。
 - 2026-06-08 阶段 2 第一轮分类 PRD 已完成：`docs/BuffXLogic阶段2全量分类与复用矩阵.md` 现在持有非排他分类 schema、149 个 root-workspace `BuffXLogic` census、helper / record / reader / event-adapter / state-sync / handler / listener pattern catalog、风险矩阵与 ranked follow-up pool。
-- 当前默认下一 Ralph PRD 仍沿 [Buff重构方案.md](./Buff重构方案.md) 的阶段顺序留在阶段 2，但从“全量分类”推进到“AM/AP reader + computed count state-sync family”的复用设计与 focused test 包；不要回退到角色驱动式单文件薄切片，也不要直接升级成阶段 3 全面替换。
+- 当前默认下一 Ralph PRD 仍沿 [Buff重构方案.md](./Buff重构方案.md) 的阶段顺序留在阶段 2，但从已完成的 P2-A 推进到“crit / impact reader family package”的 reader parity、state-sync order 与 event-adjacent focused test 包；不要回退到角色驱动式单文件薄切片，也不要直接升级成阶段 3 全面替换。
 
 ## 本文档的用途
 
@@ -50,7 +50,7 @@
 
 ### 下一轮默认 Ralph PRD
 
-`阶段 2：AM/AP reader + computed count state-sync 复用设计与 focused test 包`
+`阶段 2：crit / impact reader family package 复用设计与 focused test 包`
 
 ### 本轮已消解的耦合点
 
@@ -58,40 +58,45 @@
 - 分类轴已固定为非排他：属性读取、事件触发、record / count 写回、anomaly / debuff / dot bypass、`sim_instance` service-location、Calculator / CalAnomaly formula snapshot、listener broadcast、scheduled publish、runtime immediate write、retained compatibility only。
 - 第一轮复用目录已形成：`BuffAttributeReader` helper family、record object catalog、state-sync helper、scheduled event adapter、runtime command / facade、handler pattern、listener pattern、dot / bypass runtime-state adapter、explicit context helper 和 validation entrypoints。
 - 风险矩阵已给出 behavior risk、ordering risk、validation coverage、runtime-boundary risk、rollback complexity 与 likely follow-up PRD size；下一轮不再需要先做一遍全量分类。
+- P2-A 已完成：六个 AM/AP read-then-writeback 文件改为 `create_anomaly_attribute_read_context(...)` + `CalculatorBuffAttributeReader.read_anomaly_mastery(...)` / `read_anomaly_proficiency(...)`，并由 reader parity、state-sync order、source guardrail 和 validation profiles 覆盖。
+- P2-A source guardrail 已阻断六个迁移文件回退到 direct `MultiplierData`、`MultiplierData as Mul`、`Mul(...)` 或 direct `Calculator.AnomalyMul.cal_am/cal_ap(...)` / `Cal.AnomalyMul.cal_am/cal_ap(...)`。
+- P2-A 最终验证已通过：focused pytest `45 passed`，`calculator-reads` profile base `2 passed` / isolated teams `3 passed` / focused `63 passed` / mypy `20 source files` clean，`implicit-events` profile base `2 passed` / isolated teams `3 passed` / focused `105 passed` / mypy `76 source files` clean。
 
 ### 本轮未解决或新暴露的耦合点
 
-- AM / AP direct `MultiplierData` / alias reads 与 computed count writeback 仍未替换；下一轮默认只做 helper / state-sync 设计、focused tests 和最小可验证迁移入口。
-- Impact、full crit rate、personal crit rate、personal crit damage 仍是 reader family 候选，且 full / personal crit 语义不能合并。
-- Trigger-state read-only gates、direct simulator context helpers、scheduled publish ordering parity、dot runtime-state / initialization、`BuffAddStrategy` facade-backed forced writes 都保留为同阶段候选块。
+- Impact、full crit rate、personal crit rate、personal crit damage 仍是 reader family 候选，且 full / personal crit 语义不能合并；这是下一轮默认 P2-B。
+- `LighterAdditionalAbility_IceFireBonus.py`、`QingYiAdditionalAbilityStunConvertToATK.py`、`TriggerAdditionalAbilityStunBonus.py`、`Soldier0AnbyCoreSkillCritDMGBonus.py` 仍代表 read-then-writeback risk；`CannonRotor.py`、`MiyabiCoreSkill_IceFire.py`、`WoodpeckerElectroSet4_*` 仍代表 crit reader / RNG / event-adjacent risk。
+- Trigger-state read-only gates、direct simulator context helpers、scheduled publish ordering parity、dot runtime-state / initialization、`BuffAddStrategy` facade-backed forced writes 都保留为同阶段候选块，不能因为 P2-B 成为默认就从候选池删除。
 - Formula snapshots、CalAnomaly internals、old containers、legacy `buff_add()` / `KickOutBuff()` 和 deleted raw queue discovery surfaces 仍是 retained compatibility / phase-3 / blocker-only 项，不是下一轮默认替换目标。
 
 ### 已确认事件 / 上下文 / 顺序约束
 
-- `simple_start(..., no_count=1) -> dy.count -> update_to_buff_0(...)` 是 AM/AP 和部分 count 写回故事必须先锁定的顺序，不应被泛化 helper 隐藏。
+- P2-A 已用 focused tests 锁定 `simple_start(..., no_count=1) -> dy.count -> update_to_buff_0(...)`；P2-B 若触达 impact / crit read-then-writeback，必须先建立同等顺序测试，不能只替换 reader 表达式。
+- full crit rate helper 必须保留 `crit_rate_received_increase` 语义；personal crit rate / damage helper 不能包含 received crit，且 AP-to-crit-rate 文件不能误归入 personal crit reader。
 - `LoadingMission.mission_start(...) -> ScheduleDispatchPort.publish_scheduled(...)`、publish 后 record reset、payload target / priority / fan-out 等 order 证据仍由 scheduled-publish focused tests 保护。
 - listener broadcast、scheduled queue publish、dot runtime registration / removal、runtime immediate write 是四层边界；下一轮不得合并为一个 event bus。
 - `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 仍是唯一 same-tick command boundary；`BuffRuntimeReadPort` 保持只读，不扩成 write API。
 - `.codex_worktrees/` 仍只作为历史 worktree 快照；PRD blocker 必须回到 root-workspace source、focused tests 和 validation profiles。
+- validation profiles 必须串行执行；当前注册队伍没有 Alice / Yuzuha / Jane 样本，P2-A 未运行 main-loop sample 的原因已记录，后续若 P2-B 候选存在真实 registered team 才运行 behavior sample。
 
 ### 阶段 2 同阶段候选池
 
-#### 候选块 P2-A：AM/AP reader + computed count state-sync（当前默认）
+#### 候选块 P2-A：AM/AP reader + computed count state-sync（已完成 / guardrail 维护）
 
 - 候选文件 / 符号：`AliceAdditionalAbilityApBonus.py`、`YuzuhaAdditionalAbilityAnomalyBuildupBonus.py`、`YuzuhaAdditionalAbilityAnomalyDmgBonus.py`、`JaneCinema1APTransToDmgBonus.py`、`JaneCoreSkillStrikeCritRateBonus.py`、`JanePassionStateAPTransToATK.py`、已有 AM / AP reader samples。
-- 当前耦合：direct `MultiplierData` / alias reads、`dynamic_buff_list=1`、computed count writeback、`simple_start(..., no_count=1)`、`dy.count`、`update_to_buff_0(...)`。
-- 可拆工作方向：先设计 reusable reader + state-sync harness，补 focused order tests；只有 parity 和顺序测试绿色后才迁移代表入口。
+- 当前状态：六个文件已从 direct `MultiplierData` / alias reads 迁到 AM/AP reader seam；`dynamic_buff_list` 只作为 `BuffAttributeReadContext.active_buff_view` 输入保留，computed count writeback 顺序由 focused tests 和 source guardrail 保护。
+- 可拆工作方向：不再作为默认实现 backlog；后续只在 source guardrail、focused parity/order tests 或 validation profile 暴露具体回归时开 blocker 修复。
 - 必须保留：`MultiplierData` formula snapshot、old `buff_0` identity、record fields、state-sync order。
-- 验证入口：`calculator-reads`，并新增或扩展 focused state-sync pytest；若触达 event-adjacent 文件再加 `implicit-events`。
+- 验证入口：`calculator-reads` 与 `implicit-events` 已通过；维护时先跑 `tests/simulator/test_migrated_am_ap_reader_guardrail.py`、`tests/simulator/test_buff_attribute_reader.py`、`tests/simulator/test_buff_attribute_state_sync.py`。
 - 非目标：不做 scheduled publish 迁移，不重写 Calculator 公式，不删除旧容器。
 
-#### 候选块 P2-B：crit / impact reader family package
+#### 候选块 P2-B：crit / impact reader family package（当前默认）
 
 - 候选文件 / 符号：`LighterAdditionalAbility_IceFireBonus.py`、`QingYiAdditionalAbilityStunConvertToATK.py`、`CannonRotor.py`、`MiyabiCoreSkill_IceFire.py`、`WoodpeckerElectroSet4_*`、`TriggerAdditionalAbilityStunBonus.py`、`Soldier0AnbyCoreSkillCritDMGBonus.py`。
 - 当前耦合：impact、full crit rate、personal crit rate、personal crit damage 混合 read-only gate、RNG / event-adjacent read 与 count writeback。
-- 可拆工作方向：分别设计 `read_impact(...)`、`read_full_crit_rate(...)`、`read_personal_crit_rate(...)`、`read_personal_crit_damage(...)` 候选，先补 helper parity 和 count/order tests。
+- 可拆工作方向：分别设计 `read_impact(...)`、`read_full_crit_rate(...)`、`read_personal_crit_rate(...)`、`read_personal_crit_damage(...)` 候选；先补 helper parity、full-vs-personal semantics tests、count/order tests，再迁移代表入口。
 - 必须保留：full crit 包含 received crit；personal crit 不包含 received crit；已有 event publishers 保持 `ScheduleDispatchPort`。
-- 验证入口：`calculator-reads`；event-adjacent paths 加 `implicit-events`。
+- 验证入口：`calculator-reads`；event-adjacent paths 加 `implicit-events`，若触达 scheduled publish ordering 则加 file-specific dispatch tests。
 - 非目标：不把 full / personal crit 语义合并，不做 one-file Trigger / Soldier 薄 PRD。
 
 #### 候选块 P2-C：trigger-state read-only gates
@@ -143,7 +148,8 @@
 - 必跑：`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`
 - 若触达生命周期容器或 runtime 写路径，追加：`uv run python scripts/run_buff_refactor_validation.py`
 - 若触达 `Calculator` seam，追加：`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads`
-- 若采用当前默认 AM/AP reader + computed count state-sync PRD，除 `calculator-reads` 外必须新增或扩展 focused pytest，锁定 `simple_start(..., no_count=1)`、`dy.count` 和 `update_to_buff_0(...)` 的相对顺序。
+- 若采用当前默认 P2-B crit / impact reader family PRD，除 `calculator-reads` 外必须新增或扩展 focused pytest，分别锁定 impact、full crit、personal crit rate、personal crit damage parity；任何 read-then-writeback 文件还要锁定 `simple_start(...)`、`dy.count` 和 `update_to_buff_0(...)` 的相对顺序。
+- 若维护已完成 P2-A 文件，必须保留 migrated-source guardrail 范围和 `.codex_worktrees/` 排除，不得把 guardrail 扩成阻断未迁移 P2-B / P2-C 候选。
 - 若故事改动了验证命令契约、帮助文本或执行路径，补跑对应的 `--help` / focused pytest / 样例命令，而不是继续引用占位入口。
 - 上述验证命令应串行执行，不要并发跑多个 profile；它们会共享 sqlite `sessions` 数据与异步日志写线程，并发时容易制造假失败。
 
@@ -284,17 +290,18 @@ PRD-12 已按候选块 B/C/D/E 完成阶段 1 基础设施收口样本、guardra
 - [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md)
   重点先看 `6.6`、`6.7`、`6.8`、`6.9`
 - [BuffXLogic阶段2全量分类与复用矩阵.md](./BuffXLogic阶段2全量分类与复用矩阵.md)
-  重点先看 `US-008 复用模式目录与风险矩阵`、`Ranked follow-up pool` 和当前默认 P2-A 候选文件。
+  重点先看 `US-008 复用模式目录与风险矩阵`、`Ranked follow-up pool`、P2-A completion update 和当前默认 P2-B 候选文件。
 - [Buff系统重构Checklist.md](./Buff系统重构Checklist.md)
 - `scripts/ralph/progress.txt`
   重点先看 `## Codebase Patterns`
 
 ## Phase 2 分类 PRD 后的下一轮调查提纲
 
-阶段 2 第一轮已完成“XLogic 全量分析与复用收敛”的分类与设计产物。下一轮 PRD 不再重复 census，而是从 ranked pool 中选择一个同风险面、同验证入口、同回滚方式的 coherent bucket，优先从 P2-A 开始：
+阶段 2 第一轮已完成“XLogic 全量分析与复用收敛”的分类与设计产物，P2-A AM/AP reader + computed count state-sync package 也已完成。下一轮 PRD 不再重复 census，也不继续沿六个已迁移 AM/AP 文件做薄切片，而是从 ranked pool 中选择一个同风险面、同验证入口、同回滚方式的 coherent bucket，当前默认从 P2-B 开始：
 
-- 哪些 AM/AP XLogic 已经可以通过现有 `BuffAttributeReader` 代表样本证明 reader parity。
-- 哪些 computed count writeback 必须先补 `simple_start(...) -> dy.count -> update_to_buff_0(...)` focused order tests。
+- 哪些 impact / crit XLogic 可以通过新的 reader parity fixture 证明与现有 Calculator helper 等价。
+- 哪些 full crit rate、personal crit rate、personal crit damage 语义必须拆开验证，不能合并成一个 reader。
+- 哪些 impact / crit computed count writeback 必须先补 `simple_start(...) -> dy.count -> update_to_buff_0(...)` focused order tests。
 - 哪些文件只是 read-only gate，不能混入读后写回 helper。
 - 哪些 event-adjacent reader files 需要同时保留 `ScheduleDispatchPort` order tests。
 - 哪些旧模板身份、record 字段和 `history.record` lazy init 仍必须作为 retained compatibility input。

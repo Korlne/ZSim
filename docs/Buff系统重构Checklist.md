@@ -187,10 +187,20 @@
 - [x] 本 PRD 没有替换 live XLogic、runtime port、facade、dispatch adapter、listener、Dot 或 validation wiring；它只完成分类、复用设计与 handoff 同步。
 - [x] 验证基线：`implicit-events` 与 `calculator-reads` profiles 在分类 stories 中均已串行通过；US-009 final validation 继续复跑这两个入口。
 
+## 本轮阶段 2 AM/AP reader + computed count state-sync PRD 收口状态（2026-06-08）
+
+- [x] P2-A 六个 root-workspace 文件已完成 AM/AP reader 迁移：`AliceAdditionalAbilityApBonus.py`、`YuzuhaAdditionalAbilityAnomalyBuildupBonus.py`、`YuzuhaAdditionalAbilityAnomalyDmgBonus.py`、`JaneCinema1APTransToDmgBonus.py`、`JaneCoreSkillStrikeCritRateBonus.py`、`JanePassionStateAPTransToATK.py`。
+- [x] `create_anomaly_attribute_read_context(...)` 只承担 `BuffAttributeReadContext` 构造；各 XLogic 文件仍显式保留 `read_anomaly_mastery(...)` / `read_anomaly_proficiency(...)`、阈值 / count 公式、`simple_start(..., no_count=1) -> dy.count -> update_to_buff_0(...)` 顺序。
+- [x] `tests/simulator/test_buff_attribute_reader.py`、`tests/simulator/test_buff_attribute_state_sync.py` 与 `tests/simulator/test_migrated_am_ap_reader_guardrail.py` 已覆盖 reader parity、computed count state-sync 顺序、source guardrail 与 `.codex_worktrees/` 排除。
+- [x] 验证基线：US-013 已串行通过 focused pytest `45 passed`、`calculator-reads` profile（base `2 passed`、isolated teams `3 passed`、focused `63 passed`、mypy `20 source files` clean）与 `implicit-events` profile（base `2 passed`、isolated teams `3 passed`、focused `105 passed`、mypy `76 source files` clean）。
+- [x] 当前注册队伍不含 Alice / Yuzuha / Jane 代表样本，未运行 main-loop behavior sample；本轮以 parity / order / guardrail tests 与两个 validation profiles 作为 P2-A 收口证据。
+- [x] P2-A 没有重写 Calculator / CalAnomaly 公式，没有删除 old containers，没有重开 raw queue、`ScheduleDispatchPort`、`RuntimeCommandPort`、listener broadcast、dot runtime registration 或 same-tick runtime write 边界。
+
 ## 当前默认下一步
 
 - [x] `US-024` 已完成 closure decision，没有输出 phase-1 blocker package；不得继续生成新的阶段 1 实现 PRD，除非 guardrail / validation 给出新的生产失败证据。
 - [x] 阶段 2 第一轮“全量分类、复用方法 / 记录对象 / stat reader / event adapter / state sync / handler / listener pattern 清单与风险矩阵”已完成；后续不再把“做全量分类”当默认下一步。
-- [ ] 下一轮默认 PRD 应沿 [Buff重构方案.md](./Buff重构方案.md) 继续留在阶段 2，优先选择 “AM/AP reader + computed count state-sync family” 作为复用设计与 focused test 包，而不是单文件薄切片或阶段 3 全面替换。
-- [ ] 同阶段候选池必须继续保留 crit / impact reader family、trigger-state read-only gates、scheduled publish ordering parity、dot runtime-state / initialization、BuffAddStrategy caller / facade-write design 与 phase-3-only formula snapshot replacement，避免 PRD 生成器只沿上一个文件继续。
+- [x] P2-A “AM/AP reader + computed count state-sync family” 已完成；后续不再把六个已迁移文件当默认实现 backlog，除非 source guardrail 或 validation 给出具体回归证据。
+- [ ] 下一轮默认 PRD 应沿 [Buff重构方案.md](./Buff重构方案.md) 继续留在阶段 2，优先选择 “crit / impact reader family package” 作为 P2-B reader parity + state-sync focused test 包，而不是单文件薄切片或阶段 3 全面替换。
+- [ ] 同阶段候选池必须继续保留 trigger-state read-only gates、scheduled publish ordering parity、dot runtime-state / initialization、BuffAddStrategy caller / facade-write design 与 phase-3-only formula snapshot replacement，避免 PRD 生成器只沿上一个文件继续。
 - [ ] 若后续 validation 或 guardrail 重新暴露阶段 1 blocker，下一轮 PRD 只处理 blocker package 中列出的具体文件、符号、失败测试、失败 guardrail 或验证命令；不得重开已删除的 `event_list` surface 或已闭合的 producer batch，除非 guardrail 给出新的生产证据。
