@@ -1427,3 +1427,15 @@
 - Next step:
   - 继续 US-012，为六个已迁移的 P2-A AM/AP 文件添加 source guardrail，防止 direct `MultiplierData(...)` / `Mul(...)` / `Calculator.AnomalyMul.cal_am/cal_ap(...)` 读口回流，同时保留 P2-B crit / impact reader 候选池。
 ---
+## 2026-06-08 14:24 +08:00 - US-012
+- Files changed: `tests/simulator/test_migrated_am_ap_reader_guardrail.py`, `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_migrated_am_ap_reader_guardrail.py` replaces the remaining unguarded source surface for the six migrated P2-A AM/AP files by blocking direct `MultiplierData` imports, `MultiplierData(...)` / `Mul(...)`, and direct `Calculator.AnomalyMul.cal_am/cal_ap(...)` or `Cal.AnomalyMul.cal_am/cal_ap(...)` reads.
+  - `scripts/run_buff_refactor_validation.py` now prepares future `calculator-reads` runs to catch legacy AM/AP reader reintroduction through both focused pytest and mypy target lists.
+- Compatibility retained:
+  - The guardrail intentionally scans only the six root migrated P2-A files and excludes `.codex_worktrees/`.
+  - `zsim/sim_progress/ScheduledEvent/Calculator.py`, `zsim/sim_progress/ScheduledEvent/CalAnomaly.py`, and non-migrated phase-2 candidate buckets remain retained formula snapshot locations until their own PRDs run.
+  - No live `BuffXLogic` behavior, count formula, state-sync order, `ScheduleDispatchPort`, `RuntimeCommandPort`, old-container deletion, scheduled publish, listener broadcast, or same-tick runtime write boundary changed in this story.
+- Next step:
+  - 继续 US-013，串行运行最终 focused validation / behavior sample decision，并把结果记录到 Ralph progress；不要把 P2-A guardrail 扩展成 P2-B crit / impact reader work。
+---
