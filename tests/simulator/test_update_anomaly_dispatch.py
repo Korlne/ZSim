@@ -6,7 +6,9 @@ import numpy as np
 
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 from zsim.sim_progress.Dot.BaseDot import Dot
+from zsim.sim_progress.Update import UpdateAnomaly as update_anomaly_module
 from zsim.sim_progress.Update.UpdateAnomaly import (
+    anomaly_effect_active,
     remove_dots_cause_disorder,
     update_anomaly,
 )
@@ -28,6 +30,37 @@ class _RecordingEventList(list):
         if self._call_order is not None:
             self._call_order.append(("publish", item))
         super().append(item)
+
+
+class _RecordingDotRuntimeList(list):
+    def __init__(
+        self,
+        call_order: list[tuple[str, object]],
+        items: list[object] | None = None,
+    ) -> None:
+        super().__init__(items or [])
+        self._call_order = call_order
+
+    def append(self, item):
+        self._call_order.append(("dot_append", item.ft.index))
+        super().append(item)
+
+    def remove(self, item):
+        self._call_order.append(("dot_remove", item.ft.index))
+        super().remove(item)
+
+
+class _FailFastDotRuntimeList(list):
+    def append(self, item):
+        raise AssertionError("debuff-only anomaly effects should not register runtime dots")
+
+    def remove(self, item):
+        raise AssertionError("debuff-only anomaly effects should not remove runtime dots")
+
+
+class _ForbiddenListenerManager:
+    def broadcast_event(self, **kwargs):
+        raise AssertionError("dot replacement should not use listener broadcast")
 
 
 class _ForbiddenRuntimeCommandPort:
@@ -217,6 +250,130 @@ def test_update_anomaly_preserves_new_anomaly_then_disorder_order_via_dispatch_p
     assert disorder.activated_by is skill_node
     assert disorder.is_disorder is True
     assert disorder.schedule_priority == 999
+
+
+def test_anomaly_effect_active_replaces_same_index_dot_without_scheduled_publish(
+    monkeypatch,
+):
+    call_order: list[tuple[str, object]] = []
+    sim_instance = _build_sim_instance(_FailFastEventList())
+    sim_instance.listener_manager = _ForbiddenListenerManager()
+    enemy = _build_enemy(sim_instance)
+    old_dot = _FakeDot(index="Shock", call_order=call_order)
+    unrelated_dot = _FakeDot(index="Ignite", call_order=call_order)
+    new_dot = _FakeDot(index="Shock", call_order=call_order)
+    enemy.dynamic.dynamic_dot_list = _RecordingDotRuntimeList(
+        call_order,
+        [unrelated_dot, old_dot],
+    )
+    new_anomaly = SimpleNamespace(marker="new-shock-anomaly")
+    spawn_calls: list[tuple[object, int, object, object]] = []
+
+    def fake_spawn_anomaly_dot(element_type, timenow, *, bar, sim_instance):
+        spawn_calls.append((element_type, timenow, bar, sim_instance))
+        return new_dot
+
+    monkeypatch.setattr(
+        update_anomaly_module,
+        "spawn_anomaly_dot",
+        fake_spawn_anomaly_dot,
+    )
+
+    anomaly_effect_active(
+        SimpleNamespace(accompany_debuff=None, accompany_dot="Shock"),
+        77,
+        enemy,
+        new_anomaly,
+        3,
+        sim_instance,
+    )
+
+    assert spawn_calls == [(3, 77, new_anomaly, sim_instance)]
+    assert old_dot.ended_at == 77
+    assert enemy.dynamic.dynamic_dot_list == [unrelated_dot, new_dot]
+    assert enemy.dynamic.dynamic_dot_list.count(new_dot) == 1
+    assert call_order == [
+        ("dot_end", "Shock"),
+        ("dot_remove", "Shock"),
+        ("dot_append", "Shock"),
+    ]
+
+
+def test_anomaly_effect_active_spawn_false_leaves_runtime_dot_list_unchanged(
+    monkeypatch,
+):
+    call_order: list[tuple[str, object]] = []
+    sim_instance = _build_sim_instance(_FailFastEventList())
+    sim_instance.listener_manager = _ForbiddenListenerManager()
+    enemy = _build_enemy(sim_instance)
+    existing_dot = _FakeDot(index="Shock", call_order=call_order)
+    enemy.dynamic.dynamic_dot_list = _RecordingDotRuntimeList(
+        call_order,
+        [existing_dot],
+    )
+
+    monkeypatch.setattr(
+        update_anomaly_module,
+        "spawn_anomaly_dot",
+        lambda *args, **kwargs: False,
+    )
+
+    anomaly_effect_active(
+        SimpleNamespace(accompany_debuff=None, accompany_dot="Shock"),
+        88,
+        enemy,
+        SimpleNamespace(marker="new-shock-anomaly"),
+        3,
+        sim_instance,
+    )
+
+    assert existing_dot.ended_at is None
+    assert enemy.dynamic.dynamic_dot_list == [existing_dot]
+    assert call_order == []
+
+
+def test_anomaly_effect_active_debuff_branch_uses_existing_buff_add_path(
+    monkeypatch,
+):
+    sim_instance = _build_sim_instance(_FailFastEventList())
+    sim_instance.listener_manager = _ForbiddenListenerManager()
+    enemy = _build_enemy(sim_instance)
+    enemy.dynamic.dynamic_dot_list = _FailFastDotRuntimeList()
+    buff_calls: list[tuple[str, object]] = []
+
+    def fake_buff_add_strategy(buff_index, **kwargs):
+        buff_calls.append((buff_index, kwargs["sim_instance"]))
+
+    monkeypatch.setattr(
+        update_anomaly_module,
+        "buff_add_strategy",
+        fake_buff_add_strategy,
+    )
+    monkeypatch.setattr(
+        update_anomaly_module,
+        "spawn_anomaly_dot",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("debuff-only anomaly effects should not spawn runtime dots")
+        ),
+    )
+
+    anomaly_effect_active(
+        SimpleNamespace(
+            accompany_debuff=["Buff-异常-畏缩", "Buff-异常-霜寒"],
+            accompany_dot=None,
+        ),
+        90,
+        enemy,
+        SimpleNamespace(marker="new-anomaly"),
+        1,
+        sim_instance,
+    )
+
+    assert buff_calls == [
+        ("Buff-异常-畏缩", sim_instance),
+        ("Buff-异常-霜寒", sim_instance),
+    ]
+    assert enemy.dynamic.dynamic_dot_list == []
 
 
 def test_remove_dots_cause_disorder_publishes_freeze_follow_up_via_dispatch_port():

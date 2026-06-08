@@ -1972,3 +1972,14 @@
 - Next step:
   - Continue with US-005 by adding `UpdateAnomaly.anomaly_effect_active(...)` dot replacement and debuff-separation focused coverage before introducing any dot runtime-state helper / adapter.
 ---
+## 2026-06-09 03:33 +08:00 - US-005
+- Files changed: `tests/simulator/test_update_anomaly_dispatch.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_update_anomaly_dispatch.py` prepares to replace manual `UpdateAnomaly.anomaly_effect_active(...)` dot replacement review by pinning same-index old-dot `end(timenow)`, runtime list removal, new-dot append-once behavior, `spawn_anomaly_dot(...) == False` no-mutation behavior, and `buff_add_strategy(...)` debuff separation.
+  - This story strengthens focused parity coverage only; no live `UpdateAnomaly`, dot runtime-state helper, dispatch adapter, listener, runtime command, old-container, Calculator, or CalAnomaly behavior was replaced in this iteration.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `anomaly_effect_active(...)` still calls `buff_add_strategy(...)` for accompanying debuffs, uses `spawn_anomaly_dot(...)` for accompanying dots, mutates `enemy.dynamic.dynamic_dot_list` directly for replacement, and leaves the historical `# event_list.append(new_dot)` comment as non-production text.
+  - Scheduled publish, listener broadcast, same-tick runtime writes, `RuntimeCommandPort`, `BuffRuntimeReadPort`, old containers, `CalAnomaly`, and anomaly formulas remain unchanged.
+- Next step:
+  - Continue with US-006 by adding `remove_dots_cause_disorder(...)` non-freeze removal, freeze mutation, process-state, and invalid-entry coverage before introducing the dot runtime-state helper / adapter.
+---
