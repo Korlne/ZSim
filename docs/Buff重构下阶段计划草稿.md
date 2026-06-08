@@ -25,7 +25,8 @@
 - 2026-06-07 `PRD-12 US-024` 已完成阶段 1 closure decision：候选块 B/C/D/E 均已有 audit、代表性实现或 guardrail / validation evidence，`implicit-events`、`calculator-reads` 与默认 lifecycle validation profile 在 US-024 串行复跑通过，未输出 phase-1 blocker package。
 - PRD-12 closure 不删除旧容器，也不把 sample CLI label 当 live runtime switch；`exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT`、legacy `buff_add()`、legacy `KickOutBuff()`、Calculator / CalAnomaly 公式快照、handler requeue、damage continuation、dot runtime registration 与 listener broadcast 都仍按各自 retained boundary 保留。
 - 2026-06-08 gap-closure blocker PRD 已把 `docs/查漏补缺.md` 中的 `ScheduleBuffSettle.py` guardrail / validation 覆盖缺口收敛为 retained-boundary 守门：`ScheduleBuffSettle.py` 进入 raw old-container guardrail 扫描和 `lifecycle` / `implicit-events` scoped mypy targets，分类为 `legacy ScheduleBuffSettle command-adapter internals`。这不是 live runtime path 替换，也不重开已闭合 producer batch。
-- 本 blocker PRD 完整关闭后，默认路线返回阶段 2；只有新的 guardrail / validation / root-workspace source scan 证据暴露 phase-1 production blocker 时，才回到阶段 1 窄修复。
+- 2026-06-08 gap-closure blocker PRD 已完整关闭：root-workspace source scan 排除 `.codex_worktrees/` 后未发现新的 production-level raw `event_list` producer，也未发现 handler/helper 直接调用 `ScheduleBuffSettle(...)`；CodeGraph 命中的 `.codex_worktrees/` direct caller 仅作为历史快照证据处理。`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`ScheduleDispatchPort`、`BuffRuntimeReadPort` 与 `LegacyBuffRuntimeFacade` retained boundaries 保持 intact。
+- 本 blocker PRD 已完整关闭，默认路线返回阶段 2；只有新的 guardrail / validation / root-workspace source scan 证据暴露 phase-1 production blocker 时，才回到阶段 1 窄修复。
 - 阶段 1 / 阶段 2 的源码复扫必须把 `.codex_worktrees/` 视为本地历史 worktree 快照并默认排除；除非明确审计归档分支，不能把其中的 CodeGraph / `rg` 命中当作当前生产 blocker。最终 blocker 结论必须回到根工作区源码、focused tests 和 validation profiles。
 - 当前默认下一 Ralph PRD 应进入阶段 2：XLogic 全量分析与复用收敛。阶段 2 的第一轮只做分类、复用清单与风险矩阵，不直接进入阶段 3 的具体替换。
 - 下一轮路线仍然严格遵循 [Buff重构方案.md](./Buff重构方案.md) 中的阶段顺序，不回退到角色驱动式切片，也不把阶段 2 的分类工作直接升级成单个 XLogic 替换故事。

@@ -1197,3 +1197,14 @@
 - Next step:
   - Continue with US-006 final validation and closure handoff; after closure, the default route returns to phase 2 unless new guardrail, validation, or root-workspace source-scan evidence appears.
 ---
+## 2026-06-08 08:23 - US-006
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The final closure handoff replaces the temporary phase-1 blocker-open state with validated closure evidence and restores the default route to phase 2 XLogic full classification / reuse convergence.
+  - No live simulator runtime path was replaced in this story; it closes validation and documentation around the retained `ScheduleBuffSettle.py` guardrail boundary.
+- Compatibility retained:
+  - `ScheduleBuffSettle.py` remains retained `legacy ScheduleBuffSettle command-adapter internals` behind `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter`.
+  - No old container was deleted, no `event_list` surface was reopened, no producer batch was restarted, and scheduled queue publish / listener broadcast / runtime immediate write remain separate layers.
+- Next step:
+  - Start the next PRD from phase 2: XLogic full classification and reuse convergence, unless new guardrail, validation, or root-workspace source-scan evidence exposes a concrete phase-1 production blocker.
+---

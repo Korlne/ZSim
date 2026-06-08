@@ -174,6 +174,7 @@
 - [x] `US-024` 已基于 completion matrix、guardrail matrix、serial validation 和 handoff docs 声明阶段 1 基础设施解耦关闭；阶段 2 可以作为下一轮 PRD 默认入口。
 - [x] 2026-06-08 gap-closure guardrail evidence 已补齐 `zsim/sim_progress/Buff/ScheduleBuffSettle.py` raw old-container guardrail 覆盖，并将其纳入 `lifecycle` 与 `implicit-events` scoped mypy targets；当前旧容器写入只按 `legacy ScheduleBuffSettle command-adapter internals` retained boundary 和 ceiling 保留。
 - [x] 该 gap-closure PRD 不替换 live runtime path，不删除旧容器，不重开已删除的 `event_list` surface，不重启已闭合的 producer batch，也不合并 listener broadcast / scheduled queue / runtime write 分层；完整 closure 后默认路线仍返回阶段 2。
+- [x] gap-closure final validation 已通过：`implicit-events` profile 基础 `2 passed`、隔离队伍 `3 passed`、focused `105 passed`、mypy `76 source files` clean；默认 lifecycle profile 基础 `2 passed`、隔离队伍 `3 passed`、focused raw-container guardrail `18 passed`、mypy `9 source files` clean。root-workspace scan 未新增 production raw `event_list` producer 或 handler/helper direct `ScheduleBuffSettle(...)` caller，阶段 2 仍是下一轮默认入口。
 
 ## 当前默认下一步
 
