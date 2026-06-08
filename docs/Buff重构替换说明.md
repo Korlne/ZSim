@@ -1927,3 +1927,14 @@
 - Next step:
   - Generate the next phase-2 PRD from [Buff重构方案.md](./Buff重构方案.md), defaulting to P2-E dot runtime-state / initialization while preserving P2-F BuffAddStrategy facade-write design, direct simulator context helpers, P2-D guarded maintenance, phase-3 formula snapshots, retained compatibility rows, and blocker-only phase-1 reopen rules.
 ---
+## 2026-06-09 03:04 +08:00 - US-001
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - This evidence-only story prepares P2-E dot runtime-state / initialization coverage to replace manual scope review for `VivianDotTrigger.special_hit_logic(...)`, `VivianCinema1Debuff.special_judge_logic(...)`, `Shock.DotFeature.__post_init__()`, `UpdateAnomaly.anomaly_effect_active(...)`, `spawn_anomaly_dot(...)`, and `remove_dots_cause_disorder(...)`.
+  - No live `BuffXLogic`, `UpdateAnomaly`, `Dot`, dispatch adapter, listener, runtime command, facade, old-container, Calculator, or CalAnomaly behavior was replaced in this iteration.
+- Compatibility retained:
+  - Old paths still retained in this iteration: Vivian dot registration still mutates `enemy.dynamic.dynamic_dot_list`, Shock duration still reads the documented Rina passive inputs, UpdateAnomaly dot replacement / removal still mutates runtime dot state, Vivian and freeze follow-up scheduled payloads still publish through `ScheduleDispatchPort`, and debuff writes still route through `buff_add_strategy(...)`.
+  - P2-A / P2-B / P2-C / P2-D completed buckets, phase-1 raw queue deletion, old-container deletion, listener broadcast, `RuntimeCommandPort`, `BuffRuntimeReadPort` read-only semantics, direct simulator context candidates, and Calculator / CalAnomaly formula snapshots remain unchanged.
+- Next step:
+  - Continue with US-002 by auditing existing dot coverage and defining a minimal dot runtime-state contract before adding helper / adapter production code.
+---
