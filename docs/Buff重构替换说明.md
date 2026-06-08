@@ -1186,3 +1186,14 @@
 - Next step:
   - Continue with US-005 by documenting `.codex_worktrees` audit hygiene without mutating historical worktrees.
 ---
+## 2026-06-08 08:15 - US-005
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `docs/Buff重构下阶段计划草稿.md` and Ralph progress now replace ambiguous phase-1 / phase-2 source-scan handoff wording with an explicit `.codex_worktrees/` exclusion and root-workspace evidence rule.
+  - No live simulator runtime path was replaced in this story; it documents audit hygiene for historical local worktree snapshots.
+- Compatibility retained:
+  - `.codex_worktrees/` remains untouched and is historical local worktree evidence only unless a future story explicitly audits archived branches.
+  - Existing guardrail and validation scripts were not changed; `ScheduleBuffSettle.py` remains covered by the retained `legacy ScheduleBuffSettle command-adapter internals` guardrail and scoped typecheck profile.
+- Next step:
+  - Continue with US-006 final validation and closure handoff; after closure, the default route returns to phase 2 unless new guardrail, validation, or root-workspace source-scan evidence appears.
+---
