@@ -50,7 +50,7 @@
 
 ### 下一轮默认 Ralph PRD
 
-`阶段 2：trigger-state read-only gates 旧模板状态读口与 focused no-write gate 包`
+`阶段 2：scheduled publish ordering / adapter parity focused 覆盖包`
 
 ### 本轮已消解的耦合点
 
@@ -64,24 +64,27 @@
 - P2-B 已完成：`LighterAdditionalAbility_IceFireBonus.py`、`QingYiAdditionalAbilityStunConvertToATK.py`、`TriggerAdditionalAbilityStunBonus.py`、`Soldier0AnbyCoreSkillCritDMGBonus.py`、`CannonRotor.py`、`MiyabiCoreSkill_IceFire.py` 与 `WoodpeckerElectroSet4_*` 九个 root 文件已改用 `CalculatorBuffAttributeReader.read_impact(...)` / `read_full_crit_rate(...)` / `read_personal_crit_rate(...)` / `read_personal_crit_damage(...)`。
 - P2-B 已由 reader parity、state-sync order、full-crit event-adjacent tests、file-specific dispatch tests、`tests/simulator/test_migrated_p2b_reader_guardrail.py` 与 `.codex_worktrees/` 排除 guardrail 覆盖；retained Calculator / CalAnomaly formula snapshots 仍允许。
 - P2-B 最终验证已通过：focused pytest `107 passed`，`calculator-reads` profile base `2 passed` / isolated teams `3 passed` / focused `129 passed` / mypy `22 source files` clean，`implicit-events` profile base `2 passed` / isolated teams `3 passed` / focused `136 passed` / mypy `77 source files` clean；`莱特火属性队` stop-tick 600 consistency sample `matches=true`，总伤 `646446.67` vs `646446.67`，event count `19` vs `19`，buff timeline 差异为零。
+- P2-C 已完成：`TriggerBuffState` / `read_trigger_buff_state(record)` 建立旧模板 trigger Buff state 只读快照，`FlamemakerShakerApBonus.py`、`SpectralGazeImpactBonus.py`、`SharpenedStingerAnomalyBuildupBonus.py`、`CordisGerminaSNAAndQIgnoreDefense.py` 与 `AstralVoice.py` 已迁移到 helper，并保留 `check_preparation(..., trigger_buff_0=...)`、旧模板 Buff identity 与 `history.record` lazy init。
+- P2-C 已由 `tests/simulator/test_trigger_state_read_only_gates.py`、`tests/simulator/test_migrated_p2c_trigger_state_guardrail.py` 与 `implicit-events` 覆盖；guardrail 只扫描五个已迁移 root 文件并排除 `.codex_worktrees/`，不阻断剩余 `trigger_buff_0=` pool。
+- P2-C 最终验证已通过：`implicit-events` profile base `2 passed` / isolated teams `3 passed` / focused `181 passed` / mypy `80 source files` clean；`席德大安比队` stop-tick 1000 consistency sample `matches=true`，总伤 `5744827.24` vs `5744827.24`，event count `50` vs `50`，buff timeline 差异为零。
 
 ### 本轮未解决或新暴露的耦合点
 
-- Trigger-state read-only gates 仍未迁移：`trigger_buff_0=`、旧模板 Buff identity、`history.record` lazy init 与 read-only gate 分支需要 P2-C focused tests 和显式 read contract，这是下一轮默认 P2-C。
-- Direct simulator context helpers、scheduled publish ordering parity、dot runtime-state / initialization、`BuffAddStrategy` facade-backed forced writes 都保留为同阶段候选块，不能因为 P2-B 已完成就从候选池删除。
-- P2-B impact / crit reader family 不再作为默认实现 backlog；后续只在 source guardrail、reader parity、state-sync order、dispatch tests 或 validation profile 暴露具体回归时开窄 blocker。
+- P2-D scheduled publish ordering / adapter parity 仍未补齐为 completed bucket：已迁移 `ScheduleDispatchPort` producers 需要按 payload / target / priority / `mission_start(...)` / publish-before-or-after-reset 语义扩展 focused parity 覆盖，这是下一轮默认 P2-D。
+- Direct simulator context helpers、dot runtime-state / initialization、`BuffAddStrategy` facade-backed forced writes、phase-3 formula snapshot replacement 都保留为同阶段或后续候选块，不能因为 P2-C 已完成就从候选池删除。
+- P2-A / P2-B / P2-C 不再作为默认实现 backlog；后续只在 source guardrail、reader parity、trigger-state no-write / order tests、dispatch tests 或 validation profile 暴露具体回归时开窄 blocker。
 - Formula snapshots、CalAnomaly internals、old containers、legacy `buff_add()` / `KickOutBuff()` 和 deleted raw queue discovery surfaces 仍是 retained compatibility / phase-3 / blocker-only 项，不是下一轮默认替换目标。
 
 ### 已确认事件 / 上下文 / 顺序约束
 
 - P2-A / P2-B 已用 focused tests 锁定 reader parity 与 `simple_start(...)`、`dy.count`、`update_to_buff_0(...)` 相对顺序；维护已迁移文件时先跑对应 source guardrail 和 focused order tests，不能只看 reader 表达式。
 - full crit rate helper 已保留 `crit_rate_received_increase` 语义；personal crit rate / damage helper 不包含 received crit。后续 full / personal crit 维护仍不得合并语义，AP-to-crit-rate 文件也不能误归入 personal crit reader。
-- P2-C 默认 PRD 必须保持 `BuffRuntimeReadPort` 只读，不在 read-only trigger-state 故事里新增写 API、old-container 删除或 same-tick runtime write facade。
+- P2-C helper 维护必须保持 `BuffRuntimeReadPort` 只读；P2-D 默认 PRD 必须保持 `ScheduleDispatchPort` queue-only 语义，不在 scheduled publish parity 故事里新增 raw queue、old-container 删除或 same-tick runtime write facade。
 - `LoadingMission.mission_start(...) -> ScheduleDispatchPort.publish_scheduled(...)`、publish 后 record reset、payload target / priority / fan-out 等 order 证据仍由 scheduled-publish focused tests 保护。
 - listener broadcast、scheduled queue publish、dot runtime registration / removal、runtime immediate write 是四层边界；下一轮不得合并为一个 event bus。
 - `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 仍是唯一 same-tick command boundary；`BuffRuntimeReadPort` 保持只读，不扩成 write API。
 - `.codex_worktrees/` 仍只作为历史 worktree 快照；PRD blocker 必须回到 root-workspace source、focused tests 和 validation profiles。
-- validation profiles 必须串行执行；P2-B 已用真实注册 `莱特火属性队` 样本证明 Lighter / Trigger route baseline 与 candidate 一致。后续 P2-C / P2-D / P2-E / P2-F 只有在存在真实注册代表队且故事触达 live 行为时才运行 behavior sample。
+- validation profiles 必须串行执行；P2-B 已用真实注册 `莱特火属性队` 样本证明 Lighter / Trigger route baseline 与 candidate 一致，P2-C 已用真实注册 `席德大安比队` 样本证明 `机巧心种` + `索魂影眸` route baseline 与 candidate 一致。后续 P2-D / P2-E / P2-F / direct context 候选只有在存在真实注册代表队且故事触达 live 行为时才运行 behavior sample。
 
 ### 阶段 2 同阶段候选池
 
@@ -103,16 +106,16 @@
 - 验证入口：维护时跑 `calculator-reads`；event-adjacent 维护加 `implicit-events` 与 file-specific dispatch tests。
 - 非目标：不把 full / personal crit 语义合并，不把 P2-B guardrail 扩成阻断 P2-C / P2-D / P2-E / P2-F。
 
-#### 候选块 P2-C：trigger-state read-only gates（当前默认）
+#### 候选块 P2-C：trigger-state read-only gates（已完成 / guarded scope）
 
 - 候选文件 / 符号：`AstralVoice.py`、`FlamemakerShakerApBonus.py`、`CordisGerminaSNAAndQIgnoreDefense.py`、`SpectralGazeImpactBonus.py`、`SharpenedStingerAnomalyBuildupBonus.py`、`trigger_buff_0=` 相关文件。
-- 当前耦合：旧模板 Buff state、`exist_buff_dict`、`history.record` read-only gate；多数不直接写回 count。
-- 可拆工作方向：先建立 read-only trigger-state access 设计和 no-write gate tests，覆盖 active / inactive gate、old template identity、record lazy init，再处理 read-then-writeback 变体。
-- 必须保留：`BuffRuntimeReadPort` 只读语义与旧模板身份。
-- 验证入口：`implicit-events` 加 file-specific no-write branch tests。
-- 非目标：不在 `BuffRuntimeReadPort` 上加写 API，不删除 old containers。
+- 当前状态：五个 root migrated files 已经通过 `read_trigger_buff_state(record)` 读取 `active`、`count`、`built_in_buff_box`；`AstralVoice.special_effect_logic(...)` 的 count mirror 保留 `simple_start(...) -> current dy.count -> update_to_buff_0(self.buff_0)` 顺序。
+- 可拆工作方向：不再作为默认实现 backlog；后续只在 migrated-file guardrail、focused no-write / count-mirror tests、`implicit-events` 或行为样本暴露回归时开 blocker。剩余未迁移 `trigger_buff_0=` pool 仍保留给后续独立分类，不由 P2-C guardrail 自动阻断。
+- 必须保留：`BuffRuntimeReadPort` 只读语义、旧模板身份、`check_preparation(..., trigger_buff_0=...)` / `trigger_buff_0_handler(...)` 兼容路径、`JudgeTools.find_exist_buff_dict(...)` lookup。
+- 验证入口：维护时跑 `tests/simulator/test_trigger_state_read_only_gates.py`、`tests/simulator/test_migrated_p2c_trigger_state_guardrail.py` 与 `implicit-events`。
+- 非目标：不在 `BuffRuntimeReadPort` 上加写 API，不删除 old containers，不把 P2-C guardrail 扩展到未迁移 trigger-state pool。
 
-#### 候选块 P2-D：scheduled publish ordering / adapter parity
+#### 候选块 P2-D：scheduled publish ordering / adapter parity（当前默认）
 
 - 候选文件 / 符号：`CannonRotor.py`、`HugoCorePassiveTotalizeTrigger.py`、`YixuanCinema1Trigger.py`、`VivianDotTrigger.py`、`YanagiPolarityDisorderTrigger.py`、`ElegantVanitySpRecover.py`、`SliceofTimeExtraResources.py`、`UpdateAnomaly.update_anomaly(...)`。
 - 当前耦合：已迁移 `ScheduleDispatchPort` producers 仍有 payload、target、priority、`mission_start(...)`、publish-before/after-reset 等 source-specific ordering。
@@ -139,6 +142,24 @@
 - 验证入口：`implicit-events`、`test_buff_add_strategy_runtime_facade.py`、raw-container guardrail；触达 lifecycle 才跑默认 profile。
 - 非目标：不新增第二套 write facade，不转换成 scheduled publish，不删除 legacy `buff_add()` / `KickOutBuff()`。
 
+#### 候选块 P2-G：direct simulator context helpers
+
+- 候选文件 / 符号：`YuzuhaHardCandyShotTrigger.py`、`YuzuhaCinema4QuickAssistTrigger.py`、`YuzuhaCinema6SheelTrigger.py`、RNG trigger files、report-only `change_process_state()` files。
+- 当前耦合：XLogic 直接读取 `sim_instance.tick`、`preload.preload_data`、`char_data.find_next_char_obj(...)`、`schedule_data.enemy`、`listener_manager` 或 `rng_instance`，这些服务不都属于 Buff runtime facade。
+- 可拆工作方向：先按具体服务补 action / no-op branch focused tests，再决定是否抽 explicit context helper；不得为了扩大 PRD 把不同服务混为一个 adapter。
+- 必须保留：local preload、Character action / resource、listener broadcast、report state、RNG 与 scheduled publish / runtime write 的分层。
+- 验证入口：`implicit-events` 加 file-specific branch tests；触达真实队伍行为时再选 registered main-loop consistency sample。
+- 非目标：不是 `LegacyBuffRuntimeFacade` 替换，不是 raw queue backlog，不迁移 Calculator formula。
+
+#### 候选块 Phase-3：formula snapshot replacement（保留 / 非当前阶段）
+
+- 候选文件 / 符号：`Calculator.py`、`CalAnomaly.py`、`MultiplierData`、`MulData`、anomaly / disorder formula helpers。
+- 当前耦合：公式快照定义伤害与异常数值，当前 reader seams 只隔离部分 XLogic 属性读取，不等价于公式替换。
+- 可拆工作方向：只有在 phase-2 reader / state / event adapters 均有 parity suite 后，另开公式专项 PRD。
+- 必须保留：`MultiplierData` / `MulData` formula snapshots、`AnomalyBar.current_ndarray`、Calculator / CalAnomaly formulas。
+- 验证入口：未来 formula parity suite 加 `calculator-reads`；当前 P2-D 不触达。
+- 非目标：不在 phase-2 scheduled publish / trigger-state / context helper PRD 中重写公式。
+
 ## 已存在的真实验证入口
 
 - `uv run python scripts/run_buff_main_loop_consistency.py --team <team> --stop-tick <n> --legacy-runtime <label> --candidate-runtime <label> --json`
@@ -152,8 +173,8 @@
 - 必跑：`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`
 - 若触达生命周期容器或 runtime 写路径，追加：`uv run python scripts/run_buff_refactor_validation.py`
 - 若触达 `Calculator` seam，追加：`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads`
-- 若采用当前默认 P2-C trigger-state read-only gates PRD，必须新增或扩展 focused pytest 锁定 active / inactive gate、no-write branch、old template Buff identity、`history.record` lazy init 和 `BuffRuntimeReadPort` 只读边界；不要在该 PRD 中新增写 API。
-- 若维护已完成 P2-A 或 P2-B 文件，必须保留 migrated-source guardrail 范围和 `.codex_worktrees/` 排除，不得把 guardrail 扩成阻断未迁移 P2-C / P2-D / P2-E / P2-F 候选。
+- 若采用当前默认 P2-D scheduled publish ordering / adapter parity PRD，必须新增或扩展 focused pytest 锁定 payload fields、target fan-out、priority、`LoadingMission.mission_start(...)` / publish / reset 相对顺序、adapter 按需创建与 `ScheduleData.reset_myself()` 后 event_list rebinding；不要在该 PRD 中新增 raw queue passthrough 或 runtime write facade。
+- 若维护已完成 P2-A / P2-B / P2-C 文件，必须保留 migrated-source guardrail 范围和 `.codex_worktrees/` 排除，不得把 guardrail 扩成阻断未迁移 P2-D / P2-E / P2-F / P2-G 候选。
 - 若故事改动了验证命令契约、帮助文本或执行路径，补跑对应的 `--help` / focused pytest / 样例命令，而不是继续引用占位入口。
 - 上述验证命令应串行执行，不要并发跑多个 profile；它们会共享 sqlite `sessions` 数据与异步日志写线程，并发时容易制造假失败。
 
@@ -294,21 +315,21 @@ PRD-12 已按候选块 B/C/D/E 完成阶段 1 基础设施收口样本、guardra
 - [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md)
   重点先看 `6.6`、`6.7`、`6.8`、`6.9`
 - [BuffXLogic阶段2全量分类与复用矩阵.md](./BuffXLogic阶段2全量分类与复用矩阵.md)
-  重点先看 `US-008 复用模式目录与风险矩阵`、`Ranked follow-up pool`、P2-A / P2-B completion updates 和当前默认 P2-C 候选文件。
+  重点先看 `US-008 复用模式目录与风险矩阵`、`Ranked follow-up pool`、P2-A / P2-B / P2-C completion updates 和当前默认 P2-D 候选文件。
 - [Buff系统重构Checklist.md](./Buff系统重构Checklist.md)
 - `scripts/ralph/progress.txt`
   重点先看 `## Codebase Patterns`
 
 ## Phase 2 分类 PRD 后的下一轮调查提纲
 
-阶段 2 第一轮已完成“XLogic 全量分析与复用收敛”的分类与设计产物，P2-A AM/AP reader + computed count state-sync package 和 P2-B crit / impact reader family package 均已完成。下一轮 PRD 不再重复 census，也不继续沿已迁移 AM/AP 或 impact / crit 文件做薄切片，而是从 ranked pool 中选择一个同风险面、同验证入口、同回滚方式的 coherent bucket，当前默认从 P2-C trigger-state read-only gates 开始：
+阶段 2 第一轮已完成“XLogic 全量分析与复用收敛”的分类与设计产物，P2-A AM/AP reader + computed count state-sync package、P2-B crit / impact reader family package 和 P2-C trigger-state read-only gates 均已完成。下一轮 PRD 不再重复 census，也不继续沿已迁移 AM/AP、impact / crit 或 trigger-state 文件做薄切片，而是从 ranked pool 中选择一个同风险面、同验证入口、同回滚方式的 coherent bucket，当前默认从 P2-D scheduled publish ordering / adapter parity 开始：
 
-- 哪些 `trigger_buff_0=` / old template Buff state 读取是纯 read-only gate，可以先用 no-write branch focused tests 覆盖。
-- 哪些文件依赖 `history.record` lazy init、old `buff_0` identity 或 record 字段，必须作为 retained compatibility input。
-- 哪些 trigger-state gates 还伴随 count writeback、scheduled publish、listener broadcast、RNG 或 direct simulator context，不能混入第一批纯 read-only story。
-- 哪些 read-only gate 可以通过 `BuffRuntimeReadPort` 或显式 read context 表达，且不得在该 PRD 中新增 write API。
+- 哪些已迁移 `ScheduleDispatchPort` producer 仍缺 payload / target / priority / fan-out / ordering parity focused tests。
+- 哪些 source-specific 顺序必须逐文件保留，例如 `LoadingMission.mission_start(...)` before publish、publish before reset、publish before or after `simple_start(...)`。
+- 哪些 adapter 创建必须从当前 `sim_instance` 或 `schedule_data` 按需取得，不能跨 `ScheduleData.reset_myself()` 缓存。
+- 哪些 branch 是 listener broadcast、dot runtime registration、runtime immediate write 或 direct simulator context，不应混入 scheduled publish parity PRD。
 - 哪些 validation profile 足够，哪些必须补 file-specific focused pytest 或 main-loop consistency sample。
-- 哪些 P2-B guardrail / reader tests 只作为 completed-bucket 维护证据，不应扩展成阻断 P2-C / P2-D / P2-E / P2-F。
+- 哪些 P2-A / P2-B / P2-C guardrail / reader / trigger-state tests 只作为 completed-bucket 维护证据，不应扩展成阻断 P2-D / P2-E / P2-F / P2-G。
 
 ## 每次更新本文档时必须补充的内容
 

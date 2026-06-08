@@ -1812,3 +1812,14 @@
 - Next step:
   - Continue with US-013 final handoff docs: mark P2-C validated/guarded completion evidence, record that no old-coupling review update was needed unless new evidence appears, and promote the next same-phase default from the retained phase-2 pool.
 ---
+## 2026-06-08 21:34 +08:00 - US-013
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - Final handoff docs now replace stale “P2-C is next” planning with completed P2-C trigger-state helper / migrated-file / source-guardrail evidence, serial validation summaries, registered behavior-sample evidence, and a concrete next default PRD: P2-D scheduled publish ordering / adapter parity.
+  - This story updates planning and handoff state only; it does not replace additional live `BuffXLogic` behavior.
+- Compatibility retained:
+  - P2-C migrated files, `TriggerBuffState`, `read_trigger_buff_state(record)`, focused no-write / count-mirror tests, migrated-file-only guardrail, remaining un-migrated `trigger_buff_0=` pool, `BuffRuntimeReadPort`, `RuntimeCommandPort`, `ScheduleDispatchPort`, listener broadcast, dot runtime registration, raw queue deletion boundaries, Calculator / CalAnomaly formula snapshots, old template Buff identity, and old containers remain unchanged.
+  - No new old-coupling review update was needed; root-workspace evidence found no new coupling beyond existing P2-C completion and retained P2-D/P2-E/P2-F/direct-context pool entries.
+- Next step:
+  - Generate the next phase-2 PRD from [Buff重构方案.md](./Buff重构方案.md), defaulting to P2-D scheduled publish ordering / adapter parity while preserving P2-E dot runtime-state, P2-F BuffAddStrategy facade-write design, direct simulator context helpers, phase-3 formula snapshots, retained compatibility rows, and blocker-only phase-1 reopen rules.
+---

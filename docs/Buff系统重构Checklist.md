@@ -205,12 +205,24 @@
 - [x] 行为样本：`uv run python scripts/run_buff_main_loop_consistency.py --team "莱特火属性队" --stop-tick 600 --legacy-runtime "p2b-us017-baseline" --candidate-runtime "p2b-us017-reader" --json` 已通过；`matches=true`，总伤 `646446.67` vs `646446.67`，event count `19` vs `19`，buff timeline 差异为零。
 - [x] P2-B 没有重写 Calculator / CalAnomaly 公式，没有删除 old containers，没有重开 raw queue、`ScheduleDispatchPort`、`RuntimeCommandPort`、listener broadcast、dot runtime registration、same-tick runtime write 或 phase-1 deletion 边界。
 
+## 本轮阶段 2 trigger-state read-only gates PRD 收口状态（2026-06-08）
+
+- [x] P2-C 只读触发状态 helper 已落地：`zsim/sim_progress/Buff/JudgeTools/TriggerState.py` 提供 frozen `TriggerBuffState` 与 `read_trigger_buff_state(record)`，只读取已由 `check_preparation(..., trigger_buff_0=...)` / `trigger_buff_0_handler(...)` 写入 `history.record.trigger_buff_0` 的旧模板 Buff 状态。
+- [x] 五个 root-workspace migrated files 已完成：`FlamemakerShakerApBonus.py`、`SpectralGazeImpactBonus.py`、`SharpenedStingerAnomalyBuildupBonus.py`、`CordisGerminaSNAAndQIgnoreDefense.py` 与 `AstralVoice.py` 不再通过 `record.trigger_buff_0.dy.active` / `.count` / `.built_in_buff_box` direct chain 读取已迁移 gate。
+- [x] `AstralVoice.special_effect_logic(...)` 保留旧 state-sync 顺序：先 `simple_start(...)`，再从 `TriggerBuffState.count` 写 current `dy.count`，最后 `update_to_buff_0(self.buff_0)`；old equipment-owner `buff_0` identity 与 `record.sub_exist_buff_dict` 仍由旧兼容路径提供。
+- [x] P2-C focused tests 与 guardrail 已覆盖 active / inactive、threshold、tuple-box length、lazy `history.record`、old template identity、no-write branch、count-mirror order 和 source guardrail；`tests/simulator/test_migrated_p2c_trigger_state_guardrail.py` 只扫描五个已迁移 root 文件并排除 `.codex_worktrees/`。
+- [x] 验证基线：US-012 已串行通过 `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`，base `2 passed`、isolated teams `3 passed`、focused `181 passed`、mypy `80 source files` clean。
+- [x] 行为样本：`uv run python scripts/run_buff_main_loop_consistency.py --team "席德大安比队" --stop-tick 1000 --legacy-runtime p2c-baseline --candidate-runtime p2c-current --json` 已通过；`matches=true`，总伤 `5744827.24` vs `5744827.24`，event count `50` vs `50`，buff timeline 差异为零。
+- [x] P2-C 没有给 `BuffRuntimeReadPort` 新增写 API，没有删除 old containers，没有重开 raw queue、`ScheduleDispatchPort`、`RuntimeCommandPort`、listener broadcast、dot runtime registration、Calculator formula 或 phase-1 deletion 边界。
+- [x] 本轮未发现新的旧 Buff 耦合点；`docs/旧Buff系统耦合审查结果.md` 不需要新增 P2-C blocker 条目。
+
 ## 当前默认下一步
 
 - [x] `US-024` 已完成 closure decision，没有输出 phase-1 blocker package；不得继续生成新的阶段 1 实现 PRD，除非 guardrail / validation 给出新的生产失败证据。
 - [x] 阶段 2 第一轮“全量分类、复用方法 / 记录对象 / stat reader / event adapter / state sync / handler / listener pattern 清单与风险矩阵”已完成；后续不再把“做全量分类”当默认下一步。
 - [x] P2-A “AM/AP reader + computed count state-sync family” 已完成；后续不再把六个已迁移文件当默认实现 backlog，除非 source guardrail 或 validation 给出具体回归证据。
 - [x] P2-B “crit / impact reader family package” 已完成；后续不再把九个已迁移 impact / crit 文件当默认实现 backlog，除非 source guardrail、focused test 或 validation 给出具体回归证据。
-- [ ] 下一轮默认 PRD 应沿 [Buff重构方案.md](./Buff重构方案.md) 继续留在阶段 2，优先选择 “trigger-state read-only gates” 作为 P2-C old-template-state read / no-write gate focused test 包，而不是单文件薄切片或阶段 3 全面替换。
-- [ ] 同阶段候选池必须继续保留 scheduled publish ordering parity、dot runtime-state / initialization、BuffAddStrategy caller / facade-write design、direct simulator context helpers 与 phase-3-only formula snapshot replacement，避免 PRD 生成器只沿上一个文件继续。
+- [x] P2-C “trigger-state read-only gates” 已完成；后续不再把五个已迁移 trigger-state 文件当默认实现 backlog，除非 P2-C source guardrail、focused no-write / count-mirror tests、`implicit-events` 或 behavior sample 给出具体回归证据。
+- [ ] 下一轮默认 PRD 应沿 [Buff重构方案.md](./Buff重构方案.md) 继续留在阶段 2，优先选择 “scheduled publish ordering / adapter parity” 作为 P2-D payload / target / priority / order focused test 包，而不是单文件薄切片或阶段 3 全面替换。
+- [ ] 同阶段候选池必须继续保留 dot runtime-state / initialization、BuffAddStrategy caller / facade-write design、direct simulator context helpers 与 phase-3-only formula snapshot replacement，避免 PRD 生成器只沿上一个文件继续。
 - [ ] 若后续 validation 或 guardrail 重新暴露阶段 1 blocker，下一轮 PRD 只处理 blocker package 中列出的具体文件、符号、失败测试、失败 guardrail 或验证命令；不得重开已删除的 `event_list` surface 或已闭合的 producer batch，除非 guardrail 给出新的生产证据。
