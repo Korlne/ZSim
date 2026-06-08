@@ -1845,3 +1845,15 @@
 - Next step:
   - Continue with US-003 by adding resource-refresh payload parity coverage for the P2-D resource refresh family while reusing the adapter rebinding baseline from `test_schedule_dispatch.py`.
 ---
+## 2026-06-08 22:57 +08:00 - US-003
+- Files changed: `tests/simulator/test_xstart_sp_refresh_dispatch.py`, `tests/simulator/test_xhit_sp_refresh_dispatch.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_xstart_sp_refresh_dispatch.py` prepares to replace manual resource-refresh order review for `ElegantVanitySpRecover` and `LunarNoviluna` by asserting exact `ScheduleRefreshData` SP payload fields, default decibel fields, fail-fast raw queue behavior, and source-specific `simple_start(...)` / `publish_scheduled(...)` order.
+  - `tests/simulator/test_xhit_sp_refresh_dispatch.py` prepares to replace manual resource-refresh order review for `MagneticStormCharlieSpRecover` and `SeedAdditionalAbilityTrigger` by asserting exact SP payload fields, default decibel fields, fail-fast raw queue behavior, Seed publish-before-report ordering, and the retained report-only `change_process_state()` / print branch.
+  - This story strengthens focused parity coverage only; no live `BuffXLogic` resource-refresh producer behavior was replaced in this iteration.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `ElegantVanitySpRecover`, `LunarNoviluna`, `MagneticStormCharlieSpRecover`, `SeedAdditionalAbilityTrigger`, and `SliceofTimeExtraResources` still publish through their existing `_create_dispatch_port(...)` / `create_schedule_dispatch_port(...)` paths.
+  - Scheduler priority sorting, handler requeue behavior, core Load/Schedule appends, listener broadcast, dot runtime registration, runtime command writes, old containers, and Calculator / CalAnomaly formula snapshots remain unchanged.
+- Next step:
+  - Continue with US-004 by adding `SkillNode` / `LoadingMission` publish order parity coverage for the P2-D scheduled publish family, without reopening resource-refresh production behavior.
+---

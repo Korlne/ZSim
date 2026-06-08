@@ -23,10 +23,12 @@ class _FailFastEventList(list):
 
 
 class _RecordingDispatchPort:
-    def __init__(self) -> None:
+    def __init__(self, call_order: list[str]) -> None:
         self.events: list[object] = []
+        self._call_order = call_order
 
     def publish_scheduled(self, event: object) -> None:
+        self._call_order.append("publish")
         self.events.append(event)
 
 
@@ -42,14 +44,14 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_elegant_vanity_sp_recover_publishes_after_simple_start_via_dispatch_port(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    dispatch_port = _RecordingDispatchPort()
+    call_order: list[str] = []
+    dispatch_port = _RecordingDispatchPort(call_order)
     sim_instance = SimpleNamespace(tick=27, schedule_data=SimpleNamespace(event_list=_FailFastEventList()))
     buff_instance = SimpleNamespace(
         sim_instance=sim_instance,
         ft=SimpleNamespace(refinement="3"),
     )
     logic = ElegantVanitySpRecover(buff_instance)
-    call_order: list[tuple[str, int]] = []
     sub_exist_buff_dict = {"EV": object()}
     record = SimpleNamespace(
         sub_exist_buff_dict=sub_exist_buff_dict,
@@ -66,33 +68,36 @@ def test_elegant_vanity_sp_recover_publishes_after_simple_start_via_dispatch_por
     _block_legacy_event_lookup(monkeypatch)
 
     def fake_simple_start(tick_now, target_sub_exist_buff_dict):
-        call_order.append(("simple_start", tick_now))
+        call_order.append("simple_start")
+        assert tick_now == 27
         assert target_sub_exist_buff_dict is sub_exist_buff_dict
 
     cast(Any, buff_instance).simple_start = fake_simple_start
 
     logic.special_start_logic()
 
-    assert call_order == [("simple_start", 27)]
+    assert call_order == ["simple_start", "publish"]
     assert len(dispatch_port.events) == 1
     refresh_data = dispatch_port.events[0]
     assert isinstance(refresh_data, ScheduleRefreshData)
     assert refresh_data.sp_target == ("可琳",)
     assert refresh_data.sp_value == 6
+    assert refresh_data.decibel_target == ("",)
+    assert refresh_data.decibel_value == 0
     assert sim_instance.schedule_data.event_list == []
 
 
 def test_lunar_noviluna_preserves_publish_then_simple_start_order_via_dispatch_port(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    dispatch_port = _RecordingDispatchPort()
+    call_order: list[str] = []
+    dispatch_port = _RecordingDispatchPort(call_order)
     sim_instance = SimpleNamespace(tick=31, schedule_data=SimpleNamespace(event_list=_FailFastEventList()))
     buff_instance = SimpleNamespace(
         sim_instance=sim_instance,
         ft=SimpleNamespace(refinement=4),
     )
     logic = LunarNoviluna(buff_instance)
-    call_order: list[str] = []
     sub_exist_buff_dict = {"LN": object()}
     record = SimpleNamespace(
         sub_exist_buff_dict=sub_exist_buff_dict,
@@ -122,5 +127,7 @@ def test_lunar_noviluna_preserves_publish_then_simple_start_order_via_dispatch_p
     assert isinstance(refresh_data, ScheduleRefreshData)
     assert refresh_data.sp_target == ("露娜",)
     assert refresh_data.sp_value == 4.5
-    assert call_order == ["simple_start"]
+    assert refresh_data.decibel_target == ("",)
+    assert refresh_data.decibel_value == 0
+    assert call_order == ["publish", "simple_start"]
     assert sim_instance.schedule_data.event_list == []
