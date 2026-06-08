@@ -1518,3 +1518,15 @@
 - Next step:
   - Continue with US-006 by migrating `LighterAdditionalAbility_IceFireBonus.py` to `read_impact(...)` while preserving the US-004-pinned count/state-sync order.
 ---
+## 2026-06-08 16:53 +08:00 - US-006
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/LighterAdditionalAbility_IceFireBonus.py`, `tests/simulator/test_buff_attribute_state_sync.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `LighterAdditionalAbility_IceFireBonus.py` now replaces its direct `MultiplierData(...)` / `Calculator.StunMul.cal_imp(...)` impact read with `create_anomaly_attribute_read_context(...)` and `CalculatorBuffAttributeReader.read_impact(...)`.
+  - The focused state-sync test now guards this migrated file against reintroducing the direct impact Calculator snapshot path.
+- Compatibility retained:
+  - Lighter `get_prepared(...)` arguments, impact threshold, `fake_count_delta` / count formula, real-count update, 300-count clamp, old `buff_0` identity, and `simple_start(...) -> read -> dy.count -> update_to_buff_0(...)` order remain preserved.
+  - The retained Calculator formula snapshot still owns `Calculator.StunMul.cal_imp(...)`; QingYi, Trigger, Soldier0 Anby, and event-adjacent full-crit P2-B candidates remain on their old paths until their own stories run.
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, dot runtime-state, same-tick runtime writes, and old-container deletion boundaries remain unchanged.
+- Next step:
+  - Continue with US-007 by migrating `QingYiAdditionalAbilityStunConvertToATK.py` through `read_impact(...)` while preserving its old-`buff_0` adjustment order.
+---

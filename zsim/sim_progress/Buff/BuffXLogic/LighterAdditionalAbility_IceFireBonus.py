@@ -1,4 +1,7 @@
-from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
+from zsim.sim_progress.ScheduledEvent.Calculator import (
+    CalculatorBuffAttributeReader,
+    create_anomaly_attribute_read_context,
+)
 
 from .. import Buff, JudgeTools, check_preparation
 
@@ -70,10 +73,12 @@ class LighterExtraSkill_IceFireBonus(Buff.BuffLogic):
         self.record.real_count = real_count
 
         # 计算实时冲击力
-        mul_data = MultiplierData(
-            self.record.enemy, self.record.dynamic_buff_list, self.record.char
+        context = create_anomaly_attribute_read_context(
+            enemy=self.record.enemy,
+            active_buff_view=self.record.dynamic_buff_list,
+            character=self.record.char,
         )
-        stun_value = Calculator.StunMul.cal_imp(mul_data)
+        stun_value = CalculatorBuffAttributeReader().read_impact(context)
 
         # 计算虚层
         fake_count_delta = max((stun_value - 170) / 10, 0)

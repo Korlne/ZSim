@@ -1726,6 +1726,17 @@ def test_lighter_impact_state_sync_keeps_high_impact_cap_order(
     assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
 
 
+def test_lighter_impact_uses_reader_not_multiplier_data() -> None:
+    source = Path(
+        "zsim/sim_progress/Buff/BuffXLogic/LighterAdditionalAbility_IceFireBonus.py"
+    ).read_text(encoding="utf-8")
+
+    assert "MultiplierData" not in source
+    assert "Calculator.StunMul.cal_imp" not in source
+    assert "create_anomaly_attribute_read_context" in source
+    assert "read_impact" in source
+
+
 def test_qingyi_impact_state_sync_keeps_old_count_adjustment_order(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
