@@ -2407,3 +2407,14 @@
 - Next step:
   - Generate the next PRD as a phase-2 closure / phase-3 formula snapshot readiness decision following `docs/Buff重构方案.md`; keep P2-A through P2-G as guarded maintenance buckets and reopen phase-1 only for concrete guardrail / validation failures.
 ---
+## 2026-06-09 18:59 +08:00 - US-001
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - This story reconfirms the phase-2 closure / phase-3 formula snapshot readiness boundary; it does not replace live production behavior, calculator formulas, anomaly formulas, or BuffXLogic runtime paths.
+  - The current PRD readiness gate replaces manual uncertainty about whether P2-A through P2-G should be reopened by recording doc evidence that they are completed or guarded-maintenance buckets.
+- Compatibility retained:
+  - P2-A through P2-G implementation buckets, scheduled publish, listener broadcast, same-tick runtime writes, old containers, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, Calculator / CalAnomaly formulas, formula snapshots, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No old-coupling review update was needed; this story found no new Buff coupling.
+- Next step:
+  - Continue with the formula snapshot readiness stories by auditing current guardrail evidence and validation gaps before any phase-3 formula replacement work.
+---
