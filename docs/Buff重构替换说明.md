@@ -2326,3 +2326,16 @@
 - Next step:
   - Continue with US-007 by adding listener-manager representative coverage without broadening into RNG helper extraction, scheduled publish migration, formula replacement, or same-tick runtime write changes.
 ---
+## 2026-06-09 17:22 +08:00 - US-007
+- Files changed: `tests/simulator/test_listener_manager_direct_context.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_listener_manager_direct_context.py` now replaces manual `HeartstringNocturne` listener lookup review with focused coverage for active-signal listener lookup, cached listener reuse, no-op mismatch behavior, and dispatch/runtime/report/raw-queue separation.
+  - This story adds branch and boundary evidence only; it does not replace live production behavior or extract a new helper.
+- Compatibility retained:
+  - `HeartstringNocturne.py` source, `listener_manager.get_listener(...)`, `record.listener_exist`, active-signal matching, `SkillNode` no-op gates, and return semantics remain unchanged.
+  - `CinderCobaltAtkBonus.py`, `HormonePunkAtkBonus.py`, and `ZanshinHerbCase.py` remain retained same-family listener lookup candidates; this iteration does not duplicate branch-equivalent coverage.
+  - `listener_manager.get_listener(...)` remains direct listener context lookup, while `listener_manager.broadcast_event()` remains synchronous listener broadcast. Neither is converted into scheduled queue publish, report-state mutation, raw queue mutation, `RuntimeCommandPort`, `LegacyBuffRuntimeFacade`, or `BuffRuntimeReadPort` work.
+  - No new old-coupling review update was needed; this story found no new Buff coupling beyond the already documented P2-G direct simulator context candidates.
+- Next step:
+  - Continue with US-008 by adding RNG-service representative coverage without broadening into listener helper extraction, scheduled publish migration, formula replacement, or same-tick runtime write changes.
+---
