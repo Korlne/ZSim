@@ -13,9 +13,16 @@ sys.modules.setdefault("define", define_module)
 trigger_module = importlib.import_module(
     "zsim.sim_progress.Buff.BuffXLogic.YuzuhaHardCandyShotTrigger"
 )
+cinema4_trigger_module = importlib.import_module(
+    "zsim.sim_progress.Buff.BuffXLogic.YuzuhaCinema4QuickAssistTrigger"
+)
 
 YuzuhaHardCandyShotTrigger = trigger_module.YuzuhaHardCandyShotTrigger
 YuzuhaHardCandyShotTriggerRecord = trigger_module.YuzuhaHardCandyShotTriggerRecord
+YuzuhaCinema4QuickAssistTrigger = cinema4_trigger_module.YuzuhaCinema4QuickAssistTrigger
+YuzuhaCinema4QuickAssistTriggerRecord = (
+    cinema4_trigger_module.YuzuhaCinema4QuickAssistTriggerRecord
+)
 
 
 class _FailFastEventList(list[object]):
@@ -54,6 +61,54 @@ class _SkillNodeProbe:
     def is_hit_now(self, *, tick: int) -> bool:
         self.hit_ticks.append(tick)
         return self._hit
+
+
+class _Cinema4SkillNodeProbe:
+    def __init__(
+        self, *, skill_tag: str = "1411_Assault_Aid", last_hit: bool = True
+    ) -> None:
+        self.skill_tag = skill_tag
+        self._last_hit = last_hit
+        self.last_hit_ticks: list[int] = []
+
+    def is_last_hit(self, *, tick: int) -> bool:
+        self.last_hit_ticks.append(tick)
+        return self._last_hit
+
+
+class _QuickAssistSystemProbe:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    def force_active_quick_assist(
+        self, *, tick_now: int, skill_node: object, char_name: str
+    ) -> None:
+        self.calls.append(
+            {
+                "tick_now": tick_now,
+                "skill_node": skill_node,
+                "char_name": char_name,
+            }
+        )
+
+
+class _CharDataProbe:
+    def __init__(self, *, next_char_name: str = "仪玄") -> None:
+        self.next_char = SimpleNamespace(NAME=next_char_name)
+        self.calls: list[dict[str, int]] = []
+
+    def find_next_char_obj(self, *, char_now: int, direction: int) -> SimpleNamespace:
+        self.calls.append({"char_now": char_now, "direction": direction})
+        return self.next_char
+
+
+class _ScheduleDataReportProbe:
+    def __init__(self) -> None:
+        self.event_list = _FailFastEventList()
+        self.change_process_calls = 0
+
+    def change_process_state(self) -> None:
+        self.change_process_calls += 1
 
 
 class _YuzuhaProbe:
@@ -135,6 +190,58 @@ def _build_trigger_harness(
     )
 
 
+def _build_cinema4_trigger_harness(
+    *,
+    tick: int = 1440,
+    next_char_name: str = "仪玄",
+    report_state: bool = False,
+) -> SimpleNamespace:
+    quick_assist_system = _QuickAssistSystemProbe()
+    char_data = _CharDataProbe(next_char_name=next_char_name)
+    schedule_data = (
+        _ScheduleDataReportProbe()
+        if report_state
+        else SimpleNamespace(
+            event_list=_FailFastEventList(),
+            change_process_state=_ForbiddenLayer("report-state mutation"),
+        )
+    )
+    sim_instance = SimpleNamespace(
+        tick=tick,
+        preload=SimpleNamespace(
+            preload_data=SimpleNamespace(quick_assist_system=quick_assist_system)
+        ),
+        char_data=char_data,
+        schedule_data=schedule_data,
+        listener_manager=_ForbiddenLayer("listener broadcast"),
+        runtime_command_port=_ForbiddenLayer("RuntimeCommandPort"),
+    )
+    buff_instance = _BuffInstanceProbe(sim_instance=sim_instance)
+    buff_instance.ft = SimpleNamespace(index="Buff-角色-柚叶-4画快速支援触发")
+    trigger = YuzuhaCinema4QuickAssistTrigger(buff_instance)
+
+    record = YuzuhaCinema4QuickAssistTriggerRecord()
+    record.char = _YuzuhaProbe(sugar_points=0, cinema=4)
+    trigger.buff_0 = SimpleNamespace(history=SimpleNamespace(record=record))
+    prepared_calls: list[dict[str, object]] = []
+
+    def record_prepared_call(**kwargs: object) -> None:
+        prepared_calls.append(kwargs)
+
+    trigger.get_prepared = record_prepared_call
+
+    return SimpleNamespace(
+        trigger=trigger,
+        record=record,
+        buff_instance=buff_instance,
+        sim_instance=sim_instance,
+        quick_assist_system=quick_assist_system,
+        char_data=char_data,
+        schedule_data=schedule_data,
+        prepared_calls=prepared_calls,
+    )
+
+
 def test_yuzuha_hard_candy_tick_and_preload_allow_local_action_path() -> None:
     harness = _build_trigger_harness(tick=960, occupied=False, sugar_points=2)
     skill_node = _SkillNodeProbe()
@@ -203,6 +310,87 @@ def test_yuzuha_hard_candy_trigger_stays_out_of_dispatch_and_runtime_boundaries(
 
     assert "sim_instance.tick" in source
     assert "char_occupied_check" in source
+    for forbidden_term in (
+        "ScheduleDispatchPort",
+        "create_schedule_dispatch_port",
+        "publish_scheduled",
+        "RuntimeCommandPort",
+        "create_runtime_command_port",
+        "LegacyBuffRuntimeFacade",
+        "BuffRuntimeReadPort",
+        "listener_manager",
+        "broadcast_event",
+        "event_list",
+    ):
+        assert forbidden_term not in source
+
+
+def test_yuzuha_cinema4_quick_assist_reads_context_and_forwards_tick(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(cinema4_trigger_module, "YUZUHA_REPORT", False)
+    harness = _build_cinema4_trigger_harness(tick=1440, next_char_name="仪玄")
+    skill_node = _Cinema4SkillNodeProbe()
+
+    assert harness.trigger.special_judge_logic(skill_node=skill_node) is True
+
+    assert harness.prepared_calls == [{"char_CID": 1411}]
+    assert skill_node.last_hit_ticks == [1440]
+    assert harness.record.trigger_skill_node is skill_node
+
+    harness.trigger.special_hit_logic()
+
+    assert harness.prepared_calls == [{"char_CID": 1411}, {"char_CID": 1411}]
+    assert harness.char_data.calls == [{"char_now": 1411, "direction": 1}]
+    assert harness.quick_assist_system.calls == [
+        {"tick_now": 1440, "skill_node": skill_node, "char_name": "仪玄"}
+    ]
+    assert harness.record.trigger_skill_node is None
+    assert harness.sim_instance.schedule_data.event_list == []
+
+
+def test_yuzuha_cinema4_non_last_hit_blocks_quick_assist_context(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(cinema4_trigger_module, "YUZUHA_REPORT", False)
+    harness = _build_cinema4_trigger_harness(tick=1440)
+    skill_node = _Cinema4SkillNodeProbe(last_hit=False)
+
+    assert harness.trigger.special_judge_logic(skill_node=skill_node) is False
+
+    assert harness.prepared_calls == [{"char_CID": 1411}]
+    assert skill_node.last_hit_ticks == [1440]
+    assert harness.record.trigger_skill_node is None
+    assert harness.quick_assist_system.calls == []
+    assert harness.char_data.calls == []
+    assert harness.buff_instance.simple_start_calls == []
+    assert harness.sim_instance.schedule_data.event_list == []
+
+
+def test_yuzuha_cinema4_report_state_stays_out_of_dispatch_and_runtime(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(cinema4_trigger_module, "YUZUHA_REPORT", True)
+    harness = _build_cinema4_trigger_harness(report_state=True)
+    skill_node = _Cinema4SkillNodeProbe()
+
+    assert harness.trigger.special_judge_logic(skill_node=skill_node) is True
+    harness.trigger.special_hit_logic()
+
+    assert harness.quick_assist_system.calls == [
+        {"tick_now": 1440, "skill_node": skill_node, "char_name": "仪玄"}
+    ]
+    assert harness.schedule_data.change_process_calls == 1
+    assert harness.schedule_data.event_list == []
+
+
+def test_yuzuha_cinema4_trigger_stays_out_of_dispatch_and_runtime_boundaries() -> None:
+    source = inspect.getsource(cinema4_trigger_module.YuzuhaCinema4QuickAssistTrigger)
+
+    assert "quick_assist_system" in source
+    assert "find_next_char_obj(char_now=1411, direction=1)" in source
+    assert "tick_now=sim_instance.tick" in source
+    assert "schedule_data.change_process_state()" in source
     for forbidden_term in (
         "ScheduleDispatchPort",
         "create_schedule_dispatch_port",

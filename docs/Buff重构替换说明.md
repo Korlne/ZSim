@@ -2272,3 +2272,16 @@
 - Next step:
   - Continue with US-003 by adding Yuzuha Cinema4 quick-assist next-character coverage without broadening into RNG, listener, runtime write, scheduled publish migration, or formula replacement work.
 ---
+## 2026-06-09 15:54 +08:00 - US-003
+- Files changed: `tests/simulator/test_yuzuha_direct_context_helpers.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_yuzuha_direct_context_helpers.py` now replaces manual `YuzuhaCinema4QuickAssistTrigger` quick-assist / next-character review with focused coverage for allowed last-hit activation, `quick_assist_system` lookup, `find_next_char_obj(char_now=1411, direction=1)`, `tick_now=sim_instance.tick` forwarding, report-state behavior, and no-op last-hit gating.
+  - This story adds branch and boundary evidence only; it does not replace live production behavior or extract a new helper.
+- Compatibility retained:
+  - `YuzuhaCinema4QuickAssistTrigger.py` source, allowed skill tags, last-hit gating, quick-assist activation, next-character lookup, report printing, and `record.trigger_skill_node` reset remain unchanged.
+  - `schedule_data.change_process_state()` remains report-state / process-state behavior and is not treated as scheduled payload publication, listener broadcast, runtime write, or raw queue mutation.
+  - `ScheduleDispatchPort`, synchronous listener broadcast, `RuntimeCommandPort`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort` read-only semantics, raw pending queues, old containers, Calculator / CalAnomaly formulas, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; this story found no new Buff coupling beyond the already documented P2-G direct simulator context candidate.
+- Next step:
+  - Continue with US-004 by adding Yuzuha Cinema6 Sheel preload / report-state coverage without broadening into RNG, listener, runtime write, scheduled publish migration, or formula replacement work.
+---
