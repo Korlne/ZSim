@@ -2354,3 +2354,17 @@
 - Next step:
   - Continue with US-009 by adding report-state representative coverage without broadening into RNG helper extraction, listener migration, scheduled publish migration, formula replacement, or same-tick runtime write changes.
 ---
+## 2026-06-09 17:47 +08:00 - US-009
+- Files changed: `tests/simulator/test_report_state_direct_context.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_report_state_direct_context.py` now replaces manual `AstraYaoCorePassiveAtkBonus.special_start_logic()` report-state review with focused coverage for positive buff-update/report ordering, same-tick no-op gating, and dispatch/listener/runtime/raw-queue/deletion separation.
+  - This story adds branch and boundary evidence only; it does not replace live production behavior or extract a new helper.
+- Compatibility retained:
+  - `AstraYaoCorePassiveAtkBonus.py` source, `simple_start(...)`, `update_to_buff_0(...)`, `record.update_info_box` same-tick guard, report printing, and `schedule_data.change_process_state()` remain unchanged.
+  - `schedule_data.change_process_state()` remains report-state / process-state behavior and is not treated as scheduled payload publication, listener broadcast, runtime immediate write, raw queue mutation, or old-container deletion.
+  - `AstraYaoChordManagerTrigger.py`, `HugoCorePassive*`, `SeedAdditionalAbilityTrigger.py`, `SeedCinema6Trigger.py`, `Vivian*`, `Yixuan*`, and already-covered Yuzuha report-state files remain retained candidates or completed contrast evidence; this iteration does not duplicate those branches.
+  - `ScheduleDispatchPort`, synchronous listener broadcast, `RuntimeCommandPort`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, raw pending queues, old containers, Calculator / CalAnomaly formulas, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; this story found no new Buff coupling beyond the already documented P2-G direct simulator context candidates.
+- Next step:
+  - Continue with US-010 by deciding explicit context helpers and retained compatibility boundaries without introducing a universal simulator context object or collapsing report-state, listener, scheduled publish, RNG, and runtime-write semantics.
+---
