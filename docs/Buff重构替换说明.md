@@ -2595,3 +2595,14 @@
 - Next step:
   - Continue with US-003 by turning this inventory into focused formula parity fixtures before any production formula replacement.
 ---
+## 2026-06-10 00:02 +08:00 - US-003
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The US-003 fixture harness prepares to replace ad hoc formula parity setup with focused helpers for `MultiplierData`, `DynamicStatement`, enemy dynamic fields, and settled anomaly snapshots.
+  - This story builds deterministic test infrastructure only; it does not replace a live production path, formula helper, copied-output formula, dispatch adapter, runtime port, validation profile, guardrail, or behavior sample.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, copied anomaly / disorder output paths, P2-A through P2-G guarded-maintenance buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and existing `calculator-reads` / `implicit-events` validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this test-only fixture work found no new Buff coupling beyond already documented retained formula snapshot, copied-output, enemy dynamic read, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-004 by using the stabilized fixtures to characterize `MultiplierData` and `DynamicStatement` aggregation before any production formula replacement.
+---

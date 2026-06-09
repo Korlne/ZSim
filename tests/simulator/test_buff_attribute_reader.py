@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import inspect
 from types import SimpleNamespace
-from typing import Any, Sequence, cast
+from typing import Any, Iterator, Sequence, cast
 
 import numpy as np
 import pytest
@@ -39,6 +39,27 @@ class _AttributeReadFixture:
     enemy: SimpleNamespace
     char: SimpleNamespace
     expected_enabled_buff: tuple[object, ...]
+    expected_enemy_dot_buff: tuple[object, ...] = ()
+
+
+@dataclass(frozen=True)
+class _AnomalyFormulaFixture:
+    sim_instance: SimpleNamespace
+    character: SimpleNamespace
+    activation: SimpleNamespace
+    enemy: SimpleNamespace
+    active_buff_view: dict[str, list[object]]
+    source_snapshot: np.ndarray
+    anomaly_bar: AnomalyBar
+
+
+@pytest.fixture(autouse=True)
+def _reset_formula_fixture_state() -> Iterator[None]:
+    MultiplierData.mul_data_cache.clear()
+    MultiplierData.StaticStatement._instance_cache.clear()
+    yield
+    MultiplierData.mul_data_cache.clear()
+    MultiplierData.StaticStatement._instance_cache.clear()
 
 
 def _make_character(
@@ -63,11 +84,14 @@ def _make_character(
     return SimpleNamespace(NAME=name, CID=1301, level=60, statement=statement)
 
 
-def _make_enemy(enemy_debuffs: Sequence[object] = ()) -> SimpleNamespace:
+def _make_enemy(
+    enemy_debuffs: Sequence[object] = (),
+    enemy_dots: Sequence[object] = (),
+) -> SimpleNamespace:
     return SimpleNamespace(
         dynamic=SimpleNamespace(
             dynamic_debuff_list=list(enemy_debuffs),
-            dynamic_dot_list=[],
+            dynamic_dot_list=list(enemy_dots),
         ),
         sim_instance=SimpleNamespace(marker="sim"),
     )
@@ -83,9 +107,11 @@ def _make_attribute_read_fixture(
     crit_damage: float = 0.0,
     char_buff_count: int = 1,
     enemy_debuff_count: int = 1,
+    enemy_dot_count: int = 0,
 ) -> _AttributeReadFixture:
     char_buffs = tuple(object() for _ in range(char_buff_count))
     enemy_debuffs = tuple(object() for _ in range(enemy_debuff_count))
+    enemy_dots = tuple(object() for _ in range(enemy_dot_count))
     char = _make_character(
         name=name,
         am=am,
@@ -94,7 +120,7 @@ def _make_attribute_read_fixture(
         crit_rate=crit_rate,
         crit_damage=crit_damage,
     )
-    enemy = _make_enemy(enemy_debuffs)
+    enemy = _make_enemy(enemy_debuffs, enemy_dots)
     active_buff_view = {char.NAME: list(char_buffs)}
     return _AttributeReadFixture(
         context=create_anomaly_attribute_read_context(
@@ -106,6 +132,55 @@ def _make_attribute_read_fixture(
         enemy=enemy,
         char=char,
         expected_enabled_buff=char_buffs + enemy_debuffs,
+        expected_enemy_dot_buff=enemy_dots,
+    )
+
+
+def _make_anomaly_snapshot(values: Sequence[float] | None = None) -> np.ndarray:
+    if values is None:
+        values = (
+            100.0,
+            1.10,
+            2.0,
+            60.0,
+            1.30,
+            999.0,
+            0.05,
+            8.0,
+            0.10,
+            1.20,
+            1.40,
+        )
+    return np.array([list(values)], dtype=np.float64)
+
+
+def _make_settled_anomaly_formula_fixture(
+    *,
+    character_name: str = "异常公式角色",
+    snapshot: np.ndarray | None = None,
+    scaling_factor: float = 1.25,
+) -> _AnomalyFormulaFixture:
+    source_snapshot = _make_anomaly_snapshot() if snapshot is None else snapshot
+    sim_instance = SimpleNamespace(tick=321)
+    character = SimpleNamespace(NAME=character_name)
+    activation = SimpleNamespace(skill=SimpleNamespace(char_obj=character))
+    enemy = _make_enemy()
+    active_buff_view: dict[str, list[object]] = {character.NAME: []}
+    anomaly_bar = AnomalyBar(sim_instance=cast(Any, sim_instance), element_type=0)
+    anomaly_bar.current_ndarray = np.array(source_snapshot, dtype=np.float64, copy=True)
+    anomaly_bar.current_effective_anomaly = np.float64(30.0)
+    anomaly_bar.current_anomaly = np.float64(129.0)
+    anomaly_bar.settled = True
+    anomaly_bar.activated_by = cast(Any, activation)
+    anomaly_bar.scaling_factor = scaling_factor
+    return _AnomalyFormulaFixture(
+        sim_instance=sim_instance,
+        character=character,
+        activation=activation,
+        enemy=enemy,
+        active_buff_view=active_buff_view,
+        source_snapshot=source_snapshot,
+        anomaly_bar=anomaly_bar,
     )
 
 
@@ -200,6 +275,99 @@ def _patch_buff_aggregation(
         fake_cal_buff_total_bonus,
     )
     return aggregation_calls
+
+
+def test_formula_parity_fixture_builds_independent_calculator_inputs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_attribute_read_fixture(
+        name="公式夹具角色",
+        am=100.0,
+        ap=300.0,
+        imp=80.0,
+        crit_rate=0.2,
+        crit_damage=0.5,
+        char_buff_count=2,
+        enemy_debuff_count=1,
+        enemy_dot_count=2,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        {
+            "局内异常掌控": 0.2,
+            "固定异常精通": 30.0,
+            "局内冲击力%": 0.1,
+        },
+    )
+
+    data = _legacy_multiplier_data(fixture)
+    reader_data = _reader_snapshot_data(fixture.context)
+
+    assert fixture.char.statement.AM == pytest.approx(100.0)
+    assert fixture.char.statement.AP == pytest.approx(300.0)
+    assert len(fixture.active_buff_view[fixture.char.NAME]) == 2
+    assert tuple(fixture.enemy.dynamic.dynamic_debuff_list) == (
+        fixture.expected_enabled_buff[2:]
+    )
+    assert (
+        tuple(fixture.enemy.dynamic.dynamic_dot_list)
+        == fixture.expected_enemy_dot_buff
+    )
+    assert data.dynamic.field_anomaly_mastery == pytest.approx(0.2)
+    assert data.dynamic.anomaly_proficiency == pytest.approx(30.0)
+    assert reader_data.dynamic.field_imp_percentage == pytest.approx(0.1)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=2)
+
+    data.dynamic.anomaly_proficiency = -999.0
+    fixture.active_buff_view[fixture.char.NAME].append(object())
+    fixture.enemy.dynamic.dynamic_debuff_list.append(object())
+    fixture.enemy.dynamic.dynamic_dot_list.append(object())
+
+    next_fixture = _make_attribute_read_fixture(
+        name="公式夹具角色",
+        am=100.0,
+        ap=300.0,
+        imp=80.0,
+        crit_rate=0.2,
+        crit_damage=0.5,
+        char_buff_count=2,
+        enemy_debuff_count=1,
+        enemy_dot_count=2,
+    )
+    next_data = _legacy_multiplier_data(next_fixture)
+
+    assert next_data is not data
+    assert len(next_fixture.active_buff_view[next_fixture.char.NAME]) == 2
+    assert len(next_fixture.enemy.dynamic.dynamic_debuff_list) == 1
+    assert len(next_fixture.enemy.dynamic.dynamic_dot_list) == 2
+    assert next_data.dynamic.anomaly_proficiency == pytest.approx(30.0)
+
+
+def test_anomaly_formula_fixture_copies_snapshot_inputs_for_copied_output() -> None:
+    source_snapshot = _make_anomaly_snapshot(
+        (210.0, 1.20, 3.0, 60.0, 1.50, 999.0, 0.15, 5.0, 0.20, 1.30, 1.70)
+    )
+    original_snapshot = source_snapshot.copy()
+    fixture = _make_settled_anomaly_formula_fixture(snapshot=source_snapshot)
+
+    assert fixture.anomaly_bar.current_ndarray is not source_snapshot
+    np.testing.assert_allclose(fixture.anomaly_bar.current_ndarray, original_snapshot)
+
+    copied = NewAnomaly(
+        fixture.anomaly_bar,
+        active_by=cast(Any, fixture.activation),
+        sim_instance=cast(Any, SimpleNamespace(tick=322)),
+    )
+
+    source_snapshot[0, 0] = -111.0
+    assert fixture.anomaly_bar.current_ndarray[0, 0] == pytest.approx(
+        original_snapshot[0, 0]
+    )
+    fixture.anomaly_bar.current_ndarray[0, 0] = -222.0
+    assert copied.current_ndarray[0, 0] == pytest.approx(original_snapshot[0, 0])
+
+    next_fixture = _make_settled_anomaly_formula_fixture()
+    assert next_fixture.anomaly_bar.current_ndarray[0, 0] == pytest.approx(100.0)
 
 
 @pytest.mark.parametrize(
@@ -850,22 +1018,14 @@ def test_cal_anomaly_uses_settled_snapshot_mul_data_and_retained_damage_ratios(
         staticmethod(lambda data: np.float64(1.2)),
     )
 
-    sim_instance = SimpleNamespace(tick=321)
-    character = SimpleNamespace(NAME="异常公式角色")
-    activation = SimpleNamespace(skill=SimpleNamespace(char_obj=character))
-    enemy = SimpleNamespace(marker="enemy")
-    active_buff_view: dict[str, list[object]] = {character.NAME: []}
-    settled_snapshot = np.array(
-        [[100.0, 1.10, 2.0, 60.0, 1.30, 999.0, 0.05, 8.0, 0.10, 1.20, 1.40]],
-        dtype=np.float64,
-    )
-    anomaly_bar = AnomalyBar(sim_instance=cast(Any, sim_instance), element_type=0)
-    anomaly_bar.current_ndarray = settled_snapshot
-    anomaly_bar.current_effective_anomaly = np.float64(30.0)
-    anomaly_bar.current_anomaly = np.float64(129.0)
-    anomaly_bar.settled = True
-    anomaly_bar.activated_by = cast(Any, activation)
-    anomaly_bar.scaling_factor = 1.25
+    anomaly_fixture = _make_settled_anomaly_formula_fixture()
+    sim_instance = anomaly_fixture.sim_instance
+    character = anomaly_fixture.character
+    activation = anomaly_fixture.activation
+    enemy = anomaly_fixture.enemy
+    active_buff_view = anomaly_fixture.active_buff_view
+    anomaly_bar = anomaly_fixture.anomaly_bar
+    settled_snapshot = anomaly_bar.current_ndarray
 
     calculator = cal_anomaly_module.CalAnomaly(
         anomaly_obj=anomaly_bar,
