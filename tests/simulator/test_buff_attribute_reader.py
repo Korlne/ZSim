@@ -1256,7 +1256,9 @@ def test_anomaly_bar_settlement_and_copied_snapshot_inputs_remain_retained_compa
     assert bar.settled is True
     assert bar.current_effective_anomaly == pytest.approx(30.0)
     assert bar.ndarray_box == []
+    assert bar.current_ndarray.shape == expected_snapshot.shape
     np.testing.assert_allclose(bar.current_ndarray, expected_snapshot)
+    source_current_ndarray = bar.current_ndarray
 
     activation = SimpleNamespace(
         skill=SimpleNamespace(char_obj=SimpleNamespace(NAME="快照角色"))
@@ -1267,11 +1269,14 @@ def test_anomaly_bar_settlement_and_copied_snapshot_inputs_remain_retained_compa
         sim_instance=cast(Any, SimpleNamespace(tick=121)),
     )
 
-    assert copied.current_ndarray is not bar.current_ndarray
+    assert copied.current_ndarray is not source_current_ndarray
     np.testing.assert_allclose(copied.current_ndarray, expected_snapshot)
-    bar.current_ndarray[0, 0] = -999.0
+    source_current_ndarray[0, 0] = -999.0
     assert copied.current_ndarray[0, 0] == pytest.approx(expected_snapshot[0, 0])
+    copied.current_ndarray[0, 1] = -888.0
+    assert source_current_ndarray[0, 1] == pytest.approx(expected_snapshot[0, 1])
     assert copied.activated_by is activation
+    assert copied.activate_by is activation
 
 
 def test_cal_anomaly_rejects_unsettled_or_bad_snapshot_shape() -> None:

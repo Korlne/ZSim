@@ -2651,3 +2651,14 @@
 - Next step:
   - Continue with US-008 by characterizing `AnomalyBar` settlement and copied snapshot inputs while keeping production `CalAnomaly.py` and copied-output formula paths retained.
 ---
+## 2026-06-10 00:49 +08:00 - US-008
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The tightened `test_anomaly_bar_settlement_and_copied_snapshot_inputs_remain_retained_compatibility()` prepares to replace manual review of `AnomalyBar.update_snap_shot(...)`, `anomaly_settled()`, settled `current_ndarray` shape, copied ndarray aliasing, and `active_by` / `activate_by` override semantics with focused characterization coverage.
+  - This story adds formula parity evidence only; it does not replace a live production path, `AnomalyBar` settlement formula, copied-output formula, `CalAnomaly` formula, dispatch adapter, runtime port, validation profile, guardrail, or behavior sample.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `AnomalyBarClass.py`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.py`, `CalAnomaly.py`, `Calculator.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, copied anomaly / disorder output paths, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and existing `calculator-reads` / `implicit-events` validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this test-only characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output, enemy dynamic read, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-009 by using this `AnomalyBar` / copied snapshot baseline to characterize Vivian copied anomaly output parity without replacing production formula or publish paths.
+---
