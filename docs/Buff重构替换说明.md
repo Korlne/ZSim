@@ -2078,3 +2078,15 @@
 - Next step:
   - Generate the next phase-2 PRD from [Buff重构方案.md](./Buff重构方案.md), defaulting to P2-F BuffAddStrategy caller / facade-write design while preserving the broader same-phase pool.
 ---
+## 2026-06-09 11:26 +08:00 - US-001
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - This planning / taxonomy story does not replace live production behavior; it replaces ad hoc P2-F scoping with a root-workspace caller taxonomy for `buff_add_strategy(...)` and a working-note boundary for later focused tests and guardrails.
+  - The taxonomy prepares focused P2-F tests to replace manual review of forced same-tick Buff / Debuff write callers in BuffXLogic, BattleEventListener, Character managers, and `UpdateAnomaly.anomaly_effect_active(...)`.
+- Compatibility retained:
+  - `buff_add_strategy(...)` / `LegacyBuffRuntimeFacade` remains the forced same-tick Buff / Debuff write boundary; active-store replacement, enemy debuff mirror sync, registry/template identity, and no pending queue writes remain retained compatibility.
+  - `ScheduleDispatchPort`, listener broadcast, `RuntimeCommandPort`, `BuffRuntimeReadPort` read-only semantics, P2-A / P2-B / P2-C / P2-D / P2-E guarded buckets, old containers, Calculator / CalAnomaly formulas, direct simulator context helpers, and legacy `buff_add()` / `KickOutBuff()` deletion all remain out of scope.
+  - No new old-coupling review update was needed; root-workspace evidence matched already documented P2-F coupling.
+- Next step:
+  - Continue with US-002 by locking active-store replacement and enemy mirror facade behavior in focused tests without broadening into caller-family coverage or production behavior edits unless a documented contract mismatch appears.
+---
