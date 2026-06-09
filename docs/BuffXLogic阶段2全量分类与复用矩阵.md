@@ -972,3 +972,46 @@ rg -n --hidden --glob '!.codex_worktrees/**' --glob '!__pycache__/**' --glob '!*
 | P2-G direct simulator context helpers | `tests/simulator/test_migrated_p2g_direct_context_guardrail.py` and service-family tests cover Yuzuha tick/preload/next-character/report-state, enemy context, listener lookup, RNG service, and report-state representatives without introducing a universal context helper. | `implicit-events`; `calculator-reads` remains contrast evidence for RNG / crit-adjacent reader seams. | Tick, preload, char-data, enemy, listener, RNG, report-state, scheduled publish, runtime write, and formula snapshot boundaries stay service-specific. | Only reopen if P2-G guardrail or service-family focused tests name a selected root representative regression; do not reopen for generic `sim_instance` text or `.codex_worktrees/` hits alone. |
 
 Closure decision: P2-D scheduled publish, P2-E dot runtime-state, P2-F same-tick facade write, and P2-G direct simulator services remain four different boundary families. Future PRDs should open a narrow blocker only when root-workspace source, focused tests, or validation profiles provide a concrete file / expression / behavior failure; otherwise P2-A through P2-G stay completed guarded-maintenance buckets.
+
+### 2026-06-09 US-004 Validation Profile / Formula Readiness Gap Audit
+
+本节只审计 `scripts/run_buff_refactor_validation.py` 当前 profile wiring 与 phase-3 formula readiness 缺口；不修改验证脚本，不新增 profile，不编辑 `Calculator.py`、`CalAnomaly.py` 或任何 live XLogic 行为。
+
+#### Runner wiring snapshot
+
+`BuffRefactorValidationRunner.build_steps()` 当前固定先跑 `tests/simulator/test_basic_simulator.py` 与 `tests/simulator/test_isolated_teams.py`，再按 `FOCUSED_PYTEST_PROFILES[typecheck_profile]` 追加 focused pytest，最后把 `TYPECHECK_PROFILES[typecheck_profile]` 与 `FOCUSED_MYPY_PROFILES[typecheck_profile]` 合并为 scoped mypy 目标。`DEFAULT_TYPECHECK_PROFILE` 仍是 `lifecycle`；`--mainloop` 只追加 `tests/test_simulator.py`，不会自动替代 profile-specific focused coverage。
+
+| profile | current wiring | coverage this profile proves | formula-readiness limit |
+| --- | --- | --- | --- |
+| `lifecycle` (default) | 8 production / script mypy targets plus `test_buff_raw_container_guardrail.py` focused pytest and focused mypy. | Buff lifecycle / old-container guardrail smoke; useful when lifecycle or same-tick runtime write wiring changes. | It does not prove Calculator formula parity, CalAnomaly settled snapshot parity, scheduled publish ordering, or direct context branch behavior. |
+| `implicit-events` | 50 production / script mypy targets, 39 focused pytest targets, and 38 focused mypy targets. | Shared planned-event, listener/runtime boundary, dot runtime, BuffAddStrategy, retained semantics, and P2-C through P2-G guardrail coverage. | It is the right broad gate for event/runtime maintenance, but it only carries formula-adjacent evidence indirectly; it must not be treated as permission to replace Calculator / CalAnomaly formulas. |
+| `calculator-reads` | 16 typecheck targets, 6 focused pytest targets, and the same 6 focused mypy targets: `test_buff_attribute_reader.py`, `test_buff_raw_container_guardrail.py`, `test_migrated_am_ap_reader_guardrail.py`, `test_migrated_p2b_reader_guardrail.py`, `test_buff_attribute_state_sync.py`, `test_full_crit_event_adjacent_reader.py`. | Current reader seams, AM/AP + crit/impact migrated-source guardrails, read-then-writeback order, raw-container contrast, and full-crit event-adjacent behavior. | This is necessary but not sufficient for phase-3 formula replacement: it proves selected reader parity and migrated-file guardrails, not full damage / anomaly formula equivalence. |
+
+#### Existing focused-test coverage map
+
+| risk surface | existing coverage | current readiness decision |
+| --- | --- | --- |
+| Reader seams | `test_buff_attribute_reader.py`, `test_migrated_am_ap_reader_guardrail.py`, `test_migrated_p2b_reader_guardrail.py`, `test_buff_raw_container_guardrail.py`, plus `calculator-reads`. | Sufficient for current `BuffAttributeReader` helper families and migrated-source guardrails; not sufficient to delete `MultiplierData` or formula internals. |
+| State-sync order | `test_buff_attribute_state_sync.py` and P2-A guardrails cover `simple_start(...) -> dy.count -> update_to_buff_0(...)` style read-then-writeback order. | Keep future helper work paired with order assertions; never replace only the read expression when `dy.count`, record fields, or `buff_0` identity are involved. |
+| Scheduled publish order | `test_schedule_dispatch.py`, resource refresh dispatch tests, `test_cannon_rotor_dispatch.py`, `test_miyabi_core_skill_icefire_dispatch.py`, `test_yixuan_cinema1_dispatch.py`, Vivian / Yanagi / Hugo / Decibel dispatch tests, and `test_migrated_p2d_scheduled_publish_guardrail.py` under `implicit-events`. | P2-D remains guarded maintenance; dispatch adapter parity is not a formula-readiness blocker unless a later formula story changes event production or ordering. |
+| Dot runtime state | `test_dot_runtime_initialization.py`, `test_dot_runtime_state_adapter.py`, Vivian dot / UpdateAnomaly focused tests, and `test_migrated_p2e_dot_runtime_guardrail.py` under `implicit-events`. | Runtime dot registration/removal remains separate from scheduled publish and formula snapshots; no phase-3 formula profile should absorb dot runtime writes. |
+| Direct context services | P2-G focused tests cover Yuzuha tick/preload/next-character/report-state, enemy context, listener lookup, RNG service, report-state, and factory-backed preload contrast; `implicit-events` currently carries `test_migrated_p2g_direct_context_guardrail.py`. | Existing branch tests are service-specific evidence, while the shared profile only gates selected-symbol regressions; future formula parity work should not turn direct context services into a universal adapter backlog. |
+| Formula-adjacent behavior | `test_full_crit_event_adjacent_reader.py`, `test_buff_attribute_reader.py`, `test_buff_attribute_state_sync.py`, `test_anomaly_handler_runtime_view.py`, `test_dot_runtime_initialization.py`, and the formula census rows for `Calculator.py`, `CalAnomaly.py`, `AnomalyBar.current_ndarray`. | Existing tests identify seams and retained snapshots. They do not yet form a full Calculator / CalAnomaly formula parity suite. |
+
+#### Formula parity suite gaps before replacement
+
+Before any phase-3 PRD replaces Calculator / CalAnomaly formula internals, the suite still needs explicit coverage for:
+
+- `Calculator.py` formula-core parity across `MultiplierData`, `DynamicStatement`, static statement fields, active Buff view, enemy debuff view, and the named AM / AP / impact / crit helper families.
+- `CalAnomaly.py` settled anomaly snapshot parity: `AnomalyBar.current_ndarray` shape `(1, 11)`, virtual level extraction, `MulData(...)`, Calculator multiplier calls, `final_multipliers`, `scaling_factor`, disorder / polarity / abloom subclasses, and element-specific anomaly behavior.
+- Copied-output and anomaly-bar adjacency: Vivian / Yanagi copied anomaly payloads and `current_ndarray` usage must stay separated from scheduled publish, listener broadcast, dot runtime registration, and same-tick runtime writes.
+- Behavior-sample criteria: a live registered-team main-loop consistency sample is required only when formula or live runtime semantics change; doc-only, guardrail-only, or profile-wiring-only stories should keep serial validation profiles as the gate.
+- Rollback and non-goals: phase-3 formula PRDs must name retained `MultiplierData` / `MulData` responsibilities, the exact candidate files, and which old containers / dispatch / runtime / listener boundaries remain out of scope.
+
+No new validation profile is wired in this story. If a later PRD introduces a `formula-parity` profile, its intended test set should be documented before wiring and should start from the existing `calculator-reads` focused tests plus new formula-specific pytest targets for Calculator formula parity, CalAnomaly settled snapshot parity, and anomaly `current_ndarray` / copied-output parity; the profile must also name scoped mypy targets before it is added to `run_buff_refactor_validation.py`.
+
+#### US-004 readiness conclusion
+
+- Current validation profiles are adequate for phase-2 guarded maintenance: `implicit-events` protects event/runtime/service boundaries and `calculator-reads` protects current reader seams and migrated-source guardrails.
+- They are not yet a phase-3 formula replacement gate. Formula replacement must wait until the parity suite above exists and the PRD explicitly decides whether to wire a new profile or continue using `calculator-reads` plus focused formula tests.
+- No new old-Buff coupling was discovered; `docs/旧Buff系统耦合审查结果.md` does not need a new entry for this audit.

@@ -2444,3 +2444,15 @@
 - Next step:
   - Continue with US-004 by auditing validation profile wiring and formula-readiness gaps before defining any phase-3 formula parity or replacement suite.
 ---
+## 2026-06-09 19:27 +08:00 - US-004
+- Files changed: `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The new validation-profile / formula-readiness audit section replaces manual interpretation of `run_buff_refactor_validation.py` profile wiring with a documented profile matrix, existing focused-test coverage map, and formula parity gap list.
+  - This story adds audit and handoff evidence only; it does not wire a new validation profile or replace live Calculator / CalAnomaly formula behavior.
+- Compatibility retained:
+  - `implicit-events`, `calculator-reads`, and default `lifecycle` validation semantics remain unchanged.
+  - P2-A through P2-G guarded-maintenance buckets, scheduled publish, listener broadcast, same-tick runtime writes, dot runtime state, direct simulator services, old containers, formula snapshots, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No old-coupling review update was needed; this audit found no new Buff coupling beyond already documented retained formula snapshot and guarded-maintenance boundaries.
+- Next step:
+  - Continue with US-005 by defining the formula parity suite contract before any Calculator / CalAnomaly formula replacement or validation-profile wiring.
+---
