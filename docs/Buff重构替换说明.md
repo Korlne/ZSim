@@ -2103,3 +2103,16 @@
 - Next step:
   - Continue with US-003 by locking beneficiary selection, explicit target override, template identity, and `specified_count` behavior without broadening into caller-family coverage or production behavior edits unless a documented contract mismatch appears.
 ---
+## 2026-06-09 12:01 +08:00 - US-003
+- Files changed: `tests/simulator/test_buff_add_strategy_runtime_facade.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_buff_add_strategy_runtime_facade.py` now replaces manual review of `confirm_selected_character(...)` target fan-out and explicit `benifit_list` override behavior with focused facade-backed tests.
+  - The focused tests now prove per-beneficiary `exist_buff_dict` template writeback through `simple_start(...)`, copied runtime Buff identity, `specified_count` propagation, and untouched pending queues for automatic fan-out and explicit target override paths.
+  - This story locks the existing boundary with tests only; it does not replace live production behavior.
+- Compatibility retained:
+  - `buff_add_strategy(...)` / `LegacyBuffRuntimeFacade` remains the forced same-tick Buff / Debuff write boundary, with target selection still flowing through `confirm_selected_character(...)` and runtime writes through `let_buff_start(...)`.
+  - `LOADING_BUFF_DICT` pending queues, `ScheduleDispatchPort` scheduled backlog, listener broadcast, `RuntimeCommandPort`, `BuffRuntimeReadPort` read-only semantics, old containers, Calculator / CalAnomaly formulas, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; root-workspace evidence matched already documented P2-F target-selection and template-identity coupling.
+- Next step:
+  - Continue with US-004 by adding Hugo Totalize caller coverage without broadening into Roaring Ride, Seed, listener, or Character manager caller families.
+---

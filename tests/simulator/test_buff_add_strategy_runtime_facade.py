@@ -172,6 +172,14 @@ def _install_runtime_command_creation_guard(monkeypatch: Any) -> None:
     )
 
 
+def _assert_pending_queues_untouched(
+    sim_instance: Any, pending_queues: dict[str, list[Buff]]
+) -> None:
+    for name, pending_queue in pending_queues.items():
+        assert sim_instance.load_data.LOADING_BUFF_DICT[name] is pending_queue
+        assert pending_queue == []
+
+
 def test_buff_add_strategy_replaces_active_store_through_runtime_facade(
     monkeypatch: Any,
 ) -> None:
@@ -216,6 +224,163 @@ def test_buff_add_strategy_replaces_active_store_through_runtime_facade(
         ("find_active_buff_by_index", "Alice", "forced-buff"),
         ("remove_active_buff", "Alice", old_active_buff),
         ("append_active_buff", "Alice", new_active_buff),
+    ]
+
+
+def test_buff_add_strategy_auto_fanout_replaces_each_selected_target(
+    monkeypatch: Any,
+) -> None:
+    facade_calls = _install_recording_runtime_facade(monkeypatch)
+    _install_runtime_command_creation_guard(monkeypatch)
+    alice_template = _BuffAddProbe(
+        "fanout-buff", add_buff_to="1100", count=2, step=2
+    )
+    bob_template = _BuffAddProbe("fanout-buff", add_buff_to="1100", count=5)
+    corin_template = _BuffAddProbe("fanout-buff", add_buff_to="1100", count=8)
+    alice_old = _BuffAddProbe("fanout-buff", count=12)
+    bob_old = _BuffAddProbe("fanout-buff", count=13)
+    alice_unrelated = _BuffAddProbe("other-buff", count=1)
+    bob_unrelated = _BuffAddProbe("other-buff", count=2)
+    corin_active = _BuffAddProbe("fanout-buff", count=14)
+    alice_store = [alice_old, alice_unrelated]
+    bob_store = [bob_old, bob_unrelated]
+    corin_store = [corin_active]
+    pending_queues: dict[str, list[Buff]] = {
+        "Alice": _FailFastPendingQueue(),
+        "Bob": _FailFastPendingQueue(),
+        "Corin": _FailFastPendingQueue(),
+    }
+    sim_instance = _make_sim_instance(
+        exist_buff_dict={
+            "Alice": {"fanout-buff": alice_template},
+            "Bob": {"fanout-buff": bob_template},
+            "Corin": {"fanout-buff": corin_template},
+        },
+        loading_buff_dict=pending_queues,
+        dynamic_buff_dict={
+            "Alice": alice_store,
+            "Bob": bob_store,
+            "Corin": corin_store,
+        },
+        enemy_debuff_mirror=[],
+    )
+    sim_instance.load_data.all_name_order_box = {
+        "Alice": ["Alice", "Bob", "Corin", "Daisy"],
+        "enemy": ["enemy"],
+    }
+
+    buff_add_strategy("fanout-buff", sim_instance=sim_instance)
+
+    alice_replacements = [
+        buff for buff in alice_store if buff.ft.index == "fanout-buff"
+    ]
+    bob_replacements = [buff for buff in bob_store if buff.ft.index == "fanout-buff"]
+    assert len(alice_replacements) == 1
+    assert len(bob_replacements) == 1
+    alice_new = alice_replacements[0]
+    bob_new = bob_replacements[0]
+    assert alice_new is not alice_old
+    assert alice_new is not alice_template
+    assert bob_new is not bob_old
+    assert bob_new is not bob_template
+    assert alice_store == [alice_unrelated, alice_new]
+    assert bob_store == [bob_unrelated, bob_new]
+    assert corin_store == [corin_active]
+    assert alice_new.dy.count == 4
+    assert bob_new.dy.count == 6
+    assert alice_new.dy.startticks == 42
+    assert bob_new.dy.startticks == 42
+    assert alice_new.dy.endticks == 52
+    assert bob_new.dy.endticks == 52
+    assert alice_template.dy.count == 4
+    assert bob_template.dy.count == 6
+    assert alice_template.dy.startticks == 42
+    assert bob_template.dy.startticks == 42
+    assert alice_template.dy.endticks == 52
+    assert bob_template.dy.endticks == 52
+    assert alice_template.history.active_times == 1
+    assert bob_template.history.active_times == 1
+    assert corin_template.dy.count == 8
+    assert corin_template.history.active_times == 0
+    _assert_pending_queues_untouched(sim_instance, pending_queues)
+    assert facade_calls == [
+        ("find_active_buff_by_index", "Alice", "fanout-buff"),
+        ("remove_active_buff", "Alice", alice_old),
+        ("append_active_buff", "Alice", alice_new),
+        ("find_active_buff_by_index", "Bob", "fanout-buff"),
+        ("remove_active_buff", "Bob", bob_old),
+        ("append_active_buff", "Bob", bob_new),
+    ]
+
+
+def test_buff_add_strategy_explicit_targets_override_auto_selection(
+    monkeypatch: Any,
+) -> None:
+    facade_calls = _install_recording_runtime_facade(monkeypatch)
+    _install_runtime_command_creation_guard(monkeypatch)
+    alice_template = _BuffAddProbe("override-buff", add_buff_to="1100", count=1)
+    bob_template = _BuffAddProbe("override-buff", add_buff_to="1100", count=6)
+    corin_template = _BuffAddProbe("override-buff", add_buff_to="1100", count=2)
+    alice_active = _BuffAddProbe("override-buff", count=9)
+    bob_active = _BuffAddProbe("override-buff", count=10)
+    corin_old = _BuffAddProbe("override-buff", count=11)
+    alice_store = [alice_active]
+    bob_store = [bob_active]
+    corin_store = [corin_old]
+    pending_queues: dict[str, list[Buff]] = {
+        "Alice": _FailFastPendingQueue(),
+        "Bob": _FailFastPendingQueue(),
+        "Corin": _FailFastPendingQueue(),
+    }
+    sim_instance = _make_sim_instance(
+        exist_buff_dict={
+            "Alice": {"override-buff": alice_template},
+            "Bob": {"override-buff": bob_template},
+            "Corin": {"override-buff": corin_template},
+        },
+        loading_buff_dict=pending_queues,
+        dynamic_buff_dict={
+            "Alice": alice_store,
+            "Bob": bob_store,
+            "Corin": corin_store,
+        },
+        enemy_debuff_mirror=[],
+    )
+    sim_instance.load_data.all_name_order_box = {
+        "Alice": ["Alice", "Bob", "Corin", "Daisy"],
+        "enemy": ["enemy"],
+    }
+
+    buff_add_strategy(
+        "override-buff",
+        benifit_list=["Corin"],
+        specified_count=7,
+        sim_instance=sim_instance,
+    )
+
+    assert alice_store == [alice_active]
+    assert bob_store == [bob_active]
+    assert len(corin_store) == 1
+    corin_new = corin_store[0]
+    assert corin_new is not corin_old
+    assert corin_new is not corin_template
+    assert corin_old not in corin_store
+    assert corin_new.dy.count == 7
+    assert corin_new.dy.startticks == 42
+    assert corin_new.dy.endticks == 52
+    assert corin_template.dy.count == 7
+    assert corin_template.dy.startticks == 42
+    assert corin_template.dy.endticks == 52
+    assert corin_template.history.active_times == 1
+    assert alice_template.dy.count == 1
+    assert bob_template.dy.count == 6
+    assert alice_template.history.active_times == 0
+    assert bob_template.history.active_times == 0
+    _assert_pending_queues_untouched(sim_instance, pending_queues)
+    assert facade_calls == [
+        ("find_active_buff_by_index", "Corin", "override-buff"),
+        ("remove_active_buff", "Corin", corin_old),
+        ("append_active_buff", "Corin", corin_new),
     ]
 
 
