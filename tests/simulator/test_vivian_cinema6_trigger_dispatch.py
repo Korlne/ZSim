@@ -16,6 +16,7 @@ from zsim.sim_progress.Buff.BuffXLogic.VivianCinema6Trigger import (
     VivianCinema6Trigger,
     VivianCinema6TriggerRecord,
 )
+from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.anomaly_bar import AnomalyBar
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import DirgeOfDestinyAnomaly
 
@@ -26,11 +27,69 @@ class _FailFastEventList(list):
 
 
 class _RecordingDispatchPort:
-    def __init__(self) -> None:
+    def __init__(
+        self, action_log: list[tuple[str, object]] | None = None
+    ) -> None:
         self.events: list[object] = []
+        self.action_log = action_log
 
     def publish_scheduled(self, event: object) -> None:
+        if self.action_log is not None:
+            self.action_log.append(("publish_scheduled", event))
         self.events.append(event)
+
+
+class _FeatherManagerProbe:
+    def __init__(
+        self,
+        *,
+        guard_feather: int,
+        c1_counter: int,
+        flight_feather: int,
+        action_log: list[tuple[str, object]],
+    ) -> None:
+        self._guard_feather = guard_feather
+        self._c1_counter = c1_counter
+        self._flight_feather = flight_feather
+        self.action_log = action_log
+        self.mutation_log: list[tuple[str, object]] = []
+        self.update_calls: list[bool] = []
+
+    def _record(self, field: str, value: object) -> None:
+        entry = (field, value)
+        self.mutation_log.append(entry)
+        self.action_log.append(entry)
+
+    @property
+    def guard_feather(self) -> int:
+        return self._guard_feather
+
+    @guard_feather.setter
+    def guard_feather(self, value: int) -> None:
+        self._record("guard_feather", value)
+        self._guard_feather = value
+
+    @property
+    def c1_counter(self) -> int:
+        return self._c1_counter
+
+    @c1_counter.setter
+    def c1_counter(self, value: int) -> None:
+        self._record("c1_counter", value)
+        self._c1_counter = value
+
+    @property
+    def flight_feather(self) -> int:
+        return self._flight_feather
+
+    @flight_feather.setter
+    def flight_feather(self, value: int) -> None:
+        self._record("flight_feather", value)
+        self._flight_feather = value
+
+    def update_myself(self, *, c6_signal: bool) -> None:
+        self.update_calls.append(c6_signal)
+        self.action_log.append(("update_myself", c6_signal))
 
 
 class _FakeMultiplierData:
@@ -63,23 +122,30 @@ def _build_active_anomaly(*, sim_instance: object) -> AnomalyBar:
     return anomaly_bar
 
 
+def _build_skill_node(*, uuid: str = "vivian-cinema6-node") -> SkillNode:
+    skill_node = SkillNode.__new__(SkillNode)
+    skill_node.skill_tag = "1331_SNA_2"
+    skill_node.UUID = uuid
+    return skill_node
+
+
 def _build_logic_harness(*, active_anomalies: list[AnomalyBar]) -> tuple[
     VivianCinema6Trigger,
     VivianCinema6TriggerRecord,
     _RecordingDispatchPort,
     SimpleNamespace,
 ]:
-    dispatch_port = _RecordingDispatchPort()
+    action_log: list[tuple[str, object]] = []
+    dispatch_port = _RecordingDispatchPort(action_log=action_log)
     schedule_data = SimpleNamespace(
         event_list=_FailFastEventList(),
         change_process_state=lambda: None,
     )
-    feather_updates: list[bool] = []
-    feather_manager = SimpleNamespace(
+    feather_manager = _FeatherManagerProbe(
         guard_feather=3,
         c1_counter=1,
         flight_feather=2,
-        update_myself=lambda *, c6_signal: feather_updates.append(c6_signal),
+        action_log=action_log,
     )
     char = SimpleNamespace(
         NAME="\u8587\u8587\u5b89",
@@ -95,6 +161,7 @@ def _build_logic_harness(*, active_anomalies: list[AnomalyBar]) -> tuple[
     )
     dynamic = SimpleNamespace(
         get_active_anomaly=lambda: active_anomalies,
+        is_under_anomaly=bool(active_anomalies),
     )
     enemy = SimpleNamespace(sim_instance=sim_instance, dynamic=dynamic)
     dynamic_buff_list: dict[str, list[Any]] = {"enemy": []}
@@ -113,8 +180,9 @@ def _build_logic_harness(*, active_anomalies: list[AnomalyBar]) -> tuple[
         schedule_data=schedule_data,
         char=char,
         feather_manager=feather_manager,
-        feather_updates=feather_updates,
+        feather_updates=feather_manager.update_calls,
         dynamic_buff_list=dynamic_buff_list,
+        action_log=action_log,
     )
 
 
@@ -130,10 +198,17 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
     monkeypatch.setattr(trigger_module, "VIVIAN_REPORT", False)
+    dispatch_factory_calls: list[object] = []
+
+    def fake_create_schedule_dispatch_port(*, sim_instance: object) -> _RecordingDispatchPort:
+        dispatch_factory_calls.append(sim_instance)
+        harness.action_log.append(("create_schedule_dispatch_port", sim_instance))
+        return dispatch_port
+
     monkeypatch.setattr(
         trigger_module,
         "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
+        fake_create_schedule_dispatch_port,
     )
     _block_legacy_event_lookup(monkeypatch)
 
@@ -152,10 +227,33 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
 
     monkeypatch.setattr(trigger_module.Cal.AnomalyMul, "cal_ap", fake_cal_ap)
 
+    skill_node = _build_skill_node()
+
+    assert logic.special_judge_logic(skill_node=skill_node) is True
+    assert record.last_update_node is skill_node
+    assert record.guard_feather == 3
+    assert harness.feather_manager.guard_feather == 0
+    assert harness.feather_manager.c1_counter == 0
+    assert harness.feather_manager.flight_feather == 3
+    assert dispatch_factory_calls == []
+    assert dispatch_port.events == []
+
     logic.special_effect_logic()
 
     assert len(dispatch_port.events) == 1
     published_event = dispatch_port.events[0]
+    assert dispatch_factory_calls == [harness.sim_instance]
+    assert [entry[0] for entry in harness.action_log] == [
+        "guard_feather",
+        "c1_counter",
+        "c1_counter",
+        "flight_feather",
+        "create_schedule_dispatch_port",
+        "publish_scheduled",
+        "update_myself",
+    ]
+    assert harness.action_log[4][1] is harness.sim_instance
+    assert harness.action_log[5][1] is published_event
     assert isinstance(published_event, DirgeOfDestinyAnomaly)
     assert published_event is not active_anomaly
     assert published_event.marker == "c6-active-anomaly"

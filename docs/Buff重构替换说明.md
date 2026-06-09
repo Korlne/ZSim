@@ -2662,3 +2662,14 @@
 - Next step:
   - Continue with US-009 by using this `AnomalyBar` / copied snapshot baseline to characterize Vivian copied anomaly output parity without replacing production formula or publish paths.
 ---
+## 2026-06-10 00:58 +08:00 - US-009
+- Files changed: `tests/simulator/test_vivian_core_passive_trigger_dispatch.py`, `tests/simulator/test_vivian_cinema6_trigger_dispatch.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The Vivian focused dispatch tests prepare to replace manual review of `VivianCorePassiveTrigger.py` copied anomaly construction, AP-derived ratio inputs, on-demand dispatch adapter use, `VivianCinema6Trigger.py` pre-active feather/resource ordering, and copied payload publish timing with executable characterization coverage.
+  - This story adds formula / dispatch parity evidence only; it does not replace a live production path, copied-output formula, Calculator formula, CalAnomaly formula, dispatch adapter, listener path, runtime port, validation profile, guardrail, or behavior sample.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `VivianCorePassiveTrigger.py`, `VivianCinema6Trigger.py`, `CopyAnomalyForOutput.py`, `AnomalyBarClass.py`, `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and existing `calculator-reads` / `implicit-events` validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this test-only characterization found no new Buff coupling beyond already documented retained copied-output, formula snapshot, enemy dynamic read, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-010 by characterizing disorder and copied-output formula reads without reopening Vivian production triggers or scheduled dispatch infrastructure.
+---

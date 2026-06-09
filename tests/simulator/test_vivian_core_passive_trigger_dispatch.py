@@ -97,10 +97,16 @@ def test_vivian_core_passive_publishes_dirge_anomaly_via_dispatch_port(
     record.dynamic_buff_list = dynamic_buff_list
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
+    dispatch_factory_calls: list[object] = []
+
+    def fake_create_schedule_dispatch_port(*, sim_instance: object) -> _RecordingDispatchPort:
+        dispatch_factory_calls.append(sim_instance)
+        return dispatch_port
+
     monkeypatch.setattr(
         trigger_module,
         "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
+        fake_create_schedule_dispatch_port,
     )
     _block_legacy_event_lookup(monkeypatch)
 
@@ -119,9 +125,12 @@ def test_vivian_core_passive_publishes_dirge_anomaly_via_dispatch_port(
 
     monkeypatch.setattr(trigger_module.Cal.AnomalyMul, "cal_ap", fake_cal_ap)
 
+    assert dispatch_factory_calls == []
+
     logic.special_effect_logic()
 
     assert len(dispatch_port.events) == 1
+    assert dispatch_factory_calls == [sim_instance]
     published_event = dispatch_port.events[0]
     assert isinstance(published_event, DirgeOfDestinyAnomaly)
     assert published_event is not active_anomaly
