@@ -2156,3 +2156,17 @@
 - Next step:
   - Continue with US-007 by adding `UpdateAnomaly.anomaly_effect_active(...)` debuff activation coverage while keeping dot runtime-state replacement on the P2-E path.
 ---
+## 2026-06-09 12:55 +08:00 - US-007
+- Files changed: `tests/simulator/test_update_anomaly_dispatch.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_update_anomaly_dispatch.py` now replaces manual `UpdateAnomaly.anomaly_effect_active(...)` debuff/dot boundary review with focused tests for debuff `buff_add_strategy(...)` calls, dot runtime-state replacement, and caller-layer guardrails.
+  - This story locks existing `UpdateAnomaly` behavior with tests only; it does not replace live production behavior.
+- Compatibility retained:
+  - `anomaly_effect_active(...)` source, anomaly formulas, dot duration initialization, dot replacement semantics, and scheduled anomaly publish behavior remain unchanged.
+  - `buff_add_strategy(...)` / `LegacyBuffRuntimeFacade` remains the forced same-tick Buff / Debuff write boundary for `bar.accompany_debuff`.
+  - `DotRuntimeStateAdapter.replace_by_index(...)` remains the P2-E dot runtime-state path for `bar.accompany_dot`.
+  - `LOADING_BUFF_DICT` pending queues, scheduled publish, listener broadcast, `RuntimeCommandPort`, `BuffRuntimeReadPort` read-only semantics, old containers, Calculator / CalAnomaly formulas, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; root-workspace evidence matched already documented P2-F `UpdateAnomaly` caller coupling.
+- Next step:
+  - Continue with US-008 by adding BattleEventListener caller focused coverage without broadening into Character manager callers or cross-layer source guardrail wiring.
+---

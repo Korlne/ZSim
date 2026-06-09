@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 from types import SimpleNamespace
 
 import numpy as np
@@ -58,6 +59,20 @@ class _FailFastDotRuntimeList(list):
 
     def remove(self, item):
         raise AssertionError("debuff-only anomaly effects should not remove runtime dots")
+
+
+class _FailFastPendingBuffQueue(list):
+    def append(self, item):
+        raise AssertionError("anomaly effects should not write pending Buff queues")
+
+    def extend(self, items):
+        raise AssertionError("anomaly effects should not write pending Buff queues")
+
+    def insert(self, index, item):
+        raise AssertionError("anomaly effects should not write pending Buff queues")
+
+    def clear(self):
+        raise AssertionError("anomaly effects should not write pending Buff queues")
 
 
 class _RecordingDotRuntimeStateAdapter(DotRuntimeStateAdapter):
@@ -319,6 +334,8 @@ def test_anomaly_effect_active_replaces_same_index_dot_without_scheduled_publish
     call_order: list[tuple[str, object]] = []
     helper_calls: list[tuple[str, object]] = []
     sim_instance = _build_sim_instance(_FailFastEventList())
+    pending_queue = _FailFastPendingBuffQueue()
+    sim_instance.load_data = SimpleNamespace(LOADING_BUFF_DICT={"enemy": pending_queue})
     sim_instance.listener_manager = _ForbiddenListenerManager()
     enemy = _build_enemy(sim_instance)
     old_dot = _FakeDot(index="Shock", call_order=call_order)
@@ -340,6 +357,13 @@ def test_anomaly_effect_active_replaces_same_index_dot_without_scheduled_publish
         "spawn_anomaly_dot",
         fake_spawn_anomaly_dot,
     )
+    monkeypatch.setattr(
+        update_anomaly_module,
+        "buff_add_strategy",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("dot-only anomaly effects should not call buff_add_strategy")
+        ),
+    )
     _record_dot_runtime_state_adapter(monkeypatch, helper_calls)
 
     anomaly_effect_active(
@@ -359,6 +383,7 @@ def test_anomaly_effect_active_replaces_same_index_dot_without_scheduled_publish
     assert old_dot.ended_at == 77
     assert enemy.dynamic.dynamic_dot_list == [unrelated_dot, new_dot]
     assert enemy.dynamic.dynamic_dot_list.count(new_dot) == 1
+    assert pending_queue == []
     assert call_order == [
         ("dot_end", "Shock"),
         ("dot_remove", "Shock"),
@@ -371,6 +396,8 @@ def test_anomaly_effect_active_spawn_false_leaves_runtime_dot_list_unchanged(
 ):
     call_order: list[tuple[str, object]] = []
     sim_instance = _build_sim_instance(_FailFastEventList())
+    pending_queue = _FailFastPendingBuffQueue()
+    sim_instance.load_data = SimpleNamespace(LOADING_BUFF_DICT={"enemy": pending_queue})
     sim_instance.listener_manager = _ForbiddenListenerManager()
     enemy = _build_enemy(sim_instance)
     existing_dot = _FakeDot(index="Shock", call_order=call_order)
@@ -383,6 +410,13 @@ def test_anomaly_effect_active_spawn_false_leaves_runtime_dot_list_unchanged(
         update_anomaly_module,
         "spawn_anomaly_dot",
         lambda *args, **kwargs: False,
+    )
+    monkeypatch.setattr(
+        update_anomaly_module,
+        "buff_add_strategy",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("dot-only anomaly effects should not call buff_add_strategy")
+        ),
     )
     monkeypatch.setattr(
         update_anomaly_module.DotRuntimeStateAdapter,
@@ -405,6 +439,7 @@ def test_anomaly_effect_active_spawn_false_leaves_runtime_dot_list_unchanged(
 
     assert existing_dot.ended_at is None
     assert enemy.dynamic.dynamic_dot_list == [existing_dot]
+    assert pending_queue == []
     assert call_order == []
 
 
@@ -432,6 +467,15 @@ def test_anomaly_effect_active_debuff_branch_uses_existing_buff_add_path(
             AssertionError("debuff-only anomaly effects should not spawn runtime dots")
         ),
     )
+    monkeypatch.setattr(
+        update_anomaly_module.DotRuntimeStateAdapter,
+        "from_enemy",
+        classmethod(
+            lambda *args, **kwargs: (_ for _ in ()).throw(
+                AssertionError("debuff-only anomaly effects should not create dot helper")
+            )
+        ),
+    )
 
     anomaly_effect_active(
         SimpleNamespace(
@@ -450,6 +494,25 @@ def test_anomaly_effect_active_debuff_branch_uses_existing_buff_add_path(
         ("Buff-异常-霜寒", sim_instance),
     ]
     assert enemy.dynamic.dynamic_dot_list == []
+
+
+def test_anomaly_effect_active_does_not_introduce_runtime_write_ports():
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
+
+    source = inspect.getsource(update_anomaly_module.anomaly_effect_active)
+    assert "RuntimeCommandPort" not in source
+    assert "create_runtime_command_port" not in source
+    assert "BuffRuntimeReadPort" not in source
+    assert "DotRuntimeStateAdapter.from_enemy" in source
+
+    write_method_names = {
+        "append_pending_buff",
+        "clear_pending_buffs",
+        "remove_active_buff",
+        "append_active_buff",
+        "sync_enemy_debuff_mirror",
+    }
+    assert write_method_names.isdisjoint(BuffRuntimeReadPort.__dict__)
 
 
 @pytest.mark.parametrize("dot_index", ["Freez", "Freezdot"])
