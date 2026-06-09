@@ -2744,3 +2744,15 @@
 - Next step:
   - Continue with US-016 by running serial validation and writing the final formula replacement Go / No-Go handoff; production formula replacement remains blocked until that story names exact evidence and remaining blockers.
 ---
+## 2026-06-10 02:25 +08:00 - US-016
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The final serial validation and Go / No-Go handoff replaces the provisional US-016 default with a closed validation record and a concrete next default: phase-3 formula oracle gap closure / deterministic parity matrix.
+  - This iteration prepares later replacement decisions only; it does not replace a live production path, Calculator formula, CalAnomaly formula, copied-output formula, dispatch adapter, runtime port, validation profile, guardrail, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, copied anomaly / disorder output paths, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring remain unchanged.
+  - Final Go / No-Go is No-Go for production formula replacement: deterministic table-driven formula oracles, copied-output payload parity, `AnomalyBar.current_ndarray` field matrices, registered behavior sample triggers, rollback plan, retained validation gates, and non-goals must be explicit before any later production formula PRD.
+  - No old-coupling review update was needed; this validation / handoff story found no new Buff coupling beyond already documented retained formula snapshot, copied-output, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Generate the next PRD for phase-3 formula oracle gap closure / deterministic parity matrix under `docs/Buff重构方案.md`; do not generate production formula replacement until those oracle gaps are closed and the next Go / No-Go explicitly says Go.
+---

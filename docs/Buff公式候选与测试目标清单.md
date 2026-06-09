@@ -1,6 +1,6 @@
 # Buff公式候选与测试目标清单
 
-更新时间：2026-06-10 01:58 +08:00
+更新时间：2026-06-10 02:25 +08:00
 
 本清单服务于 Phase 3 公式等价测试设计。当前故事只建立候选面和测试目标证据，不替换 `Calculator.py`、`CalAnomaly.py`、复制异常 / 紊乱输出公式，也不改变 `ScheduleDispatchPort`、`RuntimeCommandPort` 或旧容器兼容路径。
 
@@ -59,6 +59,27 @@
 - `CalDisorder` / `CalPolarityDisorder` / `CalAbloom` 还缺 deterministic formula oracle 与 copied-output report payload parity。
 - `AnomalyBar.current_ndarray` 仍缺字段级 reset / deepcopy / update path 矩阵。
 - registered-team main-loop sample 只在实际 production formula、Buff timeline 或 scheduled event semantics 改动时运行；当前 validation wiring 不需要新增注册队伍样本。
+
+## US-016 final serial validation / production formula Go-No-Go
+
+结论：No-Go。US-016 serial validation 证明当前 characterization surface、`formula-parity` profile、retained `calculator-reads` gate、event-adjacent `implicit-events` gate 与默认 lifecycle gate 可以串行通过；它没有消除 production formula replacement 前必须具备的 deterministic oracle、copied-output payload parity、`AnomalyBar.current_ndarray` 字段矩阵、registered behavior sample 条件和 rollback plan 缺口。
+
+验证证据：
+
+- `uv run pytest tests/simulator/test_buff_attribute_reader.py -q` passed：`60 passed`。
+- `uv run pytest tests/simulator/test_vivian_core_passive_trigger_dispatch.py tests/simulator/test_vivian_cinema6_trigger_dispatch.py -q` passed：`3 passed`。
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile formula-parity` passed：base `2 passed` / isolated teams `3 passed` / focused `60 passed` / mypy `9 source files` clean。
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads` passed：base `2 passed` / isolated teams `3 passed` / focused `160 passed` / mypy `22 source files` clean。
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events` passed：base `2 passed` / isolated teams `3 passed` / focused `238 passed` / mypy `88 source files` clean。
+- `uv run python scripts/run_buff_refactor_validation.py` passed：base `2 passed` / isolated teams `3 passed` / focused lifecycle `18 passed` / mypy `9 source files` clean。
+
+下一默认 PRD 不能直接替换 `Calculator.py`、`CalAnomaly.py` 或 copied-output 生产公式。它应先做 phase-3 formula oracle gap closure / deterministic parity matrix，最小候选包括：
+
+- `Calculator.RegularMul` / `Calculator.AnomalyMul` / `Calculator.StunMul` 表驱动公式 oracle 与边界组合。
+- `CalDisorder` / `CalPolarityDisorder` / `CalAbloom` deterministic formula oracle。
+- `CopyAnomalyForOutput.py` / `UpdateAnomaly.py` report payload parity 与 listener-facing fields。
+- `AnomalyBar.current_ndarray` reset / deepcopy / update path 字段矩阵。
+- registered-team sample trigger 条件、rollback plan、retained `formula-parity` / `calculator-reads` / `implicit-events` gates 和明确 non-goals。
 
 ## US-013 行为样本决策矩阵
 
