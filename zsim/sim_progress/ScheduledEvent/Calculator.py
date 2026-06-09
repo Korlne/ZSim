@@ -168,7 +168,7 @@ class MultiplierData:
             tuple(enemy_obj.dynamic.dynamic_dot_list),
         )
 
-        node_id = id(judge_node)
+        node_id: Any = id(judge_node)
         if isinstance(judge_node, AnomalyBar):
             node_id = judge_node.UUID
 

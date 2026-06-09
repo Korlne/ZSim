@@ -1,6 +1,6 @@
 # Buff公式候选与测试目标清单
 
-更新时间：2026-06-10 01:45 +08:00
+更新时间：2026-06-10 01:58 +08:00
 
 本清单服务于 Phase 3 公式等价测试设计。当前故事只建立候选面和测试目标证据，不替换 `Calculator.py`、`CalAnomaly.py`、复制异常 / 紊乱输出公式，也不改变 `ScheduleDispatchPort`、`RuntimeCommandPort` 或旧容器兼容路径。
 
@@ -27,6 +27,38 @@
 
 - 单文件 focused：`uv run pytest tests/simulator/test_buff_attribute_reader.py -q`。
 - 当前 profile：`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads`，覆盖 `test_buff_attribute_reader.py`、`test_buff_raw_container_guardrail.py`、`test_migrated_am_ap_reader_guardrail.py`、`test_migrated_p2b_reader_guardrail.py`、`test_buff_attribute_state_sync.py`、`test_full_crit_event_adjacent_reader.py`。
+
+## US-014 formula-parity validation profile 决策
+
+结论：Go，新增窄 `formula-parity` validation profile，但它只代表当前 Phase 3 characterization / parity fixture 最小门禁，不授权生产公式替换、删除 retained formula snapshots、扩大 runtime write facade 或替代 `calculator-reads`。
+
+新增 profile 的 focused pytest 目标：
+
+- `tests/simulator/test_buff_attribute_reader.py`
+
+新增 profile 的 scoped mypy 目标：
+
+- `zsim/sim_progress/ScheduledEvent/Calculator.py`
+- `zsim/sim_progress/ScheduledEvent/CalAnomaly.py`
+- `zsim/sim_progress/anomaly_bar/__init__.py`
+- `zsim/sim_progress/anomaly_bar/AnomalyBarClass.py`
+- `zsim/sim_progress/anomaly_bar/CopyAnomalyForOutput.py`
+- `zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritDamageBonus.py`
+- `zsim/sim_progress/Buff/BuffXLogic/TimeweaverDisorderDmgMul.py`
+- `scripts/run_buff_refactor_validation.py`
+- `tests/simulator/test_buff_attribute_reader.py`
+
+`calculator-reads` 仍保留为活跃 gate，用来覆盖迁移 reader seam、raw container guardrail、AM/AP guardrail、P2-B guardrail、state sync 与 full-crit event-adjacent reader：
+
+- focused pytest / mypy：`tests/simulator/test_buff_attribute_reader.py`、`tests/simulator/test_buff_raw_container_guardrail.py`、`tests/simulator/test_migrated_am_ap_reader_guardrail.py`、`tests/simulator/test_migrated_p2b_reader_guardrail.py`、`tests/simulator/test_buff_attribute_state_sync.py`、`tests/simulator/test_full_crit_event_adjacent_reader.py`。
+- scoped mypy source：`Calculator.py`、P2-A / P2-B reader callsites、`CannonRotor.py`、`TimeweaverDisorderDmgMul.py` 与 `scripts/run_buff_refactor_validation.py`，以 `scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads` 的当前配置为准。
+
+仍然阻塞 production formula replacement 的缺口：
+
+- `RegularMul` / `AnomalyMul` / `StunMul` 还需要更完整的表驱动公式 oracle 与边界组合快照。
+- `CalDisorder` / `CalPolarityDisorder` / `CalAbloom` 还缺 deterministic formula oracle 与 copied-output report payload parity。
+- `AnomalyBar.current_ndarray` 仍缺字段级 reset / deepcopy / update path 矩阵。
+- registered-team main-loop sample 只在实际 production formula、Buff timeline 或 scheduled event semantics 改动时运行；当前 validation wiring 不需要新增注册队伍样本。
 
 ## US-013 行为样本决策矩阵
 

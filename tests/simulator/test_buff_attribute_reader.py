@@ -711,7 +711,7 @@ def test_disorder_copied_output_preserves_formula_inputs_and_payload_fields(
         snapshot=source_snapshot,
         scaling_factor=1.75,
     )
-    source_bar = fixture.anomaly_bar
+    source_bar = cast(Any, fixture.anomaly_bar)
     source_bar.element_type = 3
     source_bar.accompany_dot = "Shock"
     source_bar.anomaly_dmg_ratio = 2.4
@@ -721,6 +721,7 @@ def test_disorder_copied_output_preserves_formula_inputs_and_payload_fields(
     source_bar.rename_tag = "copied-disorder-source"
     runtime_sim = SimpleNamespace(tick=300)
 
+    copied: Any
     if copied_kind == "polarity_disorder":
         assert polarity_ratio is not None
         copied = PolarityDisorder(

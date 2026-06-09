@@ -2720,3 +2720,16 @@
 - Next step:
   - Continue with US-014 by deciding whether formula parity validation wiring remains on `calculator-reads` or gets a scoped named profile; do not add production formula replacement before the named focused pytest, mypy, registered-sample, rollback, and non-goal contract is explicit.
 ---
+## 2026-06-10 02:03 +08:00 - US-014
+- Files changed: `scripts/run_buff_refactor_validation.py`, `zsim/sim_progress/ScheduledEvent/Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The new `formula-parity` validation profile replaces ad hoc single-file formula characterization runs with a named scoped profile for the current Phase 3 formula parity fixture surface.
+  - `FORMULA_PARITY_TYPECHECK_TARGETS` and `FORMULA_PARITY_FOCUSED_TEST_TARGETS` document the exact source, test, and runner targets used by that profile.
+  - This story adds validation wiring and typing cleanup only; it does not replace a live production path, Calculator formula, CalAnomaly formula, copied-output formula, dispatch adapter, runtime port, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, copied anomaly / disorder output paths, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `calculator-reads` / `implicit-events` validation wiring remain available.
+  - `calculator-reads` remains the active retained gate for migrated reader seams, raw-container guardrails, AM/AP guardrails, P2-B guardrails, state sync, and full-crit event-adjacent coverage.
+  - No old-coupling review update was needed; this validation-wiring story found no new Buff coupling beyond already documented retained formula snapshot, copied-output, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-015 by updating handoff docs and the next candidate pool while keeping production formula replacement blocked until the formula parity suite, registered-sample triggers, rollback plan, and non-goals remain explicit.
+---
