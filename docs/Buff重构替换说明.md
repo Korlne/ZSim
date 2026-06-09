@@ -2685,3 +2685,15 @@
 - Next step:
   - Continue with US-011 by characterizing enemy dynamic and debuff aggregation reads without turning copied-output or listener broadcast evidence into a production formula replacement.
 ---
+## 2026-06-10 01:20 +08:00 - US-011
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_enemy_dynamic_debuff_reads_feed_old_and_reader_formula_snapshots()` prepares to replace manual review of enemy-side dynamic debuff aggregation with focused characterization for empty enemy state, one enemy debuff, stacked enemy debuffs, and enemy dot non-aggregation.
+  - The US-011 matrix entry classifies `_calculate_dynamic_statement()`, `MultiplierData.get_buff_bonus()`, reader snapshots, `CalAnomaly` retained anomaly-state reads, `AnomalyBar` duration reads, and dot/freez-like continuations by formula parity, guarded maintenance, retained compatibility, and blocker-only follow-up.
+  - This story adds formula parity evidence only; it does not replace a live production path, Calculator formula, CalAnomaly formula, copied-output formula, enemy debuff single source of truth, dispatch adapter, runtime port, validation profile, guardrail, or behavior sample.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `_calculate_dynamic_statement()`, `MultiplierData`, `DynamicStatement`, `CalculatorBuffAttributeReader`, `CalAnomaly.py`, `MulData`, `AnomalyBar.__get_duration_enemy_buffs()`, dot/freez-like Load/Schedule continuations, copied anomaly / disorder output paths, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and existing `calculator-reads` / `implicit-events` validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this test-only characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output, enemy dynamic read, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-012 by adding migrated reader seam regression samples using this enemy dynamic characterization as compatibility evidence without starting an enemy debuff single-source-of-truth migration.
+---

@@ -353,6 +353,96 @@ def test_formula_parity_fixture_builds_independent_calculator_inputs(
     assert next_data.dynamic.anomaly_proficiency == pytest.approx(30.0)
 
 
+@pytest.mark.parametrize(
+    (
+        "char_buff_count",
+        "enemy_debuff_count",
+        "enemy_dot_count",
+        "case_id",
+    ),
+    [
+        pytest.param(0, 0, 0, "empty-enemy-state", id="empty-enemy-state"),
+        pytest.param(0, 1, 0, "one-enemy-debuff", id="one-enemy-debuff"),
+        pytest.param(1, 3, 2, "stacked-enemy-debuffs", id="stacked-enemy-debuffs"),
+    ],
+)
+def test_enemy_dynamic_debuff_reads_feed_old_and_reader_formula_snapshots(
+    monkeypatch: pytest.MonkeyPatch,
+    char_buff_count: int,
+    enemy_debuff_count: int,
+    enemy_dot_count: int,
+    case_id: str,
+) -> None:
+    fixture = _make_attribute_read_fixture(
+        name=f"敌方动态读测试-{case_id}",
+        am=100.0,
+        ap=300.0,
+        char_buff_count=char_buff_count,
+        enemy_debuff_count=enemy_debuff_count,
+        enemy_dot_count=enemy_dot_count,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(
+            field_anomaly_mastery=0.2,
+            anomaly_mastery=5.0,
+            field_anomaly_proficiency=0.1,
+            anomaly_proficiency=15.0,
+            all_vulnerability=0.25,
+        ),
+    )
+
+    retained_data = _legacy_multiplier_data(fixture)
+    reader_snapshot_data = _reader_snapshot_data(fixture.context)
+    reader = CalculatorBuffAttributeReader()
+
+    retained_values = {
+        "cal_am": Calculator.AnomalyMul.cal_am(retained_data),
+        "cal_ap": Calculator.AnomalyMul.cal_ap(retained_data),
+        "cal_dmg_vulnerability": Calculator.RegularMul.cal_dmg_vulnerability(
+            retained_data,
+            element_type=0,
+        ),
+    }
+    reader_snapshot_values = {
+        "cal_am": Calculator.AnomalyMul.cal_am(reader_snapshot_data),
+        "cal_ap": Calculator.AnomalyMul.cal_ap(reader_snapshot_data),
+        "cal_dmg_vulnerability": Calculator.RegularMul.cal_dmg_vulnerability(
+            reader_snapshot_data,
+            element_type=0,
+        ),
+    }
+    reader_values = {
+        "cal_am": reader.read_anomaly_mastery(fixture.context),
+        "cal_ap": reader.read_anomaly_proficiency(fixture.context),
+    }
+
+    assert retained_values == pytest.approx(
+        {
+            "cal_am": 125.0,
+            "cal_ap": 345.0,
+            "cal_dmg_vulnerability": 1.25,
+        }
+    )
+    assert reader_snapshot_values == pytest.approx(retained_values)
+    assert reader_values == pytest.approx(
+        {
+            "cal_am": retained_values["cal_am"],
+            "cal_ap": retained_values["cal_ap"],
+        }
+    )
+    assert tuple(fixture.enemy.dynamic.dynamic_debuff_list) == tuple(
+        fixture.expected_enabled_buff[char_buff_count:]
+    )
+    assert (
+        tuple(fixture.enemy.dynamic.dynamic_dot_list)
+        == fixture.expected_enemy_dot_buff
+    )
+    _assert_aggregation_calls(aggregation_calls, fixture, times=4)
+    for enabled_buff, *_ in aggregation_calls:
+        assert all(dot not in enabled_buff for dot in fixture.expected_enemy_dot_buff)
+
+
 def test_anomaly_formula_fixture_copies_snapshot_inputs_for_copied_output() -> None:
     source_snapshot = _make_anomaly_snapshot(
         (210.0, 1.20, 3.0, 60.0, 1.50, 999.0, 0.15, 5.0, 0.20, 1.30, 1.70)
@@ -1479,6 +1569,10 @@ def test_cal_anomaly_uses_settled_snapshot_mul_data_and_retained_damage_ratios(
     character = anomaly_fixture.character
     activation = anomaly_fixture.activation
     enemy = anomaly_fixture.enemy
+    enemy_debuffs = (object(), object())
+    enemy_dots = (object(),)
+    enemy.dynamic.dynamic_debuff_list = list(enemy_debuffs)
+    enemy.dynamic.dynamic_dot_list = list(enemy_dots)
     active_buff_view = anomaly_fixture.active_buff_view
     anomaly_bar = anomaly_fixture.anomaly_bar
     settled_snapshot = anomaly_bar.current_ndarray
@@ -1513,6 +1607,11 @@ def test_cal_anomaly_uses_settled_snapshot_mul_data_and_retained_damage_ratios(
     assert created_mul_data[0].judge_node is anomaly_bar
     assert created_mul_data[0].dynamic_buff is active_buff_view
     assert created_mul_data[0].character_obj is character
+    assert (
+        tuple(created_mul_data[0].enemy_obj.dynamic.dynamic_debuff_list)
+        == enemy_debuffs
+    )
+    assert tuple(created_mul_data[0].enemy_obj.dynamic.dynamic_dot_list) == enemy_dots
     assert calculator.v_char_level == 60
     assert calculator.dmg_sp is anomaly_bar.current_ndarray
     assert calculator.dmg_sp.shape == (1, 11)
