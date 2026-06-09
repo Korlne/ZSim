@@ -2090,3 +2090,16 @@
 - Next step:
   - Continue with US-002 by locking active-store replacement and enemy mirror facade behavior in focused tests without broadening into caller-family coverage or production behavior edits unless a documented contract mismatch appears.
 ---
+## 2026-06-09 11:45 +08:00 - US-002
+- Files changed: `tests/simulator/test_buff_add_strategy_runtime_facade.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_buff_add_strategy_runtime_facade.py` now replaces manual review of the core `buff_add_strategy(...)` active-store contract with recording-facade assertions for `find_active_buff_by_index(...)`, `remove_active_buff(...)`, `append_active_buff(...)`, and `sync_enemy_debuff_mirror(...)`.
+  - The focused tests now prove active replacement removes only the matching old Buff index for the target beneficiary and that enemy mirror sync uses the same runtime object appended through the active-store path.
+  - This story locks the existing boundary with tests only; it does not replace live production behavior.
+- Compatibility retained:
+  - `buff_add_strategy(...)` / `LegacyBuffRuntimeFacade` remains the forced same-tick Buff / Debuff write boundary.
+  - `LOADING_BUFF_DICT` pending queues, `ScheduleDispatchPort` scheduled backlog, listener broadcast, `RuntimeCommandPort`, `BuffRuntimeReadPort` read-only semantics, old containers, Calculator / CalAnomaly formulas, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; root-workspace evidence matched already documented P2-F active-store / enemy mirror coupling.
+- Next step:
+  - Continue with US-003 by locking beneficiary selection, explicit target override, template identity, and `specified_count` behavior without broadening into caller-family coverage or production behavior edits unless a documented contract mismatch appears.
+---
