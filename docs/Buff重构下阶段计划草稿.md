@@ -78,6 +78,7 @@
 - P2-G 已完成 guarded scope：Yuzuha tick / preload / next-character / report-state、enemy context、listener lookup、RNG service、report-state representative 与 exact-file / selected-symbol source guardrail 均由 focused tests 覆盖；没有抽取 universal simulator context helper。
 - P2-G 最终验证已通过：changed focused pytest `67 passed`，`implicit-events` profile base `2 passed` / isolated teams `3 passed` / focused `238 passed` / mypy `88 source files` clean，`calculator-reads` profile base `2 passed` / isolated teams `3 passed` / focused `133 passed` / mypy `22 source files` clean；本 PRD 未改 root production behavior，main-loop consistency sample 因无 live semantic change 而跳过。
 - US-012 已把 phase-3 production formula replacement 判定为 No-Go：下一轮只能设计 / characterization 公式 parity suite，不能新增 production formula rewrite、不能删除 retained formula snapshots，也不能新增未命名 pytest / mypy targets 的 validation profile。
+- US-014 最终串行验证已通过：changed focused pytest `tests/simulator/test_buff_attribute_reader.py -q` 为 `38 passed`；`calculator-reads` profile base `2 passed` / isolated teams `3 passed` / focused `138 passed` / mypy `22 source files` clean；`implicit-events` profile base `2 passed` / isolated teams `3 passed` / focused `238 passed` / mypy `88 source files` clean。该 story 未改 production formula behavior、live registered-team semantics、lifecycle/runtime write paths 或 validation wiring，因此默认 lifecycle profile 与 main-loop consistency sample 均按规则跳过。
 
 ### 本轮未解决或新暴露的耦合点
 

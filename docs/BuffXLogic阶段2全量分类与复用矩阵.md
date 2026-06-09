@@ -1198,3 +1198,20 @@ US-011 conclusion：behavior samples are live-route evidence, not a generic vali
 | Guarded maintenance / retained compatibility | P2-A through P2-G migrated files, old containers, legacy `buff_add()` / `KickOutBuff()`, deleted event-list discovery surfaces, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`. | Keep as guardrail / blocker-only pool; open narrow PRD only when root source, focused tests, or validation names the failing file / symbol / behavior. | Existing focused guardrails plus `implicit-events`, `calculator-reads`, or default lifecycle profile depending on touched layer. | Do not manufacture new implementation backlog from retained compatibility names or historical `.codex_worktrees/` hits. |
 
 US-013 conclusion：the next default PRD should be formula parity suite design / characterization, not phase-2 implementation cleanup and not production formula replacement. P2-A through P2-G remain completed guarded-maintenance buckets; old-coupling review does not need a new entry because no new coupling evidence was discovered.
+
+### 2026-06-09 US-014 Final Serial Validation And Ralph Handoff
+
+本节只记录 final validation / Ralph handoff evidence；不改 `BuffXLogic`、`Calculator.py`、`CalAnomaly.py`、dispatch adapter、runtime port、guardrail、validation profile 或 live formula / event / runtime behavior。
+
+#### Final validation evidence
+
+- Changed focused pytest introduced by this PRD was rerun with `uv run pytest tests/simulator/test_buff_attribute_reader.py -q` and passed with `38 passed`.
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads` passed: base simulator `2 passed`, isolated teams `3 passed`, focused calculator-reads pytest `138 passed`, and mypy `Success: no issues found in 22 source files`.
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events` passed: base simulator `2 passed`, isolated teams `3 passed`, focused implicit-events pytest `238 passed`, and mypy `Success: no issues found in 88 source files`.
+- The validation runner still emits the known async log-writer shutdown traceback text while exiting `0`; this was already observed in prior iterations and did not change acceptance status.
+
+#### Handoff decision
+
+- Default lifecycle validation was skipped because this story did not change lifecycle/runtime write paths, validation wiring, or the default validation profile.
+- Main-loop consistency sample was skipped because this story did not change production formula behavior or live registered-team semantics.
+- The next default PRD remains phase-3 formula parity suite design / characterization under `docs/Buff重构方案.md`; production formula replacement remains No-Go until candidate files, focused pytest targets, scoped mypy targets, behavior-sample conditions, rollback plan, validation entrypoints, and non-goals are named.
