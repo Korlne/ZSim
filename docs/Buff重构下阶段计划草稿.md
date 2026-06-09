@@ -84,6 +84,7 @@
 - Phase-3 formula snapshot replacement、P2-D / P2-E / P2-F / P2-G guarded maintenance 都保留为后续候选块，不能因为 P2-G 已完成就从候选池删除。
 - P2-A / P2-B / P2-C / P2-D / P2-E / P2-F / P2-G 不再作为默认实现 backlog；后续只在 source guardrail、reader parity、trigger-state no-write / order tests、dispatch tests、dot runtime-state guardrails、P2-F forced-write guardrail、P2-G direct-context guardrail 或 validation profile 暴露具体回归时开窄 blocker。
 - Formula snapshots、CalAnomaly internals、old containers、legacy `buff_add()` / `KickOutBuff()` 和 deleted raw queue discovery surfaces 仍是 retained compatibility / phase-3 / blocker-only 项，不是下一轮默认替换目标。
+- US-012 决定：phase-3 formula snapshot replacement 的 production implementation 当前 No-Go；只允许进入下一轮 formula parity 设计 / characterization PRD，不允许直接替换 `Calculator` / `CalAnomaly` 公式。验证 wiring 本轮不改，继续用 `calculator-reads` + focused characterization tests 作为 formula-readiness gate，并用 `implicit-events` 保留事件 / runtime 边界回归。
 
 ### 已确认事件 / 上下文 / 顺序约束
 
@@ -181,12 +182,15 @@
 
 #### 候选块 Phase-3：formula snapshot replacement（保留 / 非当前阶段）
 
-- 候选文件 / 符号：`Calculator.py`、`CalAnomaly.py`、`MultiplierData`、`MulData`、anomaly / disorder formula helpers。
+- 候选文件 / 符号：`zsim/sim_progress/ScheduledEvent/Calculator.py` (`Calculator`, `MultiplierData`, `DynamicStatement`, `cal_am`, `cal_ap`, `cal_imp`, `cal_crit_rate`, `cal_personal_crit_rate`, `cal_personal_crit_dmg`)、`zsim/sim_progress/ScheduledEvent/CalAnomaly.py` (`CalAnomaly`, `MulData`)、`zsim/sim_progress/anomaly_bar/AnomalyBarClass.py` (`current_ndarray`)、`zsim/sim_progress/anomaly_bar/CopyAnomalyForOutput.py`、`zsim/sim_progress/Update/UpdateAnomaly.py`，以及 `docs/BuffXLogic阶段2全量分类与复用矩阵.md` 中已列明的 AM/AP、impact、crit、anomaly ratio / copied output、enemy anomaly-state read 候选。
 - 当前耦合：公式快照定义伤害与异常数值，当前 reader seams 只隔离部分 XLogic 属性读取，不等价于公式替换。
-- 可拆工作方向：只有在 phase-2 reader / state / event adapters 均有 parity suite 后，另开公式专项 PRD。
+- US-012 Go / No-Go：phase-3 production formula replacement 当前 No-Go；下一轮只 Go 到 parity suite 设计 / characterization。不得新增 `formula-readiness` / `formula-parity` validation profile，直到 focused pytest 与 scoped mypy targets 已在 PRD 中逐项命名。
+- 可拆工作方向：下一轮 phase-3 PRD 先建立公式 parity suite contract，覆盖 Calculator 属性公式、CalAnomaly / anomaly bar snapshot、copied anomaly / disorder 输出数值、enemy anomaly-state read helpers 和已迁移 reader seam 的回归样本；通过前不得改 production formula。
 - 必须保留：`MultiplierData` / `MulData` formula snapshots、`AnomalyBar.current_ndarray`、Calculator / CalAnomaly formulas。
-- 验证入口：未来 formula parity suite 加 `calculator-reads`；当前 P2-G 不触达。
-- 非目标：不在 phase-2 scheduled publish / trigger-state / dot runtime-state / context helper PRD 中重写公式。
+- 验证入口：当前 gate 仍是 `calculator-reads` + existing focused characterization tests；触达事件 / runtime / dispatch boundary 时追加 `implicit-events`。未来若确实新增 formula parity profile，必须先列出 pytest targets、mypy targets、`--help` 验证和仍需保留的 `calculator-reads` / `implicit-events` 串行验证。
+- 行为样本规则：本 readiness / go-no-go story 不跑 main-loop sample；未来 production formula 或 formula-output 语义变更只有在真实注册队伍能触达目标 route 时才跑 `scripts/run_buff_main_loop_consistency.py`，否则记录注册队伍缺口并用 focused parity tests 收口。
+- 回滚计划：保留现有 formula snapshots 和 old compatibility paths 作为 rollback anchor；若未来 parity profile、reader helper 或 formula replacement 失败，回退该 helper / profile / formula diff，继续走 `MultiplierData` / `MulData` / `AnomalyBar.current_ndarray` / existing Calculator / CalAnomaly formulas，不删除 old containers 或 legacy Buff write paths。
+- 非目标：不在 phase-2 scheduled publish / trigger-state / dot runtime-state / context helper PRD 中重写公式；不把 CLI label 当 live runtime switch；不删除 old containers、legacy `buff_add()` / `KickOutBuff()`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter` 或 `LegacyBuffRuntimeFacade`。
 
 ## 已存在的真实验证入口
 
@@ -205,6 +209,7 @@
 - 若维护已完成 P2-E dot runtime-state / initialization bucket，必须保留 exact-file source guardrail、runtime-list helper parity、Shock duration read helper parity、Vivian / UpdateAnomaly focused tests 与 scheduled follow-up 分层证据；不要把 guardrail 扩成阻断 P2-F / P2-G，也不要把 dot runtime state 转成 planned-event backlog。
 - 若维护已完成 P2-G direct simulator context helpers bucket，必须保留 service-family guardrail、focused branch tests 与 `.codex_worktrees/` 排除；触达 preload schedule、Character action/resource、listener/report/RNG 或 live behavior semantics 时追加对应 file-specific pytest，只有真实注册代表队存在且 live behavior 变化时才运行 main-loop consistency sample。
 - 若采用当前默认 phase-2 closure / phase-3 readiness PRD，必须复核 P2-A through P2-G guardrail / validation evidence，明确是否还有同阶段默认实现候选；只有证据显示 phase-2 已闭合时，才为 phase-3 formula snapshot replacement 产出 parity suite、candidate files、validation entrypoints 和 non-goals。
+- US-012 后的 validation decision：本轮不新增 validation profile；下一轮若只做 phase-3 parity 设计 / characterization，继续跑 `calculator-reads` 和需要的 focused tests。只有实际新增 formula parity profile 或验证命令契约时，才更新 `scripts/run_buff_refactor_validation.py`，并补跑 `--help`、新增 profile、`calculator-reads` 与 `implicit-events`。
 - 若维护已完成 P2-A / P2-B / P2-C 文件，必须保留 migrated-source guardrail 范围和 `.codex_worktrees/` 排除，不得把 guardrail 扩成阻断未迁移 P2-D / P2-E / P2-F / P2-G 候选。
 - 若故事改动了验证命令契约、帮助文本或执行路径，补跑对应的 `--help` / focused pytest / 样例命令，而不是继续引用占位入口。
 - 上述验证命令应串行执行，不要并发跑多个 profile；它们会共享 sqlite `sessions` 数据与异步日志写线程，并发时容易制造假失败。

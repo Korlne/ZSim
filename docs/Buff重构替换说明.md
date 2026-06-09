@@ -2540,3 +2540,14 @@
 - Next step:
   - Continue with US-012 by deciding phase-3 go / no-go and whether validation wiring should remain `calculator-reads` + `implicit-events` or add a future formula-readiness profile.
 ---
+## 2026-06-09 21:22 +08:00 - US-012
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The US-012 go / no-go record replaces ambiguous phase-3 readiness wording with an explicit No-Go for immediate production formula snapshot replacement and an explicit requirement to design formula parity before replacement.
+  - This story adds readiness documentation only; it does not replace a live production path, validation profile, formula helper, dispatch adapter, runtime port, guardrail, or behavior sample.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, copied anomaly / disorder output paths, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and existing `calculator-reads` / `implicit-events` validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this decision found no new Buff coupling beyond already documented retained formula snapshot, copied-output, event/runtime, and guarded P2-A through P2-G boundaries.
+- Next step:
+  - Continue with US-013 by updating handoff docs and the next candidate pool so future PRD generation keeps formula parity design, guarded maintenance, retained compatibility, rollback, and non-goals separate.
+---
