@@ -2640,3 +2640,14 @@
 - Next step:
   - Continue with US-007 by characterizing `CalAnomaly` settled snapshot input contracts before any production formula replacement.
 ---
+## 2026-06-10 00:41 +08:00 - US-007
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_cal_anomaly_rejects_unsettled_or_bad_snapshot_shape()` and the tightened `test_cal_anomaly_uses_settled_snapshot_mul_data_and_retained_damage_ratios()` prepare to replace manual review of `CalAnomaly.__init__()` settled snapshot guards, `MulData` inputs, helper call order, virtual-level handling, ordered multipliers, and retained `cal_anomaly_dmg(...)` ratio inputs with focused characterization coverage.
+  - This story adds formula parity evidence only; it does not replace a live production path, `CalAnomaly` formula, Calculator formula, copied-output formula, dispatch adapter, runtime port, validation profile, guardrail, or behavior sample.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `CalAnomaly.py`, `CalAnomaly`, `CalAbloom`, `MulData`, `MultiplierData`, `Calculator.RegularMul`, `AnomalyBar.current_ndarray`, copied anomaly / disorder output paths, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and existing `calculator-reads` / `implicit-events` validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this test-only characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output, enemy dynamic read, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-008 by characterizing `AnomalyBar` settlement and copied snapshot inputs while keeping production `CalAnomaly.py` and copied-output formula paths retained.
+---

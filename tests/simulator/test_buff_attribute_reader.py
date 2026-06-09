@@ -1274,10 +1274,38 @@ def test_anomaly_bar_settlement_and_copied_snapshot_inputs_remain_retained_compa
     assert copied.activated_by is activation
 
 
+def test_cal_anomaly_rejects_unsettled_or_bad_snapshot_shape() -> None:
+    unsettled_fixture = _make_settled_anomaly_formula_fixture()
+    unsettled_fixture.anomaly_bar.settled = False
+
+    with pytest.raises(ValueError, match="尚未结算快照"):
+        cal_anomaly_module.CalAnomaly(
+            anomaly_obj=unsettled_fixture.anomaly_bar,
+            enemy_obj=cast(Any, unsettled_fixture.enemy),
+            dynamic_buff=unsettled_fixture.active_buff_view,
+            sim_instance=cast(Any, unsettled_fixture.sim_instance),
+        )
+
+    bad_shape_fixture = _make_settled_anomaly_formula_fixture(
+        snapshot=_make_anomaly_snapshot(
+            (100.0, 1.10, 2.0, 60.0, 1.30, 999.0, 0.05, 8.0, 0.10, 1.20)
+        )
+    )
+
+    with pytest.raises(AssertionError, match="异常伤害快照形状错误"):
+        cal_anomaly_module.CalAnomaly(
+            anomaly_obj=bad_shape_fixture.anomaly_bar,
+            enemy_obj=cast(Any, bad_shape_fixture.enemy),
+            dynamic_buff=bad_shape_fixture.active_buff_view,
+            sim_instance=cast(Any, bad_shape_fixture.sim_instance),
+        )
+
+
 def test_cal_anomaly_uses_settled_snapshot_mul_data_and_retained_damage_ratios(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     created_mul_data: list[Any] = []
+    helper_calls: list[tuple[Any, ...]] = []
 
     class _MulDataProbe:
         def __init__(
@@ -1298,34 +1326,74 @@ def test_cal_anomaly_uses_settled_snapshot_mul_data_and_retained_damage_ratios(
             )
             created_mul_data.append(self)
 
+    def _cal_def_mul_probe(self: object, data: object, v_char_level: int) -> np.float64:
+        helper_calls.append(("cal_def_mul", data, v_char_level))
+        return np.float64(0.5)
+
+    def _cal_res_mul_probe(
+        data: object, *, element_type: object, snapshot_res_pen: object
+    ) -> np.float64:
+        helper_calls.append(("cal_res_mul", data, element_type, snapshot_res_pen))
+        return np.float64(0.7)
+
+    def _cal_dmg_vulnerability_probe(
+        data: object, *, element_type: object
+    ) -> np.float64:
+        helper_calls.append(("cal_dmg_vulnerability", data, element_type))
+        return np.float64(0.9)
+
+    def _cal_stun_vulnerability_probe(data: object) -> np.float64:
+        helper_calls.append(("cal_stun_vulnerability", data))
+        return np.float64(0.8)
+
+    def _cal_special_mul_probe(data: object) -> np.float64:
+        helper_calls.append(("cal_special_mul", data))
+        return np.float64(1.2)
+
     monkeypatch.setattr(cal_anomaly_module, "MulData", _MulDataProbe)
     monkeypatch.setattr(
         cal_anomaly_module.CalAnomaly,
         "cal_def_mul",
-        lambda self, data, v_char_level: np.float64(0.5),
+        _cal_def_mul_probe,
     )
     monkeypatch.setattr(
         cal_anomaly_module.Cal.RegularMul,
         "cal_res_mul",
-        staticmethod(lambda data, *, element_type, snapshot_res_pen: np.float64(0.7)),
+        staticmethod(_cal_res_mul_probe),
     )
     monkeypatch.setattr(
         cal_anomaly_module.Cal.RegularMul,
         "cal_dmg_vulnerability",
-        staticmethod(lambda data, *, element_type: np.float64(0.9)),
+        staticmethod(_cal_dmg_vulnerability_probe),
     )
     monkeypatch.setattr(
         cal_anomaly_module.Cal.RegularMul,
         "cal_stun_vulnerability",
-        staticmethod(lambda data: np.float64(0.8)),
+        staticmethod(_cal_stun_vulnerability_probe),
     )
     monkeypatch.setattr(
         cal_anomaly_module.Cal.RegularMul,
         "cal_special_mul",
-        staticmethod(lambda data: np.float64(1.2)),
+        staticmethod(_cal_special_mul_probe),
     )
 
-    anomaly_fixture = _make_settled_anomaly_formula_fixture()
+    anomaly_fixture = _make_settled_anomaly_formula_fixture(
+        snapshot=_make_anomaly_snapshot(
+            (
+                100.0,
+                1.10,
+                2.0,
+                59.99999995,
+                1.30,
+                999.0,
+                0.05,
+                8.0,
+                0.10,
+                1.20,
+                1.40,
+            )
+        )
+    )
     sim_instance = anomaly_fixture.sim_instance
     character = anomaly_fixture.character
     activation = anomaly_fixture.activation
@@ -1360,10 +1428,29 @@ def test_cal_anomaly_uses_settled_snapshot_mul_data_and_retained_damage_ratios(
         dtype=np.float64,
     )
     assert len(created_mul_data) == 1
+    assert created_mul_data[0].enemy_obj is enemy
     assert created_mul_data[0].judge_node is anomaly_bar
     assert created_mul_data[0].dynamic_buff is active_buff_view
     assert created_mul_data[0].character_obj is character
+    assert calculator.v_char_level == 60
     assert calculator.dmg_sp is anomaly_bar.current_ndarray
+    assert calculator.dmg_sp.shape == (1, 11)
+    assert [call[0] for call in helper_calls] == [
+        "cal_def_mul",
+        "cal_res_mul",
+        "cal_dmg_vulnerability",
+        "cal_stun_vulnerability",
+        "cal_special_mul",
+    ]
+    assert helper_calls[0][1] is created_mul_data[0]
+    assert helper_calls[0][2] == 60
+    assert helper_calls[1][1] is created_mul_data[0]
+    assert helper_calls[1][2] == anomaly_bar.element_type
+    assert helper_calls[1][3] == pytest.approx(settled_snapshot[0, 8])
+    assert helper_calls[2][1] is created_mul_data[0]
+    assert helper_calls[2][2] == anomaly_bar.element_type
+    assert helper_calls[3][1] is created_mul_data[0]
+    assert helper_calls[4][1] is created_mul_data[0]
     np.testing.assert_allclose(calculator.final_multipliers, expected_multipliers)
     assert calculator.cal_anomaly_dmg() == pytest.approx(
         np.prod(expected_multipliers)
