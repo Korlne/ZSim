@@ -2584,3 +2584,14 @@
 - Next step:
   - Continue with US-002 by building the formula candidate and focused-test target inventory from root-workspace evidence while keeping production formula replacement No-Go.
 ---
+## 2026-06-09 23:47 +08:00 - US-002
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `docs/Buff公式候选与测试目标清单.md` prepares to replace broad ad hoc formula searches with a root-workspace candidate and focused-test inventory for Phase 3 parity-suite design.
+  - This story builds an evidence boundary only; it does not replace a live production path, formula helper, copied-output formula, dispatch adapter, runtime port, validation profile, guardrail, or behavior sample.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, copied anomaly / disorder output paths, P2-A through P2-G guarded-maintenance buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and existing `calculator-reads` / `implicit-events` validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this inventory found no new Buff coupling beyond already documented retained formula snapshot, copied-output, enemy dynamic read, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-003 by turning this inventory into focused formula parity fixtures before any production formula replacement.
+---
