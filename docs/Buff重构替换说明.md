@@ -2299,3 +2299,17 @@
 - Next step:
   - Continue with US-005 by selecting Yuzuha tick-only / report-state representatives without broadening into RNG, listener, runtime write, scheduled publish migration, or formula replacement work.
 ---
+## 2026-06-09 16:58 +08:00 - US-005
+- Files changed: `tests/simulator/test_yuzuha_direct_context_helpers.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_yuzuha_direct_context_helpers.py` now replaces manual `YuzuhaCinema2Trigger` and `YuzuhaSugarBurstAnomalyBuildupBonus` tick/report-state review with focused coverage for report-state QTE mutation, cooldown no-op behavior, tick-only preload match, preload-tick mismatch, and dispatch/listener/runtime/raw-queue separation.
+  - This story adds branch and boundary evidence only; it does not replace live production behavior or extract a new helper.
+- Compatibility retained:
+  - `YuzuhaCinema2Trigger.py` source, allowed skill tags, enemy stun gate, cooldown math, last-hit gating, QTE flag mutation, report printing, and `schedule_data.change_process_state()` remain unchanged.
+  - `YuzuhaSugarBurstAnomalyBuildupBonus.py` source, `preload_tick == sim_instance.tick` gating, `simple_start(timenow=sim_instance.tick, no_count=1)`, count calculation, and `update_to_buff_0(...)` remain unchanged.
+  - `YuzuhaTanukiWishAtkBonus.py` and `YuzuhaSugarBurstMaxAnomalyBuildupBonus.py` remain retained candidates; this iteration records why they were not selected instead of duplicating branch-equivalent coverage.
+  - `ScheduleDispatchPort`, synchronous listener broadcast, `RuntimeCommandPort`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, raw pending queues, old containers, Calculator / CalAnomaly formulas, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; this story found no new Buff coupling beyond the already documented P2-G direct simulator context candidates.
+- Next step:
+  - Continue with US-006 by adding enemy-context representative coverage without broadening into formula replacement, listener/RNG helper extraction, scheduled publish migration, or same-tick runtime write changes.
+---

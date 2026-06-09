@@ -19,6 +19,12 @@ cinema4_trigger_module = importlib.import_module(
 cinema6_trigger_module = importlib.import_module(
     "zsim.sim_progress.Buff.BuffXLogic.YuzuhaCinema6SheelTrigger"
 )
+cinema2_trigger_module = importlib.import_module(
+    "zsim.sim_progress.Buff.BuffXLogic.YuzuhaCinema2Trigger"
+)
+sugar_burst_module = importlib.import_module(
+    "zsim.sim_progress.Buff.BuffXLogic.YuzuhaSugarBurstAnomalyBuildupBonus"
+)
 schedule_preload_module = importlib.import_module(
     "zsim.sim_progress.data_struct.SchedulePreload"
 )
@@ -31,6 +37,14 @@ YuzuhaCinema4QuickAssistTriggerRecord = (
 )
 YuzuhaCinema6SheelTrigger = cinema6_trigger_module.YuzuhaCinema6SheelTrigger
 YuzuhaCinema6SheelTriggerRecord = cinema6_trigger_module.YuzuhaCinema6SheelTriggerRecord
+YuzuhaCinema2Trigger = cinema2_trigger_module.YuzuhaCinema2Trigger
+YuzuhaCinema2TriggerRecord = cinema2_trigger_module.YuzuhaCinema2TriggerRecord
+YuzuhaSugarBurstAnomalyBuildupBonus = (
+    sugar_burst_module.YuzuhaSugarBurstAnomalyBuildupBonus
+)
+YuzuhaSugarBurstAnomalyBuildupBonusRecord = (
+    sugar_burst_module.YuzuhaSugarBurstAnomalyBuildupBonusRecord
+)
 
 
 class _FailFastEventList(list[object]):
@@ -108,6 +122,26 @@ class _Cinema6SkillNodeProbe:
         self.end_tick = end_tick
 
 
+class _Cinema2SkillNodeProbe:
+    def __init__(
+        self, *, skill_tag: str = "1411_E_EX_A", last_hit: bool = True
+    ) -> None:
+        self.skill_tag = skill_tag
+        self._last_hit = last_hit
+        self.last_hit_ticks: list[int] = []
+        self.force_qte_trigger = False
+
+    def is_last_hit(self, *, tick: int) -> bool:
+        self.last_hit_ticks.append(tick)
+        return self._last_hit
+
+
+class _PreloadTickSkillNodeProbe:
+    def __init__(self, *, skill_tag: str = "1411_SNA_A", preload_tick: int) -> None:
+        self.skill_tag = skill_tag
+        self.preload_tick = preload_tick
+
+
 class _QuickAssistSystemProbe:
     def __init__(self) -> None:
         self.calls: list[dict[str, object]] = []
@@ -167,13 +201,24 @@ class _YuzuhaProbe:
 class _BuffInstanceProbe:
     def __init__(self, *, sim_instance: SimpleNamespace) -> None:
         self.sim_instance = sim_instance
-        self.ft = SimpleNamespace(index="Buff-角色-柚叶-硬糖射击触发")
+        self.ft = SimpleNamespace(index="Buff-角色-柚叶-硬糖射击触发", maxcount=999)
+        self.dy = SimpleNamespace(count=0)
         self.simple_start_calls: list[dict[str, object]] = []
+        self.update_to_buff_0_calls: list[object] = []
 
-    def simple_start(self, *, timenow: int, sub_exist_buff_dict: dict[str, object]) -> None:
-        self.simple_start_calls.append(
-            {"timenow": timenow, "sub_exist_buff_dict": sub_exist_buff_dict}
-        )
+    def simple_start(
+        self,
+        *,
+        timenow: int,
+        sub_exist_buff_dict: dict[str, object],
+        **kwargs: object,
+    ) -> None:
+        call = {"timenow": timenow, "sub_exist_buff_dict": sub_exist_buff_dict}
+        call.update(kwargs)
+        self.simple_start_calls.append(call)
+
+    def update_to_buff_0(self, *, buff_0: object) -> None:
+        self.update_to_buff_0_calls.append(buff_0)
 
 
 def _build_trigger_harness(
@@ -325,6 +370,89 @@ def _build_cinema6_trigger_harness(
         sim_instance=sim_instance,
         preload_data=preload_data,
         schedule_data=schedule_data,
+        prepared_calls=prepared_calls,
+    )
+
+
+def _build_cinema2_trigger_harness(
+    *,
+    tick: int = 1500,
+    last_update_tick: int | None = None,
+    report_state: bool = False,
+) -> SimpleNamespace:
+    schedule_data = (
+        _ScheduleDataReportProbe()
+        if report_state
+        else SimpleNamespace(
+            event_list=_FailFastEventList(),
+            change_process_state=_ForbiddenLayer("report-state mutation"),
+        )
+    )
+    sim_instance = SimpleNamespace(
+        tick=tick,
+        schedule_data=schedule_data,
+        listener_manager=_ForbiddenLayer("listener broadcast"),
+        runtime_command_port=_ForbiddenLayer("RuntimeCommandPort"),
+    )
+    buff_instance = _BuffInstanceProbe(sim_instance=sim_instance)
+    buff_instance.ft = SimpleNamespace(index="Buff-角色-柚叶-2画触发", maxcount=999)
+    trigger = YuzuhaCinema2Trigger(buff_instance)
+
+    record = YuzuhaCinema2TriggerRecord()
+    record.enemy = SimpleNamespace(dynamic=SimpleNamespace(stun=False))
+    record.last_update_tick = last_update_tick
+    trigger.buff_0 = SimpleNamespace(history=SimpleNamespace(record=record))
+    prepared_calls: list[dict[str, object]] = []
+
+    def record_prepared_call(**kwargs: object) -> None:
+        prepared_calls.append(kwargs)
+
+    trigger.get_prepared = record_prepared_call
+
+    return SimpleNamespace(
+        trigger=trigger,
+        record=record,
+        buff_instance=buff_instance,
+        sim_instance=sim_instance,
+        schedule_data=schedule_data,
+        prepared_calls=prepared_calls,
+    )
+
+
+def _build_sugar_burst_trigger_harness(
+    *,
+    tick: int = 1800,
+    na_skill_level: int = 8,
+) -> SimpleNamespace:
+    sim_instance = SimpleNamespace(
+        tick=tick,
+        schedule_data=SimpleNamespace(
+            event_list=_FailFastEventList(),
+            change_process_state=_ForbiddenLayer("report-state mutation"),
+        ),
+        listener_manager=_ForbiddenLayer("listener broadcast"),
+        runtime_command_port=_ForbiddenLayer("RuntimeCommandPort"),
+    )
+    buff_instance = _BuffInstanceProbe(sim_instance=sim_instance)
+    buff_instance.ft = SimpleNamespace(index="Buff-角色-柚叶-彩糖花火积蓄值提升", maxcount=999)
+    trigger = YuzuhaSugarBurstAnomalyBuildupBonus(buff_instance)
+
+    record = YuzuhaSugarBurstAnomalyBuildupBonusRecord()
+    record.na_skill_level = na_skill_level
+    record.sub_exist_buff_dict = {buff_instance.ft.index: object()}
+    trigger.buff_0 = SimpleNamespace(history=SimpleNamespace(record=record))
+    prepared_calls: list[dict[str, object]] = []
+
+    def record_prepared_call(**kwargs: object) -> None:
+        prepared_calls.append(kwargs)
+
+    trigger.get_prepared = record_prepared_call
+
+    return SimpleNamespace(
+        trigger=trigger,
+        record=record,
+        buff_instance=buff_instance,
+        sim_instance=sim_instance,
         prepared_calls=prepared_calls,
     )
 
@@ -594,6 +722,124 @@ def test_yuzuha_cinema6_trigger_keeps_publish_report_and_runtime_boundaries() ->
     assert "schedule_preload_event_factory(" in source
     assert "schedule_data.change_process_state()" in source
     for forbidden_term in (
+        "RuntimeCommandPort",
+        "create_runtime_command_port",
+        "LegacyBuffRuntimeFacade",
+        "BuffRuntimeReadPort",
+        "listener_manager",
+        "broadcast_event",
+        "event_list",
+    ):
+        assert forbidden_term not in source
+
+
+def test_yuzuha_cinema2_report_state_sets_qte_without_dispatch_or_runtime(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(cinema2_trigger_module, "YUZUHA_REPORT", True)
+    harness = _build_cinema2_trigger_harness(tick=1500, report_state=True)
+    skill_node = _Cinema2SkillNodeProbe()
+
+    assert harness.trigger.special_judge_logic(skill_node=skill_node) is True
+
+    assert harness.prepared_calls == [{"char_CID": 1411, "enemy": 1}]
+    assert skill_node.last_hit_ticks == [1500]
+    assert harness.record.skill_node_be_changed is skill_node
+
+    harness.trigger.special_hit_logic()
+
+    assert harness.prepared_calls == [
+        {"char_CID": 1411, "enemy": 1},
+        {"char_CID": 1411},
+    ]
+    assert skill_node.force_qte_trigger is True
+    assert harness.schedule_data.change_process_calls == 1
+    assert harness.schedule_data.event_list == []
+    assert harness.record.skill_node_be_changed is None
+    assert harness.record.last_update_tick == 1500
+
+
+def test_yuzuha_cinema2_cooldown_blocks_tick_branch_without_report_state(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(cinema2_trigger_module, "YUZUHA_REPORT", False)
+    harness = _build_cinema2_trigger_harness(tick=1500, last_update_tick=1490)
+    skill_node = _Cinema2SkillNodeProbe()
+
+    assert harness.trigger.special_judge_logic(skill_node=skill_node) is False
+
+    assert harness.prepared_calls == [{"char_CID": 1411, "enemy": 1}]
+    assert skill_node.last_hit_ticks == []
+    assert harness.record.skill_node_be_changed is None
+    assert skill_node.force_qte_trigger is False
+    assert harness.sim_instance.schedule_data.event_list == []
+
+
+def test_yuzuha_cinema2_trigger_keeps_report_state_out_of_dispatch_and_runtime() -> None:
+    source = inspect.getsource(cinema2_trigger_module.YuzuhaCinema2Trigger)
+
+    assert "skill_node.is_last_hit(tick=tick)" in source
+    assert "schedule_data.change_process_state()" in source
+    for forbidden_term in (
+        "ScheduleDispatchPort",
+        "create_schedule_dispatch_port",
+        "publish_scheduled",
+        "RuntimeCommandPort",
+        "create_runtime_command_port",
+        "LegacyBuffRuntimeFacade",
+        "BuffRuntimeReadPort",
+        "listener_manager",
+        "broadcast_event",
+        "event_list",
+    ):
+        assert forbidden_term not in source
+
+
+def test_yuzuha_sugar_burst_tick_match_updates_count_without_boundary_writes() -> None:
+    harness = _build_sugar_burst_trigger_harness(tick=1800, na_skill_level=8)
+    skill_node = _PreloadTickSkillNodeProbe(preload_tick=1800)
+
+    assert harness.trigger.special_judge_logic(skill_node=skill_node) is True
+    harness.trigger.special_hit_logic()
+
+    assert harness.prepared_calls == [
+        {"char_CID": 1411},
+        {"char_CID": 1411, "na_skill_level": 1, "sub_exist_buff_dict": 1},
+    ]
+    assert harness.buff_instance.simple_start_calls == [
+        {
+            "timenow": 1800,
+            "sub_exist_buff_dict": harness.record.sub_exist_buff_dict,
+            "no_count": 1,
+        }
+    ]
+    assert harness.buff_instance.dy.count == 18.0
+    assert harness.buff_instance.update_to_buff_0_calls == [harness.trigger.buff_0]
+    assert harness.sim_instance.schedule_data.event_list == []
+
+
+def test_yuzuha_sugar_burst_preload_tick_mismatch_blocks_tick_branch() -> None:
+    harness = _build_sugar_burst_trigger_harness(tick=1800)
+    skill_node = _PreloadTickSkillNodeProbe(preload_tick=1799)
+
+    assert harness.trigger.special_judge_logic(skill_node=skill_node) is False
+
+    assert harness.prepared_calls == [{"char_CID": 1411}]
+    assert harness.buff_instance.simple_start_calls == []
+    assert harness.buff_instance.update_to_buff_0_calls == []
+    assert harness.sim_instance.schedule_data.event_list == []
+
+
+def test_yuzuha_sugar_burst_trigger_keeps_tick_only_out_of_dispatch_and_runtime() -> None:
+    source = inspect.getsource(sugar_burst_module.YuzuhaSugarBurstAnomalyBuildupBonus)
+
+    assert "skill_node.preload_tick != self.buff_instance.sim_instance.tick" in source
+    assert "timenow=self.buff_instance.sim_instance.tick" in source
+    for forbidden_term in (
+        "schedule_data.change_process_state",
+        "ScheduleDispatchPort",
+        "create_schedule_dispatch_port",
+        "publish_scheduled",
         "RuntimeCommandPort",
         "create_runtime_command_port",
         "LegacyBuffRuntimeFacade",
