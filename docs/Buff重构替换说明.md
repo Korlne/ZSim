@@ -2130,3 +2130,16 @@
 - Next step:
   - Continue with US-005 by adding Roaring Ride caller coverage without broadening into Seed, listener, or Character manager caller families.
 ---
+## 2026-06-09 12:28 +08:00 - US-005
+- Files changed: `tests/simulator/test_buffaddstrategy_roaring_ride_callers.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_buffaddstrategy_roaring_ride_callers.py` now replaces manual Roaring Ride caller review with focused tests for RNG branch boundaries, exact `buff_add_strategy(...)` arguments, `sim_instance` forwarding, and caller-layer boundary guards.
+  - This story locks existing behavior with tests only; it does not replace live production behavior.
+- Compatibility retained:
+  - Roaring Ride source, refinement-derived Buff index strings, RNG thresholds, and `simple_start(find_tick(...), record.sub_exist_buff_dict)` state/count behavior remain unchanged.
+  - `buff_add_strategy(...)` / `LegacyBuffRuntimeFacade` remains the forced same-tick Buff / Debuff write boundary.
+  - `LOADING_BUFF_DICT` pending queues, scheduled publish, listener broadcast, `RuntimeCommandPort`, `BuffRuntimeReadPort` read-only semantics, old containers, Calculator / CalAnomaly formulas, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; root-workspace evidence matched already documented P2-F Roaring Ride caller coupling.
+- Next step:
+  - Continue with US-006 by adding Seed BuffXLogic caller-family coverage without broadening into listener or Character manager caller families.
+---
