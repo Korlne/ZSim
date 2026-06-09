@@ -225,6 +225,15 @@
 - [x] 本 PRD 没有删除 old containers、legacy `buff_add()`、legacy `KickOutBuff()`，没有替换 Calculator / CalAnomaly formulas，没有迁移 direct simulator context helpers，没有把 forced Buff / Debuff write 转成 scheduled queue 或 listener broadcast，也没有新增第二套 write facade。
 - [x] 本轮未发现新的旧 Buff 耦合点；`docs/旧Buff系统耦合审查结果.md` 不需要新增 P2-F blocker 条目。
 
+## 本轮阶段 2 direct simulator context helpers PRD 收口状态（2026-06-09）
+
+- [x] P2-G 已完成 direct simulator service-family representative coverage：Yuzuha tick / preload / next-character / report-state、enemy context、listener lookup、RNG service、report-state representative 与 factory-backed scheduled preload contrast 均有 focused tests。
+- [x] `tests/simulator/test_migrated_p2g_direct_context_guardrail.py` 已接入 `implicit-events` focused pytest 与 scoped mypy；guardrail 只扫描 selected root files / symbols，排除 `.codex_worktrees/`、`__pycache__/`、generated logs 和 `scripts/ralph/archive/**`，不扩散到 P2-A through P2-F completed buckets。
+- [x] P2-G 保留 tick / preload / char-data / enemy / listener / RNG / report-state 的服务分层；没有抽取 universal simulator context helper，也没有把 direct context reads 伪装成 `LegacyBuffRuntimeFacade`、`RuntimeCommandPort`、`ScheduleDispatchPort` 或 `BuffRuntimeReadPort` 工作。
+- [x] 验证基线：US-012 已串行通过 changed focused pytest `67 passed`、`implicit-events` profile（base `2 passed`、isolated teams `3 passed`、focused `238 passed`、mypy `88 source files` clean）与 `calculator-reads` profile（base `2 passed`、isolated teams `3 passed`、focused `133 passed`、mypy `22 source files` clean）。
+- [x] 本 PRD 没有改 root production behavior、lifecycle wiring 或 live registered-team semantics；main-loop consistency sample 因无 live semantic change 而跳过。
+- [x] 本轮未发现新的旧 Buff 耦合点；`docs/旧Buff系统耦合审查结果.md` 不需要新增 P2-G blocker 条目。
+
 ## 当前默认下一步
 
 - [x] `US-024` 已完成 closure decision，没有输出 phase-1 blocker package；不得继续生成新的阶段 1 实现 PRD，除非 guardrail / validation 给出新的生产失败证据。
@@ -235,6 +244,7 @@
 - [x] P2-D “scheduled publish ordering / adapter parity” 已完成 guarded scope：adapter rebinding、resource refresh payload / order、`SkillNode` / `LoadingMission` order、stateful anomaly / dot layer separation、fan-out / multi-publish parity 与 exact-file source guardrail 已由 focused tests、`test_migrated_p2d_scheduled_publish_guardrail.py` 和 `implicit-events` 串行验证覆盖；后续不再把 P2-D 当默认 backlog，除非 guardrail / validation 给出具体回归证据。
 - [x] P2-E “dot runtime-state / initialization” 已完成 guarded scope：`DotRuntimeStateAdapter`、`DotInitializationReadContext`、Vivian dot presence / registration、Shock duration initialization、`UpdateAnomaly` replacement / removal、freeze follow-up 分层、exact-file P2-E guardrail 与 `implicit-events` 串行验证均已覆盖；后续不再把 P2-E 当默认 backlog，除非 P2-E guardrail / focused tests / validation 给出具体回归证据。
 - [x] P2-F “BuffAddStrategy caller / facade-write design” 已完成 guarded scope：caller taxonomy、active replacement、enemy mirror sync、selected-target fan-out、Character / listener / BuffXLogic / `UpdateAnomaly` 代表 caller tests、cross-layer semantics、exact-file P2-F guardrail 和 `implicit-events` validation 均已覆盖；后续不再把 P2-F 当默认 backlog，除非 P2-F guardrail / focused tests / validation 给出具体回归证据。
-- [ ] 下一轮默认 PRD 应沿 [Buff重构方案.md](./Buff重构方案.md) 继续留在阶段 2，优先选择 “direct simulator context helpers” 作为 P2-G 服务定位 / explicit context helper 分类与 focused test 包，而不是把不同服务混成 `LegacyBuffRuntimeFacade` 替换、scheduled publish 迁移、Calculator formula 替换，或删除 legacy `buff_add()` / `KickOutBuff()`。
-- [ ] 同阶段候选池必须继续保留 P2-D / P2-E / P2-F guarded maintenance、phase-3-only formula snapshot replacement、retained compatibility 与 blocker-only phase-1 reopen rules，避免 PRD 生成器只沿上一个文件继续。
+- [x] P2-G “direct simulator context helpers” 已完成 guarded scope：Yuzuha、enemy context、listener lookup、RNG service、report-state representative、exact-file / selected-symbol guardrail 和 `implicit-events` validation 均已覆盖；后续不再把 P2-G 当默认 backlog，除非 P2-G guardrail / focused tests / validation 给出具体回归证据。
+- [ ] 下一轮默认 PRD 应沿 [Buff重构方案.md](./Buff重构方案.md) 从阶段 2 收口转入 phase-3 formula snapshot readiness decision：先证明 P2-A through P2-G 没有剩余默认实现候选，再定义公式 parity suite、候选文件、验证入口和非目标。
+- [ ] 同阶段候选池必须继续保留 P2-A through P2-G guarded maintenance、phase-3-only formula snapshot replacement、retained compatibility 与 blocker-only phase-1 reopen rules，避免 PRD 生成器只沿上一个文件继续。
 - [ ] 若后续 validation 或 guardrail 重新暴露阶段 1 blocker，下一轮 PRD 只处理 blocker package 中列出的具体文件、符号、失败测试、失败 guardrail 或验证命令；不得重开已删除的 `event_list` surface 或已闭合的 producer batch，除非 guardrail 给出新的生产证据。

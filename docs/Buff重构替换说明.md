@@ -2395,3 +2395,15 @@
 - Next step:
   - Continue with US-012 by running serial validation and updating final handoff docs without adding more P2-G implementation scope unless validation or doc evidence exposes a real gap.
 ---
+## 2026-06-09 18:21 +08:00 - US-012
+- Files changed: `docs/Buff重构替换说明.md`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - Final P2-G handoff docs now replace the previous "P2-G is the current default next PRD" state with completed direct-context evidence, serial validation results, and a phase-2 closure / phase-3 readiness next default.
+  - This story adds validation and handoff evidence only; it does not replace live production behavior or extract a new simulator context helper.
+- Compatibility retained:
+  - P2-G tick / preload / next-character, enemy context, listener lookup, RNG service, report-state, factory-backed scheduled preload, and covered forced-write / scheduled-publish contrast behavior remain unchanged.
+  - `ScheduleDispatchPort`, synchronous listener broadcast, `RuntimeCommandPort`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, raw pending queues, old containers, Calculator / CalAnomaly formulas, formula snapshots, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - `docs/旧Buff系统耦合审查结果.md` was not changed because this final validation found no new direct-context coupling beyond the already documented P2-G candidates.
+- Next step:
+  - Generate the next PRD as a phase-2 closure / phase-3 formula snapshot readiness decision following `docs/Buff重构方案.md`; keep P2-A through P2-G as guarded maintenance buckets and reopen phase-1 only for concrete guardrail / validation failures.
+---
