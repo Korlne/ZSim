@@ -2518,3 +2518,14 @@
 - Next step:
   - Continue with US-010 by classifying remaining XLogic formula-adjacent candidates while keeping copied-output dispatch paths as guarded-maintenance scope unless focused tests or validation name a regression.
 ---
+## 2026-06-09 20:59 +08:00 - US-010
+- Files changed: `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The US-010 matrix classification replaces manual remaining-candidate triage with helper-family buckets for AM/AP, impact, crit, anomaly ratio / copied output, enemy anomaly-state reads, and retained formula snapshots.
+  - This story adds readiness documentation only; it does not replace a live production path, formula helper, dispatch adapter, runtime port, guardrail, or validation profile.
+- Compatibility retained:
+  - Old paths still retained in this iteration: all P2-A through P2-G migrated files remain guarded maintenance, and `BuffXLogic`, `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and deleted event-list discovery surfaces all remain unchanged.
+  - No old-coupling review update was needed; this classification found no new Buff coupling beyond already documented formula snapshot, copied-output, enemy-state read, and guarded P2-A through P2-G boundaries.
+- Next step:
+  - Continue with US-011 by deciding behavior sample matrix and registered-team requirements before any phase-3 go / no-go or formula validation wiring.
+---
