@@ -2456,3 +2456,15 @@
 - Next step:
   - Continue with US-005 by defining the formula parity suite contract before any Calculator / CalAnomaly formula replacement or validation-profile wiring.
 ---
+## 2026-06-09 19:47 +08:00 - US-005
+- Files changed: `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The new formula parity suite contract replaces manual phase-3 parity ambiguity with named input domains, output invariants, comparison policy, and focused-vs-registered-sample rules.
+  - This story adds contract documentation only; it does not replace live Calculator / CalAnomaly formula behavior or wire a new validation profile.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `AnomalyBar.current_ndarray`, `MultiplierData`, `MulData`, `DynamicStatement`, and current `CalculatorBuffAttributeReader` helper seams all remain unchanged.
+  - P2-A through P2-G guarded-maintenance buckets, scheduled publish, listener broadcast, same-tick runtime writes, dot runtime state, direct simulator services, old containers, formula snapshots, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No old-coupling review update was needed; this contract found no new Buff coupling beyond already documented retained formula snapshot boundaries.
+- Next step:
+  - Continue with US-006 by characterizing `MultiplierData` and `DynamicStatement` snapshot behavior under this parity contract before any phase-3 formula replacement or validation-profile wiring.
+---
