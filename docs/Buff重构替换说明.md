@@ -44,6 +44,19 @@
 - Next step:
   - Continue with US-010 by strengthening cross-layer boundary semantics without broadening into source rewrites or Character manager implementation changes.
 ---
+## 2026-06-09 13:46 +08:00 - US-010
+- Files changed: `tests/simulator/test_bypass_layer_semantics.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_bypass_layer_semantics.py` now replaces manual P2-F cross-layer boundary review with focused tests for automatic target fan-out, explicit `benifit_list` override, enemy debuff mirror sync, and layer-separation guards.
+  - The new boundary test prepares to replace any future ambiguity between forced same-tick Buff / Debuff writes and scheduled publish, listener broadcast, runtime command, or read-port behavior.
+  - This story locks existing behavior with tests only; it does not replace live production behavior.
+- Compatibility retained:
+  - `buff_add_strategy(...)` / `LegacyBuffRuntimeFacade` remains the forced same-tick Buff / Debuff write boundary.
+  - `LOADING_BUFF_DICT` pending queues, `ScheduleDispatchPort` scheduled backlog, listener broadcast, `RuntimeCommandPort`, `BuffRuntimeReadPort` read-only semantics, old containers, Calculator / CalAnomaly formulas, P2-G direct simulator context helpers, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; root-workspace evidence matched already documented P2-F cross-layer boundary coupling.
+- Next step:
+  - Continue with US-011 by adding the P2-F exact-file source guardrail and validation wiring without broadening completed P2-A / P2-B / P2-C / P2-D / P2-E guardrails.
+---
 ## 2026-06-05 13:28:48 - US-001
 - 本轮文件：`zsim/sim_progress/data_struct/schedule_dispatch.py`, `tests/simulator/test_schedule_dispatch.py`, `scripts/run_buff_refactor_validation.py`
 - 替换说明：

@@ -6,20 +6,17 @@ from typing import Any, Mapping, Sequence, cast
 import pytest
 
 import zsim.sim_progress.data_struct.BattleEventListener.AliceDotTriggerListener as alice_dot_module
+import zsim.sim_progress.data_struct.schedule_dispatch as schedule_dispatch_module
 from tests.simulator.test_buff_add_strategy_runtime_facade import (
+    _assert_pending_queues_untouched,
     _BuffAddProbe,
+    _FailFastPendingQueue,
     _make_sim_instance,
 )
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
+from zsim.sim_progress.Buff import BuffAddStrategy as buff_add_strategy_module
+from zsim.sim_progress.Buff.buff_class import Buff
 from zsim.sim_progress.Buff.BuffAddStrategy import buff_add_strategy
-from zsim.sim_progress.Dot.BaseDot import Dot
-from zsim.sim_progress.ScheduledEvent import runtime_command as runtime_command_module
-from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
-from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
-from zsim.sim_progress.ScheduledEvent.event_handlers.handlers.preload import (
-    PreloadEventHandler,
-)
-from zsim.sim_progress.ScheduledEvent.runtime_command import create_runtime_command_port
 from zsim.sim_progress.data_struct.BattleEventListener import ListenerManger
 from zsim.sim_progress.data_struct.BattleEventListener.AliceDotTriggerListener import (
     AliceDotTriggerListener,
@@ -28,6 +25,15 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduleDispatchPort,
     create_schedule_dispatch_port,
 )
+from zsim.sim_progress.Dot.BaseDot import Dot
+from zsim.sim_progress.ScheduledEvent import buff_runtime as buff_runtime_module
+from zsim.sim_progress.ScheduledEvent import runtime_command as runtime_command_module
+from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
+from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
+from zsim.sim_progress.ScheduledEvent.event_handlers.handlers.preload import (
+    PreloadEventHandler,
+)
+from zsim.sim_progress.ScheduledEvent.runtime_command import create_runtime_command_port
 
 
 class _FailFastEventList(list[object]):
@@ -111,6 +117,86 @@ class _RecordingListener:
 
     def listening_event(self, event: object, signal: LBS, **kwargs: object) -> None:
         self.calls.append((event, signal, kwargs))
+
+
+def _install_buff_add_cross_layer_guards(
+    monkeypatch: pytest.MonkeyPatch,
+) -> list[tuple[str, str, object]]:
+    facade_calls: list[tuple[str, str, object]] = []
+
+    class _RecordingLegacyBuffRuntimeFacade(buff_runtime_module.LegacyBuffRuntimeFacade):
+        def find_active_buff_by_index(self, beneficiary: str, buff_index: str) -> Buff | None:
+            facade_calls.append(("find_active_buff_by_index", beneficiary, buff_index))
+            return super().find_active_buff_by_index(beneficiary, buff_index)
+
+        def remove_active_buff(self, beneficiary: str, buff: Buff) -> None:
+            facade_calls.append(("remove_active_buff", beneficiary, buff))
+            super().remove_active_buff(beneficiary, buff)
+
+        def append_active_buff(self, beneficiary: str, buff: Buff) -> None:
+            facade_calls.append(("append_active_buff", beneficiary, buff))
+            super().append_active_buff(beneficiary, buff)
+
+        def sync_enemy_debuff_mirror(self, buff: Buff) -> None:
+            facade_calls.append(("sync_enemy_debuff_mirror", "enemy", buff))
+            super().sync_enemy_debuff_mirror(buff)
+
+    def create_recording_legacy_facade(
+        **kwargs: Any,
+    ) -> buff_runtime_module.BuffRuntimeFacade:
+        facade_calls.append(
+            ("create_legacy_buff_runtime_facade", "runtime", "LegacyBuffRuntimeFacade")
+        )
+        return _RecordingLegacyBuffRuntimeFacade(**kwargs)
+
+    def fail_schedule_dispatch_port(*args: object, **kwargs: object) -> None:
+        raise AssertionError("buff_add_strategy must not create ScheduleDispatchPort")
+
+    def fail_runtime_command_port(*args: object, **kwargs: object) -> None:
+        raise AssertionError("buff_add_strategy must not create RuntimeCommandPort")
+
+    def fail_runtime_read_port(*args: object, **kwargs: object) -> None:
+        raise AssertionError("buff_add_strategy must not create BuffRuntimeReadPort")
+
+    monkeypatch.setattr(
+        buff_runtime_module,
+        "create_legacy_buff_runtime_facade",
+        create_recording_legacy_facade,
+    )
+    monkeypatch.setattr(
+        schedule_dispatch_module,
+        "create_schedule_dispatch_port",
+        fail_schedule_dispatch_port,
+    )
+    monkeypatch.setattr(
+        runtime_command_module,
+        "create_runtime_command_port",
+        fail_runtime_command_port,
+    )
+    monkeypatch.setattr(
+        buff_runtime_module,
+        "create_buff_runtime_read_port",
+        fail_runtime_read_port,
+    )
+    monkeypatch.setattr(
+        buff_add_strategy_module,
+        "create_schedule_dispatch_port",
+        fail_schedule_dispatch_port,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        buff_add_strategy_module,
+        "create_runtime_command_port",
+        fail_runtime_command_port,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        buff_add_strategy_module,
+        "create_buff_runtime_read_port",
+        fail_runtime_read_port,
+        raising=False,
+    )
+    return facade_calls
 
 
 def test_schedule_dispatch_publish_is_queue_only_not_broadcast_or_runtime_write() -> None:
@@ -242,9 +328,7 @@ def test_runtime_command_same_tick_write_does_not_publish_or_broadcast(
     def fail_broadcast(**kwargs: object) -> None:
         raise AssertionError("runtime command should not broadcast listener events")
 
-    sim_instance = SimpleNamespace(
-        listener_manager=SimpleNamespace(broadcast_event=fail_broadcast)
-    )
+    sim_instance = SimpleNamespace(listener_manager=SimpleNamespace(broadcast_event=fail_broadcast))
     captured: list[tuple[str, object]] = []
 
     def fake_update_anomaly(
@@ -340,3 +424,148 @@ def test_buff_add_strategy_forced_write_stays_out_of_schedule_and_listener_layer
     assert len(active_store) == 1
     assert active_store[0] is not old_active_buff
     assert active_store[0].dy.count == 3
+
+
+def test_buff_add_strategy_cross_layer_boundary_covers_target_shapes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    facade_calls = _install_buff_add_cross_layer_guards(monkeypatch)
+
+    fanout_pending: dict[str, list[Buff]] = {
+        "Alice": _FailFastPendingQueue(),
+        "Bob": _FailFastPendingQueue(),
+        "Corin": _FailFastPendingQueue(),
+    }
+    alice_store: list[Buff] = [_BuffAddProbe("fanout-boundary", count=8)]
+    bob_store: list[Buff] = []
+    corin_store: list[Buff] = []
+    fanout_sim = _make_sim_instance(
+        exist_buff_dict={
+            "Alice": {"fanout-boundary": _BuffAddProbe("fanout-boundary", add_buff_to="1100")},
+            "Bob": {"fanout-boundary": _BuffAddProbe("fanout-boundary", add_buff_to="1100")},
+            "Corin": {"fanout-boundary": _BuffAddProbe("fanout-boundary", add_buff_to="1100")},
+        },
+        loading_buff_dict=fanout_pending,
+        dynamic_buff_dict={
+            "Alice": alice_store,
+            "Bob": bob_store,
+            "Corin": corin_store,
+        },
+        enemy_debuff_mirror=[],
+    )
+    fanout_sim.load_data.all_name_order_box = {
+        "Alice": ["Alice", "Bob", "Corin", "Daisy"],
+        "enemy": ["enemy"],
+    }
+
+    buff_add_strategy("fanout-boundary", sim_instance=fanout_sim)
+
+    _assert_pending_queues_untouched(fanout_sim, fanout_pending)
+    assert fanout_sim.schedule_data.event_list == []
+    assert [call[:2] for call in facade_calls if call[0] == "append_active_buff"] == [
+        ("append_active_buff", "Alice"),
+        ("append_active_buff", "Bob"),
+    ]
+    assert any(
+        call
+        == (
+            "create_legacy_buff_runtime_facade",
+            "runtime",
+            "LegacyBuffRuntimeFacade",
+        )
+        for call in facade_calls
+    )
+
+    explicit_start = len(facade_calls)
+    explicit_pending: dict[str, list[Buff]] = {
+        "Alice": _FailFastPendingQueue(),
+        "Bob": _FailFastPendingQueue(),
+        "Corin": _FailFastPendingQueue(),
+    }
+    explicit_sim = _make_sim_instance(
+        exist_buff_dict={
+            "Alice": {"explicit-boundary": _BuffAddProbe("explicit-boundary", add_buff_to="1100")},
+            "Bob": {"explicit-boundary": _BuffAddProbe("explicit-boundary", add_buff_to="1100")},
+            "Corin": {"explicit-boundary": _BuffAddProbe("explicit-boundary", add_buff_to="1100")},
+        },
+        loading_buff_dict=explicit_pending,
+        dynamic_buff_dict={
+            "Alice": [],
+            "Bob": [],
+            "Corin": [],
+        },
+        enemy_debuff_mirror=[],
+    )
+    explicit_sim.load_data.all_name_order_box = fanout_sim.load_data.all_name_order_box
+
+    buff_add_strategy(
+        "explicit-boundary",
+        benifit_list=["Corin"],
+        sim_instance=explicit_sim,
+    )
+
+    explicit_calls = facade_calls[explicit_start:]
+    _assert_pending_queues_untouched(explicit_sim, explicit_pending)
+    assert explicit_sim.schedule_data.event_list == []
+    assert [call[:2] for call in explicit_calls if call[0] == "append_active_buff"] == [
+        ("append_active_buff", "Corin"),
+    ]
+
+    enemy_start = len(facade_calls)
+    enemy_pending: dict[str, list[Buff]] = {"enemy": _FailFastPendingQueue()}
+    old_enemy_buff = _BuffAddProbe("enemy-boundary", operator="enemy")
+    old_enemy_mirror = _BuffAddProbe("enemy-boundary", operator="enemy")
+    enemy_store: list[Buff] = [old_enemy_buff]
+    enemy_mirror: list[Buff] = [old_enemy_mirror]
+    enemy_sim = _make_sim_instance(
+        exist_buff_dict={
+            "enemy": {
+                "enemy-boundary": _BuffAddProbe(
+                    "enemy-boundary",
+                    operator="enemy",
+                    add_buff_to="0001",
+                )
+            }
+        },
+        loading_buff_dict=enemy_pending,
+        dynamic_buff_dict={"enemy": enemy_store},
+        enemy_debuff_mirror=enemy_mirror,
+    )
+
+    buff_add_strategy(
+        "enemy-boundary",
+        benifit_list=["enemy"],
+        sim_instance=enemy_sim,
+    )
+
+    enemy_calls = facade_calls[enemy_start:]
+    _assert_pending_queues_untouched(enemy_sim, enemy_pending)
+    assert enemy_sim.schedule_data.event_list == []
+    assert len(enemy_store) == 1
+    new_enemy_buff = enemy_store[0]
+    assert new_enemy_buff is not old_enemy_buff
+    assert enemy_mirror == [new_enemy_buff]
+    assert (
+        "sync_enemy_debuff_mirror",
+        "enemy",
+        new_enemy_buff,
+    ) in enemy_calls
+
+
+def test_buff_runtime_read_port_exposes_no_public_write_methods() -> None:
+    write_prefixes = (
+        "activate",
+        "append",
+        "clear",
+        "drain",
+        "end",
+        "enqueue",
+        "remove",
+        "replace",
+        "settle",
+        "sync",
+        "update",
+    )
+    public_names = {name for name in BuffRuntimeReadPort.__dict__ if not name.startswith("_")}
+
+    assert {name for name in public_names if name.startswith(write_prefixes)} == set()
