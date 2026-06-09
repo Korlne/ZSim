@@ -1081,3 +1081,18 @@ US-006 结论：当前证据把 active Buff view、enemy debuff view 与 transla
 | personal crit rate / damage | 同一 focused test 锁定 `cal_personal_crit_rate(...)` 与 `cal_personal_crit_dmg(...)` 不计入 received crit / received crit damage 字段，同时保留动态 snapshot 中的 received 字段可见性。 | Personal crit reader parity 继续排除 received fields；后续 phase-3 必须先补齐 formula parity suite 与 go / no-go decision，不能从 P2-A / P2-B migrated-file guardrail 直接推导公式删除。 |
 
 US-007 结论：`calculator-reads` 现在覆盖 `MultiplierData` / `DynamicStatement` fan-in 与六个 Calculator attribute formula helper 的 focused boundary characterization；它仍不是完整 Calculator / CalAnomaly formula replacement gate。
+
+### 2026-06-09 US-008 CalAnomaly / AnomalyBar Snapshot Boundary Characterization
+
+本节只记录 `CalAnomaly` 与 settled `AnomalyBar.current_ndarray` 的 focused characterization，不改 `CalAnomaly.py`、`AnomalyBarClass.py`、`CopyAnomalyForOutput.py`、handler、dispatch adapter、runtime port 或验证脚本。
+
+| surface | characterization evidence | retained compatibility / non-goal |
+| --- | --- | --- |
+| Anomaly buildup / settled `current_ndarray` | `tests/simulator/test_buff_attribute_reader.py::test_anomaly_bar_settlement_and_copied_snapshot_inputs_remain_retained_compatibility` 覆盖 `AnomalyBar.update_snap_shot(...)` 对所有 buildup 累加 `current_anomaly`，但只把 `effective_anomlay_buildup()` 为真的 snapshot 放进 `ndarray_box`；`anomaly_settled()` 继续按有效 buildup 权重结算 `(1, 11)` `current_ndarray` 并清空 `ndarray_box`。 | `AnomalyBarClass.py` 结算公式、字段形状与 event/runtime 分层保持不变；本 story 不改 anomaly buildup 公式、不改 scheduled publish、listener broadcast、dot runtime registration 或 same-tick runtime write。 |
+| Copied anomaly snapshot inputs | 同一 focused test 覆盖 `NewAnomaly(...)` 经 `AnomalyBar.__deepcopy__()` 复制 settled `current_ndarray`，复制结果与源数组数值一致但数组对象独立，且 `active_by` override 保持现有 copied-output 输入语义。 | `CopyAnomalyForOutput.py` copied-output 行为继续作为 phase-3 formula / output parity 的 retained baseline；本 story 不替换 Vivian / Yanagi copied-output publish 路径。 |
+| `CalAnomaly.__init__()` / `MulData` input contract | `tests/simulator/test_buff_attribute_reader.py::test_cal_anomaly_uses_settled_snapshot_mul_data_and_retained_damage_ratios` 用 patched formula dependencies 锁定 `CalAnomaly.__init__(...)` 仍直接消费 settled `anomaly_obj.current_ndarray`，构造 `MulData(enemy_obj=..., dynamic_buff=..., judge_node=..., character_obj=...)`，并保留 snapshot 虚拟等级、Calculator multiplier order 与 `final_multipliers` 排列。 | `MulData` / Calculator helper 调用仍是 retained formula snapshot；reader seam evidence 不等价于可以删除 `CalAnomaly` 公式或 `MultiplierData` 聚合责任。 |
+| Anomaly damage ratio / abloom ratio | 同一 focused test 锁定 `cal_anomaly_dmg()` 继续按 `np.prod(final_multipliers) / (imp * stun) * scaling_factor` 输出，并锁定 `CalAbloom` 继续把 copied anomaly 的 `anomaly_dmg_ratio` 乘进 base multiplier。 | `scaling_factor`、`anomaly_dmg_ratio`、abloom subclass selection 与 final damage formula 都保持兼容；本 story 只新增 baseline，不实施 phase-3 formula replacement。 |
+
+US-008 结论：`calculator-reads` 现在覆盖 `AnomalyBar` effective buildup settlement、copied anomaly snapshot inputs、`CalAnomaly.__init__()` `MulData` 输入契约、`final_multipliers` 排列、`scaling_factor` 与 `CalAbloom.anomaly_dmg_ratio` retained baseline；它仍不是完整 anomaly / disorder / polarity disorder formula replacement gate。
+
+No new old-Buff coupling was discovered; `docs/旧Buff系统耦合审查结果.md` does not need a new entry for this characterization.

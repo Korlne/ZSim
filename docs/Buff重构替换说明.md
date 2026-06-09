@@ -2493,3 +2493,16 @@
 - Next step:
   - Continue with US-008 by characterizing CalAnomaly and AnomalyBar snapshot boundaries before any phase-3 formula replacement or validation-profile wiring.
 ---
+## 2026-06-09 20:15 +08:00 - US-008
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_anomaly_bar_settlement_and_copied_snapshot_inputs_remain_retained_compatibility` prepares to replace manual review of `AnomalyBar.update_snap_shot(...)`, `anomaly_settled()`, and `NewAnomaly(...)` copied snapshot inputs with focused characterization coverage.
+  - `test_cal_anomaly_uses_settled_snapshot_mul_data_and_retained_damage_ratios` prepares to replace manual review of `CalAnomaly.__init__()` snapshot / `MulData` inputs, `final_multipliers`, `scaling_factor`, and `CalAbloom.anomaly_dmg_ratio` with focused characterization coverage.
+  - This story characterizes retained anomaly formula snapshot behavior only; it does not replace a live production path, CalAnomaly formula, AnomalyBar settlement formula, copied-output publish path, or validation profile.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `CalAnomaly.py`, `AnomalyBarClass.py`, `CopyAnomalyForOutput.py`, `MultiplierData` / `MulData`, Calculator multiplier helpers, `AnomalyBar.current_ndarray`, copied anomaly outputs, and current `calculator-reads` validation wiring all remain unchanged.
+  - Scheduled publish, listener broadcast, dot runtime registration, same-tick runtime writes, old containers, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot boundaries.
+- Next step:
+  - Continue with US-009 by using the new CalAnomaly / AnomalyBar baseline as compatibility evidence while keeping phase-3 formula replacement gated behind explicit formula parity scope and validation decisions.
+---

@@ -5,8 +5,10 @@ import inspect
 from types import SimpleNamespace
 from typing import Any, Sequence, cast
 
+import numpy as np
 import pytest
 
+import zsim.sim_progress.ScheduledEvent.CalAnomaly as cal_anomaly_module
 import zsim.sim_progress.ScheduledEvent.Calculator as calculator_module
 from zsim.sim_progress.Buff.BuffXLogic.BranchBladeSongCritDamageBonus import (
     BranchBladeSongCritDamageBonus,
@@ -20,6 +22,11 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
     CalculatorBuffAttributeReader,
     MultiplierData,
     create_anomaly_attribute_read_context,
+)
+from zsim.sim_progress.anomaly_bar import AnomalyBar
+from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
+    DirgeOfDestinyAnomaly,
+    NewAnomaly,
 )
 
 _AggregationCall = tuple[tuple[object, ...], object | None, object, str | None]
@@ -735,6 +742,193 @@ def test_calculator_attribute_formula_boundaries_remain_retained_compatibility(
         0.4
     )
     _assert_aggregation_calls(aggregation_calls, fixture, times=7)
+
+
+def test_anomaly_bar_settlement_and_copied_snapshot_inputs_remain_retained_compatibility() -> None:
+    sim_instance = SimpleNamespace(tick=120)
+    bar = AnomalyBar(sim_instance=cast(Any, sim_instance), element_type=0)
+    first_snapshot = np.array(
+        [[100.0, 1.10, 2.0, 60.0, 1.30, 0.0, 0.05, 8.0, 0.10, 1.20, 1.40]],
+        dtype=np.float64,
+    )
+    second_snapshot = np.array(
+        [[200.0, 1.40, 3.0, 50.0, 1.60, 0.0, 0.15, 4.0, 0.20, 1.60, 1.80]],
+        dtype=np.float64,
+    )
+    ineffective_snapshot: np.ndarray = np.full((1, 11), 999.0, dtype=np.float64)
+    effective_hit = SimpleNamespace(effective_anomlay_buildup=lambda: True)
+    ineffective_hit = SimpleNamespace(effective_anomlay_buildup=lambda: False)
+
+    bar.update_snap_shot(
+        (0, np.float64(20.0), first_snapshot),
+        cast(Any, effective_hit),
+    )
+    bar.update_snap_shot(
+        (0, np.float64(10.0), second_snapshot),
+        cast(Any, effective_hit),
+    )
+    bar.update_snap_shot(
+        (0, np.float64(99.0), ineffective_snapshot),
+        cast(Any, ineffective_hit),
+    )
+
+    assert bar.current_anomaly == pytest.approx(129.0)
+    assert len(cast(list[tuple[Any, ...]], bar.ndarray_box)) == 2
+
+    bar.anomaly_settled()
+
+    expected_snapshot = ((first_snapshot * 20.0) + (second_snapshot * 10.0)) / 30.0
+    assert bar.settled is True
+    assert bar.current_effective_anomaly == pytest.approx(30.0)
+    assert bar.ndarray_box == []
+    np.testing.assert_allclose(bar.current_ndarray, expected_snapshot)
+
+    activation = SimpleNamespace(
+        skill=SimpleNamespace(char_obj=SimpleNamespace(NAME="快照角色"))
+    )
+    copied = NewAnomaly(
+        bar,
+        active_by=cast(Any, activation),
+        sim_instance=cast(Any, SimpleNamespace(tick=121)),
+    )
+
+    assert copied.current_ndarray is not bar.current_ndarray
+    np.testing.assert_allclose(copied.current_ndarray, expected_snapshot)
+    bar.current_ndarray[0, 0] = -999.0
+    assert copied.current_ndarray[0, 0] == pytest.approx(expected_snapshot[0, 0])
+    assert copied.activated_by is activation
+
+
+def test_cal_anomaly_uses_settled_snapshot_mul_data_and_retained_damage_ratios(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    created_mul_data: list[Any] = []
+
+    class _MulDataProbe:
+        def __init__(
+            self,
+            *,
+            enemy_obj: object,
+            dynamic_buff: object,
+            judge_node: object,
+            character_obj: object,
+        ) -> None:
+            self.enemy_obj = enemy_obj
+            self.dynamic_buff = dynamic_buff
+            self.judge_node = judge_node
+            self.character_obj = character_obj
+            self.dynamic = SimpleNamespace(
+                strike_crit_rate_increase=0.25,
+                strike_crit_dmg_increase=0.4,
+            )
+            created_mul_data.append(self)
+
+    monkeypatch.setattr(cal_anomaly_module, "MulData", _MulDataProbe)
+    monkeypatch.setattr(
+        cal_anomaly_module.CalAnomaly,
+        "cal_def_mul",
+        lambda self, data, v_char_level: np.float64(0.5),
+    )
+    monkeypatch.setattr(
+        cal_anomaly_module.Cal.RegularMul,
+        "cal_res_mul",
+        staticmethod(lambda data, *, element_type, snapshot_res_pen: np.float64(0.7)),
+    )
+    monkeypatch.setattr(
+        cal_anomaly_module.Cal.RegularMul,
+        "cal_dmg_vulnerability",
+        staticmethod(lambda data, *, element_type: np.float64(0.9)),
+    )
+    monkeypatch.setattr(
+        cal_anomaly_module.Cal.RegularMul,
+        "cal_stun_vulnerability",
+        staticmethod(lambda data: np.float64(0.8)),
+    )
+    monkeypatch.setattr(
+        cal_anomaly_module.Cal.RegularMul,
+        "cal_special_mul",
+        staticmethod(lambda data: np.float64(1.2)),
+    )
+
+    sim_instance = SimpleNamespace(tick=321)
+    character = SimpleNamespace(NAME="异常公式角色")
+    activation = SimpleNamespace(skill=SimpleNamespace(char_obj=character))
+    enemy = SimpleNamespace(marker="enemy")
+    active_buff_view: dict[str, list[object]] = {character.NAME: []}
+    settled_snapshot = np.array(
+        [[100.0, 1.10, 2.0, 60.0, 1.30, 999.0, 0.05, 8.0, 0.10, 1.20, 1.40]],
+        dtype=np.float64,
+    )
+    anomaly_bar = AnomalyBar(sim_instance=cast(Any, sim_instance), element_type=0)
+    anomaly_bar.current_ndarray = settled_snapshot
+    anomaly_bar.current_effective_anomaly = np.float64(30.0)
+    anomaly_bar.current_anomaly = np.float64(129.0)
+    anomaly_bar.settled = True
+    anomaly_bar.activated_by = cast(Any, activation)
+    anomaly_bar.scaling_factor = 1.25
+
+    calculator = cal_anomaly_module.CalAnomaly(
+        anomaly_obj=anomaly_bar,
+        enemy_obj=cast(Any, enemy),
+        dynamic_buff=active_buff_view,
+        sim_instance=cast(Any, sim_instance),
+    )
+
+    expected_multipliers = np.array(
+        [
+            100.0,
+            1.10,
+            2.0,
+            2.0,
+            1.30,
+            1.10,
+            0.5,
+            0.7,
+            0.9,
+            1.20,
+            1.40,
+            0.8,
+            1.2,
+        ],
+        dtype=np.float64,
+    )
+    assert len(created_mul_data) == 1
+    assert created_mul_data[0].judge_node is anomaly_bar
+    assert created_mul_data[0].dynamic_buff is active_buff_view
+    assert created_mul_data[0].character_obj is character
+    assert calculator.dmg_sp is anomaly_bar.current_ndarray
+    np.testing.assert_allclose(calculator.final_multipliers, expected_multipliers)
+    assert calculator.cal_anomaly_dmg() == pytest.approx(
+        np.prod(expected_multipliers)
+        / (settled_snapshot[0, 9] * settled_snapshot[0, 10])
+        * anomaly_bar.scaling_factor
+    )
+
+    abloom = DirgeOfDestinyAnomaly(
+        anomaly_bar,
+        active_by=cast(Any, activation),
+        sim_instance=cast(Any, sim_instance),
+    )
+    abloom.anomaly_dmg_ratio = 1.3
+    abloom.scaling_factor = 1.0
+    created_mul_data.clear()
+
+    abloom_calculator = cal_anomaly_module.CalAbloom(
+        abloom_obj=abloom,
+        enemy_obj=cast(Any, enemy),
+        dynamic_buff=active_buff_view,
+        sim_instance=cast(Any, sim_instance),
+    )
+
+    expected_abloom_multipliers = expected_multipliers.copy()
+    expected_abloom_multipliers[0] *= abloom.anomaly_dmg_ratio
+    assert len(created_mul_data) == 1
+    assert created_mul_data[0].judge_node is abloom
+    assert abloom_calculator.dmg_sp is abloom.current_ndarray
+    np.testing.assert_allclose(
+        abloom_calculator.final_multipliers,
+        expected_abloom_multipliers,
+    )
 
 
 @pytest.mark.parametrize(
