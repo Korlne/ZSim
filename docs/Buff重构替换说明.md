@@ -2246,3 +2246,16 @@
 - Next step:
   - Generate the next phase-2 PRD from [Buff重构方案.md](./Buff重构方案.md), defaulting to P2-G direct simulator context helpers while preserving P2-D / P2-E / P2-F guarded maintenance, phase-3 formula snapshot replacement, retained compatibility, and blocker-only phase-1 reopen rows.
 ---
+## 2026-06-09 15:13 +08:00 - US-001
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `scripts/ralph/progress.txt` now replaces ad-hoc P2-G service-location intake with documented root `rg` counts, CodeGraph representative inspection, service taxonomy, selected focused-test representatives, and rejected thin slices.
+  - This story builds boundary taxonomy only; it does not replace live production behavior.
+- Compatibility retained:
+  - `sim_instance.tick`, local preload / Character action context, `char_data.find_next_char_obj(...)`, `schedule_data.enemy`, `listener_manager`, `rng_instance`, and `schedule_data.change_process_state()` remain unchanged.
+  - `ScheduleDispatchPort`, synchronous listener broadcast, `RuntimeCommandPort`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort` read-only semantics, old containers, Calculator / CalAnomaly formulas, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - P2-A / P2-B / P2-C / P2-D / P2-E / P2-F completed buckets are retained as guarded maintenance evidence and are not reopened by this taxonomy story.
+  - No new old-coupling review update was needed; root-workspace evidence matched the existing direct simulator context candidate pool.
+- Next step:
+  - Continue with US-002 by adding Yuzuha Hard Candy tick / preload branch coverage without broadening into RNG, listener, scheduled publish, runtime write, or formula replacement work.
+---
