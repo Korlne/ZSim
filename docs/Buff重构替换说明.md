@@ -2368,3 +2368,16 @@
 - Next step:
   - Continue with US-010 by deciding explicit context helpers and retained compatibility boundaries without introducing a universal simulator context object or collapsing report-state, listener, scheduled publish, RNG, and runtime-write semantics.
 ---
+## 2026-06-09 17:56 +08:00 - US-010
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - This story records the P2-G helper decision only; it does not replace live production behavior or extract a new helper.
+  - The existing P2-G focused tests now replace manual helper-design confidence for the covered service families: Yuzuha tick/preload/next-character/report-state branches, enemy context, listener lookup, RNG service, and report-state process changes.
+- Compatibility retained:
+  - Tick gate, local preload, next-character lookup, enemy context, listener lookup, RNG service, report-state change, scheduled publish, and same-tick runtime write remain separate boundaries.
+  - No universal simulator context object was introduced, and direct context reads were not routed through `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyBuffRuntimeFacade`, or `BuffRuntimeReadPort`.
+  - `ScheduleDispatchPort`, synchronous listener broadcast, `RuntimeCommandPort`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, raw pending queues, old containers, Calculator / CalAnomaly formulas, formula snapshots, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; this story found no new Buff coupling beyond the already documented P2-G direct simulator context candidates.
+- Next step:
+  - Continue with US-011 by adding exact-file or selected-service-family P2-G source guardrails and validation wiring without broadening into P2-A / P2-B / P2-C / P2-D / P2-E / P2-F guarded buckets, phase-3 formula work, or old-container deletion.
+---
