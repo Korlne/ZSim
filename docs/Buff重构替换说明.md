@@ -2551,3 +2551,14 @@
 - Next step:
   - Continue with US-013 by updating handoff docs and the next candidate pool so future PRD generation keeps formula parity design, guarded maintenance, retained compatibility, rollback, and non-goals separate.
 ---
+## 2026-06-09 21:34 +08:00 - US-013
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - The US-013 handoff update prepares to replace ambiguous “phase-3 readiness decision” planning with an explicit next PRD default for formula parity suite design / characterization.
+  - This story updates planning and Ralph artifacts only; it does not replace a live production path, formula helper, dispatch adapter, runtime port, validation profile, guardrail, or behavior sample.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, copied anomaly / disorder output paths, P2-A through P2-G guarded-maintenance buckets, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and existing `calculator-reads` / `implicit-events` validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this handoff found no new Buff coupling beyond already documented retained formula snapshot, copied-output, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-014 by running the required serial validation and final Ralph handoff; the next PRD default after this readiness run remains phase-3 formula parity suite design / characterization, not production formula replacement.
+---
