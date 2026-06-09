@@ -2617,3 +2617,14 @@
 - Next step:
   - Continue with US-005 by characterizing Calculator AM/AP/impact formula parity against the same retained snapshot boundary before any production formula replacement.
 ---
+## 2026-06-10 00:22 +08:00 - US-005
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_calculator_am_ap_impact_formula_family_matches_reader_snapshot_parity()` prepares to replace ad hoc AM/AP/impact formula confidence with focused characterization across static-only, dynamic-flat, and field-buff reader-backed snapshots.
+  - This story adds formula parity evidence only; it does not replace a live production path, Calculator formula, CalAnomaly formula, copied-output formula, dispatch adapter, runtime port, validation profile, guardrail, or behavior sample.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `Calculator.AnomalyMul`, `Calculator.StunMul`, `MultiplierData`, `_CalculatorReadSnapshot`, `DynamicStatement`, `_calculate_dynamic_statement()`, `CalculatorBuffAttributeReader`, `CalAnomaly.py`, copied anomaly / disorder output paths, P2-A through P2-G guarded-maintenance buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and existing `calculator-reads` / `implicit-events` validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this test-only characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output, enemy dynamic read, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-006 by characterizing Calculator crit formula families while keeping received-crit fields and reader seam evidence separate from any production formula replacement decision.
+---

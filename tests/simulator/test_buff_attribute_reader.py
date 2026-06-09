@@ -277,6 +277,14 @@ def _patch_buff_aggregation(
     return aggregation_calls
 
 
+def _dynamic_statement_by_attr(**attrs: float) -> dict[str, float]:
+    effect_by_attr = {
+        cast(str, attr): cast(str, effect)
+        for effect, attr in calculator_module.buff_effect_trans.items()
+    }
+    return {effect_by_attr[attr]: value for attr, value in attrs.items()}
+
+
 def test_formula_parity_fixture_builds_independent_calculator_inputs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -731,6 +739,110 @@ def test_p2b_parity_fixture_matches_old_impact_helper(
     assert reader_value == pytest.approx(old_value)
     assert reader_value == pytest.approx(expected)
     _assert_aggregation_calls(aggregation_calls, fixture)
+
+
+@pytest.mark.parametrize(
+    (
+        "name",
+        "static_am",
+        "static_ap",
+        "static_imp",
+        "dynamic_attrs",
+        "char_buff_count",
+        "enemy_debuff_count",
+        "expected_values",
+    ),
+    [
+        pytest.param(
+            "static-only",
+            115.0,
+            375.0,
+            100.0,
+            {},
+            0,
+            0,
+            {"cal_am": 115.0, "cal_ap": 375.0, "cal_imp": 100.0},
+            id="static-only",
+        ),
+        pytest.param(
+            "dynamic-flat",
+            100.0,
+            300.0,
+            80.0,
+            {
+                "anomaly_mastery": 15.0,
+                "anomaly_proficiency": 75.0,
+                "imp": 12.0,
+            },
+            1,
+            1,
+            {"cal_am": 115.0, "cal_ap": 375.0, "cal_imp": 92.0},
+            id="dynamic-flat",
+        ),
+        pytest.param(
+            "field-buff",
+            100.0,
+            300.0,
+            80.0,
+            {
+                "field_anomaly_mastery": 0.15,
+                "field_anomaly_proficiency": 0.25,
+                "field_imp_percentage": 0.10,
+            },
+            1,
+            1,
+            {"cal_am": 115.0, "cal_ap": 375.0, "cal_imp": 88.0},
+            id="field-buff",
+        ),
+    ],
+)
+def test_calculator_am_ap_impact_formula_family_matches_reader_snapshot_parity(
+    monkeypatch: pytest.MonkeyPatch,
+    name: str,
+    static_am: float,
+    static_ap: float,
+    static_imp: float,
+    dynamic_attrs: dict[str, float],
+    char_buff_count: int,
+    enemy_debuff_count: int,
+    expected_values: dict[str, float],
+) -> None:
+    fixture = _make_attribute_read_fixture(
+        name=name,
+        am=static_am,
+        ap=static_ap,
+        imp=static_imp,
+        char_buff_count=char_buff_count,
+        enemy_debuff_count=enemy_debuff_count,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(**dynamic_attrs),
+    )
+
+    retained_data = _legacy_multiplier_data(fixture)
+    reader_snapshot_data = _reader_snapshot_data(fixture.context)
+    retained_formula_values = {
+        "cal_am": Calculator.AnomalyMul.cal_am(retained_data),
+        "cal_ap": Calculator.AnomalyMul.cal_ap(retained_data),
+        "cal_imp": Calculator.StunMul.cal_imp(retained_data),
+    }
+    reader_snapshot_formula_values = {
+        "cal_am": Calculator.AnomalyMul.cal_am(reader_snapshot_data),
+        "cal_ap": Calculator.AnomalyMul.cal_ap(reader_snapshot_data),
+        "cal_imp": Calculator.StunMul.cal_imp(reader_snapshot_data),
+    }
+    reader = CalculatorBuffAttributeReader()
+    reader_values = {
+        "cal_am": reader.read_anomaly_mastery(fixture.context),
+        "cal_ap": reader.read_anomaly_proficiency(fixture.context),
+        "cal_imp": reader.read_impact(fixture.context),
+    }
+
+    assert retained_formula_values == pytest.approx(expected_values)
+    assert reader_snapshot_formula_values == pytest.approx(retained_formula_values)
+    assert reader_values == pytest.approx(retained_formula_values)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=5)
 
 
 @pytest.mark.parametrize(
