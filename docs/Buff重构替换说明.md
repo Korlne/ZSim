@@ -2529,3 +2529,14 @@
 - Next step:
   - Continue with US-011 by deciding behavior sample matrix and registered-team requirements before any phase-3 go / no-go or formula validation wiring.
 ---
+## 2026-06-09 21:11 +08:00 - US-011
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The US-011 behavior-sample matrix replaces manual decisions about when to run `scripts/run_buff_main_loop_consistency.py` with explicit registered-team, live-route, and production-semantics requirements.
+  - This story adds readiness documentation only; it does not replace a live production path, formula helper, dispatch adapter, runtime port, validation profile, or registered team fixture.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, copied anomaly / disorder output paths, P2-A through P2-G guarded-maintenance buckets, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and existing `implicit-events` validation wiring all remain unchanged.
+  - Existing successful `莱特火属性队` and `席德大安比队` samples remain route-specific evidence only; no new main-loop sample was run for this doc-only story.
+- Next step:
+  - Continue with US-012 by deciding phase-3 go / no-go and whether validation wiring should remain `calculator-reads` + `implicit-events` or add a future formula-readiness profile.
+---

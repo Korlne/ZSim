@@ -99,6 +99,21 @@
 - `.codex_worktrees/` 仍只作为历史 worktree 快照；PRD blocker 必须回到 root-workspace source、focused tests 和 validation profiles。
 - validation profiles 必须串行执行；P2-B 已用真实注册 `莱特火属性队` 样本证明 Lighter / Trigger route baseline 与 candidate 一致，P2-C 已用真实注册 `席德大安比队` 样本证明 `机巧心种` + `索魂影眸` route baseline 与 candidate 一致。P2-D / P2-E / P2-F 未改 live production semantics，已明确跳过 behavior sample；后续 P2-G / direct context 候选只有在存在真实注册代表队且故事触达 live 行为时才运行 behavior sample。
 
+### 行为样本决策矩阵
+
+| 后续故事类型 | 是否运行 `scripts/run_buff_main_loop_consistency.py` | 判定规则 |
+| --- | --- | --- |
+| 文档、分类、guardrail 或 test-only 变更 | 不运行，除非同一 story 也改生产语义 | 用 focused characterization、source guardrail、`calculator-reads` / `implicit-events` 串行验证作为证据；在 progress 里记录跳过原因。 |
+| 已完成 P2-A through P2-G 的 guarded maintenance | 仅当 guardrail / focused test / validation 指向具体生产回归，且真实注册队伍覆盖该 live route 时运行 | 不为了补样本而创建 validation-only team；无注册队伍时记录缺口并以 focused tests + validation profile 收口。 |
+| phase-3 formula snapshot replacement 或 formula-output parity | 若 story 实际改 `Calculator.py`、`CalAnomaly.py`、`AnomalyBar.current_ndarray`、copied anomaly / disorder ratio 或输出数值语义，且有真实注册队伍能跑到目标 route，则运行 | main-loop sample 只作为 live behavior 证据；仍必须先有 focused formula parity suite、候选文件、rollback plan 和 validation entrypoint。 |
+| phase-3 readiness / go-no-go 决策但不改生产公式 | 不运行 | 只记录样本要求、注册队伍覆盖状态和缺口；不得把 CLI label 当 live runtime switch。 |
+
+已有成功样本只证明各自 route：
+
+- `莱特火属性队` stop-tick 600 证明 P2-B Lighter / Trigger / Hugo route 在该样本下 baseline 与 candidate 的总伤、event count 和 buff timeline 一致；它不证明 Alice / Yuzuha / Jane / Vivian / Yanagi，也不证明 Calculator / CalAnomaly 公式可删除。
+- `席德大安比队` stop-tick 1000 证明 P2-C `机巧心种` + `索魂影眸` route 在该样本下 baseline 与 candidate 一致；它不证明 P2-A AM/AP、P2-D scheduled publish、P2-E dot runtime、P2-F forced write、P2-G direct context 或 phase-3 formula replacement。
+- 当前真实注册队伍为 `青衣雷属性队`、`席德大安比队`、`莱特火属性队`、`薇薇安物理队`。Alice / 爱丽丝、Yuzuha / 柚叶、Jane / 简 目前没有注册代表队；Vivian / 薇薇安 与 Yanagi / 柳 有 `薇薇安物理队`，但本文档尚未记录通过的 main-loop consistency 样本，后续只能在 APL 确认触达目标 formula / output route 后使用。
+
 ### 阶段 2 同阶段候选池
 
 #### 候选块 P2-A：AM/AP reader + computed count state-sync（已完成 / guardrail 维护）
