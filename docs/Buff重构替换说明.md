@@ -2506,3 +2506,15 @@
 - Next step:
   - Continue with US-009 by using the new CalAnomaly / AnomalyBar baseline as compatibility evidence while keeping phase-3 formula replacement gated behind explicit formula parity scope and validation decisions.
 ---
+## 2026-06-09 20:28 +08:00 - US-009
+- Files changed: `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The new copied anomaly / disorder output classification replaces manual ambiguity between formula snapshot data, copied payload construction, scheduled payload publication, listener broadcast, dot runtime registration, and same-tick runtime writes.
+  - This story adds readiness documentation only; it does not replace a live production path, copied-output publisher, listener broadcast, dispatch adapter, dot runtime helper, runtime command boundary, Calculator formula, or CalAnomaly formula.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `VivianCorePassiveTrigger.py`, `VivianCinema6Trigger.py`, `YanagiPolarityDisorderTrigger.py`, `AlicePolarizedAssaultTrigger.py`, `UpdateAnomaly.py`, `CopyAnomalyForOutput.py`, `ScheduleDispatchPort`, `spawn_output()`, `PolarityDisorder`, `DirgeOfDestinyAnomaly`, `PolarizedAssaultEvent`, `AnomalyBar.current_ndarray`, `MultiplierData` / `MulData`, and existing `implicit-events` validation wiring all remain unchanged.
+  - Listener broadcast (`LBS.DISORDER_SPAWN`), dot runtime registration/removal, same-tick runtime writes, old containers, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained copied-output, scheduled publish, listener, dot runtime, runtime write, and formula snapshot boundaries.
+- Next step:
+  - Continue with US-010 by classifying remaining XLogic formula-adjacent candidates while keeping copied-output dispatch paths as guarded-maintenance scope unless focused tests or validation name a regression.
+---
