@@ -2431,3 +2431,16 @@
 - Next step:
   - Continue with US-003 by auditing P2-A through P2-G guardrail evidence and validation gaps before any phase-3 formula replacement work.
 ---
+## 2026-06-09 19:18 +08:00 - US-003
+- Files changed: `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - The new P2-A through P2-G closure matrix replaces manual cross-reading of prior completion notes with a single guardrail / validation / retained-boundary / blocker-only reopen table.
+  - This story adds audit and handoff evidence only; it does not replace live production behavior, Calculator formulas, CalAnomaly formulas, dispatch adapters, same-tick runtime writes, dot runtime state, or direct simulator service helpers.
+- Compatibility retained:
+  - P2-A through P2-G migrated buckets remain completed guarded-maintenance scope; no guardrail scan set was broadened.
+  - P2-D scheduled publish, P2-E dot runtime-state, P2-F same-tick facade writes, and P2-G direct simulator services remain separate boundary families.
+  - `ScheduleDispatchPort`, synchronous listener broadcast, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, old containers, formula snapshots, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No old-coupling review update was needed; this audit found no new Buff coupling beyond already documented P2-A through P2-G retained boundaries.
+- Next step:
+  - Continue with US-004 by auditing validation profile wiring and formula-readiness gaps before defining any phase-3 formula parity or replacement suite.
+---
