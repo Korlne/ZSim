@@ -2381,3 +2381,17 @@
 - Next step:
   - Continue with US-011 by adding exact-file or selected-service-family P2-G source guardrails and validation wiring without broadening into P2-A / P2-B / P2-C / P2-D / P2-E / P2-F guarded buckets, phase-3 formula work, or old-container deletion.
 ---
+## 2026-06-09 18:10 +08:00 - US-011
+- Files changed: `tests/simulator/test_migrated_p2g_direct_context_guardrail.py`, `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_migrated_p2g_direct_context_guardrail.py` now replaces manual source-review confidence for completed P2-G direct simulator context services with an exact root file / selected-symbol AST guardrail.
+  - The new `MIGRATED_P2G_DIRECT_CONTEXT_GUARDRAIL_FOCUSED_TEST_TARGETS` validation bucket wires that guardrail into the `implicit-events` focused pytest and mypy profile.
+  - This story adds validation guardrails only; it does not replace live production behavior or extract a new helper.
+- Compatibility retained:
+  - P2-G tick/preload/next-character, enemy context, listener lookup, RNG service, report-state, and factory-backed scheduled preload behavior remain unchanged.
+  - `CannonRotor.special_hit_logic()` and other completed P2-D scheduled-publish paths remain retained; the P2-G guardrail targets `CannonRotor.special_judge_logic()` for RNG-service regression only.
+  - `ScheduleDispatchPort`, synchronous listener broadcast, `RuntimeCommandPort`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, raw pending queues, old containers, Calculator / CalAnomaly formulas, formula snapshots, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; this story found no new Buff coupling beyond the already documented P2-G direct simulator context candidates.
+- Next step:
+  - Continue with US-012 by running serial validation and updating final handoff docs without adding more P2-G implementation scope unless validation or doc evidence exposes a real gap.
+---
