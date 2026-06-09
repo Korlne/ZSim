@@ -2143,3 +2143,16 @@
 - Next step:
   - Continue with US-006 by adding Seed BuffXLogic caller-family coverage without broadening into listener or Character manager caller families.
 ---
+## 2026-06-09 12:41 +08:00 - US-006
+- Files changed: `tests/simulator/test_buffaddstrategy_seed_callers.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_buffaddstrategy_seed_callers.py` now replaces manual Seed BuffXLogic caller review with focused tests for besiege-state `benifit_list` derivation, direct vanguard target forwarding, branch/no-op gating, exact `buff_add_strategy(...)` arguments, and caller-layer boundary guards.
+  - This story locks existing Seed caller behavior with tests only; it does not replace live production behavior.
+- Compatibility retained:
+  - Seed source files, record classes, trigger gates, `besiege_active_check(...)`, `direct_strike_active`, benefit-list construction, and absence of `specified_count` forwarding remain unchanged.
+  - `buff_add_strategy(...)` / `LegacyBuffRuntimeFacade` remains the forced same-tick Buff / Debuff write boundary.
+  - `LOADING_BUFF_DICT` pending queues, scheduled publish, listener broadcast, `RuntimeCommandPort`, `BuffRuntimeReadPort` read-only semantics, old containers, Calculator / CalAnomaly formulas, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; root-workspace evidence matched already documented P2-F Seed caller coupling.
+- Next step:
+  - Continue with US-007 by adding `UpdateAnomaly.anomaly_effect_active(...)` debuff activation coverage while keeping dot runtime-state replacement on the P2-E path.
+---
