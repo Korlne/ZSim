@@ -2709,3 +2709,14 @@
 - Next step:
   - Continue with US-013 by characterizing any remaining formula parity suite samples from the current PRD without turning migrated reader-seam evidence into production formula replacement.
 ---
+## 2026-06-10 01:50 +08:00 - US-013
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The US-013 behavior-sample decision matrix replaces ad hoc choices about when to run registered main-loop consistency samples with explicit domain rules for damage, stun, anomaly, copied-output, Buff timeline, scheduled event publish timing, and test-only stories.
+  - This story adds validation-policy documentation only; it does not replace a live production path, Calculator formula, CalAnomaly formula, copied-output formula, dispatch adapter, runtime port, validation profile, registered team fixture, or behavior sample.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, scheduled event producers, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, registered-team configs, `scripts/run_buff_refactor_validation.py`, `scripts/run_buff_main_loop_consistency.py`, `zsim/utils/main_loop_consistency.py`, and existing `calculator-reads` / `implicit-events` validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this documentation-only story found no new Buff coupling beyond already documented retained formula snapshot, copied-output, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-014 by deciding whether formula parity validation wiring remains on `calculator-reads` or gets a scoped named profile; do not add production formula replacement before the named focused pytest, mypy, registered-sample, rollback, and non-goal contract is explicit.
+---

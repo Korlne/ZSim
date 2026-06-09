@@ -111,6 +111,17 @@
 | phase-3 formula snapshot replacement 或 formula-output parity | 若 story 实际改 `Calculator.py`、`CalAnomaly.py`、`AnomalyBar.current_ndarray`、copied anomaly / disorder ratio 或输出数值语义，且有真实注册队伍能跑到目标 route，则运行 | main-loop sample 只作为 live behavior 证据；仍必须先有 focused formula parity suite、候选文件、rollback plan 和 validation entrypoint。 |
 | phase-3 readiness / go-no-go 决策但不改生产公式 | 不运行 | 只记录样本要求、注册队伍覆盖状态和缺口；不得把 CLI label 当 live runtime switch。 |
 
+US-013 将 Phase 3 公式 / 行为域细分为以下 registered-team trigger；完整矩阵记录在 [Buff公式候选与测试目标清单.md](./Buff公式候选与测试目标清单.md)。
+
+| 触发域 | 只需要 focused characterization 的情况 | 语义变更后必须追加 registered main-loop sample 的情况 |
+| --- | --- | --- |
+| damage / crit / defense / resistance / vulnerability | 只新增 oracle、reader seam 或 retained helper parity test。 | 生产公式输出会改变 live damage route，且注册队伍 APL 能在 stop-tick 内触达对应伤害事件。 |
+| stun / impact | 只锁定 `Calculator.StunMul` 或 impact reader 快照。 | impact、stun ratio 或 stun received 语义改变，且注册队伍能打出目标失衡 route。 |
+| anomaly / settlement | 只刻画 `CalAnomaly`、`AnomalyBar.current_ndarray`、settlement snapshot。 | 异常积蓄、结算、异常伤害或 active anomaly snapshot 语义改变，且注册队伍能触发目标异常 route。 |
+| copied-output | 只锁 copied anomaly / disorder payload fields 和 formula inputs。 | NewAnomaly / Disorder / PolarityDisorder / Vivian copied payload 语义或 listener-facing 字段改变，且注册队伍能生成该 payload。 |
+| Buff timeline | 只新增 no-write / runtime facade / guardrail evidence。 | Buff / debuff / dot add、refresh、activation、duration、removal 顺序改变，且注册队伍 route 会产生相关 timeline entries。 |
+| event publish timing | 只新增 dispatch order / fail-fast queue focused tests。 | `execute_tick`、priority、target fan-out 或 producer-local publish order 改变，且注册队伍 live route 会发布该事件。 |
+
 已有成功样本只证明各自 route：
 
 - `莱特火属性队` stop-tick 600 证明 P2-B Lighter / Trigger / Hugo route 在该样本下 baseline 与 candidate 的总伤、event count 和 buff timeline 一致；它不证明 Alice / Yuzuha / Jane / Vivian / Yanagi，也不证明 Calculator / CalAnomaly 公式可删除。
