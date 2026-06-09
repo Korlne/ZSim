@@ -892,3 +892,67 @@ rg -l "publish_scheduled|create_schedule_dispatch_port|ScheduleDispatchPort|spaw
 - Formula snapshots, old containers, legacy `buff_add()` / `KickOutBuff()` and deleted raw queue discovery surfaces remain retained compatibility or phase-3 / blocker-only targets, not phase-2 replacement work.
 - CodeGraph evidence was used to cross-check fan-out and contract risk, but `.codex_worktrees/` duplicates and incomplete dynamic caller coverage mean final conclusions still depend on the root-workspace source classifications from US-001 through US-007 plus validation output.
 - P2-F added test / guardrail / validation wiring only; it did not replace live XLogic behavior, change the runtime boundary, delete old containers, or change production behavior.
+
+### 2026-06-09 US-002 根工作区公式快照 Census
+
+本节补 phase-2 closure / phase-3 formula snapshot readiness 的根工作区复扫结果。它只更新 census 证据和后续分桶，不修改 `Calculator.py`、`CalAnomaly.py`、XLogic 行为、runtime port、dispatch adapter 或验证脚本。
+
+#### 可复现扫描命令
+
+以下命令在根工作区执行，默认排除 `.codex_worktrees/**`、`__pycache__/**`、`*.log` 和 `scripts/ralph/archive/**`。根工作区总数保留 docs / tasks / scripts 命中，用于确认历史材料和当前 PRD 自身不会被误当成生产 blocker；生产结论只采信 root `zsim/`、focused tests 和当前验证入口。
+
+```powershell
+rg -n --hidden --glob '!.codex_worktrees/**' --glob '!__pycache__/**' --glob '!**/__pycache__/**' --glob '!*.log' --glob '!scripts/ralph/archive/**' "Calculator" .
+rg -n --hidden --glob '!.codex_worktrees/**' --glob '!__pycache__/**' --glob '!**/__pycache__/**' --glob '!*.log' --glob '!scripts/ralph/archive/**' "CalAnomaly" .
+rg -n --hidden --glob '!.codex_worktrees/**' --glob '!__pycache__/**' --glob '!**/__pycache__/**' --glob '!*.log' --glob '!scripts/ralph/archive/**' "MultiplierData" .
+rg -n --hidden --glob '!.codex_worktrees/**' --glob '!__pycache__/**' --glob '!**/__pycache__/**' --glob '!*.log' --glob '!scripts/ralph/archive/**' "MulData" .
+rg -n --hidden --glob '!.codex_worktrees/**' --glob '!__pycache__/**' --glob '!**/__pycache__/**' --glob '!*.log' --glob '!scripts/ralph/archive/**' "current_ndarray" .
+rg -n --hidden --glob '!.codex_worktrees/**' --glob '!__pycache__/**' --glob '!**/__pycache__/**' --glob '!*.log' --glob '!scripts/ralph/archive/**' "DynamicStatement" .
+rg -n --hidden --glob '!.codex_worktrees/**' --glob '!__pycache__/**' --glob '!**/__pycache__/**' --glob '!*.log' --glob '!scripts/ralph/archive/**' "cal_am" .
+rg -n --hidden --glob '!.codex_worktrees/**' --glob '!__pycache__/**' --glob '!**/__pycache__/**' --glob '!*.log' --glob '!scripts/ralph/archive/**' "cal_ap" .
+rg -n --hidden --glob '!.codex_worktrees/**' --glob '!__pycache__/**' --glob '!**/__pycache__/**' --glob '!*.log' --glob '!scripts/ralph/archive/**' "cal_imp" .
+rg -n --hidden --glob '!.codex_worktrees/**' --glob '!__pycache__/**' --glob '!**/__pycache__/**' --glob '!*.log' --glob '!scripts/ralph/archive/**' "cal_crit_rate" .
+rg -n --hidden --glob '!.codex_worktrees/**' --glob '!__pycache__/**' --glob '!**/__pycache__/**' --glob '!*.log' --glob '!scripts/ralph/archive/**' "cal_personal_crit_rate" .
+rg -n --hidden --glob '!.codex_worktrees/**' --glob '!__pycache__/**' --glob '!**/__pycache__/**' --glob '!*.log' --glob '!scripts/ralph/archive/**' "cal_personal_crit_dmg" .
+```
+
+#### Census 结果
+
+| term | total matches / files | group split | representative root source | representative tests |
+| --- | ---: | --- | --- | --- |
+| `Calculator` | 706 / 71 | zsim=86, tests=96, docs=327, tasks=183, scripts=12, other=2 | `zsim/sim_progress/ScheduledEvent/Calculator.py`, `zsim/sim_progress/Character/utils/filters.py`, `zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py` | `tests/simulator/test_buff_attribute_reader.py`, `tests/simulator/test_buff_attribute_state_sync.py`, `tests/simulator/test_buff_raw_container_guardrail.py` |
+| `CalAnomaly` | 213 / 29 | zsim=9, tests=7, docs=145, tasks=42, scripts=10 | `zsim/sim_progress/ScheduledEvent/CalAnomaly.py`, `zsim/sim_progress/ScheduledEvent/event_handlers/handlers/anomaly.py` | `tests/simulator/test_dot_runtime_initialization.py`, `tests/simulator/test_anomaly_handler_runtime_view.py`, `tests/simulator/test_enemy_context_direct_helpers.py` |
+| `MultiplierData` | 425 / 40 | zsim=51, tests=106, docs=157, tasks=103, scripts=6, other=2 | `zsim/sim_progress/ScheduledEvent/Calculator.py`, `zsim/sim_progress/Character/utils/filters.py`, `zsim/sim_progress/ScheduledEvent/CalAnomaly.py` | `tests/simulator/test_buff_attribute_state_sync.py`, `tests/simulator/test_buff_attribute_reader.py`, `tests/simulator/test_full_crit_event_adjacent_reader.py` |
+| `MulData` | 36 / 10 | zsim=5, tests=3, docs=20, tasks=6, scripts=2 | `zsim/sim_progress/ScheduledEvent/CalAnomaly.py` | `tests/simulator/test_buff_raw_container_guardrail.py` |
+| `current_ndarray` | 36 / 9 | zsim=25, docs=6, tasks=3, scripts=2 | `zsim/sim_progress/anomaly_bar/AnomalyBarClass.py`, `zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py`, `zsim/sim_progress/Update/UpdateAnomaly.py`, `zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py` | none |
+| `DynamicStatement` | 19 / 5 | zsim=3, docs=6, tasks=5, scripts=5 | `zsim/sim_progress/ScheduledEvent/Calculator.py` | none |
+| `cal_am` | 47 / 12 | zsim=2, tests=11, docs=24, tasks=7, scripts=2, other=1 | `zsim/sim_progress/ScheduledEvent/Calculator.py` | `tests/simulator/test_buff_attribute_state_sync.py`, `tests/simulator/test_migrated_am_ap_reader_guardrail.py`, `tests/simulator/test_buff_attribute_reader.py` |
+| `cal_ap` | 57 / 16 | zsim=7, tests=24, docs=17, tasks=7, scripts=2 | `zsim/sim_progress/ScheduledEvent/Calculator.py`, `zsim/sim_progress/ScheduledEvent/CalAnomaly.py`, `zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py`, `zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py` | `tests/simulator/test_buff_attribute_state_sync.py`, `tests/simulator/test_vivian_core_passive_trigger_dispatch.py`, `tests/simulator/test_vivian_cinema6_trigger_dispatch.py` |
+| `cal_imp` | 43 / 11 | zsim=3, tests=8, docs=14, tasks=11, scripts=7 | `zsim/sim_progress/ScheduledEvent/Calculator.py` | `tests/simulator/test_migrated_p2b_reader_guardrail.py`, `tests/simulator/test_buff_attribute_state_sync.py`, `tests/simulator/test_buff_attribute_reader.py` |
+| `cal_crit_rate` | 50 / 11 | zsim=3, tests=11, docs=21, tasks=13, scripts=2 | `zsim/sim_progress/ScheduledEvent/Calculator.py` | `tests/simulator/test_full_crit_event_adjacent_reader.py`, `tests/simulator/test_migrated_p2b_reader_guardrail.py`, `tests/simulator/test_buff_attribute_reader.py` |
+| `cal_personal_crit_rate` | 30 / 10 | zsim=2, tests=7, docs=11, tasks=8, scripts=2 | `zsim/sim_progress/ScheduledEvent/Calculator.py` | `tests/simulator/test_migrated_p2b_reader_guardrail.py`, `tests/simulator/test_buff_attribute_state_sync.py`, `tests/simulator/test_buff_attribute_reader.py` |
+| `cal_personal_crit_dmg` | 30 / 10 | zsim=2, tests=8, docs=10, tasks=8, scripts=2 | `zsim/sim_progress/ScheduledEvent/Calculator.py` | `tests/simulator/test_migrated_p2b_reader_guardrail.py`, `tests/simulator/test_buff_attribute_state_sync.py`, `tests/simulator/test_buff_attribute_reader.py` |
+
+#### CodeGraph 导航证据
+
+- Query terms used: `US-002 Build Root Formula Snapshot Census`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `Calculator.py`, `CalAnomaly.py`, `AnomalyBarClass.py`, `UpdateAnomaly.py`, `VivianCinema6Trigger.py`, `VivianCorePassiveTrigger.py`, `Calculator`, `CalAnomaly`, `MultiplierData`, `MulData`, `current_ndarray`, `DynamicStatement`, `cal_am`, `cal_ap`, `cal_imp`, `cal_crit_rate`, `cal_personal_crit_rate`, `cal_personal_crit_dmg`, `calculator-reads`.
+- CodeGraph again surfaced `.codex_worktrees/` duplicates for Calculator / CalAnomaly helpers. Those hits remain historical navigation evidence only and are excluded from blocker conclusions.
+- Root `Calculator.py` owns `MultiplierData`, `DynamicStatement`, `_calculate_anomaly_mastery(...)`, `_calculate_anomaly_proficiency(...)`, `AnomalyMul.cal_am(...)`, `AnomalyMul.cal_ap(...)`, `StunMul.cal_imp(...)`, and `RegularMul` crit helpers. Existing `CalculatorBuffAttributeReader` is a parity seam, not a formula replacement.
+- Root `CalAnomaly.__init__(...)` consumes settled `AnomalyBar.current_ndarray`, asserts `(1, 11)`, builds `MulData(...)`, and calls Calculator multiplier helpers before `cal_anomaly_dmg(...)` multiplies `final_multipliers` with `anomaly_obj.scaling_factor`.
+- Root `AnomalyBar.current_ndarray` is the settled anomaly snapshot field; `UpdateAnomaly` and Vivian trigger comments are adjacent evidence, but they do not create a new phase-2 implementation target by themselves.
+
+#### Formula snapshot buckets
+
+| bucket | current representative files / symbols | readiness conclusion | retained boundary | validation entrypoint / non-goal |
+| --- | --- | --- | --- | --- |
+| Calculator formula core | `zsim/sim_progress/ScheduledEvent/Calculator.py`, `MultiplierData`, `DynamicStatement`, `AnomalyMul.cal_am(...)`, `AnomalyMul.cal_ap(...)`, `StunMul.cal_imp(...)`, `RegularMul.cal_crit_rate(...)`, `RegularMul.cal_personal_crit_rate(...)`, `RegularMul.cal_personal_crit_dmg(...)` | Current source has one central formula snapshot module. Future phase-3 work must define formula parity before shrinking it. | Keep `MultiplierData` cache, dynamic statement aggregation, static/dynamic formula fields, and current helper semantics. | `calculator-reads`; no formula rewrite, cache deletion, or helper expansion in this story. |
+| CalAnomaly settled snapshot | `zsim/sim_progress/ScheduledEvent/CalAnomaly.py`, `MulData`, `AnomalyBar.current_ndarray`, `cal_anomaly_dmg(...)` | This is a damage-defining anomaly snapshot path, not a phase-2 reader-helper candidate. | Keep settled snapshot shape `(1, 11)`, virtual level extraction, Calculator multiplier calls, final multiplier product, and scaling factor behavior. | Future formula parity suite plus anomaly focused tests; no `CalAnomaly` behavior edit in this story. |
+| Anomaly copied-output / current array adjacency | `zsim/sim_progress/anomaly_bar/AnomalyBarClass.py`, `zsim/sim_progress/Update/UpdateAnomaly.py`, `VivianCorePassiveTrigger.py`, `VivianCinema6Trigger.py` | `current_ndarray` appears in runtime anomaly state and copied-output comments; it supports phase-3 inventory but is not new raw queue, dot runtime, or same-tick write evidence. | Keep anomaly runtime state, scheduled publish, listener broadcast, dot runtime registration and runtime immediate writes as separate layers. | Use `implicit-events` only when a later story changes publish/runtime behavior; no phase-2 replacement from comments alone. |
+| BuffXLogic reader-family remnants | AM/AP, impact, full-crit, personal-crit and personal-crit-damage XLogic families already documented under US-003 / P2-A / P2-B completion rows. | Completed P2-A / P2-B guardrails are maintenance evidence; new phase-3 work should start from root formula scope and parity, not reopen completed XLogic helper buckets. | Retain old `buff_0` identity, state-sync order, scheduled publish order and Calculator formulas. | Open blocker only on focused guardrail or validation failure; no broad XLogic migration in this readiness census. |
+| Docs / PRD / scripts hits | `docs/Buff重构替换说明.md`, this matrix, current task PRD, `scripts/ralph/prd.json`, `scripts/ralph/context_index.py` | These hits explain high root total counts and should not be treated as production callsites. | Root-source and focused-test evidence remain the compatibility basis. | Do not create backlog from planning-text matches. |
+
+#### US-002 readiness conclusion
+
+- The root census names current formula snapshot surfaces without editing formula behavior: `Calculator.py`, `CalAnomaly.py`, `AnomalyBar.current_ndarray`, and completed reader-family guardrails are the evidence base for later phase-3 planning.
+- `.codex_worktrees/`, generated logs, `__pycache__` and `scripts/ralph/archive/` remain excluded from blocker conclusions.
+- Current default route remains phase-2 closure / phase-3 readiness following `docs/Buff重构方案.md`; the next formula story should define parity scope and tests before touching damage formulas.

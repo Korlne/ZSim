@@ -2418,3 +2418,16 @@
 - Next step:
   - Continue with the formula snapshot readiness stories by auditing current guardrail evidence and validation gaps before any phase-3 formula replacement work.
 ---
+## 2026-06-09 19:10 +08:00 - US-002
+- Files changed: `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - This story builds the root-workspace formula snapshot census and phase-3 readiness buckets; it does not replace a live production path.
+  - The new matrix section replaces manual uncertainty about current formula snapshot scope with reproducible scans for `Calculator`, `CalAnomaly`, `MultiplierData`, `MulData`, `current_ndarray`, `DynamicStatement`, and the named Calculator helper terms.
+- Compatibility retained:
+  - `zsim/sim_progress/ScheduledEvent/Calculator.py` and `zsim/sim_progress/ScheduledEvent/CalAnomaly.py` formula behavior remain unchanged.
+  - `.codex_worktrees/**`, generated logs, `__pycache__/**`, and `scripts/ralph/archive/**` remain excluded from blocker conclusions.
+  - P2-A through P2-G guarded buckets, scheduled publish, listener broadcast, same-tick runtime writes, old containers, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, formula snapshots, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No old-coupling review update was needed; this story found no new Buff coupling beyond already documented formula snapshot retained boundaries.
+- Next step:
+  - Continue with US-003 by auditing P2-A through P2-G guardrail evidence and validation gaps before any phase-3 formula replacement work.
+---
