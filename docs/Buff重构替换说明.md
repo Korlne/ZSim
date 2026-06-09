@@ -2170,3 +2170,16 @@
 - Next step:
   - Continue with US-008 by adding BattleEventListener caller focused coverage without broadening into Character manager callers or cross-layer source guardrail wiring.
 ---
+## 2026-06-09 13:09 +08:00 - US-008
+- Files changed: `tests/simulator/test_buffaddstrategy_listener_callers.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_buffaddstrategy_listener_callers.py` now replaces manual BattleEventListener `buff_add_strategy(...)` caller review with focused tests for enemy-target forwarding, explicit target forwarding, repeated same-index writes, valid no-op gating, exact arguments, `sim_instance` forwarding, and caller-layer guardrails.
+  - This story locks existing BattleEventListener caller behavior with tests only; it does not replace live production behavior.
+- Compatibility retained:
+  - BattleEventListener source files, synchronous listener activation, signal/type gates, target lists, Practiced Perfection repeated-write ordering, and the `LBS.ASSAULT_SPAWN` no-op forced-write branch remain unchanged.
+  - `buff_add_strategy(...)` / `LegacyBuffRuntimeFacade` remains the forced same-tick Buff / Debuff write boundary for listener callers.
+  - `LOADING_BUFF_DICT` pending queues, scheduled publish, listener broadcast, `RuntimeCommandPort`, `BuffRuntimeReadPort` read-only semantics, old containers, Calculator / CalAnomaly formulas, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; root-workspace evidence matched already documented P2-F BattleEventListener caller coupling.
+- Next step:
+  - Continue with US-009 by adding Character manager caller focused coverage without broadening into P2-G direct simulator context helpers or source guardrail wiring.
+---
