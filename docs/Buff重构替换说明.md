@@ -2234,3 +2234,15 @@
 - Next step:
   - Continue with US-013 by updating final P2-F handoff docs and the next candidate pool without claiming production behavior deletion or broad phase migration.
 ---
+## 2026-06-09 14:33 +08:00 - US-013
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - Final P2-F handoff docs now replace ad-hoc next-PRD routing with documented guarded-complete evidence for caller taxonomy, focused tests, guardrail wiring, serial validation, and retained same-tick write boundaries.
+  - The next-candidate pool now prepares P2-G direct simulator context helper work to replace manual service-location review with service-specific focused tests and explicit helper design.
+- Compatibility retained:
+  - `buff_add_strategy(...)` / `LegacyBuffRuntimeFacade` remains the forced same-tick Buff / Debuff write boundary.
+  - Old containers, legacy `buff_add()` / `KickOutBuff()`, Calculator / CalAnomaly formulas, `ScheduleDispatchPort` scheduled queue publish, synchronous listener broadcast, `RuntimeCommandPort`, and `BuffRuntimeReadPort` read-only semantics all remain unchanged.
+  - No new old-coupling review update was needed; this story changed handoff docs and Ralph artifacts only and did not discover new or materially changed Buff coupling.
+- Next step:
+  - Generate the next phase-2 PRD from [Buff重构方案.md](./Buff重构方案.md), defaulting to P2-G direct simulator context helpers while preserving P2-D / P2-E / P2-F guarded maintenance, phase-3 formula snapshot replacement, retained compatibility, and blocker-only phase-1 reopen rows.
+---

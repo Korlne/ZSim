@@ -216,6 +216,15 @@
 - [x] P2-C 没有给 `BuffRuntimeReadPort` 新增写 API，没有删除 old containers，没有重开 raw queue、`ScheduleDispatchPort`、`RuntimeCommandPort`、listener broadcast、dot runtime registration、Calculator formula 或 phase-1 deletion 边界。
 - [x] 本轮未发现新的旧 Buff 耦合点；`docs/旧Buff系统耦合审查结果.md` 不需要新增 P2-C blocker 条目。
 
+## 本轮阶段 2 BuffAddStrategy caller / facade-write design PRD 收口状态（2026-06-09）
+
+- [x] P2-F 已完成 caller taxonomy 与 focused coverage：`test_buff_add_strategy_runtime_facade.py` 锁定 active replacement、enemy mirror sync、target fan-out、template identity 和 no-pending-queue 写入；Hugo、Roaring Ride、Seed、`UpdateAnomaly`、BattleEventListener 与 Character manager representative caller tests 均已覆盖 exact `buff_add_strategy(...)` arguments、branch/no-op gates 和 `sim_instance` forwarding。
+- [x] P2-F cross-layer semantics 已由 `test_bypass_layer_semantics.py` 覆盖：forced Buff / Debuff write 仍是 same-tick runtime write，和 `ScheduleDispatchPort` planned publish、同步 listener broadcast、`RuntimeCommandPort` scheduled-handler command write、`BuffRuntimeReadPort` read-only access 分层。
+- [x] P2-F guardrail 已由 `tests/simulator/test_migrated_p2f_buff_add_strategy_guardrail.py` 接入 `FOCUSED_PYTEST_PROFILES["implicit-events"]` 和 scoped mypy；guardrail exact-file 扫描 `BuffAddStrategy.py` / `buff_runtime.py`，排除 `.codex_worktrees/`、`__pycache__/` 和 archive paths，阻断 raw pending queue、raw active store、raw enemy mirror、deleted event-list discovery、scheduled queue conversion、listener broadcast conversion、第二 write facade 与 `BuffRuntimeReadPort` write API 回流。
+- [x] 验证基线：P2-F release validation 已串行通过 uncovered caller focused pytest（Roaring Ride `5 passed`、Seed `6 passed`、`UpdateAnomaly` `10 passed`、listener `4 passed`、Character `4 passed`）与 `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`；profile 覆盖 base simulator `2 passed`、isolated teams `3 passed`、focused implicit-events `229 passed`，类型检查通过。
+- [x] 本 PRD 没有删除 old containers、legacy `buff_add()`、legacy `KickOutBuff()`，没有替换 Calculator / CalAnomaly formulas，没有迁移 direct simulator context helpers，没有把 forced Buff / Debuff write 转成 scheduled queue 或 listener broadcast，也没有新增第二套 write facade。
+- [x] 本轮未发现新的旧 Buff 耦合点；`docs/旧Buff系统耦合审查结果.md` 不需要新增 P2-F blocker 条目。
+
 ## 当前默认下一步
 
 - [x] `US-024` 已完成 closure decision，没有输出 phase-1 blocker package；不得继续生成新的阶段 1 实现 PRD，除非 guardrail / validation 给出新的生产失败证据。
@@ -225,6 +234,7 @@
 - [x] P2-C “trigger-state read-only gates” 已完成；后续不再把五个已迁移 trigger-state 文件当默认实现 backlog，除非 P2-C source guardrail、focused no-write / count-mirror tests、`implicit-events` 或 behavior sample 给出具体回归证据。
 - [x] P2-D “scheduled publish ordering / adapter parity” 已完成 guarded scope：adapter rebinding、resource refresh payload / order、`SkillNode` / `LoadingMission` order、stateful anomaly / dot layer separation、fan-out / multi-publish parity 与 exact-file source guardrail 已由 focused tests、`test_migrated_p2d_scheduled_publish_guardrail.py` 和 `implicit-events` 串行验证覆盖；后续不再把 P2-D 当默认 backlog，除非 guardrail / validation 给出具体回归证据。
 - [x] P2-E “dot runtime-state / initialization” 已完成 guarded scope：`DotRuntimeStateAdapter`、`DotInitializationReadContext`、Vivian dot presence / registration、Shock duration initialization、`UpdateAnomaly` replacement / removal、freeze follow-up 分层、exact-file P2-E guardrail 与 `implicit-events` 串行验证均已覆盖；后续不再把 P2-E 当默认 backlog，除非 P2-E guardrail / focused tests / validation 给出具体回归证据。
-- [ ] 下一轮默认 PRD 应沿 [Buff重构方案.md](./Buff重构方案.md) 继续留在阶段 2，优先选择 “BuffAddStrategy caller / facade-write design” 作为 P2-F forced same-tick Buff / Debuff write 分类与 focused test 包，而不是新增第二套 write facade、转成 scheduled publish，或删除 legacy `buff_add()` / `KickOutBuff()`。
-- [ ] 同阶段候选池必须继续保留 direct simulator context helpers、P2-D / P2-E guarded maintenance、phase-3-only formula snapshot replacement、retained compatibility 与 blocker-only phase-1 reopen rules，避免 PRD 生成器只沿上一个文件继续。
+- [x] P2-F “BuffAddStrategy caller / facade-write design” 已完成 guarded scope：caller taxonomy、active replacement、enemy mirror sync、selected-target fan-out、Character / listener / BuffXLogic / `UpdateAnomaly` 代表 caller tests、cross-layer semantics、exact-file P2-F guardrail 和 `implicit-events` validation 均已覆盖；后续不再把 P2-F 当默认 backlog，除非 P2-F guardrail / focused tests / validation 给出具体回归证据。
+- [ ] 下一轮默认 PRD 应沿 [Buff重构方案.md](./Buff重构方案.md) 继续留在阶段 2，优先选择 “direct simulator context helpers” 作为 P2-G 服务定位 / explicit context helper 分类与 focused test 包，而不是把不同服务混成 `LegacyBuffRuntimeFacade` 替换、scheduled publish 迁移、Calculator formula 替换，或删除 legacy `buff_add()` / `KickOutBuff()`。
+- [ ] 同阶段候选池必须继续保留 P2-D / P2-E / P2-F guarded maintenance、phase-3-only formula snapshot replacement、retained compatibility 与 blocker-only phase-1 reopen rules，避免 PRD 生成器只沿上一个文件继续。
 - [ ] 若后续 validation 或 guardrail 重新暴露阶段 1 blocker，下一轮 PRD 只处理 blocker package 中列出的具体文件、符号、失败测试、失败 guardrail 或验证命令；不得重开已删除的 `event_list` surface 或已闭合的 producer batch，除非 guardrail 给出新的生产证据。
