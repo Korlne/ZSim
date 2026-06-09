@@ -31,6 +31,19 @@
 - 下一步：
   - 下一轮优先落地事件发布入口、`EventContext` runtime view 与最小适配层，并从该轮开始在本文档记录真实的新旧路径替换关系。
 ---
+## 2026-06-09 13:34 +08:00 - US-009
+- Files changed: `tests/simulator/test_buffaddstrategy_character_callers.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_buffaddstrategy_character_callers.py` now replaces manual Character manager `buff_add_strategy(...)` caller review with focused tests for Seed EX-state explicit-target/count forwarding, Yanagi stance forwarding, branch/no-op gating, `sim_instance` forwarding, and caller-layer guardrails.
+  - This story locks existing Character manager caller behavior with tests only; it does not replace live production behavior.
+- Compatibility retained:
+  - Character manager source files, Seed EX-state transitions, Yanagi stance toggling, Yanagi anomaly/cinema gates, AstraYao core-passive target selection, and AstraYao adjacent scheduled preload publishing remain unchanged.
+  - `buff_add_strategy(...)` / `LegacyBuffRuntimeFacade` remains the forced same-tick Buff write boundary for Character manager callers.
+  - `LOADING_BUFF_DICT` pending queues, scheduled publish, listener broadcast, `RuntimeCommandPort`, `BuffRuntimeReadPort` read-only semantics, old containers, Calculator / CalAnomaly formulas, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; root-workspace evidence matched already documented P2-F Character manager caller coupling.
+- Next step:
+  - Continue with US-010 by strengthening cross-layer boundary semantics without broadening into source rewrites or Character manager implementation changes.
+---
 ## 2026-06-05 13:28:48 - US-001
 - 本轮文件：`zsim/sim_progress/data_struct/schedule_dispatch.py`, `tests/simulator/test_schedule_dispatch.py`, `scripts/run_buff_refactor_validation.py`
 - 替换说明：
