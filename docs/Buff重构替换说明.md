@@ -2673,3 +2673,15 @@
 - Next step:
   - Continue with US-010 by characterizing disorder and copied-output formula reads without reopening Vivian production triggers or scheduled dispatch infrastructure.
 ---
+## 2026-06-10 01:11 +08:00 - US-010
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_disorder_copied_output_preserves_formula_inputs_and_payload_fields()` prepares to replace manual review of `CopyAnomalyForOutput.py` copied disorder / polarity-disorder payload semantics with focused characterization for snapshot independence, formula input fields, listener-facing fields, `remaining_tick()` inputs, and retained scheduled-event payload metadata.
+  - The US-010 matrix entry classifies `CopyAnomalyForOutput.py`, `UpdateAnomaly.py`, `TimeweaverDisorderDmgMul.py`, Alice disorder listeners, and retained Vivian copied-output evidence by source, formula input, publish boundary, runtime side effect, and retained compatibility.
+  - This story adds formula / boundary characterization evidence only; it does not replace a live production path, copied-output formula, Calculator formula, CalAnomaly formula, dispatch adapter, listener path, dot runtime helper, same-tick runtime write facade, validation profile, guardrail, or behavior sample.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `CopyAnomalyForOutput.py`, `UpdateAnomaly.py`, `TimeweaverDisorderDmgMul.py`, Alice disorder listeners, Vivian copied-output triggers, `CalAnomaly.py`, `Calculator.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and existing `calculator-reads` / `implicit-events` validation wiring all remain unchanged.
+  - Listener broadcast, scheduled queue publish, dot runtime registration, and same-tick Buff runtime writes remain documented as separate retained layers; this story found no new Buff coupling beyond those already documented boundaries.
+- Next step:
+  - Continue with US-011 by characterizing enemy dynamic and debuff aggregation reads without turning copied-output or listener broadcast evidence into a production formula replacement.
+---

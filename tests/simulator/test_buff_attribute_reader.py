@@ -26,7 +26,9 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
 from zsim.sim_progress.anomaly_bar import AnomalyBar
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
     DirgeOfDestinyAnomaly,
+    Disorder,
     NewAnomaly,
+    PolarityDisorder,
 )
 
 _AggregationCall = tuple[tuple[object, ...], object | None, object, str | None]
@@ -376,6 +378,80 @@ def test_anomaly_formula_fixture_copies_snapshot_inputs_for_copied_output() -> N
 
     next_fixture = _make_settled_anomaly_formula_fixture()
     assert next_fixture.anomaly_bar.current_ndarray[0, 0] == pytest.approx(100.0)
+
+
+@pytest.mark.parametrize(
+    ("copied_kind", "polarity_ratio"),
+    [
+        pytest.param("disorder", None, id="disorder"),
+        pytest.param("polarity_disorder", 0.65, id="polarity-disorder"),
+    ],
+)
+def test_disorder_copied_output_preserves_formula_inputs_and_payload_fields(
+    copied_kind: str,
+    polarity_ratio: float | None,
+) -> None:
+    source_snapshot = _make_anomaly_snapshot(
+        (188.0, 1.35, 4.0, 72.0, 1.80, 777.0, 0.22, 9.0, 0.33, 1.44, 1.66)
+    )
+    fixture = _make_settled_anomaly_formula_fixture(
+        snapshot=source_snapshot,
+        scaling_factor=1.75,
+    )
+    source_bar = fixture.anomaly_bar
+    source_bar.element_type = 3
+    source_bar.accompany_dot = "Shock"
+    source_bar.anomaly_dmg_ratio = 2.4
+    source_bar.basic_max_duration = 600
+    source_bar.max_duration = 480
+    source_bar.last_active = 120
+    source_bar.rename_tag = "copied-disorder-source"
+    runtime_sim = SimpleNamespace(tick=300)
+
+    if copied_kind == "polarity_disorder":
+        assert polarity_ratio is not None
+        copied = PolarityDisorder(
+            source_bar,
+            polarity_ratio,
+            active_by=cast(Any, fixture.activation),
+            sim_instance=cast(Any, runtime_sim),
+        )
+    else:
+        copied = Disorder(
+            source_bar,
+            active_by=cast(Any, fixture.activation),
+            sim_instance=cast(Any, runtime_sim),
+        )
+
+    assert copied is not source_bar
+    assert copied.sim_instance is runtime_sim
+    assert copied.activated_by is fixture.activation
+    assert copied.activate_by is fixture.activation
+    assert copied.is_disorder is True
+    assert copied.element_type == source_bar.element_type
+    assert copied.accompany_dot == "Shock"
+    assert copied.anomaly_dmg_ratio == pytest.approx(2.4)
+    assert copied.scaling_factor == pytest.approx(1.75)
+    assert copied.max_duration == pytest.approx(480)
+    assert copied.last_active == 120
+    assert copied.remaining_tick() == pytest.approx(300)
+    assert copied.rename_tag == "copied-disorder-source"
+    assert copied.schedule_priority == 999
+    assert not hasattr(copied, "execute_tick")
+    assert copied.current_ndarray is not source_bar.current_ndarray
+    np.testing.assert_allclose(copied.current_ndarray, source_snapshot)
+    source_bar.current_ndarray[0, 0] = -10.0
+    assert copied.current_ndarray[0, 0] == pytest.approx(source_snapshot[0, 0])
+    copied.current_ndarray[0, 1] = -20.0
+    assert source_bar.current_ndarray[0, 1] == pytest.approx(source_snapshot[0, 1])
+
+    if copied_kind == "polarity_disorder":
+        assert copied.polarity_disorder_ratio == pytest.approx(
+            cast(float, polarity_ratio)
+        )
+        assert copied.additional_dmg_ap_ratio == 32
+    else:
+        assert not hasattr(copied, "polarity_disorder_ratio")
 
 
 @pytest.mark.parametrize(
