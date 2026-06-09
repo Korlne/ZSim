@@ -197,6 +197,74 @@ def _patch_buff_aggregation(
 
 @pytest.mark.parametrize(
     (
+        "char_buff_count",
+        "enemy_debuff_count",
+        "dynamic_statement",
+        "expected_fields",
+    ),
+    [
+        pytest.param(
+            0,
+            0,
+            {},
+            {
+                "field_anomaly_mastery": 0.0,
+                "anomaly_mastery": 0.0,
+                "field_anomaly_proficiency": 0.0,
+                "anomaly_proficiency": 0.0,
+                "crit_rate": 0.0,
+            },
+            id="no-buff-no-debuff",
+        ),
+        pytest.param(
+            2,
+            1,
+            {
+                "局内异常掌控": 0.25,
+                "固定异常掌控": 12.0,
+                "局内异常精通": 0.15,
+                "固定异常精通": 35.0,
+            },
+            {
+                "field_anomaly_mastery": 0.25,
+                "anomaly_mastery": 12.0,
+                "field_anomaly_proficiency": 0.15,
+                "anomaly_proficiency": 35.0,
+                "crit_rate": 0.0,
+            },
+            id="active-buff-enemy-debuff",
+        ),
+    ],
+)
+def test_multiplier_data_get_buff_bonus_builds_dynamic_statement_snapshot(
+    monkeypatch: pytest.MonkeyPatch,
+    char_buff_count: int,
+    enemy_debuff_count: int,
+    dynamic_statement: dict[str, float],
+    expected_fields: dict[str, float],
+) -> None:
+    MultiplierData.mul_data_cache.clear()
+    fixture = _make_attribute_read_fixture(
+        char_buff_count=char_buff_count,
+        enemy_debuff_count=enemy_debuff_count,
+    )
+    aggregation_calls = _patch_buff_aggregation(monkeypatch, dynamic_statement)
+
+    data = _legacy_multiplier_data(fixture)
+    raw_statement = data.get_buff_bonus(
+        fixture.active_buff_view,
+        fixture.context.query_node,
+    )
+
+    assert raw_statement == dynamic_statement
+    for attr_name, expected_value in expected_fields.items():
+        assert getattr(data.dynamic, attr_name) == pytest.approx(expected_value)
+    assert data.dynamic.ano_extra_bonus["all"] == pytest.approx(0.0)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=2)
+
+
+@pytest.mark.parametrize(
+    (
         "static_am",
         "field_am",
         "flat_am",

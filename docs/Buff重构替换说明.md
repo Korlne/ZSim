@@ -2468,3 +2468,15 @@
 - Next step:
   - Continue with US-006 by characterizing `MultiplierData` and `DynamicStatement` snapshot behavior under this parity contract before any phase-3 formula replacement or validation-profile wiring.
 ---
+## 2026-06-09 19:49 +08:00 - US-006
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_multiplier_data_get_buff_bonus_builds_dynamic_statement_snapshot` prepares to replace manual review of `MultiplierData.get_buff_bonus(...)` fan-in and `DynamicStatement` translated fields with focused characterization coverage.
+  - This story characterizes retained snapshot behavior only; it does not replace a live production path, Calculator formula, CalAnomaly formula, or validation profile.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `MultiplierData`, `MultiplierData.mul_data_cache`, `_calculate_dynamic_statement(...)`, `DynamicStatement`, `cal_buff_total_bonus(...)`, and current `CalculatorBuffAttributeReader` helper seams all remain unchanged.
+  - Active Buff view aggregation, enemy debuff aggregation, old containers, formula snapshots, scheduled publish, listener broadcast, same-tick runtime writes, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot boundaries.
+- Next step:
+  - Continue with US-007 by characterizing Calculator attribute formula boundaries while keeping reader seam evidence separate from full formula replacement.
+---

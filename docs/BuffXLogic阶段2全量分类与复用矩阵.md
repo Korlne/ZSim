@@ -1057,3 +1057,15 @@ No new validation profile is wired in this story. If a later PRD introduces a `f
 - `calculator-reads` remains the current validation entrypoint for this doc-only story. A future `formula-parity` profile must be introduced only after the focused Calculator / CalAnomaly / copied-output tests are implemented and scoped mypy targets are named.
 - No phase-3 formula replacement, validation-profile wiring, old-container deletion, dispatch rewrite, listener rewrite, runtime-write facade change, or broad XLogic migration is performed in this story.
 - No new old-Buff coupling was discovered; `docs/旧Buff系统耦合审查结果.md` does not need a new entry for this contract.
+
+### 2026-06-09 US-006 MultiplierData / DynamicStatement Snapshot Characterization
+
+本节只记录 `MultiplierData.get_buff_bonus(...)` 与 `DynamicStatement` 的 focused characterization，不修改 `Calculator.py` 公式、不删除 `MultiplierData` cache，也不扩展 `BuffAttributeReader` helper family。
+
+| surface | characterization evidence | retained compatibility / non-goal |
+| --- | --- | --- |
+| `MultiplierData.get_buff_bonus(...)` fan-in | `tests/simulator/test_buff_attribute_reader.py::test_multiplier_data_get_buff_bonus_builds_dynamic_statement_snapshot` 覆盖 no-buff / no-debuff baseline 与 active Buff + enemy debuff aggregation；断言传给 `cal_buff_total_bonus(...)` 的 `enabled_buff` 仍是角色 active Buff view 加 `enemy.dynamic.dynamic_debuff_list`，并保留 `sim_instance` 与 `char_name`。 | `_calculate_dynamic_statement(...)` 与 `cal_buff_total_bonus(...)` 仍是当前聚合入口；本 story 不移动聚合职责、不改 cache key、不替换公式输入路径。 |
+| `DynamicStatement` translated snapshot fields | 同一 focused test 断言中文动态字段继续翻译到 `field_anomaly_mastery`、`anomaly_mastery`、`field_anomaly_proficiency`、`anomaly_proficiency`，且未出现的字段保持默认 `0.0`。 | `DynamicStatement` 仍是 retained formula snapshot object；后续 phase-3 必须先有 parity suite 才能移动或替换它。 |
+| `BuffAttributeReader` seam separation | 本 story 复用现有 reader test module，但 characterization 直接锁定 legacy `MultiplierData` snapshot，不新增 reader 方法。 | `CalculatorBuffAttributeReader` 继续只是当前 helper parity seam；reader seam evidence 不能单独证明 `MultiplierData` / `DynamicStatement` 可删除。 |
+
+US-006 结论：当前证据把 active Buff view、enemy debuff view 与 translated dynamic fields 纳入 `calculator-reads` focused coverage；phase-3 formula replacement 仍需后续 story 继续补齐 Calculator attribute formula boundaries、CalAnomaly snapshot boundaries、copied-output reads 与 go / no-go decision。
