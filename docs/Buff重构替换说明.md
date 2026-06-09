@@ -57,6 +57,18 @@
 - Next step:
   - Continue with US-011 by adding the P2-F exact-file source guardrail and validation wiring without broadening completed P2-A / P2-B / P2-C / P2-D / P2-E guardrails.
 ---
+## 2026-06-09 14:07 +08:00 - US-011
+- Files changed: `tests/simulator/test_migrated_p2f_buff_add_strategy_guardrail.py`, `scripts/run_buff_refactor_validation.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_migrated_p2f_buff_add_strategy_guardrail.py` replaces manual P2-F source review with an exact-file AST guardrail for `BuffAddStrategy.py` forced-write conversions and `BuffRuntimeReadPort` write-style API regressions.
+  - `scripts/run_buff_refactor_validation.py` now wires the P2-F guardrail into `implicit-events` focused pytest and scoped mypy.
+- Compatibility retained:
+  - `BuffAddStrategy.py` facade construction from legacy containers, beneficiary selection registry reads, template clone registry compatibility, and inactive diagnostic helper behavior remain covered by the existing raw-container guardrail buckets.
+  - `ScheduledEvent/buff_runtime.py` remains the retained `LegacyBuffRuntimeFacade` implementation; this story protects the read-port API contract without outlawing facade internals.
+  - No production behavior, P2-A / P2-B / P2-C / P2-D / P2-E guardrail allowlists, old-container deletion boundaries, scheduled publish semantics, listener broadcast semantics, or second write facade was changed.
+- Next step:
+  - Continue with US-012 by recording serial validation and the behavior-sample decision for this test-only guardrail slice.
+---
 ## 2026-06-05 13:28:48 - US-001
 - 本轮文件：`zsim/sim_progress/data_struct/schedule_dispatch.py`, `tests/simulator/test_schedule_dispatch.py`, `scripts/run_buff_refactor_validation.py`
 - 替换说明：
