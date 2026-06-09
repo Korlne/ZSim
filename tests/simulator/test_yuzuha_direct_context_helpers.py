@@ -16,6 +16,12 @@ trigger_module = importlib.import_module(
 cinema4_trigger_module = importlib.import_module(
     "zsim.sim_progress.Buff.BuffXLogic.YuzuhaCinema4QuickAssistTrigger"
 )
+cinema6_trigger_module = importlib.import_module(
+    "zsim.sim_progress.Buff.BuffXLogic.YuzuhaCinema6SheelTrigger"
+)
+schedule_preload_module = importlib.import_module(
+    "zsim.sim_progress.data_struct.SchedulePreload"
+)
 
 YuzuhaHardCandyShotTrigger = trigger_module.YuzuhaHardCandyShotTrigger
 YuzuhaHardCandyShotTriggerRecord = trigger_module.YuzuhaHardCandyShotTriggerRecord
@@ -23,11 +29,24 @@ YuzuhaCinema4QuickAssistTrigger = cinema4_trigger_module.YuzuhaCinema4QuickAssis
 YuzuhaCinema4QuickAssistTriggerRecord = (
     cinema4_trigger_module.YuzuhaCinema4QuickAssistTriggerRecord
 )
+YuzuhaCinema6SheelTrigger = cinema6_trigger_module.YuzuhaCinema6SheelTrigger
+YuzuhaCinema6SheelTriggerRecord = cinema6_trigger_module.YuzuhaCinema6SheelTriggerRecord
 
 
 class _FailFastEventList(list[object]):
     def append(self, item: object) -> None:
-        raise AssertionError("Yuzuha hard candy trigger should not write raw event_list")
+        raise AssertionError("Yuzuha direct context helper should not write raw event_list")
+
+
+class _RecordingDispatchPort:
+    def __init__(self, *, order_log: list[str] | None = None) -> None:
+        self.events: list[object] = []
+        self.order_log = order_log
+
+    def publish_scheduled(self, event: object) -> None:
+        self.events.append(event)
+        if self.order_log is not None:
+            self.order_log.append("publish")
 
 
 class _ForbiddenLayer:
@@ -76,6 +95,19 @@ class _Cinema4SkillNodeProbe:
         return self._last_hit
 
 
+class _Cinema6SkillNodeProbe:
+    def __init__(
+        self,
+        *,
+        skill_tag: str = "1411_Assault_Aid_B",
+        preload_tick: int = 1400,
+        end_tick: int = 1600,
+    ) -> None:
+        self.skill_tag = skill_tag
+        self.preload_tick = preload_tick
+        self.end_tick = end_tick
+
+
 class _QuickAssistSystemProbe:
     def __init__(self) -> None:
         self.calls: list[dict[str, object]] = []
@@ -103,12 +135,15 @@ class _CharDataProbe:
 
 
 class _ScheduleDataReportProbe:
-    def __init__(self) -> None:
+    def __init__(self, *, order_log: list[str] | None = None) -> None:
         self.event_list = _FailFastEventList()
         self.change_process_calls = 0
+        self.order_log = order_log
 
     def change_process_state(self) -> None:
         self.change_process_calls += 1
+        if self.order_log is not None:
+            self.order_log.append("report")
 
 
 class _YuzuhaProbe:
@@ -237,6 +272,58 @@ def _build_cinema4_trigger_harness(
         sim_instance=sim_instance,
         quick_assist_system=quick_assist_system,
         char_data=char_data,
+        schedule_data=schedule_data,
+        prepared_calls=prepared_calls,
+    )
+
+
+def _build_cinema6_trigger_harness(
+    *,
+    tick: int = 1440,
+    sugar_points: int = 1,
+    charging_tick: int = 24,
+    sheel_counter: int = 0,
+    report_state: bool = False,
+    order_log: list[str] | None = None,
+) -> SimpleNamespace:
+    preload_data = SimpleNamespace(label="cinema6-preload-data")
+    schedule_data = (
+        _ScheduleDataReportProbe(order_log=order_log)
+        if report_state
+        else SimpleNamespace(
+            event_list=_FailFastEventList(),
+            change_process_state=_ForbiddenLayer("report-state mutation"),
+        )
+    )
+    sim_instance = SimpleNamespace(
+        tick=tick,
+        preload=SimpleNamespace(preload_data=preload_data),
+        schedule_data=schedule_data,
+        listener_manager=_ForbiddenLayer("listener broadcast"),
+        runtime_command_port=_ForbiddenLayer("RuntimeCommandPort"),
+    )
+    buff_instance = _BuffInstanceProbe(sim_instance=sim_instance)
+    buff_instance.ft = SimpleNamespace(index="Buff-角色-柚叶-6画炮弹触发")
+    trigger = YuzuhaCinema6SheelTrigger(buff_instance)
+
+    record = YuzuhaCinema6SheelTriggerRecord()
+    record.char = _YuzuhaProbe(sugar_points=sugar_points, cinema=6)
+    record.charging_tick = charging_tick
+    record.sheel_counter = sheel_counter
+    trigger.buff_0 = SimpleNamespace(history=SimpleNamespace(record=record))
+    prepared_calls: list[dict[str, object]] = []
+
+    def record_prepared_call(**kwargs: object) -> None:
+        prepared_calls.append(kwargs)
+
+    trigger.get_prepared = record_prepared_call
+
+    return SimpleNamespace(
+        trigger=trigger,
+        record=record,
+        buff_instance=buff_instance,
+        sim_instance=sim_instance,
+        preload_data=preload_data,
         schedule_data=schedule_data,
         prepared_calls=prepared_calls,
     )
@@ -395,6 +482,118 @@ def test_yuzuha_cinema4_trigger_stays_out_of_dispatch_and_runtime_boundaries() -
         "ScheduleDispatchPort",
         "create_schedule_dispatch_port",
         "publish_scheduled",
+        "RuntimeCommandPort",
+        "create_runtime_command_port",
+        "LegacyBuffRuntimeFacade",
+        "BuffRuntimeReadPort",
+        "listener_manager",
+        "broadcast_event",
+        "event_list",
+    ):
+        assert forbidden_term not in source
+
+
+def test_yuzuha_cinema6_preload_publish_uses_current_tick_and_preload_data(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(cinema6_trigger_module, "YUZUHA_REPORT", False)
+    dispatch_port = _RecordingDispatchPort()
+    monkeypatch.setattr(
+        schedule_preload_module,
+        "create_schedule_dispatch_port",
+        lambda *, sim_instance: dispatch_port,
+    )
+    harness = _build_cinema6_trigger_harness(
+        tick=1440,
+        sugar_points=2,
+        charging_tick=24,
+        sheel_counter=2,
+    )
+    skill_node = _Cinema6SkillNodeProbe(preload_tick=1400, end_tick=1600)
+
+    assert harness.trigger.special_judge_logic(skill_node=skill_node) is True
+    harness.trigger.special_effect_logic()
+
+    assert harness.prepared_calls == [{"char_CID": 1411}, {"char_CID": 1411}]
+    assert harness.record.charging_start is True
+    assert harness.record.char.resource_reads == 1
+    assert len(dispatch_port.events) == 1
+    published_event = dispatch_port.events[0]
+    assert isinstance(published_event, schedule_preload_module.SchedulePreload)
+    assert published_event.execute_tick == 1440
+    assert published_event.skill_tag == "1411_Cinema_6"
+    assert published_event.preload_data is harness.preload_data
+    assert published_event.apl_priority == 0
+    assert published_event.active_generation is False
+    assert published_event.sim_instance is harness.sim_instance
+    assert harness.record.sheel_counter == 3
+    assert harness.record.charging_tick == 0
+    assert harness.sim_instance.schedule_data.event_list == []
+
+
+def test_yuzuha_cinema6_charge_gate_blocks_preload_publish_and_context_reads(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(cinema6_trigger_module, "YUZUHA_REPORT", False)
+    dispatch_port = _RecordingDispatchPort()
+    monkeypatch.setattr(
+        schedule_preload_module,
+        "create_schedule_dispatch_port",
+        lambda *, sim_instance: dispatch_port,
+    )
+    harness = _build_cinema6_trigger_harness(
+        tick=1440,
+        sugar_points=2,
+        charging_tick=0,
+    )
+    skill_node = _Cinema6SkillNodeProbe(preload_tick=1430, end_tick=1600)
+
+    assert harness.trigger.special_judge_logic(skill_node=skill_node) is False
+
+    assert harness.prepared_calls == [{"char_CID": 1411}]
+    assert harness.record.charging_start is False
+    assert harness.record.char.resource_reads == 0
+    assert dispatch_port.events == []
+    assert harness.sim_instance.schedule_data.event_list == []
+
+
+def test_yuzuha_cinema6_report_state_stays_separate_from_publish_and_runtime(
+    monkeypatch: Any,
+) -> None:
+    order_log: list[str] = []
+    monkeypatch.setattr(cinema6_trigger_module, "YUZUHA_REPORT", True)
+    dispatch_port = _RecordingDispatchPort(order_log=order_log)
+    monkeypatch.setattr(
+        schedule_preload_module,
+        "create_schedule_dispatch_port",
+        lambda *, sim_instance: dispatch_port,
+    )
+    harness = _build_cinema6_trigger_harness(
+        tick=1500,
+        sugar_points=2,
+        charging_tick=24,
+        report_state=True,
+        order_log=order_log,
+    )
+    skill_node = _Cinema6SkillNodeProbe(preload_tick=1400, end_tick=1600)
+
+    assert harness.trigger.special_judge_logic(skill_node=skill_node) is True
+    harness.trigger.special_effect_logic()
+
+    assert order_log == ["publish", "report"]
+    assert len(dispatch_port.events) == 1
+    assert harness.schedule_data.change_process_calls == 1
+    assert harness.schedule_data.event_list == []
+
+
+def test_yuzuha_cinema6_trigger_keeps_publish_report_and_runtime_boundaries() -> None:
+    source = inspect.getsource(cinema6_trigger_module.YuzuhaCinema6SheelTrigger)
+
+    assert "preload_tick_list = [sim_instance.tick]" in source
+    assert "preload_data = sim_instance.preload.preload_data" in source
+    assert "schedule_preload_event_factory(" in source
+    assert "schedule_data.change_process_state()" in source
+    for forbidden_term in (
         "RuntimeCommandPort",
         "create_runtime_command_port",
         "LegacyBuffRuntimeFacade",

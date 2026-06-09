@@ -2285,3 +2285,17 @@
 - Next step:
   - Continue with US-004 by adding Yuzuha Cinema6 Sheel preload / report-state coverage without broadening into RNG, listener, runtime write, scheduled publish migration, or formula replacement work.
 ---
+## 2026-06-09 16:44 +08:00 - US-004
+- Files changed: `tests/simulator/test_yuzuha_direct_context_helpers.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_yuzuha_direct_context_helpers.py` now replaces manual `YuzuhaCinema6SheelTrigger` preload / report-state review with focused coverage for current-tick `SchedulePreload` publish, `sim_instance.preload.preload_data` forwarding, charge-gate no-op behavior, `YUZUHA_REPORT` process-state ordering, and raw queue / listener / runtime separation.
+  - This story adds branch and boundary evidence only; it does not replace live production behavior or extract a new helper.
+- Compatibility retained:
+  - `YuzuhaCinema6SheelTrigger.py` source, allowed skill tag, charge-duration gate, Yuzuha resource gate, `schedule_preload_event_factory(...)`, `SchedulePreload` payload fields, counter reset/update behavior, report printing, and `schedule_data.change_process_state()` remain unchanged.
+  - Factory-backed scheduled preload publication remains a `ScheduleDispatchPort` / `create_schedule_dispatch_port(...)` responsibility inside `schedule_preload_event_factory(...)`; report-state `change_process_state()` remains separate from scheduled payload publication, listener broadcast, same-tick runtime write, and raw queue mutation.
+  - `tests/simulator/test_yuzuha_cinema6_energy_dispatch.py` still covers existing Character/Yuzuha cinema-6 team energy fan-out behavior and file-specific target ordering.
+  - `RuntimeCommandPort`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, listener broadcast, old containers, Calculator / CalAnomaly formulas, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; this story found no new Buff coupling beyond the already documented P2-G direct simulator context / factory-backed `SchedulePreload` candidate.
+- Next step:
+  - Continue with US-005 by selecting Yuzuha tick-only / report-state representatives without broadening into RNG, listener, runtime write, scheduled publish migration, or formula replacement work.
+---
