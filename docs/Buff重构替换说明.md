@@ -2221,3 +2221,16 @@
 - Next step:
   - Continue with US-009 by adding Character manager caller focused coverage without broadening into P2-G direct simulator context helpers or source guardrail wiring.
 ---
+## 2026-06-09 14:19 +08:00 - US-012
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `scripts/ralph/progress.txt` now replaces ad-hoc P2-F release-readiness review with a serial validation record, uncovered focused caller command evidence, and an explicit behavior-sample decision.
+  - This story builds validation and handoff evidence only; it does not replace live production behavior.
+- Compatibility retained:
+  - `buff_add_strategy(...)` / `LegacyBuffRuntimeFacade` remains the forced same-tick Buff / Debuff write boundary.
+  - `ScheduleDispatchPort`, synchronous listener broadcast, `RuntimeCommandPort`, `BuffRuntimeReadPort` read-only semantics, pending queues, active-store replacement, enemy mirror sync, old containers, Calculator / CalAnomaly formulas, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No live APL / team behavior sample was run because this iteration made no production behavior changes and the required evidence is test-only caller / guardrail coverage plus serial validation.
+  - No new old-coupling review update was needed; this story did not discover new Buff coupling.
+- Next step:
+  - Continue with US-013 by updating final P2-F handoff docs and the next candidate pool without claiming production behavior deletion or broad phase migration.
+---
