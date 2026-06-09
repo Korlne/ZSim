@@ -2628,3 +2628,15 @@
 - Next step:
   - Continue with US-006 by characterizing Calculator crit formula families while keeping received-crit fields and reader seam evidence separate from any production formula replacement decision.
 ---
+## 2026-06-10 00:32 +08:00 - US-006
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_calculator_regular_mul_crit_formula_families_preserve_received_boundaries()` prepares to replace ad hoc crit-formula confidence with focused characterization for `Calculator.RegularMul.cal_crit_rate(...)`, `cal_personal_crit_rate(...)`, and `cal_personal_crit_dmg(...)`.
+  - This story adds formula parity evidence only; it does not replace a live production path, Calculator formula, CalAnomaly formula, copied-output formula, dispatch adapter, runtime port, validation profile, guardrail, or behavior sample.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `Calculator.RegularMul`, `MultiplierData`, `_CalculatorReadSnapshot`, `DynamicStatement`, `_calculate_dynamic_statement()`, `CalculatorBuffAttributeReader`, P2-B migrated reader files, `CalAnomaly.py`, copied anomaly / disorder output paths, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and existing `calculator-reads` / `implicit-events` validation wiring all remain unchanged.
+  - P2-B reader-seam tests remain guarded-maintenance evidence only; this story does not use migrated reader files as proof that retained Calculator formulas can be deleted.
+  - No old-coupling review update was needed; this test-only characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output, enemy dynamic read, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-007 by characterizing `CalAnomaly` settled snapshot input contracts before any production formula replacement.
+---

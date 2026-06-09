@@ -847,6 +847,110 @@ def test_calculator_am_ap_impact_formula_family_matches_reader_snapshot_parity(
 
 @pytest.mark.parametrize(
     (
+        "dynamic_attrs",
+        "expected_values",
+        "expected_received_crit_rate",
+        "expected_received_crit_damage",
+    ),
+    [
+        pytest.param(
+            {},
+            {
+                "cal_crit_rate": 0.2,
+                "cal_personal_crit_rate": 0.2,
+                "cal_personal_crit_dmg": 0.5,
+            },
+            0.0,
+            0.0,
+            id="static-only",
+        ),
+        pytest.param(
+            {
+                "crit_rate": 0.1,
+                "field_crit_rate": 0.05,
+                "crit_dmg": 0.3,
+                "field_crit_dmg": 0.2,
+            },
+            {
+                "cal_crit_rate": 0.35,
+                "cal_personal_crit_rate": 0.35,
+                "cal_personal_crit_dmg": 1.0,
+            },
+            0.0,
+            0.0,
+            id="personal-fields",
+        ),
+        pytest.param(
+            {
+                "crit_rate": 0.1,
+                "field_crit_rate": 0.05,
+                "crit_rate_received_increase": 0.25,
+                "crit_dmg": 0.3,
+                "field_crit_dmg": 0.2,
+                "received_crit_dmg_bonus": 0.4,
+            },
+            {
+                "cal_crit_rate": 0.6,
+                "cal_personal_crit_rate": 0.35,
+                "cal_personal_crit_dmg": 1.0,
+            },
+            0.25,
+            0.4,
+            id="received-fields-excluded-from-personal-values",
+        ),
+    ],
+)
+def test_calculator_regular_mul_crit_formula_families_preserve_received_boundaries(
+    monkeypatch: pytest.MonkeyPatch,
+    dynamic_attrs: dict[str, float],
+    expected_values: dict[str, float],
+    expected_received_crit_rate: float,
+    expected_received_crit_damage: float,
+) -> None:
+    fixture = _make_attribute_read_fixture(
+        name="双暴公式角色",
+        crit_rate=0.2,
+        crit_damage=0.5,
+        char_buff_count=1,
+        enemy_debuff_count=1,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(**dynamic_attrs),
+    )
+
+    retained_data = _legacy_multiplier_data(fixture)
+    retained_dynamic = cast(Any, retained_data).dynamic
+    values = {
+        "cal_crit_rate": Calculator.RegularMul.cal_crit_rate(retained_data),
+        "cal_personal_crit_rate": Calculator.RegularMul.cal_personal_crit_rate(
+            retained_data
+        ),
+        "cal_personal_crit_dmg": Calculator.RegularMul.cal_personal_crit_dmg(
+            retained_data
+        ),
+    }
+
+    assert values == pytest.approx(expected_values)
+    assert retained_dynamic.crit_rate_received_increase == pytest.approx(
+        expected_received_crit_rate
+    )
+    assert retained_dynamic.received_crit_dmg_bonus == pytest.approx(
+        expected_received_crit_damage
+    )
+    assert values["cal_crit_rate"] - values["cal_personal_crit_rate"] == pytest.approx(
+        retained_dynamic.crit_rate_received_increase
+    )
+    assert values["cal_personal_crit_dmg"] == pytest.approx(
+        cast(Any, retained_data).static.crit_damage
+        + retained_dynamic.crit_dmg
+        + retained_dynamic.field_crit_dmg
+    )
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+
+
+@pytest.mark.parametrize(
+    (
         "static_crit_rate",
         "field_crit_rate",
         "flat_crit_rate",
