@@ -2606,3 +2606,14 @@
 - Next step:
   - Continue with US-004 by using the stabilized fixtures to characterize `MultiplierData` and `DynamicStatement` aggregation before any production formula replacement.
 ---
+## 2026-06-10 00:12 +08:00 - US-004
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The US-004 characterization cases prepare to replace implicit `MultiplierData` / `DynamicStatement` aggregation assumptions with executable focused coverage for empty input, single buff, stacked buffs, and enemy debuffs.
+  - This story adds formula parity evidence only; it does not replace a live production path, formula helper, copied-output formula, dispatch adapter, runtime port, validation profile, guardrail, or behavior sample.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `_calculate_dynamic_statement()`, `AnomalyBar.current_ndarray`, copied anomaly / disorder output paths, P2-A through P2-G guarded-maintenance buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and existing `calculator-reads` / `implicit-events` validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this test-only characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output, enemy dynamic read, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-005 by characterizing Calculator AM/AP/impact formula parity against the same retained snapshot boundary before any production formula replacement.
+---

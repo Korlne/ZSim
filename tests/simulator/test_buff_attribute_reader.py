@@ -376,6 +376,9 @@ def test_anomaly_formula_fixture_copies_snapshot_inputs_for_copied_output() -> N
         "enemy_debuff_count",
         "dynamic_statement",
         "expected_fields",
+        "expected_personal_crit_rate",
+        "expected_full_crit_rate",
+        "expected_personal_crit_damage",
     ),
     [
         pytest.param(
@@ -383,31 +386,97 @@ def test_anomaly_formula_fixture_copies_snapshot_inputs_for_copied_output() -> N
             0,
             {},
             {
+                "atk": 0.0,
+                "field_atk_percentage": 0.0,
                 "field_anomaly_mastery": 0.0,
                 "anomaly_mastery": 0.0,
                 "field_anomaly_proficiency": 0.0,
                 "anomaly_proficiency": 0.0,
                 "crit_rate": 0.0,
+                "field_crit_rate": 0.0,
+                "crit_rate_received_increase": 0.0,
+                "crit_dmg": 0.0,
+                "field_crit_dmg": 0.0,
+                "received_crit_dmg_bonus": 0.0,
+                "fire_dmg_res_decrease": 0.0,
+                "all_vulnerability": 0.0,
             },
-            id="no-buff-no-debuff",
+            0.2,
+            0.2,
+            0.8,
+            id="empty-input",
         ),
         pytest.param(
-            2,
             1,
+            0,
             {
                 "局内异常掌控": 0.25,
-                "固定异常掌控": 12.0,
-                "局内异常精通": 0.15,
                 "固定异常精通": 35.0,
+                "局内暴击率": 0.05,
+                "固定暴击伤害": 0.15,
             },
             {
                 "field_anomaly_mastery": 0.25,
+                "anomaly_proficiency": 35.0,
+                "field_crit_rate": 0.05,
+                "crit_dmg": 0.15,
+                "crit_rate_received_increase": 0.0,
+                "received_crit_dmg_bonus": 0.0,
+            },
+            0.25,
+            0.25,
+            0.95,
+            id="single-character-buff",
+        ),
+        pytest.param(
+            3,
+            0,
+            {
+                "固定异常掌控": 12.0,
+                "局内异常精通": 0.15,
+                "局内攻击力%": 0.30,
+                "固定攻击力": 120.0,
+                "固定暴击率": 0.07,
+                "局内暴击伤害": 0.20,
+            },
+            {
+                "atk": 120.0,
+                "field_atk_percentage": 0.30,
                 "anomaly_mastery": 12.0,
                 "field_anomaly_proficiency": 0.15,
-                "anomaly_proficiency": 35.0,
-                "crit_rate": 0.0,
+                "crit_rate": 0.07,
+                "field_crit_dmg": 0.20,
+                "crit_rate_received_increase": 0.0,
+                "received_crit_dmg_bonus": 0.0,
             },
-            id="active-buff-enemy-debuff",
+            0.27,
+            0.27,
+            1.0,
+            id="stacked-character-buffs",
+        ),
+        pytest.param(
+            0,
+            2,
+            {
+                "被暴击几率增加": 0.12,
+                "受暴击伤害增加": 0.22,
+                "火伤害抗性降低": 0.15,
+                "全易伤": 0.10,
+                "百分比减防": 0.08,
+            },
+            {
+                "crit_rate": 0.0,
+                "field_crit_rate": 0.0,
+                "crit_rate_received_increase": 0.12,
+                "received_crit_dmg_bonus": 0.22,
+                "fire_dmg_res_decrease": 0.15,
+                "all_vulnerability": 0.10,
+                "percentage_def_reduction": 0.08,
+            },
+            0.2,
+            0.32,
+            0.8,
+            id="enemy-debuffs-only",
         ),
     ],
 )
@@ -417,9 +486,17 @@ def test_multiplier_data_get_buff_bonus_builds_dynamic_statement_snapshot(
     enemy_debuff_count: int,
     dynamic_statement: dict[str, float],
     expected_fields: dict[str, float],
+    expected_personal_crit_rate: float,
+    expected_full_crit_rate: float,
+    expected_personal_crit_damage: float,
 ) -> None:
     MultiplierData.mul_data_cache.clear()
     fixture = _make_attribute_read_fixture(
+        am=100.0,
+        ap=300.0,
+        imp=80.0,
+        crit_rate=0.2,
+        crit_damage=0.8,
         char_buff_count=char_buff_count,
         enemy_debuff_count=enemy_debuff_count,
     )
@@ -432,8 +509,22 @@ def test_multiplier_data_get_buff_bonus_builds_dynamic_statement_snapshot(
     )
 
     assert raw_statement == dynamic_statement
+    assert data.static.am == pytest.approx(100.0)
+    assert data.static.ap == pytest.approx(300.0)
+    assert data.static.imp == pytest.approx(80.0)
+    assert data.static.crit_rate == pytest.approx(0.2)
+    assert data.static.crit_damage == pytest.approx(0.8)
     for attr_name, expected_value in expected_fields.items():
         assert getattr(data.dynamic, attr_name) == pytest.approx(expected_value)
+    personal_crit_rate = Calculator.RegularMul.cal_personal_crit_rate(data)
+    full_crit_rate = Calculator.RegularMul.cal_crit_rate(data)
+    personal_crit_damage = Calculator.RegularMul.cal_personal_crit_dmg(data)
+    assert personal_crit_rate == pytest.approx(expected_personal_crit_rate)
+    assert full_crit_rate == pytest.approx(expected_full_crit_rate)
+    assert personal_crit_damage == pytest.approx(expected_personal_crit_damage)
+    assert full_crit_rate - personal_crit_rate == pytest.approx(
+        data.dynamic.crit_rate_received_increase
+    )
     assert data.dynamic.ano_extra_bonus["all"] == pytest.approx(0.0)
     _assert_aggregation_calls(aggregation_calls, fixture, times=2)
 
