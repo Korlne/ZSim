@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import inspect
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Iterator, Sequence, cast
 
@@ -31,6 +32,8 @@ from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
     PolarityDisorder,
 )
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
 _AggregationCall = tuple[tuple[object, ...], object | None, object, str | None]
 
 
@@ -53,6 +56,17 @@ class _AnomalyFormulaFixture:
     active_buff_view: dict[str, list[object]]
     source_snapshot: np.ndarray
     anomaly_bar: AnomalyBar
+
+
+@dataclass(frozen=True)
+class _MigratedReaderSeamSample:
+    case_id: str
+    phase: str
+    migrated_file: str
+    formula_key: str
+    fixture_kwargs: dict[str, Any]
+    dynamic_attrs: dict[str, float]
+    expected_value: float
 
 
 @pytest.fixture(autouse=True)
@@ -285,6 +299,215 @@ def _dynamic_statement_by_attr(**attrs: float) -> dict[str, float]:
         for effect, attr in calculator_module.buff_effect_trans.items()
     }
     return {effect_by_attr[attr]: value for attr, value in attrs.items()}
+
+
+_MIGRATED_READER_SEAM_SAMPLES = (
+    _MigratedReaderSeamSample(
+        case_id="p2a-alice-am",
+        phase="P2-A",
+        migrated_file="zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
+        formula_key="cal_am",
+        fixture_kwargs={
+            "name": "Alice",
+            "am": 100.0,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 1,
+        },
+        dynamic_attrs={
+            "field_anomaly_mastery": 0.2,
+            "anomaly_mastery": 15.0,
+        },
+        expected_value=135.0,
+    ),
+    _MigratedReaderSeamSample(
+        case_id="p2a-jane-ap",
+        phase="P2-A",
+        migrated_file="zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py",
+        formula_key="cal_ap",
+        fixture_kwargs={
+            "name": "Jane",
+            "ap": 300.0,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 1,
+        },
+        dynamic_attrs={
+            "field_anomaly_proficiency": 0.25,
+            "anomaly_proficiency": 40.0,
+        },
+        expected_value=415.0,
+    ),
+    _MigratedReaderSeamSample(
+        case_id="p2b-qingyi-impact",
+        phase="P2-B",
+        migrated_file=(
+            "zsim/sim_progress/Buff/BuffXLogic/"
+            "QingYiAdditionalAbilityStunConvertToATK.py"
+        ),
+        formula_key="cal_imp",
+        fixture_kwargs={
+            "name": "Qingyi",
+            "imp": 80.0,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 1,
+        },
+        dynamic_attrs={
+            "field_imp_percentage": 0.1,
+            "imp": 9.0,
+        },
+        expected_value=97.0,
+    ),
+    _MigratedReaderSeamSample(
+        case_id="p2b-cannon-rotor-full-crit",
+        phase="P2-B",
+        migrated_file="zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py",
+        formula_key="cal_crit_rate",
+        fixture_kwargs={
+            "name": "CannonRotor",
+            "crit_rate": 0.2,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 1,
+        },
+        dynamic_attrs={
+            "field_crit_rate": 0.05,
+            "crit_rate": 0.1,
+            "crit_rate_received_increase": 0.25,
+        },
+        expected_value=0.6,
+    ),
+    _MigratedReaderSeamSample(
+        case_id="p2b-anby-personal-crit-dmg",
+        phase="P2-B",
+        migrated_file=(
+            "zsim/sim_progress/Buff/BuffXLogic/"
+            "Soldier0AnbyCoreSkillCritDMGBonus.py"
+        ),
+        formula_key="cal_personal_crit_dmg",
+        fixture_kwargs={
+            "name": "Soldier0Anby",
+            "crit_damage": 0.5,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 1,
+        },
+        dynamic_attrs={
+            "field_crit_dmg": 0.2,
+            "crit_dmg": 0.3,
+            "received_crit_dmg_bonus": 0.4,
+        },
+        expected_value=1.0,
+    ),
+)
+
+
+def _retained_formula_value(formula_key: str, data: MultiplierData) -> Any:
+    if formula_key == "cal_am":
+        return Calculator.AnomalyMul.cal_am(data)
+    if formula_key == "cal_ap":
+        return Calculator.AnomalyMul.cal_ap(data)
+    if formula_key == "cal_imp":
+        return Calculator.StunMul.cal_imp(data)
+    if formula_key == "cal_crit_rate":
+        return Calculator.RegularMul.cal_crit_rate(data)
+    if formula_key == "cal_personal_crit_dmg":
+        return Calculator.RegularMul.cal_personal_crit_dmg(data)
+    raise AssertionError(f"Unknown migrated reader formula sample: {formula_key}")
+
+
+def _reader_formula_value(
+    formula_key: str,
+    reader: CalculatorBuffAttributeReader,
+    context: BuffAttributeReadContext,
+) -> Any:
+    if formula_key == "cal_am":
+        return reader.read_anomaly_mastery(context)
+    if formula_key == "cal_ap":
+        return reader.read_anomaly_proficiency(context)
+    if formula_key == "cal_imp":
+        return reader.read_impact(context)
+    if formula_key == "cal_crit_rate":
+        return reader.read_full_crit_rate(context)
+    if formula_key == "cal_personal_crit_dmg":
+        return reader.read_personal_crit_damage(context)
+    raise AssertionError(f"Unknown migrated reader formula sample: {formula_key}")
+
+
+def test_migrated_reader_seam_regression_sample_scope_is_representative() -> None:
+    selected = {
+        (sample.phase, sample.migrated_file, sample.formula_key)
+        for sample in _MIGRATED_READER_SEAM_SAMPLES
+    }
+
+    assert selected == {
+        (
+            "P2-A",
+            "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
+            "cal_am",
+        ),
+        (
+            "P2-A",
+            "zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py",
+            "cal_ap",
+        ),
+        (
+            "P2-B",
+            "zsim/sim_progress/Buff/BuffXLogic/"
+            "QingYiAdditionalAbilityStunConvertToATK.py",
+            "cal_imp",
+        ),
+        (
+            "P2-B",
+            "zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py",
+            "cal_crit_rate",
+        ),
+        (
+            "P2-B",
+            "zsim/sim_progress/Buff/BuffXLogic/"
+            "Soldier0AnbyCoreSkillCritDMGBonus.py",
+            "cal_personal_crit_dmg",
+        ),
+    }
+    assert {sample.phase for sample in _MIGRATED_READER_SEAM_SAMPLES} == {
+        "P2-A",
+        "P2-B",
+    }
+    for sample in _MIGRATED_READER_SEAM_SAMPLES:
+        migrated_path = PROJECT_ROOT / sample.migrated_file
+        assert migrated_path.is_file()
+        assert ".codex_worktrees" not in migrated_path.parts
+
+
+@pytest.mark.parametrize(
+    "sample",
+    _MIGRATED_READER_SEAM_SAMPLES,
+    ids=lambda sample: sample.case_id,
+)
+def test_migrated_reader_seam_regression_samples_match_retained_helpers(
+    monkeypatch: pytest.MonkeyPatch,
+    sample: _MigratedReaderSeamSample,
+) -> None:
+    fixture = _make_attribute_read_fixture(**sample.fixture_kwargs)
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(**sample.dynamic_attrs),
+    )
+
+    retained_value = _retained_formula_value(
+        sample.formula_key,
+        _legacy_multiplier_data(fixture),
+    )
+    reader_snapshot_value = _retained_formula_value(
+        sample.formula_key,
+        _reader_snapshot_data(fixture.context),
+    )
+    reader_value = _reader_formula_value(
+        sample.formula_key,
+        CalculatorBuffAttributeReader(),
+        fixture.context,
+    )
+
+    assert retained_value == pytest.approx(sample.expected_value)
+    assert reader_snapshot_value == pytest.approx(retained_value)
+    assert reader_value == pytest.approx(retained_value)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=3)
 
 
 def test_formula_parity_fixture_builds_independent_calculator_inputs(

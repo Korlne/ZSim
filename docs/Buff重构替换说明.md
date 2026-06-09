@@ -2697,3 +2697,15 @@
 - Next step:
   - Continue with US-012 by adding migrated reader seam regression samples using this enemy dynamic characterization as compatibility evidence without starting an enemy debuff single-source-of-truth migration.
 ---
+## 2026-06-10 01:33 +08:00 - US-012
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_migrated_reader_seam_regression_sample_scope_is_representative()` and `test_migrated_reader_seam_regression_samples_match_retained_helpers()` prepare to replace manual spot checks of representative P2-A / P2-B migrated reader files with focused formula parity coverage.
+  - The US-012 inventory entry records selected samples from `AliceAdditionalAbilityApBonus.py`, `JaneCinema1APTransToDmgBonus.py`, `QingYiAdditionalAbilityStunConvertToATK.py`, `CannonRotor.py`, and `Soldier0AnbyCoreSkillCritDMGBonus.py`, tying each reader seam to the retained Calculator helper it must match.
+  - This story adds regression evidence only; it does not replace a live production path, Calculator formula, `MultiplierData`, `DynamicStatement`, dispatch adapter, listener broadcast, runtime port, validation profile, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalculatorBuffAttributeReader`, `MultiplierData`, `DynamicStatement`, P2-A / P2-B migrated BuffXLogic files, P2-C through P2-G guarded buckets, `CalAnomaly.py`, copied anomaly / disorder output paths, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and existing `calculator-reads` / `implicit-events` validation wiring all remain unchanged.
+  - P2-A through P2-G remain completed guarded buckets and are reopened only by concrete guardrail or validation failure; this story found no new Buff coupling beyond already documented retained formula snapshot, copied-output, enemy dynamic read, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-013 by characterizing any remaining formula parity suite samples from the current PRD without turning migrated reader-seam evidence into production formula replacement.
+---

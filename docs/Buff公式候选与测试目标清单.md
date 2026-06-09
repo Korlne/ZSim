@@ -49,6 +49,19 @@
 | `AnomalyBar.__get_duration_enemy_buffs()` / dot、freeze-like duration reads | runtime view 或 legacy enemy dynamic list。 | 异常持续时间和 dot/freeze-like 状态相邻读取。 | guarded maintenance。 | 本 PRD 不迁移异常持续时间读取；后续需要单独覆盖 runtime view、legacy fallback、dot 列表和 freeze-like 分支。 |
 | `Load/LoadDamageEvent.py` dot / freez-like continuation | 调用方显式传入当前 Schedule 队列。 | dot 时间触发、命中后 dot、碎冰类效果继续生成伤害事件。 | blocker-only follow-up。 | 属于 Load/Schedule event-router 方向，不是 Buff phase-3 formula parity 替换入口。 |
 
+## US-012 migrated reader seam 回归样本
+
+| 样本 / 文件 | phase-2 来源 | 旧公式 helper | reader seam | 本轮证据 |
+| --- | --- | --- | --- | --- |
+| `AliceAdditionalAbilityApBonus.py` | P2-A AM/AP migrated reader bucket | `Calculator.AnomalyMul.cal_am(...)` | `CalculatorBuffAttributeReader.read_anomaly_mastery(...)` | `test_migrated_reader_seam_regression_samples_match_retained_helpers[p2a-alice-am]` 证明 reader 输出、reader-built snapshot 和 retained helper 一致。 |
+| `JaneCinema1APTransToDmgBonus.py` | P2-A AM/AP migrated reader bucket | `Calculator.AnomalyMul.cal_ap(...)` | `CalculatorBuffAttributeReader.read_anomaly_proficiency(...)` | `test_migrated_reader_seam_regression_samples_match_retained_helpers[p2a-jane-ap]` 证明 AP reader seam 仍匹配 retained helper。 |
+| `QingYiAdditionalAbilityStunConvertToATK.py` | P2-B impact / crit migrated reader bucket | `Calculator.StunMul.cal_imp(...)` | `CalculatorBuffAttributeReader.read_impact(...)` | `test_migrated_reader_seam_regression_samples_match_retained_helpers[p2b-qingyi-impact]` 证明 impact reader seam 仍匹配 retained helper。 |
+| `CannonRotor.py` | P2-B impact / crit migrated reader bucket | `Calculator.RegularMul.cal_crit_rate(...)` | `CalculatorBuffAttributeReader.read_full_crit_rate(...)` | `test_migrated_reader_seam_regression_samples_match_retained_helpers[p2b-cannon-rotor-full-crit]` 证明 full crit reader seam 仍保留 received crit rate inclusion。 |
+| `Soldier0AnbyCoreSkillCritDMGBonus.py` | P2-B impact / crit migrated reader bucket | `Calculator.RegularMul.cal_personal_crit_dmg(...)` | `CalculatorBuffAttributeReader.read_personal_crit_damage(...)` | `test_migrated_reader_seam_regression_samples_match_retained_helpers[p2b-anby-personal-crit-dmg]` 证明 personal crit damage reader seam 仍排除 received crit damage bonus。 |
+
+- `test_migrated_reader_seam_regression_sample_scope_is_representative()` 锁定上述样本文件均来自 root workspace，且不来自 `.codex_worktrees/`。
+- P2-A through P2-G 保持已完成 guarded buckets；本节只增加 formula parity suite 回归样本，不重开生产迁移、不删除 `Calculator.py` / `MultiplierData` / `DynamicStatement`，也不替换 runtime write、listener broadcast 或 scheduled publish 边界。
+
 ## 后续非目标
 
 - 不在 US-002 替换生产公式、移动计算公式、重写异常结算或删除旧 helper。
