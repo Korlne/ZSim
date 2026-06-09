@@ -4,7 +4,7 @@ import inspect
 import sys
 from dataclasses import dataclass
 from types import SimpleNamespace
-from typing import Any, Sequence, cast
+from typing import Any, Sequence, SupportsIndex, cast
 
 import pytest
 import zsim.define as define_module
@@ -12,7 +12,12 @@ import zsim.define as define_module
 sys.modules.setdefault("define", define_module)
 
 import zsim.sim_progress.Buff.BuffXLogic.MiyabiCoreSkill_IceFire as miyabi_module
+import zsim.sim_progress.Buff.BuffXLogic.CannonRotor as cannon_module
+import zsim.sim_progress.ScheduledEvent as scheduled_event_module
+import zsim.sim_progress.ScheduledEvent.buff_runtime as buff_runtime_module
 import zsim.sim_progress.ScheduledEvent.Calculator as calculator_module
+import zsim.sim_progress.ScheduledEvent.runtime_command as runtime_command_module
+import zsim.sim_progress.data_struct.schedule_dispatch as schedule_dispatch_module
 
 from zsim.sim_progress.Buff import Buff as BuffClass, JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.CannonRotor import CannonRotor
@@ -42,6 +47,12 @@ _AggregationCall = tuple[tuple[object, ...], object | None, object, str | None]
 class _FailFastEventList(list[object]):
     def append(self, item: object) -> None:
         raise AssertionError("full crit reader tests should not append raw events")
+
+    def extend(self, items: object) -> None:
+        raise AssertionError("full crit reader tests should not extend raw events")
+
+    def insert(self, index: SupportsIndex, item: object) -> None:
+        raise AssertionError("full crit reader tests should not insert raw events")
 
 
 class _FailFastDispatchPort:
@@ -231,6 +242,69 @@ def _patch_buff_aggregation(
     return aggregation_calls
 
 
+def _install_rng_service_boundary_guards(
+    monkeypatch: pytest.MonkeyPatch,
+    sim_instance: SimpleNamespace,
+) -> None:
+    def fail_change_process_state(*args: object, **kwargs: object) -> None:
+        raise AssertionError("RNG service read should not change process state")
+
+    def fail_broadcast_event(*args: object, **kwargs: object) -> None:
+        raise AssertionError("RNG service read should not broadcast listener events")
+
+    def fail_create_runtime_command_port(*args: object, **kwargs: object) -> None:
+        raise AssertionError("RNG service read should not create RuntimeCommandPort")
+
+    def fail_create_legacy_buff_runtime_facade(*args: object, **kwargs: object) -> None:
+        raise AssertionError("RNG service read should not create LegacyBuffRuntimeFacade")
+
+    def fail_create_buff_runtime_read_port(*args: object, **kwargs: object) -> None:
+        raise AssertionError("RNG service read should not create BuffRuntimeReadPort")
+
+    def fail_create_schedule_dispatch_port(*args: object, **kwargs: object) -> None:
+        raise AssertionError("RNG service read should not create ScheduleDispatchPort")
+
+    sim_instance.schedule_data.event_list = _FailFastEventList()
+    sim_instance.schedule_data.change_process_state = fail_change_process_state
+    sim_instance.listener_manager = SimpleNamespace(broadcast_event=fail_broadcast_event)
+
+    monkeypatch.setattr(
+        runtime_command_module,
+        "create_runtime_command_port",
+        fail_create_runtime_command_port,
+    )
+    monkeypatch.setattr(
+        scheduled_event_module,
+        "create_runtime_command_port",
+        fail_create_runtime_command_port,
+    )
+    monkeypatch.setattr(
+        buff_runtime_module,
+        "create_legacy_buff_runtime_facade",
+        fail_create_legacy_buff_runtime_facade,
+    )
+    monkeypatch.setattr(
+        buff_runtime_module,
+        "create_buff_runtime_read_port",
+        fail_create_buff_runtime_read_port,
+    )
+    monkeypatch.setattr(
+        scheduled_event_module,
+        "create_buff_runtime_read_port",
+        fail_create_buff_runtime_read_port,
+    )
+    monkeypatch.setattr(
+        schedule_dispatch_module,
+        "create_schedule_dispatch_port",
+        fail_create_schedule_dispatch_port,
+    )
+    monkeypatch.setattr(
+        cannon_module,
+        "create_schedule_dispatch_port",
+        fail_create_schedule_dispatch_port,
+    )
+
+
 def _full_crit_reader_personal_and_legacy_values(
     fixture: _FullCritFixture,
 ) -> tuple[float, float, float]:
@@ -362,6 +436,7 @@ def test_cannon_rotor_full_crit_gate_includes_received_bonus_without_publish(
     aggregation_calls.clear()
     rng = _FakeRng([rng_value])
     fixture.sim_instance.rng_instance = rng
+    _install_rng_service_boundary_guards(monkeypatch, fixture.sim_instance)
 
     def fail_simple_start(*args: object, **kwargs: object) -> None:
         raise AssertionError("CannonRotor judge should not start buff state")
@@ -694,6 +769,7 @@ def test_woodpecker_full_crit_gate_pins_rng_and_trigger_level(
     aggregation_calls.clear()
     rng = _FakeRng([rng_value])
     fixture.sim_instance.rng_instance = rng
+    _install_rng_service_boundary_guards(monkeypatch, fixture.sim_instance)
 
     def fail_simple_start(*args: object, **kwargs: object) -> None:
         raise AssertionError("Woodpecker full crit gate should not start buff state")
@@ -759,6 +835,7 @@ def test_woodpecker_ca_full_crit_gate_reads_before_rng(
         raise AssertionError("Woodpecker CA full crit gate should not start state")
 
     fixture.sim_instance.rng_instance = SimpleNamespace(random_float=random_float)
+    _install_rng_service_boundary_guards(monkeypatch, fixture.sim_instance)
     buff_instance = SimpleNamespace(
         ft=SimpleNamespace(index="woodpecker-electro"),
         sim_instance=fixture.sim_instance,
@@ -951,3 +1028,30 @@ def test_woodpecker_ca_full_crit_gate_uses_reader_seam_source() -> None:
     assert "cal_crit_rate" not in module_source
     assert "create_anomaly_attribute_read_context" in method_source
     assert "read_full_crit_rate" in method_source
+
+
+@pytest.mark.parametrize(
+    "logic_type",
+    [
+        pytest.param(CannonRotor, id="CannonRotor"),
+        pytest.param(WoodpeckerElectroSet4_NA, id="WoodpeckerElectroSet4_NA"),
+        pytest.param(WoodpeckerElectroSet4_E_EX, id="WoodpeckerElectroSet4_E_EX"),
+        pytest.param(WoodpeckerElectroSet4_CA, id="WoodpeckerElectroSet4_CA"),
+    ],
+)
+def test_rng_service_full_crit_gate_source_stays_read_only(
+    logic_type: type[Any],
+) -> None:
+    source = inspect.getsource(logic_type.special_judge_logic)
+
+    assert "create_schedule_dispatch_port" not in source
+    assert "publish_scheduled" not in source
+    assert "event_list" not in source
+    assert "broadcast_event" not in source
+    assert "change_process_state" not in source
+    assert "RuntimeCommandPort" not in source
+    assert "create_runtime_command_port" not in source
+    assert "LegacyBuffRuntimeFacade" not in source
+    assert "create_legacy_buff_runtime_facade" not in source
+    assert "BuffRuntimeReadPort" not in source
+    assert "create_buff_runtime_read_port" not in source

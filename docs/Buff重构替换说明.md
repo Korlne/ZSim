@@ -2339,3 +2339,18 @@
 - Next step:
   - Continue with US-008 by adding RNG-service representative coverage without broadening into listener helper extraction, scheduled publish migration, formula replacement, or same-tick runtime write changes.
 ---
+## 2026-06-09 17:35 +08:00 - US-008
+- Files changed: `tests/simulator/test_full_crit_event_adjacent_reader.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_full_crit_event_adjacent_reader.py` now replaces manual RNG-service boundary review for `CannonRotor.special_judge_logic()` and the Woodpecker full-crit RNG gates with deterministic fake RNG assertions plus fail-fast runtime / queue / listener guards.
+  - This story adds branch and boundary evidence only; it does not replace live production behavior or extract a new helper.
+- Compatibility retained:
+  - `CannonRotor.py`, `WoodpeckerElectroSet4_NA.py`, `WoodpeckerElectroSet4_E_EX.py`, `WoodpeckerElectroSet4_CA.py`, and `RoaringRideBuffTrigger.py` source remain unchanged.
+  - Cannon Rotor and Woodpecker RNG threshold semantics, full-crit received-bonus semantics, reader-before-RNG order, and no-publish judge behavior remain unchanged.
+  - Roaring Ride remains the existing P2-F forced Buff write path through `buff_add_strategy(...)` / `LegacyBuffRuntimeFacade`; this story does not broaden that write boundary.
+  - Cannon Rotor `special_hit_logic()` remains the existing P2-D scheduled-publish path through `ScheduleDispatchPort`; this story does not migrate or retest its publish ordering beyond retained guard evidence.
+  - `RuntimeCommandPort`, listener broadcast, report-state mutation, raw `event_list` mutation, old-container deletion boundaries, Calculator / CalAnomaly formulas, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; this story found no new Buff coupling beyond the already documented P2-G direct simulator context candidates.
+- Next step:
+  - Continue with US-009 by adding report-state representative coverage without broadening into RNG helper extraction, listener migration, scheduled publish migration, formula replacement, or same-tick runtime write changes.
+---
