@@ -2116,3 +2116,17 @@
 - Next step:
   - Continue with US-004 by adding Hugo Totalize caller coverage without broadening into Roaring Ride, Seed, listener, or Character manager caller families.
 ---
+## 2026-06-09 12:15 +08:00 - US-004
+- Files changed: `tests/simulator/test_hugo_totalize_dispatch.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_hugo_totalize_dispatch.py` now replaces manual Hugo Totalize caller review with focused tests for `buff_add_strategy(...)` call order, exact arguments, branch/no-op gating, and scheduled publish ordering.
+  - The focused tests now guard Hugo forced-write branches against raw pending queue writes, listener broadcast, `RuntimeCommandPort` creation, and `BuffRuntimeReadPort` write APIs.
+  - This story locks existing behavior with tests only; it does not replace live production behavior.
+- Compatibility retained:
+  - Hugo formulas, totalize ratios, thresholds, scheduled payload fields, `LoadingMission.mission_start(...)` before dispatch publish, and optional stun termination publish timing remain unchanged.
+  - `buff_add_strategy(...)` / `LegacyBuffRuntimeFacade` remains the forced same-tick Buff / Debuff write boundary.
+  - `LOADING_BUFF_DICT` pending queues, listener broadcast, `RuntimeCommandPort`, `BuffRuntimeReadPort` read-only semantics, old containers, Calculator / CalAnomaly formulas, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; root-workspace evidence matched already documented P2-F Hugo caller coupling.
+- Next step:
+  - Continue with US-005 by adding Roaring Ride caller coverage without broadening into Seed, listener, or Character manager caller families.
+---

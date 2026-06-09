@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Iterable
 from types import SimpleNamespace
-from typing import Any, Callable
+from typing import Any, Callable, SupportsIndex
 
 import pytest
 import zsim.define as define_module
+import zsim.sim_progress.ScheduledEvent as scheduled_event_module
+import zsim.sim_progress.ScheduledEvent.buff_runtime as buff_runtime_module
+import zsim.sim_progress.ScheduledEvent.runtime_command as runtime_command_module
 
 sys.modules.setdefault("define", define_module)
 
@@ -17,14 +21,26 @@ from zsim.sim_progress.Buff.BuffXLogic.HugoCorePassiveTotalizeTrigger import (
     HugoCorePassiveTotalizeTriggerRecord,
 )
 from zsim.sim_progress.Load import LoadingMission
+from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
 from zsim.sim_progress.data_struct import StunForcedTerminationEvent
 
 
-class _FailFastEventList(list):
-    def append(self, item):
+class _FailFastEventList(list[Any]):
+    def append(self, item: Any) -> None:
         raise AssertionError(
             "HugoCorePassiveTotalizeTrigger should publish planned events via dispatch port"
         )
+
+
+class _FailFastPendingQueue(list[Any]):
+    def append(self, item: Any) -> None:
+        raise AssertionError("Hugo totalize should not write raw pending Buff queues")
+
+    def extend(self, items: Iterable[Any]) -> None:
+        raise AssertionError("Hugo totalize should not write raw pending Buff queues")
+
+    def insert(self, index: SupportsIndex, item: Any) -> None:
+        raise AssertionError("Hugo totalize should not write raw pending Buff queues")
 
 
 class _RecordingDispatchPort:
@@ -53,15 +69,27 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def _build_hugo_harness(
     *,
-    active_signal: int,
+    active_signal: int | None,
     cinema: int,
     enemy_stun: bool,
     rest_tick: int = 360,
 ) -> SimpleNamespace:
     call_order: list[str] = []
+    listener_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+
+    def fail_listener_broadcast(*args: object, **kwargs: object) -> None:
+        listener_calls.append((args, kwargs))
+        raise AssertionError("Hugo totalize should not broadcast listener events")
+
     dispatch_port = _RecordingDispatchPort(call_order)
     schedule_data = SimpleNamespace(event_list=_FailFastEventList())
-    sim_instance = SimpleNamespace(tick=88, schedule_data=schedule_data)
+    pending_queue = _FailFastPendingQueue()
+    sim_instance = SimpleNamespace(
+        tick=88,
+        schedule_data=schedule_data,
+        load_data=SimpleNamespace(LOADING_BUFF_DICT={"雨果": pending_queue}),
+        listener_manager=SimpleNamespace(broadcast_event=fail_listener_broadcast),
+    )
     buff_instance = SimpleNamespace(
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="hugo-totalize"),
@@ -87,6 +115,39 @@ def _build_hugo_harness(
         logic=logic,
         record=record,
         publish_signal_states=publish_signal_states,
+        pending_queue=pending_queue,
+        listener_calls=listener_calls,
+    )
+
+
+def _patch_runtime_boundary_guards(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail_create_runtime_command_port(*args: object, **kwargs: object) -> None:
+        raise AssertionError("Hugo totalize should not create RuntimeCommandPort")
+
+    def fail_create_buff_runtime_read_port(*args: object, **kwargs: object) -> None:
+        raise AssertionError("Hugo totalize should not create BuffRuntimeReadPort")
+
+    monkeypatch.setattr(
+        runtime_command_module,
+        "create_runtime_command_port",
+        fail_create_runtime_command_port,
+    )
+    monkeypatch.setattr(
+        scheduled_event_module,
+        "create_runtime_command_port",
+        fail_create_runtime_command_port,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        buff_runtime_module,
+        "create_buff_runtime_read_port",
+        fail_create_buff_runtime_read_port,
+    )
+    monkeypatch.setattr(
+        scheduled_event_module,
+        "create_buff_runtime_read_port",
+        fail_create_buff_runtime_read_port,
+        raising=False,
     )
 
 
@@ -94,6 +155,8 @@ def _patch_hugo_dependencies(
     monkeypatch: pytest.MonkeyPatch,
     harness: SimpleNamespace,
 ) -> None:
+    _patch_runtime_boundary_guards(monkeypatch)
+
     def fake_check_record_module() -> None:
         harness.logic.record = harness.record
 
@@ -161,6 +224,39 @@ def _patch_hugo_dependencies(
     harness.spawned_skill = spawned_skill
 
 
+def _assert_buff_add_calls(
+    harness: SimpleNamespace,
+    expected: list[tuple[str, int | float | None]],
+) -> None:
+    assert [buff_index for buff_index, _ in harness.buff_add_calls] == [
+        buff_index for buff_index, _ in expected
+    ]
+    for (buff_index, kwargs), (expected_index, specified_count) in zip(
+        harness.buff_add_calls, expected, strict=True
+    ):
+        assert buff_index == expected_index
+        assert kwargs["sim_instance"] is harness.sim_instance
+        assert kwargs["benifit_list"] == ["雨果"]
+        assert ("specified_count" in kwargs) is (specified_count is not None)
+        if specified_count is not None:
+            assert kwargs["specified_count"] == specified_count
+        assert set(kwargs) <= {"benifit_list", "sim_instance", "specified_count"}
+
+
+def _assert_no_raw_runtime_side_effects(harness: SimpleNamespace) -> None:
+    assert harness.schedule_data.event_list == []
+    assert harness.pending_queue == []
+    assert harness.listener_calls == []
+    write_method_names = {
+        "append_active_buff",
+        "remove_active_buff",
+        "sync_enemy_debuff_mirror",
+        "replace_buff",
+        "write_buff",
+    }
+    assert write_method_names.isdisjoint(BuffRuntimeReadPort.__dict__)
+
+
 def test_hugo_totalize_node_publishes_via_dispatch_port_before_any_raw_queue_access(
     monkeypatch: pytest.MonkeyPatch,
 ):
@@ -177,18 +273,15 @@ def test_hugo_totalize_node_publishes_via_dispatch_port_before_any_raw_queue_acc
         "mission_start",
         "publish",
     ]
-    assert [buff_index for buff_index, _ in harness.buff_add_calls] == [
-        harness.record.totalize_buff_index,
-        harness.record.cinema_1_buff_index,
-        harness.record.cinema_2_buff_index,
-        harness.record.cinema_6_buff_index,
-    ]
-    assert harness.buff_add_calls[0][1]["specified_count"] == 2500.0
-    for _, kwargs in harness.buff_add_calls:
-        assert kwargs["sim_instance"] is harness.sim_instance
-        assert isinstance(kwargs["benifit_list"], list)
-        assert len(kwargs["benifit_list"]) == 1
-        assert isinstance(kwargs["benifit_list"][0], str)
+    _assert_buff_add_calls(
+        harness,
+        [
+            (harness.record.totalize_buff_index, 2500.0),
+            (harness.record.cinema_1_buff_index, None),
+            (harness.record.cinema_2_buff_index, None),
+            (harness.record.cinema_6_buff_index, None),
+        ],
+    )
     assert len(harness.dispatch_port.events) == 1
     published_node = harness.dispatch_port.events[0]
     assert published_node is harness.spawned_skill
@@ -199,7 +292,7 @@ def test_hugo_totalize_node_publishes_via_dispatch_port_before_any_raw_queue_acc
     assert published_node.loading_mission.mission_start_tick == 88
     assert published_node.loading_mission.mission_dict[88.0] == "start"
     assert harness.publish_signal_states == [2]
-    assert harness.schedule_data.event_list == []
+    _assert_no_raw_runtime_side_effects(harness)
     assert harness.record.active_signal is None
 
 
@@ -218,10 +311,13 @@ def test_hugo_stun_event_publishes_via_dispatch_port_when_branch_conditions_matc
         "publish",
         "publish",
     ]
-    assert [buff_index for buff_index, _ in harness.buff_add_calls] == [
-        harness.record.totalize_buff_index,
-        harness.record.cinema_1_buff_index,
-    ]
+    _assert_buff_add_calls(
+        harness,
+        [
+            (harness.record.totalize_buff_index, 2500.0),
+            (harness.record.cinema_1_buff_index, None),
+        ],
+    )
     assert len(harness.dispatch_port.events) == 2
     assert harness.dispatch_port.events[0] is harness.spawned_skill
     published_stun_event = harness.dispatch_port.events[1]
@@ -230,7 +326,7 @@ def test_hugo_stun_event_publishes_via_dispatch_port_when_branch_conditions_matc
     assert published_stun_event.feed_back_ratio == 0.25
     assert published_stun_event.execute_tick == 88
     assert harness.publish_signal_states == [2, 2]
-    assert harness.schedule_data.event_list == []
+    _assert_no_raw_runtime_side_effects(harness)
     assert harness.record.active_signal is None
 
 
@@ -249,15 +345,18 @@ def test_hugo_cinema_two_ultimate_keeps_stun_event_skipped_after_gateway_migrati
         "mission_start",
         "publish",
     ]
-    assert [buff_index for buff_index, _ in harness.buff_add_calls] == [
-        harness.record.totalize_buff_index,
-        harness.record.cinema_1_buff_index,
-        harness.record.cinema_2_buff_index,
-    ]
+    _assert_buff_add_calls(
+        harness,
+        [
+            (harness.record.totalize_buff_index, 2500.0),
+            (harness.record.cinema_1_buff_index, None),
+            (harness.record.cinema_2_buff_index, None),
+        ],
+    )
     assert len(harness.dispatch_port.events) == 1
     assert harness.dispatch_port.events[0] is harness.spawned_skill
     assert harness.publish_signal_states == [6]
-    assert harness.schedule_data.event_list == []
+    _assert_no_raw_runtime_side_effects(harness)
     assert harness.record.active_signal is None
 
 
@@ -270,12 +369,27 @@ def test_hugo_active_signal_zero_resets_without_scheduled_publish(
     harness.logic.special_hit_logic()
 
     assert harness.call_order == [harness.record.abyss_reverb_buff_index]
-    assert [buff_index for buff_index, _ in harness.buff_add_calls] == [
-        harness.record.abyss_reverb_buff_index,
-    ]
-    assert harness.buff_add_calls[0][1]["sim_instance"] is harness.sim_instance
-    assert harness.buff_add_calls[0][1]["benifit_list"] == ["雨果"]
+    _assert_buff_add_calls(
+        harness,
+        [(harness.record.abyss_reverb_buff_index, None)],
+    )
     assert harness.dispatch_port.events == []
     assert harness.publish_signal_states == []
-    assert harness.schedule_data.event_list == []
+    _assert_no_raw_runtime_side_effects(harness)
+    assert harness.record.active_signal is None
+
+
+def test_hugo_judge_without_skill_node_does_not_force_buff_add(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    harness = _build_hugo_harness(active_signal=None, cinema=6, enemy_stun=True)
+    _patch_hugo_dependencies(monkeypatch, harness)
+
+    assert harness.logic.special_judge_logic() is False
+
+    assert harness.call_order == []
+    assert harness.buff_add_calls == []
+    assert harness.dispatch_port.events == []
+    assert harness.publish_signal_states == []
+    _assert_no_raw_runtime_side_effects(harness)
     assert harness.record.active_signal is None
