@@ -2259,3 +2259,16 @@
 - Next step:
   - Continue with US-002 by adding Yuzuha Hard Candy tick / preload branch coverage without broadening into RNG, listener, scheduled publish, runtime write, or formula replacement work.
 ---
+## 2026-06-09 15:28 +08:00 - US-002
+- Files changed: `tests/simulator/test_yuzuha_direct_context_helpers.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_yuzuha_direct_context_helpers.py` now replaces manual `YuzuhaHardCandyShotTrigger` tick / preload branch review with focused coverage for the allowed local action path, preload-occupied no-op, cooldown no-op, resource read, `simple_start(...)` tick forwarding, and `spawn_hard_candy_shot(...)` signal forwarding.
+  - This story adds branch and boundary evidence only; it does not replace live production behavior or extract a new helper.
+- Compatibility retained:
+  - `YuzuhaHardCandyShotTrigger.py` source, `sim_instance.tick`, `preload.preload_data.char_occupied_check(...)`, Yuzuha resource reads, cooldown math, `simple_start(...)`, and local Character action invocation remain unchanged.
+  - `Character/Yuzuha.spawn_hard_candy_shot(...)` and `schedule_preload_event_factory(...)` remain separate scheduled-preload publish behavior and are not migrated by this story.
+  - `ScheduleDispatchPort`, synchronous listener broadcast, `RuntimeCommandPort`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort` read-only semantics, raw pending queues, old containers, Calculator / CalAnomaly formulas, and legacy `buff_add()` / `KickOutBuff()` deletion all remain unchanged.
+  - No new old-coupling review update was needed; this story found no new Buff coupling beyond the already documented P2-G direct simulator context candidate.
+- Next step:
+  - Continue with US-003 by adding Yuzuha Cinema4 quick-assist next-character coverage without broadening into RNG, listener, runtime write, scheduled publish migration, or formula replacement work.
+---
