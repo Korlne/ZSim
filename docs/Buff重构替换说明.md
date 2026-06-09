@@ -2573,3 +2573,14 @@
 - Next step:
   - Generate the next PRD for phase-3 formula parity suite design / characterization under `docs/Buff重构方案.md`; production formula replacement remains No-Go until the parity suite, validation targets, behavior-sample conditions, rollback plan, and non-goals are explicit.
 ---
+## 2026-06-09 23:36 +08:00 - US-001
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The US-001 scope reconfirmation replaces any ambiguity at the start of the new phase-3 PRD with an explicit No-Go for production formula replacement in this story.
+  - This story adds scope and validation evidence only; it does not replace a live production path, formula helper, copied-output formula, dispatch adapter, runtime port, guardrail, validation profile, or behavior sample.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, copied anomaly / disorder output paths, P2-A through P2-G guarded-maintenance buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and existing `calculator-reads` / `implicit-events` validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this reconfirmation found no new Buff coupling beyond already documented retained formula snapshot, copied-output, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-002 by building the formula candidate and focused-test target inventory from root-workspace evidence while keeping production formula replacement No-Go.
+---
