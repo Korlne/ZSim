@@ -1069,3 +1069,15 @@ No new validation profile is wired in this story. If a later PRD introduces a `f
 | `BuffAttributeReader` seam separation | 本 story 复用现有 reader test module，但 characterization 直接锁定 legacy `MultiplierData` snapshot，不新增 reader 方法。 | `CalculatorBuffAttributeReader` 继续只是当前 helper parity seam；reader seam evidence 不能单独证明 `MultiplierData` / `DynamicStatement` 可删除。 |
 
 US-006 结论：当前证据把 active Buff view、enemy debuff view 与 translated dynamic fields 纳入 `calculator-reads` focused coverage；phase-3 formula replacement 仍需后续 story 继续补齐 Calculator attribute formula boundaries、CalAnomaly snapshot boundaries、copied-output reads 与 go / no-go decision。
+
+### 2026-06-09 US-007 Calculator Attribute Formula Boundary Characterization
+
+本节只记录 `Calculator.py` attribute formula boundary 的 focused characterization，不改 `Calculator.py` 公式、不移动 `MultiplierData` / `DynamicStatement` 职责，也不把 P2-A / P2-B reader helper parity 解释为公式可删除证据。
+
+| formula family | characterization evidence | retained compatibility / non-goal |
+| --- | --- | --- |
+| AM / AP / impact | `tests/simulator/test_buff_attribute_reader.py::test_calculator_attribute_formula_boundaries_remain_retained_compatibility` 直接调用 `Calculator.AnomalyMul.cal_am(...)`、`cal_ap(...)`、`Calculator.StunMul.cal_imp(...)`，并与 `CalculatorBuffAttributeReader` 读口保持同一组 snapshot 输入的数值等价。 | `Calculator.py` formula internals、`MultiplierData` cache、static / dynamic statement fields 与 reader seam 全部保留；本 story 不抽新 helper、不替换公式。 |
+| full crit rate | 同一 focused test 锁定 `Calculator.RegularMul.cal_crit_rate(...) = static crit + dynamic crit + field crit + crit_rate_received_increase`。 | Full crit rate 继续包含 received crit；event-adjacent P2-B 证据仍只是兼容 / guardrail 证据，不代表可删除 full crit formula。 |
+| personal crit rate / damage | 同一 focused test 锁定 `cal_personal_crit_rate(...)` 与 `cal_personal_crit_dmg(...)` 不计入 received crit / received crit damage 字段，同时保留动态 snapshot 中的 received 字段可见性。 | Personal crit reader parity 继续排除 received fields；后续 phase-3 必须先补齐 formula parity suite 与 go / no-go decision，不能从 P2-A / P2-B migrated-file guardrail 直接推导公式删除。 |
+
+US-007 结论：`calculator-reads` 现在覆盖 `MultiplierData` / `DynamicStatement` fan-in 与六个 Calculator attribute formula helper 的 focused boundary characterization；它仍不是完整 Calculator / CalAnomaly formula replacement gate。

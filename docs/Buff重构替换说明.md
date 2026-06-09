@@ -2480,3 +2480,16 @@
 - Next step:
   - Continue with US-007 by characterizing Calculator attribute formula boundaries while keeping reader seam evidence separate from full formula replacement.
 ---
+## 2026-06-09 20:04 +08:00 - US-007
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_calculator_attribute_formula_boundaries_remain_retained_compatibility` prepares to replace manual review of Calculator attribute formula boundaries with focused coverage for `cal_am(...)`, `cal_ap(...)`, `cal_imp(...)`, `cal_crit_rate(...)`, `cal_personal_crit_rate(...)`, and `cal_personal_crit_dmg(...)`.
+  - This story characterizes retained formula behavior only; it does not replace a live production path, Calculator formula, CalAnomaly formula, or validation profile.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `Calculator.AnomalyMul`, `Calculator.StunMul`, `Calculator.RegularMul`, `MultiplierData`, `DynamicStatement`, and current `CalculatorBuffAttributeReader` helper seams all remain unchanged.
+  - Full crit rate still includes received crit; personal crit rate and personal crit damage still exclude received crit fields.
+  - P2-A / P2-B reader helper tests remain compatibility evidence and migrated-file guardrails only; they are not treated as proof that Calculator formulas can be deleted.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot boundaries.
+- Next step:
+  - Continue with US-008 by characterizing CalAnomaly and AnomalyBar snapshot boundaries before any phase-3 formula replacement or validation-profile wiring.
+---

@@ -660,6 +660,83 @@ def test_p2b_personal_crit_damage_excludes_received_crit_damage_bonus(
     _assert_aggregation_calls(aggregation_calls, fixture, times=2)
 
 
+def test_calculator_attribute_formula_boundaries_remain_retained_compatibility(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    MultiplierData.mul_data_cache.clear()
+    fixture = _make_attribute_read_fixture(
+        name="公式边界测试",
+        am=100.0,
+        ap=300.0,
+        imp=80.0,
+        crit_rate=0.2,
+        crit_damage=0.5,
+        char_buff_count=1,
+        enemy_debuff_count=1,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        {
+            "局内异常掌控": 0.2,
+            "固定异常掌控": 15.0,
+            "局内异常精通": 0.25,
+            "固定异常精通": 40.0,
+            "局内冲击力%": 0.1,
+            "固定冲击力": 9.0,
+            "固定暴击率": 0.1,
+            "局内暴击率": 0.05,
+            "被暴击几率增加": 0.25,
+            "固定暴击伤害": 0.3,
+            "局内暴击伤害": 0.2,
+            "受暴击伤害增加": 0.4,
+        },
+    )
+
+    retained_data = _legacy_multiplier_data(fixture)
+    formula_boundaries = {
+        "cal_am": Calculator.AnomalyMul.cal_am(retained_data),
+        "cal_ap": Calculator.AnomalyMul.cal_ap(retained_data),
+        "cal_imp": Calculator.StunMul.cal_imp(retained_data),
+        "cal_crit_rate": Calculator.RegularMul.cal_crit_rate(retained_data),
+        "cal_personal_crit_rate": Calculator.RegularMul.cal_personal_crit_rate(
+            retained_data
+        ),
+        "cal_personal_crit_dmg": Calculator.RegularMul.cal_personal_crit_dmg(
+            retained_data
+        ),
+    }
+    expected_boundaries = {
+        "cal_am": 135.0,
+        "cal_ap": 415.0,
+        "cal_imp": 97.0,
+        "cal_crit_rate": 0.6,
+        "cal_personal_crit_rate": 0.35,
+        "cal_personal_crit_dmg": 1.0,
+    }
+
+    reader = CalculatorBuffAttributeReader()
+    reader_values = {
+        "cal_am": reader.read_anomaly_mastery(fixture.context),
+        "cal_ap": reader.read_anomaly_proficiency(fixture.context),
+        "cal_imp": reader.read_impact(fixture.context),
+        "cal_crit_rate": reader.read_full_crit_rate(fixture.context),
+        "cal_personal_crit_rate": reader.read_personal_crit_rate(fixture.context),
+        "cal_personal_crit_dmg": reader.read_personal_crit_damage(fixture.context),
+    }
+
+    assert formula_boundaries == pytest.approx(expected_boundaries)
+    # P2-A/P2-B reader parity 只是兼容性证据，不能作为删除 Calculator 公式的依据。
+    assert reader_values == pytest.approx(formula_boundaries)
+    assert (
+        formula_boundaries["cal_crit_rate"]
+        - formula_boundaries["cal_personal_crit_rate"]
+    ) == pytest.approx(0.25)
+    assert cast(Any, retained_data).dynamic.received_crit_dmg_bonus == pytest.approx(
+        0.4
+    )
+    _assert_aggregation_calls(aggregation_calls, fixture, times=7)
+
+
 @pytest.mark.parametrize(
     ("static_am", "field_am", "flat_am", "expected_gate"),
     [
