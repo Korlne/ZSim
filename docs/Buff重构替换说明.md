@@ -2733,3 +2733,14 @@
 - Next step:
   - Continue with US-015 by updating handoff docs and the next candidate pool while keeping production formula replacement blocked until the formula parity suite, registered-sample triggers, rollback plan, and non-goals remain explicit.
 ---
+## 2026-06-10 02:10 +08:00 - US-015
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The updated handoff docs replace provisional post-US-014 planning text with an explicit US-016 final serial validation / Go-No-Go default and a preserved next candidate pool.
+  - This story prepares later replacement decisions only; it does not replace a live production path, Calculator formula, CalAnomaly formula, copied-output formula, dispatch adapter, runtime port, validation profile, guardrail, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, copied anomaly / disorder output paths, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring remain unchanged.
+  - No old-coupling review update was needed; this documentation-only handoff found no new Buff coupling beyond already documented retained formula snapshot, copied-output, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-016 by running serial validation and writing the final formula replacement Go / No-Go handoff; production formula replacement remains blocked until that story names exact evidence and remaining blockers.
+---

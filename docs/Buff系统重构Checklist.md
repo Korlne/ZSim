@@ -248,5 +248,7 @@
 - [x] 阶段 2 closure / phase-3 formula snapshot readiness decision 已完成：P2-A through P2-G 没有剩余默认实现候选，phase-3 production formula replacement 当前 No-Go。
 - [x] 下一轮默认 PRD 应沿 [Buff重构方案.md](./Buff重构方案.md) 从阶段 2 guarded-maintenance 状态转入 phase-3 formula parity suite design / characterization：先命名 candidate files、focused pytest targets、scoped mypy targets、behavior-sample 条件、rollback plan、validation entrypoints 和 non-goals，再评估是否允许 production formula replacement。
 - [x] US-014 closure / readiness PRD 最终串行验证已通过：changed focused pytest `tests/simulator/test_buff_attribute_reader.py -q` 为 `38 passed`；`calculator-reads` profile 为 base `2 passed`、isolated teams `3 passed`、focused `138 passed`、mypy `22 source files` clean；`implicit-events` profile 为 base `2 passed`、isolated teams `3 passed`、focused `238 passed`、mypy `88 source files` clean。
+- [x] US-015 handoff docs 已同步：phase-3 characterization / validation-readiness 证据、`formula-parity` scoped profile、`calculator-reads` retained gate、下一候选池和 production formula replacement No-Go 边界均已回写到 checklist、下阶段计划、阶段 2/3 矩阵与替换说明。
+- [ ] 当前 PRD 剩余默认 story 是 US-016 final serial validation / Go-No-Go handoff；完成前不得把下一轮 PRD 改成 production formula replacement。
 - [x] 同阶段候选池继续保留 P2-A through P2-G guarded maintenance、phase-3 formula parity design、retained compatibility 与 blocker-only phase-1 reopen rules，避免 PRD 生成器只沿上一个文件继续。
 - [x] 若后续 validation 或 guardrail 重新暴露阶段 1 blocker，下一轮 PRD 只处理 blocker package 中列出的具体文件、符号、失败测试、失败 guardrail 或验证命令；不得重开已删除的 `event_list` surface 或已闭合的 producer batch，除非 guardrail 给出新的生产证据。

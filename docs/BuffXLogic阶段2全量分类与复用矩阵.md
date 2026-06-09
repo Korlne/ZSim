@@ -1215,3 +1215,33 @@ US-013 conclusion：the next default PRD should be formula parity suite design /
 - Default lifecycle validation was skipped because this story did not change lifecycle/runtime write paths, validation wiring, or the default validation profile.
 - Main-loop consistency sample was skipped because this story did not change production formula behavior or live registered-team semantics.
 - The next default PRD remains phase-3 formula parity suite design / characterization under `docs/Buff重构方案.md`; production formula replacement remains No-Go until candidate files, focused pytest targets, scoped mypy targets, behavior-sample conditions, rollback plan, validation entrypoints, and non-goals are named.
+
+### 2026-06-10 US-015 Handoff Docs And Next Candidate Pool Refresh
+
+本节只同步 handoff docs、phase-3 readiness 状态和下一候选池；不改 `BuffXLogic`、`Calculator.py`、`CalAnomaly.py`、dispatch adapter、runtime port、guardrail、validation profile、focused tests 或 live formula / event / runtime behavior。`formula-parity` 仍是 characterization profile，不是 production formula replacement approval。
+
+#### Source / navigation evidence
+
+- `rg` preflight used `US-014|US-015|formula-parity|calculator-reads|候选|下阶段|替换|同阶段|下一阶段|阶段3|完成|未替换|矩阵` across docs, Ralph artifacts, progress, and the validation runner; doc inventory used `rg --files docs | rg "Buff|公式|候选|替换|耦合|清单|重构|计划"`.
+- CodeGraph query terms used the active-story seed for US-015 handoff docs plus `scripts/run_buff_refactor_validation.py`, `TYPECHECK_PROFILES`, `FOCUSED_PYTEST_PROFILES`, `FOCUSED_MYPY_PROFILES`, `FORMULA_PARITY`, `formula-parity`, `calculator-reads`, and the current formula characterization files.
+- CodeGraph confirmed root validation wiring currently exposes `formula-parity`, `calculator-reads`, `implicit-events`, and `lifecycle`; this story does not modify that wiring.
+
+#### Handoff document updates
+
+| document | US-015 update | retained boundary |
+| --- | --- | --- |
+| `docs/Buff系统重构Checklist.md` | Records US-015 handoff completion and names US-016 final serial validation / Go-No-Go as the remaining default story. | Production formula replacement stays No-Go until US-016 closes. |
+| `docs/Buff重构下阶段计划草稿.md` | Refreshes the concrete default, `formula-parity` / `calculator-reads` validation roles, and Phase-3 candidate block while preserving P2-A through P2-G guarded-maintenance blocks. | Candidate pool remains broad; PRD generation must not collapse to a single safe callsite. |
+| `docs/BuffXLogic阶段2全量分类与复用矩阵.md` | Adds this US-015 searchable handoff section and next-pool table. | Matrix evidence remains characterization / readiness only. |
+| `docs/Buff重构替换说明.md` | Appends replacement note stating this iteration prepares future replacement decisions without replacing production formula paths. | Old formulas, containers, dispatch/runtime/listener layers and validation gates remain available. |
+
+#### Next candidate pool
+
+| priority | candidate block | candidate files / symbols | Ralph-sized work direction | validation entrypoints | non-goals |
+| --- | --- | --- | --- | --- | --- |
+| Current default | US-016 final serial validation / formula Go-No-Go handoff | `tests/simulator/test_buff_attribute_reader.py`, `scripts/run_buff_refactor_validation.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构下阶段计划草稿.md`, this matrix, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt` | Run serial focused validation, `calculator-reads`, and conditional `implicit-events` / default profile only if touched boundaries require them; write final Go / No-Go with exact remaining blockers. | Focused tests touched by this PRD; `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads`; conditional `implicit-events` / default profile by boundary. | Do not change production formula behavior or live registered-team semantics inside the validation handoff. |
+| Phase-3 replacement proposal only if US-016 says Go | `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, copied anomaly / disorder output paths, selected formula-oracle tests | If final handoff allows it, propose one bounded production replacement domain with explicit rollback, formula oracle, behavior sample condition, and retained gates. If US-016 remains No-Go, keep this as characterization / blocker list only. | `formula-parity`, `calculator-reads`, and any route-specific focused tests; registered main-loop sample only when live formula semantics change and a real registered route reaches it. | No broad formula rewrite, no old-container deletion, no `CalAnomaly` / copied-output replacement without focused parity and rollback. |
+| Same-phase guarded maintenance | P2-A through P2-G migrated files, exact-file guardrails, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, retained `buff_add()` / `KickOutBuff()` | Open only blocker-driven PRDs when focused tests, source guardrails, or validation names a concrete regression. | Existing P2 focused tests plus `calculator-reads`, `implicit-events`, or default profile depending on touched layer. | Do not manufacture implementation backlog from completed buckets, retained compatibility names, or `.codex_worktrees/` hits. |
+| Formula-adjacent characterization backlog | enemy anomaly-state read helpers, copied-output parity, anomaly snapshot field matrices, migrated reader-seam regression samples | Continue focused characterization only when the target has named files, oracle fields, expected payload / snapshot shape, and scoped validation. | `formula-parity` where covered; otherwise focused pytest plus `calculator-reads`; add `implicit-events` only for event/runtime layering. | Do not classify enemy-state gates as scheduled publishers, old-container deletion, `LegacyBuffRuntimeFacade` replacement, or production formula rewrite. |
+
+US-015 conclusion：handoff docs and the next candidate pool are now synchronized. The current default remains US-016 final serial validation / Go-No-Go; production formula replacement is still blocked until that story records a final decision with exact evidence.
