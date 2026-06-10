@@ -2899,3 +2899,14 @@
 - Next step:
   - Continue with US-013 by characterizing `CalAnomaly.set_final_multipliers(...)`, snapshot impact / stun ratio treatment, multiplication order, `cal_anomaly_dmg(...)`, and `scaling_factor` placement without changing production formulas.
 ---
+## 2026-06-10 12:14 +08:00 - US-013
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The `_CAL_ANOMALY_FINAL_MULTIPLIER_ORDER` contract and non-default `scaling_factor` values in `test_cal_anomaly_multiplier_inputs_remain_retained_mul_data_snapshot()` replace implicit confidence in `CalAnomaly.set_final_multipliers(...)` vector ordering, snapshot impact / stun ratio treatment, and `cal_anomaly_dmg(...)` scaling placement with executable retained formula evidence.
+  - This story adds characterization only; it does not replace a live production path, `CalAnomaly.py` formula semantics, `Calculator.py` formula semantics, copied-output formula, anomaly snapshot writer, dispatch adapter, runtime port, validation profile, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `CalAnomaly.py`, `Calculator.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `AnomalyBarClass.py`, `CopyAnomalyForOutput.py`, copied anomaly / disorder output paths, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-014 by characterizing `CalDisorder` base damage, extra multiplier, and stun formulas without widening into `CalPolarityDisorder`, `CalAbloom`, copied-output payloads, or production formula replacement.
+---

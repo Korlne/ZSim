@@ -133,6 +133,24 @@ class _CalAnomalyMultiplierOracleCase:
     expected_dynamic_fields: dict[str, float]
     expected_snapshot_fields: dict[str, float]
     expected_final_multipliers: tuple[float, ...]
+    scaling_factor: float = 1.25
+
+
+_CAL_ANOMALY_FINAL_MULTIPLIER_ORDER = (
+    "base_dmg",
+    "dmg_bonus",
+    "am_mul",
+    "k_level",
+    "anomaly_bonus",
+    "active_crit",
+    "def_mul",
+    "res_mul",
+    "vulnerability_mul",
+    "snapshot_impact",
+    "snapshot_stun_bonus",
+    "stun_vulnerability",
+    "special_mul",
+)
 
 
 def _reset_formula_oracle_caches() -> None:
@@ -1675,6 +1693,7 @@ _CAL_ANOMALY_MULTIPLIER_ORACLE_CASES = (
             1.70,
             1.07,
         ),
+        scaling_factor=1.75,
     ),
     _CalAnomalyMultiplierOracleCase(
         case_id="fire-res-vulnerability-keeps-active-crit-neutral",
@@ -1754,6 +1773,7 @@ _CAL_ANOMALY_MULTIPLIER_ORACLE_CASES = (
             1.04,
             1.0,
         ),
+        scaling_factor=0.60,
     ),
 )
 
@@ -3365,6 +3385,7 @@ def test_cal_anomaly_multiplier_inputs_remain_retained_mul_data_snapshot(
     fixture = _make_settled_anomaly_formula_fixture(
         element_type=case.element_type,
         snapshot=_make_anomaly_snapshot(case.snapshot_values),
+        scaling_factor=case.scaling_factor,
     )
     fixture.enemy.max_DEF = case.enemy_max_def
     for attr_name, value in case.enemy_damage_resistance_attrs.items():
@@ -3417,13 +3438,30 @@ def test_cal_anomaly_multiplier_inputs_remain_retained_mul_data_snapshot(
         calculator.final_multipliers,
         np.array(case.expected_final_multipliers, dtype=np.float64),
     )
+    assert len(calculator.final_multipliers) == len(_CAL_ANOMALY_FINAL_MULTIPLIER_ORDER)
+    final_multiplier_by_slot = {
+        label: calculator.final_multipliers[index]
+        for index, label in enumerate(_CAL_ANOMALY_FINAL_MULTIPLIER_ORDER)
+    }
+    expected_final_multiplier_by_slot = {
+        label: case.expected_final_multipliers[index]
+        for index, label in enumerate(_CAL_ANOMALY_FINAL_MULTIPLIER_ORDER)
+    }
+    assert final_multiplier_by_slot == pytest.approx(expected_final_multiplier_by_slot)
+    assert final_multiplier_by_slot["snapshot_impact"] == pytest.approx(
+        case.expected_snapshot_fields["snapshot_impact"]
+    )
+    assert final_multiplier_by_slot["snapshot_stun_bonus"] == pytest.approx(
+        case.expected_snapshot_fields["snapshot_stun_bonus"]
+    )
+    product_with_snapshot_impact_and_stun = np.prod(case.expected_final_multipliers)
+    unscaled_damage = product_with_snapshot_impact_and_stun / (
+        final_multiplier_by_slot["snapshot_impact"]
+        * final_multiplier_by_slot["snapshot_stun_bonus"]
+    )
+    assert fixture.anomaly_bar.scaling_factor == pytest.approx(case.scaling_factor)
     assert calculator.cal_anomaly_dmg() == pytest.approx(
-        np.prod(case.expected_final_multipliers)
-        / (
-            case.expected_snapshot_fields["snapshot_impact"]
-            * case.expected_snapshot_fields["snapshot_stun_bonus"]
-        )
-        * fixture.anomaly_bar.scaling_factor
+        unscaled_damage * case.scaling_factor
     )
 
 
