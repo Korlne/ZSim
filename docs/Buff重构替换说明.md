@@ -2852,3 +2852,16 @@
 - Next step:
   - Continue with US-009 by characterizing `StunMul` impact, stun ratio, resistance, bonus, and received formulas without widening into `AnomalyMul.cal_res_pen()`, anomaly vector snapshots, copied-output, or production formula replacement.
 ---
+## 2026-06-10 11:21 +08:00 - US-009
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The new `stun-impact-reader-parity` and `stun-ratio-res-bonus-received-retained` `_FORMULA_ORACLE_TABLE_CASES` entries replace implicit confidence in `Calculator.StunMul.cal_imp()` / `cal_stun_ratio()` / `cal_stun_res()` / `cal_stun_bonus()` / `cal_stun_received()` with executable retained-oracle coverage for impact, stun ratio, enemy stun resistance, trigger / label stun bonus, and received stun fields.
+  - The formula fixture now prepares to replace ad hoc stun snapshot setup with explicit `SkillNode.stun_ratio` and `enemy.stun_resistance_dict` inputs while keeping `read_impact(...)` as the only reader API parity path in this story.
+  - This story adds characterization only; it does not replace a live production path, Calculator formula semantics, CalAnomaly formula, copied-output formula, dispatch adapter, runtime port, validation profile, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py` retained formulas, `Calculator.StunMul`, `MultiplierData`, `DynamicStatement`, `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, `CalAnomaly.py`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, copied anomaly / disorder output paths, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - P2-B migrated impact reader seam samples remain guarded-maintenance evidence only; the new table cases are retained-oracle evidence and do not authorize deleting retained `Calculator.StunMul`, `MultiplierData`, or `DynamicStatement`.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-010 by characterizing `MultiplierData` translation cache and invalid key edges without widening into production formula replacement, copied-output, or runtime work.
+---

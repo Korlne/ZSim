@@ -170,6 +170,7 @@ def _make_enemy(
     max_def: float = 0.0,
     damage_resistance_attrs: dict[str, float] | None = None,
     anomaly_resistance_attrs: dict[int, float] | None = None,
+    stun_resistance_attrs: dict[int, float] | None = None,
 ) -> SimpleNamespace:
     resistance_values = {
         "PHY_damage_resistance": 0.0,
@@ -190,6 +191,9 @@ def _make_enemy(
         anomaly_resistance_dict=(
             {} if anomaly_resistance_attrs is None else dict(anomaly_resistance_attrs)
         ),
+        stun_resistance_dict=(
+            {} if stun_resistance_attrs is None else dict(stun_resistance_attrs)
+        ),
         **resistance_values,
     )
 
@@ -198,6 +202,7 @@ def _make_skill_node(
     *,
     char_name: str,
     damage_ratio: float,
+    stun_ratio: float = 0.0,
     hit_times: int,
     diff_multiplier: int,
     element_type: int = 0,
@@ -214,6 +219,7 @@ def _make_skill_node(
         ticks=max(hit_times + 1, 2),
         tick_list=[],
         damage_ratio=damage_ratio,
+        stun_ratio=stun_ratio,
         diff_multiplier=diff_multiplier,
         element_type=element_type,
         trigger_buff_level=trigger_buff_level,
@@ -236,6 +242,7 @@ def _make_attribute_read_fixture(
     crit_damage: float = 0.0,
     static_statement_attrs: dict[str, float] | None = None,
     damage_ratio: float | None = None,
+    stun_ratio: float = 0.0,
     hit_times: int = 1,
     diff_multiplier: int = 0,
     element_type: int = 0,
@@ -246,6 +253,7 @@ def _make_attribute_read_fixture(
     enemy_max_def: float = 0.0,
     enemy_damage_resistance_attrs: dict[str, float] | None = None,
     enemy_anomaly_resistance_attrs: dict[int, float] | None = None,
+    enemy_stun_resistance_attrs: dict[int, float] | None = None,
     char_buff_count: int = 1,
     enemy_debuff_count: int = 1,
     enemy_dot_count: int = 0,
@@ -271,12 +279,14 @@ def _make_attribute_read_fixture(
         max_def=enemy_max_def,
         damage_resistance_attrs=enemy_damage_resistance_attrs,
         anomaly_resistance_attrs=enemy_anomaly_resistance_attrs,
+        stun_resistance_attrs=enemy_stun_resistance_attrs,
     )
     active_buff_view = {char.NAME: list(char_buffs)}
     query_node = (
         _make_skill_node(
             char_name=char.NAME,
             damage_ratio=damage_ratio,
+            stun_ratio=stun_ratio,
             hit_times=hit_times,
             diff_multiplier=diff_multiplier,
             element_type=element_type,
@@ -1260,6 +1270,91 @@ _FORMULA_ORACLE_TABLE_CASES = (
                 label="cal_anomaly_crit",
                 expected_value=1.0,
                 retained_value=_anomaly_mul_crit,
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="stun-impact-reader-parity",
+        fixture_kwargs={
+            "name": "失衡乘区-冲击 reader",
+            "imp": 80.0,
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 1,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "field_imp_percentage": 0.25,
+            "imp": 5.0,
+        },
+        expected_dynamic_fields={
+            "field_imp_percentage": 0.25,
+            "imp": 5.0,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_imp",
+                expected_value=105.0,
+                retained_value=lambda data: Calculator.StunMul.cal_imp(data),
+                reader_value=lambda reader, context: reader.read_impact(context),
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="stun-ratio-res-bonus-received-retained",
+        fixture_kwargs={
+            "name": "失衡乘区-倍率抗性增幅受击",
+            "damage_ratio": 1.0,
+            "stun_ratio": 240.0,
+            "hit_times": 4,
+            "diff_multiplier": 0,
+            "element_type": 3,
+            "trigger_buff_level": 2,
+            "skill_labels": {"aftershock_attack": 1},
+            "enemy_stun_resistance_attrs": {3: 0.20},
+            "char_buff_count": 1,
+            "enemy_debuff_count": 1,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "stun_res": 0.15,
+            "ex_special_skill_stun_bonus": 0.25,
+            "stun_bonus": 0.10,
+            "aftershock_attack_stun_bonus": 0.05,
+            "received_stun_increase": 0.30,
+        },
+        expected_dynamic_fields={
+            "stun_res": 0.15,
+            "ex_special_skill_stun_bonus": 0.25,
+            "stun_bonus": 0.10,
+            "aftershock_attack_stun_bonus": 0.05,
+            "received_stun_increase": 0.30,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_stun_ratio",
+                expected_value=60.0,
+                retained_value=lambda data: Calculator.StunMul.cal_stun_ratio(data),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_stun_res",
+                expected_value=0.65,
+                retained_value=lambda data: Calculator.StunMul.cal_stun_res(
+                    data,
+                    cast(SkillNode, data.judge_node).element_type,
+                ),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_stun_bonus",
+                expected_value=1.40,
+                retained_value=lambda data: Calculator.StunMul.cal_stun_bonus(data),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_stun_received",
+                expected_value=1.30,
+                retained_value=lambda data: Calculator.StunMul.cal_stun_received(data),
             ),
         ),
     ),
