@@ -2910,3 +2910,14 @@
 - Next step:
   - Continue with US-014 by characterizing `CalDisorder` base damage, extra multiplier, and stun formulas without widening into `CalPolarityDisorder`, `CalAbloom`, copied-output payloads, or production formula replacement.
 ---
+## 2026-06-10 12:28 +08:00 - US-014
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `_CAL_DISORDER_ORACLE_CASES` and `test_cal_disorder_formula_inputs_remain_separate_from_copied_payload()` replace implicit confidence in `CalDisorder.cal_disorder_base_dmg(...)`, `cal_disorder_extra_mul(...)`, and `cal_disorder_stun(...)` with executable element-type retained formula evidence.
+  - This story adds characterization only; it does not replace a live production path, `CalAnomaly.py` / `CalDisorder` formula semantics, `Calculator.py` formula semantics, copied-output payload construction, handler report payloads, listener broadcast, dispatch adapter, runtime port, validation profile, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `CalAnomaly.py`, `CalDisorder`, `CalPolarityDisorder`, `CalAbloom`, `Calculator.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, copied anomaly / disorder output paths, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-015 by characterizing `CalPolarityDisorder` formula inputs and payload boundary without widening into `CalAbloom`, copied-output report payloads, or production formula replacement.
+---

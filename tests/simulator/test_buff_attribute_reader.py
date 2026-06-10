@@ -136,6 +136,24 @@ class _CalAnomalyMultiplierOracleCase:
     scaling_factor: float = 1.25
 
 
+@dataclass(frozen=True)
+class _CalDisorderOracleCase:
+    case_id: str
+    element_type: int
+    snapshot_values: tuple[float, ...]
+    dynamic_attrs: dict[str, float]
+    expected_dynamic_fields: dict[str, float]
+    runtime_tick: int
+    max_duration: int
+    last_active: int
+    expected_remaining_tick: int
+    enemy_stun_resistance: float
+    payload_fields: dict[str, Any]
+    expected_final_multipliers: tuple[float, ...]
+    expected_disorder_stun: float
+    scaling_factor: float = 1.0
+
+
 _CAL_ANOMALY_FINAL_MULTIPLIER_ORDER = (
     "base_dmg",
     "dmg_bonus",
@@ -1774,6 +1792,133 @@ _CAL_ANOMALY_MULTIPLIER_ORACLE_CASES = (
             1.0,
         ),
         scaling_factor=0.60,
+    ),
+)
+
+
+_CAL_DISORDER_COMMON_DYNAMIC_ATTRS = {
+    "all_disorder_basic_mul": 0.10,
+    "disorder_dmg_mul": 0.45,
+    "stun_res": 0.12,
+    "received_stun_increase": 0.16,
+}
+
+_CAL_DISORDER_COMMON_PAYLOAD_FIELDS: dict[str, Any] = {
+    "schedule_priority": 123,
+    "rename_tag": "listener-payload-sentinel",
+    "accompany_dot": "copied-output-only",
+    "anomaly_dmg_ratio": 99.0,
+}
+
+
+def _cal_disorder_snapshot(base_mul: float) -> tuple[float, ...]:
+    return (
+        base_mul,
+        1.11,
+        2.20,
+        60.0,
+        9.99,
+        777.0,
+        0.0,
+        0.0,
+        0.0,
+        1.25,
+        1.35,
+    )
+
+
+def _make_cal_disorder_oracle_case(
+    *,
+    case_id: str,
+    element_type: int,
+    base_mul: float,
+    element_disorder_basic_attr: str,
+    expected_base_dmg: float,
+) -> _CalDisorderOracleCase:
+    dynamic_attrs = {
+        **_CAL_DISORDER_COMMON_DYNAMIC_ATTRS,
+        element_disorder_basic_attr: 0.20,
+    }
+    return _CalDisorderOracleCase(
+        case_id=case_id,
+        element_type=element_type,
+        snapshot_values=_cal_disorder_snapshot(base_mul),
+        dynamic_attrs=dynamic_attrs,
+        expected_dynamic_fields=dynamic_attrs,
+        runtime_tick=300,
+        max_duration=500,
+        last_active=115,
+        expected_remaining_tick=315,
+        enemy_stun_resistance=0.18,
+        payload_fields=dict(_CAL_DISORDER_COMMON_PAYLOAD_FIELDS),
+        expected_final_multipliers=(
+            expected_base_dmg,
+            1.11,
+            2.20,
+            2.0,
+            1.45,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.25,
+            1.35,
+            1.0,
+            1.0,
+        ),
+        expected_disorder_stun=3.973725,
+    )
+
+
+_CAL_DISORDER_ORACLE_CASES = (
+    _make_cal_disorder_oracle_case(
+        case_id="physical-strike-floor-seconds",
+        element_type=0,
+        base_mul=713.0,
+        element_disorder_basic_attr="strike_disorder_basic_mul",
+        expected_base_dmg=517.5,
+    ),
+    _make_cal_disorder_oracle_case(
+        case_id="fire-burn-half-second-floor",
+        element_type=1,
+        base_mul=50.0,
+        element_disorder_basic_attr="burn_disorder_basic_mul",
+        expected_base_dmg=980.0,
+    ),
+    _make_cal_disorder_oracle_case(
+        case_id="ice-frostbite-floor-seconds",
+        element_type=2,
+        base_mul=500.0,
+        element_disorder_basic_attr="frostbite_disorder_basic_mul",
+        expected_base_dmg=517.5,
+    ),
+    _make_cal_disorder_oracle_case(
+        case_id="electric-shock-floor-seconds",
+        element_type=3,
+        base_mul=125.0,
+        element_disorder_basic_attr="shock_disorder_basic_mul",
+        expected_base_dmg=1105.0,
+    ),
+    _make_cal_disorder_oracle_case(
+        case_id="ether-chaos-half-second-floor",
+        element_type=4,
+        base_mul=62.5,
+        element_disorder_basic_attr="chaos_disorder_basic_mul",
+        expected_base_dmg=1105.0,
+    ),
+    _make_cal_disorder_oracle_case(
+        case_id="auric-ink-frostbite-floor-seconds",
+        element_type=5,
+        base_mul=500.0,
+        element_disorder_basic_attr="frostbite_disorder_basic_mul",
+        expected_base_dmg=1005.0,
+    ),
+    _make_cal_disorder_oracle_case(
+        case_id="auric-ether-chaos-half-second-floor",
+        element_type=6,
+        base_mul=62.5,
+        element_disorder_basic_attr="chaos_disorder_basic_mul",
+        expected_base_dmg=1105.0,
     ),
 )
 
@@ -3462,6 +3607,92 @@ def test_cal_anomaly_multiplier_inputs_remain_retained_mul_data_snapshot(
     assert fixture.anomaly_bar.scaling_factor == pytest.approx(case.scaling_factor)
     assert calculator.cal_anomaly_dmg() == pytest.approx(
         unscaled_damage * case.scaling_factor
+    )
+
+
+@pytest.mark.parametrize(
+    "case",
+    _CAL_DISORDER_ORACLE_CASES,
+    ids=lambda case: case.case_id,
+)
+def test_cal_disorder_formula_inputs_remain_separate_from_copied_payload(
+    monkeypatch: pytest.MonkeyPatch,
+    case: _CalDisorderOracleCase,
+) -> None:
+    _reset_formula_oracle_caches()
+    fixture = _make_settled_anomaly_formula_fixture(
+        element_type=case.element_type,
+        snapshot=_make_anomaly_snapshot(case.snapshot_values),
+        scaling_factor=case.scaling_factor,
+    )
+    fixture.sim_instance.tick = case.runtime_tick
+    fixture.anomaly_bar.max_duration = case.max_duration
+    fixture.anomaly_bar.last_active = case.last_active
+    fixture.enemy.dynamic.stun = False
+    fixture.enemy.stun_resistance_dict[case.element_type] = case.enemy_stun_resistance
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(**case.dynamic_attrs),
+    )
+
+    disorder_payload = Disorder(
+        fixture.anomaly_bar,
+        active_by=cast(Any, fixture.activation),
+        sim_instance=cast(Any, fixture.sim_instance),
+    )
+    for attr_name, value in case.payload_fields.items():
+        setattr(disorder_payload, attr_name, value)
+
+    calculator = cal_anomaly_module.CalDisorder(
+        disorder_obj=disorder_payload,
+        enemy_obj=cast(Any, fixture.enemy),
+        dynamic_buff=fixture.active_buff_view,
+        sim_instance=cast(Any, fixture.sim_instance),
+    )
+
+    assert disorder_payload.is_disorder is True
+    assert disorder_payload.current_ndarray is not fixture.anomaly_bar.current_ndarray
+    assert disorder_payload.remaining_tick() == pytest.approx(
+        case.expected_remaining_tick
+    )
+    for attr_name, value in case.payload_fields.items():
+        assert getattr(disorder_payload, attr_name) == value
+    assert calculator.dmg_sp is disorder_payload.current_ndarray
+    assert calculator.data.judge_node is disorder_payload
+    assert aggregation_calls == [
+        (
+            (),
+            disorder_payload,
+            fixture.enemy.sim_instance,
+            fixture.character.NAME,
+        )
+    ]
+    dynamic_inputs = {
+        attr_name: getattr(calculator.data.dynamic, attr_name)
+        for attr_name in case.expected_dynamic_fields
+    }
+    assert dynamic_inputs == pytest.approx(case.expected_dynamic_fields)
+    np.testing.assert_allclose(
+        calculator.final_multipliers,
+        np.array(case.expected_final_multipliers, dtype=np.float64),
+    )
+    assert calculator.cal_disorder_base_dmg(
+        np.float64(case.snapshot_values[0])
+    ) == pytest.approx(case.expected_final_multipliers[0])
+    assert calculator.cal_disorder_extra_mul() == pytest.approx(
+        case.expected_final_multipliers[4]
+    )
+    assert calculator.cal_disorder_stun() == pytest.approx(
+        case.expected_disorder_stun
+    )
+    product_with_snapshot_impact_and_stun = np.prod(case.expected_final_multipliers)
+    assert calculator.cal_anomaly_dmg() == pytest.approx(
+        product_with_snapshot_impact_and_stun
+        / (
+            case.expected_final_multipliers[9]
+            * case.expected_final_multipliers[10]
+        )
+        * case.scaling_factor
     )
 
 
