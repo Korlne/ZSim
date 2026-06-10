@@ -24,6 +24,7 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
     MultiplierData,
     create_anomaly_attribute_read_context,
 )
+from zsim.sim_progress.Preload.SkillsQueue import SkillNode
 from zsim.sim_progress.anomaly_bar import AnomalyBar
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
     DirgeOfDestinyAnomaly,
@@ -134,6 +135,9 @@ def _reset_formula_fixture_state() -> Iterator[None]:
 def _make_character(
     *,
     name: str = "折枝剑歌",
+    atk: float = 0.0,
+    hp: float = 0.0,
+    defense: float = 0.0,
     am: float = 0.0,
     ap: float = 0.0,
     imp: float = 0.0,
@@ -141,6 +145,9 @@ def _make_character(
     crit_damage: float = 0.0,
 ) -> SimpleNamespace:
     statement_values = {
+        "ATK": atk,
+        "HP": hp,
+        "DEF": defense,
         "AM": am,
         "AP": ap,
         "IMP": imp,
@@ -166,14 +173,43 @@ def _make_enemy(
     )
 
 
+def _make_skill_node(
+    *,
+    char_name: str,
+    damage_ratio: float,
+    hit_times: int,
+    diff_multiplier: int,
+    element_type: int = 0,
+) -> SkillNode:
+    skill = SimpleNamespace(
+        skill_tag=f"{char_name}-formula-oracle",
+        char_name=char_name,
+        hit_times=hit_times,
+        labels=None,
+        ticks=max(hit_times + 1, 2),
+        tick_list=[],
+        damage_ratio=damage_ratio,
+        diff_multiplier=diff_multiplier,
+        element_type=element_type,
+        trigger_buff_level=0,
+    )
+    return SkillNode(cast(Any, skill), preload_tick=0)
+
+
 def _make_attribute_read_fixture(
     *,
     name: str = "折枝剑歌",
+    atk: float = 0.0,
+    hp: float = 0.0,
+    defense: float = 0.0,
     am: float = 0.0,
     ap: float = 0.0,
     imp: float = 0.0,
     crit_rate: float = 0.0,
     crit_damage: float = 0.0,
+    damage_ratio: float | None = None,
+    hit_times: int = 1,
+    diff_multiplier: int = 0,
     char_buff_count: int = 1,
     enemy_debuff_count: int = 1,
     enemy_dot_count: int = 0,
@@ -183,6 +219,9 @@ def _make_attribute_read_fixture(
     enemy_dots = tuple(object() for _ in range(enemy_dot_count))
     char = _make_character(
         name=name,
+        atk=atk,
+        hp=hp,
+        defense=defense,
         am=am,
         ap=ap,
         imp=imp,
@@ -191,11 +230,22 @@ def _make_attribute_read_fixture(
     )
     enemy = _make_enemy(enemy_debuffs, enemy_dots)
     active_buff_view = {char.NAME: list(char_buffs)}
+    query_node = (
+        _make_skill_node(
+            char_name=char.NAME,
+            damage_ratio=damage_ratio,
+            hit_times=hit_times,
+            diff_multiplier=diff_multiplier,
+        )
+        if damage_ratio is not None
+        else None
+    )
     return _AttributeReadFixture(
         context=create_anomaly_attribute_read_context(
             enemy=cast(Any, enemy),
             active_buff_view=active_buff_view,
             character=cast(Any, char),
+            query_node=query_node,
         ),
         active_buff_view=active_buff_view,
         enemy=enemy,
@@ -295,7 +345,7 @@ def _assert_aggregation_calls(
     assert aggregation_calls == [
         (
             fixture.expected_enabled_buff,
-            None,
+            fixture.context.query_node,
             fixture.enemy.sim_instance,
             fixture.char.NAME,
         )
@@ -586,7 +636,124 @@ def _reader_formula_value(
     raise AssertionError(f"Unknown migrated reader formula sample: {formula_key}")
 
 
+def _regular_mul_oracle() -> Any:
+    return Calculator.RegularMul.__new__(Calculator.RegularMul)
+
+
+def _regular_mul_base_attr(data: MultiplierData, base_attr: int) -> float:
+    return cast(float, _regular_mul_oracle().cal_base_attr(base_attr, data))
+
+
+def _regular_mul_base_dmg(data: MultiplierData) -> float:
+    return cast(float, _regular_mul_oracle().cal_base_dmg(data))
+
+
 _FORMULA_ORACLE_TABLE_CASES = (
+    _FormulaOracleCase(
+        case_id="regular-base-dmg-neutral-atk",
+        fixture_kwargs={
+            "name": "直伤基础-攻击中性",
+            "atk": 100.0,
+            "damage_ratio": 2.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "char_buff_count": 0,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={},
+        expected_dynamic_fields={
+            "field_atk_percentage": 0.0,
+            "atk": 0.0,
+            "extra_damage_ratio": 0.0,
+            "base_dmg_increase_percentage": 0.0,
+            "base_dmg_increase": 0.0,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_base_attr_atk",
+                expected_value=100.0,
+                retained_value=lambda data: _regular_mul_base_attr(data, 0),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_base_dmg",
+                expected_value=200.0,
+                retained_value=_regular_mul_base_dmg,
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="regular-base-attr-static-hp",
+        fixture_kwargs={
+            "name": "直伤基础-生命静态",
+            "hp": 1250.0,
+            "damage_ratio": 3.0,
+            "hit_times": 2,
+            "diff_multiplier": 1,
+            "char_buff_count": 0,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={},
+        expected_dynamic_fields={
+            "field_hp_percentage": 0.0,
+            "hp": 0.0,
+            "extra_damage_ratio": 0.0,
+            "base_dmg_increase_percentage": 0.0,
+            "base_dmg_increase": 0.0,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_base_attr_hp",
+                expected_value=1250.0,
+                retained_value=lambda data: _regular_mul_base_attr(data, 1),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_base_dmg",
+                expected_value=1875.0,
+                retained_value=_regular_mul_base_dmg,
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="regular-base-dmg-dynamic-atk",
+        fixture_kwargs={
+            "name": "直伤基础-动态攻击",
+            "atk": 120.0,
+            "damage_ratio": 1.8,
+            "hit_times": 2,
+            "diff_multiplier": 0,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 1,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "field_atk_percentage": 0.25,
+            "atk": 40.0,
+            "extra_damage_ratio": 0.2,
+            "base_dmg_increase_percentage": 0.5,
+            "base_dmg_increase": 10.0,
+        },
+        expected_dynamic_fields={
+            "field_atk_percentage": 0.25,
+            "atk": 40.0,
+            "extra_damage_ratio": 0.2,
+            "base_dmg_increase_percentage": 0.5,
+            "base_dmg_increase": 10.0,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_base_attr_atk",
+                expected_value=190.0,
+                retained_value=lambda data: _regular_mul_base_attr(data, 0),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_base_dmg",
+                expected_value=323.5,
+                retained_value=_regular_mul_base_dmg,
+            ),
+        ),
+    ),
     _FormulaOracleCase(
         case_id="active-debuff-dot-reader-parity",
         fixture_kwargs={

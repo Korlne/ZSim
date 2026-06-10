@@ -2790,3 +2790,16 @@
 - Next step:
   - Continue with US-004 by adding deterministic `RegularMul` base damage and attribute input cases through the new table harness before any production formula replacement.
 ---
+## 2026-06-10 10:15 +08:00 - US-004
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The new `regular-base-dmg-*` `_FORMULA_ORACLE_TABLE_CASES` replace implicit confidence in `Calculator.RegularMul.cal_base_dmg()` / `cal_base_attr()` foundations with executable retained-oracle coverage for neutral ATK, static HP selection, and dynamic ATK / base-damage buff fields.
+  - The test fixture now prepares to replace ad hoc base-damage snapshot setup with explicit static ATK / HP / DEF fields and optional `SkillNode` construction, while still using retained `MultiplierData` / reader snapshot comparison only as compatibility evidence.
+  - This story adds characterization only; it does not replace a live production path, Calculator formula, CalAnomaly formula, copied-output formula, dispatch adapter, runtime port, validation profile, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `Calculator.RegularMul`, `MultiplierData`, `DynamicStatement`, `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, `CalAnomaly.py`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, copied anomaly / disorder output paths, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - Reader seam evidence remains compatibility evidence only and does not authorize deleting retained `Calculator.RegularMul`, `MultiplierData`, or `DynamicStatement`.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-005 by characterizing `RegularMul` damage bonus, defense, resistance, and vulnerability fields without changing production formulas or widening into crit / anomaly / stun families.
+---
