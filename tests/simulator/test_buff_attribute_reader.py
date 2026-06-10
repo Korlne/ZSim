@@ -154,6 +154,20 @@ class _CalDisorderOracleCase:
     scaling_factor: float = 1.0
 
 
+@dataclass(frozen=True)
+class _CalPolarityDisorderOracleCase:
+    case_id: str
+    base_case: _CalDisorderOracleCase
+    dynamic_attrs: dict[str, float]
+    expected_dynamic_fields: dict[str, float]
+    polarity_disorder_ratio: float
+    additional_dmg_ap_ratio: float
+    yanagi_static_ap: float
+    expected_yanagi_ap: float
+    expected_base_disorder_dmg: float
+    expected_final_multipliers: tuple[float, ...]
+
+
 _CAL_ANOMALY_FINAL_MULTIPLIER_ORDER = (
     "base_dmg",
     "dmg_bonus",
@@ -1919,6 +1933,72 @@ _CAL_DISORDER_ORACLE_CASES = (
         base_mul=62.5,
         element_disorder_basic_attr="chaos_disorder_basic_mul",
         expected_base_dmg=1105.0,
+    ),
+)
+
+
+def _make_cal_polarity_disorder_oracle_case(
+    *,
+    case_id: str,
+    element_type: int,
+    base_mul: float,
+    element_disorder_basic_attr: str,
+    expected_base_dmg: float,
+    polarity_disorder_ratio: float,
+    additional_dmg_ap_ratio: float,
+    yanagi_static_ap: float,
+    yanagi_field_ap: float,
+    yanagi_flat_ap: float,
+) -> _CalPolarityDisorderOracleCase:
+    base_case = _make_cal_disorder_oracle_case(
+        case_id=case_id,
+        element_type=element_type,
+        base_mul=base_mul,
+        element_disorder_basic_attr=element_disorder_basic_attr,
+        expected_base_dmg=expected_base_dmg,
+    )
+    yanagi_ap_attrs = {
+        "field_anomaly_proficiency": yanagi_field_ap,
+        "anomaly_proficiency": yanagi_flat_ap,
+    }
+    dynamic_attrs = {
+        **base_case.dynamic_attrs,
+        **yanagi_ap_attrs,
+    }
+    expected_yanagi_ap = yanagi_static_ap * (1 + yanagi_field_ap) + yanagi_flat_ap
+    expected_polarity_base_dmg = (
+        base_case.expected_final_multipliers[0] * polarity_disorder_ratio
+    ) + (expected_yanagi_ap * additional_dmg_ap_ratio)
+    expected_final_multipliers = (
+        expected_polarity_base_dmg,
+        *base_case.expected_final_multipliers[1:],
+    )
+    return _CalPolarityDisorderOracleCase(
+        case_id=case_id,
+        base_case=base_case,
+        dynamic_attrs=dynamic_attrs,
+        expected_dynamic_fields=dynamic_attrs,
+        polarity_disorder_ratio=polarity_disorder_ratio,
+        additional_dmg_ap_ratio=additional_dmg_ap_ratio,
+        yanagi_static_ap=yanagi_static_ap,
+        expected_yanagi_ap=expected_yanagi_ap,
+        expected_base_disorder_dmg=base_case.expected_final_multipliers[0],
+        expected_final_multipliers=expected_final_multipliers,
+    )
+
+
+_CAL_POLARITY_DISORDER_ORACLE_CASES = (
+    _make_cal_polarity_disorder_oracle_case(
+        case_id="electric-polarity-disorder-ratio-plus-yanagi-ap",
+        element_type=3,
+        base_mul=125.0,
+        element_disorder_basic_attr="shock_disorder_basic_mul",
+        expected_base_dmg=1105.0,
+        polarity_disorder_ratio=0.13,
+        additional_dmg_ap_ratio=17.5,
+        yanagi_static_ap=400.0,
+        yanagi_field_ap=0.25,
+        yanagi_flat_ap=60.0,
     ),
 )
 
@@ -3693,6 +3773,143 @@ def test_cal_disorder_formula_inputs_remain_separate_from_copied_payload(
             * case.expected_final_multipliers[10]
         )
         * case.scaling_factor
+    )
+
+
+@pytest.mark.parametrize(
+    "case",
+    _CAL_POLARITY_DISORDER_ORACLE_CASES,
+    ids=lambda case: case.case_id,
+)
+def test_cal_polarity_disorder_formula_inputs_and_payload_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+    case: _CalPolarityDisorderOracleCase,
+) -> None:
+    _reset_formula_oracle_caches()
+    base_case = case.base_case
+    fixture = _make_settled_anomaly_formula_fixture(
+        element_type=base_case.element_type,
+        snapshot=_make_anomaly_snapshot(base_case.snapshot_values),
+        scaling_factor=base_case.scaling_factor,
+    )
+    fixture.sim_instance.tick = base_case.runtime_tick
+    fixture.anomaly_bar.max_duration = base_case.max_duration
+    fixture.anomaly_bar.last_active = base_case.last_active
+    fixture.enemy.dynamic.stun = False
+    fixture.enemy.stun_resistance_dict[
+        base_case.element_type
+    ] = base_case.enemy_stun_resistance
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(**case.dynamic_attrs),
+    )
+
+    class _YanagiFormulaProbe(SimpleNamespace):
+        pass
+
+    monkeypatch.setattr(cal_anomaly_module, "Yanagi", _YanagiFormulaProbe)
+    yanagi_statement = _make_character(name="柳", ap=case.yanagi_static_ap).statement
+    yanagi = _YanagiFormulaProbe(
+        NAME="柳",
+        CID=1221,
+        level=60,
+        statement=yanagi_statement,
+    )
+    fixture.sim_instance.char_data = SimpleNamespace(char_obj_dict={"柳": yanagi})
+    fixture.active_buff_view[yanagi.NAME] = []
+
+    polarity_payload = PolarityDisorder(
+        fixture.anomaly_bar,
+        case.polarity_disorder_ratio,
+        active_by=cast(Any, fixture.activation),
+        sim_instance=cast(Any, fixture.sim_instance),
+    )
+    payload_fields = {
+        **base_case.payload_fields,
+        "additional_dmg_ap_ratio": case.additional_dmg_ap_ratio,
+    }
+    for attr_name, value in payload_fields.items():
+        setattr(polarity_payload, attr_name, value)
+
+    calculator = cal_anomaly_module.CalPolarityDisorder(
+        disorder_obj=polarity_payload,
+        enemy_obj=cast(Any, fixture.enemy),
+        dynamic_buff=fixture.active_buff_view,
+        sim_instance=cast(Any, fixture.sim_instance),
+    )
+
+    assert polarity_payload.is_disorder is True
+    assert polarity_payload.current_ndarray is not fixture.anomaly_bar.current_ndarray
+    assert polarity_payload.remaining_tick() == pytest.approx(
+        base_case.expected_remaining_tick
+    )
+    for attr_name, value in payload_fields.items():
+        assert getattr(polarity_payload, attr_name) == value
+    assert polarity_payload.polarity_disorder_ratio == pytest.approx(
+        case.polarity_disorder_ratio
+    )
+    assert polarity_payload.additional_dmg_ap_ratio == pytest.approx(
+        case.additional_dmg_ap_ratio
+    )
+    assert calculator.dmg_sp is polarity_payload.current_ndarray
+    assert calculator.data.judge_node is polarity_payload
+    assert aggregation_calls == [
+        (
+            (),
+            polarity_payload,
+            fixture.enemy.sim_instance,
+            fixture.character.NAME,
+        ),
+        (
+            (),
+            None,
+            fixture.enemy.sim_instance,
+            yanagi.NAME,
+        ),
+    ]
+    snapshot_inputs = {
+        "base_snapshot": calculator.dmg_sp[0, 0],
+        "virtual_character_level": calculator.dmg_sp[0, 3],
+        "snapshot_impact": calculator.dmg_sp[0, 9],
+        "snapshot_stun_bonus": calculator.dmg_sp[0, 10],
+    }
+    assert snapshot_inputs == pytest.approx(
+        {
+            "base_snapshot": base_case.snapshot_values[0],
+            "virtual_character_level": base_case.snapshot_values[3],
+            "snapshot_impact": base_case.snapshot_values[9],
+            "snapshot_stun_bonus": base_case.snapshot_values[10],
+        }
+    )
+    dynamic_inputs = {
+        attr_name: getattr(calculator.data.dynamic, attr_name)
+        for attr_name in case.expected_dynamic_fields
+    }
+    assert dynamic_inputs == pytest.approx(case.expected_dynamic_fields)
+    assert cal_anomaly_module.Cal.AnomalyMul.cal_ap(
+        cal_anomaly_module.MulData(
+            enemy_obj=cast(Any, fixture.enemy),
+            dynamic_buff=fixture.active_buff_view,
+            character_obj=yanagi,
+        )
+    ) == pytest.approx(case.expected_yanagi_ap)
+    np.testing.assert_allclose(
+        calculator.final_multipliers,
+        np.array(case.expected_final_multipliers, dtype=np.float64),
+    )
+    assert calculator.cal_disorder_base_dmg(
+        np.float64(base_case.snapshot_values[0])
+    ) == pytest.approx(case.expected_base_disorder_dmg)
+    assert calculator.cal_disorder_extra_mul() == pytest.approx(
+        base_case.expected_final_multipliers[4]
+    )
+    assert calculator.cal_anomaly_dmg() == pytest.approx(
+        np.prod(case.expected_final_multipliers)
+        / (
+            case.expected_final_multipliers[9]
+            * case.expected_final_multipliers[10]
+        )
+        * base_case.scaling_factor
     )
 
 
