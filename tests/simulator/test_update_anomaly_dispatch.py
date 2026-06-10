@@ -13,9 +13,15 @@ from zsim.sim_progress.Update import UpdateAnomaly as update_anomaly_module
 from zsim.sim_progress.Update.UpdateAnomaly import (
     anomaly_effect_active,
     remove_dots_cause_disorder,
+    spawn_output,
     update_anomaly,
 )
 from zsim.sim_progress.anomaly_bar import AnomalyBar
+from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
+    Disorder,
+    NewAnomaly,
+    PolarityDisorder,
+)
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 
@@ -231,6 +237,29 @@ def _build_anomaly_bar(sim_instance, *, element_type: int) -> AnomalyBar:
     return bar
 
 
+def _build_spawn_output_source_bar(
+    sim_instance,
+    *,
+    element_type: int,
+    settled: bool,
+) -> AnomalyBar:
+    bar = _build_anomaly_bar(sim_instance, element_type=element_type)
+    snapshot = np.array([[1.25, 2.5, 3.75]], dtype=np.float64)
+    bar.current_anomaly = np.float64(100)
+    bar.current_effective_anomaly = np.float64(100 if settled else 0)
+    bar.current_ndarray = snapshot.copy()
+    bar.ndarray_box = [] if settled else [(element_type, np.float64(100), snapshot)]
+    bar.settled = settled
+    bar.active = True
+    bar.anomaly_dmg_ratio = 2.25
+    bar.scaling_factor = 1.5
+    bar.max_duration = 420
+    bar.last_active = 120
+    bar.accompany_dot = "Shock"
+    bar.rename_tag = f"spawn-output-mode-{element_type}"
+    return bar
+
+
 def _build_skill_node(*, element_type: int, char_name: str = "alpha", skill_tag: str = "1001_TEST"):
     return SimpleNamespace(
         element_type=element_type,
@@ -238,6 +267,141 @@ def _build_skill_node(*, element_type: int, char_name: str = "alpha", skill_tag:
         skill_tag=skill_tag,
         skill=SimpleNamespace(char_obj=SimpleNamespace(CID=1001)),
     )
+
+
+def test_spawn_output_mode_zero_settles_without_listener_or_scheduled_publish():
+    call_order: list[tuple[str, object]] = []
+    broadcast_events: list[tuple[object, object]] = []
+    recording_queue = _RecordingEventList(call_order)
+    sim_instance = _build_sim_instance(recording_queue)
+    sim_instance.load_data = SimpleNamespace(
+        LOADING_BUFF_DICT={"enemy": _FailFastPendingBuffQueue()}
+    )
+
+    def record_broadcast(*, event: object, signal: object) -> None:
+        call_order.append(("broadcast", signal))
+        broadcast_events.append((event, signal))
+
+    sim_instance.listener_manager = SimpleNamespace(broadcast_event=record_broadcast)
+    source_bar = _build_spawn_output_source_bar(
+        sim_instance,
+        element_type=4,
+        settled=False,
+    )
+    skill_node = _build_skill_node(element_type=4)
+
+    output = spawn_output(
+        source_bar,
+        0,
+        sim_instance=sim_instance,
+        skill_node=skill_node,
+    )
+
+    assert type(output) is NewAnomaly
+    assert output is not source_bar
+    assert output.sim_instance is sim_instance
+    assert output.activated_by is skill_node
+    assert output.activate_by is skill_node
+    assert output.is_disorder is False
+    assert output.element_type == 4
+    assert output.accompany_dot == "Shock"
+    assert output.rename_tag == "spawn-output-mode-4"
+    assert output.anomaly_dmg_ratio == pytest.approx(2.25)
+    assert output.scaling_factor == pytest.approx(1.5)
+    assert output.max_duration == 420
+    assert output.last_active == 120
+    assert output.current_effective_anomaly == pytest.approx(100)
+    assert source_bar.settled is True
+    assert output.current_ndarray is not source_bar.current_ndarray
+    np.testing.assert_allclose(
+        output.current_ndarray,
+        np.array([[1.25, 2.5, 3.75]], dtype=np.float64),
+    )
+    assert output.schedule_priority == 999
+    assert not hasattr(output, "execute_tick")
+    assert recording_queue == []
+    assert broadcast_events == []
+    assert call_order == []
+
+
+@pytest.mark.parametrize(
+    ("mode_number", "expected_type", "kwargs", "expected_polarity_ratio"),
+    [
+        pytest.param(1, Disorder, {}, None, id="disorder"),
+        pytest.param(
+            2,
+            PolarityDisorder,
+            {"polarity_ratio": 1.6},
+            1.6,
+            id="polarity-disorder",
+        ),
+    ],
+)
+def test_spawn_output_disorder_modes_broadcast_listener_payload_without_publish(
+    mode_number,
+    expected_type,
+    kwargs,
+    expected_polarity_ratio,
+):
+    call_order: list[tuple[str, object]] = []
+    broadcast_events: list[tuple[object, object]] = []
+    recording_queue = _RecordingEventList(call_order)
+    sim_instance = _build_sim_instance(recording_queue)
+    sim_instance.load_data = SimpleNamespace(
+        LOADING_BUFF_DICT={"enemy": _FailFastPendingBuffQueue()}
+    )
+
+    def record_broadcast(*, event: object, signal: object) -> None:
+        call_order.append(("broadcast", signal))
+        broadcast_events.append((event, signal))
+
+    sim_instance.listener_manager = SimpleNamespace(broadcast_event=record_broadcast)
+    source_bar = _build_spawn_output_source_bar(
+        sim_instance,
+        element_type=3,
+        settled=True,
+    )
+    skill_node = _build_skill_node(element_type=3)
+
+    output = spawn_output(
+        source_bar,
+        mode_number,
+        sim_instance=sim_instance,
+        skill_node=skill_node,
+        **kwargs,
+    )
+
+    assert type(output) is expected_type
+    assert output is not source_bar
+    assert output.sim_instance is sim_instance
+    assert output.activated_by is skill_node
+    assert output.activate_by is skill_node
+    assert output.is_disorder is True
+    assert output.settled is True
+    assert output.element_type == 3
+    assert output.accompany_dot == "Shock"
+    assert output.rename_tag == "spawn-output-mode-3"
+    assert output.anomaly_dmg_ratio == pytest.approx(2.25)
+    assert output.scaling_factor == pytest.approx(1.5)
+    assert output.max_duration == 420
+    assert output.last_active == 120
+    assert output.current_effective_anomaly == pytest.approx(100)
+    assert output.current_ndarray is not source_bar.current_ndarray
+    np.testing.assert_allclose(
+        output.current_ndarray,
+        np.array([[1.25, 2.5, 3.75]], dtype=np.float64),
+    )
+    if expected_polarity_ratio is None:
+        assert not hasattr(output, "polarity_disorder_ratio")
+        assert not hasattr(output, "additional_dmg_ap_ratio")
+    else:
+        assert output.polarity_disorder_ratio == pytest.approx(expected_polarity_ratio)
+        assert output.additional_dmg_ap_ratio == 32
+    assert output.schedule_priority == 999
+    assert not hasattr(output, "execute_tick")
+    assert recording_queue == []
+    assert broadcast_events == [(output, LBS.DISORDER_SPAWN)]
+    assert call_order == [("broadcast", LBS.DISORDER_SPAWN)]
 
 
 def test_update_anomaly_publishes_new_anomaly_via_dispatch_port_without_raw_queue_append():

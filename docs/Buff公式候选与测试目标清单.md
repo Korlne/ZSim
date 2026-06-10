@@ -157,6 +157,15 @@ US-013 本轮没有 live semantic change、没有 validation wiring change，也
 | `AnomalyBar.__get_duration_enemy_buffs()` / dot、freeze-like duration reads | runtime view 或 legacy enemy dynamic list。 | 异常持续时间和 dot/freeze-like 状态相邻读取。 | guarded maintenance。 | 本 PRD 不迁移异常持续时间读取；后续需要单独覆盖 runtime view、legacy fallback、dot 列表和 freeze-like 分支。 |
 | `Load/LoadDamageEvent.py` dot / freez-like continuation | 调用方显式传入当前 Schedule 队列。 | dot 时间触发、命中后 dot、碎冰类效果继续生成伤害事件。 | blocker-only follow-up。 | 属于 Load/Schedule event-router 方向，不是 Buff phase-3 formula parity 替换入口。 |
 
+## 当前 PRD US-021 UpdateAnomaly.spawn_output 输出与监听边界刻画
+
+本节只记录 `UpdateAnomaly.spawn_output(...)` mode 0 / 1 / 2 focused characterization；不改 `UpdateAnomaly.py`、`CopyAnomalyForOutput.py`、scheduled publish、dot runtime、runtime command port、handler report payload 或 production formula 语义。
+
+- `test_spawn_output_mode_zero_settles_without_listener_or_scheduled_publish()` 使用未结算 active `AnomalyBar`，证明 mode 0 先 `anomaly_settled()` 再复制 `NewAnomaly`，并保留 `current_ndarray` / `current_effective_anomaly`、`active_by` / `activate_by`、payload sentinel 字段与无 `execute_tick` 语义。
+- `test_spawn_output_disorder_modes_broadcast_listener_payload_without_publish()` 覆盖 mode 1 `Disorder` 与 mode 2 `PolarityDisorder`，证明两者同步广播 `DISORDER_SPAWN`，listener payload 即 copied output 本体，并保留 `is_disorder`、`settled`、duration fields、snapshot 非别名和 polarity-only fields。
+- 两个测试均用 recording schedule queue 证明 direct `spawn_output(...)` 不做 scheduled publish；`test_update_anomaly_preserves_new_anomaly_then_disorder_order_via_dispatch_port()` 继续保留 `update_anomaly(...)` 层的 anomaly broadcast、disorder broadcast、new anomaly publish、`special_resources(disorder)`、disorder publish 相对顺序。
+- `runtime_command_port` 与 pending Buff queue 仍为 fail-fast boundary；dot runtime 仍由既有 `anomaly_effect_active(...)` / `remove_dots_cause_disorder(...)` tests 覆盖，不把 listener broadcast、scheduled publish、dot runtime 或 same-tick Buff writes 合并。
+
 ## 当前 PRD US-020 Disorder / PolarityDisorder copied-output payload 刻画
 
 本节只记录 `CopyAnomalyForOutput.Disorder` / `CopyAnomalyForOutput.PolarityDisorder` copied payload focused characterization；不改 `CopyAnomalyForOutput.py`、`UpdateAnomaly.py`、handler report payload、listener broadcast、scheduled publish、runtime port 或 production formula 语义。

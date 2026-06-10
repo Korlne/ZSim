@@ -2988,3 +2988,14 @@
 - Next step:
   - Continue with US-021 by characterizing `UpdateAnomaly.spawn_output(...)` mode 0 / 1 / 2 listener-facing fields and publish order while keeping listener broadcast, scheduled publish, dot runtime, and same-tick runtime writes separate.
 ---
+## 2026-06-10 14:09 +08:00 - US-021
+- Files changed: `tests/simulator/test_update_anomaly_dispatch.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_spawn_output_mode_zero_settles_without_listener_or_scheduled_publish()` and `test_spawn_output_disorder_modes_broadcast_listener_payload_without_publish()` replace implicit confidence in `UpdateAnomaly.spawn_output(...)` mode 0 / 1 / 2 output behavior with executable characterization for active-bar settlement, listener-facing copied payload fields, direct no-publish behavior, and polarity-only fields.
+  - This story adds characterization only; it does not replace a live production path, `UpdateAnomaly.py` branch semantics, copied-output constructors, `ScheduleDispatchPort`, listener broadcast, dot runtime registration, runtime command behavior, validation profile wiring, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `UpdateAnomaly.spawn_output(...)`, `UpdateAnomaly.update_anomaly(...)`, `CopyAnomalyForOutput.NewAnomaly`, `CopyAnomalyForOutput.Disorder`, `CopyAnomalyForOutput.PolarityDisorder`, `AnomalyBar.anomaly_settled()`, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-022 by defining registered-team sample conditions for formula domains without widening into production formula replacement or runtime write-path replacement.
+---
