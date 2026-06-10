@@ -328,6 +328,96 @@ def test_update_anomaly_preserves_new_anomaly_then_disorder_order_via_dispatch_p
     assert disorder.schedule_priority == 999
 
 
+def test_update_anomaly_records_new_anomaly_field_matrix_with_runtime_dot(
+    monkeypatch,
+):
+    call_order: list[tuple[str, object]] = []
+    helper_calls: list[tuple[str, object]] = []
+    legacy_event_list = _FailFastEventList()
+    sim_instance = _build_sim_instance(legacy_event_list, call_order)
+    enemy = _build_enemy(sim_instance)
+    source_bar = _build_anomaly_bar(sim_instance, element_type=3)
+    source_bar.accompany_dot = "Shock"
+    source_bar.ndarray_box = [
+        (3, np.float64(40), np.array([[2.0, 4.0]], dtype=np.float64)),
+        (3, np.float64(60), np.array([[6.0, 8.0]], dtype=np.float64)),
+    ]
+    enemy.anomaly_bars_dict[3] = source_bar
+    enemy.dynamic.dynamic_dot_list = _RecordingDotRuntimeList(call_order)
+    skill_node = _build_skill_node(element_type=3)
+    chars = [
+        SimpleNamespace(
+            special_resources=lambda anomaly: call_order.append(
+                ("special_resources", anomaly)
+            )
+        )
+    ]
+    new_dot = _FakeDot(index="Shock", call_order=call_order)
+    spawn_calls: list[tuple[object, int, object, object]] = []
+
+    def fake_spawn_anomaly_dot(element_type, timenow, *, bar, sim_instance):
+        spawn_calls.append((element_type, timenow, bar, sim_instance))
+        return new_dot
+
+    monkeypatch.setattr(
+        update_anomaly_module,
+        "spawn_anomaly_dot",
+        fake_spawn_anomaly_dot,
+    )
+    _record_dot_runtime_state_adapter(monkeypatch, helper_calls)
+    recording_queue = _RecordingEventList(call_order)
+    sim_instance.schedule_data.event_list = recording_queue
+
+    update_anomaly(
+        3,
+        enemy,
+        14,
+        legacy_event_list,
+        chars,
+        sim_instance,
+        skill_node,
+        {"alpha": [], "enemy": []},
+    )
+
+    assert len(recording_queue) == 1
+    published = recording_queue[0]
+    active_bar = enemy.dynamic.active_anomaly_bar_dict[3]
+    assert active_bar is not source_bar
+    assert enemy.dynamic.anomaly_state_3 is True
+    assert active_bar.active is True
+    assert active_bar.settled is True
+    assert source_bar.current_anomaly == np.float64(0)
+    assert source_bar.current_effective_anomaly == np.float64(0)
+    assert source_bar.ndarray_box == []
+    np.testing.assert_array_equal(
+        source_bar.current_ndarray,
+        np.zeros((1, 1), dtype=np.float64),
+    )
+
+    assert published.element_type == 3
+    assert published.activated_by is skill_node
+    assert published.is_disorder is False
+    assert published.current_effective_anomaly == np.float64(100)
+    np.testing.assert_allclose(
+        published.current_ndarray,
+        np.array([[4.4, 6.4]], dtype=np.float64),
+    )
+    assert published.schedule_priority == 999
+    assert not hasattr(published, "execute_tick")
+    assert spawn_calls == [(3, 14, published, sim_instance)]
+    assert helper_calls == [
+        ("from_enemy", enemy),
+        ("replace_by_index", new_dot, 14),
+    ]
+    assert enemy.dynamic.dynamic_dot_list == [new_dot]
+    assert call_order == [
+        ("broadcast", LBS.ANOMALY),
+        ("special_resources", published),
+        ("dot_append", "Shock"),
+        ("publish", published),
+    ]
+
+
 def test_anomaly_effect_active_replaces_same_index_dot_without_scheduled_publish(
     monkeypatch,
 ):

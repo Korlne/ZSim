@@ -2955,3 +2955,14 @@
 - Next step:
   - Continue with US-018 by characterizing the `UpdateAnomaly.py` write-path field matrix without widening into production formula replacement, copied-output report payload parity, or runtime write-path replacement.
 ---
+## 2026-06-10 13:32 +08:00 - US-018
+- Files changed: `tests/simulator/test_update_anomaly_dispatch.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_update_anomaly_records_new_anomaly_field_matrix_with_runtime_dot()` replaces implicit confidence in `UpdateAnomaly.update_anomaly(...)` new-anomaly write behavior with executable characterization for source snapshot reset, copied `NewAnomaly` fields, active-state flags, listener broadcast, character resource notification, runtime dot replacement, and scheduled publish order.
+  - This story adds characterization only; it does not replace a live production path, `UpdateAnomaly.py` branch semantics, copied-output constructors, `ScheduleDispatchPort`, `DotRuntimeStateAdapter`, listener broadcasts, runtime command behavior, validation profile wiring, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `UpdateAnomaly.py`, `anomaly_effect_active(...)`, `remove_dots_cause_disorder(...)`, `spawn_output(...)`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.NewAnomaly`, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-019 by characterizing `CopyAnomalyForOutput.NewAnomaly` payload fields separately from `UpdateAnomaly.py` publish order and without widening into runtime write-path replacement.
+---
