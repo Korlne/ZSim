@@ -168,6 +168,17 @@ class _CalPolarityDisorderOracleCase:
     expected_final_multipliers: tuple[float, ...]
 
 
+@dataclass(frozen=True)
+class _CalAbloomOracleCase:
+    case_id: str
+    base_case: _CalAnomalyMultiplierOracleCase
+    anomaly_dmg_ratio: float
+    copied_payload_sentinel_fields: dict[str, Any]
+    fixture_blocker_fields: tuple[str, ...]
+    expected_deterministic_fields: dict[str, float]
+    expected_final_multipliers: tuple[float, ...]
+
+
 _CAL_ANOMALY_FINAL_MULTIPLIER_ORDER = (
     "base_dmg",
     "dmg_bonus",
@@ -1806,6 +1817,65 @@ _CAL_ANOMALY_MULTIPLIER_ORACLE_CASES = (
             1.0,
         ),
         scaling_factor=0.60,
+    ),
+)
+
+
+_ABLOOM_FIXTURE_BLOCKER_FIELDS = (
+    "schedule_priority",
+    "rename_tag",
+    "accompany_dot",
+)
+
+
+def _make_cal_abloom_oracle_case(
+    *,
+    case_id: str,
+    base_case: _CalAnomalyMultiplierOracleCase,
+    anomaly_dmg_ratio: float,
+) -> _CalAbloomOracleCase:
+    expected_final_multipliers = (
+        base_case.expected_final_multipliers[0] * anomaly_dmg_ratio,
+        *base_case.expected_final_multipliers[1:],
+    )
+    expected_damage = (
+        float(np.prod(expected_final_multipliers))
+        / (expected_final_multipliers[9] * expected_final_multipliers[10])
+        * base_case.scaling_factor
+    )
+    return _CalAbloomOracleCase(
+        case_id=case_id,
+        base_case=base_case,
+        anomaly_dmg_ratio=anomaly_dmg_ratio,
+        copied_payload_sentinel_fields={
+            "schedule_priority": 321,
+            "rename_tag": f"{case_id}-copied-output-only",
+            "accompany_dot": "abloom-fixture-blocker",
+        },
+        fixture_blocker_fields=_ABLOOM_FIXTURE_BLOCKER_FIELDS,
+        expected_deterministic_fields={
+            "source_base_snapshot": base_case.snapshot_values[0],
+            "anomaly_dmg_ratio": anomaly_dmg_ratio,
+            "abloom_base_multiplier": expected_final_multipliers[0],
+            "scaling_factor": base_case.scaling_factor,
+            "snapshot_impact": base_case.snapshot_values[9],
+            "snapshot_stun_bonus": base_case.snapshot_values[10],
+            "cal_anomaly_dmg": expected_damage,
+        },
+        expected_final_multipliers=expected_final_multipliers,
+    )
+
+
+_CAL_ABLOOM_ORACLE_CASES = (
+    _make_cal_abloom_oracle_case(
+        case_id="physical-abloom-ratio-keeps-inherited-active-crit-inputs",
+        base_case=_CAL_ANOMALY_MULTIPLIER_ORACLE_CASES[0],
+        anomaly_dmg_ratio=1.30,
+    ),
+    _make_cal_abloom_oracle_case(
+        case_id="fire-abloom-ratio-keeps-non-physical-active-crit-neutral",
+        base_case=_CAL_ANOMALY_MULTIPLIER_ORACLE_CASES[1],
+        anomaly_dmg_ratio=0.75,
     ),
 )
 
@@ -3687,6 +3757,99 @@ def test_cal_anomaly_multiplier_inputs_remain_retained_mul_data_snapshot(
     assert fixture.anomaly_bar.scaling_factor == pytest.approx(case.scaling_factor)
     assert calculator.cal_anomaly_dmg() == pytest.approx(
         unscaled_damage * case.scaling_factor
+    )
+
+
+@pytest.mark.parametrize(
+    "case",
+    _CAL_ABLOOM_ORACLE_CASES,
+    ids=lambda case: case.case_id,
+)
+def test_cal_abloom_formula_inputs_and_fixture_blockers(
+    monkeypatch: pytest.MonkeyPatch,
+    case: _CalAbloomOracleCase,
+) -> None:
+    _reset_formula_oracle_caches()
+    base_case = case.base_case
+    fixture = _make_settled_anomaly_formula_fixture(
+        element_type=base_case.element_type,
+        snapshot=_make_anomaly_snapshot(base_case.snapshot_values),
+        scaling_factor=base_case.scaling_factor,
+    )
+    fixture.enemy.max_DEF = base_case.enemy_max_def
+    for attr_name, value in base_case.enemy_damage_resistance_attrs.items():
+        setattr(fixture.enemy, attr_name, value)
+    fixture.enemy.dynamic.stun = base_case.enemy_stunned
+    fixture.enemy.stun_DMG_take_ratio = base_case.enemy_stun_ratio
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(**base_case.dynamic_attrs),
+    )
+
+    abloom_payload = DirgeOfDestinyAnomaly(
+        fixture.anomaly_bar,
+        active_by=cast(Any, fixture.activation),
+        sim_instance=cast(Any, fixture.sim_instance),
+    )
+    abloom_payload.anomaly_dmg_ratio = case.anomaly_dmg_ratio
+    for attr_name, value in case.copied_payload_sentinel_fields.items():
+        setattr(abloom_payload, attr_name, value)
+
+    calculator = cal_anomaly_module.CalAbloom(
+        abloom_obj=abloom_payload,
+        enemy_obj=cast(Any, fixture.enemy),
+        dynamic_buff=fixture.active_buff_view,
+        sim_instance=cast(Any, fixture.sim_instance),
+    )
+
+    assert abloom_payload.current_ndarray is not fixture.anomaly_bar.current_ndarray
+    np.testing.assert_allclose(
+        abloom_payload.current_ndarray,
+        fixture.anomaly_bar.current_ndarray,
+    )
+    assert abloom_payload.activated_by is fixture.activation
+    assert calculator.dmg_sp is abloom_payload.current_ndarray
+    assert calculator.data.judge_node is abloom_payload
+    assert aggregation_calls == [
+        (
+            (),
+            abloom_payload,
+            fixture.enemy.sim_instance,
+            fixture.character.NAME,
+        )
+    ]
+    for attr_name, value in case.copied_payload_sentinel_fields.items():
+        assert getattr(abloom_payload, attr_name) == value
+    assert tuple(case.copied_payload_sentinel_fields) == case.fixture_blocker_fields
+
+    snapshot_inputs = {
+        "virtual_character_level": calculator.dmg_sp[0, 3],
+        "snapshot_pen_ratio": calculator.dmg_sp[0, 6],
+        "snapshot_pen_numeric": calculator.dmg_sp[0, 7],
+        "snapshot_res_pen": calculator.dmg_sp[0, 8],
+        "snapshot_impact": calculator.dmg_sp[0, 9],
+        "snapshot_stun_bonus": calculator.dmg_sp[0, 10],
+    }
+    dynamic_inputs = {
+        attr_name: getattr(calculator.data.dynamic, attr_name)
+        for attr_name in base_case.expected_dynamic_fields
+    }
+    deterministic_fields = {
+        "source_base_snapshot": fixture.anomaly_bar.current_ndarray[0, 0],
+        "anomaly_dmg_ratio": abloom_payload.anomaly_dmg_ratio,
+        "abloom_base_multiplier": calculator.final_multipliers[0],
+        "scaling_factor": abloom_payload.scaling_factor,
+        "snapshot_impact": calculator.final_multipliers[9],
+        "snapshot_stun_bonus": calculator.final_multipliers[10],
+        "cal_anomaly_dmg": calculator.cal_anomaly_dmg(),
+    }
+
+    assert snapshot_inputs == pytest.approx(base_case.expected_snapshot_fields)
+    assert dynamic_inputs == pytest.approx(base_case.expected_dynamic_fields)
+    assert deterministic_fields == pytest.approx(case.expected_deterministic_fields)
+    np.testing.assert_allclose(
+        calculator.final_multipliers,
+        np.array(case.expected_final_multipliers, dtype=np.float64),
     )
 
 
