@@ -2445,10 +2445,15 @@ def test_disorder_copied_output_preserves_formula_inputs_and_payload_fields(
     copied, runtime_sim = _copy_output_from_payload_case(case, fixture)
 
     assert copied is not source_bar
+    if case.copied_kind == "polarity_disorder":
+        assert isinstance(copied, PolarityDisorder)
+    else:
+        assert type(copied) is Disorder
     assert copied.sim_instance is runtime_sim
     assert copied.activated_by is fixture.activation
     assert copied.activate_by is fixture.activation
     assert copied.is_disorder is True
+    assert copied.settled is True
     assert copied.element_type == case.payload_fields["element_type"]
     assert copied.accompany_dot == case.payload_fields["accompany_dot"]
     assert copied.anomaly_dmg_ratio == pytest.approx(
@@ -2461,9 +2466,18 @@ def test_disorder_copied_output_preserves_formula_inputs_and_payload_fields(
         case.payload_fields["max_duration"]
         - (case.runtime_tick - case.payload_fields["last_active"])
     )
+    source_bar.max_duration = 999
+    source_bar.last_active = 1
+    assert copied.remaining_tick() == pytest.approx(
+        case.payload_fields["max_duration"]
+        - (case.runtime_tick - case.payload_fields["last_active"])
+    )
     assert copied.rename_tag == case.payload_fields["rename_tag"]
     assert copied.schedule_priority == 999
     assert not hasattr(copied, "execute_tick")
+    assert copied.current_effective_anomaly == pytest.approx(
+        fixture.anomaly_bar.current_effective_anomaly
+    )
     assert copied.current_ndarray is not source_bar.current_ndarray
     np.testing.assert_allclose(copied.current_ndarray, source_snapshot)
     source_bar.current_ndarray[0, 0] = -10.0
@@ -2478,6 +2492,7 @@ def test_disorder_copied_output_preserves_formula_inputs_and_payload_fields(
         assert copied.additional_dmg_ap_ratio == 32
     else:
         assert not hasattr(copied, "polarity_disorder_ratio")
+        assert not hasattr(copied, "additional_dmg_ap_ratio")
 
 
 def test_new_anomaly_spawn_output_copies_active_payload_without_publish() -> None:

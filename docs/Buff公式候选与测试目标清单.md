@@ -157,6 +157,15 @@ US-013 本轮没有 live semantic change、没有 validation wiring change，也
 | `AnomalyBar.__get_duration_enemy_buffs()` / dot、freeze-like duration reads | runtime view 或 legacy enemy dynamic list。 | 异常持续时间和 dot/freeze-like 状态相邻读取。 | guarded maintenance。 | 本 PRD 不迁移异常持续时间读取；后续需要单独覆盖 runtime view、legacy fallback、dot 列表和 freeze-like 分支。 |
 | `Load/LoadDamageEvent.py` dot / freez-like continuation | 调用方显式传入当前 Schedule 队列。 | dot 时间触发、命中后 dot、碎冰类效果继续生成伤害事件。 | blocker-only follow-up。 | 属于 Load/Schedule event-router 方向，不是 Buff phase-3 formula parity 替换入口。 |
 
+## 当前 PRD US-020 Disorder / PolarityDisorder copied-output payload 刻画
+
+本节只记录 `CopyAnomalyForOutput.Disorder` / `CopyAnomalyForOutput.PolarityDisorder` copied payload focused characterization；不改 `CopyAnomalyForOutput.py`、`UpdateAnomaly.py`、handler report payload、listener broadcast、scheduled publish、runtime port 或 production formula 语义。
+
+- `_COPIED_OUTPUT_PAYLOAD_CASES` 覆盖 plain `Disorder` 与 `PolarityDisorder` 两个 copied kind，共用 settled `AnomalyBar` fixture 和 payload sentinel 字段。
+- `test_disorder_copied_output_preserves_formula_inputs_and_payload_fields()` 断言 exact copied class、`active_by` / `activate_by`、`is_disorder`、`settled`、`element_type`、`accompany_dot`、`anomaly_dmg_ratio`、`scaling_factor`、`max_duration` / `last_active` / `remaining_tick()`、`current_effective_anomaly` 与 `current_ndarray` 非别名。
+- `PolarityDisorder` case 锁定 `polarity_disorder_ratio` 与 `additional_dmg_ap_ratio=32`；plain `Disorder` case 明确没有 polarity-only 字段。
+- 这些断言只提供 retained copied-output payload evidence；`spawn_output(...)` mode 1 / 2 listener broadcast、`UpdateAnomaly.update_anomaly(...)` scheduled publish order、handler report payload、dot runtime 与 runtime write boundaries 均保留给后续故事。
+
 ## 当前 PRD US-019 NewAnomaly copied-output payload 刻画
 
 本节只记录 `CopyAnomalyForOutput.NewAnomaly` / `UpdateAnomaly.spawn_output(..., mode_number=0)` copied payload focused characterization；不改 `CopyAnomalyForOutput.py`、`UpdateAnomaly.py`、handler report payload、listener broadcast、scheduled publish、runtime port 或 production formula 语义。

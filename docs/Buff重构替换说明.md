@@ -2977,3 +2977,14 @@
 - Next step:
   - Continue with US-020 by characterizing `Disorder` and `PolarityDisorder` copied-output payload parity without widening into production formula replacement or runtime write-path replacement.
 ---
+## 2026-06-10 13:57 +08:00 - US-020
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `_COPIED_OUTPUT_PAYLOAD_CASES` and `test_disorder_copied_output_preserves_formula_inputs_and_payload_fields()` replace implicit confidence in `CopyAnomalyForOutput.Disorder` / `PolarityDisorder` copied payload fields with executable characterization for exact copied class, `is_disorder`, `polarity_disorder_ratio`, `additional_dmg_ap_ratio`, `remaining_tick()`, `settled`, `current_effective_anomaly`, and `current_ndarray` non-aliasing.
+  - This story adds characterization only; it does not replace a live production path, `CopyAnomalyForOutput.py` constructors, `UpdateAnomaly.py` branch semantics, `spawn_output(...)` listener broadcast, scheduled publish order, handler report payloads, runtime ports, validation profile wiring, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `CopyAnomalyForOutput.Disorder`, `CopyAnomalyForOutput.PolarityDisorder`, `UpdateAnomaly.spawn_output(...)`, `UpdateAnomaly.update_anomaly(...)`, `AnomalyBar.current_ndarray`, `CalDisorder`, `CalPolarityDisorder`, `CalAnomaly.py`, `Calculator.py`, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-021 by characterizing `UpdateAnomaly.spawn_output(...)` mode 0 / 1 / 2 listener-facing fields and publish order while keeping listener broadcast, scheduled publish, dot runtime, and same-tick runtime writes separate.
+---
