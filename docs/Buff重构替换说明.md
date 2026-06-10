@@ -2828,3 +2828,15 @@
 - Next step:
   - Continue with US-007 by characterizing `AnomalyMul` mastery, proficiency, buildup, and base-damage oracle cases without changing production formulas or widening into copied-output / runtime work.
 ---
+## 2026-06-10 10:55 +08:00 - US-007
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The new `anomaly-mastery-proficiency-buildup-base-damage` `_FORMULA_ORACLE_TABLE_CASES` entry replaces implicit confidence in `Calculator.AnomalyMul.cal_am()` / `cal_ap()` / `cal_anomaly_buildup()` / `cal_base_damage()` with executable retained-oracle coverage for AM/AP reader parity, fire anomaly buildup, base anomaly damage, enemy anomaly resistance, trigger buildup bonus, and reader-built formula snapshots.
+  - This story adds characterization only; it does not replace a live production path, Calculator formula semantics, CalAnomaly formula, copied-output formula, dispatch adapter, runtime port, validation profile, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py` retained formulas, `Calculator.AnomalyMul`, `MultiplierData`, `DynamicStatement`, `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, `CalAnomaly.py`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, copied anomaly / disorder output paths, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - P2-A migrated AM/AP reader seam samples remain guarded-maintenance evidence only and do not authorize deleting retained `Calculator.AnomalyMul`, `MultiplierData`, or `DynamicStatement`.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-008 by characterizing `AnomalyMul` damage bonus, AP multiplier, extra multiplier, and anomaly crit without widening into production formula replacement, copied-output, or runtime work.
+---

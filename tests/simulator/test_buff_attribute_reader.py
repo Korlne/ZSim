@@ -169,6 +169,7 @@ def _make_enemy(
     *,
     max_def: float = 0.0,
     damage_resistance_attrs: dict[str, float] | None = None,
+    anomaly_resistance_attrs: dict[int, float] | None = None,
 ) -> SimpleNamespace:
     resistance_values = {
         "PHY_damage_resistance": 0.0,
@@ -186,6 +187,9 @@ def _make_enemy(
         ),
         sim_instance=SimpleNamespace(marker="sim"),
         max_DEF=max_def,
+        anomaly_resistance_dict=(
+            {} if anomaly_resistance_attrs is None else dict(anomaly_resistance_attrs)
+        ),
         **resistance_values,
     )
 
@@ -198,6 +202,8 @@ def _make_skill_node(
     diff_multiplier: int,
     element_type: int = 0,
     trigger_buff_level: int = 0,
+    anomaly_accumulation: float = 0.0,
+    element_damage_percent: float = 1.0,
     labels: dict[str, int] | None = None,
 ) -> SkillNode:
     skill = SimpleNamespace(
@@ -211,6 +217,8 @@ def _make_skill_node(
         diff_multiplier=diff_multiplier,
         element_type=element_type,
         trigger_buff_level=trigger_buff_level,
+        anomaly_accumulation=anomaly_accumulation,
+        element_damage_percent=element_damage_percent,
     )
     return SkillNode(cast(Any, skill), preload_tick=0)
 
@@ -233,8 +241,11 @@ def _make_attribute_read_fixture(
     element_type: int = 0,
     trigger_buff_level: int = 0,
     skill_labels: dict[str, int] | None = None,
+    anomaly_accumulation: float = 0.0,
+    element_damage_percent: float = 1.0,
     enemy_max_def: float = 0.0,
     enemy_damage_resistance_attrs: dict[str, float] | None = None,
+    enemy_anomaly_resistance_attrs: dict[int, float] | None = None,
     char_buff_count: int = 1,
     enemy_debuff_count: int = 1,
     enemy_dot_count: int = 0,
@@ -259,6 +270,7 @@ def _make_attribute_read_fixture(
         enemy_dots,
         max_def=enemy_max_def,
         damage_resistance_attrs=enemy_damage_resistance_attrs,
+        anomaly_resistance_attrs=enemy_anomaly_resistance_attrs,
     )
     active_buff_view = {char.NAME: list(char_buffs)}
     query_node = (
@@ -269,6 +281,8 @@ def _make_attribute_read_fixture(
             diff_multiplier=diff_multiplier,
             element_type=element_type,
             trigger_buff_level=trigger_buff_level,
+            anomaly_accumulation=anomaly_accumulation,
+            element_damage_percent=element_damage_percent,
             labels=skill_labels,
         )
         if damage_ratio is not None
@@ -1029,6 +1043,82 @@ _FORMULA_ORACLE_TABLE_CASES = (
                 ),
                 reader_value=lambda reader, context: reader.read_personal_crit_damage(
                     context
+                ),
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="anomaly-mastery-proficiency-buildup-base-damage",
+        fixture_kwargs={
+            "name": "异常乘区-火积蓄基础伤害",
+            "atk": 200.0,
+            "am": 120.0,
+            "ap": 350.0,
+            "damage_ratio": 1.0,
+            "hit_times": 2,
+            "diff_multiplier": 0,
+            "element_type": 1,
+            "trigger_buff_level": 2,
+            "anomaly_accumulation": 80.0,
+            "element_damage_percent": 0.75,
+            "enemy_anomaly_resistance_attrs": {1: 0.10},
+            "char_buff_count": 1,
+            "enemy_debuff_count": 1,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "field_anomaly_mastery": 0.25,
+            "anomaly_mastery": 20.0,
+            "field_anomaly_proficiency": 0.10,
+            "anomaly_proficiency": 30.0,
+            "field_atk_percentage": 0.50,
+            "atk": 20.0,
+            "fire_anomaly_buildup_bonus": 0.20,
+            "all_anomaly_buildup_bonus": 0.10,
+            "ex_special_skill_anomaly_buildup_bonus": 0.15,
+            "fire_anomaly_res_decrease": 0.05,
+        },
+        expected_dynamic_fields={
+            "field_anomaly_mastery": 0.25,
+            "anomaly_mastery": 20.0,
+            "field_anomaly_proficiency": 0.10,
+            "anomaly_proficiency": 30.0,
+            "field_atk_percentage": 0.50,
+            "atk": 20.0,
+            "fire_anomaly_buildup_bonus": 0.20,
+            "all_anomaly_buildup_bonus": 0.10,
+            "ex_special_skill_anomaly_buildup_bonus": 0.15,
+            "fire_anomaly_res_decrease": 0.05,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_am",
+                expected_value=170.0,
+                retained_value=lambda data: Calculator.AnomalyMul.cal_am(data),
+                reader_value=lambda reader, context: reader.read_anomaly_mastery(
+                    context
+                ),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_ap",
+                expected_value=415.0,
+                retained_value=lambda data: Calculator.AnomalyMul.cal_ap(data),
+                reader_value=lambda reader, context: reader.read_anomaly_proficiency(
+                    context
+                ),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_anomaly_buildup",
+                expected_value=62.8575,
+                retained_value=lambda data: Calculator.AnomalyMul.cal_anomaly_buildup(
+                    data
+                ),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_base_damage",
+                expected_value=160.0,
+                retained_value=lambda data: Calculator.AnomalyMul.cal_base_damage(
+                    data
                 ),
             ),
         ),
