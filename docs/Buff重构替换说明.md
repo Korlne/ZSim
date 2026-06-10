@@ -2803,3 +2803,16 @@
 - Next step:
   - Continue with US-005 by characterizing `RegularMul` damage bonus, defense, resistance, and vulnerability fields without changing production formulas or widening into crit / anomaly / stun families.
 ---
+## 2026-06-10 10:28 +08:00 - US-005
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The new `regular-multipliers-*` `_FORMULA_ORACLE_TABLE_CASES` replace implicit confidence in `Calculator.RegularMul.cal_dmg_bonus()` / `cal_defense_mul()` / `cal_res_mul()` / `cal_dmg_vulnerability()` with executable retained-oracle coverage for zero-like neutral, character-side damage-bonus stack, enemy defense / resistance, received resistance reduction / penetration, and vulnerability fields.
+  - `_CalculatorReadSnapshot` now carries the minimal `enemy_obj` and `char_level` fields needed for retained defense / resistance formula parity while keeping `enemy_obj` out of dataclass hashing so cached AP reader behavior stays compatible.
+  - This story adds characterization and snapshot-readiness only; it does not replace a live production path, Calculator formula semantics, CalAnomaly formula, copied-output formula, dispatch adapter, runtime port, validation profile, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py` retained formulas, `Calculator.RegularMul`, `MultiplierData`, `DynamicStatement`, `CalculatorBuffAttributeReader`, `CalAnomaly.py`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, copied anomaly / disorder output paths, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - Reader-snapshot evidence remains compatibility evidence only and does not authorize deleting retained `Calculator.RegularMul`, `MultiplierData`, or `DynamicStatement`.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-006 by characterizing `RegularMul` crit formula families / crit expectation boundaries without widening into anomaly, stun, copied-output, or production formula replacement work.
+---

@@ -1,5 +1,5 @@
 from collections.abc import Mapping as MappingABC
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 from functools import lru_cache
 from typing import Any, Literal, Mapping, Protocol, Sequence, cast
@@ -41,6 +41,8 @@ class _CalculatorReadSnapshot:
     static: Any
     dynamic: Any
     judge_node: SkillNode | AnomalyBar | None
+    enemy_obj: Enemy = field(compare=False, hash=False)
+    char_level: int | None = None
 
 
 def create_anomaly_attribute_read_context(
@@ -608,6 +610,8 @@ class CalculatorBuffAttributeReader(BuffAttributeReader):
                 static=static,
                 dynamic=dynamic,
                 judge_node=context.query_node,
+                enemy_obj=context.enemy,
+                char_level=getattr(context.character, "level", None),
             ),
         )
 

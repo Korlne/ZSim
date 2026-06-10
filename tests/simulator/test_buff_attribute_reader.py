@@ -143,6 +143,7 @@ def _make_character(
     imp: float = 0.0,
     crit_rate: float = 0.0,
     crit_damage: float = 0.0,
+    static_statement_attrs: dict[str, float] | None = None,
 ) -> SimpleNamespace:
     statement_values = {
         "ATK": atk,
@@ -154,6 +155,8 @@ def _make_character(
         "CRIT_rate": crit_rate,
         "CRIT_damage": crit_damage,
     }
+    if static_statement_attrs is not None:
+        statement_values.update(static_statement_attrs)
     statement = SimpleNamespace(statement=statement_values)
     for attr_name, value in statement_values.items():
         setattr(statement, attr_name, value)
@@ -163,13 +166,27 @@ def _make_character(
 def _make_enemy(
     enemy_debuffs: Sequence[object] = (),
     enemy_dots: Sequence[object] = (),
+    *,
+    max_def: float = 0.0,
+    damage_resistance_attrs: dict[str, float] | None = None,
 ) -> SimpleNamespace:
+    resistance_values = {
+        "PHY_damage_resistance": 0.0,
+        "FIRE_damage_resistance": 0.0,
+        "ICE_damage_resistance": 0.0,
+        "ELECTRIC_damage_resistance": 0.0,
+        "ETHER_damage_resistance": 0.0,
+    }
+    if damage_resistance_attrs is not None:
+        resistance_values.update(damage_resistance_attrs)
     return SimpleNamespace(
         dynamic=SimpleNamespace(
             dynamic_debuff_list=list(enemy_debuffs),
             dynamic_dot_list=list(enemy_dots),
         ),
         sim_instance=SimpleNamespace(marker="sim"),
+        max_DEF=max_def,
+        **resistance_values,
     )
 
 
@@ -180,18 +197,20 @@ def _make_skill_node(
     hit_times: int,
     diff_multiplier: int,
     element_type: int = 0,
+    trigger_buff_level: int = 0,
+    labels: dict[str, int] | None = None,
 ) -> SkillNode:
     skill = SimpleNamespace(
         skill_tag=f"{char_name}-formula-oracle",
         char_name=char_name,
         hit_times=hit_times,
-        labels=None,
+        labels=labels,
         ticks=max(hit_times + 1, 2),
         tick_list=[],
         damage_ratio=damage_ratio,
         diff_multiplier=diff_multiplier,
         element_type=element_type,
-        trigger_buff_level=0,
+        trigger_buff_level=trigger_buff_level,
     )
     return SkillNode(cast(Any, skill), preload_tick=0)
 
@@ -207,9 +226,15 @@ def _make_attribute_read_fixture(
     imp: float = 0.0,
     crit_rate: float = 0.0,
     crit_damage: float = 0.0,
+    static_statement_attrs: dict[str, float] | None = None,
     damage_ratio: float | None = None,
     hit_times: int = 1,
     diff_multiplier: int = 0,
+    element_type: int = 0,
+    trigger_buff_level: int = 0,
+    skill_labels: dict[str, int] | None = None,
+    enemy_max_def: float = 0.0,
+    enemy_damage_resistance_attrs: dict[str, float] | None = None,
     char_buff_count: int = 1,
     enemy_debuff_count: int = 1,
     enemy_dot_count: int = 0,
@@ -227,8 +252,14 @@ def _make_attribute_read_fixture(
         imp=imp,
         crit_rate=crit_rate,
         crit_damage=crit_damage,
+        static_statement_attrs=static_statement_attrs,
     )
-    enemy = _make_enemy(enemy_debuffs, enemy_dots)
+    enemy = _make_enemy(
+        enemy_debuffs,
+        enemy_dots,
+        max_def=enemy_max_def,
+        damage_resistance_attrs=enemy_damage_resistance_attrs,
+    )
     active_buff_view = {char.NAME: list(char_buffs)}
     query_node = (
         _make_skill_node(
@@ -236,6 +267,9 @@ def _make_attribute_read_fixture(
             damage_ratio=damage_ratio,
             hit_times=hit_times,
             diff_multiplier=diff_multiplier,
+            element_type=element_type,
+            trigger_buff_level=trigger_buff_level,
+            labels=skill_labels,
         )
         if damage_ratio is not None
         else None
@@ -648,6 +682,10 @@ def _regular_mul_base_dmg(data: MultiplierData) -> float:
     return cast(float, _regular_mul_oracle().cal_base_dmg(data))
 
 
+def _regular_mul_defense_mul(data: MultiplierData) -> float:
+    return cast(float, _regular_mul_oracle().cal_defense_mul(data))
+
+
 _FORMULA_ORACLE_TABLE_CASES = (
     _FormulaOracleCase(
         case_id="regular-base-dmg-neutral-atk",
@@ -751,6 +789,180 @@ _FORMULA_ORACLE_TABLE_CASES = (
                 label="cal_base_dmg",
                 expected_value=323.5,
                 retained_value=_regular_mul_base_dmg,
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="regular-multipliers-neutral-zero-boundary",
+        fixture_kwargs={
+            "name": "直伤乘区-中性边界",
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 1,
+            "enemy_max_def": 0.0,
+            "enemy_damage_resistance_attrs": {"FIRE_damage_resistance": 0.0},
+            "char_buff_count": 0,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={},
+        expected_dynamic_fields={
+            "fire_dmg_bonus": 0.0,
+            "normal_attack_dmg_bonus": 0.0,
+            "aftershock_attack_dmg_bonus": 0.0,
+            "all_dmg_bonus": 0.0,
+            "percentage_def_reduction": 0.0,
+            "def_reduction": 0.0,
+            "pen_ratio": 0.0,
+            "pen_numeric": 0.0,
+            "fire_dmg_res_decrease": 0.0,
+            "fire_res_pen_increase": 0.0,
+            "all_dmg_res_decrease": 0.0,
+            "all_res_pen_increase": 0.0,
+            "fire_vulnerability": 0.0,
+            "all_vulnerability": 0.0,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_dmg_bonus",
+                expected_value=1.0,
+                retained_value=lambda data: Calculator.RegularMul.cal_dmg_bonus(data),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_defense_mul",
+                expected_value=1.0,
+                retained_value=_regular_mul_defense_mul,
+            ),
+            _FormulaOracleExpectation(
+                label="cal_res_mul",
+                expected_value=1.0,
+                retained_value=lambda data: Calculator.RegularMul.cal_res_mul(data),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_dmg_vulnerability",
+                expected_value=1.0,
+                retained_value=lambda data: Calculator.RegularMul.cal_dmg_vulnerability(
+                    data
+                ),
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="regular-dmg-bonus-character-field-stack",
+        fixture_kwargs={
+            "name": "直伤乘区-角色增伤堆叠",
+            "static_statement_attrs": {"FIRE_DMG_bonus": 0.15},
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 1,
+            "trigger_buff_level": 0,
+            "skill_labels": {"aftershock_attack": 1},
+            "enemy_max_def": 0.0,
+            "enemy_damage_resistance_attrs": {"FIRE_damage_resistance": 0.0},
+            "char_buff_count": 1,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "fire_dmg_bonus": 0.25,
+            "normal_attack_dmg_bonus": 0.30,
+            "aftershock_attack_dmg_bonus": 0.10,
+            "all_dmg_bonus": 0.20,
+        },
+        expected_dynamic_fields={
+            "fire_dmg_bonus": 0.25,
+            "normal_attack_dmg_bonus": 0.30,
+            "aftershock_attack_dmg_bonus": 0.10,
+            "all_dmg_bonus": 0.20,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_dmg_bonus",
+                expected_value=2.0,
+                retained_value=lambda data: Calculator.RegularMul.cal_dmg_bonus(data),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_defense_mul",
+                expected_value=1.0,
+                retained_value=_regular_mul_defense_mul,
+            ),
+            _FormulaOracleExpectation(
+                label="cal_res_mul",
+                expected_value=1.0,
+                retained_value=lambda data: Calculator.RegularMul.cal_res_mul(data),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_dmg_vulnerability",
+                expected_value=1.0,
+                retained_value=lambda data: Calculator.RegularMul.cal_dmg_vulnerability(
+                    data
+                ),
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="regular-defense-res-vulnerability-received-stack",
+        fixture_kwargs={
+            "name": "直伤乘区-敌方与受击字段堆叠",
+            "static_statement_attrs": {"PEN_ratio": 0.10, "PEN_numeric": 20.0},
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 1,
+            "enemy_max_def": 500.0,
+            "enemy_damage_resistance_attrs": {"FIRE_damage_resistance": 0.20},
+            "char_buff_count": 0,
+            "enemy_debuff_count": 1,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "percentage_def_reduction": 0.25,
+            "def_reduction": 50.0,
+            "pen_ratio": 0.15,
+            "pen_numeric": 30.0,
+            "fire_dmg_res_decrease": 0.10,
+            "fire_res_pen_increase": 0.05,
+            "all_dmg_res_decrease": 0.08,
+            "all_res_pen_increase": 0.04,
+            "fire_vulnerability": 0.18,
+            "all_vulnerability": 0.12,
+        },
+        expected_dynamic_fields={
+            "percentage_def_reduction": 0.25,
+            "def_reduction": 50.0,
+            "pen_ratio": 0.15,
+            "pen_numeric": 30.0,
+            "fire_dmg_res_decrease": 0.10,
+            "fire_res_pen_increase": 0.05,
+            "all_dmg_res_decrease": 0.08,
+            "all_res_pen_increase": 0.04,
+            "fire_vulnerability": 0.18,
+            "all_vulnerability": 0.12,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_dmg_bonus",
+                expected_value=1.0,
+                retained_value=lambda data: Calculator.RegularMul.cal_dmg_bonus(data),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_defense_mul",
+                expected_value=794.0 / (794.0 + 193.75),
+                retained_value=_regular_mul_defense_mul,
+            ),
+            _FormulaOracleExpectation(
+                label="cal_res_mul",
+                expected_value=1.07,
+                retained_value=lambda data: Calculator.RegularMul.cal_res_mul(data),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_dmg_vulnerability",
+                expected_value=1.30,
+                retained_value=lambda data: Calculator.RegularMul.cal_dmg_vulnerability(
+                    data
+                ),
             ),
         ),
     ),
