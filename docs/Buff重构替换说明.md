@@ -2876,3 +2876,14 @@
 - Next step:
   - Continue with US-011 by characterizing `DynamicStatement` enemy debuff and dot cache participation without changing production formulas or widening into copied-output / runtime work.
 ---
+## 2026-06-10 11:43 +08:00 - US-011
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The expanded `test_enemy_dynamic_debuff_reads_feed_old_and_reader_formula_snapshots()` and new `test_multiplier_data_cache_key_distinguishes_enemy_dot_participation()` replace implicit confidence in enemy debuff aggregation / dot cache participation with executable characterization for direct `_calculate_dynamic_statement()`, `MultiplierData.get_buff_bonus()`, reader snapshots, and `MultiplierData.__new__()` cache keys.
+  - This story adds characterization only; it does not replace a live production path, Calculator formula semantics, CalAnomaly formula, copied-output formula, `AnomalyBar.__get_duration_enemy_buffs()`, Load/Schedule dot continuation behavior, dispatch adapter, runtime port, validation profile, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py` retained formulas, `_calculate_dynamic_statement()`, `MultiplierData`, `MultiplierData.__new__()`, `MultiplierData.get_buff_bonus()`, `DynamicStatement`, `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, `CalAnomaly.py`, `AnomalyBar.__get_duration_enemy_buffs()`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, copied anomaly / disorder output paths, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - Enemy dot entries remain cache-key inputs but are not included in `enabled_buff` aggregation for dynamic statements.
+- Next step:
+  - Continue with US-012 by adding migrated reader seam regression samples without reopening production formula replacement or migrating anomaly duration / Load-Schedule continuation behavior.
+---

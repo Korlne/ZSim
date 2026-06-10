@@ -1753,6 +1753,13 @@ def test_formula_parity_fixture_builds_independent_calculator_inputs(
         pytest.param(0, 0, 0, "empty-enemy-state", id="empty-enemy-state"),
         pytest.param(0, 1, 0, "one-enemy-debuff", id="one-enemy-debuff"),
         pytest.param(1, 3, 2, "stacked-enemy-debuffs", id="stacked-enemy-debuffs"),
+        pytest.param(
+            1,
+            0,
+            2,
+            "enemy-dot-cache-participation",
+            id="enemy-dot-cache-participation",
+        ),
     ],
 )
 def test_enemy_dynamic_debuff_reads_feed_old_and_reader_formula_snapshots(
@@ -1770,15 +1777,23 @@ def test_enemy_dynamic_debuff_reads_feed_old_and_reader_formula_snapshots(
         enemy_debuff_count=enemy_debuff_count,
         enemy_dot_count=enemy_dot_count,
     )
+    dynamic_statement = _dynamic_statement_by_attr(
+        field_anomaly_mastery=0.2,
+        anomaly_mastery=5.0,
+        field_anomaly_proficiency=0.1,
+        anomaly_proficiency=15.0,
+        all_vulnerability=0.25,
+    )
     aggregation_calls = _patch_buff_aggregation(
         monkeypatch,
-        _dynamic_statement_by_attr(
-            field_anomaly_mastery=0.2,
-            anomaly_mastery=5.0,
-            field_anomaly_proficiency=0.1,
-            anomaly_proficiency=15.0,
-            all_vulnerability=0.25,
-        ),
+        dynamic_statement,
+    )
+
+    direct_statement = calculator_module._calculate_dynamic_statement(
+        cast(Any, fixture.enemy),
+        fixture.active_buff_view,
+        cast(Any, fixture.char),
+        cast(Any, fixture.context.query_node),
     )
 
     retained_data = _legacy_multiplier_data(fixture)
@@ -1813,6 +1828,7 @@ def test_enemy_dynamic_debuff_reads_feed_old_and_reader_formula_snapshots(
             "cal_dmg_vulnerability": 1.25,
         }
     )
+    assert direct_statement == dynamic_statement
     assert reader_snapshot_values == pytest.approx(retained_values)
     assert reader_values == pytest.approx(
         {
@@ -1827,9 +1843,47 @@ def test_enemy_dynamic_debuff_reads_feed_old_and_reader_formula_snapshots(
         tuple(fixture.enemy.dynamic.dynamic_dot_list)
         == fixture.expected_enemy_dot_buff
     )
-    _assert_aggregation_calls(aggregation_calls, fixture, times=4)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=5)
     for enabled_buff, *_ in aggregation_calls:
         assert all(dot not in enabled_buff for dot in fixture.expected_enemy_dot_buff)
+
+
+def test_multiplier_data_cache_key_distinguishes_enemy_dot_participation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_attribute_read_fixture(
+        name="敌方dot缓存测试",
+        am=100.0,
+        char_buff_count=1,
+        enemy_debuff_count=1,
+        enemy_dot_count=0,
+    )
+    dynamic_statement = _dynamic_statement_by_attr(anomaly_mastery=5.0)
+    aggregation_calls = _patch_buff_aggregation(monkeypatch, dynamic_statement)
+
+    first = _legacy_multiplier_data(fixture)
+
+    dynamic_statement.clear()
+    dynamic_statement.update(_dynamic_statement_by_attr(anomaly_mastery=9.0))
+    enemy_dot = object()
+    fixture.enemy.dynamic.dynamic_dot_list.append(enemy_dot)
+    second = _legacy_multiplier_data(fixture)
+
+    assert second is not first
+    assert first.dynamic.anomaly_mastery == pytest.approx(5.0)
+    assert second.dynamic.anomaly_mastery == pytest.approx(9.0)
+    assert len(MultiplierData.mul_data_cache) == 2
+    _assert_aggregation_calls(aggregation_calls, fixture, times=2)
+    for enabled_buff, *_ in aggregation_calls:
+        assert enemy_dot not in enabled_buff
+
+    dynamic_statement.clear()
+    dynamic_statement.update(_dynamic_statement_by_attr(anomaly_mastery=13.0))
+    still_cached = _legacy_multiplier_data(fixture)
+
+    assert still_cached is second
+    assert still_cached.dynamic.anomaly_mastery == pytest.approx(9.0)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=2)
 
 
 @pytest.mark.parametrize(
