@@ -1,6 +1,6 @@
 # Buff公式候选与测试目标清单
 
-更新时间：2026-06-10 02:25 +08:00
+更新时间：2026-06-10 09:43 +08:00
 
 本清单服务于 Phase 3 公式等价测试设计。当前故事只建立候选面和测试目标证据，不替换 `Calculator.py`、`CalAnomaly.py`、复制异常 / 紊乱输出公式，也不改变 `ScheduleDispatchPort`、`RuntimeCommandPort` 或旧容器兼容路径。
 
@@ -9,6 +9,7 @@
 - 根工作区扫描排除：`.codex_worktrees/`、`__pycache__/`、`archive/`、`.git/`、生成日志、Ralph 历史归档和历史重复副本。
 - 文档预检：`rg --files docs | rg "Buff|XLogic|Checklist|替换|下阶段|耦合|复用|分类|公式|重构"`。
 - 源码 / 测试预检：`rg -n -S -g '!**/.codex_worktrees/**' -g '!**/__pycache__/**' -g '!**/archive/**' -g '!**/.git/**' 'MultiplierData|DynamicStatement|CalAnomaly|AnomalyBar\.current_ndarray|current_ndarray|copied.*(anomaly|disorder)|enemy.*dynamic|buff_attribute_reader|calculator-reads|AM|AP|crit|impact' zsim tests scripts docs`。
+- US-002 根工作区预检：`rg -n --glob '!.codex_worktrees/**' --glob '!archive/**' --glob '!scripts/ralph/archive/**' --glob '!scripts/ralph/run-logs/**' --glob '!**/*.log' 'RegularMul|AnomalyMul|StunMul|CalAnomaly|CalDisorder|CalPolarityDisorder|CalAbloom|current_ndarray|AnomalyBar' tests/simulator/test_buff_attribute_reader.py tests/simulator zsim/sim_progress/ScheduledEvent zsim/sim_progress/anomaly_bar docs scripts/run_buff_refactor_validation.py`。
 - CodeGraph 证据需要按根工作区路径二次筛选；`.codex_worktrees/` 下的重复定义只作为历史导航噪音，不进入候选清单。
 
 ## 候选域地图
@@ -26,7 +27,8 @@
 ## 当前最小验证入口
 
 - 单文件 focused：`uv run pytest tests/simulator/test_buff_attribute_reader.py -q`。
-- 当前 profile：`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads`，覆盖 `test_buff_attribute_reader.py`、`test_buff_raw_container_guardrail.py`、`test_migrated_am_ap_reader_guardrail.py`、`test_migrated_p2b_reader_guardrail.py`、`test_buff_attribute_state_sync.py`、`test_full_crit_event_adjacent_reader.py`。
+- Phase-3 oracle gap closure profile：`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile formula-parity`，当前最小 pytest 目标为 `test_buff_attribute_reader.py`。
+- 保留的 broader reader seam profile：`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads`，覆盖 `test_buff_attribute_reader.py`、`test_buff_raw_container_guardrail.py`、`test_migrated_am_ap_reader_guardrail.py`、`test_migrated_p2b_reader_guardrail.py`、`test_buff_attribute_state_sync.py`、`test_full_crit_event_adjacent_reader.py`。
 
 ## US-014 formula-parity validation profile 决策
 
@@ -80,6 +82,32 @@
 - `CopyAnomalyForOutput.py` / `UpdateAnomaly.py` report payload parity 与 listener-facing fields。
 - `AnomalyBar.current_ndarray` reset / deepcopy / update path 字段矩阵。
 - registered-team sample trigger 条件、rollback plan、retained `formula-parity` / `calculator-reads` / `implicit-events` gates 和明确 non-goals。
+
+## US-002 fixture inventory / oracle target map
+
+本节属于当前 Phase-3 formula oracle gap closure PRD；同名历史 US-002 不适用。根工作区预检使用上方 US-002 `rg` 命令，显式排除 `.codex_worktrees/`、`archive/`、`scripts/ralph/archive/`、`scripts/ralph/run-logs/` 与 `*.log`。预检命中 727 行；`tests/simulator/test_buff_attribute_reader.py` 因同时作为显式文件和 `tests/simulator` 目录参数出现，清单去重后只按根工作区测试文件计入。
+
+| 现有 focused fixture / test | 已覆盖公式域 | 保留兼容边界 |
+| --- | --- | --- |
+| `test_create_anomaly_attribute_read_context_preserves_inputs()`、`test_formula_parity_fixture_builds_independent_calculator_inputs()`、`test_migrated_reader_seam_regression_sample_scope_is_representative()` | 公式 parity fixture、reader context 输入、root-workspace 样本来源。 | 只证明 fixture / context 隔离和样本来源；不删除 retained `Calculator`、`MultiplierData`、old containers 或 XLogic callsites。 |
+| `test_multiplier_data_get_buff_bonus_builds_dynamic_statement_snapshot()`、`test_enemy_dynamic_debuff_reads_feed_old_and_reader_formula_snapshots()` | `MultiplierData` / `DynamicStatement`、enemy debuff 聚合、enemy dot 仅参与 cache key 的边界。 | 保留旧 `_calculate_dynamic_statement()`、`MultiplierData.get_buff_bonus()`、enemy dynamic list 读取与 cache key 语义。 |
+| `test_attribute_reader_matches_old_anomaly_mastery_helper()`、`test_attribute_reader_matches_old_anomaly_proficiency_helper()`、`test_calculator_am_ap_impact_formula_family_matches_reader_snapshot_parity()`、`test_branch_blade_song_gate_uses_attribute_reader_with_old_helper_parity()`、`test_timeweaver_disorder_gate_uses_attribute_reader_with_old_helper_parity()` | `Calculator.AnomalyMul.cal_am()` / `cal_ap()`、AM/AP reader seam、两个 migrated gate callsite。 | reader seam 与 retained helper 等价；不把 reader seam 当作生产公式替换或 runtime 写 facade。 |
+| `test_p2b_parity_fixture_matches_old_impact_helper()`、`test_calculator_am_ap_impact_formula_family_matches_reader_snapshot_parity()` | `Calculator.StunMul.cal_imp()` 与 impact reader seam。 | 当前只锁 `cal_imp()`；完整 stun ratio / resistance / bonus / received 仍需 deterministic oracle。 |
+| `test_p2b_parity_fixture_matches_old_full_and_personal_crit_rate_helpers()`、`test_p2b_full_crit_rate_includes_received_bonus_but_personal_excludes()`、`test_p2b_parity_fixture_matches_old_personal_crit_damage_helper()`、`test_p2b_personal_crit_damage_excludes_received_crit_damage_bonus()`、`test_calculator_regular_mul_crit_formula_families_preserve_received_boundaries()`、`test_calculator_attribute_formula_boundaries_remain_retained_compatibility()` | `Calculator.RegularMul.cal_crit_rate()`、`cal_personal_crit_rate()`、`cal_personal_crit_dmg()`、received crit inclusion / exclusion。 | full crit 保留 received crit rate；personal crit rate / damage 保留排除 received bonus；不覆盖直伤、defense、resistance、vulnerability 全矩阵。 |
+| `test_anomaly_formula_fixture_copies_snapshot_inputs_for_copied_output()`、`test_disorder_copied_output_preserves_formula_inputs_and_payload_fields()`、`test_anomaly_bar_settlement_and_copied_snapshot_inputs_remain_retained_compatibility()` | copied `AnomalyBar.current_ndarray` 非别名、`Disorder` / `PolarityDisorder` payload 字段、结算快照输入。 | 只锁 copied-input / payload compatibility；不替换 `CopyAnomalyForOutput.py`、`UpdateAnomaly.py`、listener broadcast 或 report payload 语义。 |
+| `test_cal_anomaly_rejects_unsettled_or_bad_snapshot_shape()`、`test_cal_anomaly_uses_settled_snapshot_mul_data_and_retained_damage_ratios()` | `CalAnomaly.__init__()` settled / shape guard、`MulData` retained snapshot、`CalAnomaly.cal_anomaly_dmg()` 与 `CalAbloom` scaling sample。 | 保留 `CalAnomaly.py` 生产公式、`AnomalyBar.current_ndarray` 直接快照读取、enemy dynamic lists 与 copied-output formulas。 |
+
+| Oracle target | 当前状态 | 后续 Ralph-sized测试方向 |
+| --- | --- | --- |
+| `Calculator.RegularMul` | crit / personal crit reader seam 与部分 received-boundary 已有 focused tests；`cal_base_dmg()`、`cal_base_attr()`、`cal_dmg_bonus()`、`cal_defense_mul()`、`cal_recipient_def()` / `cal_pen_ratio()` / `cal_res_mul()`、`cal_dmg_vulnerability()`、`cal_stun_vulnerability()`、`cal_special_mul()`、`cal_sheer_dmg_bonus()`、`cal_crit_dmg()`、`cal_crit_expect()` 和 array outputs 仍缺表驱动 oracle。 | 拆成直伤基础、damage bonus / defense / resistance / vulnerability、crit expectation 三组；每组包含 neutral、static-field、dynamic-buff、enemy-side / received 字段组合。 |
+| `Calculator.AnomalyMul` | AM/AP reader seam 与 gate callsite parity 已有；`cal_anomaly_buildup()`、`cal_base_damage()`、`cal_dmg_bonus()`、`cal_ap_mul()`、`cal_ano_extra_mul()`、`cal_anomaly_crit()`、`cal_res_pen()` 与 class array outputs 仍缺 deterministic oracle。 | 先复用 formula fixture 表达 static / field / enemy debuff / anomaly-specific dynamic fields，再加 anomaly buildup 与 anomaly damage vector cases。 |
+| `Calculator.StunMul` | `cal_imp()` 已有 reader seam / family parity；`cal_stun_ratio()`、`cal_stun_res()`、`cal_stun_bonus()`、`cal_stun_received()` 与 `get_stun_array()` 缺 oracle。 | 添加 impact + stun ratio / res / bonus / received 分离表，避免把 P2-B reader evidence 外推成完整 stun formula coverage。 |
+| `CalAnomaly` | settled snapshot、shape guard、enemy dynamic lists、`CalAnomaly.cal_anomaly_dmg()` retained ratio sample 已有。 | 表驱动覆盖 `cal_k_level()` clamps、`cal_active_crit()`、`cal_def_mul()`、res / vulnerability / stun / special multiplier 组合、`set_final_multipliers()` vector 与 `scaling_factor`。 |
+| `CalDisorder` | copied payload compatibility 已有，但 formula oracle 不完整。 | 按 element type 覆盖 `cal_disorder_base_dmg()` 的 remaining tick / floor 规则、`cal_disorder_extra_mul()` 和 `cal_disorder_stun()`。 |
+| `CalPolarityDisorder` | `PolarityDisorder` copied fields 已锁；生产 formula 只由当前 smoke path 间接触达。 | 覆盖 Yanagi lookup 成功 / 缺失失败、`polarity_disorder_ratio`、`additional_dmg_ap_ratio` 与 retained `Calculator.AnomalyMul.cal_ap()` 输入。 |
+| `CalAbloom` | `CalAbloom` scaling sample 已由 `test_cal_anomaly_uses_settled_snapshot_mul_data_and_retained_damage_ratios()` 触达。 | 独立覆盖 `anomaly_dmg_ratio` 组合和 inherited final multiplier vector，不改变 Abloom handler runtime-view 读口。 |
+| copied-output payloads | `Disorder` / `PolarityDisorder` formula inputs and payload fields 已锁；`NewAnomaly` / report payload parity 仍不足。 | 补 `NewAnomaly`、`Disorder`、`PolarityDisorder` listener-facing / report fields、`UpdateAnomaly.spawn_output(...)` mode 0 / 1 / 2 输出对象和 handler payload parity。 |
+| `AnomalyBar.current_ndarray` | settled / copied snapshot 非别名已有；field-level lifecycle matrix 不完整。 | 覆盖未满条、满条结算、`update_snap_shot()`、`reset_current_info_cause_output()`、`reset_myself()`、`create_new_from_existing()`、`__deepcopy__()`、shape / dtype / aliasing。 |
 
 ## US-013 行为样本决策矩阵
 

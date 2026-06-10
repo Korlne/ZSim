@@ -2767,3 +2767,14 @@
 - Next step:
   - Continue with US-002 by inventorying existing formula fixtures and missing oracle targets without changing production formula semantics.
 ---
+## 2026-06-10 09:43 +08:00 - US-002
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `docs/Buff公式候选与测试目标清单.md` now replaces broad repeated source-search handoff for the current phase-3 oracle-gap PRD with a named root-workspace fixture inventory and oracle target map.
+  - This story builds documentation and validation routing only; it does not replace a live production path, Calculator formula, CalAnomaly formula, copied-output formula, anomaly snapshot writer, dispatch adapter, runtime port, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.py`, `AnomalyBarClass.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; root-workspace evidence matched already documented retained formula snapshot, copied-output, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-003 by stabilizing the table-driven formula oracle harness before adding individual `RegularMul`, `AnomalyMul`, `StunMul`, `CalAnomaly`, copied-output, or `AnomalyBar.current_ndarray` oracle cases.
+---
