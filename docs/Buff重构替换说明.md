@@ -2865,3 +2865,14 @@
 - Next step:
   - Continue with US-010 by characterizing `MultiplierData` translation cache and invalid key edges without widening into production formula replacement, copied-output, or runtime work.
 ---
+## 2026-06-10 11:30 +08:00 - US-010
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The new `test_multiplier_data_dynamic_statement_translates_python_attr_names()`, `test_multiplier_data_dynamic_statement_rejects_invalid_effect_key()`, and `test_multiplier_data_cache_key_stability_and_reset_isolation()` replace implicit confidence in `MultiplierData.DynamicStatement.__read_dynamic_statement()` and `MultiplierData` / `StaticStatement` cache behavior with executable characterization for Python-attribute-name translation through `buff_effect_trans`, invalid key errors, same-key cache reuse, and reset isolation.
+  - This story adds characterization only; it does not replace a live production path, Calculator formula semantics, CalAnomaly formula, copied-output formula, dispatch adapter, runtime port, validation profile, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py` retained formulas, `MultiplierData`, `MultiplierData.mul_data_cache`, `DynamicStatement`, `StaticStatement._instance_cache`, `_calculate_dynamic_statement()`, `CalculatorBuffAttributeReader`, `CalAnomaly.py`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, copied anomaly / disorder output paths, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot and enemy dynamic read boundaries.
+- Next step:
+  - Continue with US-011 by characterizing `DynamicStatement` enemy debuff and dot cache participation without changing production formulas or widening into copied-output / runtime work.
+---

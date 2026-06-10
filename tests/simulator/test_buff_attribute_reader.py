@@ -2073,6 +2073,79 @@ def test_multiplier_data_get_buff_bonus_builds_dynamic_statement_snapshot(
     _assert_aggregation_calls(aggregation_calls, fixture, times=2)
 
 
+def test_multiplier_data_dynamic_statement_translates_python_attr_names() -> None:
+    attr_values = {
+        "anomaly_mastery": 12.0,
+        "field_anomaly_mastery": 0.25,
+        "crit_rate_received_increase": 0.4,
+        "all_anomaly_dmg_mul": 0.5,
+    }
+
+    translated_statement = _dynamic_statement_by_attr(**attr_values)
+
+    assert set(translated_statement).issubset(calculator_module.buff_effect_trans)
+    assert {
+        calculator_module.buff_effect_trans[effect_key]: value
+        for effect_key, value in translated_statement.items()
+    } == attr_values
+
+    dynamic = MultiplierData.DynamicStatement(translated_statement)
+    for attr_name, expected_value in attr_values.items():
+        assert getattr(dynamic, attr_name) == pytest.approx(expected_value)
+    assert dynamic.ano_extra_bonus["all"] == pytest.approx(
+        attr_values["all_anomaly_dmg_mul"]
+    )
+
+
+def test_multiplier_data_dynamic_statement_rejects_invalid_effect_key() -> None:
+    invalid_key = "not-a-real-effect-key"
+
+    with pytest.raises(KeyError, match=f"Invalid buff multiplier key: {invalid_key}"):
+        MultiplierData.DynamicStatement({invalid_key: 1.0})
+
+
+def test_multiplier_data_cache_key_stability_and_reset_isolation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_attribute_read_fixture(
+        am=100.0,
+        char_buff_count=1,
+        enemy_debuff_count=1,
+        enemy_dot_count=1,
+    )
+    dynamic_statement = _dynamic_statement_by_attr(anomaly_mastery=5.0)
+    aggregation_calls = _patch_buff_aggregation(monkeypatch, dynamic_statement)
+
+    first = _legacy_multiplier_data(fixture)
+    second = _legacy_multiplier_data(fixture)
+
+    assert second is first
+    assert second.static is first.static
+    assert second.dynamic.anomaly_mastery == pytest.approx(5.0)
+    assert len(MultiplierData.mul_data_cache) == 1
+    assert len(MultiplierData.StaticStatement._instance_cache) == 1
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+
+    dynamic_statement.clear()
+    dynamic_statement.update(_dynamic_statement_by_attr(anomaly_mastery=8.0))
+
+    still_cached = _legacy_multiplier_data(fixture)
+
+    assert still_cached is first
+    assert still_cached.dynamic.anomaly_mastery == pytest.approx(5.0)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+
+    _reset_formula_oracle_caches()
+    refreshed = _legacy_multiplier_data(fixture)
+
+    assert refreshed is not first
+    assert refreshed.static is not first.static
+    assert refreshed.dynamic.anomaly_mastery == pytest.approx(8.0)
+    assert len(MultiplierData.mul_data_cache) == 1
+    assert len(MultiplierData.StaticStatement._instance_cache) == 1
+    _assert_aggregation_calls(aggregation_calls, fixture, times=2)
+
+
 @pytest.mark.parametrize(
     (
         "static_am",
