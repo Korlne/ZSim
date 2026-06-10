@@ -2756,3 +2756,14 @@
 - Next step:
   - Generate the next PRD for phase-3 formula oracle gap closure / deterministic parity matrix under `docs/Buff重构方案.md`; do not generate production formula replacement until those oracle gaps are closed and the next Go / No-Go explicitly says Go.
 ---
+## 2026-06-10 09:33 +08:00 - US-001
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - This story reconfirms the phase-3 formula oracle gap closure boundary and prepares later replacement decisions; it does not replace a live production path, Calculator formula, CalAnomaly formula, copied-output formula, anomaly snapshot writer, dispatch adapter, runtime port, validation profile, guardrail, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+  - The current default remains deterministic formula oracle gap closure / parity matrix work before any production formula edit.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.py`, `AnomalyBarClass.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - Production formula replacement remains No-Go until deterministic table-driven formula oracles, copied-output payload parity, `AnomalyBar.current_ndarray` field matrices, registered behavior sample triggers, rollback plan, retained validation gates, and non-goals are explicit and passing.
+- Next step:
+  - Continue with US-002 by inventorying existing formula fixtures and missing oracle targets without changing production formula semantics.
+---
