@@ -51,7 +51,7 @@
 - [ ] 替换直接依赖 `sim_instance` 服务定位的 XLogic。
 - [ ] 将旧触发链收口到统一事件驱动分发链路。
 - [ ] 每个切片都有对应单元测试。
-- [ ] 每个切片都有主循环一致性验证。
+- [ ] 每个 production semantic 切片都有主循环一致性验证；文档 / test-only / guardrail-only / retained-compatibility story 记录跳过原因，不创建 validation-only team。
 
 ## 阶段 4：旧 Buff 残余删除
 

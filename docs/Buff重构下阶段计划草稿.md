@@ -113,7 +113,7 @@
 | phase-3 formula snapshot replacement 或 formula-output parity | 若 story 实际改 `Calculator.py`、`CalAnomaly.py`、`AnomalyBar.current_ndarray`、copied anomaly / disorder ratio 或输出数值语义，且有真实注册队伍能跑到目标 route，则运行 | main-loop sample 只作为 live behavior 证据；仍必须先有 focused formula parity suite、候选文件、rollback plan 和 validation entrypoint。 |
 | phase-3 readiness / go-no-go 决策但不改生产公式 | 不运行 | 只记录样本要求、注册队伍覆盖状态和缺口；不得把 CLI label 当 live runtime switch。 |
 
-US-013 将 Phase 3 公式 / 行为域细分为以下 registered-team trigger；完整矩阵记录在 [Buff公式候选与测试目标清单.md](./Buff公式候选与测试目标清单.md)。
+US-022 将 Phase 3 公式 / 行为域细分为以下 registered-team trigger；完整矩阵记录在 [Buff公式候选与测试目标清单.md](./Buff公式候选与测试目标清单.md)。
 
 | 触发域 | 只需要 focused characterization 的情况 | 语义变更后必须追加 registered main-loop sample 的情况 |
 | --- | --- | --- |

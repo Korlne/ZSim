@@ -2999,3 +2999,14 @@
 - Next step:
   - Continue with US-022 by defining registered-team sample conditions for formula domains without widening into production formula replacement or runtime write-path replacement.
 ---
+## 2026-06-10 14:18 +08:00 - US-022
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-022 行为样本决策矩阵` replaces implicit main-loop sample selection with documented trigger conditions for direct damage / crit, stun / impact, anomaly settlement, copied-output, Buff timeline, and event publish timing.
+  - This story defines a boundary only; it does not replace a live production path, production formula, registered-team fixture, validation profile, dispatch adapter, runtime command port, old Buff container, or legacy compatibility path.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `AnomalyBar.current_ndarray`, copied-output constructors, `UpdateAnomaly.spawn_output(...)`, `ScheduleDispatchPort`, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - Current registered teams are documented as route candidates only where their APL can realistically reach the target route; Alice / Yuzuha / Jane gaps remain gaps instead of validation-only teams.
+- Next step:
+  - Continue with US-023 by codifying rollback anchors and retained validation gates without deleting old containers or legacy Buff write paths.
+---

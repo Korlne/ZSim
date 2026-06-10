@@ -109,32 +109,32 @@
 | copied-output payloads | `NewAnomaly` mode 0 active-bar payload fields、no listener publish boundary、`Disorder` / `PolarityDisorder` formula inputs and payload fields 已锁；report payload parity 仍不足。 | 继续补 `Disorder`、`PolarityDisorder` listener-facing / report fields、`UpdateAnomaly.spawn_output(...)` mode 1 / 2 输出对象和 handler payload parity；不要把 mode 0 no-broadcast 证据外推成 scheduled publish migration。 |
 | `AnomalyBar.current_ndarray` | settled / copied snapshot 非别名已有；field-level lifecycle matrix 不完整。 | 覆盖未满条、满条结算、`update_snap_shot()`、`reset_current_info_cause_output()`、`reset_myself()`、`create_new_from_existing()`、`__deepcopy__()`、shape / dtype / aliasing。 |
 
-## US-013 行为样本决策矩阵
+## US-022 行为样本决策矩阵
 
 本矩阵只定义何时需要 registered-team main-loop consistency sample；它不新增 validation profile，不替换生产公式，不把 `--legacy-runtime` / `--candidate-runtime` label 当作真实 runtime switch。
 
 | 公式 / 行为域 | 默认证据层级 | 语义变更后何时追加 registered-team main-loop sample | 关注输出 |
 | --- | --- | --- | --- |
-| 直伤 / crit / defense / resistance / vulnerability 公式 | focused unit characterization、retained `Calculator.RegularMul` oracle、reader seam parity。 | 实际改变 `Calculator.py` 中会进入 live damage route 的数值公式，且已注册队伍的 APL 能在 stop-tick 内触达对应伤害事件。 | `total_damage` 必须解释为 live behavior 证据；仍需 focused parity suite 先通过。 |
+| direct damage / crit / defense / resistance / vulnerability 公式 | focused unit characterization、retained `Calculator.RegularMul` oracle、reader seam parity。 | 实际改变 `Calculator.py` 中会进入 live damage route 的数值公式，且已注册队伍的 APL 能在 stop-tick 内触达对应伤害事件。 | `total_damage` 必须解释为 live behavior 证据；仍需 focused parity suite 先通过。 |
 | stun / impact / stun-ratio 公式 | focused impact / stun formula snapshots、P2-B migrated reader guardrail。 | 实际改变 `Calculator.StunMul`、impact reader 或 stun received 语义，且注册队伍能在 stop-tick 内打出该 stun / impact route。 | `total_damage`、相关 `event_counts` 与 Buff timeline 是否随失衡窗口改变。 |
 | anomaly buildup / anomaly damage / settlement | focused `CalAnomaly`、`AnomalyBar.current_ndarray`、settlement snapshot tests。 | 实际改变 `CalAnomaly.py`、`AnomalyBar.current_ndarray`、`anomaly_settled()`、active anomaly snapshot 或 buildup filtering，且注册队伍能触发目标异常积蓄 / 结算 route。 | `total_damage`、异常相关 `event_counts`、Buff timeline；无注册 route 时记录缺口。 |
 | copied anomaly / disorder output | focused copied-output payload、formula-input、listener-facing field tests。 | 实际改变 `CopyAnomalyForOutput.py`、`UpdateAnomaly.spawn_output(...)`、`CalDisorder` / `CalPolarityDisorder` / `CalAbloom` copied formula semantics，且注册队伍能生成 NewAnomaly / Disorder / PolarityDisorder / copied-output payload。 | `event_counts`、`total_damage`、listener/report payload 可观察差异。 |
 | Buff timeline / lifecycle | focused lifecycle、runtime facade、guardrail tests。 | 实际改变 Buff add / refresh / pending-to-active / active removal / duration tick / forced write 顺序，且注册队伍的 live route 会生成该 Buff timeline。 | `buff_timeline` 的 legacy-only / candidate-only 样本必须为零，或差异有明确预期。 |
 | scheduled event publish timing | focused dispatch tests、fail-fast queue tests、event payload order tests。 | 实际改变 `execute_tick`、priority、target fan-out、publish-before/after ordering、`mission_start(...)` / `simple_start()` 相对顺序，且注册队伍 live route 会发布该事件。 | `event_counts`、Buff timeline 与总伤；publish timing 不能只靠 CLI label 证明。 |
-| 文档 / 分类 / test-only / guardrail-only | focused docs / tests / validation profile。 | 不运行，除非同一 story 同时改 production behavior。 | 在 Ralph progress 记录跳过原因。 |
+| 文档 / 分类 / test-only / guardrail-only / retained-compatibility | focused docs / tests / validation profile。 | 不运行，除非同一 story 同时改 production behavior。 | 在 Ralph progress 记录跳过原因，不为了补样本创建 validation-only team。 |
 
 ### Registered-team 触发条件
 
-| 触发类别 | 运行 registered sample 的必要条件 | 当前证据 / 缺口 |
-| --- | --- | --- |
-| damage | 注册队伍配置存在；APL 在 stop-tick 内命中目标技能 / 伤害事件；本 story 改动会改变公式输出或事件进入伤害计算的字段。 | P2-B 已有 `莱特火属性队` 样本；phase-3 公式替换仍需按具体公式 route 重新确认。 |
-| stun | 注册队伍能触发目标 impact / stun bonus / stun received route，并在 stop-tick 内进入可观察失衡窗口。 | `青衣雷属性队` / `席德大安比队` 可作为候选，但必须先确认 APL 触达目标文件或公式。 |
-| anomaly | 注册队伍能触发目标异常积蓄、结算、紊乱或异常伤害 route；stop-tick 覆盖 active anomaly lifecycle。 | `薇薇安物理队` 可作为 Vivian / anomaly 候选；Alice / Yuzuha / Jane 当前没有注册代表队。 |
-| copied-output | 注册队伍实际生成 NewAnomaly / Disorder / PolarityDisorder / Vivian copied payload，并让 payload 进入 handler、listener 或 report path。 | 只有确认 APL 触达 copied-output route 后才运行；否则 focused copied-output tests 是当前证据。 |
-| Buff timeline | 改动会影响 Buff / debuff / dot 的 add、refresh、activation、duration 或 removal，且注册队伍 route 会产生这些 timeline entries。 | 已有成功样本只证明对应 route，不可外推到其他 Buff / formula domains。 |
-| event publish timing | 改动会影响 scheduled event 的 publish tick、priority、target fan-out 或 producer-local ordering，且注册队伍 route 会发布该事件。 | 先用 focused dispatch tests 锁 order；registered sample 只补 live route evidence。 |
+| 触发类别 | 可考虑的真实注册队伍 / APL | 运行 registered sample 的必要条件 | 当前证据 / 缺口 |
+| --- | --- | --- | --- |
+| direct damage / crit | `莱特火属性队` / `./zsim/data/APLData/莱特-扳机-雨果.toml`；`席德大安比队` / `./zsim/data/APLData/席德-大安比-扳机.toml`。 | 注册队伍配置存在；APL 在 stop-tick 内命中目标技能 / 伤害事件；本 story 改动会改变公式输出或事件进入伤害计算的字段。 | P2-B 已有 `莱特火属性队` 样本，P2-C 已有 `席德大安比队` 样本；phase-3 公式替换仍需按具体公式 route 重新确认。 |
+| stun / impact | `青衣雷属性队` / `./zsim/data/APLData/青衣-丽娜-雅.toml`；必要时复核 `席德大安比队` / `./zsim/data/APLData/席德-大安比-扳机.toml`。 | 注册队伍能触发目标 impact / stun bonus / stun received route，并在 stop-tick 内进入可观察失衡窗口。 | 只作为候选；运行前必须先确认 APL 触达目标文件或公式，不能把 direct-damage 样本外推为 stun 证据。 |
+| anomaly settlement | `薇薇安物理队` / `./zsim/data/APLData/薇薇安-柳-耀嘉音.toml`。 | 注册队伍能触发目标异常积蓄、结算、紊乱或异常伤害 route；stop-tick 覆盖 active anomaly lifecycle。 | Vivian / Yanagi 可作为 anomaly 候选；Alice / Yuzuha / Jane 当前没有 `tests.teams.TeamRegistry` 注册代表队，不能为了样本临时发明队伍。 |
+| copied-output | `薇薇安物理队` / `./zsim/data/APLData/薇薇安-柳-耀嘉音.toml`，仅在 APL 预检证明能生成目标 copied payload 后使用。 | 注册队伍实际生成 NewAnomaly / Disorder / PolarityDisorder / Vivian copied payload，并让 payload 进入 handler、listener 或 report path。 | 若 APL 无法触达 copied-output route，记录缺口并以 focused copied-output tests 收口。 |
+| Buff timeline | 已有 `莱特火属性队` 与 `席德大安比队` 成功样本；其他注册队伍需按 touched Buff route 单独确认。 | 改动会影响 Buff / debuff / dot 的 add、refresh、activation、duration 或 removal，且注册队伍 route 会产生这些 timeline entries。 | 已有成功样本只证明对应 route，不可外推到其他 Buff / formula domains。 |
+| event publish timing | 从 `青衣雷属性队`、`席德大安比队`、`莱特火属性队`、`薇薇安物理队` 中选择能触达目标 producer 的队伍。 | 改动会影响 scheduled event 的 publish tick、priority、target fan-out 或 producer-local ordering，且注册队伍 route 会发布该事件。 | 先用 focused dispatch tests 锁 order；registered sample 只补 live route evidence，不能只靠 CLI label 证明。 |
 
-US-013 本轮没有 live semantic change、没有 validation wiring change，也没有注册队伍 fixture 变更；因此不运行 `--mainloop` 或 `scripts/run_buff_main_loop_consistency.py`。
+US-022 本轮只更新文档矩阵与 Ralph 记录，没有 live semantic change、validation wiring change 或注册队伍 fixture 变更；因此不运行 `--mainloop` 或 `scripts/run_buff_main_loop_consistency.py`，以 focused docs / tests 和 `formula-parity` validation 收口。
 
 ## US-010 复制紊乱 / 输出边界分类
 
