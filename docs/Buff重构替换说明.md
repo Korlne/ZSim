@@ -2966,3 +2966,14 @@
 - Next step:
   - Continue with US-019 by characterizing `CopyAnomalyForOutput.NewAnomaly` payload fields separately from `UpdateAnomaly.py` publish order and without widening into runtime write-path replacement.
 ---
+## 2026-06-10 13:46 +08:00 - US-019
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_new_anomaly_spawn_output_copies_active_payload_without_publish()` replaces implicit confidence in `CopyAnomalyForOutput.NewAnomaly` mode-0 copied payload fields with executable characterization for active `AnomalyBar` settlement copy, `current_ndarray`, `current_effective_anomaly`, `element_type`, `anomaly_dmg_ratio`, `scaling_factor`, duration fields, `active_by`, and no listener publish.
+  - This story adds characterization only; it does not replace a live production path, `CopyAnomalyForOutput.py` constructors, `UpdateAnomaly.py` branch semantics, handler report payloads, `ScheduleDispatchPort`, listener broadcasts, dot runtime registration, runtime ports, validation profile wiring, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `CopyAnomalyForOutput.NewAnomaly`, `UpdateAnomaly.spawn_output(...)`, `UpdateAnomaly.update_anomaly(...)`, `AnomalyBar.current_ndarray`, `AnomalyBar.anomaly_settled()`, `CalAnomaly.py`, `Calculator.py`, copied disorder / polarity disorder output paths, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-020 by characterizing `Disorder` and `PolarityDisorder` copied-output payload parity without widening into production formula replacement or runtime write-path replacement.
+---

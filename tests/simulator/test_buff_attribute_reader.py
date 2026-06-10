@@ -2480,6 +2480,93 @@ def test_disorder_copied_output_preserves_formula_inputs_and_payload_fields(
         assert not hasattr(copied, "polarity_disorder_ratio")
 
 
+def test_new_anomaly_spawn_output_copies_active_payload_without_publish() -> None:
+    from zsim.sim_progress.Update import spawn_output
+
+    broadcast_events: list[tuple[object, object]] = []
+
+    def record_broadcast(*, event: object, signal: object) -> None:
+        broadcast_events.append((event, signal))
+
+    runtime_sim = SimpleNamespace(
+        tick=410,
+        listener_manager=SimpleNamespace(broadcast_event=record_broadcast),
+    )
+    active_bar = AnomalyBar(sim_instance=cast(Any, runtime_sim), element_type=4)
+    source_snapshot = _make_anomaly_snapshot(
+        (
+            266.0,
+            1.45,
+            5.0,
+            80.0,
+            1.90,
+            0.25,
+            0.18,
+            12.0,
+            0.27,
+            1.52,
+            1.86,
+        )
+    )
+    active_bar.update_snap_shot(
+        (4, np.float64(25.0), source_snapshot),
+        cast(Any, SimpleNamespace(effective_anomlay_buildup=lambda: True)),
+    )
+    _apply_copied_output_payload(
+        cast(Any, active_bar),
+        {
+            "anomaly_dmg_ratio": 2.15,
+            "scaling_factor": 1.40,
+            "max_duration": 540,
+            "last_active": 250,
+            "active": True,
+            "accompany_dot": "Corruption",
+            "rename_tag": "new-anomaly-payload",
+        },
+    )
+    activation = SimpleNamespace(
+        skill_tag="payload-skill",
+        skill=SimpleNamespace(char_obj=_make_character(name="异常输出角色")),
+    )
+
+    copied = cast(
+        Any,
+        spawn_output(
+            active_bar,
+            0,
+            sim_instance=cast(Any, runtime_sim),
+            skill_node=cast(Any, activation),
+        ),
+    )
+
+    assert isinstance(copied, NewAnomaly)
+    copied_payload = cast(Any, copied)
+    assert copied is not active_bar
+    assert copied.sim_instance is runtime_sim
+    assert copied.is_disorder is False
+    assert copied.active is True
+    assert copied.element_type == 4
+    assert copied.accompany_dot == "Corruption"
+    assert copied.rename_tag == "new-anomaly-payload"
+    assert copied_payload.anomaly_dmg_ratio == pytest.approx(2.15)
+    assert copied.scaling_factor == pytest.approx(1.40)
+    assert copied.max_duration == 540
+    assert copied.last_active == 250
+    assert copied.remaining_tick() == pytest.approx(380)
+    assert copied.current_effective_anomaly == pytest.approx(25.0)
+    assert copied.activated_by is activation
+    assert copied.activate_by is activation
+    assert active_bar.settled is True
+    assert copied.current_ndarray is not active_bar.current_ndarray
+    np.testing.assert_allclose(copied.current_ndarray, source_snapshot)
+    active_bar.current_ndarray[0, 0] = -30.0
+    assert copied.current_ndarray[0, 0] == pytest.approx(source_snapshot[0, 0])
+    copied.current_ndarray[0, 1] = -40.0
+    assert active_bar.current_ndarray[0, 1] == pytest.approx(source_snapshot[0, 1])
+    assert not hasattr(copied, "execute_tick")
+    assert broadcast_events == []
+
+
 @pytest.mark.parametrize(
     (
         "char_buff_count",
