@@ -2840,3 +2840,15 @@
 - Next step:
   - Continue with US-008 by characterizing `AnomalyMul` damage bonus, AP multiplier, extra multiplier, and anomaly crit without widening into production formula replacement, copied-output, or runtime work.
 ---
+## 2026-06-10 11:08 +08:00 - US-008
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The new `anomaly-dmg-bonus-ratio-fields`, `anomaly-ap-multiplier-conversion`, `anomaly-extra-multiplier-fields`, and `anomaly-crit-retained-fields` `_FORMULA_ORACLE_TABLE_CASES` entries replace implicit confidence in `Calculator.AnomalyMul.cal_dmg_bonus()` / `cal_ap_mul()` / `cal_ap()` / `cal_ano_extra_mul()` / `cal_anomaly_crit()` with executable retained-oracle coverage for anomaly damage fields, AP conversion fields, extra multiplier fields, and the retained anomaly-crit `1` boundary.
+  - This story adds characterization only; it does not replace a live production path, Calculator formula semantics, CalAnomaly formula, copied-output formula, dispatch adapter, runtime port, validation profile, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py` retained formulas, `Calculator.AnomalyMul`, `MultiplierData`, `DynamicStatement`, `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, `CalAnomaly.py`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, copied anomaly / disorder output paths, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - P2-A migrated AM/AP reader seam samples remain guarded-maintenance evidence only; the new table cases are retained-oracle evidence and do not authorize deleting retained `Calculator.AnomalyMul`, `MultiplierData`, or `DynamicStatement`.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-009 by characterizing `StunMul` impact, stun ratio, resistance, bonus, and received formulas without widening into `AnomalyMul.cal_res_pen()`, anomaly vector snapshots, copied-output, or production formula replacement.
+---

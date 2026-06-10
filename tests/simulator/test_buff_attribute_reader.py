@@ -688,6 +688,10 @@ def _regular_mul_oracle() -> Any:
     return Calculator.RegularMul.__new__(Calculator.RegularMul)
 
 
+def _anomaly_mul_oracle() -> Any:
+    return Calculator.AnomalyMul.__new__(Calculator.AnomalyMul)
+
+
 def _regular_mul_base_attr(data: MultiplierData, base_attr: int) -> float:
     return cast(float, _regular_mul_oracle().cal_base_attr(base_attr, data))
 
@@ -698,6 +702,14 @@ def _regular_mul_base_dmg(data: MultiplierData) -> float:
 
 def _regular_mul_defense_mul(data: MultiplierData) -> float:
     return cast(float, _regular_mul_oracle().cal_defense_mul(data))
+
+
+def _anomaly_mul_ap_mul(data: MultiplierData) -> float:
+    return cast(float, _anomaly_mul_oracle().cal_ap_mul(data))
+
+
+def _anomaly_mul_crit(data: MultiplierData) -> float:
+    return cast(float, _anomaly_mul_oracle().cal_anomaly_crit(data))
 
 
 _FORMULA_ORACLE_TABLE_CASES = (
@@ -1120,6 +1132,134 @@ _FORMULA_ORACLE_TABLE_CASES = (
                 retained_value=lambda data: Calculator.AnomalyMul.cal_base_damage(
                     data
                 ),
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="anomaly-dmg-bonus-ratio-fields",
+        fixture_kwargs={
+            "name": "异常乘区-增伤字段",
+            "static_statement_attrs": {"FIRE_DMG_bonus": 0.12},
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 1,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "fire_dmg_bonus": 0.23,
+            "all_dmg_bonus": 0.17,
+            "anomaly_dmg_bonus": 0.08,
+        },
+        expected_dynamic_fields={
+            "fire_dmg_bonus": 0.23,
+            "all_dmg_bonus": 0.17,
+            "anomaly_dmg_bonus": 0.08,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_dmg_bonus",
+                expected_value=1.60,
+                retained_value=lambda data: Calculator.AnomalyMul.cal_dmg_bonus(data),
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="anomaly-ap-multiplier-conversion",
+        fixture_kwargs={
+            "name": "异常乘区-AP转换",
+            "ap": 320.0,
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 1,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "field_anomaly_proficiency": 0.25,
+            "anomaly_proficiency": 60.0,
+        },
+        expected_dynamic_fields={
+            "field_anomaly_proficiency": 0.25,
+            "anomaly_proficiency": 60.0,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_ap",
+                expected_value=460.0,
+                retained_value=lambda data: Calculator.AnomalyMul.cal_ap(data),
+                reader_value=lambda reader, context: reader.read_anomaly_proficiency(
+                    context
+                ),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_ap_mul",
+                expected_value=4.60,
+                retained_value=_anomaly_mul_ap_mul,
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="anomaly-extra-multiplier-fields",
+        fixture_kwargs={
+            "name": "异常乘区-额外倍率",
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 3,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "shock_dmg_mul": 0.35,
+            "all_anomaly_dmg_mul": 0.15,
+        },
+        expected_dynamic_fields={
+            "shock_dmg_mul": 0.35,
+            "all_anomaly_dmg_mul": 0.15,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_ano_extra_mul",
+                expected_value=1.50,
+                retained_value=lambda data: Calculator.AnomalyMul.cal_ano_extra_mul(
+                    data
+                ),
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="anomaly-crit-retained-fields",
+        fixture_kwargs={
+            "name": "异常乘区-暴击保留边界",
+            "crit_rate": 0.20,
+            "crit_damage": 0.80,
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 0,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "strike_crit_rate_increase": 0.25,
+            "strike_crit_dmg_increase": 0.40,
+        },
+        expected_dynamic_fields={
+            "strike_crit_rate_increase": 0.25,
+            "strike_crit_dmg_increase": 0.40,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_anomaly_crit",
+                expected_value=1.0,
+                retained_value=_anomaly_mul_crit,
             ),
         ),
     ),
