@@ -1,6 +1,6 @@
 # Buff公式候选与测试目标清单
 
-更新时间：2026-06-10 14:35 +08:00
+更新时间：2026-06-10 14:55 +08:00
 
 本清单服务于 Phase 3 公式等价测试设计。当前故事只建立候选面和测试目标证据，不替换 `Calculator.py`、`CalAnomaly.py`、复制异常 / 紊乱输出公式，也不改变 `ScheduleDispatchPort`、`RuntimeCommandPort` 或旧容器兼容路径。
 
@@ -82,6 +82,26 @@
 - `CopyAnomalyForOutput.py` / `UpdateAnomaly.py` report payload parity 与 listener-facing fields。
 - `AnomalyBar.current_ndarray` reset / deepcopy / update path 字段矩阵。
 - registered-team sample trigger 条件、rollback plan、retained `formula-parity` / `calculator-reads` / `implicit-events` gates 和明确 non-goals。
+
+## US-026 final handoff / production formula Go-No-Go
+
+结论：No-Go。US-025 已证明当前 formula-oracle PRD 的 serial gates 全部通过，但 US-026 只更新 handoff docs、PRD 状态与 Ralph 记录；没有改 `Calculator.py`、`CalAnomaly.py`、copied-output source、tests 或 `scripts/run_buff_refactor_validation.py`，因此本 story 不重跑 `formula-parity` 或 mypy。当前没有单个 production formula domain 获得替换许可。
+
+US-025 复验记录：
+
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile formula-parity` passed：base `2 passed` / isolated teams `3 passed` / focused `95 passed` / mypy `9 source files` clean。
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads` passed：base `2 passed` / isolated teams `3 passed` / focused `195 passed` / mypy `22 source files` clean。
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events` passed：base `2 passed` / isolated teams `3 passed` / focused `238 passed` / mypy `88 source files` clean。
+
+仍阻塞 production formula replacement 的 exact blockers：
+
+- `Calculator.AnomalyMul.cal_res_pen()` 与 `anomaly_snapshot` vector assembly 仍需独立 deterministic oracle / expected vector cases；不能由 AM/AP、damage bonus、extra multiplier 或 retained-1 anomaly crit cases 外推。
+- `CalAnomaly.cal_k_level()` clamp 仍需 level-boundary cases；不能由 settled snapshot / final multiplier vector / scaling_factor cases 外推。
+- copied-output handler/report payload parity 仍需单独覆盖 `CopyAnomalyForOutput.py`、`UpdateAnomaly.spawn_output(...)`、anomaly handler report payload 和 listener-facing fields；现有 copied-input / formula-input / listener broadcast tests 不能授权生产替换。
+- registered-team behavior sample 只在未来 production semantic diff 且真实注册队伍可触达目标 route 时运行；不为了 replacement proposal 创建 validation-only team。
+- Rollback 仍必须保留 `MultiplierData` / `MulData` / `DynamicStatement`、`AnomalyBar.current_ndarray`、copied-output constructors、`ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`LegacyBuffRuntimeFacade`、old containers 和 legacy `buff_add()` / `KickOutBuff()`。
+
+下一默认 PRD 应是 phase-3 replacement blocker closure / bounded-domain eligibility decision。默认优先从 `Calculator.AnomalyMul.cal_res_pen()` + `anomaly_snapshot` vector assembly 取材；完成后再用本清单复核是否可以选择单一 bounded formula domain 进入 production replacement proposal。若上述 blockers 仍未关闭，继续 characterization，不提交 production formula replacement。
 
 ## US-002 fixture inventory / oracle target map
 

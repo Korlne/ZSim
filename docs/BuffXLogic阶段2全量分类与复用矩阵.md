@@ -1268,3 +1268,26 @@ US-015 conclusion：handoff docs and the next candidate pool were synchronized a
 | Formula-adjacent characterization backlog | Available after default | Enemy anomaly-state read helpers, copied-output parity, anomaly snapshot field matrices, and migrated reader-seam samples remain available only with named files, oracle fields, expected payload / snapshot shape, and scoped validation. | `formula-parity` where covered; otherwise focused pytest plus `calculator-reads`; add `implicit-events` only for event/runtime layering. | Do not classify enemy-state gates as scheduled publishers, old-container deletion, `LegacyBuffRuntimeFacade` replacement, or production formula rewrite. |
 
 US-016 conclusion：serial validation is green, but production formula replacement remains No-Go. The next default PRD should close deterministic formula oracle gaps under `docs/Buff重构方案.md`, while preserving the broad same-phase candidate pool and blocker-only reopen rules.
+
+### 2026-06-10 US-026 Final Handoff And Bounded Replacement Decision
+
+This section records the final handoff for the phase-3 formula oracle gap-closure PRD. It does not change `BuffXLogic`, `Calculator.py`, `CalAnomaly.py`, dispatch adapters, runtime ports, guardrails, validation profiles, focused tests, or live formula / event / runtime behavior.
+
+#### Validation evidence carried forward
+
+- US-025 `formula-parity` profile passed: base `2 passed`, isolated teams `3 passed`, focused `95 passed`, mypy `Success: no issues found in 9 source files`.
+- US-025 `calculator-reads` profile passed: base `2 passed`, isolated teams `3 passed`, focused `195 passed`, mypy `Success: no issues found in 22 source files`.
+- US-025 `implicit-events` profile passed: base `2 passed`, isolated teams `3 passed`, focused `238 passed`, mypy `Success: no issues found in 88 source files`.
+- US-026 is docs-only, so it does not rerun validation; no source, test, validation target, lifecycle, runtime-write, dispatch, listener, or old-container behavior changed.
+
+#### Final Go / No-Go
+
+| candidate block | status after US-026 | next Ralph-sized direction | validation entrypoints | non-goals |
+| --- | --- | --- | --- | --- |
+| Production formula replacement | No-Go | Do not generate a production replacement PRD yet. No single formula domain is approved for production replacement until the blockers below close and a later PRD selects exactly one bounded domain. | Keep `formula-parity`, `calculator-reads`, and event/runtime-specific `implicit-events` gates available. | No broad formula rewrite, no old-container deletion, no dispatch/runtime/listener merge. |
+| Default next block: `AnomalyMul` resistance-penetration / vector assembly | Current default | Add deterministic oracle / expected vector cases for `Calculator.AnomalyMul.cal_res_pen()` and `anomaly_snapshot` vector assembly, then decide whether a single bounded domain is eligible for a later production proposal. | Focused pytest plus `formula-parity`; retain `calculator-reads`. | Do not reopen P2-A AM/AP reader migration or infer replacement approval from existing AM/AP / damage bonus / extra / crit cases. |
+| `CalAnomaly.cal_k_level()` clamp | Same-phase blocker candidate | Add level-boundary clamp cases or explicitly keep the blocker open. | Focused pytest plus `formula-parity`. | Do not rewrite `CalAnomaly.py` while characterization is incomplete. |
+| Copied-output handler/report payload parity | Same-phase blocker candidate | Cover `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, anomaly handler report payload, and listener-facing fields as report/payload parity evidence. | Focused pytest plus `formula-parity`; add `implicit-events` when event/runtime layering is touched. | Do not merge listener broadcast, scheduled publish, dot runtime, or same-tick runtime writes. |
+| P2-A through P2-G guarded maintenance | Completed guarded buckets | Open only blocker-driven PRDs when focused tests, source guardrails, or validation names a concrete regression. | Existing P2 focused tests plus `calculator-reads`, `implicit-events`, or default profile depending on touched layer. | Do not manufacture implementation backlog from completed buckets, retained compatibility names, or `.codex_worktrees/` hits. |
+
+US-026 conclusion：production formula replacement remains No-Go. The next default PRD should follow `docs/Buff重构方案.md` and close the `AnomalyMul.cal_res_pen()` / `anomaly_snapshot` vector-assembly blocker first, while preserving the broader same-phase candidate pool, retained compatibility boundaries, and blocker-only reopen rules.

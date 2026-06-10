@@ -3044,3 +3044,14 @@
 - Next step:
   - Continue with US-026 by updating final handoff docs and the formula replacement Go / No-Go decision using the US-025 serial validation evidence.
 ---
+## 2026-06-10 14:55 +08:00 - US-026
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-026 final handoff / Go-No-Go decision` replaces the previous default `phase-3 formula oracle gap closure / deterministic parity matrix` with a new default `phase-3 replacement blocker closure / bounded-domain eligibility decision`.
+  - This story updates handoff boundaries only; it does not replace a live production path, production formula, validation runner wiring, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `Calculator.AnomalyMul.cal_res_pen()`, `anomaly_snapshot` vector assembly, `CalAnomaly.cal_k_level()`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, anomaly handler report payloads, `ScheduleDispatchPort`, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, P2-A through P2-G guarded buckets, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this docs-only handoff found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Generate the next PRD from `docs/Buff重构方案.md` and the refreshed next-stage plan, defaulting to `Calculator.AnomalyMul.cal_res_pen()` / `anomaly_snapshot` vector assembly blocker closure before any production formula replacement proposal.
+---
