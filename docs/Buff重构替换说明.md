@@ -3033,3 +3033,14 @@
 - Next step:
   - Continue with US-025 by running the serial formula oracle validation gate and recording pytest-asyncio / async log shutdown noise separately from command exit status.
 ---
+## 2026-06-10 14:48 +08:00 - US-025
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-025 serial validation gate evidence` replaces implicit trust in branch-level formula oracle readiness with recorded serial `formula-parity`, `calculator-reads`, and conditional `implicit-events` validation outcomes.
+  - This story validates retained boundaries only; it does not replace a live production path, production formula, validation runner wiring, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, `ScheduleDispatchPort`, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, P2-A through P2-G guarded buckets, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this validation-gate story found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-026 by updating final handoff docs and the formula replacement Go / No-Go decision using the US-025 serial validation evidence.
+---
