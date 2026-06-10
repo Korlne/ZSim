@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass, field
 import inspect
 from pathlib import Path
@@ -193,6 +194,21 @@ _CAL_ANOMALY_FINAL_MULTIPLIER_ORDER = (
     "snapshot_stun_bonus",
     "stun_vulnerability",
     "special_mul",
+)
+
+
+_ANOMALY_CURRENT_NDARRAY_FIELDS = (
+    "base_dmg",
+    "dmg_bonus",
+    "anomaly_mastery",
+    "virtual_character_level",
+    "anomaly_bonus",
+    "snapshot_anomaly_crit",
+    "snapshot_pen_ratio",
+    "snapshot_pen_numeric",
+    "snapshot_res_pen",
+    "snapshot_impact",
+    "snapshot_stun_bonus",
 )
 
 
@@ -3403,6 +3419,8 @@ def test_anomaly_bar_settlement_and_copied_snapshot_inputs_remain_retained_compa
     effective_hit = SimpleNamespace(effective_anomlay_buildup=lambda: True)
     ineffective_hit = SimpleNamespace(effective_anomlay_buildup=lambda: False)
 
+    assert len(_ANOMALY_CURRENT_NDARRAY_FIELDS) == first_snapshot.shape[1]
+
     bar.update_snap_shot(
         (0, np.float64(20.0), first_snapshot),
         cast(Any, effective_hit),
@@ -3426,6 +3444,7 @@ def test_anomaly_bar_settlement_and_copied_snapshot_inputs_remain_retained_compa
     assert bar.current_effective_anomaly == pytest.approx(30.0)
     assert bar.ndarray_box == []
     assert bar.current_ndarray.shape == expected_snapshot.shape
+    assert bar.current_ndarray.shape == (1, len(_ANOMALY_CURRENT_NDARRAY_FIELDS))
     np.testing.assert_allclose(bar.current_ndarray, expected_snapshot)
     source_current_ndarray = bar.current_ndarray
 
@@ -3439,6 +3458,7 @@ def test_anomaly_bar_settlement_and_copied_snapshot_inputs_remain_retained_compa
     )
 
     assert copied.current_ndarray is not source_current_ndarray
+    assert copied.current_ndarray.shape == (1, len(_ANOMALY_CURRENT_NDARRAY_FIELDS))
     np.testing.assert_allclose(copied.current_ndarray, expected_snapshot)
     source_current_ndarray[0, 0] = -999.0
     assert copied.current_ndarray[0, 0] == pytest.approx(expected_snapshot[0, 0])
@@ -3446,6 +3466,144 @@ def test_anomaly_bar_settlement_and_copied_snapshot_inputs_remain_retained_compa
     assert source_current_ndarray[0, 1] == pytest.approx(expected_snapshot[0, 1])
     assert copied.activated_by is activation
     assert copied.activate_by is activation
+
+
+def test_anomaly_bar_current_ndarray_reset_deepcopy_and_shallow_copy_matrix() -> None:
+    assert _ANOMALY_CURRENT_NDARRAY_FIELDS == (
+        "base_dmg",
+        "dmg_bonus",
+        "anomaly_mastery",
+        "virtual_character_level",
+        "anomaly_bonus",
+        "snapshot_anomaly_crit",
+        "snapshot_pen_ratio",
+        "snapshot_pen_numeric",
+        "snapshot_res_pen",
+        "snapshot_impact",
+        "snapshot_stun_bonus",
+    )
+
+    sim_instance = SimpleNamespace(tick=240)
+    source_bar = AnomalyBar(sim_instance=cast(Any, sim_instance), element_type=0)
+    source_bar.current_ndarray = _make_anomaly_snapshot(
+        (
+            321.0,
+            1.25,
+            4.0,
+            60.0,
+            1.45,
+            777.0,
+            0.11,
+            16.0,
+            0.13,
+            1.35,
+            1.55,
+        )
+    )
+    source_bar.current_effective_anomaly = np.float64(40.0)
+    source_bar.current_anomaly = np.float64(144.0)
+    source_bar.ndarray_box = [
+        (
+            0,
+            np.float64(40.0),
+            source_bar.current_ndarray.copy(),
+        )
+    ]
+    source_bar.settled = True
+    source_bar.anomaly_times = 2
+    source_bar.last_active = 80
+    source_bar.ready = False
+    source_bar.active = True
+    source_bar.max_anomaly = 120
+    activation = SimpleNamespace(
+        skill=SimpleNamespace(char_obj=SimpleNamespace(NAME="矩阵角色"))
+    )
+    source_bar.activated_by = cast(Any, activation)
+
+    shallow = AnomalyBar.create_new_from_existing(source_bar)
+    assert shallow is not source_bar
+    assert shallow.current_ndarray is source_bar.current_ndarray
+    assert shallow.current_ndarray.shape == (1, len(_ANOMALY_CURRENT_NDARRAY_FIELDS))
+    assert shallow.activated_by is activation
+    assert shallow.UUID == source_bar.UUID
+
+    source_snapshot_before_deepcopy = source_bar.current_ndarray.copy()
+    deep = copy.deepcopy(source_bar)
+    assert deep is not source_bar
+    assert deep.sim_instance is sim_instance
+    assert deep.current_ndarray is not source_bar.current_ndarray
+    assert deep.current_ndarray.shape == (1, len(_ANOMALY_CURRENT_NDARRAY_FIELDS))
+    np.testing.assert_allclose(deep.current_ndarray, source_snapshot_before_deepcopy)
+    assert deep.activated_by is not None
+    assert deep.activated_by is not activation
+    assert deep.activated_by.skill is activation.skill
+    assert deep.UUID != source_bar.UUID
+
+    source_bar.current_ndarray[0, 0] = -10.0
+    assert shallow.current_ndarray[0, 0] == pytest.approx(-10.0)
+    assert deep.current_ndarray[0, 0] == pytest.approx(
+        source_snapshot_before_deepcopy[0, 0]
+    )
+    deep.current_ndarray[0, 1] = -20.0
+    assert source_bar.current_ndarray[0, 1] == pytest.approx(
+        source_snapshot_before_deepcopy[0, 1]
+    )
+
+    output_reset_bar = AnomalyBar(sim_instance=cast(Any, sim_instance), element_type=0)
+    output_reset_bar.current_ndarray = _make_anomaly_snapshot()
+    output_reset_bar.current_effective_anomaly = np.float64(30.0)
+    output_reset_bar.current_anomaly = np.float64(129.0)
+    output_reset_bar.ndarray_box = [
+        (
+            0,
+            np.float64(30.0),
+            output_reset_bar.current_ndarray.copy(),
+        )
+    ]
+    output_reset_bar.settled = True
+
+    output_reset_bar.reset_current_info_cause_output()
+
+    assert output_reset_bar.current_ndarray.shape == (1, 1)
+    np.testing.assert_allclose(
+        output_reset_bar.current_ndarray,
+        np.zeros((1, 1), dtype=np.float64),
+    )
+    assert output_reset_bar.current_effective_anomaly == pytest.approx(0.0)
+    assert output_reset_bar.current_anomaly == pytest.approx(0.0)
+    assert output_reset_bar.ndarray_box == []
+    assert output_reset_bar.settled is False
+
+    full_reset_bar = AnomalyBar(sim_instance=cast(Any, sim_instance), element_type=0)
+    full_reset_bar.current_ndarray = _make_anomaly_snapshot()
+    full_reset_bar.current_anomaly = np.float64(129.0)
+    full_reset_bar.anomaly_times = 5
+    full_reset_bar.last_active = 200
+    full_reset_bar.ready = False
+    full_reset_bar.active = True
+    full_reset_bar.max_anomaly = 120
+    full_reset_bar.ndarray_box = [
+        (
+            0,
+            np.float64(30.0),
+            full_reset_bar.current_ndarray.copy(),
+        )
+    ]
+
+    full_reset_bar.reset_myself()
+
+    assert full_reset_bar.current_ndarray.shape == (1, 1)
+    np.testing.assert_allclose(
+        full_reset_bar.current_ndarray,
+        np.zeros((1, 1), dtype=np.float64),
+    )
+    assert full_reset_bar.current_anomaly == pytest.approx(0.0)
+    assert full_reset_bar.anomaly_times == 0
+    assert full_reset_bar.last_active == 0
+    assert full_reset_bar.ready is True
+    assert full_reset_bar.active is False
+    assert full_reset_bar.max_anomaly is None
+    assert full_reset_bar.ndarray_box == []
 
 
 def test_cal_anomaly_rejects_unsettled_or_bad_snapshot_shape() -> None:

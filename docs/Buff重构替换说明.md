@@ -2944,3 +2944,14 @@
 - Next step:
   - Continue with US-017 by building the `AnomalyBar.current_ndarray` reset / deepcopy / settlement matrix without widening into production formula replacement, handler report payloads, or runtime write paths.
 ---
+## 2026-06-10 13:13 +08:00 - US-017
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `_ANOMALY_CURRENT_NDARRAY_FIELDS`, the expanded `test_anomaly_bar_settlement_and_copied_snapshot_inputs_remain_retained_compatibility()`, and `test_anomaly_bar_current_ndarray_reset_deepcopy_and_shallow_copy_matrix()` replace implicit confidence in `AnomalyBar.current_ndarray` shape / copy behavior with executable retained-state characterization for 11 snapshot fields, effective-only settlement, copied-output active_by override, shallow aliasing, deepcopy non-aliasing, and reset shapes.
+  - This story adds characterization only; it does not replace a live production path, `AnomalyBarClass.py` state semantics, `UpdateAnomaly.py` write behavior, `CalAnomaly.py` formula semantics, `CopyAnomalyForOutput.py` payload construction, handler report payloads, listener broadcast, dispatch adapter, runtime port, validation profile, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `AnomalyBarClass.py`, `AnomalyBar.current_ndarray`, `UpdateAnomaly.py`, `CalAnomaly.py`, `Calculator.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `CopyAnomalyForOutput.py`, copied anomaly / disorder output paths, `AnomalyEventHandler`, `AbloomEventHandler`, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-018 by characterizing the `UpdateAnomaly.py` write-path field matrix without widening into production formula replacement, copied-output report payload parity, or runtime write-path replacement.
+---
