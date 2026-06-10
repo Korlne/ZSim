@@ -1,6 +1,6 @@
 # Buff公式候选与测试目标清单
 
-更新时间：2026-06-10 12:58 +08:00
+更新时间：2026-06-10 14:26 +08:00
 
 本清单服务于 Phase 3 公式等价测试设计。当前故事只建立候选面和测试目标证据，不替换 `Calculator.py`、`CalAnomaly.py`、复制异常 / 紊乱输出公式，也不改变 `ScheduleDispatchPort`、`RuntimeCommandPort` 或旧容器兼容路径。
 
@@ -135,6 +135,33 @@
 | event publish timing | 从 `青衣雷属性队`、`席德大安比队`、`莱特火属性队`、`薇薇安物理队` 中选择能触达目标 producer 的队伍。 | 改动会影响 scheduled event 的 publish tick、priority、target fan-out 或 producer-local ordering，且注册队伍 route 会发布该事件。 | 先用 focused dispatch tests 锁 order；registered sample 只补 live route evidence，不能只靠 CLI label 证明。 |
 
 US-022 本轮只更新文档矩阵与 Ralph 记录，没有 live semantic change、validation wiring change 或注册队伍 fixture 变更；因此不运行 `--mainloop` 或 `scripts/run_buff_main_loop_consistency.py`，以 focused docs / tests 和 `formula-parity` validation 收口。
+
+## US-023 rollback plan / retained validation gates
+
+本节只 codify rollback 与 gate 保留规则；不改 `Calculator.py`、`CalAnomaly.py`、`CopyAnomalyForOutput.py`、`UpdateAnomaly.py`、`AnomalyBarClass.py`、validation runner 或 production formula 语义。
+
+### Retained rollback anchors
+
+- 公式锚点：`Calculator.py`、`CalAnomaly.py`、`MultiplierData`、`MulData`、`DynamicStatement`、`AnomalyBar.current_ndarray`。
+- copied-output 锚点：`CopyAnomalyForOutput.NewAnomaly`、`Disorder`、`PolarityDisorder`，以及 `UpdateAnomaly.spawn_output(...)` / `update_anomaly(...)` 的 listener-facing payload 与 scheduled publish 分层。
+- 验证锚点：`formula-parity` 是 Phase 3 formula oracle 最小 gate；`calculator-reads` 保留 reader seam / XLogic helper / dynamic snapshot gate；`implicit-events` 保留 event publish、listener broadcast、dot runtime、same-tick runtime write 和 old Buff runtime compatibility gate。
+- runtime 兼容锚点：`ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`LegacyBuffRuntimeFacade`、old containers、legacy `buff_add()` / `KickOutBuff()` 均保留；rollback 不通过删除旧容器、关闭 legacy Buff write path 或新增第二套 runtime write facade 来“修复”失败。
+
+### Rollback 操作规则
+
+| 失败类型 | 回滚动作 | 必须保留 | 复验 gate |
+| --- | --- | --- | --- |
+| helper / fixture diff 失败 | 只回退本 helper、fixture、oracle case 或测试期 adapter diff；若同 story 改了 source 与 test，按同一 commit 范围一起回退。 | 旧 `MultiplierData` / `MulData` / `DynamicStatement` 快照、`AnomalyBar.current_ndarray` 读取、copied-output 类和旧 Buff runtime compatibility path。 | `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile formula-parity`。若 helper 触及 reader seam，再串行追加 `calculator-reads`。 |
+| validation profile / runner diff 失败 | 回退 `scripts/run_buff_refactor_validation.py` 中新增或改动的 profile target / focused pytest target；不要为了让 profile 通过而删除 retained source anchors。 | `formula-parity`、`calculator-reads`、`implicit-events` 三个命名 gate 的现有职责边界。 | 若 runner contract 改过，先运行 `--help`；随后运行失败 profile 对应的 `--typecheck-profile ...`。 |
+| production formula diff 失败（后续 PRD） | 回退生产公式 diff 到上述 retained source anchors；保留 characterization tests 作为失败证据或按同 commit 回退未通过的新增断言。 | `Calculator.py` / `CalAnomaly.py` retained formula snapshots、copied-output constructors、old containers、legacy Buff write paths、dispatch / listener / runtime write 分层。 | 先跑 `formula-parity`；涉及 reader seam 跑 `calculator-reads`；涉及 copied-output event/runtime layering 跑 `implicit-events`；只有实际 production semantic slice 且 registered route 存在时才追加 main-loop sample。 |
+
+### P2-A through P2-G reopen rule
+
+- P2-A through P2-G guarded buckets 保持完成状态；公式 oracle 扩容、rollback 文档、validation profile 保留或 registered-team sample policy 不会自动重开这些 bucket。
+- 只有 guardrail、validation、root-workspace source scan 或真实 registered-route 行为证据命名具体失败文件 / 符号 / gate 时，才允许以 blocker-only PRD 重开对应 P2 bucket。
+- rollback 的默认动作是撤销失败的 replacement / helper / profile diff，并保留旧兼容边界；不得把 old containers、legacy `buff_add()` / `KickOutBuff()`、`RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 或 `ScheduleDispatchPort` 当作清理失败 diff 的删除目标。
+
+US-023 本轮只更新 rollback 文档与 Ralph 记录，没有 live semantic change、validation wiring change、registered-team fixture change 或 runtime boundary change；因此以 `formula-parity` validation 收口，不追加 `calculator-reads`、`implicit-events` 或 main-loop sample。
 
 ## US-010 复制紊乱 / 输出边界分类
 

@@ -3010,3 +3010,14 @@
 - Next step:
   - Continue with US-023 by codifying rollback anchors and retained validation gates without deleting old containers or legacy Buff write paths.
 ---
+## 2026-06-10 14:26 +08:00 - US-023
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-023 rollback plan / retained validation gates` replaces implicit rollback expectations with documented revert-and-validate rules for failed helper, validation profile, or future production formula diffs.
+  - This story builds a release-maintenance boundary only; it does not replace a live production path, formula implementation, validation runner contract, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.NewAnomaly`, `Disorder`, `PolarityDisorder`, `UpdateAnomaly.spawn_output(...)`, `ScheduleDispatchPort`, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, P2-A through P2-G guarded buckets, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this documentation story found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-024 by confirming whether current `formula-parity` validation targets remain sufficient or need explicit runner-contract updates.
+---

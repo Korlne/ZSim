@@ -52,6 +52,7 @@
 - [ ] 将旧触发链收口到统一事件驱动分发链路。
 - [ ] 每个切片都有对应单元测试。
 - [ ] 每个 production semantic 切片都有主循环一致性验证；文档 / test-only / guardrail-only / retained-compatibility story 记录跳过原因，不创建 validation-only team。
+- [x] Phase 3 formula rollback plan 已 codify：失败 helper / profile / formula diff 必须回退到 retained source anchors，并保留 `formula-parity`、`calculator-reads`、`implicit-events` 与 old Buff runtime compatibility gates；P2-A through P2-G 只按 concrete blocker 证据重开。
 
 ## 阶段 4：旧 Buff 残余删除
 
