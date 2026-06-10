@@ -2816,3 +2816,15 @@
 - Next step:
   - Continue with US-006 by characterizing `RegularMul` crit formula families / crit expectation boundaries without widening into anomaly, stun, copied-output, or production formula replacement work.
 ---
+## 2026-06-10 10:42 +08:00 - US-006
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The new `regular-crit-received-boundary` `_FORMULA_ORACLE_TABLE_CASES` entry replaces implicit confidence in `Calculator.RegularMul.cal_crit_rate()` / `cal_personal_crit_rate()` / `cal_crit_dmg()` / `cal_personal_crit_dmg()` with executable retained-oracle coverage for received crit rate / damage inclusion and personal crit exclusion.
+  - The direct crit boundary test now pins full crit damage separately from personal crit damage, but this remains characterization only and does not replace a live production path or retained Calculator formula.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py` retained formulas, `Calculator.RegularMul`, `MultiplierData`, `DynamicStatement`, `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, `CalAnomaly.py`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, copied anomaly / disorder output paths, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - P2-B migrated reader seam samples remain guardrail evidence only and do not authorize deleting retained `Calculator.RegularMul`, `MultiplierData`, or `DynamicStatement`.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-007 by characterizing `AnomalyMul` mastery, proficiency, buildup, and base-damage oracle cases without changing production formulas or widening into copied-output / runtime work.
+---

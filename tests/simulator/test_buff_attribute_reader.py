@@ -967,6 +967,73 @@ _FORMULA_ORACLE_TABLE_CASES = (
         ),
     ),
     _FormulaOracleCase(
+        case_id="regular-crit-received-boundary",
+        fixture_kwargs={
+            "name": "直伤双暴-受击字段边界",
+            "crit_rate": 0.20,
+            "crit_damage": 0.50,
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 1,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "crit_rate": 0.10,
+            "field_crit_rate": 0.05,
+            "crit_rate_received_increase": 0.25,
+            "crit_dmg": 0.30,
+            "field_crit_dmg": 0.20,
+            "received_crit_dmg_bonus": 0.40,
+        },
+        expected_dynamic_fields={
+            "crit_rate": 0.10,
+            "field_crit_rate": 0.05,
+            "crit_rate_received_increase": 0.25,
+            "crit_dmg": 0.30,
+            "field_crit_dmg": 0.20,
+            "received_crit_dmg_bonus": 0.40,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_crit_rate",
+                expected_value=0.60,
+                retained_value=lambda data: Calculator.RegularMul.cal_crit_rate(
+                    data
+                ),
+                reader_value=lambda reader, context: reader.read_full_crit_rate(
+                    context
+                ),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_personal_crit_rate",
+                expected_value=0.35,
+                retained_value=lambda data: Calculator.RegularMul.cal_personal_crit_rate(
+                    data
+                ),
+                reader_value=lambda reader, context: reader.read_personal_crit_rate(
+                    context
+                ),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_crit_dmg",
+                expected_value=1.40,
+                retained_value=lambda data: Calculator.RegularMul.cal_crit_dmg(data),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_personal_crit_dmg",
+                expected_value=1.00,
+                retained_value=lambda data: Calculator.RegularMul.cal_personal_crit_dmg(
+                    data
+                ),
+                reader_value=lambda reader, context: reader.read_personal_crit_damage(
+                    context
+                ),
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
         case_id="active-debuff-dot-reader-parity",
         fixture_kwargs={
             "name": "公式表用例-动态列表",
@@ -2002,6 +2069,7 @@ def test_calculator_am_ap_impact_formula_family_matches_reader_snapshot_parity(
             {
                 "cal_crit_rate": 0.2,
                 "cal_personal_crit_rate": 0.2,
+                "cal_crit_dmg": 0.5,
                 "cal_personal_crit_dmg": 0.5,
             },
             0.0,
@@ -2018,6 +2086,7 @@ def test_calculator_am_ap_impact_formula_family_matches_reader_snapshot_parity(
             {
                 "cal_crit_rate": 0.35,
                 "cal_personal_crit_rate": 0.35,
+                "cal_crit_dmg": 1.0,
                 "cal_personal_crit_dmg": 1.0,
             },
             0.0,
@@ -2036,6 +2105,7 @@ def test_calculator_am_ap_impact_formula_family_matches_reader_snapshot_parity(
             {
                 "cal_crit_rate": 0.6,
                 "cal_personal_crit_rate": 0.35,
+                "cal_crit_dmg": 1.4,
                 "cal_personal_crit_dmg": 1.0,
             },
             0.25,
@@ -2055,6 +2125,9 @@ def test_calculator_regular_mul_crit_formula_families_preserve_received_boundari
         name="双暴公式角色",
         crit_rate=0.2,
         crit_damage=0.5,
+        damage_ratio=1.0,
+        hit_times=1,
+        diff_multiplier=0,
         char_buff_count=1,
         enemy_debuff_count=1,
     )
@@ -2070,6 +2143,7 @@ def test_calculator_regular_mul_crit_formula_families_preserve_received_boundari
         "cal_personal_crit_rate": Calculator.RegularMul.cal_personal_crit_rate(
             retained_data
         ),
+        "cal_crit_dmg": Calculator.RegularMul.cal_crit_dmg(retained_data),
         "cal_personal_crit_dmg": Calculator.RegularMul.cal_personal_crit_dmg(
             retained_data
         ),
@@ -2084,6 +2158,9 @@ def test_calculator_regular_mul_crit_formula_families_preserve_received_boundari
     )
     assert values["cal_crit_rate"] - values["cal_personal_crit_rate"] == pytest.approx(
         retained_dynamic.crit_rate_received_increase
+    )
+    assert values["cal_crit_dmg"] - values["cal_personal_crit_dmg"] == pytest.approx(
+        retained_dynamic.received_crit_dmg_bonus
     )
     assert values["cal_personal_crit_dmg"] == pytest.approx(
         cast(Any, retained_data).static.crit_damage
