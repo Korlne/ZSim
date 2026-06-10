@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import inspect
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Iterator, Sequence, cast
+from typing import Any, Callable, Iterator, Sequence, cast
 
 import numpy as np
 import pytest
@@ -35,6 +35,10 @@ from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 _AggregationCall = tuple[tuple[object, ...], object | None, object, str | None]
+_FormulaDataOracle = Callable[[MultiplierData], Any]
+_ReaderContextOracle = Callable[
+    [CalculatorBuffAttributeReader, BuffAttributeReadContext], Any
+]
 
 
 @dataclass(frozen=True)
@@ -69,13 +73,62 @@ class _MigratedReaderSeamSample:
     expected_value: float
 
 
+@dataclass(frozen=True)
+class _OracleTolerance:
+    rel: float = 1e-12
+    abs: float = 1e-12
+
+    def approx(self, expected: Any) -> Any:
+        return pytest.approx(expected, rel=self.rel, abs=self.abs)
+
+
+@dataclass(frozen=True)
+class _FormulaOracleExpectation:
+    label: str
+    expected_value: float
+    retained_value: _FormulaDataOracle
+    reader_value: _ReaderContextOracle | None = None
+
+
+@dataclass(frozen=True)
+class _FormulaOracleCase:
+    case_id: str
+    fixture_kwargs: dict[str, Any]
+    dynamic_attrs: dict[str, float]
+    expected_dynamic_fields: dict[str, float]
+    expectations: tuple[_FormulaOracleExpectation, ...]
+    expected_aggregation_times: int | None = None
+    tolerance: _OracleTolerance = field(default_factory=_OracleTolerance)
+
+
+@dataclass(frozen=True)
+class _AnomalySnapshotOracleCase:
+    case_id: str
+    snapshot_values: tuple[float, ...]
+    scaling_factor: float = 1.25
+    character_name: str = "异常公式角色"
+
+
+@dataclass(frozen=True)
+class _CopiedOutputPayloadCase:
+    case_id: str
+    snapshot_case: _AnomalySnapshotOracleCase
+    copied_kind: str
+    runtime_tick: int
+    payload_fields: dict[str, Any]
+    polarity_ratio: float | None = None
+
+
+def _reset_formula_oracle_caches() -> None:
+    MultiplierData.mul_data_cache.clear()
+    MultiplierData.StaticStatement._instance_cache.clear()
+
+
 @pytest.fixture(autouse=True)
 def _reset_formula_fixture_state() -> Iterator[None]:
-    MultiplierData.mul_data_cache.clear()
-    MultiplierData.StaticStatement._instance_cache.clear()
+    _reset_formula_oracle_caches()
     yield
-    MultiplierData.mul_data_cache.clear()
-    MultiplierData.StaticStatement._instance_cache.clear()
+    _reset_formula_oracle_caches()
 
 
 def _make_character(
@@ -301,6 +354,105 @@ def _dynamic_statement_by_attr(**attrs: float) -> dict[str, float]:
     return {effect_by_attr[attr]: value for attr, value in attrs.items()}
 
 
+def _make_anomaly_formula_fixture_from_case(
+    case: _AnomalySnapshotOracleCase,
+) -> _AnomalyFormulaFixture:
+    return _make_settled_anomaly_formula_fixture(
+        character_name=case.character_name,
+        snapshot=_make_anomaly_snapshot(case.snapshot_values),
+        scaling_factor=case.scaling_factor,
+    )
+
+
+def _run_formula_oracle_case(
+    monkeypatch: pytest.MonkeyPatch,
+    case: _FormulaOracleCase,
+) -> _AttributeReadFixture:
+    _reset_formula_oracle_caches()
+    fixture = _make_attribute_read_fixture(**case.fixture_kwargs)
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(**case.dynamic_attrs),
+    )
+
+    retained_data = _legacy_multiplier_data(fixture)
+    reader_snapshot_data = _reader_snapshot_data(fixture.context)
+    for attr_name, expected_value in case.expected_dynamic_fields.items():
+        for source_label, data in (
+            ("retained", retained_data),
+            ("reader-snapshot", reader_snapshot_data),
+        ):
+            assert getattr(data.dynamic, attr_name) == case.tolerance.approx(
+                expected_value
+            ), f"{case.case_id}:{source_label}:{attr_name}"
+
+    reader = CalculatorBuffAttributeReader()
+    reader_expectation_count = 0
+    for expectation in case.expectations:
+        expected = case.tolerance.approx(expectation.expected_value)
+        assert expectation.retained_value(retained_data) == expected, (
+            f"{case.case_id}:{expectation.label}:retained"
+        )
+        assert expectation.retained_value(reader_snapshot_data) == expected, (
+            f"{case.case_id}:{expectation.label}:reader-snapshot"
+        )
+        if expectation.reader_value is not None:
+            reader_expectation_count += 1
+            assert expectation.reader_value(reader, fixture.context) == expected, (
+                f"{case.case_id}:{expectation.label}:reader"
+            )
+
+    expected_aggregation_times = case.expected_aggregation_times
+    if expected_aggregation_times is None:
+        expected_aggregation_times = 2 + reader_expectation_count
+    _assert_aggregation_calls(
+        aggregation_calls,
+        fixture,
+        times=expected_aggregation_times,
+    )
+    for enabled_buff, *_ in aggregation_calls:
+        assert all(dot not in enabled_buff for dot in fixture.expected_enemy_dot_buff), (
+            f"{case.case_id}:enemy-dot-exclusion"
+        )
+    return fixture
+
+
+def _apply_copied_output_payload(
+    anomaly_bar: Any,
+    payload_fields: dict[str, Any],
+) -> None:
+    for field_name, value in payload_fields.items():
+        setattr(anomaly_bar, field_name, value)
+
+
+def _copy_output_from_payload_case(
+    case: _CopiedOutputPayloadCase,
+    fixture: _AnomalyFormulaFixture,
+) -> tuple[Any, SimpleNamespace]:
+    runtime_sim = SimpleNamespace(tick=case.runtime_tick)
+    if case.copied_kind == "polarity_disorder":
+        assert case.polarity_ratio is not None
+        return (
+            PolarityDisorder(
+                cast(Any, fixture.anomaly_bar),
+                case.polarity_ratio,
+                active_by=cast(Any, fixture.activation),
+                sim_instance=cast(Any, runtime_sim),
+            ),
+            runtime_sim,
+        )
+    if case.copied_kind == "disorder":
+        return (
+            Disorder(
+                cast(Any, fixture.anomaly_bar),
+                active_by=cast(Any, fixture.activation),
+                sim_instance=cast(Any, runtime_sim),
+            ),
+            runtime_sim,
+        )
+    raise AssertionError(f"Unknown copied-output oracle case: {case.copied_kind}")
+
+
 _MIGRATED_READER_SEAM_SAMPLES = (
     _MigratedReaderSeamSample(
         case_id="p2a-alice-am",
@@ -407,6 +559,8 @@ def _retained_formula_value(formula_key: str, data: MultiplierData) -> Any:
         return Calculator.StunMul.cal_imp(data)
     if formula_key == "cal_crit_rate":
         return Calculator.RegularMul.cal_crit_rate(data)
+    if formula_key == "cal_personal_crit_rate":
+        return Calculator.RegularMul.cal_personal_crit_rate(data)
     if formula_key == "cal_personal_crit_dmg":
         return Calculator.RegularMul.cal_personal_crit_dmg(data)
     raise AssertionError(f"Unknown migrated reader formula sample: {formula_key}")
@@ -425,9 +579,231 @@ def _reader_formula_value(
         return reader.read_impact(context)
     if formula_key == "cal_crit_rate":
         return reader.read_full_crit_rate(context)
+    if formula_key == "cal_personal_crit_rate":
+        return reader.read_personal_crit_rate(context)
     if formula_key == "cal_personal_crit_dmg":
         return reader.read_personal_crit_damage(context)
     raise AssertionError(f"Unknown migrated reader formula sample: {formula_key}")
+
+
+_FORMULA_ORACLE_TABLE_CASES = (
+    _FormulaOracleCase(
+        case_id="active-debuff-dot-reader-parity",
+        fixture_kwargs={
+            "name": "公式表用例-动态列表",
+            "am": 100.0,
+            "ap": 300.0,
+            "imp": 80.0,
+            "crit_rate": 0.2,
+            "crit_damage": 0.8,
+            "char_buff_count": 2,
+            "enemy_debuff_count": 2,
+            "enemy_dot_count": 1,
+        },
+        dynamic_attrs={
+            "field_anomaly_mastery": 0.2,
+            "anomaly_mastery": 10.0,
+            "field_anomaly_proficiency": 0.1,
+            "anomaly_proficiency": 15.0,
+            "field_imp_percentage": 0.25,
+            "imp": 5.0,
+            "field_crit_rate": 0.05,
+            "crit_rate": 0.1,
+            "crit_rate_received_increase": 0.25,
+            "field_crit_dmg": 0.25,
+            "crit_dmg": 0.2,
+        },
+        expected_dynamic_fields={
+            "field_anomaly_mastery": 0.2,
+            "anomaly_mastery": 10.0,
+            "field_anomaly_proficiency": 0.1,
+            "anomaly_proficiency": 15.0,
+            "field_imp_percentage": 0.25,
+            "imp": 5.0,
+            "field_crit_rate": 0.05,
+            "crit_rate": 0.1,
+            "crit_rate_received_increase": 0.25,
+            "field_crit_dmg": 0.25,
+            "crit_dmg": 0.2,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_am",
+                expected_value=130.0,
+                retained_value=lambda data: Calculator.AnomalyMul.cal_am(data),
+                reader_value=lambda reader, context: reader.read_anomaly_mastery(
+                    context
+                ),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_ap",
+                expected_value=345.0,
+                retained_value=lambda data: Calculator.AnomalyMul.cal_ap(data),
+                reader_value=lambda reader, context: reader.read_anomaly_proficiency(
+                    context
+                ),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_imp",
+                expected_value=105.0,
+                retained_value=lambda data: Calculator.StunMul.cal_imp(data),
+                reader_value=lambda reader, context: reader.read_impact(context),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_crit_rate",
+                expected_value=0.6,
+                retained_value=lambda data: Calculator.RegularMul.cal_crit_rate(
+                    data
+                ),
+                reader_value=lambda reader, context: reader.read_full_crit_rate(
+                    context
+                ),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_personal_crit_dmg",
+                expected_value=1.25,
+                retained_value=lambda data: Calculator.RegularMul.cal_personal_crit_dmg(
+                    data
+                ),
+                reader_value=lambda reader, context: reader.read_personal_crit_damage(
+                    context
+                ),
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="empty-dynamic-defaults",
+        fixture_kwargs={
+            "name": "公式表用例-默认值",
+            "am": 90.0,
+            "ap": 310.0,
+            "imp": 70.0,
+            "crit_rate": 0.15,
+            "crit_damage": 0.6,
+            "char_buff_count": 0,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={},
+        expected_dynamic_fields={
+            "field_anomaly_mastery": 0.0,
+            "anomaly_mastery": 0.0,
+            "field_anomaly_proficiency": 0.0,
+            "anomaly_proficiency": 0.0,
+            "field_imp_percentage": 0.0,
+            "imp": 0.0,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_am",
+                expected_value=90.0,
+                retained_value=lambda data: Calculator.AnomalyMul.cal_am(data),
+                reader_value=lambda reader, context: reader.read_anomaly_mastery(
+                    context
+                ),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_ap",
+                expected_value=310.0,
+                retained_value=lambda data: Calculator.AnomalyMul.cal_ap(data),
+                reader_value=lambda reader, context: reader.read_anomaly_proficiency(
+                    context
+                ),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_imp",
+                expected_value=70.0,
+                retained_value=lambda data: Calculator.StunMul.cal_imp(data),
+                reader_value=lambda reader, context: reader.read_impact(context),
+            ),
+        ),
+    ),
+)
+
+
+_ANOMALY_SNAPSHOT_ORACLE_CASES = (
+    _AnomalySnapshotOracleCase(
+        case_id="new-anomaly-copy-source-snapshot",
+        snapshot_values=(
+            210.0,
+            1.20,
+            3.0,
+            60.0,
+            1.50,
+            999.0,
+            0.15,
+            5.0,
+            0.20,
+            1.30,
+            1.70,
+        ),
+    ),
+)
+
+
+_COPIED_OUTPUT_PAYLOAD_CASES = (
+    _CopiedOutputPayloadCase(
+        case_id="disorder-payload-fields",
+        snapshot_case=_AnomalySnapshotOracleCase(
+            case_id="disorder-source-snapshot",
+            snapshot_values=(
+                188.0,
+                1.35,
+                4.0,
+                72.0,
+                1.80,
+                777.0,
+                0.22,
+                9.0,
+                0.33,
+                1.44,
+                1.66,
+            ),
+            scaling_factor=1.75,
+        ),
+        copied_kind="disorder",
+        runtime_tick=300,
+        payload_fields={
+            "element_type": 3,
+            "accompany_dot": "Shock",
+            "anomaly_dmg_ratio": 2.4,
+            "max_duration": 480,
+            "last_active": 120,
+            "rename_tag": "copied-disorder-source",
+        },
+    ),
+    _CopiedOutputPayloadCase(
+        case_id="polarity-disorder-payload-fields",
+        snapshot_case=_AnomalySnapshotOracleCase(
+            case_id="polarity-disorder-source-snapshot",
+            snapshot_values=(
+                188.0,
+                1.35,
+                4.0,
+                72.0,
+                1.80,
+                777.0,
+                0.22,
+                9.0,
+                0.33,
+                1.44,
+                1.66,
+            ),
+            scaling_factor=1.75,
+        ),
+        copied_kind="polarity_disorder",
+        runtime_tick=300,
+        payload_fields={
+            "element_type": 3,
+            "accompany_dot": "Shock",
+            "anomaly_dmg_ratio": 2.4,
+            "max_duration": 480,
+            "last_active": 120,
+            "rename_tag": "copied-disorder-source",
+        },
+        polarity_ratio=0.65,
+    ),
+)
 
 
 def test_migrated_reader_seam_regression_sample_scope_is_representative() -> None:
@@ -508,6 +884,25 @@ def test_migrated_reader_seam_regression_samples_match_retained_helpers(
     assert reader_snapshot_value == pytest.approx(retained_value)
     assert reader_value == pytest.approx(retained_value)
     _assert_aggregation_calls(aggregation_calls, fixture, times=3)
+
+
+@pytest.mark.parametrize(
+    "case",
+    _FORMULA_ORACLE_TABLE_CASES,
+    ids=lambda case: case.case_id,
+)
+def test_formula_oracle_table_cases_drive_expected_fields_and_reader_parity(
+    monkeypatch: pytest.MonkeyPatch,
+    case: _FormulaOracleCase,
+) -> None:
+    fixture = _run_formula_oracle_case(monkeypatch, case)
+
+    char_buff_count = cast(int, case.fixture_kwargs["char_buff_count"])
+    enemy_debuff_count = cast(int, case.fixture_kwargs["enemy_debuff_count"])
+    enemy_dot_count = cast(int, case.fixture_kwargs["enemy_dot_count"])
+    assert len(fixture.active_buff_view[fixture.char.NAME]) == char_buff_count
+    assert len(fixture.enemy.dynamic.dynamic_debuff_list) == enemy_debuff_count
+    assert len(fixture.enemy.dynamic.dynamic_dot_list) == enemy_dot_count
 
 
 def test_formula_parity_fixture_builds_independent_calculator_inputs(
@@ -666,12 +1061,17 @@ def test_enemy_dynamic_debuff_reads_feed_old_and_reader_formula_snapshots(
         assert all(dot not in enabled_buff for dot in fixture.expected_enemy_dot_buff)
 
 
-def test_anomaly_formula_fixture_copies_snapshot_inputs_for_copied_output() -> None:
-    source_snapshot = _make_anomaly_snapshot(
-        (210.0, 1.20, 3.0, 60.0, 1.50, 999.0, 0.15, 5.0, 0.20, 1.30, 1.70)
-    )
+@pytest.mark.parametrize(
+    "case",
+    _ANOMALY_SNAPSHOT_ORACLE_CASES,
+    ids=lambda case: case.case_id,
+)
+def test_anomaly_formula_fixture_copies_snapshot_inputs_for_copied_output(
+    case: _AnomalySnapshotOracleCase,
+) -> None:
+    fixture = _make_anomaly_formula_fixture_from_case(case)
+    source_snapshot = fixture.source_snapshot
     original_snapshot = source_snapshot.copy()
-    fixture = _make_settled_anomaly_formula_fixture(snapshot=source_snapshot)
 
     assert fixture.anomaly_bar.current_ndarray is not source_snapshot
     np.testing.assert_allclose(fixture.anomaly_bar.current_ndarray, original_snapshot)
@@ -694,62 +1094,37 @@ def test_anomaly_formula_fixture_copies_snapshot_inputs_for_copied_output() -> N
 
 
 @pytest.mark.parametrize(
-    ("copied_kind", "polarity_ratio"),
-    [
-        pytest.param("disorder", None, id="disorder"),
-        pytest.param("polarity_disorder", 0.65, id="polarity-disorder"),
-    ],
+    "case",
+    _COPIED_OUTPUT_PAYLOAD_CASES,
+    ids=lambda case: case.case_id,
 )
 def test_disorder_copied_output_preserves_formula_inputs_and_payload_fields(
-    copied_kind: str,
-    polarity_ratio: float | None,
+    case: _CopiedOutputPayloadCase,
 ) -> None:
-    source_snapshot = _make_anomaly_snapshot(
-        (188.0, 1.35, 4.0, 72.0, 1.80, 777.0, 0.22, 9.0, 0.33, 1.44, 1.66)
-    )
-    fixture = _make_settled_anomaly_formula_fixture(
-        snapshot=source_snapshot,
-        scaling_factor=1.75,
-    )
+    fixture = _make_anomaly_formula_fixture_from_case(case.snapshot_case)
+    source_snapshot = fixture.source_snapshot
     source_bar = cast(Any, fixture.anomaly_bar)
-    source_bar.element_type = 3
-    source_bar.accompany_dot = "Shock"
-    source_bar.anomaly_dmg_ratio = 2.4
-    source_bar.basic_max_duration = 600
-    source_bar.max_duration = 480
-    source_bar.last_active = 120
-    source_bar.rename_tag = "copied-disorder-source"
-    runtime_sim = SimpleNamespace(tick=300)
-
-    copied: Any
-    if copied_kind == "polarity_disorder":
-        assert polarity_ratio is not None
-        copied = PolarityDisorder(
-            source_bar,
-            polarity_ratio,
-            active_by=cast(Any, fixture.activation),
-            sim_instance=cast(Any, runtime_sim),
-        )
-    else:
-        copied = Disorder(
-            source_bar,
-            active_by=cast(Any, fixture.activation),
-            sim_instance=cast(Any, runtime_sim),
-        )
+    _apply_copied_output_payload(source_bar, case.payload_fields)
+    copied, runtime_sim = _copy_output_from_payload_case(case, fixture)
 
     assert copied is not source_bar
     assert copied.sim_instance is runtime_sim
     assert copied.activated_by is fixture.activation
     assert copied.activate_by is fixture.activation
     assert copied.is_disorder is True
-    assert copied.element_type == source_bar.element_type
-    assert copied.accompany_dot == "Shock"
-    assert copied.anomaly_dmg_ratio == pytest.approx(2.4)
-    assert copied.scaling_factor == pytest.approx(1.75)
-    assert copied.max_duration == pytest.approx(480)
-    assert copied.last_active == 120
-    assert copied.remaining_tick() == pytest.approx(300)
-    assert copied.rename_tag == "copied-disorder-source"
+    assert copied.element_type == case.payload_fields["element_type"]
+    assert copied.accompany_dot == case.payload_fields["accompany_dot"]
+    assert copied.anomaly_dmg_ratio == pytest.approx(
+        case.payload_fields["anomaly_dmg_ratio"]
+    )
+    assert copied.scaling_factor == pytest.approx(case.snapshot_case.scaling_factor)
+    assert copied.max_duration == pytest.approx(case.payload_fields["max_duration"])
+    assert copied.last_active == case.payload_fields["last_active"]
+    assert copied.remaining_tick() == pytest.approx(
+        case.payload_fields["max_duration"]
+        - (case.runtime_tick - case.payload_fields["last_active"])
+    )
+    assert copied.rename_tag == case.payload_fields["rename_tag"]
     assert copied.schedule_priority == 999
     assert not hasattr(copied, "execute_tick")
     assert copied.current_ndarray is not source_bar.current_ndarray
@@ -759,9 +1134,9 @@ def test_disorder_copied_output_preserves_formula_inputs_and_payload_fields(
     copied.current_ndarray[0, 1] = -20.0
     assert source_bar.current_ndarray[0, 1] == pytest.approx(source_snapshot[0, 1])
 
-    if copied_kind == "polarity_disorder":
+    if case.copied_kind == "polarity_disorder":
         assert copied.polarity_disorder_ratio == pytest.approx(
-            cast(float, polarity_ratio)
+            cast(float, case.polarity_ratio)
         )
         assert copied.additional_dmg_ap_ratio == 32
     else:

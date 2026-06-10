@@ -2778,3 +2778,15 @@
 - Next step:
   - Continue with US-003 by stabilizing the table-driven formula oracle harness before adding individual `RegularMul`, `AnomalyMul`, `StunMul`, `CalAnomaly`, copied-output, or `AnomalyBar.current_ndarray` oracle cases.
 ---
+## 2026-06-10 10:03 +08:00 - US-003
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `_FormulaOracleCase`, `_FormulaOracleExpectation`, `_AnomalySnapshotOracleCase`, and `_CopiedOutputPayloadCase` replace one-off formula oracle setup for the current phase-3 test harness with table-driven retained / reader snapshot / optional reader assertions.
+  - `_reset_formula_oracle_caches()` centralizes the cache reset used by formula oracle fixtures and prepares later stories to add deterministic `RegularMul`, `AnomalyMul`, `StunMul`, `CalAnomaly`, copied-output, and `AnomalyBar.current_ndarray` oracle cases without changing production formulas.
+  - This story builds test harness infrastructure only; it does not replace a live production path, Calculator formula, CalAnomaly formula, copied-output formula, anomaly snapshot writer, dispatch adapter, runtime port, validation profile, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.py`, `AnomalyBarClass.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; the new table harness matched already documented retained formula snapshot, copied-output payload, enemy dynamic read, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-004 by adding deterministic `RegularMul` base damage and attribute input cases through the new table harness before any production formula replacement.
+---
