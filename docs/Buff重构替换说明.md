@@ -3021,3 +3021,15 @@
 - Next step:
   - Continue with US-024 by confirming whether current `formula-parity` validation targets remain sufficient or need explicit runner-contract updates.
 ---
+## 2026-06-10 14:38 +08:00 - US-024
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-024 formula-parity validation target contract` replaces implicit validation-target assumptions with an explicit retained contract: formula oracle tests stay under `tests/simulator/test_buff_attribute_reader.py`, and `FORMULA_PARITY_FOCUSED_TEST_TARGETS` / `FORMULA_PARITY_TYPECHECK_TARGETS` remain sufficient for the current formula-oracle surface.
+  - This story builds a validation-contract boundary only; it does not replace a live production path, formula implementation, validation runner wiring, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, `ScheduleDispatchPort`, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, P2-A through P2-G guarded buckets, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - `tests/simulator/test_update_anomaly_dispatch.py` remains event/runtime copied-output evidence covered by `implicit-events` or story-local focused tests; it is not folded into `formula-parity` without a future formula-oracle source/test split.
+  - No old-coupling review update was needed; this documentation story found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-025 by running the serial formula oracle validation gate and recording pytest-asyncio / async log shutdown noise separately from command exit status.
+---

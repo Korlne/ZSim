@@ -1,6 +1,6 @@
 # Buff公式候选与测试目标清单
 
-更新时间：2026-06-10 14:26 +08:00
+更新时间：2026-06-10 14:35 +08:00
 
 本清单服务于 Phase 3 公式等价测试设计。当前故事只建立候选面和测试目标证据，不替换 `Calculator.py`、`CalAnomaly.py`、复制异常 / 紊乱输出公式，也不改变 `ScheduleDispatchPort`、`RuntimeCommandPort` 或旧容器兼容路径。
 
@@ -162,6 +162,16 @@ US-022 本轮只更新文档矩阵与 Ralph 记录，没有 live semantic change
 - rollback 的默认动作是撤销失败的 replacement / helper / profile diff，并保留旧兼容边界；不得把 old containers、legacy `buff_add()` / `KickOutBuff()`、`RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 或 `ScheduleDispatchPort` 当作清理失败 diff 的删除目标。
 
 US-023 本轮只更新 rollback 文档与 Ralph 记录，没有 live semantic change、validation wiring change、registered-team fixture change 或 runtime boundary change；因此以 `formula-parity` validation 收口，不追加 `calculator-reads`、`implicit-events` 或 main-loop sample。
+
+## US-024 formula-parity validation target contract
+
+结论：保持 `scripts/run_buff_refactor_validation.py` 中现有 `formula-parity` target contract，不新增 focused pytest target、scoped mypy target 或 profile wiring。本 PRD 的公式 oracle / retained formula / `AnomalyBar.current_ndarray` 字段矩阵仍集中在 `tests/simulator/test_buff_attribute_reader.py`；US-018 / US-021 的 `tests/simulator/test_update_anomaly_dispatch.py` 样本属于 copied-output listener / scheduled publish / runtime 分层证据，继续由 `implicit-events` 或 story-local focused pytest 覆盖，不扩大 `formula-parity`。
+
+当前 retained contract：
+
+- focused pytest：`FORMULA_PARITY_FOCUSED_TEST_TARGETS = ["tests/simulator/test_buff_attribute_reader.py"]`，已覆盖 `RegularMul` / `AnomalyMul` / `StunMul` table oracle、`MultiplierData` / `DynamicStatement` cache and translation characterization、`CalAnomaly` / `CalDisorder` / `CalPolarityDisorder` / `CalAbloom` deterministic oracle、copied formula-input payload boundaries 与 `AnomalyBar.current_ndarray` reset / deepcopy matrix。
+- scoped mypy：`FORMULA_PARITY_TYPECHECK_TARGETS` 保持 `Calculator.py`、`CalAnomaly.py`、`anomaly_bar/__init__.py`、`AnomalyBarClass.py`、`CopyAnomalyForOutput.py`、`BranchBladeSongCritDamageBonus.py`、`TimeweaverDisorderDmgMul.py` 与 `scripts/run_buff_refactor_validation.py`；`FOCUSED_MYPY_PROFILES["formula-parity"]` 继续追加 `tests/simulator/test_buff_attribute_reader.py`。
+- 本轮没有新增或迁移 formula-oracle source / test 文件，也没有修改 runner contract；因此不运行 `--help`。验证仍以 `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile formula-parity` 收口。
 
 ## US-010 复制紊乱 / 输出边界分类
 
