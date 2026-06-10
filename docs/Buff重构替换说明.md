@@ -2887,3 +2887,15 @@
 - Next step:
   - Continue with US-012 by adding migrated reader seam regression samples without reopening production formula replacement or migrating anomaly duration / Load-Schedule continuation behavior.
 ---
+## 2026-06-10 12:02 +08:00 - US-012
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - The new `test_cal_anomaly_multiplier_inputs_remain_retained_mul_data_snapshot()` and `_CalAnomalyMultiplierOracleCase` entries replace implicit confidence in `CalAnomaly.cal_active_crit(...)`, `cal_def_mul(...)`, resistance / vulnerability, stun vulnerability, and special multiplier inputs with executable retained `MulData` / settled `AnomalyBar.current_ndarray` characterization.
+  - `_make_settled_anomaly_formula_fixture(...)` now prepares live `CalAnomaly` formula tests by constructing a statement-bearing `_make_character(...)` and accepting explicit `element_type`, but this remains test harness support only.
+  - This story adds characterization only; it does not replace a live production path, `CalAnomaly.py` formula semantics, `Calculator.py` formula semantics, copied-output formula, anomaly snapshot writer, dispatch adapter, runtime port, validation profile, registered-team fixture, behavior sample, or phase-2 guarded bucket.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `CalAnomaly.py`, `Calculator.py`, `Calculator.RegularMul`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `AnomalyBarClass.py`, `CopyAnomalyForOutput.py`, copied anomaly / disorder output paths, P2-A through P2-G guarded buckets, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-013 by characterizing `CalAnomaly.set_final_multipliers(...)`, snapshot impact / stun ratio treatment, multiplication order, `cal_anomaly_dmg(...)`, and `scaling_factor` placement without changing production formulas.
+---

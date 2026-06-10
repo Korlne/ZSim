@@ -120,6 +120,21 @@ class _CopiedOutputPayloadCase:
     polarity_ratio: float | None = None
 
 
+@dataclass(frozen=True)
+class _CalAnomalyMultiplierOracleCase:
+    case_id: str
+    element_type: int
+    snapshot_values: tuple[float, ...]
+    enemy_max_def: float
+    enemy_damage_resistance_attrs: dict[str, float]
+    enemy_stunned: bool
+    enemy_stun_ratio: float
+    dynamic_attrs: dict[str, float]
+    expected_dynamic_fields: dict[str, float]
+    expected_snapshot_fields: dict[str, float]
+    expected_final_multipliers: tuple[float, ...]
+
+
 def _reset_formula_oracle_caches() -> None:
     MultiplierData.mul_data_cache.clear()
     MultiplierData.StaticStatement._instance_cache.clear()
@@ -334,16 +349,19 @@ def _make_anomaly_snapshot(values: Sequence[float] | None = None) -> np.ndarray:
 def _make_settled_anomaly_formula_fixture(
     *,
     character_name: str = "异常公式角色",
+    element_type: int = 0,
     snapshot: np.ndarray | None = None,
     scaling_factor: float = 1.25,
 ) -> _AnomalyFormulaFixture:
     source_snapshot = _make_anomaly_snapshot() if snapshot is None else snapshot
     sim_instance = SimpleNamespace(tick=321)
-    character = SimpleNamespace(NAME=character_name)
+    character = _make_character(name=character_name)
     activation = SimpleNamespace(skill=SimpleNamespace(char_obj=character))
     enemy = _make_enemy()
     active_buff_view: dict[str, list[object]] = {character.NAME: []}
-    anomaly_bar = AnomalyBar(sim_instance=cast(Any, sim_instance), element_type=0)
+    anomaly_bar = AnomalyBar(
+        sim_instance=cast(Any, sim_instance), element_type=element_type
+    )
     anomaly_bar.current_ndarray = np.array(source_snapshot, dtype=np.float64, copy=True)
     anomaly_bar.current_effective_anomaly = np.float64(30.0)
     anomaly_bar.current_anomaly = np.float64(129.0)
@@ -1573,6 +1591,169 @@ _COPIED_OUTPUT_PAYLOAD_CASES = (
             "rename_tag": "copied-disorder-source",
         },
         polarity_ratio=0.65,
+    ),
+)
+
+
+_CAL_ANOMALY_MULTIPLIER_ORACLE_CASES = (
+    _CalAnomalyMultiplierOracleCase(
+        case_id="physical-active-crit-defense-res-vulnerability-stack",
+        element_type=0,
+        snapshot_values=(
+            120.0,
+            1.15,
+            2.25,
+            60.0,
+            1.35,
+            999.0,
+            0.07,
+            12.0,
+            0.09,
+            1.20,
+            1.40,
+        ),
+        enemy_max_def=600.0,
+        enemy_damage_resistance_attrs={"PHY_damage_resistance": 0.22},
+        enemy_stunned=True,
+        enemy_stun_ratio=0.45,
+        dynamic_attrs={
+            "strike_crit_rate_increase": 0.30,
+            "strike_crit_dmg_increase": 0.50,
+            "strike_ignore_defense": 0.04,
+            "percentage_def_reduction": 0.20,
+            "def_reduction": 40.0,
+            "pen_ratio": 0.10,
+            "pen_numeric": 25.0,
+            "physical_dmg_res_decrease": 0.08,
+            "physical_res_pen_increase": 0.03,
+            "all_dmg_res_decrease": 0.06,
+            "all_res_pen_increase": 0.02,
+            "physical_vulnerability": 0.14,
+            "all_vulnerability": 0.11,
+            "stun_vulnerability_increase": 0.20,
+            "stun_vulnerability_increase_all_time": 0.05,
+            "special_multiplier_zone": 0.07,
+        },
+        expected_dynamic_fields={
+            "strike_crit_rate_increase": 0.30,
+            "strike_crit_dmg_increase": 0.50,
+            "strike_ignore_defense": 0.04,
+            "percentage_def_reduction": 0.20,
+            "def_reduction": 40.0,
+            "pen_ratio": 0.10,
+            "pen_numeric": 25.0,
+            "physical_dmg_res_decrease": 0.08,
+            "physical_res_pen_increase": 0.03,
+            "all_dmg_res_decrease": 0.06,
+            "all_res_pen_increase": 0.02,
+            "physical_vulnerability": 0.14,
+            "all_vulnerability": 0.11,
+            "stun_vulnerability_increase": 0.20,
+            "stun_vulnerability_increase_all_time": 0.05,
+            "special_multiplier_zone": 0.07,
+        },
+        expected_snapshot_fields={
+            "virtual_character_level": 60.0,
+            "snapshot_pen_ratio": 0.07,
+            "snapshot_pen_numeric": 12.0,
+            "snapshot_res_pen": 0.09,
+            "snapshot_impact": 1.20,
+            "snapshot_stun_bonus": 1.40,
+        },
+        expected_final_multipliers=(
+            120.0,
+            1.15,
+            2.25,
+            2.0,
+            1.35,
+            1.15,
+            0.7188122397247874,
+            1.06,
+            1.25,
+            1.20,
+            1.40,
+            1.70,
+            1.07,
+        ),
+    ),
+    _CalAnomalyMultiplierOracleCase(
+        case_id="fire-res-vulnerability-keeps-active-crit-neutral",
+        element_type=1,
+        snapshot_values=(
+            90.0,
+            1.05,
+            1.75,
+            40.0,
+            1.20,
+            999.0,
+            0.03,
+            5.0,
+            0.04,
+            1.10,
+            1.30,
+        ),
+        enemy_max_def=500.0,
+        enemy_damage_resistance_attrs={"FIRE_damage_resistance": 0.18},
+        enemy_stunned=False,
+        enemy_stun_ratio=0.0,
+        dynamic_attrs={
+            "strike_crit_rate_increase": 0.80,
+            "strike_crit_dmg_increase": 2.00,
+            "strike_ignore_defense": 0.50,
+            "percentage_def_reduction": 0.10,
+            "def_reduction": 25.0,
+            "pen_ratio": 0.05,
+            "pen_numeric": 15.0,
+            "fire_dmg_res_decrease": 0.07,
+            "fire_res_pen_increase": 0.02,
+            "all_dmg_res_decrease": 0.03,
+            "all_res_pen_increase": 0.01,
+            "fire_vulnerability": 0.09,
+            "all_vulnerability": 0.06,
+            "stun_vulnerability_increase": 0.90,
+            "stun_vulnerability_increase_all_time": 0.04,
+        },
+        expected_dynamic_fields={
+            "strike_crit_rate_increase": 0.80,
+            "strike_crit_dmg_increase": 2.00,
+            "strike_ignore_defense": 0.50,
+            "percentage_def_reduction": 0.10,
+            "def_reduction": 25.0,
+            "pen_ratio": 0.05,
+            "pen_numeric": 15.0,
+            "fire_dmg_res_decrease": 0.07,
+            "fire_res_pen_increase": 0.02,
+            "all_dmg_res_decrease": 0.03,
+            "all_res_pen_increase": 0.01,
+            "fire_vulnerability": 0.09,
+            "all_vulnerability": 0.06,
+            "stun_vulnerability_increase": 0.90,
+            "stun_vulnerability_increase_all_time": 0.04,
+            "special_multiplier_zone": 0.0,
+        },
+        expected_snapshot_fields={
+            "virtual_character_level": 40.0,
+            "snapshot_pen_ratio": 0.03,
+            "snapshot_pen_numeric": 5.0,
+            "snapshot_res_pen": 0.04,
+            "snapshot_impact": 1.10,
+            "snapshot_stun_bonus": 1.30,
+        },
+        expected_final_multipliers=(
+            90.0,
+            1.05,
+            1.75,
+            1.661,
+            1.20,
+            1.0,
+            0.5315656565656566,
+            0.99,
+            1.15,
+            1.10,
+            1.30,
+            1.04,
+            1.0,
+        ),
     ),
 )
 
@@ -3169,6 +3350,80 @@ def test_cal_anomaly_uses_settled_snapshot_mul_data_and_retained_damage_ratios(
     np.testing.assert_allclose(
         abloom_calculator.final_multipliers,
         expected_abloom_multipliers,
+    )
+
+
+@pytest.mark.parametrize(
+    "case",
+    _CAL_ANOMALY_MULTIPLIER_ORACLE_CASES,
+    ids=lambda case: case.case_id,
+)
+def test_cal_anomaly_multiplier_inputs_remain_retained_mul_data_snapshot(
+    monkeypatch: pytest.MonkeyPatch,
+    case: _CalAnomalyMultiplierOracleCase,
+) -> None:
+    fixture = _make_settled_anomaly_formula_fixture(
+        element_type=case.element_type,
+        snapshot=_make_anomaly_snapshot(case.snapshot_values),
+    )
+    fixture.enemy.max_DEF = case.enemy_max_def
+    for attr_name, value in case.enemy_damage_resistance_attrs.items():
+        setattr(fixture.enemy, attr_name, value)
+    fixture.enemy.dynamic.stun = case.enemy_stunned
+    fixture.enemy.stun_DMG_take_ratio = case.enemy_stun_ratio
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(**case.dynamic_attrs),
+    )
+
+    calculator = cal_anomaly_module.CalAnomaly(
+        anomaly_obj=fixture.anomaly_bar,
+        enemy_obj=cast(Any, fixture.enemy),
+        dynamic_buff=fixture.active_buff_view,
+        sim_instance=cast(Any, fixture.sim_instance),
+    )
+
+    assert isinstance(calculator.data, MultiplierData)
+    assert calculator.data.judge_node is fixture.anomaly_bar
+    assert calculator.data.char_instance is fixture.character
+    assert calculator.dmg_sp is fixture.anomaly_bar.current_ndarray
+    assert aggregation_calls == [
+        (
+            (),
+            fixture.anomaly_bar,
+            fixture.enemy.sim_instance,
+            fixture.character.NAME,
+        )
+    ]
+    snapshot_inputs = {
+        "virtual_character_level": calculator.dmg_sp[0, 3],
+        "snapshot_pen_ratio": calculator.dmg_sp[0, 6],
+        "snapshot_pen_numeric": calculator.dmg_sp[0, 7],
+        "snapshot_res_pen": calculator.dmg_sp[0, 8],
+        "snapshot_impact": calculator.dmg_sp[0, 9],
+        "snapshot_stun_bonus": calculator.dmg_sp[0, 10],
+    }
+    dynamic_inputs = {
+        attr_name: getattr(calculator.data.dynamic, attr_name)
+        for attr_name in case.expected_dynamic_fields
+    }
+
+    assert snapshot_inputs == pytest.approx(case.expected_snapshot_fields)
+    assert dynamic_inputs == pytest.approx(case.expected_dynamic_fields)
+    assert calculator.v_char_level == int(
+        case.expected_snapshot_fields["virtual_character_level"]
+    )
+    np.testing.assert_allclose(
+        calculator.final_multipliers,
+        np.array(case.expected_final_multipliers, dtype=np.float64),
+    )
+    assert calculator.cal_anomaly_dmg() == pytest.approx(
+        np.prod(case.expected_final_multipliers)
+        / (
+            case.expected_snapshot_fields["snapshot_impact"]
+            * case.expected_snapshot_fields["snapshot_stun_bonus"]
+        )
+        * fixture.anomaly_bar.scaling_factor
     )
 
 
