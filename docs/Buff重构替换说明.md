@@ -3406,3 +3406,16 @@
 - Next step:
   - Continue with US-006 by adding AP reader snapshot parity rows against the retained AP oracle values without changing production formulas.
 ---
+## 2026-06-11 19:29 +08:00 - US-006
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `test_cal_ap_retained_multiplier_data_oracle_rows` now replaces implicit AP reader parity assumptions with executable comparisons across retained `MultiplierData`, reader-built `_build_formula_snapshot(context)`, and `CalculatorBuffAttributeReader.read_anomaly_proficiency(...)`.
+  - This story builds compatibility evidence only; it does not replace a live production formula, copied-output constructor, validation runner, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - `Calculator.AnomalyMul.cal_ap()` remains unchanged and still computes `static.ap * (1 + dynamic.field_anomaly_proficiency) + dynamic.anomaly_proficiency`.
+  - Existing AP state-sync / read-then-writeback guardrails and copied-output anomaly/disorder payload behavior remain unchanged.
+  - `Calculator.AnomalyMul.cal_res_pen()`, `Calculator.AnomalyMul.cal_am()`, `Calculator.StunMul.cal_imp()`, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed because this test-only story found no new Buff coupling.
+- Next step:
+  - Continue with US-007 by adding explicit numeric retained `MultiplierData` oracle rows for `Calculator.StunMul.cal_imp(...)` before mirroring impact reader snapshot parity in US-008.
+---
