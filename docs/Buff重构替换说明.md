@@ -3167,3 +3167,14 @@
 - Next step:
   - Continue with US-002 by mapping existing blocker-closure evidence to the `Calculator.AnomalyMul.cal_res_pen()` proposal contract without implementing production formula changes.
 ---
+## 2026-06-11 12:03 +08:00 - US-002
+- Files changed: `scripts/ralph/investigations/2026-06-11-US-002-oracle-evidence-inventory.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-002 proposal evidence contract map` replaces implicit reuse of blocker-closure artifacts with an explicit inventory that separates proposal prerequisites from production implementation approval for `Calculator.AnomalyMul.cal_res_pen()`.
+  - This story builds a docs/evidence boundary only; it does not replace live production formula code, copied-output constructors, validation runner wiring, dispatch adapters, runtime command ports, old Buff containers, or legacy compatibility write paths.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `Calculator.AnomalyMul.cal_res_pen()`, `Calculator.AnomalyMul.anomaly_snapshot`, `CalAnomaly.cal_k_level()`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, `ScheduleDispatchPort`, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, copied-output payload handlers, P2-A through P2-G guarded buckets, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this docs/evidence story found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-003 by drafting the bounded `Calculator.AnomalyMul.cal_res_pen()` proposal using this evidence map, without implementing a production formula diff.
+---
