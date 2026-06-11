@@ -3319,3 +3319,16 @@
 - Next step:
   - Continue with US-008 by recording rollback anchors and replacement notes without broadening beyond the bounded `cal_res_pen()` extraction.
 ---
+## 2026-06-11 16:19 +08:00 - US-008
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-008 rollback anchor for Calculator.AnomalyMul.cal_res_pen()` records that the completed implementation story replaced only the inline element-to-resistance-penetration selector inside the retained public `Calculator.AnomalyMul.cal_res_pen(data)` path with `Calculator.AnomalyMul._select_res_pen_for_element(...)`.
+  - Rollback anchor: `zsim/sim_progress/ScheduledEvent/Calculator.py` keeps the current retained source at `_select_res_pen_for_element(...)` and `cal_res_pen(data)`; rollback should restore the previous inline branch selector inside `cal_res_pen(data)` and remove the private helper/delegation only, without changing `CalAnomaly.py`, copied-output constructors, old Buff containers, or runtime compatibility paths.
+  - Required evidence: `formula-parity` and `calculator-reads` were required and passed for this story; `implicit-events`, default lifecycle validation, and registered main-loop sample evidence were not required because this story changed only docs/Ralph artifacts and the implemented production diff is a behavior-preserving selector extraction with no copied-output, event-adjacent, dispatch, listener, dot runtime, same-tick runtime-write, or live semantic diff.
+- Compatibility retained:
+  - This PRD does not delete `MultiplierData`, `MulData`, `DynamicStatement`, old containers, legacy `buff_add()`, legacy `KickOutBuff()`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, or `LegacyBuffRuntimeFacade`.
+  - Old paths still retained in this iteration: `Calculator.AnomalyMul.cal_res_pen(data)` remains the public retained formula method, `Calculator.AnomalyMul.__init__` still assigns `self.res_pen` from `self.cal_res_pen(data)`, and `CalAnomaly.py`, copied-output constructors, old Buff containers, and runtime compatibility paths remain unchanged.
+  - No old-coupling review update was needed; this docs/evidence story found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, old-container, registered-route, and runtime boundary layers.
+- Next step:
+  - Continue with US-009 by running final serial validation and refreshing handoff docs without weakening the rollback anchors recorded here.
+---
