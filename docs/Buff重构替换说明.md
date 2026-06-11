@@ -3079,3 +3079,14 @@
 - Next step:
   - Generate the next PRD from `docs/Buff重构方案.md` and the refreshed next-stage plan, defaulting to `Calculator.AnomalyMul.cal_res_pen()` / `anomaly_snapshot` vector assembly blocker closure before any production formula replacement proposal.
 ---
+## 2026-06-11 09:37 +08:00 - US-003
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `_anomaly_mul_res_pen()` and the `anomaly-res-pen-fire-positive`, `anomaly-res-pen-default-zero`, and `anomaly-res-pen-frost-uses-ice-field` table rows replace implicit confidence in `Calculator.AnomalyMul.cal_res_pen()` with executable retained / reader-snapshot oracle evidence for positive resistance penetration, default zero behavior, and `element_type=5` reading `ice_res_pen_increase` while ignoring nonmatching / global fields.
+  - This story adds characterization only; it does not replace live production formula code, `Calculator.AnomalyMul`, `MultiplierData`, `DynamicStatement`, reader APIs, copied-output payload construction, event dispatch, runtime ports, old containers, or legacy compatibility paths.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `Calculator.AnomalyMul.cal_res_pen()`, `Calculator.AnomalyMul.anomaly_snapshot`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, `ScheduleDispatchPort`, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, P2-A through P2-G guarded buckets, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-004 by adding expected vector cases for `Calculator.AnomalyMul.anomaly_snapshot` without widening into copied-output payload, `AnomalyBar.current_ndarray` lifecycle, or production formula replacement.
+---

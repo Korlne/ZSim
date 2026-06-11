@@ -817,6 +817,10 @@ def _anomaly_mul_crit(data: MultiplierData) -> float:
     return cast(float, _anomaly_mul_oracle().cal_anomaly_crit(data))
 
 
+def _anomaly_mul_res_pen(data: MultiplierData) -> float:
+    return cast(float, _anomaly_mul_oracle().cal_res_pen(data))
+
+
 _FORMULA_ORACLE_TABLE_CASES = (
     _FormulaOracleCase(
         case_id="regular-base-dmg-neutral-atk",
@@ -1365,6 +1369,88 @@ _FORMULA_ORACLE_TABLE_CASES = (
                 label="cal_anomaly_crit",
                 expected_value=1.0,
                 retained_value=_anomaly_mul_crit,
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="anomaly-res-pen-fire-positive",
+        fixture_kwargs={
+            "name": "异常乘区-火抗性穿透正值",
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 1,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "fire_res_pen_increase": 0.18,
+        },
+        expected_dynamic_fields={
+            "fire_res_pen_increase": 0.18,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_res_pen",
+                expected_value=0.18,
+                retained_value=_anomaly_mul_res_pen,
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="anomaly-res-pen-default-zero",
+        fixture_kwargs={
+            "name": "异常乘区-抗性穿透默认零值",
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 3,
+            "char_buff_count": 0,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={},
+        expected_dynamic_fields={
+            "electric_res_pen_increase": 0.0,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_res_pen",
+                expected_value=0.0,
+                retained_value=_anomaly_mul_res_pen,
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="anomaly-res-pen-frost-uses-ice-field",
+        fixture_kwargs={
+            "name": "异常乘区-霜属性读取冰抗穿",
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 5,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 1,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "fire_res_pen_increase": 0.44,
+            "ice_res_pen_increase": 0.33,
+            "ether_res_pen_increase": 0.55,
+            "all_res_pen_increase": 0.66,
+        },
+        expected_dynamic_fields={
+            "fire_res_pen_increase": 0.44,
+            "ice_res_pen_increase": 0.33,
+            "ether_res_pen_increase": 0.55,
+            "all_res_pen_increase": 0.66,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_res_pen",
+                expected_value=0.33,
+                retained_value=_anomaly_mul_res_pen,
             ),
         ),
     ),
