@@ -54,6 +54,18 @@
   - `US-004` should define focused pytest targets, scoped mypy targets, and the validation contract for the later `cal_res_pen()` implementation PRD without broadening the replacement domain.
 ---
 
+## 2026-06-11 12:27 +08:00 - US-004
+- Files changed: `scripts/ralph/investigations/2026-06-11-US-004-validation-contract.md`, `scripts/ralph/investigations/2026-06-11-US-003-bounded-cal-res-pen-proposal.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 validation contract` replaces implicit future acceptance-gate assumptions with exact focused pytest, scoped mypy, `formula-parity`, and retained `calculator-reads` serial validation commands for the bounded `Calculator.AnomalyMul.cal_res_pen()` proposal.
+  - This story builds a proposal validation boundary only; it does not replace a live production formula path, validation runner wiring, copied-output constructor, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `Calculator.AnomalyMul.cal_res_pen()`, `Calculator.AnomalyMul.anomaly_snapshot`, `CalAnomaly.cal_k_level()`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, listener/runtime layers, old containers, legacy `buff_add()` / `KickOutBuff()`, P2-A through P2-G guarded buckets, and the existing validation-runner profile wiring all remain unchanged.
+  - No old-coupling review update was needed; this docs/evidence story found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-005 by adding registered behavior sample conditions and rollback anchors to the same bounded proposal without implementing production formula changes.
+---
+
 ## 2026-06-05 - 调查型 PRD 收口基线
 
 - 本轮文件：`docs/旧Buff系统耦合审查结果.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
