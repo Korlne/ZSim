@@ -3468,3 +3468,15 @@
 - Next step:
   - Continue with US-011 by deciding registered behavior sample eligibility separately from validation profile wiring.
 ---
+## 2026-06-11 20:18 +08:00 - US-011
+- Files changed: `scripts/ralph/investigations/2026-06-11-US-011-registered-sample-eligibility.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-011 registered sample eligibility packet` replaces implicit main-loop sample judgment with an explicit rule: run `scripts/run_buff_main_loop_consistency.py` only when a story changes live formula semantics and a real registered route shows nonzero relevant event counts.
+  - This story records a decision boundary only; it does not replace live production formula code, add validation-only teams, edit the validation runner, add a dispatch adapter, alter a runtime command port, delete old Buff containers, or change legacy compatibility paths.
+- Compatibility retained:
+  - `scripts/run_buff_main_loop_consistency.py` remains available as a live-behavior comparison tool for future eligible production changes.
+  - `Calculator.AnomalyMul.cal_am()`, `Calculator.AnomalyMul.cal_ap()`, `Calculator.StunMul.cal_imp()`, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed because this decision-only story found no new Buff coupling.
+- Next step:
+  - Continue with US-012 by running serial `formula-parity` and `calculator-reads` gates while still skipping main-loop consistency unless a live semantic diff appears.
+---
