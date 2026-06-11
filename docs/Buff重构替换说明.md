@@ -3344,3 +3344,16 @@
 - Next step:
   - Generate the next PRD as Phase-3 next-candidate selection / oracle-gap closure; do not reopen `cal_res_pen()` unless focused regression, guardrail, or validation evidence requires it.
 ---
+## 2026-06-11 18:15 +08:00 - US-001
+- Files changed: `scripts/ralph/investigations/2026-06-11-US-001-am-ap-impact-scope.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `2026-06-11-US-001-am-ap-impact-scope.md` replaces implicit AM/AP/impact PRD scope assumptions with evidence-backed scope boundaries, query terms, retained non-goals, and validation evidence.
+  - This story builds a boundary only; it does not replace a live production formula, copied-output constructor, validation runner, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - `Calculator.AnomalyMul.cal_res_pen()` remains completed by the previous PRD and out of default scope.
+  - `Calculator.AnomalyMul.cal_am()`, `Calculator.AnomalyMul.cal_ap()`, `Calculator.StunMul.cal_imp()`, and `CalculatorBuffAttributeReader.read_anomaly_mastery()`, `read_anomaly_proficiency()`, `read_impact()` are the current in-scope oracle/readiness symbols for later stories.
+  - `CalAnomaly.cal_k_level()`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed; this docs-only scope story found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, old-container, registered-route, and runtime boundary layers.
+- Next step:
+  - Continue with US-002 by running the root-workspace AM/AP/impact formula and reader call-path census, excluding `.codex_worktrees/` and generated artifacts from blocker conclusions.
+---
