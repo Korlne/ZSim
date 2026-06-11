@@ -3156,3 +3156,14 @@
 - Next step:
   - Generate the next PRD from `docs/Buff重构方案.md` and the refreshed next-stage plan, defaulting to a bounded proposal for `Calculator.AnomalyMul.cal_res_pen()` only while keeping copied-output parity, registered-route eligibility, retained compatibility, and P2-A through P2-G guarded maintenance as same-phase candidate blocks.
 ---
+## 2026-06-11 11:53 +08:00 - US-001
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/investigations/2026-06-11-US-001-proposal-only-scope.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 proposal-only scope reconfirmation` replaces implicit carry-over from the previous PRD with explicit current-PRD evidence that only `Calculator.AnomalyMul.cal_res_pen()` may receive a bounded proposal in this run.
+  - This story builds a docs/progress boundary only; it does not replace a live production path, production formula, copied-output constructor, validation runner wiring, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `Calculator.AnomalyMul.cal_res_pen()`, `Calculator.AnomalyMul.anomaly_snapshot`, `CalAnomaly.cal_k_level()`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, `ScheduleDispatchPort`, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, copied-output payload handlers, P2-A through P2-G guarded buckets, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this docs/evidence story found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-002 by mapping existing blocker-closure evidence to the `Calculator.AnomalyMul.cal_res_pen()` proposal contract without implementing production formula changes.
+---
