@@ -1373,22 +1373,29 @@ class Calculator:
             """已弃用，避免大范围重构数据类型，保留一个1"""
             return 1
 
-        def cal_res_pen(self, data: MultiplierData) -> float:
-            assert isinstance(data.judge_node, SkillNode)
-            element_type = data.judge_node.element_type
+        @staticmethod
+        def _select_res_pen_for_element(
+            dynamic: MultiplierData.DynamicStatement, element_type: ElementType
+        ) -> float:
             if element_type == 0:
-                element_res_pen = data.dynamic.physical_res_pen_increase
+                element_res_pen = dynamic.physical_res_pen_increase
             elif element_type == 1:
-                element_res_pen = data.dynamic.fire_res_pen_increase
+                element_res_pen = dynamic.fire_res_pen_increase
             elif element_type == 2 or element_type == 5:
-                element_res_pen = data.dynamic.ice_res_pen_increase
+                element_res_pen = dynamic.ice_res_pen_increase
             elif element_type == 3:
-                element_res_pen = data.dynamic.electric_res_pen_increase
+                element_res_pen = dynamic.electric_res_pen_increase
             elif element_type in [4, 6]:
-                element_res_pen = data.dynamic.ether_res_pen_increase
+                element_res_pen = dynamic.ether_res_pen_increase
             else:
                 raise AssertionError(INVALID_ELEMENT_ERROR)
             return element_res_pen
+
+        def cal_res_pen(self, data: MultiplierData) -> float:
+            assert isinstance(data.judge_node, SkillNode)
+            return self._select_res_pen_for_element(
+                data.dynamic, data.judge_node.element_type
+            )
 
     class StunMul:
         """

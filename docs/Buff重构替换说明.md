@@ -3258,3 +3258,15 @@
 - Next step:
   - Continue with US-003 by extracting the bounded `Calculator.AnomalyMul.cal_res_pen()` selector against the new branch-complete oracle coverage.
 ---
+## 2026-06-11 15:19 +08:00 - US-003
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `Calculator.AnomalyMul._select_res_pen_for_element(...)` replaces the inline branch selector inside `Calculator.AnomalyMul.cal_res_pen(data)` while keeping `cal_res_pen(data)` as the public retained formula method.
+  - This story implements a bounded behavior-preserving extraction only; it does not replace adjacent production formulas, copied-output constructors, validation runner wiring, dispatch adapters, runtime command ports, old Buff containers, or legacy compatibility write paths.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.AnomalyMul.cal_res_pen(data)` still asserts `SkillNode` and delegates from the same caller path; `Calculator.AnomalyMul.__init__` still assigns `self.res_pen` from `self.cal_res_pen(data)`.
+  - Physical, fire, ice/frost, electric, ether/auric-ink, default-zero, and invalid-element behavior remain covered by focused oracle tests; `MultiplierData`, `MulData`, `DynamicStatement`, `CalculatorBuffAttributeReader`, `_build_formula_snapshot(context)`, `Calculator.AnomalyMul.anomaly_snapshot`, `CalAnomaly.cal_k_level()`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain unchanged.
+  - No old-coupling review update was needed; this focused extraction found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, old-container, and runtime boundary layers.
+- Next step:
+  - Continue with US-004 by verifying retained reader snapshot compatibility and formula-boundary retention around the extracted selector without widening into adjacent formulas or validation-profile rewiring.
+---
