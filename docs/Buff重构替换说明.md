@@ -3112,3 +3112,14 @@
 - Next step:
   - Continue with US-006 by characterizing copied-output handler and report payload parity without widening into production formula replacement, registered-route eligibility, or runtime write-path replacement.
 ---
+## 2026-06-11 10:23 +08:00 - US-006
+- Files changed: `tests/simulator/test_anomaly_handler_runtime_view.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/investigations/2026-06-11-US-006-copied-output-payload-parity.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `test_copied_anomaly_handler_reports_payload_fields_separate_from_settle_port()`, `test_abloom_copied_output_handler_reports_payload_fields()`, `test_disorder_handler_reports_payload_and_listener_fields()`, and `test_polarity_disorder_handler_reports_payload_and_listener_fields()` replace implicit confidence in copied-output handler report payloads with executable characterization for tick, skill tag, element type, rounded damage, anomaly/disorder flags, stun, buildup, runtime status, UUID, listener broadcast identity, runtime-view reads, and `RuntimeCommandPort` settle separation.
+  - This story adds characterization only; it does not replace a live production path, `CopyAnomalyForOutput.py` constructors, `UpdateAnomaly.spawn_output(...)`, `UpdateAnomaly.update_anomaly(...)`, handler production code, `ScheduleDispatchPort`, listener broadcast semantics, dot runtime registration/removal, runtime ports, validation profile wiring, registered-team fixture, behavior sample, or production formula code.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `CopyAnomalyForOutput.NewAnomaly`, `Disorder`, `PolarityDisorder`, `DirgeOfDestinyAnomaly`, `UpdateAnomaly.spawn_output(...)`, `AnomalyEventHandler`, `DisorderEventHandler`, `PolarityDisorderEventHandler`, `AbloomEventHandler`, `AnomalyBar.current_ndarray`, `CalAnomaly.py`, `Calculator.py`, `ScheduleDispatchPort`, scheduled publish ordering, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-007 by defining registered-route behavior sample eligibility without widening into production formula replacement or runtime write-path replacement.
+---

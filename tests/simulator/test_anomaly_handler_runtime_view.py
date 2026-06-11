@@ -5,6 +5,7 @@ from typing import Any
 
 import pytest
 
+from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
 from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
 from zsim.sim_progress.ScheduledEvent.event_handlers.handlers import abloom as abloom_module
@@ -22,6 +23,12 @@ from zsim.sim_progress.ScheduledEvent.event_handlers.handlers.polarity_disorder 
     PolarityDisorderEventHandler,
 )
 from zsim.sim_progress.anomaly_bar import AnomalyBar
+from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
+    DirgeOfDestinyAnomaly,
+    Disorder,
+    NewAnomaly,
+    PolarityDisorder,
+)
 
 
 class _RuntimeViewProbe(BuffRuntimeReadPort):
@@ -93,6 +100,28 @@ def _build_context(
         sim_instance=sim_instance,
     )
     return context, broadcasts
+
+
+def _build_copied_output_source(
+    sim_instance: Any,
+    *,
+    element_type: int,
+    rename_tag: str | None = None,
+) -> AnomalyBar:
+    bar = AnomalyBar(sim_instance=sim_instance, element_type=element_type)
+    bar.rename_tag = rename_tag
+    bar.max_duration = 600
+    bar.last_active = 100
+    bar.active = True
+    return bar
+
+
+def _build_activation(skill_tag: str = "1001_HANDLER_PAYLOAD"):
+    return SimpleNamespace(
+        char_name="handler-copied-output",
+        skill_tag=skill_tag,
+        skill=SimpleNamespace(char_obj=SimpleNamespace(CID=1001)),
+    )
 
 
 class _DurationBuffProbe:
@@ -248,6 +277,267 @@ def test_disorder_family_handlers_read_runtime_view_without_legacy_dynamic_conta
     assert runtime_view.legacy_dynamic_calls == 0
     assert runtime_view.legacy_exist_calls == 0
     assert broadcasts
+
+
+def test_copied_anomaly_handler_reports_payload_fields_separate_from_settle_port(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    runtime_view = _RuntimeViewProbe(
+        {"alpha": [object()], "enemy": [object()]}, {}, allow_legacy=False
+    )
+    captured: dict[str, object] = {}
+    reports: list[dict[str, object]] = []
+
+    class _RuntimeCommandPortProbe:
+        def update_anomaly(self, **kwargs) -> None:
+            raise AssertionError("report payload path should not issue update_anomaly")
+
+        def settle_buffs(self, *, tick, enemy, skill_node=None, anomaly_bar=None) -> None:
+            captured["settle_tick"] = tick
+            captured["settle_enemy"] = enemy
+            captured["settle_skill_node"] = skill_node
+            captured["settle_anomaly_bar"] = anomaly_bar
+
+    context, broadcasts = _build_context(
+        runtime_view,
+        runtime_command_port=_RuntimeCommandPortProbe(),
+    )
+    context.enemy.dynamic.get_status = lambda: {"enemy_status": "runtime"}
+
+    class _FakeCalculator:
+        def __init__(self, *, anomaly_obj, dynamic_buff, **kwargs) -> None:
+            captured["calculator_event"] = anomaly_obj
+            captured["dynamic_buff"] = dynamic_buff
+
+        def cal_anomaly_dmg(self):
+            return 12.346
+
+    monkeypatch.setattr(anomaly_module, "CalAnomaly", _FakeCalculator)
+    monkeypatch.setattr(
+        anomaly_module.Report,
+        "report_dmg_result",
+        lambda **kwargs: reports.append(kwargs),
+    )
+
+    source = _build_copied_output_source(
+        context.sim_instance,
+        element_type=4,
+        rename_tag="copied-anomaly-report",
+    )
+    event = NewAnomaly(
+        source,
+        active_by=_build_activation(),
+        sim_instance=context.sim_instance,
+    )
+    event.UUID = "new-anomaly-report-uuid"
+
+    AnomalyEventHandler().handle(event, context)
+
+    assert reports == [
+        {
+            "tick": 10,
+            "skill_tag": "copied-anomaly-report",
+            "element_type": 4,
+            "dmg_expect": 12.35,
+            "is_anomaly": True,
+            "dmg_crit": 12.35,
+            "stun": 0,
+            "buildup": 0,
+            "enemy_status": "runtime",
+            "UUID": "new-anomaly-report-uuid",
+        }
+    ]
+    assert broadcasts == []
+    assert captured["calculator_event"] is event
+    assert captured["dynamic_buff"] is runtime_view.active_buff_view
+    assert captured["settle_tick"] == 10
+    assert captured["settle_enemy"] is context.enemy
+    assert captured["settle_skill_node"] is None
+    assert captured["settle_anomaly_bar"] is event
+    assert runtime_view.active_view_calls == 1
+    assert runtime_view.legacy_dynamic_calls == 0
+    assert runtime_view.legacy_exist_calls == 0
+
+
+def test_abloom_copied_output_handler_reports_payload_fields(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    runtime_view = _RuntimeViewProbe(
+        {"alpha": [object()], "enemy": [object()]}, {}, allow_legacy=False
+    )
+    context, broadcasts = _build_context(runtime_view)
+    context.enemy.dynamic.get_status = lambda: {"enemy_status": "runtime"}
+    captured: dict[str, object] = {}
+    reports: list[dict[str, object]] = []
+
+    class _FakeCalculator:
+        def __init__(self, *, abloom_obj, dynamic_buff, **kwargs) -> None:
+            captured["calculator_event"] = abloom_obj
+            captured["dynamic_buff"] = dynamic_buff
+
+        def cal_anomaly_dmg(self):
+            return 45.678
+
+    monkeypatch.setattr(abloom_module, "CalAbloom", _FakeCalculator)
+    monkeypatch.setattr(
+        abloom_module.Report,
+        "report_dmg_result",
+        lambda **kwargs: reports.append(kwargs),
+    )
+
+    source = _build_copied_output_source(context.sim_instance, element_type=1)
+    event = DirgeOfDestinyAnomaly(
+        source,
+        active_by=_build_activation("1001_ABLOOM"),
+        sim_instance=context.sim_instance,
+    )
+    event.UUID = "abloom-report-uuid"
+
+    AbloomEventHandler().handle(event, context)
+
+    assert reports == [
+        {
+            "tick": 10,
+            "element_type": 1,
+            "skill_tag": "异放",
+            "dmg_expect": 45.68,
+            "is_anomaly": True,
+            "dmg_crit": 45.68,
+            "stun": 0,
+            "buildup": 0,
+            "enemy_status": "runtime",
+            "UUID": "abloom-report-uuid",
+        }
+    ]
+    assert broadcasts == []
+    assert captured["calculator_event"] is event
+    assert captured["dynamic_buff"] is runtime_view.active_buff_view
+    assert runtime_view.active_view_calls == 1
+    assert runtime_view.legacy_dynamic_calls == 0
+    assert runtime_view.legacy_exist_calls == 0
+
+
+def test_disorder_handler_reports_payload_and_listener_fields(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    runtime_view = _RuntimeViewProbe(
+        {"alpha": [object()], "enemy": [object()]}, {}, allow_legacy=False
+    )
+    context, broadcasts = _build_context(runtime_view)
+    context.enemy.dynamic.get_status = lambda: {"enemy_status": "runtime"}
+    captured: dict[str, object] = {}
+    reports: list[dict[str, object]] = []
+
+    class _FakeCalculator:
+        def __init__(self, *, disorder_obj, dynamic_buff, **kwargs) -> None:
+            captured["calculator_event"] = disorder_obj
+            captured["dynamic_buff"] = dynamic_buff
+
+        def cal_anomaly_dmg(self):
+            return 23.456
+
+        def cal_disorder_stun(self):
+            return 6.789
+
+    monkeypatch.setattr(disorder_module, "CalDisorder", _FakeCalculator)
+    monkeypatch.setattr(
+        disorder_module.Report,
+        "report_dmg_result",
+        lambda **kwargs: reports.append(kwargs),
+    )
+
+    source = _build_copied_output_source(context.sim_instance, element_type=3)
+    event = Disorder(
+        source,
+        active_by=_build_activation("1001_DISORDER"),
+        sim_instance=context.sim_instance,
+    )
+    event.UUID = "disorder-report-uuid"
+
+    DisorderEventHandler().handle(event, context)
+
+    assert reports == [
+        {
+            "tick": 10,
+            "element_type": 3,
+            "dmg_expect": 23.46,
+            "dmg_crit": 23.46,
+            "is_anomaly": True,
+            "is_disorder": True,
+            "stun": 6.79,
+            "buildup": 0,
+            "enemy_status": "runtime",
+            "UUID": "disorder-report-uuid",
+        }
+    ]
+    assert "skill_tag" not in reports[0]
+    assert broadcasts[0] == {"event": event, "signal": LBS.DISORDER_SETTLED}
+    assert broadcasts[1]["stun"] == pytest.approx(6.789)
+    assert captured["calculator_event"] is event
+    assert captured["dynamic_buff"] is runtime_view.active_buff_view
+    assert runtime_view.active_view_calls == 1
+    assert runtime_view.legacy_dynamic_calls == 0
+    assert runtime_view.legacy_exist_calls == 0
+
+
+def test_polarity_disorder_handler_reports_payload_and_listener_fields(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    runtime_view = _RuntimeViewProbe(
+        {"alpha": [object()], "enemy": [object()]}, {}, allow_legacy=False
+    )
+    context, broadcasts = _build_context(runtime_view)
+    context.enemy.dynamic.get_status = lambda: {"enemy_status": "runtime"}
+    captured: dict[str, object] = {}
+    reports: list[dict[str, object]] = []
+
+    class _FakeCalculator:
+        def __init__(self, *, disorder_obj, dynamic_buff, **kwargs) -> None:
+            captured["calculator_event"] = disorder_obj
+            captured["dynamic_buff"] = dynamic_buff
+
+        def cal_anomaly_dmg(self):
+            return 34.567
+
+    monkeypatch.setattr(polarity_disorder_module, "CalPolarityDisorder", _FakeCalculator)
+    monkeypatch.setattr(
+        polarity_disorder_module.Report,
+        "report_dmg_result",
+        lambda **kwargs: reports.append(kwargs),
+    )
+
+    source = _build_copied_output_source(context.sim_instance, element_type=6)
+    event = PolarityDisorder(
+        source,
+        1.6,
+        active_by=_build_activation("1001_POLARITY"),
+        sim_instance=context.sim_instance,
+    )
+    event.UUID = "polarity-report-uuid"
+
+    PolarityDisorderEventHandler().handle(event, context)
+
+    assert reports == [
+        {
+            "tick": 10,
+            "element_type": 6,
+            "skill_tag": "极性紊乱",
+            "dmg_expect": 34.57,
+            "dmg_crit": 34.57,
+            "is_anomaly": True,
+            "is_disorder": True,
+            "stun": 0,
+            "buildup": 0,
+            "enemy_status": "runtime",
+            "UUID": "polarity-report-uuid",
+        }
+    ]
+    assert broadcasts == [{"event": event, "signal": LBS.DISORDER_SETTLED}]
+    assert captured["calculator_event"] is event
+    assert captured["dynamic_buff"] is runtime_view.active_buff_view
+    assert runtime_view.active_view_calls == 1
+    assert runtime_view.legacy_dynamic_calls == 0
+    assert runtime_view.legacy_exist_calls == 0
 
 
 def test_anomaly_handler_uses_runtime_command_port_for_settle_boundary(
