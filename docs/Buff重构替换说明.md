@@ -3134,3 +3134,14 @@
 - Next step:
   - Continue with US-008 by running the serial eligibility validation gate before any final bounded-domain Go / No-Go decision.
 ---
+## 2026-06-11 11:02 +08:00 - US-008
+- Files changed: `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-008 serial eligibility validation gate evidence` replaces implicit trust in the current PRD's blocker-closure readiness with recorded focused pytest, `formula-parity`, `calculator-reads`, and `implicit-events` validation outcomes.
+  - This story validates retained boundaries only; it does not replace a live production path, production formula, validation runner wiring, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `Calculator.AnomalyMul.cal_res_pen()`, `Calculator.AnomalyMul.anomaly_snapshot`, `CalAnomaly.cal_k_level()`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, anomaly/disorder/copied-output handlers, `ScheduleDispatchPort`, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, P2-A through P2-G guarded buckets, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this validation-gate story found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-009 by updating final handoff docs and the bounded-domain Go / No-Go decision using the US-008 serial validation evidence.
+---
