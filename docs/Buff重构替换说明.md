@@ -3101,3 +3101,14 @@
 - Next step:
   - Continue with US-005 by characterizing or explicitly preserving `CalAnomaly.cal_k_level()` clamp behavior before any bounded production formula replacement proposal.
 ---
+## 2026-06-11 10:01 +08:00 - US-005
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `_CAL_ANOMALY_LEVEL_CLAMP_ORACLE_CASES` and `test_cal_anomaly_level_clamp_remains_retained_lookup()` replace implicit confidence in `CalAnomaly.cal_k_level()` clamp behavior with executable retained lookup evidence for below-boundary `-1 -> 0.0`, normal `40 -> 1.6610`, and above-boundary `61 -> 2.0` inputs plus the retained log side effects.
+  - This story adds characterization only; it does not replace live production formula code, `CalAnomaly.py`, `Calculator.py`, `MultiplierData`, `MulData`, `DynamicStatement`, copied-output payload construction, event dispatch, runtime ports, old containers, or legacy compatibility paths.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `CalAnomaly.py`, `CalAnomaly.cal_k_level()`, `Calculator.py`, `Calculator.AnomalyMul.cal_res_pen()`, `Calculator.AnomalyMul.anomaly_snapshot`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, `ScheduleDispatchPort`, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, P2-A through P2-G guarded buckets, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-006 by characterizing copied-output handler and report payload parity without widening into production formula replacement, registered-route eligibility, or runtime write-path replacement.
+---

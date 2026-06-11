@@ -148,6 +148,14 @@ class _CalAnomalyMultiplierOracleCase:
 
 
 @dataclass(frozen=True)
+class _CalAnomalyLevelClampOracleCase:
+    case_id: str
+    input_level: int
+    expected_value: float
+    expected_log_messages: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class _CalDisorderOracleCase:
     case_id: str
     element_type: int
@@ -1788,6 +1796,27 @@ _ANOMALY_MUL_SNAPSHOT_ORACLE_CASES = (
             14.0,
             0.11,
         ),
+    ),
+)
+
+
+_CAL_ANOMALY_LEVEL_CLAMP_ORACLE_CASES = (
+    _CalAnomalyLevelClampOracleCase(
+        case_id="below-boundary-clamps-to-zero",
+        input_level=-1,
+        expected_value=0.0,
+        expected_log_messages=("角色等级-1过低，将被设置为0",),
+    ),
+    _CalAnomalyLevelClampOracleCase(
+        case_id="normal-level-uses-retained-table",
+        input_level=40,
+        expected_value=1.6610,
+    ),
+    _CalAnomalyLevelClampOracleCase(
+        case_id="above-boundary-clamps-to-sixty",
+        input_level=61,
+        expected_value=2.0,
+        expected_log_messages=("角色等级61过高，将被设置为60",),
     ),
 )
 
@@ -3918,6 +3947,25 @@ def test_cal_anomaly_rejects_unsettled_or_bad_snapshot_shape() -> None:
             dynamic_buff=bad_shape_fixture.active_buff_view,
             sim_instance=cast(Any, bad_shape_fixture.sim_instance),
         )
+
+
+@pytest.mark.parametrize(
+    "case",
+    _CAL_ANOMALY_LEVEL_CLAMP_ORACLE_CASES,
+    ids=lambda case: case.case_id,
+)
+def test_cal_anomaly_level_clamp_remains_retained_lookup(
+    monkeypatch: pytest.MonkeyPatch,
+    case: _CalAnomalyLevelClampOracleCase,
+) -> None:
+    log_messages: list[str] = []
+    monkeypatch.setattr(cal_anomaly_module, "report_to_log", log_messages.append)
+
+    result = cal_anomaly_module.CalAnomaly.cal_k_level(case.input_level)
+
+    assert isinstance(result, np.float64)
+    assert result == pytest.approx(case.expected_value)
+    assert log_messages == list(case.expected_log_messages)
 
 
 @pytest.mark.parametrize(
