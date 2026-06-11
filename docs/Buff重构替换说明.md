@@ -3282,3 +3282,15 @@
 - Next step:
   - Continue with US-005 by checking validation profile wiring and scoped typecheck coverage without assuming a production file split occurred.
 ---
+## 2026-06-11 15:41 +08:00 - US-005
+- Files changed: `scripts/ralph/investigations/2026-06-11-US-005-validation-profile-wiring.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 formula-parity wiring evidence` replaces implicit trust in the validation profile after the selector extraction with recorded runner introspection, CLI choices, and `formula-parity` output that includes `Calculator.py` plus the focused reader test file.
+  - This story validates a guardrail boundary only; it does not replace live production formula code, copied-output constructors, validation runner wiring, dispatch adapters, runtime command ports, old Buff containers, or legacy compatibility write paths.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.AnomalyMul.cal_res_pen(data)` remains the public retained formula method, `Calculator.AnomalyMul._select_res_pen_for_element(...)` remains the private selector, and `Calculator.AnomalyMul.__init__` still assigns `self.res_pen` from `self.cal_res_pen(data)`.
+  - `formula-parity` continues to cover `zsim/sim_progress/ScheduledEvent/Calculator.py`, focused pytest for `tests/simulator/test_buff_attribute_reader.py`, and scoped mypy for the same test file; `calculator-reads`, `implicit-events`, and lifecycle profile choices remain available.
+  - No old-coupling review update was needed; this validation-profile story found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, old-container, and runtime boundary layers.
+- Next step:
+  - Continue with US-006 by running the focused `formula-parity` and retained `calculator-reads` gates serially.
+---
