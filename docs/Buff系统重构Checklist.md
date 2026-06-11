@@ -55,6 +55,7 @@
 - [x] Phase 3 formula rollback plan 已 codify：失败 helper / profile / formula diff 必须回退到 retained source anchors，并保留 `formula-parity`、`calculator-reads`、`implicit-events` 与 old Buff runtime compatibility gates；P2-A through P2-G 只按 concrete blocker 证据重开。
 - [x] Phase 3 replacement blocker closure 已完成最终 handoff：`Calculator.AnomalyMul.cal_res_pen()` 是唯一允许进入下一轮 bounded production replacement proposal 的公式域；本 PRD 没有替换生产公式或删除 retained runtime/container compatibility。
 - [x] Phase 3 bounded proposal handoff 已完成最终 Go / No-Go：later implementation PRD 为 Go，但只限 `Calculator.AnomalyMul.cal_res_pen()`；broad `Calculator.py` / `CalAnomaly.py` rewrite、copied-output constructors、old containers、legacy `buff_add()` / `KickOutBuff()`、runtime ports/facades 与 `MultiplierData` / `MulData` / `DynamicStatement` 删除仍为 No-Go。
+- [x] Phase 3 bounded implementation handoff 已完成最终验证：`Calculator.AnomalyMul.cal_res_pen()` 已实现为 behavior-preserving selector extraction，最终状态是 implemented，非 partially blocked / rolled back；`formula-parity` 与 `calculator-reads` 串行通过，`implicit-events` / 默认 profile 因未触达对应边界而跳过并记录原因。
 
 ## 阶段 4：旧 Buff 残余删除
 
@@ -258,4 +259,6 @@
 - [x] 同阶段候选池继续保留 P2-A through P2-G guarded maintenance、phase-3 formula parity design、retained compatibility 与 blocker-only phase-1 reopen rules，避免 PRD 生成器只沿上一个文件继续。
 - [x] US-007 Final proposal Go / No-Go：当前 PRD 已验证 bounded `cal_res_pen()` proposal package；下一默认 PRD 可以实现 exactly `Calculator.AnomalyMul.cal_res_pen()` 的 bounded diff，但不得实现 broad formula rewrite、不得删除 retained compatibility，也不得把 `anomaly_snapshot`、`CalAnomaly.cal_k_level()` 或 copied-output payload parity 扩成第二生产替换域。
 - [x] US-007 保留边界确认：本 PRD 未删除 old containers、legacy `buff_add()`、legacy `KickOutBuff()`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`LegacyBuffRuntimeFacade`、`MultiplierData`、`MulData`、`DynamicStatement` 或 copied-output constructors；P2-A through P2-G 继续只按 guardrail / validation concrete blocker 重开。
+- [x] Current US-009 Final implementation handoff：bounded `cal_res_pen()` selector extraction 已完成并由 focused oracle / retained reader-snapshot parity、`formula-parity`（focused `116 passed` / mypy 9 files clean）与 `calculator-reads`（focused `216 passed` / mypy 22 files clean）证明；下一默认 PRD 改为 Phase-3 next-candidate selection / oracle-gap closure，不在 focused regression 或 validation failure 之外重开 `cal_res_pen()`。
+- [x] Current US-009 保留边界确认：`Calculator.AnomalyMul.cal_res_pen(data)` 仍是 public retained formula method，`Calculator.AnomalyMul.__init__` 仍从该方法赋值 `self.res_pen`；`Calculator.AnomalyMul.anomaly_snapshot`、`CalAnomaly.cal_k_level()`、copied-output constructors、old containers、legacy `buff_add()` / `KickOutBuff()`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`LegacyBuffRuntimeFacade` 与 P2-A through P2-G guarded buckets 均未删除或扩大替换。
 - [x] 若后续 validation 或 guardrail 重新暴露阶段 1 blocker，下一轮 PRD 只处理 blocker package 中列出的具体文件、符号、失败测试、失败 guardrail 或验证命令；不得重开已删除的 `event_list` surface 或已闭合的 producer batch，除非 guardrail 给出新的生产证据。

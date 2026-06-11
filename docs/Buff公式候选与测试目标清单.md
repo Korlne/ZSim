@@ -104,6 +104,27 @@ US-025 复验记录：
 
 下一默认 PRD 应是 phase-3 replacement blocker closure / bounded-domain eligibility decision。当前 PRD 内下一最小切片转向 registered-route behavior sample eligibility；完成后再用本清单复核是否可以选择单一 bounded formula domain 进入 production replacement proposal。若上述 blockers 仍未关闭，继续 characterization，不提交 production formula replacement。
 
+## Current US-009 final bounded implementation handoff
+
+结论：Implemented。`Calculator.AnomalyMul.cal_res_pen()` 已完成 behavior-preserving bounded selector extraction：public `cal_res_pen(data)` 保留 `SkillNode` assertion 和 caller path，元素分支选择移入 private `_select_res_pen_for_element(...)`。本 handoff 未回滚、未标记 partially blocked，也未授权 broad `Calculator.py` / `CalAnomaly.py` rewrite 或 retained compatibility 删除。
+
+Final validation evidence：
+
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile formula-parity` passed：base `2 passed` / isolated teams `3 passed` / focused `116 passed` / mypy `9 source files` clean。
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads` passed：base `2 passed` / isolated teams `3 passed` / focused `216 passed` / mypy `22 source files` clean。
+- `implicit-events` skipped：current final story 只改 handoff / Ralph artifacts，且该 implementation PRD 没有在最终 story 中触达 copied-output、event-adjacent、dispatch、listener、dot runtime 或 same-tick runtime-write files/tests。
+- 默认 `uv run python scripts/run_buff_refactor_validation.py` skipped：未触达 lifecycle container、runtime write path 或 validation-runner behavior。
+
+| Candidate / boundary | Current US-009 status | Next rule |
+| --- | --- | --- |
+| `Calculator.AnomalyMul.cal_res_pen()` | Implemented as bounded selector extraction. | 不作为下一默认 PRD 重开目标；只有 focused regression、validation failure 或明确语义 follow-up 才重开。 |
+| `Calculator.AnomalyMul.anomaly_snapshot` | Supporting retained vector-order / snapshot-shape evidence. | 可作为后续 candidate evidence，但不得在无新 PRD 证据时扩成第二 production domain。 |
+| `CalAnomaly.cal_k_level()` | Supporting retained clamp / lookup evidence. | 保留 below / normal / above-boundary clamp 与日志语义；不作为 `cal_res_pen()` rollback 的一部分。 |
+| Copied-output handler/report payload parity | Supporting event-adjacent compatibility evidence. | 后续触达 copied-output / handler / listener 字段时追加 `implicit-events`；不合并 scheduled publish、listener broadcast、dot runtime 和 same-tick runtime writes。 |
+| Retained compatibility | Must stay intact. | 保留 `MultiplierData`、`MulData`、`DynamicStatement`、`AnomalyBar.current_ndarray`、old containers、legacy `buff_add()` / `KickOutBuff()`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`LegacyBuffRuntimeFacade` 与 P2-A through P2-G guarded maintenance。 |
+
+Next default PRD：Phase-3 next-candidate selection / oracle-gap closure。下一轮从 formula/copy-output/registered-route pool 中选择一个 exact bounded candidate，先定义 focused pytest、scoped mypy、rollback、registered sample 条件与 retained validation gates；不得默认重开已完成的 `cal_res_pen()` selector extraction。
+
 ## US-009 final bounded-domain Go / No-Go
 
 结论：bounded proposal Go，仅限 `Calculator.AnomalyMul.cal_res_pen()`。本 PRD 没有修改 `Calculator.py`、`CalAnomaly.py`、`CopyAnomalyForOutput.py`、`UpdateAnomaly.py`、validation runner、old Buff containers 或 runtime compatibility paths；它只关闭 proposal 前置 blocker，并把下一轮默认工作从 blocker closure 转为一个 bounded production replacement proposal。

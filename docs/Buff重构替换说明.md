@@ -3332,3 +3332,15 @@
 - Next step:
   - Continue with US-009 by running final serial validation and refreshing handoff docs without weakening the rollback anchors recorded here.
 ---
+## 2026-06-11 16:31 +08:00 - US-009
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/investigations/2026-06-11-US-009-final-handoff-go-no-go.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-009 final implementation handoff docs` replace proposal-era ambiguity with the final decision that `Calculator.AnomalyMul.cal_res_pen()` is implemented as a behavior-preserving bounded selector extraction.
+  - This story does not replace an additional live production path; the actual production replacement for this PRD remains the earlier `_select_res_pen_for_element(...)` extraction inside the retained public `cal_res_pen(data)` path.
+- Compatibility retained:
+  - `Calculator.AnomalyMul.cal_res_pen(data)` remains the public retained formula method, and rollback remains limited to `_select_res_pen_for_element(...)` / `cal_res_pen(data)` helper delegation.
+  - `Calculator.AnomalyMul.anomaly_snapshot`, `CalAnomaly.cal_k_level()`, copied-output constructors, old containers, legacy `buff_add()`, legacy `KickOutBuff()`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, and P2-A through P2-G guarded buckets remain retained.
+  - `implicit-events`, default lifecycle validation, and registered main-loop sample evidence were not required for this final docs story because no copied-output, event-adjacent, dispatch, listener, dot runtime, same-tick runtime-write, lifecycle, validation-runner, or live semantic path changed.
+- Next step:
+  - Generate the next PRD as Phase-3 next-candidate selection / oracle-gap closure; do not reopen `cal_res_pen()` unless focused regression, guardrail, or validation evidence requires it.
+---

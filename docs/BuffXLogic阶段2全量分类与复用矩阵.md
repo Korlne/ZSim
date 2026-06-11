@@ -1340,3 +1340,26 @@ This section records the final handoff for the bounded `Calculator.AnomalyMul.ca
 | Retained compatibility | Must stay intact | Keep `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, copied-output constructors, old containers, legacy `buff_add()` / `KickOutBuff()`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade`. | Retained `calculator-reads`, event-specific `implicit-events`, and focused guardrails. | Do not treat bounded implementation eligibility as deletion permission. |
 
 US-007 conclusion：the next default PRD may implement exactly `Calculator.AnomalyMul.cal_res_pen()` as a bounded production diff. The same-phase pool remains broad enough for copied-output parity, registered-route eligibility, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules; future production diffs still need explicit validation, route-sample eligibility, and rollback evidence.
+
+### 2026-06-11 US-009 Final Implementation Handoff
+
+This section records the final handoff for the bounded `Calculator.AnomalyMul.cal_res_pen()` production implementation PRD. The implementation is complete as a behavior-preserving selector extraction; it does not authorize broad `Calculator.py` / `CalAnomaly.py` rewrite, copied-output formula replacement, old-container deletion, runtime-boundary deletion, or P2-A through P2-G reopen without concrete blocker evidence.
+
+#### Validation evidence
+
+- `formula-parity` profile passed in the final story: base `2 passed`, isolated teams `3 passed`, focused `116 passed`, mypy `Success: no issues found in 9 source files`.
+- `calculator-reads` profile passed in the final story: base `2 passed`, isolated teams `3 passed`, focused `216 passed`, mypy `Success: no issues found in 22 source files`.
+- `implicit-events` was not required for this final story because it changed only handoff / Ralph artifacts and did not touch copied-output, event-adjacent, dispatch, listener, dot runtime, or same-tick runtime-write files/tests.
+- Default lifecycle validation was not required because no lifecycle container, runtime write path, validation-runner behavior, or live runtime switch changed.
+
+#### Final decision
+
+| candidate block | status after current US-009 | next Ralph-sized direction | validation entrypoints | non-goals |
+| --- | --- | --- | --- | --- |
+| `Calculator.AnomalyMul.cal_res_pen()` | Implemented; not partially blocked and not rolled back | Keep as completed bounded selector extraction. Reopen only for focused regression, validation failure, or an explicitly scoped semantic follow-up. | `formula-parity`; retained `calculator-reads`. | No default rework of the completed selector; no broad formula rewrite. |
+| Next Phase-3 formula candidate | Current default | Select one exact bounded candidate from the documented formula / copied-output / registered-route pool, then define focused tests, scoped mypy, rollback, retained gates, and registered sample conditions before any production diff. | `formula-parity`; `calculator-reads`; event-specific `implicit-events` when layering is touched. | Do not infer production approval from `cal_res_pen()` completion. |
+| Copied-output parity and registered-route eligibility | Same-phase evidence pool | Preserve as future candidate evidence and route-sample rules; run main-loop sample only for a live semantic diff with nonzero relevant event counts. | Focused copied-output tests; `implicit-events`; registered main-loop sample only when eligible. | No validation-only team and no merge of scheduled publish / listener broadcast / dot runtime / same-tick runtime write layers. |
+| P2-A through P2-G guarded maintenance | Completed guarded buckets | Open only blocker-driven PRDs when focused tests, source guardrails, or validation names a concrete regression. | Existing P2 focused tests plus `calculator-reads`, `implicit-events`, or default profile depending on touched layer. | Do not manufacture implementation backlog from completed buckets, retained compatibility names, or `.codex_worktrees/` hits. |
+| Retained compatibility | Must stay intact | Keep `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, copied-output constructors, old containers, legacy `buff_add()` / `KickOutBuff()`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade`. | Retained `calculator-reads`, event-specific `implicit-events`, and focused guardrails. | Do not treat a completed bounded selector extraction as deletion permission. |
+
+Current US-009 conclusion：`Calculator.AnomalyMul.cal_res_pen()` is complete as a bounded selector extraction and should not be reopened by default. The next default PRD should follow `docs/Buff重构方案.md` and the current next-stage draft to choose a new exact Phase-3 candidate while preserving copied-output parity, registered-route eligibility, retained compatibility, P2-A through P2-G guarded maintenance, and blocker-only reopen rules.

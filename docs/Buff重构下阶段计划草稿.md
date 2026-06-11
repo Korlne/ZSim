@@ -31,6 +31,7 @@
 - 2026-06-08 阶段 2 第一轮分类 PRD 已完成：`docs/BuffXLogic阶段2全量分类与复用矩阵.md` 现在持有非排他分类 schema、149 个 root-workspace `BuffXLogic` census、helper / record / reader / event-adapter / state-sync / handler / listener pattern catalog、风险矩阵与 ranked follow-up pool。
 - 当前默认下一 Ralph story 仍沿 [Buff重构方案.md](./Buff重构方案.md) 的阶段顺序推进；US-012 已完成阶段 2 closure / phase-3 formula snapshot readiness decision，US-014 已新增 scoped `formula-parity` profile，US-015 已同步 handoff docs 与下一候选池，US-016 已完成 final serial validation / Go / No-Go，US-025 已给出 serial gate green evidence，US-026 完成最终 handoff，replacement blocker closure PRD 已把 `Calculator.AnomalyMul.cal_res_pen()` 收敛为唯一 proposal-eligible bounded domain。
 - 2026-06-11 bounded proposal PRD 已完成最终 handoff：later implementation PRD 为 Go，但只允许实现 `Calculator.AnomalyMul.cal_res_pen()` 的 bounded production diff；本 PRD 本身未替换任何 production formula，也未删除 retained compatibility。下一轮不得把该 Go 扩大为 broad `Calculator.py` / `CalAnomaly.py` rewrite，仍必须保留 `MultiplierData` / `MulData` / `DynamicStatement`、`AnomalyBar.current_ndarray`、copied-output constructors、old containers、legacy `buff_add()` / `KickOutBuff()`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter` 与 `LegacyBuffRuntimeFacade`，并先通过 `formula-parity`、`calculator-reads`，触达 copied-output / event / runtime 分层时追加 `implicit-events`；若改 live semantic diff，还必须使用真实 registered route 与 nonzero anomaly event count 证明。
+- 2026-06-11 bounded implementation PRD 已完成最终 handoff：`Calculator.AnomalyMul.cal_res_pen()` 已实现为 behavior-preserving bounded selector extraction，状态为 implemented，非 partially blocked / rolled back。最终串行验证 `formula-parity`（focused `116 passed` / mypy 9 files clean）与 `calculator-reads`（focused `216 passed` / mypy 22 files clean）均通过；本最终 story 未触达 copied-output、event-adjacent、dispatch、listener、dot runtime、same-tick runtime-write、lifecycle container 或 validation-runner 行为，因此 `implicit-events` 与默认 profile 只保留为后续触达对应边界时的 gate。
 
 ## 本文档的用途
 
@@ -51,7 +52,7 @@
 
 ### 下一轮默认 Ralph PRD
 
-Phase-3 bounded production implementation PRD：仅 `Calculator.AnomalyMul.cal_res_pen()`，已授权 later implementation；未授权 broad formula rewrite 或 retained compatibility 删除
+Phase-3 next-candidate selection / oracle-gap closure PRD：`Calculator.AnomalyMul.cal_res_pen()` 已完成，不作为默认重开目标；下一轮从公式候选、copied-output parity、registered-route eligibility 与 retained compatibility pool 中选择一个 exact bounded candidate，先写清 focused tests、scoped mypy targets、rollback、validation gates 与 non-goals，再决定是否允许 production diff。
 
 ### 本轮已消解的耦合点
 
@@ -200,12 +201,12 @@ US-022 将 Phase 3 公式 / 行为域细分为以下 registered-team trigger；�
 - 验证入口：维护时跑 P2-G focused tests、`tests/simulator/test_migrated_p2g_direct_context_guardrail.py` 与 `implicit-events`；触达真实队伍行为时再选 registered main-loop consistency sample。
 - 非目标：不是 `LegacyBuffRuntimeFacade` 替换，不是 raw queue backlog，不迁移 Calculator formula，不把不同 direct services 合并成一个 adapter。
 
-#### 候选块 Phase-3：bounded `cal_res_pen()` production implementation（当前默认 / exact-domain Go）
+#### 候选块 Phase-3：bounded `cal_res_pen()` production implementation（已完成 / next-candidate selection）
 
 - 候选文件 / 符号：`zsim/sim_progress/ScheduledEvent/Calculator.py` (`Calculator`, `MultiplierData`, `DynamicStatement`, `cal_am`, `cal_ap`, `cal_imp`, `cal_crit_rate`, `cal_personal_crit_rate`, `cal_personal_crit_dmg`)、`zsim/sim_progress/ScheduledEvent/CalAnomaly.py` (`CalAnomaly`, `MulData`)、`zsim/sim_progress/anomaly_bar/AnomalyBarClass.py` (`current_ndarray`)、`zsim/sim_progress/anomaly_bar/CopyAnomalyForOutput.py`、`zsim/sim_progress/Update/UpdateAnomaly.py`，以及 `docs/BuffXLogic阶段2全量分类与复用矩阵.md` 中已列明的 AM/AP、impact、crit、anomaly ratio / copied output、enemy anomaly-state read 候选。
-- 当前耦合：公式快照定义伤害与异常数值，当前 reader seams 只隔离部分 XLogic 属性读取，不等价于公式替换。
-- US-012 / US-015 / US-016 / US-026 / US-009 / US-007 Go / No-Go：phase-3 broad production formula replacement 仍未落地；US-007 final proposal handoff 授权下一轮只为 `Calculator.AnomalyMul.cal_res_pen()` 写 later implementation PRD。`formula-parity`、retained `calculator-reads` gate 和 event-adjacent `implicit-events` gate 均可串行验证，但仍不等价于 broad production formula replacement approval。
-- 当前默认 Ralph-sized 工作方向：实现 `Calculator.AnomalyMul.cal_res_pen()` 的 bounded selector / extraction diff，而不是重写 `Calculator.py` / `CalAnomaly.py`。implementation PRD 必须复用已关闭的 deterministic oracle、`anomaly_snapshot` vector assembly、`CalAnomaly.cal_k_level()` clamp、copied-output handler/report payload parity、registered-route eligibility 与 rollback anchors，并按 proposal 中列明的 focused pytest targets、scoped mypy targets、registered behavior sample 条件、retained gate 和 non-goals 执行。
+- 当前耦合：公式快照定义伤害与异常数值，当前 reader seams 只隔离部分 XLogic 属性读取，不等价于 broad formula replacement；`cal_res_pen()` 已完成的改动只把元素到抗性穿透字段选择提取为 private selector，保留 public `cal_res_pen(data)` 与原 caller path。
+- US-012 / US-015 / US-016 / US-026 / prior US-009 / US-007 / current US-009 Go / No-Go：phase-3 broad production formula replacement 仍未落地；`Calculator.AnomalyMul.cal_res_pen()` 这一 bounded implementation 已完成且验证通过，不再作为默认下一 PRD 重开目标。`formula-parity`、retained `calculator-reads` gate 和 event-adjacent `implicit-events` gate 均可串行验证，但仍不等价于 broad production formula replacement approval。
+- 当前默认 Ralph-sized 工作方向：做 Phase-3 next-candidate selection / oracle-gap closure，而不是继续改 `cal_res_pen()`。下一 PRD 必须从下方同阶段候选池中选择一个 exact bounded domain，先命名 candidate files / symbols、known coupling、focused tests、scoped mypy targets、rollback plan、registered behavior sample 条件、retained gates 和 non-goals；没有新证据时只记录 blocker-only / retained-compatibility 状态。
 - 后续同阶段候选块：
   - `Calculator.AnomalyMul.anomaly_snapshot` vector assembly：作为 `cal_res_pen()` implementation 的 retained vector-order / snapshot-shape 证据保留，不单独扩大为 production replacement domain。
   - `CalAnomaly.cal_k_level()` clamp：保留 below / normal / above-boundary oracle 与日志语义；不重写 `CalAnomaly.py`。
@@ -214,8 +215,8 @@ US-022 将 Phase 3 公式 / 行为域细分为以下 registered-team trigger；�
   - P2-A through P2-G guarded maintenance：继续只由 guardrail / focused test / validation 的 concrete blocker 触发，不作为默认实现 backlog。
 - 必须保留：`MultiplierData` / `MulData` / `DynamicStatement` formula snapshots、`AnomalyBar.current_ndarray`、Calculator / CalAnomaly formulas、copied-output constructors、old containers、legacy `buff_add()` / `KickOutBuff()`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`LegacyBuffRuntimeFacade`。
 - 验证入口：当前 narrow characterization gate 是 `formula-parity`，retained reader / guardrail gate 仍是 `calculator-reads`；触达事件 / runtime / dispatch boundary 时追加 `implicit-events`，触达 lifecycle container / runtime write path 时追加默认 profile。任何后续 production formula PRD 仍必须先列出 focused pytest targets、mypy targets、behavior sample 条件、rollback plan、`--help` 验证和 retained `calculator-reads` / `implicit-events` 串行验证。
-- 行为样本规则：US-007 final proposal handoff 未改 production formula 或 live semantics，因此本轮不跑 main-loop sample；下一轮若实现 `cal_res_pen()` semantic diff，只有在真实注册队伍能触达目标 route 时才跑 `scripts/run_buff_main_loop_consistency.py`，否则记录注册队伍缺口并用 focused parity tests 收口。
-- 回滚计划：保留现有 formula snapshots 和 old compatibility paths 作为 rollback anchor；若未来 parity profile、reader helper 或 formula replacement 失败，回退该 helper / profile / formula diff，继续走 `MultiplierData` / `MulData` / `AnomalyBar.current_ndarray` / existing Calculator / CalAnomaly formulas，不删除 old containers 或 legacy Buff write paths。
+- 行为样本规则：current US-009 final handoff 未改 live semantics，因此本轮不跑 main-loop sample；后续只有真实 production semantic diff 且真实注册队伍能触达目标 route 时才跑 `scripts/run_buff_main_loop_consistency.py`，否则记录注册队伍缺口并用 focused parity tests 收口。
+- 回滚计划：`cal_res_pen()` rollback 只回退 `_select_res_pen_for_element(...)` / `cal_res_pen(data)` helper delegation，不触碰 `CalAnomaly.py`、copied-output constructors、old containers 或 runtime compatibility paths；其他未来 parity profile、reader helper 或 formula replacement 失败时，回退对应 helper / profile / formula diff，继续走 `MultiplierData` / `MulData` / `AnomalyBar.current_ndarray` / existing Calculator / CalAnomaly formulas。
 - 非目标：不在 phase-2 scheduled publish / trigger-state / dot runtime-state / context helper PRD 中重写公式；不把 CLI label 当 live runtime switch；不删除 old containers、legacy `buff_add()` / `KickOutBuff()`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter` 或 `LegacyBuffRuntimeFacade`。
 
 ## 已存在的真实验证入口
@@ -228,14 +229,14 @@ US-022 将 Phase 3 公式 / 行为域细分为以下 registered-team trigger；�
 
 ## 下一轮 PRD 的验证要求
 
-- 当前默认 bounded `Calculator.AnomalyMul.cal_res_pen()` production replacement proposal 必跑：新增或触达的 focused pytest targets、`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile formula-parity`，以及 retained gate `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads`。
+- 当前默认 Phase-3 next-candidate selection / oracle-gap closure PRD 必跑：新增或触达的 focused pytest targets、`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile formula-parity`，以及 retained gate `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads`；不得默认重开已完成的 `Calculator.AnomalyMul.cal_res_pen()` selector extraction。
 - 若触达 event-adjacent copied-output、validation wiring、dispatch/runtime boundaries，追加：`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`。
 - 若触达生命周期容器、runtime 写路径或更广 validation script 行为，追加：`uv run python scripts/run_buff_refactor_validation.py`。
 - 若维护已完成 P2-D scheduled publish ordering / adapter parity bucket，必须保留 exact-file source guardrail、file-specific dispatch tests、adapter 按需创建与 `ScheduleData.reset_myself()` 后 event_list rebinding 证据；不要把 guardrail 扩成阻断 P2-E / P2-F / P2-G，也不要新增 raw queue passthrough 或 runtime write facade。
 - 若维护已完成 P2-E dot runtime-state / initialization bucket，必须保留 exact-file source guardrail、runtime-list helper parity、Shock duration read helper parity、Vivian / UpdateAnomaly focused tests 与 scheduled follow-up 分层证据；不要把 guardrail 扩成阻断 P2-F / P2-G，也不要把 dot runtime state 转成 planned-event backlog。
 - 若维护已完成 P2-G direct simulator context helpers bucket，必须保留 service-family guardrail、focused branch tests 与 `.codex_worktrees/` 排除；触达 preload schedule、Character action/resource、listener/report/RNG 或 live behavior semantics 时追加对应 file-specific pytest，只有真实注册代表队存在且 live behavior 变化时才运行 main-loop consistency sample。
 - US-026 后的 validation decision：`formula-parity`、`calculator-reads` 与 `implicit-events` serial gates 已通过，但 production replacement 仍 No-Go。下一轮必须从本文件的 Phase-3 候选块和 `docs/BuffXLogic阶段2全量分类与复用矩阵.md` 的 formula-readiness 证据取材，命名 exact formula oracle fields、focused tests、scoped mypy targets、registered behavior sample 条件、rollback plan、retained `calculator-reads` / `implicit-events` gate 与 remaining blockers；除非 blocker 关闭并选择单一 bounded domain，不生成 production replacement proposal。
-- US-009 后的 validation / handoff decision：`Calculator.AnomalyMul.cal_res_pen()` 是唯一 proposal-eligible bounded domain；下一轮可以生成 proposal，但仍不得在 proposal 之外替换 `anomaly_snapshot`、`CalAnomaly.cal_k_level()`、copied-output constructors、old Buff containers 或 runtime compatibility paths。
+- Current US-009 后的 validation / handoff decision：`Calculator.AnomalyMul.cal_res_pen()` 已实现为 bounded selector extraction，最终串行 `formula-parity` 与 `calculator-reads` 通过；下一轮默认从 broad same-phase pool 选择新的 exact bounded candidate，不在 focused regression 或 validation failure 之外重开 `cal_res_pen()`。
 - 若维护已完成 P2-A / P2-B / P2-C 文件，必须保留 migrated-source guardrail 范围和 `.codex_worktrees/` 排除，不得把 guardrail 扩成阻断未迁移 P2-D / P2-E / P2-F / P2-G 候选。
 - 若故事改动了验证命令契约、帮助文本或执行路径，补跑对应的 `--help` / focused pytest / 样例命令，而不是继续引用占位入口。
 - 上述验证命令应串行执行，不要并发跑多个 profile；它们会共享 sqlite `sessions` 数据与异步日志写线程，并发时容易制造假失败。
