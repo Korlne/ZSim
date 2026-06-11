@@ -3357,3 +3357,15 @@
 - Next step:
   - Continue with US-002 by running the root-workspace AM/AP/impact formula and reader call-path census, excluding `.codex_worktrees/` and generated artifacts from blocker conclusions.
 ---
+## 2026-06-11 18:28 +08:00 - US-002
+- Files changed: `scripts/ralph/investigations/2026-06-11-US-002-am-ap-impact-census.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `2026-06-11-US-002-am-ap-impact-census.md` replaces implicit AM/AP/impact call-path assumptions with a root-workspace census that separates retained formulas, reader-backed compatibility, test-only guardrails, docs/task history, and future candidate evidence.
+  - This story builds an evidence boundary only; it does not replace a live production formula, copied-output constructor, validation runner, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - `Calculator.AnomalyMul.cal_am()`, `Calculator.AnomalyMul.cal_ap()`, `Calculator.StunMul.cal_imp()`, and `CalculatorBuffAttributeReader.read_anomaly_mastery()`, `read_anomaly_proficiency()`, `read_impact()` remain unchanged.
+  - Reader-backed BuffXLogic paths remain compatibility evidence; direct `Cal.AnomalyMul.cal_ap(...)` calls in Vivian cinema/core-passive and `CalAnomaly.py` remain future AP oracle candidate evidence, not changes in this iteration.
+  - `.codex_worktrees/`, caches, generated logs, Ralph archives, docs, and historical tasks were excluded from blocker conclusions. No old-coupling review update was needed because this census found no new live Buff coupling beyond already documented retained formula/read-path boundaries.
+- Next step:
+  - Continue with US-003 by adding explicit numeric retained `MultiplierData` oracle rows for `Calculator.AnomalyMul.cal_am(...)`.
+---
