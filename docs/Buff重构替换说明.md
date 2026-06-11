@@ -3294,3 +3294,16 @@
 - Next step:
   - Continue with US-006 by running the focused `formula-parity` and retained `calculator-reads` gates serially.
 ---
+## 2026-06-11 15:52 +08:00 - US-006
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 serial implementation validation evidence` replaces accepting the bounded `cal_res_pen()` selector extraction on local focused tests alone with recorded focused pytest, `formula-parity`, and `calculator-reads` exit-0 outcomes.
+  - This story validates the already-extracted boundary only; it does not replace adjacent production formulas, copied-output constructors, validation runner wiring, dispatch adapters, runtime command ports, old Buff containers, or legacy compatibility write paths.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.AnomalyMul.cal_res_pen(data)` remains the public retained formula method, `Calculator.AnomalyMul._select_res_pen_for_element(...)` remains the private selector, and `Calculator.AnomalyMul.__init__` still assigns `self.res_pen` from `self.cal_res_pen(data)`.
+  - `Calculator.AnomalyMul.anomaly_snapshot`, `CalAnomaly.cal_k_level()`, copied-output constructors, copied-output report payloads, `MultiplierData`, `MulData`, `DynamicStatement`, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain unchanged.
+  - Known warning/noise was separated from exit status: focused pytest, `formula-parity`, and `calculator-reads` exited `0`; pytest-asyncio loop-scope warnings and async log-writer shutdown `RuntimeError` appeared after successful validation markers.
+  - `implicit-events` was skipped because no copied-output, event-adjacent, dispatch, listener, dot runtime, or same-tick runtime-write files changed. No old-coupling review update was needed.
+- Next step:
+  - Continue with US-007 by deciding registered behavior sample eligibility from the current behavior-preserving extraction evidence without creating a validation-only registered team.
+---
