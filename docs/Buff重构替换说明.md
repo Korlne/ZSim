@@ -3456,3 +3456,15 @@
 - Next step:
   - Continue with US-010 by verifying validation profile wiring for AM/AP/impact without editing the runner unless coverage evidence requires it.
 ---
+## 2026-06-11 20:09 +08:00 - US-010
+- Files changed: `scripts/ralph/investigations/2026-06-11-US-010-validation-profile-wiring.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-010 validation profile wiring evidence` replaces implicit trust in `formula-parity` / `calculator-reads` coverage with recorded runner source, CodeGraph, import introspection, and `formula-parity` exit-0 evidence.
+  - This story verifies an existing boundary only; it does not replace live production formula code, edit the validation runner, add a dispatch adapter, alter a runtime command port, delete old Buff containers, or change legacy compatibility paths.
+- Compatibility retained:
+  - `scripts/run_buff_refactor_validation.py` remains unchanged; existing `formula-parity` and `calculator-reads` profile maps already cover `zsim/sim_progress/ScheduledEvent/Calculator.py` and `tests/simulator/test_buff_attribute_reader.py`.
+  - `Calculator.AnomalyMul.cal_am()`, `Calculator.AnomalyMul.cal_ap()`, `Calculator.StunMul.cal_imp()`, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed because this runner-verification story found no new Buff coupling.
+- Next step:
+  - Continue with US-011 by deciding registered behavior sample eligibility separately from validation profile wiring.
+---
