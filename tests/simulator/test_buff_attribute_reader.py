@@ -2768,15 +2768,26 @@ def test_cal_am_retained_multiplier_data_oracle_rows(
     )
 
     retained_data = _legacy_multiplier_data(fixture)
+    reader_snapshot_data = _reader_snapshot_data(fixture.context)
 
     for attr_name, expected_value in case.expected_dynamic_fields.items():
-        assert getattr(retained_data.dynamic, attr_name) == case.tolerance.approx(
-            expected_value
-        ), f"{case.case_id}:retained:{attr_name}"
-    assert Calculator.AnomalyMul.cal_am(retained_data) == case.tolerance.approx(
-        case.expected_value
-    )
-    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+        for source_label, data in (
+            ("retained", retained_data),
+            ("reader-snapshot", reader_snapshot_data),
+        ):
+            assert getattr(data.dynamic, attr_name) == case.tolerance.approx(
+                expected_value
+            ), f"{case.case_id}:{source_label}:{attr_name}"
+
+    expected = case.tolerance.approx(case.expected_value)
+    retained_value = Calculator.AnomalyMul.cal_am(retained_data)
+    reader_snapshot_value = Calculator.AnomalyMul.cal_am(reader_snapshot_data)
+    reader_value = CalculatorBuffAttributeReader().read_anomaly_mastery(fixture.context)
+
+    assert retained_value == expected, f"{case.case_id}:retained"
+    assert reader_snapshot_value == expected, f"{case.case_id}:reader-snapshot"
+    assert reader_value == expected, f"{case.case_id}:reader"
+    _assert_aggregation_calls(aggregation_calls, fixture, times=3)
 
 
 @pytest.mark.parametrize(
