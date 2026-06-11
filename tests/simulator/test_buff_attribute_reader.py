@@ -1404,6 +1404,34 @@ _FORMULA_ORACLE_TABLE_CASES = (
         ),
     ),
     _FormulaOracleCase(
+        case_id="anomaly-res-pen-physical-positive",
+        fixture_kwargs={
+            "name": "异常乘区-物理抗性穿透正值",
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 0,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "physical_res_pen_increase": 0.21,
+            "fire_res_pen_increase": 0.99,
+        },
+        expected_dynamic_fields={
+            "physical_res_pen_increase": 0.21,
+            "fire_res_pen_increase": 0.99,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_res_pen",
+                expected_value=0.21,
+                retained_value=_anomaly_mul_res_pen,
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
         case_id="anomaly-res-pen-fire-positive",
         fixture_kwargs={
             "name": "异常乘区-火抗性穿透正值",
@@ -1425,6 +1453,120 @@ _FORMULA_ORACLE_TABLE_CASES = (
             _FormulaOracleExpectation(
                 label="cal_res_pen",
                 expected_value=0.18,
+                retained_value=_anomaly_mul_res_pen,
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="anomaly-res-pen-ice-positive",
+        fixture_kwargs={
+            "name": "异常乘区-冰抗性穿透正值",
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 2,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "physical_res_pen_increase": 0.77,
+            "ice_res_pen_increase": 0.22,
+        },
+        expected_dynamic_fields={
+            "physical_res_pen_increase": 0.77,
+            "ice_res_pen_increase": 0.22,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_res_pen",
+                expected_value=0.22,
+                retained_value=_anomaly_mul_res_pen,
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="anomaly-res-pen-electric-positive",
+        fixture_kwargs={
+            "name": "异常乘区-电抗性穿透正值",
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 3,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "electric_res_pen_increase": 0.24,
+            "ether_res_pen_increase": 0.88,
+        },
+        expected_dynamic_fields={
+            "electric_res_pen_increase": 0.24,
+            "ether_res_pen_increase": 0.88,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_res_pen",
+                expected_value=0.24,
+                retained_value=_anomaly_mul_res_pen,
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="anomaly-res-pen-ether-positive",
+        fixture_kwargs={
+            "name": "异常乘区-以太抗性穿透正值",
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 4,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "ice_res_pen_increase": 0.11,
+            "ether_res_pen_increase": 0.25,
+        },
+        expected_dynamic_fields={
+            "ice_res_pen_increase": 0.11,
+            "ether_res_pen_increase": 0.25,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_res_pen",
+                expected_value=0.25,
+                retained_value=_anomaly_mul_res_pen,
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="anomaly-res-pen-auric-ink-uses-ether-field",
+        fixture_kwargs={
+            "name": "异常乘区-玄墨属性读取以太抗穿",
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 6,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "fire_res_pen_increase": 0.12,
+            "ether_res_pen_increase": 0.26,
+            "all_res_pen_increase": 0.61,
+        },
+        expected_dynamic_fields={
+            "fire_res_pen_increase": 0.12,
+            "ether_res_pen_increase": 0.26,
+            "all_res_pen_increase": 0.61,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_res_pen",
+                expected_value=0.26,
                 retained_value=_anomaly_mul_res_pen,
             ),
         ),
@@ -1482,6 +1624,11 @@ _FORMULA_ORACLE_TABLE_CASES = (
                 label="cal_res_pen",
                 expected_value=0.33,
                 retained_value=_anomaly_mul_res_pen,
+            ),
+            _FormulaOracleExpectation(
+                label="cal_res_mul",
+                expected_value=1.99,
+                retained_value=lambda data: Calculator.RegularMul.cal_res_mul(data),
             ),
         ),
     ),
@@ -2400,6 +2547,49 @@ def test_formula_oracle_table_cases_drive_expected_fields_and_reader_parity(
     assert len(fixture.active_buff_view[fixture.char.NAME]) == char_buff_count
     assert len(fixture.enemy.dynamic.dynamic_debuff_list) == enemy_debuff_count
     assert len(fixture.enemy.dynamic.dynamic_dot_list) == enemy_dot_count
+
+
+def test_anomaly_res_pen_rejects_invalid_element_for_retained_and_reader_snapshot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _reset_formula_oracle_caches()
+    fixture = _make_attribute_read_fixture(
+        name="异常乘区-非法属性抗性穿透",
+        damage_ratio=1.0,
+        hit_times=1,
+        diff_multiplier=0,
+        element_type=7,
+        char_buff_count=1,
+        enemy_debuff_count=1,
+        enemy_dot_count=0,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(
+            physical_res_pen_increase=0.17,
+            fire_res_pen_increase=0.18,
+            ice_res_pen_increase=0.19,
+            electric_res_pen_increase=0.20,
+            ether_res_pen_increase=0.21,
+            all_res_pen_increase=0.22,
+        ),
+    )
+
+    retained_data = _legacy_multiplier_data(fixture)
+    reader_snapshot_data = _reader_snapshot_data(fixture.context)
+
+    for source_label, data in (
+        ("retained", retained_data),
+        ("reader-snapshot", reader_snapshot_data),
+    ):
+        with pytest.raises(
+            AssertionError,
+            match=calculator_module.INVALID_ELEMENT_ERROR,
+        ):
+            _anomaly_mul_res_pen(data)
+        assert data.dynamic.all_res_pen_increase == pytest.approx(0.22), source_label
+
+    _assert_aggregation_calls(aggregation_calls, fixture, times=2)
 
 
 def test_formula_parity_fixture_builds_independent_calculator_inputs(

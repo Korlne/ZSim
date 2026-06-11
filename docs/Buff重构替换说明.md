@@ -3246,3 +3246,15 @@
 - Next step:
   - Continue with US-002 by expanding focused selector oracle coverage for all supported `cal_res_pen()` branches and invalid-element behavior before production source changes.
 ---
+## 2026-06-11 15:09 +08:00 - US-002
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 branch-complete cal_res_pen oracle coverage` prepares to replace the inline `Calculator.AnomalyMul.cal_res_pen()` selector by pinning physical, fire, ice, frost-to-ice, electric, ether, auric-ink, default-zero, and invalid-element behavior before production code moves.
+  - This story builds a test/oracle boundary only; it does not replace a live production path, production formula, copied-output constructor, validation runner wiring, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.AnomalyMul.cal_res_pen()`, `Calculator.AnomalyMul.anomaly_snapshot`, `CalAnomaly.cal_k_level()`, copied-output constructors, `MultiplierData`, `MulData`, `DynamicStatement`, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade`.
+  - `all_res_pen_increase` remains outside `cal_res_pen()` and is pinned as a `RegularMul.cal_res_mul()` resistance-multiplier input.
+  - No old-coupling review update was needed; this focused oracle story found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, old-container, and runtime boundary layers.
+- Next step:
+  - Continue with US-003 by extracting the bounded `Calculator.AnomalyMul.cal_res_pen()` selector against the new branch-complete oracle coverage.
+---
