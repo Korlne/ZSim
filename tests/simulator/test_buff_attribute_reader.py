@@ -104,6 +104,16 @@ class _FormulaOracleCase:
 
 
 @dataclass(frozen=True)
+class _AnomalyMasteryRetainedOracleCase:
+    case_id: str
+    fixture_kwargs: dict[str, Any]
+    dynamic_attrs: dict[str, float]
+    expected_dynamic_fields: dict[str, float]
+    expected_value: float
+    tolerance: _OracleTolerance = field(default_factory=_OracleTolerance)
+
+
+@dataclass(frozen=True)
 class _AnomalySnapshotOracleCase:
     case_id: str
     snapshot_values: tuple[float, ...]
@@ -1954,6 +1964,95 @@ _FORMULA_ORACLE_TABLE_CASES = (
 )
 
 
+_AM_RETAINED_MULTIPLIER_ORACLE_CASES = (
+    _AnomalyMasteryRetainedOracleCase(
+        case_id="am-default-zero",
+        fixture_kwargs={
+            "name": "异常掌控-默认零值",
+            "char_buff_count": 0,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={},
+        expected_dynamic_fields={
+            "field_anomaly_mastery": 0.0,
+            "anomaly_mastery": 0.0,
+        },
+        expected_value=0.0,
+    ),
+    _AnomalyMasteryRetainedOracleCase(
+        case_id="am-base-only",
+        fixture_kwargs={
+            "name": "异常掌控-基础值",
+            "am": 95.0,
+            "char_buff_count": 0,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={},
+        expected_dynamic_fields={
+            "field_anomaly_mastery": 0.0,
+            "anomaly_mastery": 0.0,
+        },
+        expected_value=95.0,
+    ),
+    _AnomalyMasteryRetainedOracleCase(
+        case_id="am-static-fixed-increase",
+        fixture_kwargs={
+            "name": "异常掌控-静态固定值",
+            "am": 95.0,
+            "static_statement_attrs": {"AM": 118.0},
+            "char_buff_count": 0,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={},
+        expected_dynamic_fields={
+            "field_anomaly_mastery": 0.0,
+            "anomaly_mastery": 0.0,
+        },
+        expected_value=118.0,
+    ),
+    _AnomalyMasteryRetainedOracleCase(
+        case_id="am-dynamic-flat-increase",
+        fixture_kwargs={
+            "name": "异常掌控-局内固定值",
+            "am": 80.0,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 1,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "anomaly_mastery": 22.0,
+        },
+        expected_dynamic_fields={
+            "field_anomaly_mastery": 0.0,
+            "anomaly_mastery": 22.0,
+        },
+        expected_value=102.0,
+    ),
+    _AnomalyMasteryRetainedOracleCase(
+        case_id="am-mixed-flat-percentage",
+        fixture_kwargs={
+            "name": "异常掌控-固定百分比混合",
+            "am": 80.0,
+            "char_buff_count": 2,
+            "enemy_debuff_count": 1,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "field_anomaly_mastery": 0.25,
+            "anomaly_mastery": 15.0,
+        },
+        expected_dynamic_fields={
+            "field_anomaly_mastery": 0.25,
+            "anomaly_mastery": 15.0,
+        },
+        expected_value=115.0,
+    ),
+)
+
+
 _ANOMALY_SNAPSHOT_ORACLE_CASES = (
     _AnomalySnapshotOracleCase(
         case_id="new-anomaly-copy-source-snapshot",
@@ -2650,6 +2749,34 @@ def test_formula_oracle_table_cases_drive_expected_fields_and_reader_parity(
     assert len(fixture.active_buff_view[fixture.char.NAME]) == char_buff_count
     assert len(fixture.enemy.dynamic.dynamic_debuff_list) == enemy_debuff_count
     assert len(fixture.enemy.dynamic.dynamic_dot_list) == enemy_dot_count
+
+
+@pytest.mark.parametrize(
+    "case",
+    _AM_RETAINED_MULTIPLIER_ORACLE_CASES,
+    ids=lambda case: case.case_id,
+)
+def test_cal_am_retained_multiplier_data_oracle_rows(
+    monkeypatch: pytest.MonkeyPatch,
+    case: _AnomalyMasteryRetainedOracleCase,
+) -> None:
+    _reset_formula_oracle_caches()
+    fixture = _make_attribute_read_fixture(**case.fixture_kwargs)
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(**case.dynamic_attrs),
+    )
+
+    retained_data = _legacy_multiplier_data(fixture)
+
+    for attr_name, expected_value in case.expected_dynamic_fields.items():
+        assert getattr(retained_data.dynamic, attr_name) == case.tolerance.approx(
+            expected_value
+        ), f"{case.case_id}:retained:{attr_name}"
+    assert Calculator.AnomalyMul.cal_am(retained_data) == case.tolerance.approx(
+        case.expected_value
+    )
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
 
 
 @pytest.mark.parametrize(
