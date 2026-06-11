@@ -31,6 +31,18 @@
   - `US-002` should inventory existing oracle evidence and exact remaining blockers before any bounded production replacement proposal.
 ---
 
+## 2026-06-11 09:26 +08:00 - US-002
+- Files changed: `scripts/ralph/investigations/2026-06-11-US-002-oracle-evidence-inventory.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - This story only inventories existing oracle / parity evidence and does not replace a live production formula path.
+  - The investigation packet replaces ad hoc blocker discussion with an explicit map from current evidence to missing blocker-specific cases.
+- Compatibility retained:
+  - Production formula replacement remains No-Go.
+  - `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, copied-output classes, `ScheduleDispatchPort`, listener broadcast, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, `buff_add()`, and `KickOutBuff()` remain retained boundaries.
+- Next step:
+  - `US-003` should add deterministic oracle cases for `Calculator.AnomalyMul.cal_res_pen()` before any bounded production replacement proposal.
+---
+
 ## 2026-06-05 - 调查型 PRD 收口基线
 
 - 本轮文件：`docs/旧Buff系统耦合审查结果.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
