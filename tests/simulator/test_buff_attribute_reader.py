@@ -242,6 +242,109 @@ _ANOMALY_CURRENT_NDARRAY_FIELDS = (
     "snapshot_stun_bonus",
 )
 
+_CAL_RES_PEN_DYNAMIC_FIELD_NAMES = (
+    "physical_res_pen_increase",
+    "fire_res_pen_increase",
+    "ice_res_pen_increase",
+    "electric_res_pen_increase",
+    "ether_res_pen_increase",
+    "all_res_pen_increase",
+)
+
+_CAL_RES_PEN_READER_SNAPSHOT_COMPATIBILITY_CASES = (
+    (
+        "physical",
+        0,
+        "physical_res_pen_increase",
+        {
+            "physical_res_pen_increase": 0.11,
+            "fire_res_pen_increase": 0.91,
+            "ice_res_pen_increase": 0.92,
+            "electric_res_pen_increase": 0.93,
+            "ether_res_pen_increase": 0.94,
+            "all_res_pen_increase": 0.95,
+        },
+    ),
+    (
+        "fire",
+        1,
+        "fire_res_pen_increase",
+        {
+            "physical_res_pen_increase": 0.91,
+            "fire_res_pen_increase": 0.12,
+            "ice_res_pen_increase": 0.92,
+            "electric_res_pen_increase": 0.93,
+            "ether_res_pen_increase": 0.94,
+            "all_res_pen_increase": 0.95,
+        },
+    ),
+    (
+        "ice",
+        2,
+        "ice_res_pen_increase",
+        {
+            "physical_res_pen_increase": 0.91,
+            "fire_res_pen_increase": 0.92,
+            "ice_res_pen_increase": 0.13,
+            "electric_res_pen_increase": 0.93,
+            "ether_res_pen_increase": 0.94,
+            "all_res_pen_increase": 0.95,
+        },
+    ),
+    (
+        "frost",
+        5,
+        "ice_res_pen_increase",
+        {
+            "physical_res_pen_increase": 0.91,
+            "fire_res_pen_increase": 0.92,
+            "ice_res_pen_increase": 0.14,
+            "electric_res_pen_increase": 0.93,
+            "ether_res_pen_increase": 0.94,
+            "all_res_pen_increase": 0.95,
+        },
+    ),
+    (
+        "electric",
+        3,
+        "electric_res_pen_increase",
+        {
+            "physical_res_pen_increase": 0.91,
+            "fire_res_pen_increase": 0.92,
+            "ice_res_pen_increase": 0.93,
+            "electric_res_pen_increase": 0.15,
+            "ether_res_pen_increase": 0.94,
+            "all_res_pen_increase": 0.95,
+        },
+    ),
+    (
+        "ether",
+        4,
+        "ether_res_pen_increase",
+        {
+            "physical_res_pen_increase": 0.91,
+            "fire_res_pen_increase": 0.92,
+            "ice_res_pen_increase": 0.93,
+            "electric_res_pen_increase": 0.94,
+            "ether_res_pen_increase": 0.16,
+            "all_res_pen_increase": 0.95,
+        },
+    ),
+    (
+        "auric-ink",
+        6,
+        "ether_res_pen_increase",
+        {
+            "physical_res_pen_increase": 0.91,
+            "fire_res_pen_increase": 0.92,
+            "ice_res_pen_increase": 0.93,
+            "electric_res_pen_increase": 0.94,
+            "ether_res_pen_increase": 0.17,
+            "all_res_pen_increase": 0.95,
+        },
+    ),
+)
+
 
 def _reset_formula_oracle_caches() -> None:
     MultiplierData.mul_data_cache.clear()
@@ -2547,6 +2650,53 @@ def test_formula_oracle_table_cases_drive_expected_fields_and_reader_parity(
     assert len(fixture.active_buff_view[fixture.char.NAME]) == char_buff_count
     assert len(fixture.enemy.dynamic.dynamic_debuff_list) == enemy_debuff_count
     assert len(fixture.enemy.dynamic.dynamic_dot_list) == enemy_dot_count
+
+
+@pytest.mark.parametrize(
+    "case_id,element_type,selected_field,dynamic_attrs",
+    _CAL_RES_PEN_READER_SNAPSHOT_COMPATIBILITY_CASES,
+    ids=[case[0] for case in _CAL_RES_PEN_READER_SNAPSHOT_COMPATIBILITY_CASES],
+)
+def test_cal_res_pen_retained_and_reader_snapshot_select_same_dynamic_field(
+    monkeypatch: pytest.MonkeyPatch,
+    case_id: str,
+    element_type: int,
+    selected_field: str,
+    dynamic_attrs: dict[str, float],
+) -> None:
+    _reset_formula_oracle_caches()
+    fixture = _make_attribute_read_fixture(
+        name=f"异常乘区-{case_id}-reader-snapshot-compat",
+        damage_ratio=1.0,
+        hit_times=1,
+        diff_multiplier=0,
+        element_type=element_type,
+        char_buff_count=1,
+        enemy_debuff_count=1,
+        enemy_dot_count=1,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(**dynamic_attrs),
+    )
+
+    retained_data = _legacy_multiplier_data(fixture)
+    reader_snapshot_data = _reader_snapshot_data(fixture.context)
+    expected_value = dynamic_attrs[selected_field]
+
+    for source_label, data in (
+        ("retained", retained_data),
+        ("reader-snapshot", reader_snapshot_data),
+    ):
+        for field_name in _CAL_RES_PEN_DYNAMIC_FIELD_NAMES:
+            assert getattr(data.dynamic, field_name) == pytest.approx(
+                dynamic_attrs[field_name]
+            ), f"{case_id}:{source_label}:{field_name}"
+        assert _anomaly_mul_res_pen(data) == pytest.approx(expected_value), (
+            f"{case_id}:{source_label}:cal_res_pen"
+        )
+
+    _assert_aggregation_calls(aggregation_calls, fixture, times=2)
 
 
 def test_anomaly_res_pen_rejects_invalid_element_for_retained_and_reader_snapshot(

@@ -3270,3 +3270,15 @@
 - Next step:
   - Continue with US-004 by verifying retained reader snapshot compatibility and formula-boundary retention around the extracted selector without widening into adjacent formulas or validation-profile rewiring.
 ---
+## 2026-06-11 15:33 +08:00 - US-004
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `test_cal_res_pen_retained_and_reader_snapshot_select_same_dynamic_field()` replaces implicit confidence in retained / reader-snapshot compatibility after the selector extraction with explicit coverage for every supported `cal_res_pen()` branch.
+  - This story builds a characterization guardrail only; it does not replace live production formula code, copied-output constructors, validation runner wiring, dispatch adapters, runtime command ports, old Buff containers, or legacy compatibility write paths.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.AnomalyMul.cal_res_pen(data)` remains the public retained formula method, `Calculator.AnomalyMul._select_res_pen_for_element(...)` remains the private selector, and `Calculator.AnomalyMul.__init__` still assigns `self.res_pen` from `self.cal_res_pen(data)`.
+  - Physical, fire, ice/frost, electric, ether/auric-ink, and dynamic-field snapshot compatibility are now covered for both retained `MultiplierData` and `CalculatorBuffAttributeReader._build_formula_snapshot(context)`; `Calculator.AnomalyMul.anomaly_snapshot`, `CalAnomaly.cal_k_level()`, copied-output constructors, copied-output report payloads, `MultiplierData`, `MulData`, `DynamicStatement`, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain unchanged.
+  - No old-coupling review update was needed; this focused compatibility story found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, old-container, and runtime boundary layers.
+- Next step:
+  - Continue with US-005 by checking validation profile wiring and scoped typecheck coverage without assuming a production file split occurred.
+---
