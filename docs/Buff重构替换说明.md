@@ -3443,3 +3443,16 @@
 - Next step:
   - Continue with US-009 by preserving the formula boundary compatibility assertions without broadening AM/AP/impact reader parity into unrelated crit formula replacement.
 ---
+## 2026-06-11 19:57 +08:00 - US-009
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/investigations/2026-06-11-US-009-formula-boundary-test-split.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `test_calculator_am_ap_impact_formula_boundaries_remain_retained_compatibility` replaces the AM/AP/impact portion of the old mixed formula-boundary table with a dedicated retained formula-family compatibility check.
+  - `test_calculator_attribute_formula_boundaries_remain_retained_compatibility` remains as the crit boundary check and now proves full/personal crit rate plus full/personal crit damage retained responsibility boundaries without mixing in AM/AP/impact parity.
+  - This story reorganizes compatibility tests only; it does not replace a live production formula, copied-output constructor, validation runner, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - `Calculator.AnomalyMul.cal_am()`, `Calculator.AnomalyMul.cal_ap()`, `Calculator.StunMul.cal_imp()`, `Calculator.RegularMul.cal_crit_rate()`, `Calculator.RegularMul.cal_personal_crit_rate()`, `Calculator.RegularMul.cal_crit_dmg()`, and `Calculator.RegularMul.cal_personal_crit_dmg()` remain unchanged.
+  - AM/AP/impact reader parity remains compatibility evidence only and does not authorize crit formula replacement.
+  - No old-coupling review update was needed because this test-only story found no new Buff coupling.
+- Next step:
+  - Continue with US-010 by verifying validation profile wiring for AM/AP/impact without editing the runner unless coverage evidence requires it.
+---

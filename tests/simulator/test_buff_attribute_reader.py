@@ -4399,17 +4399,15 @@ def test_p2b_personal_crit_damage_excludes_received_crit_damage_bonus(
     _assert_aggregation_calls(aggregation_calls, fixture, times=2)
 
 
-def test_calculator_attribute_formula_boundaries_remain_retained_compatibility(
+def test_calculator_am_ap_impact_formula_boundaries_remain_retained_compatibility(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     MultiplierData.mul_data_cache.clear()
     fixture = _make_attribute_read_fixture(
-        name="公式边界测试",
+        name="AM/AP/冲击力边界测试",
         am=100.0,
         ap=300.0,
         imp=80.0,
-        crit_rate=0.2,
-        crit_damage=0.5,
         char_buff_count=1,
         enemy_debuff_count=1,
     )
@@ -4422,6 +4420,49 @@ def test_calculator_attribute_formula_boundaries_remain_retained_compatibility(
             "固定异常精通": 40.0,
             "局内冲击力%": 0.1,
             "固定冲击力": 9.0,
+        },
+    )
+
+    retained_data = _legacy_multiplier_data(fixture)
+    retained_formula_values = {
+        "cal_am": Calculator.AnomalyMul.cal_am(retained_data),
+        "cal_ap": Calculator.AnomalyMul.cal_ap(retained_data),
+        "cal_imp": Calculator.StunMul.cal_imp(retained_data),
+    }
+    expected_formula_values = {
+        "cal_am": 135.0,
+        "cal_ap": 415.0,
+        "cal_imp": 97.0,
+    }
+
+    reader = CalculatorBuffAttributeReader()
+    reader_values = {
+        "cal_am": reader.read_anomaly_mastery(fixture.context),
+        "cal_ap": reader.read_anomaly_proficiency(fixture.context),
+        "cal_imp": reader.read_impact(fixture.context),
+    }
+
+    assert retained_formula_values == pytest.approx(expected_formula_values)
+    # P2-A/P2-B reader parity 只是兼容性证据，不能作为删除 AM/AP/冲击力公式的依据。
+    assert reader_values == pytest.approx(retained_formula_values)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=4)
+
+
+def test_calculator_attribute_formula_boundaries_remain_retained_compatibility(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    MultiplierData.mul_data_cache.clear()
+    fixture = _make_attribute_read_fixture(
+        name="双暴公式边界测试",
+        crit_rate=0.2,
+        crit_damage=0.5,
+        damage_ratio=1.0,
+        char_buff_count=1,
+        enemy_debuff_count=1,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        {
             "固定暴击率": 0.1,
             "局内暴击率": 0.05,
             "被暴击几率增加": 0.25,
@@ -4432,48 +4473,52 @@ def test_calculator_attribute_formula_boundaries_remain_retained_compatibility(
     )
 
     retained_data = _legacy_multiplier_data(fixture)
+    retained_dynamic = cast(Any, retained_data).dynamic
     formula_boundaries = {
-        "cal_am": Calculator.AnomalyMul.cal_am(retained_data),
-        "cal_ap": Calculator.AnomalyMul.cal_ap(retained_data),
-        "cal_imp": Calculator.StunMul.cal_imp(retained_data),
         "cal_crit_rate": Calculator.RegularMul.cal_crit_rate(retained_data),
         "cal_personal_crit_rate": Calculator.RegularMul.cal_personal_crit_rate(
             retained_data
         ),
+        "cal_crit_dmg": Calculator.RegularMul.cal_crit_dmg(retained_data),
         "cal_personal_crit_dmg": Calculator.RegularMul.cal_personal_crit_dmg(
             retained_data
         ),
     }
     expected_boundaries = {
-        "cal_am": 135.0,
-        "cal_ap": 415.0,
-        "cal_imp": 97.0,
         "cal_crit_rate": 0.6,
         "cal_personal_crit_rate": 0.35,
+        "cal_crit_dmg": 1.4,
         "cal_personal_crit_dmg": 1.0,
     }
 
     reader = CalculatorBuffAttributeReader()
     reader_values = {
-        "cal_am": reader.read_anomaly_mastery(fixture.context),
-        "cal_ap": reader.read_anomaly_proficiency(fixture.context),
-        "cal_imp": reader.read_impact(fixture.context),
         "cal_crit_rate": reader.read_full_crit_rate(fixture.context),
         "cal_personal_crit_rate": reader.read_personal_crit_rate(fixture.context),
         "cal_personal_crit_dmg": reader.read_personal_crit_damage(fixture.context),
     }
 
     assert formula_boundaries == pytest.approx(expected_boundaries)
-    # P2-A/P2-B reader parity 只是兼容性证据，不能作为删除 Calculator 公式的依据。
-    assert reader_values == pytest.approx(formula_boundaries)
+    # 受暴击字段仍只属于完整双暴公式；个人双暴读口不接收这些字段。
+    assert reader_values == pytest.approx(
+        {key: formula_boundaries[key] for key in reader_values}
+    )
     assert (
         formula_boundaries["cal_crit_rate"]
         - formula_boundaries["cal_personal_crit_rate"]
-    ) == pytest.approx(0.25)
-    assert cast(Any, retained_data).dynamic.received_crit_dmg_bonus == pytest.approx(
-        0.4
+    ) == pytest.approx(retained_dynamic.crit_rate_received_increase)
+    assert (
+        formula_boundaries["cal_crit_dmg"]
+        - formula_boundaries["cal_personal_crit_dmg"]
+    ) == pytest.approx(retained_dynamic.received_crit_dmg_bonus)
+    assert retained_dynamic.crit_rate_received_increase == pytest.approx(0.25)
+    assert retained_dynamic.received_crit_dmg_bonus == pytest.approx(0.4)
+    assert formula_boundaries["cal_personal_crit_dmg"] == pytest.approx(
+        cast(Any, retained_data).static.crit_damage
+        + retained_dynamic.crit_dmg
+        + retained_dynamic.field_crit_dmg
     )
-    _assert_aggregation_calls(aggregation_calls, fixture, times=7)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=4)
 
 
 def test_anomaly_bar_settlement_and_copied_snapshot_inputs_remain_retained_compatibility() -> None:
