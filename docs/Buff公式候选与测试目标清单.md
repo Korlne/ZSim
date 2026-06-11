@@ -104,6 +104,31 @@ US-025 复验记录：
 
 下一默认 PRD 应是 phase-3 replacement blocker closure / bounded-domain eligibility decision。当前 PRD 内下一最小切片转向 registered-route behavior sample eligibility；完成后再用本清单复核是否可以选择单一 bounded formula domain 进入 production replacement proposal。若上述 blockers 仍未关闭，继续 characterization，不提交 production formula replacement。
 
+## US-009 final bounded-domain Go / No-Go
+
+结论：bounded proposal Go，仅限 `Calculator.AnomalyMul.cal_res_pen()`。本 PRD 没有修改 `Calculator.py`、`CalAnomaly.py`、`CopyAnomalyForOutput.py`、`UpdateAnomaly.py`、validation runner、old Buff containers 或 runtime compatibility paths；它只关闭 proposal 前置 blocker，并把下一轮默认工作从 blocker closure 转为一个 bounded production replacement proposal。
+
+US-008 / US-009 验证与 handoff 证据：
+
+- `uv run pytest tests/simulator/test_buff_attribute_reader.py tests/simulator/test_update_anomaly_dispatch.py tests/simulator/test_anomaly_handler_runtime_view.py -q` passed：`126 passed`。
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile formula-parity` passed：base `2 passed` / isolated teams `3 passed` / focused `103 passed` / mypy `9 source files` clean。
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads` passed：base `2 passed` / isolated teams `3 passed` / focused `203 passed` / mypy `22 source files` clean。
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events` passed：base `2 passed` / isolated teams `3 passed` / focused `242 passed` / mypy `88 source files` clean。
+- CodeGraph / source evidence confirms `CalAnomaly.cal_k_level()` clamp remains a retained lookup, `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` remain the only same-tick runtime command boundary, and `LegacyBuffRuntimeFacade` still wraps old container identity by reference.
+
+Final blocker status：
+
+| Blocker / candidate | US-009 status | Future rule |
+| --- | --- | --- |
+| `Calculator.AnomalyMul.cal_res_pen()` | Closed as the only proposal-eligible bounded domain. | Next PRD may write a bounded replacement proposal with exact focused pytest, scoped mypy, rollback plan, retained gates, and registered sample condition. |
+| `Calculator.AnomalyMul.anomaly_snapshot` vector assembly | Closed as supporting retained vector-order evidence. | Do not widen into a second production replacement domain unless a later PRD reopens it with new evidence. |
+| `CalAnomaly.cal_k_level()` clamp | Closed as retained lookup / log-side-effect evidence. | Preserve clamp behavior; do not rewrite `CalAnomaly.py` as part of the `cal_res_pen()` proposal. |
+| Copied-output handler/report payload parity | Closed as event-adjacent compatibility evidence. | Preserve copied-output constructors, listener-facing fields, handler report payloads, scheduled publish, listener broadcast, dot runtime, and runtime command separation. |
+| Registered-route eligibility | Codified for future production semantic diff. | Use `薇薇安物理队` only if JSON proves nonzero anomaly / disorder event counts; do not create validation-only teams. |
+| Rollback / retained gates | Closed for proposal intake. | Retain `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, old containers, legacy `buff_add()` / `KickOutBuff()`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, `formula-parity`, `calculator-reads`, and event-specific `implicit-events`. |
+
+Next default PRD：create a bounded proposal for `Calculator.AnomalyMul.cal_res_pen()` only. It must not implement broad formula replacement by default and must keep P2-A through P2-G guarded maintenance, retained compatibility, copied-output parity, registered-route eligibility, and blocker-only reopen rules available as same-phase candidate blocks.
+
 ## US-002 fixture inventory / oracle target map
 
 本节属于当前 Phase-3 formula oracle gap closure PRD；同名历史 US-002 不适用。根工作区预检使用上方 US-002 `rg` 命令，显式排除 `.codex_worktrees/`、`archive/`、`scripts/ralph/archive/`、`scripts/ralph/run-logs/` 与 `*.log`。预检命中 727 行；`tests/simulator/test_buff_attribute_reader.py` 因同时作为显式文件和 `tests/simulator` 目录参数出现，清单去重后只按根工作区测试文件计入。

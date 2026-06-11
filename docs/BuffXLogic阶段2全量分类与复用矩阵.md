@@ -1291,3 +1291,28 @@ This section records the final handoff for the phase-3 formula oracle gap-closur
 | P2-A through P2-G guarded maintenance | Completed guarded buckets | Open only blocker-driven PRDs when focused tests, source guardrails, or validation names a concrete regression. | Existing P2 focused tests plus `calculator-reads`, `implicit-events`, or default profile depending on touched layer. | Do not manufacture implementation backlog from completed buckets, retained compatibility names, or `.codex_worktrees/` hits. |
 
 US-026 conclusion：production formula replacement remains No-Go. The next default PRD should follow `docs/Buff重构方案.md` and close the `AnomalyMul.cal_res_pen()` / `anomaly_snapshot` vector-assembly blocker first, while preserving the broader same-phase candidate pool, retained compatibility boundaries, and blocker-only reopen rules.
+
+### 2026-06-11 US-009 Final Bounded-Domain Handoff
+
+This section records the final handoff for the phase-3 replacement blocker closure / bounded-domain eligibility PRD. It does not change `BuffXLogic`, `Calculator.py`, `CalAnomaly.py`, dispatch adapters, runtime ports, guardrails, validation profiles, focused tests, copied-output constructors, old containers, or live formula / event / runtime behavior.
+
+#### Validation evidence carried forward
+
+- Focused pytest passed: `uv run pytest tests/simulator/test_buff_attribute_reader.py tests/simulator/test_update_anomaly_dispatch.py tests/simulator/test_anomaly_handler_runtime_view.py -q` -> `126 passed`.
+- `formula-parity` profile passed: base `2 passed`, isolated teams `3 passed`, focused `103 passed`, mypy `Success: no issues found in 9 source files`.
+- `calculator-reads` profile passed: base `2 passed`, isolated teams `3 passed`, focused `203 passed`, mypy `Success: no issues found in 22 source files`.
+- `implicit-events` profile passed: base `2 passed`, isolated teams `3 passed`, focused `242 passed`, mypy `Success: no issues found in 88 source files`.
+- US-009 is docs-only, so it does not add production formula, runtime, dispatch, listener, validation-runner, old-container, or registered-team fixture changes beyond the final handoff decision.
+
+#### Final Go / No-Go
+
+| candidate block | status after US-009 | next Ralph-sized direction | validation entrypoints | non-goals |
+| --- | --- | --- | --- | --- |
+| `Calculator.AnomalyMul.cal_res_pen()` | Proposal-eligible bounded domain | Generate one bounded production replacement proposal. The proposal must name exact focused pytest targets, scoped mypy targets, rollback plan, retained gates, and registered sample conditions before any production diff. | `formula-parity`; `calculator-reads`; registered main-loop sample only if the future diff changes live semantics and `薇薇安物理队` produces nonzero anomaly / disorder event counts. | No broad `Calculator.py` / `CalAnomaly.py` rewrite, no replacement implementation in the proposal story by default, no old-container deletion. |
+| `Calculator.AnomalyMul.anomaly_snapshot` | Supporting retained vector-order evidence | Keep as guardrail / oracle evidence for the `cal_res_pen()` proposal. | `formula-parity`; focused vector cases. | Do not promote into a second production replacement domain without new PRD evidence. |
+| `CalAnomaly.cal_k_level()` clamp | Supporting retained lookup evidence | Preserve below / normal / above-boundary clamp and log side effects. | `formula-parity`; focused level-boundary cases. | Do not rewrite `CalAnomaly.py` as part of `cal_res_pen()` proposal. |
+| Copied-output handler/report payload parity | Supporting event-adjacent compatibility evidence | Preserve copied-output constructors, handler report payloads, listener-facing fields, and layer separation. | Focused copied-output tests; `implicit-events` when event/runtime layering is touched. | Do not merge scheduled publish, listener broadcast, dot runtime registration, or same-tick runtime writes. |
+| P2-A through P2-G guarded maintenance | Completed guarded buckets | Open only blocker-driven PRDs when focused tests, source guardrails, or validation names a concrete regression. | Existing P2 focused tests plus `calculator-reads`, `implicit-events`, or default profile depending on touched layer. | Do not manufacture implementation backlog from completed buckets, retained compatibility names, or `.codex_worktrees/` hits. |
+| Retained compatibility | Must stay intact | Keep `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, copied-output constructors, old containers, legacy `buff_add()` / `KickOutBuff()`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade`. | Retained `calculator-reads`, event-specific `implicit-events`, and focused guardrails. | Do not treat proposal eligibility as deletion permission. |
+
+US-009 conclusion：the next default PRD may write a bounded proposal for `Calculator.AnomalyMul.cal_res_pen()` only. The same-phase pool remains broad enough for copied-output parity, registered-route eligibility, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules; future production diffs still need explicit validation and rollback evidence.

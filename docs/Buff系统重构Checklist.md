@@ -53,6 +53,7 @@
 - [ ] 每个切片都有对应单元测试。
 - [ ] 每个 production semantic 切片都有主循环一致性验证；文档 / test-only / guardrail-only / retained-compatibility story 记录跳过原因，不创建 validation-only team。
 - [x] Phase 3 formula rollback plan 已 codify：失败 helper / profile / formula diff 必须回退到 retained source anchors，并保留 `formula-parity`、`calculator-reads`、`implicit-events` 与 old Buff runtime compatibility gates；P2-A through P2-G 只按 concrete blocker 证据重开。
+- [x] Phase 3 replacement blocker closure 已完成最终 handoff：`Calculator.AnomalyMul.cal_res_pen()` 是唯一允许进入下一轮 bounded production replacement proposal 的公式域；本 PRD 没有替换生产公式或删除 retained runtime/container compatibility。
 
 ## 阶段 4：旧 Buff 残余删除
 
@@ -254,4 +255,6 @@
 - [x] US-025 serial validation gate 已通过：`formula-parity` profile 为 base `2 passed` / isolated teams `3 passed` / focused `95 passed` / mypy `9 source files` clean；`calculator-reads` profile 为 base `2 passed` / isolated teams `3 passed` / focused `195 passed` / mypy `22 source files` clean；`implicit-events` profile 为 base `2 passed` / isolated teams `3 passed` / focused `238 passed` / mypy `88 source files` clean；未改 lifecycle container / runtime write path / validation runner 行为，因此默认 lifecycle profile 不作为本次新增证据重跑。
 - [x] US-026 Final Go / No-Go：production formula replacement 下一 PRD 仍 No-Go，当前没有单个生产公式域获得替换许可。下一默认 PRD 改为 phase-3 replacement blocker closure / bounded-domain eligibility decision：先补 `Calculator.AnomalyMul.cal_res_pen()` 与 `anomaly_snapshot` vector assembly、`CalAnomaly.cal_k_level()` clamp、copied-output handler/report payload parity 和真实 registered-route 触发条件；这些 blocker 关闭前不得替换 `Calculator.py` / `CalAnomaly.py` / copied-output 生产公式。
 - [x] 同阶段候选池继续保留 P2-A through P2-G guarded maintenance、phase-3 formula parity design、retained compatibility 与 blocker-only phase-1 reopen rules，避免 PRD 生成器只沿上一个文件继续。
+- [x] US-009 Final bounded-domain Go / No-Go：本 PRD 已关闭或 codify `cal_res_pen()` deterministic oracle、`anomaly_snapshot` vector assembly、`CalAnomaly.cal_k_level()` clamp、copied-output handler/report payload parity、registered-route eligibility 与 rollback / retained gate 证据；下一默认 PRD 可以为 `Calculator.AnomalyMul.cal_res_pen()` 写一个 bounded proposal，但不得直接实现 broad formula rewrite。
+- [x] US-009 保留边界确认：本 PRD 未删除 old containers、legacy `buff_add()`、legacy `KickOutBuff()`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`LegacyBuffRuntimeFacade`、`MultiplierData`、`MulData`、`DynamicStatement` 或 copied-output constructors；P2-A through P2-G 继续只按 guardrail / validation concrete blocker 重开。
 - [x] 若后续 validation 或 guardrail 重新暴露阶段 1 blocker，下一轮 PRD 只处理 blocker package 中列出的具体文件、符号、失败测试、失败 guardrail 或验证命令；不得重开已删除的 `event_list` surface 或已闭合的 producer batch，除非 guardrail 给出新的生产证据。

@@ -3145,3 +3145,14 @@
 - Next step:
   - Continue with US-009 by updating final handoff docs and the bounded-domain Go / No-Go decision using the US-008 serial validation evidence.
 ---
+## 2026-06-11 11:12 +08:00 - US-009
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/investigations/2026-06-11-US-009-final-handoff-go-no-go.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-009 final bounded-domain Go / No-Go` replaces the previous blocker-closure default with a proposal-only next default: one bounded production replacement proposal for `Calculator.AnomalyMul.cal_res_pen()`.
+  - This story updates handoff and eligibility boundaries only; it does not replace a live production path, production formula, validation runner wiring, dispatch adapter, runtime command port, old Buff container, copied-output constructor, or legacy compatibility write path.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `Calculator.AnomalyMul.cal_res_pen()`, `Calculator.AnomalyMul.anomaly_snapshot`, `CalAnomaly.cal_k_level()`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, anomaly/disorder/copied-output handlers, `ScheduleDispatchPort`, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, P2-A through P2-G guarded buckets, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this docs/evidence handoff found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Generate the next PRD from `docs/Buff重构方案.md` and the refreshed next-stage plan, defaulting to a bounded proposal for `Calculator.AnomalyMul.cal_res_pen()` only while keeping copied-output parity, registered-route eligibility, retained compatibility, and P2-A through P2-G guarded maintenance as same-phase candidate blocks.
+---
