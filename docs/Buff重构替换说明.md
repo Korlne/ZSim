@@ -3480,3 +3480,15 @@
 - Next step:
   - Continue with US-012 by running serial `formula-parity` and `calculator-reads` gates while still skipping main-loop consistency unless a live semantic diff appears.
 ---
+## 2026-06-11 20:30 +08:00 - US-012
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-012 serial validation evidence` replaces implicit handoff trust with recorded exit-0 evidence for the focused reader suite, `formula-parity`, and `calculator-reads`.
+  - This story is validation evidence only; it does not replace live production formula code, edit the validation runner, add a dispatch adapter, alter a runtime command port, delete old Buff containers, or change legacy compatibility paths.
+- Compatibility retained:
+  - `Calculator.AnomalyMul.cal_am()`, `Calculator.AnomalyMul.cal_ap()`, `Calculator.StunMul.cal_imp()`, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain retained compatibility / non-goal paths.
+  - `implicit-events`, default lifecycle validation, and main-loop consistency remain conditional gates; US-012 did not run them because no live formula semantics, dispatch/runtime boundaries, or registered-team behavior changed.
+  - No old-coupling review update was needed because this validation-only story found no new Buff coupling.
+- Next step:
+  - Continue with US-013 by updating final handoff docs and deciding the next bounded candidate using the Buff architecture route and current evidence ledger.
+---
