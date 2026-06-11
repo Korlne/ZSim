@@ -3431,3 +3431,15 @@
 - Next step:
   - Continue with US-008 by adding impact reader snapshot parity rows against the retained impact oracle values without changing production formulas.
 ---
+## 2026-06-11 19:47 +08:00 - US-008
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `test_cal_imp_retained_multiplier_data_oracle_rows` now replaces implicit impact reader parity assumptions with executable comparisons across retained `MultiplierData`, reader-built `_build_formula_snapshot(context)`, and `CalculatorBuffAttributeReader.read_impact(...)`.
+  - This story builds compatibility evidence only; it does not replace a live production formula, copied-output constructor, validation runner, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - `Calculator.StunMul.cal_imp()` remains unchanged and still computes `static.imp * (1 + dynamic.field_imp_percentage) + dynamic.imp`.
+  - Existing P2-B crit/impact guardrails, event-adjacent dispatch behavior, listener paths, `Calculator.AnomalyMul.cal_am()`, `Calculator.AnomalyMul.cal_ap()`, `Calculator.AnomalyMul.cal_res_pen()`, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed because this test-only story found no new Buff coupling.
+- Next step:
+  - Continue with US-009 by preserving the formula boundary compatibility assertions without broadening AM/AP/impact reader parity into unrelated crit formula replacement.
+---
