@@ -19,6 +19,18 @@
   - 下一轮应继续收口的旧路径
 ```
 
+## 2026-06-11 09:16 +08:00 - US-001
+- Files changed: `scripts/ralph/investigations/2026-06-11-US-001-phase3-blocker-scope.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/prd.json`
+- Replacement note:
+  - This story only reconfirms the Phase 3 blocker / retained-boundary state and does not replace a live production formula path.
+  - The investigation packet prepares the next oracle-inventory slice to replace ad hoc Phase 3 Go/No-Go judgment with explicit blocker evidence.
+- Compatibility retained:
+  - Production formula replacement remains No-Go at story start.
+  - Retained boundaries stay unchanged: `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, `ScheduleDispatchPort`, listener broadcast, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, `buff_add()`, and `KickOutBuff()`.
+- Next step:
+  - `US-002` should inventory existing oracle evidence and exact remaining blockers before any bounded production replacement proposal.
+---
+
 ## 2026-06-05 - 调查型 PRD 收口基线
 
 - 本轮文件：`docs/旧Buff系统耦合审查结果.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
