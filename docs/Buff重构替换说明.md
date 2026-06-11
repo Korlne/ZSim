@@ -3419,3 +3419,15 @@
 - Next step:
   - Continue with US-007 by adding explicit numeric retained `MultiplierData` oracle rows for `Calculator.StunMul.cal_imp(...)` before mirroring impact reader snapshot parity in US-008.
 ---
+## 2026-06-11 19:38 +08:00 - US-007
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `test_cal_imp_retained_multiplier_data_oracle_rows` replaces implicit impact retained formula assumptions with explicit retained `MultiplierData` oracle rows for default-zero, base-only, static statement override, dynamic in-battle percentage increase, and mixed percentage-plus-flat behavior.
+  - This story builds oracle coverage only; it does not replace a live production formula, copied-output constructor, validation runner, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - `Calculator.StunMul.cal_imp()` remains unchanged and still computes `static.imp * (1 + dynamic.field_imp_percentage) + dynamic.imp`.
+  - Impact/stun formula work remains separate from anomaly formula replacement; `Calculator.AnomalyMul.cal_am()`, `Calculator.AnomalyMul.cal_ap()`, `Calculator.AnomalyMul.cal_res_pen()`, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed because this test-only story found no new Buff coupling.
+- Next step:
+  - Continue with US-008 by adding impact reader snapshot parity rows against the retained impact oracle values without changing production formulas.
+---
