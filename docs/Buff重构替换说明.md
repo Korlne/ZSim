@@ -3090,3 +3090,14 @@
 - Next step:
   - Continue with US-004 by adding expected vector cases for `Calculator.AnomalyMul.anomaly_snapshot` without widening into copied-output payload, `AnomalyBar.current_ndarray` lifecycle, or production formula replacement.
 ---
+## 2026-06-11 09:51 +08:00 - US-004
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `_ANOMALY_MUL_SNAPSHOT_FIELDS`, `_ANOMALY_MUL_SNAPSHOT_ORACLE_CASES`, and `test_anomaly_mul_snapshot_vector_matches_expected_retained_fields()` replace implicit confidence in `Calculator.AnomalyMul.anomaly_snapshot` assembly with executable expected-vector evidence for the retained 9-slot snapshot order.
+  - This story adds characterization only; it does not replace live production formula code, `Calculator.AnomalyMul`, `MultiplierData`, `DynamicStatement`, reader APIs, copied-output payload construction, `AnomalyBar.current_ndarray`, event dispatch, runtime ports, old containers, or legacy compatibility paths.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `Calculator.AnomalyMul.anomaly_snapshot`, `Calculator.AnomalyMul.cal_res_pen()`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, `ScheduleDispatchPort`, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, P2-A through P2-G guarded buckets, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this characterization found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-005 by characterizing or explicitly preserving `CalAnomaly.cal_k_level()` clamp behavior before any bounded production formula replacement proposal.
+---

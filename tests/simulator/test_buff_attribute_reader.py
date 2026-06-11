@@ -112,6 +112,16 @@ class _AnomalySnapshotOracleCase:
 
 
 @dataclass(frozen=True)
+class _AnomalyMulSnapshotOracleCase:
+    case_id: str
+    character_name: str
+    character_kwargs: dict[str, Any]
+    skill_kwargs: dict[str, Any]
+    dynamic_attrs: dict[str, float]
+    expected_snapshot: tuple[float, ...]
+
+
+@dataclass(frozen=True)
 class _CopiedOutputPayloadCase:
     case_id: str
     snapshot_case: _AnomalySnapshotOracleCase
@@ -194,6 +204,19 @@ _CAL_ANOMALY_FINAL_MULTIPLIER_ORDER = (
     "snapshot_stun_bonus",
     "stun_vulnerability",
     "special_mul",
+)
+
+
+_ANOMALY_MUL_SNAPSHOT_FIELDS = (
+    "base_damage",
+    "dmg_bonus",
+    "ap_mul",
+    "level",
+    "anomaly_bonus",
+    "anomaly_crit",
+    "pen_ratio",
+    "pen_numeric",
+    "res_pen",
 )
 
 
@@ -1688,6 +1711,82 @@ _ANOMALY_SNAPSHOT_ORACLE_CASES = (
             0.20,
             1.30,
             1.70,
+        ),
+    ),
+)
+
+
+_ANOMALY_MUL_SNAPSHOT_ORACLE_CASES = (
+    _AnomalyMulSnapshotOracleCase(
+        case_id="physical-default-no-bonus-vector",
+        character_name="异常快照默认角色",
+        character_kwargs={
+            "atk": 100.0,
+            "ap": 200.0,
+        },
+        skill_kwargs={
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 0,
+            "anomaly_accumulation": 0.0,
+        },
+        dynamic_attrs={},
+        expected_snapshot=(
+            713.0,
+            1.0,
+            2.0,
+            60.0,
+            1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+        ),
+    ),
+    _AnomalyMulSnapshotOracleCase(
+        case_id="electric-dynamic-field-vector",
+        character_name="异常快照动态角色",
+        character_kwargs={
+            "atk": 120.0,
+            "ap": 250.0,
+            "static_statement_attrs": {
+                "PEN_ratio": 0.05,
+                "PEN_numeric": 8.0,
+                "ELECTRIC_DMG_bonus": 0.12,
+            },
+        },
+        skill_kwargs={
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "element_type": 3,
+            "anomaly_accumulation": 0.0,
+        },
+        dynamic_attrs={
+            "field_atk_percentage": 0.10,
+            "atk": 30.0,
+            "electric_dmg_bonus": 0.08,
+            "all_dmg_bonus": 0.05,
+            "anomaly_dmg_bonus": 0.04,
+            "field_anomaly_proficiency": 0.20,
+            "anomaly_proficiency": 25.0,
+            "shock_dmg_mul": 0.16,
+            "all_anomaly_dmg_mul": 0.07,
+            "pen_ratio": 0.04,
+            "pen_numeric": 6.0,
+            "electric_res_pen_increase": 0.11,
+        },
+        expected_snapshot=(
+            202.5,
+            1.29,
+            3.25,
+            60.0,
+            1.23,
+            1.0,
+            0.09,
+            14.0,
+            0.11,
         ),
     ),
 )
@@ -3819,6 +3918,84 @@ def test_cal_anomaly_rejects_unsettled_or_bad_snapshot_shape() -> None:
             dynamic_buff=bad_shape_fixture.active_buff_view,
             sim_instance=cast(Any, bad_shape_fixture.sim_instance),
         )
+
+
+@pytest.mark.parametrize(
+    "case",
+    _ANOMALY_MUL_SNAPSHOT_ORACLE_CASES,
+    ids=lambda case: case.case_id,
+)
+def test_anomaly_mul_snapshot_vector_matches_expected_retained_fields(
+    monkeypatch: pytest.MonkeyPatch,
+    case: _AnomalyMulSnapshotOracleCase,
+) -> None:
+    character = _make_character(
+        name=case.character_name,
+        **case.character_kwargs,
+    )
+    skill_node = _make_skill_node(
+        char_name=case.character_name,
+        **case.skill_kwargs,
+    )
+    enemy = _make_enemy()
+    active_buff_view: dict[str, list[object]] = {character.NAME: []}
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(**case.dynamic_attrs),
+    )
+
+    retained_data = MultiplierData(
+        enemy,
+        active_buff_view,
+        character,
+        skill_node,
+    )
+    anomaly_mul = Calculator.AnomalyMul(retained_data)
+
+    assert aggregation_calls == [
+        (
+            (),
+            skill_node,
+            enemy.sim_instance,
+            character.NAME,
+        )
+    ]
+    assert anomaly_mul.anomaly_snapshot.shape == (
+        len(_ANOMALY_MUL_SNAPSHOT_FIELDS),
+    )
+    np.testing.assert_allclose(
+        anomaly_mul.anomaly_snapshot,
+        np.array(case.expected_snapshot, dtype=np.float64),
+    )
+    snapshot_by_field = {
+        label: anomaly_mul.anomaly_snapshot[index]
+        for index, label in enumerate(_ANOMALY_MUL_SNAPSHOT_FIELDS)
+    }
+    expected_by_field = {
+        label: case.expected_snapshot[index]
+        for index, label in enumerate(_ANOMALY_MUL_SNAPSHOT_FIELDS)
+    }
+    assert snapshot_by_field == pytest.approx(expected_by_field)
+    dynamic_inputs = {
+        attr_name: getattr(retained_data.dynamic, attr_name)
+        for attr_name in case.dynamic_attrs
+    }
+    assert dynamic_inputs == pytest.approx(case.dynamic_attrs)
+
+    copied_output_payload = _make_anomaly_snapshot(
+        _ANOMALY_SNAPSHOT_ORACLE_CASES[0].snapshot_values
+    )
+    assert copied_output_payload.shape == (
+        1,
+        len(_ANOMALY_CURRENT_NDARRAY_FIELDS),
+    )
+    assert copied_output_payload.shape[1] != anomaly_mul.anomaly_snapshot.shape[0]
+    snapshot_before_payload_mutation = anomaly_mul.anomaly_snapshot.copy()
+    copied_output_payload[0, 0] = -777.0
+    np.testing.assert_allclose(
+        anomaly_mul.anomaly_snapshot,
+        snapshot_before_payload_mutation,
+    )
 
 
 def test_cal_anomaly_uses_settled_snapshot_mul_data_and_retained_damage_ratios(
