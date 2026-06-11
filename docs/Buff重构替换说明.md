@@ -66,6 +66,18 @@
   - Continue with US-005 by adding registered behavior sample conditions and rollback anchors to the same bounded proposal without implementing production formula changes.
 ---
 
+## 2026-06-11 12:41 +08:00 - US-005
+- Files changed: `scripts/ralph/investigations/2026-06-11-US-005-sample-rollback-plan.md`, `scripts/ralph/investigations/2026-06-11-US-003-bounded-cal-res-pen-proposal.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 sample conditions and rollback plan` replaces implicit future behavior-sample assumptions with explicit rules: main-loop consistency is required only after a live `Calculator.AnomalyMul.cal_res_pen()` semantic diff exists, no validation-only team should be created, and retained sample evidence must prove nonzero relevant anomaly/disorder event counts.
+  - This story builds a proposal validation / rollback boundary only; it does not replace a live production formula path, validation runner wiring, registered team fixture, copied-output constructor, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `Calculator.AnomalyMul.cal_res_pen()`, `Calculator.AnomalyMul.anomaly_snapshot`, `CalAnomaly.cal_k_level()`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, anomaly/disorder handlers, `ScheduleDispatchPort`, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, P2-A through P2-G guarded buckets, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation gates all remain unchanged.
+  - No old-coupling review update was needed; this docs/evidence story found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-006 by running the serial proposal validation gate and recording command outcomes without adding production formula code, validation-only teams, or runtime switching.
+---
+
 ## 2026-06-05 - 调查型 PRD 收口基线
 
 - 本轮文件：`docs/旧Buff系统耦合审查结果.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
