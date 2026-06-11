@@ -3307,3 +3307,15 @@
 - Next step:
   - Continue with US-007 by deciding registered behavior sample eligibility from the current behavior-preserving extraction evidence without creating a validation-only registered team.
 ---
+## 2026-06-11 16:03 +08:00 - US-007
+- Files changed: `scripts/ralph/investigations/2026-06-11-US-007-registered-route-eligibility.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 registered behavior sample eligibility decision` replaces implicit main-loop sample ambiguity with an explicit rule: the current `cal_res_pen()` selector extraction is behavior-preserving, so no registered main-loop consistency sample is required for this story.
+  - This story builds a validation eligibility boundary only; it does not replace a live production path, production formula, copied-output constructor, validation runner wiring, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.AnomalyMul.cal_res_pen(data)` remains the public retained formula method, `Calculator.AnomalyMul._select_res_pen_for_element(...)` remains the private selector, and `Calculator.AnomalyMul.__init__` still assigns `self.res_pen` from `self.cal_res_pen(data)`.
+  - `scripts/run_buff_main_loop_consistency.py` remains a future live-semantic-diff gate only. Future anomaly/disorder samples must use an already registered route and retain evidence only when both legacy and candidate labels show nonzero relevant event counts.
+  - No validation-only registered team was created; no old-coupling review update was needed because this story found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, old-container, registered-route, and runtime boundary layers.
+- Next step:
+  - Continue with US-008 by recording rollback anchors and replacement notes without broadening beyond the bounded `cal_res_pen()` extraction.
+---
