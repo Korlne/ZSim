@@ -3235,3 +3235,14 @@
 - Next step:
   - Generate the next PRD from `docs/Buff重构方案.md` and the refreshed next-stage plan, defaulting to a bounded implementation PRD for exactly `Calculator.AnomalyMul.cal_res_pen()` while keeping copied-output parity, registered-route eligibility, retained compatibility, and P2-A through P2-G guarded maintenance as same-phase candidate blocks.
 ---
+## 2026-06-11 14:57 +08:00 - US-001
+- Files changed: `scripts/ralph/investigations/2026-06-11-US-001-exact-domain-implementation-scope.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 exact-domain implementation scope reconfirmation` replaces implicit broad implementation approval with explicit current-PRD evidence that only `Calculator.AnomalyMul.cal_res_pen()` may change in production code unless a later story documents a required focused-test or validation-profile adjustment.
+  - This story builds a scope/investigation boundary only; it does not replace a live production path, production formula, copied-output constructor, validation runner wiring, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.AnomalyMul.anomaly_snapshot`, `CalAnomaly.cal_k_level()`, copied-output constructors, `MultiplierData`, `MulData`, `DynamicStatement`, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade`.
+  - No old-coupling review update was needed; this docs/evidence story found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, old-container, and runtime boundary layers.
+- Next step:
+  - Continue with US-002 by expanding focused selector oracle coverage for all supported `cal_res_pen()` branches and invalid-element behavior before production source changes.
+---
