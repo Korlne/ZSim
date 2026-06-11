@@ -3492,3 +3492,15 @@
 - Next step:
   - Continue with US-013 by updating final handoff docs and deciding the next bounded candidate using the Buff architecture route and current evidence ledger.
 ---
+## 2026-06-11 20:58 +08:00 - US-013
+- Files changed: `scripts/ralph/investigations/2026-06-11-US-013-final-handoff-next-candidate.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff公式候选与测试目标清单.md`
+- Replacement note:
+  - `US-013 final handoff and next-candidate decision` replaces readiness-only AM/AP/impact wording with an evidence-backed decision that the family is ready for a bounded production proposal PRD.
+  - This story updates handoff boundaries only; it does not replace live production formula code, edit the validation runner, add a dispatch adapter, alter a runtime command port, delete old Buff containers, or change legacy compatibility paths.
+- Compatibility retained:
+  - `Calculator.AnomalyMul.cal_am()`, `Calculator.AnomalyMul.cal_ap()`, `Calculator.StunMul.cal_imp()`, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain retained compatibility / non-goal paths.
+  - `formula-parity` and `calculator-reads` are required serial gates for the next AM/AP/impact proposal; `implicit-events`, default lifecycle validation, and registered main-loop consistency remain conditional on event/runtime/lifecycle or live semantic scope.
+  - No old-coupling review update was needed because this docs-only handoff found no new Buff coupling.
+- Next step:
+  - Generate the next PRD as a bounded AM/AP/impact production proposal, first choosing exact helper scope, rollback anchors, validation profiles, registered-sample conditions, retained boundaries, and non-goals before any implementation story changes production formulas.
+---
