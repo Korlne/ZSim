@@ -3213,3 +3213,14 @@
 - Next step:
   - Continue with US-003 by drafting the bounded `Calculator.AnomalyMul.cal_res_pen()` proposal using this evidence map, without implementing a production formula diff.
 ---
+## 2026-06-11 12:50 +08:00 - US-006
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 serial proposal validation gate evidence` replaces implicit trust in the current bounded proposal package with recorded `formula-parity` and `calculator-reads` exit-0 validation outcomes.
+  - This story validates a docs/evidence boundary only; it does not replace live production formula code, copied-output constructors, validation runner wiring, dispatch adapters, runtime command ports, old Buff containers, or legacy compatibility write paths.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `Calculator.AnomalyMul.cal_res_pen()`, `Calculator.AnomalyMul.anomaly_snapshot`, `CalAnomaly.cal_k_level()`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, anomaly/disorder/copied-output handlers, `ScheduleDispatchPort`, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, P2-A through P2-G guarded buckets, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - `implicit-events` and full validation were skipped with explicit reasons because this story touched only docs/Ralph artifacts and found no new Buff coupling; no old-coupling review update was needed.
+- Next step:
+  - Continue with US-007 by updating final handoff docs and the bounded proposal Go / No-Go decision using the current serial validation evidence.
+---
