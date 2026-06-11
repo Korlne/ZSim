@@ -43,6 +43,17 @@
   - `US-003` should add deterministic oracle cases for `Calculator.AnomalyMul.cal_res_pen()` before any bounded production replacement proposal.
 ---
 
+## 2026-06-11 12:12 +08:00 - US-003
+- Files changed: `scripts/ralph/investigations/2026-06-11-US-003-bounded-cal-res-pen-proposal.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - This story only drafts the bounded replacement proposal and does not replace a live production formula path.
+  - `scripts/ralph/investigations/2026-06-11-US-003-bounded-cal-res-pen-proposal.md` prepares to replace the in-method `Calculator.AnomalyMul.cal_res_pen(data)` selector with a later exact bounded selector/extraction, while retaining the current production body as rollback anchor.
+- Compatibility retained:
+  - `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `anomaly_snapshot`, copied-output constructors, listener/runtime layers, old containers, legacy `buff_add()` / `KickOutBuff()`, and P2-A through P2-G guarded buckets remain unchanged.
+- Next step:
+  - `US-004` should define focused pytest targets, scoped mypy targets, and the validation contract for the later `cal_res_pen()` implementation PRD without broadening the replacement domain.
+---
+
 ## 2026-06-05 - 调查型 PRD 收口基线
 
 - 本轮文件：`docs/旧Buff系统耦合审查结果.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
