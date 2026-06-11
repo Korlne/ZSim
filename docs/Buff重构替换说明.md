@@ -3123,3 +3123,14 @@
 - Next step:
   - Continue with US-007 by defining registered-route behavior sample eligibility without widening into production formula replacement or runtime write-path replacement.
 ---
+## 2026-06-11 10:46 +08:00 - US-007
+- Files changed: `scripts/ralph/investigations/2026-06-11-US-007-registered-route-eligibility.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-007 registered-route eligibility matrix` replaces implicit main-loop sample assumptions with explicit rules: a sample is required only for a future live production formula semantic diff, the team must be registered through `tests.teams.auto_register_teams()`, and anomaly / disorder domains must retain only samples with nonzero relevant event counts.
+  - This story builds a validation eligibility boundary only; it does not replace a live production path, formula implementation, copied-output handler, validation runner wiring, dispatch adapter, runtime command port, old Buff container, or legacy compatibility write path.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `Calculator.AnomalyMul.cal_res_pen()`, `Calculator.AnomalyMul.anomaly_snapshot`, `CalAnomaly.cal_k_level()`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, anomaly/disorder/copied-output handlers, `ScheduleDispatchPort`, listener broadcasts, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, legacy `buff_add()` / `KickOutBuff()`, and the existing `formula-parity`, `calculator-reads`, `implicit-events`, and lifecycle validation wiring all remain unchanged.
+  - No old-coupling review update was needed; this docs/evidence story found no new Buff coupling beyond already documented retained formula snapshot, copied-output payload, event/runtime, guarded-maintenance, and blocker-only boundaries.
+- Next step:
+  - Continue with US-008 by running the serial eligibility validation gate before any final bounded-domain Go / No-Go decision.
+---
