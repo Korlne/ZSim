@@ -129,6 +129,30 @@ Final blocker status：
 
 Next default PRD：create a bounded proposal for `Calculator.AnomalyMul.cal_res_pen()` only. It must not implement broad formula replacement by default and must keep P2-A through P2-G guarded maintenance, retained compatibility, copied-output parity, registered-route eligibility, and blocker-only reopen rules available as same-phase candidate blocks.
 
+## US-007 final proposal Go / No-Go
+
+结论：later implementation PRD 为 Go，但只限 `Calculator.AnomalyMul.cal_res_pen()`。当前 PRD 完成的是 bounded proposal、validation contract、registered-route 条件、rollback anchors 与 final handoff；它没有修改 `Calculator.py`、`CalAnomaly.py`、copied-output source、validation runner、old Buff containers 或 runtime compatibility paths。
+
+Proposal package evidence：
+
+- `scripts/ralph/investigations/2026-06-11-US-003-bounded-cal-res-pen-proposal.md` 已把 proposed production formula domain 收敛到 `Calculator.AnomalyMul.cal_res_pen()`。
+- `scripts/ralph/investigations/2026-06-11-US-004-validation-contract.md` 已记录 future implementation PRD 的 focused pytest、scoped mypy、`formula-parity` 与 retained `calculator-reads` gate。
+- `scripts/ralph/investigations/2026-06-11-US-005-sample-rollback-plan.md` 已记录 registered behavior sample 条件、nonzero event-count 规则与 rollback anchors。
+- `US-006` serial gate 已通过，且 `US-007` handoff rerun 维持绿色：`formula-parity` base `2 passed` / isolated teams `3 passed` / focused `103 passed` / mypy 9 files clean；`calculator-reads` base `2 passed` / isolated teams `3 passed` / focused `203 passed` / mypy 22 files clean。
+
+Final decision matrix：
+
+| candidate / boundary | final decision | next rule |
+| --- | --- | --- |
+| `Calculator.AnomalyMul.cal_res_pen()` | Go for later implementation PRD only | Implement one bounded selector / extraction diff using the proposal contract, focused pytest targets, scoped mypy targets, retained gates, rollback anchors, and registered sample condition. |
+| `Calculator.AnomalyMul.anomaly_snapshot` | Supporting evidence | Keep vector-order / snapshot-shape oracle as guardrail evidence for the `cal_res_pen()` diff; do not promote into a second production domain without a new PRD. |
+| `CalAnomaly.cal_k_level()` | Supporting evidence | Preserve retained lookup, clamp, and log side effects; do not rewrite `CalAnomaly.py` as part of the `cal_res_pen()` implementation. |
+| Copied-output handler/report payload parity | Supporting event-adjacent evidence | Preserve constructors, report payloads, listener-facing fields, scheduled publish, listener broadcast, dot runtime, and same-tick runtime-write separation. |
+| Retained compatibility | Must stay intact | Keep `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, old containers, legacy `buff_add()` / `KickOutBuff()`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade`. |
+| P2-A through P2-G guarded maintenance | Same-phase blocker-only pool | Reopen only when focused tests, source guardrails, or validation names a concrete regression. |
+
+Next default PRD：implement exactly `Calculator.AnomalyMul.cal_res_pen()` as a bounded production diff. It must not implement broad `Calculator.py` / `CalAnomaly.py` replacement, copied-output formula replacement, old-container deletion, or validation-runner rewiring by default.
+
 ## US-002 fixture inventory / oracle target map
 
 本节属于当前 Phase-3 formula oracle gap closure PRD；同名历史 US-002 不适用。根工作区预检使用上方 US-002 `rg` 命令，显式排除 `.codex_worktrees/`、`archive/`、`scripts/ralph/archive/`、`scripts/ralph/run-logs/` 与 `*.log`。预检命中 727 行；`tests/simulator/test_buff_attribute_reader.py` 因同时作为显式文件和 `tests/simulator` 目录参数出现，清单去重后只按根工作区测试文件计入。
