@@ -3719,3 +3719,15 @@
 - Next step:
   - Continue with US-005 by deciding proposal readiness and conditional gates from the now-covered Stun array, RegularMul array, and RegularMul branch evidence without changing production formulas.
 ---
+## 2026-06-12 18:57 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-decide-proposal-readiness-and-conditional-gates.md`, `scripts/ralph/investigations/2026-06-12-US-005-array-regularmul-proposal-readiness.md`, `scripts/ralph/checkpoints/2026-06-12-us-005-array-regularmul-proposal-readiness.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 array / RegularMul proposal readiness packet` replaces implicit production-proposal readiness assumptions with a source-backed No-Go decision and conditional gate matrix.
+  - This story builds a decision/checkpoint boundary only; it does not replace live production formula code, edit validation-runner wiring, add a dispatch adapter, alter a runtime command port, touch lifecycle containers, create registered-team fixtures, or replace copied-output constructors.
+- Compatibility retained:
+  - `Calculator.py`, `Calculator.RegularMul`, `Calculator.StunMul.get_stun_array()`, `Calculator.cal_stun()`, `CalculatorBuffAttributeReader`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, and validation-runner wiring remain untouched.
+  - `implicit-events`, default lifecycle validation, and `run_buff_main_loop_consistency.py` remain conditional future gates because this slice touched no copied-output, event, dispatch, runtime, listener, same-tick write, lifecycle, validation wiring, production semantic diff, or registered route with nonzero relevant counts.
+  - No old-coupling review update was needed because this decision-only slice found no new Buff coupling.
+- Next step:
+  - Continue with US-006 final serial verification and invariant review; do not promote array / RegularMul production replacement unless a later packet names one exact candidate with deterministic oracle, rollback anchors, and registered-sample conditions.
+---
