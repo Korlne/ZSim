@@ -3517,3 +3517,15 @@
 - Next step:
   - Continue with US-002 by mapping AM evidence to proposal prerequisites without changing production formula code.
 ---
+## 2026-06-12 12:50 +08:00 - US-002
+- Files changed: `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-002-map-am-evidence-to-proposal-prerequisites.md`, `scripts/ralph/plans/slices/us-003-map-ap-evidence-to-proposal-prerequisites.md`, `scripts/ralph/investigations/2026-06-12-US-002-am-evidence-proposal-prerequisites.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 AM proposal prerequisite packet` replaces implicit reuse of prior AM oracle/readiness artifacts with an explicit proposal contract map for `Calculator.AnomalyMul.cal_am()`, `_calculate_anomaly_mastery(...)`, `CalculatorBuffAttributeReader.read_anomaly_mastery(...)`, and `test_cal_am_retained_multiplier_data_oracle_rows()`.
+  - This story builds a boundary/evidence contract only; it does not replace live production formula code, edit the validation runner, add a dispatch adapter, alter a runtime command port, delete old Buff containers, or change legacy compatibility paths.
+- Compatibility retained:
+  - `Calculator.AnomalyMul.cal_am()` remains unchanged and still routes through `_calculate_anomaly_mastery(...)`.
+  - `CalculatorBuffAttributeReader.read_anomaly_mastery(...)`, reader-built `_build_formula_snapshot(context)`, `MultiplierData`, `MulData`, `DynamicStatement`, `Calculator.AnomalyMul.cal_ap()`, `Calculator.StunMul.cal_imp()`, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed because this proposal-prerequisite story found no new Buff coupling.
+- Next step:
+  - Continue with US-003 by mapping AP evidence to the same proposal prerequisite standard and confirming the AM/AP shared helper-family contract before drafting production scope.
+---
