@@ -3673,3 +3673,15 @@
 - Next step:
   - Generate the next Phase-3 PRD from the remaining formula/candidate pool, defaulting to `Calculator.StunMul.get_stun_array()` / array output oracle work or one exact `Calculator.RegularMul` branch while preserving copied-output, registered-route, and P2-A through P2-G guarded-maintenance candidates.
 ---
+## 2026-06-12 17:47 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconfirm-array-regularmul-scope-and-baseline.md`, `scripts/ralph/investigations/2026-06-12-US-001-array-regularmul-scope-baseline.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 array / RegularMul scope baseline packet` replaces chat-only Phase-3 scope assumptions with cited docs, CodeGraph source evidence, focused test inventory, verifier evidence, and a next-slice recommendation.
+  - This story builds a boundary and validation baseline only; it does not replace live production formula code, edit validation-runner wiring, add a dispatch adapter, alter a runtime command port, delete old Buff containers, replace copied-output constructors, or change legacy compatibility paths.
+- Compatibility retained:
+  - `Calculator.StunMul.get_stun_array()`, `Calculator.cal_stun()`, and `Calculator.RegularMul` array builders remain retained production code and future characterization targets.
+  - `Calculator.AnomalyMul.cal_res_pen()`, AM/AP/impact helper implementation, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, and validation runner wiring remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed because this baseline-only story found no new Buff coupling.
+- Next step:
+  - Continue with US-002 by adding direct `Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()` characterization for shape, dtype, order, and product semantics before any RegularMul or production replacement work.
+---
