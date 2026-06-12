@@ -417,7 +417,13 @@ def _make_character(
     statement = SimpleNamespace(statement=statement_values)
     for attr_name, value in statement_values.items():
         setattr(statement, attr_name, value)
-    return SimpleNamespace(NAME=name, CID=1301, level=60, statement=statement)
+    return SimpleNamespace(
+        NAME=name,
+        CID=1301,
+        level=60,
+        statement=statement,
+        crit_balancing=False,
+    )
 
 
 def _make_enemy(
@@ -442,9 +448,11 @@ def _make_enemy(
         dynamic=SimpleNamespace(
             dynamic_debuff_list=list(enemy_debuffs),
             dynamic_dot_list=list(enemy_dots),
+            stun=False,
         ),
         sim_instance=SimpleNamespace(marker="sim"),
         max_DEF=max_def,
+        stun_DMG_take_ratio=0.0,
         anomaly_resistance_dict=(
             {} if anomaly_resistance_attrs is None else dict(anomaly_resistance_attrs)
         ),
@@ -3208,6 +3216,134 @@ def test_stun_array_output_contract_preserves_field_order_dtype_and_product(
     assert get_stun_array_calls == ["get_stun_array"]
     assert isinstance(stun_value, np.float64)
     assert stun_value == pytest.approx(np.float64(np.prod(expected_array)))
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+
+
+def test_regular_mul_array_outputs_preserve_field_order_dtype_and_crit_split(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_attribute_read_fixture(
+        name="常规直伤数组契约",
+        atk=100.0,
+        crit_rate=0.20,
+        crit_damage=0.50,
+        static_statement_attrs={"FIRE_DMG_bonus": 0.15},
+        damage_ratio=2.0,
+        hit_times=2,
+        diff_multiplier=0,
+        element_type=1,
+        trigger_buff_level=0,
+        skill_labels={"aftershock_attack": 1},
+        enemy_max_def=0.0,
+        enemy_damage_resistance_attrs={"FIRE_damage_resistance": 0.0},
+        char_buff_count=1,
+        enemy_debuff_count=1,
+        enemy_dot_count=0,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(
+            field_atk_percentage=0.25,
+            atk=10.0,
+            extra_damage_ratio=0.50,
+            base_dmg_increase_percentage=0.20,
+            base_dmg_increase=3.0,
+            fire_dmg_bonus=0.25,
+            normal_attack_dmg_bonus=0.30,
+            aftershock_attack_dmg_bonus=0.10,
+            all_dmg_bonus=0.20,
+            crit_rate=0.10,
+            field_crit_rate=0.05,
+            crit_rate_received_increase=0.25,
+            crit_dmg=0.30,
+            field_crit_dmg=0.20,
+            aftershock_attack_crit_dmg_bonus=0.10,
+            received_crit_dmg_bonus=0.40,
+            fire_vulnerability=0.18,
+            all_vulnerability=0.12,
+            stun_vulnerability_increase=0.20,
+            stun_vulnerability_increase_all_time=0.05,
+            special_multiplier_zone=0.07,
+        ),
+    )
+
+    retained_data = _legacy_multiplier_data(fixture)
+    regular_multipliers = Calculator.RegularMul(retained_data)
+    common_prefix = (
+        ("base_dmg", 246.0),
+        ("dmg_bonus", 2.0),
+    )
+    common_suffix = (
+        ("defense_mul", 1.0),
+        ("res_mul", 1.0),
+        ("dmg_vulnerability", 1.30),
+        ("stun_vulnerability", 1.05),
+        ("special_multiplier_zone", 1.07),
+        ("sheer_dmg_bonus", 1.0),
+    )
+    expected_expect_fields = common_prefix + (("crit_expect", 1.90),) + common_suffix
+    expected_crit_fields = common_prefix + (("when_crit_mul", 2.50),) + common_suffix
+    expected_not_crit_fields = common_prefix + (("not_crit_mul", 1.0),) + common_suffix
+
+    array_expect = regular_multipliers.get_array_expect()
+    array_crit = regular_multipliers.get_array_crit()
+    array_not_crit = regular_multipliers.get_array_not_crit()
+
+    assert tuple(name for name, _ in expected_expect_fields) == (
+        "base_dmg",
+        "dmg_bonus",
+        "crit_expect",
+        "defense_mul",
+        "res_mul",
+        "dmg_vulnerability",
+        "stun_vulnerability",
+        "special_multiplier_zone",
+        "sheer_dmg_bonus",
+    )
+    assert tuple(name for name, _ in expected_crit_fields) == (
+        "base_dmg",
+        "dmg_bonus",
+        "when_crit_mul",
+        "defense_mul",
+        "res_mul",
+        "dmg_vulnerability",
+        "stun_vulnerability",
+        "special_multiplier_zone",
+        "sheer_dmg_bonus",
+    )
+    assert tuple(name for name, _ in expected_not_crit_fields) == (
+        "base_dmg",
+        "dmg_bonus",
+        "not_crit_mul",
+        "defense_mul",
+        "res_mul",
+        "dmg_vulnerability",
+        "stun_vulnerability",
+        "special_multiplier_zone",
+        "sheer_dmg_bonus",
+    )
+
+    for actual_array, expected_fields in (
+        (array_expect, expected_expect_fields),
+        (array_crit, expected_crit_fields),
+        (array_not_crit, expected_not_crit_fields),
+    ):
+        assert actual_array.shape == (9,)
+        assert actual_array.dtype == np.float64
+        np.testing.assert_allclose(
+            actual_array,
+            np.array(
+                [expected_value for _, expected_value in expected_fields],
+                dtype=np.float64,
+            ),
+        )
+
+    shared_indexes = np.array([0, 1, 3, 4, 5, 6, 7, 8])
+    assert array_expect[2] != pytest.approx(array_crit[2])
+    assert array_expect[2] != pytest.approx(array_not_crit[2])
+    assert array_crit[2] != pytest.approx(array_not_crit[2])
+    np.testing.assert_allclose(array_expect[shared_indexes], array_crit[shared_indexes])
+    np.testing.assert_allclose(array_expect[shared_indexes], array_not_crit[shared_indexes])
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
 
 

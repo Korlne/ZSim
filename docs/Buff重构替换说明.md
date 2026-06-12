@@ -3696,3 +3696,14 @@
 - Next step:
   - Continue with US-003 by applying the direct array-contract characterization pattern to `Calculator.RegularMul.get_array_expect()`, `get_array_crit()`, and `get_array_not_crit()` without changing production array construction unless a focused failing test proves a defect.
 ---
+## 2026-06-12 18:22 +08:00 - US-003
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-003-characterize-regularmul-array-output-boundaries.md`, `scripts/ralph/investigations/2026-06-12-US-003-regularmul-array-fixture.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-004-characterize-regularmul-formula-branches.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `test_regular_mul_array_outputs_preserve_field_order_dtype_and_crit_split()` replaces implicit trust in `Calculator.RegularMul.get_array_expect()`, `get_array_crit()`, and `get_array_not_crit()` array semantics with executable retained `MultiplierData` oracle coverage for nine-field order, shape, `np.float64` dtype, explicit component mapping, divergent crit-slot semantics, and shared multiplier equality.
+  - This story strengthens a test/evidence boundary only; it does not replace live production formula code, introduce a reader-built RegularMul array API, edit validation-runner wiring, add dispatch/runtime adapters, alter listener broadcasts, delete old Buff containers, or touch copied-output constructors.
+- Compatibility retained:
+  - `Calculator.py`, production `Calculator.RegularMul` array construction, `Calculator.StunMul.get_stun_array()`, `Calculator.AnomalyMul.cal_res_pen()`, AM/AP/impact helper implementation, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, and validation-runner wiring remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed because this test/fixture/evidence slice discovered no new Buff coupling.
+- Next step:
+  - Continue with US-004 by characterizing bounded `Calculator.RegularMul` branch formulas and rollback anchors without re-proving direct array order/dtype/component mapping.
+---
