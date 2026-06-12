@@ -3529,3 +3529,16 @@
 - Next step:
   - Continue with US-003 by mapping AP evidence to the same proposal prerequisite standard and confirming the AM/AP shared helper-family contract before drafting production scope.
 ---
+## 2026-06-12 13:08 +08:00 - US-003
+- Files changed: `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-003-map-ap-evidence-to-proposal-prerequisites.md`, `scripts/ralph/investigations/2026-06-12-US-003-ap-evidence-proposal-prerequisites.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 AP proposal prerequisite packet` replaces implicit reuse of prior AP oracle/readiness artifacts with an explicit proposal contract map for `Calculator.AnomalyMul.cal_ap()`, `_calculate_anomaly_proficiency(...)`, `CalculatorBuffAttributeReader.read_anomaly_proficiency(...)`, and `test_cal_ap_retained_multiplier_data_oracle_rows()`.
+  - This story builds a boundary/evidence contract only; it does not replace live production formula code, edit the validation runner, add a dispatch adapter, alter a runtime command port, delete old Buff containers, or change legacy compatibility paths.
+- Compatibility retained:
+  - `Calculator.AnomalyMul.cal_ap()` remains unchanged and still directly computes the retained AP expression while the reader path delegates to `_calculate_anomaly_proficiency(...)`.
+  - Root-only alias-qualified AP consumers in `CalAnomaly.py`, `VivianCinema6Trigger.py`, and `VivianCorePassiveTrigger.py` remain retained compatibility / future proposal risk surfaces.
+  - `CalculatorBuffAttributeReader.read_anomaly_proficiency(...)`, reader-built `_build_formula_snapshot(context)`, `MultiplierData`, `MulData`, `DynamicStatement`, `Calculator.AnomalyMul.cal_am()`, `Calculator.StunMul.cal_imp()`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed because this proposal-prerequisite story found no new Buff coupling.
+- Next step:
+  - Continue with US-004 by mapping impact evidence and keeping array-output / copied-output behavior out of the bounded production proposal unless a separate later slice supplies its own evidence and validation contract.
+---
