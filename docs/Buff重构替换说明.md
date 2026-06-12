@@ -3817,3 +3817,15 @@
 - Next step:
   - Continue with US-006 final serial verification and invariant review from the No-Go state; do not promote `RegularMul` sheer conversion to production proposal without real registered-route sample evidence and an architecture-approved reader-contract plan.
 ---
+## 2026-06-12 23:32 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-final-serial-verification-and-invariant-review.md`, `scripts/ralph/checkpoints/2026-06-12-us-006-regularmul-sheer-final-serial-verification.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 final serial verification and invariant checkpoint` replaces incomplete verifier-state assumptions with serial focused pytest, `formula-parity`, `calculator-reads`, `implicit-events`, reviewer verdict, and checkpoint evidence.
+  - This story builds a verification/evidence boundary only; it does not replace live production formula code, add a reader-built sheer API, extend `_CalculatorReadSnapshot`, edit validation-runner wiring, create registered-team fixtures, add dispatch/runtime adapters, alter listener broadcasts, delete old Buff containers, or touch copied-output constructors.
+- Compatibility retained:
+  - `cal_base_attr(..., base_attr=4)` remains retained-only because it needs runtime `char_instance.sheer_attack_conversion_rate`; current reader-built snapshots still cannot represent that path without broadening the reader contract.
+  - `Calculator.py`, production `Calculator.RegularMul`, `CalculatorBuffAttributeReader`, `_CalculatorReadSnapshot`, `MultiplierData`, `DynamicStatement`, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, registered teams, and validation-runner wiring remain untouched.
+  - No old-coupling review update was needed because this verifier-only slice found no new Buff coupling.
+- Next step:
+  - Continue with US-007 final handoff docs and same-phase candidate pool; preserve the broad Phase-3 candidate pool and do not collapse the next PRD to only `RegularMul` sheer conversion.
+---
