@@ -3065,6 +3065,36 @@ def test_cal_ap_delegates_to_scalar_proficiency_helper_and_keeps_cache(
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
 
 
+def test_cal_imp_delegates_to_scalar_impact_helper_and_remains_uncached(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_attribute_read_fixture(imp=80.0)
+    aggregation_calls = _patch_buff_aggregation(monkeypatch, {})
+    retained_data = _legacy_multiplier_data(fixture)
+    helper_calls: list[tuple[Any, Any]] = []
+
+    def fake_calculate_impact(static_statement: Any, dynamic_statement: Any) -> float:
+        helper_calls.append((static_statement, dynamic_statement))
+        return 321.0
+
+    monkeypatch.setattr(
+        calculator_module,
+        "_calculate_impact",
+        fake_calculate_impact,
+    )
+
+    first_value = Calculator.StunMul.cal_imp(retained_data)
+    second_value = Calculator.StunMul.cal_imp(retained_data)
+
+    assert first_value == pytest.approx(321.0)
+    assert second_value == pytest.approx(321.0)
+    assert helper_calls == [
+        (retained_data.static, retained_data.dynamic),
+        (retained_data.static, retained_data.dynamic),
+    ]
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+
+
 @pytest.mark.parametrize(
     "case",
     _IMP_RETAINED_MULTIPLIER_ORACLE_CASES,

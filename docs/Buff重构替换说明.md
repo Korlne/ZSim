@@ -29,7 +29,6 @@
   - Retained boundaries stay unchanged: `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.spawn_output(...)`, `ScheduleDispatchPort`, listener broadcast, dot runtime registration, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, old containers, `buff_add()`, and `KickOutBuff()`.
 - Next step:
   - `US-002` should inventory existing oracle evidence and exact remaining blockers before any bounded production replacement proposal.
----
 
 ## 2026-06-11 09:26 +08:00 - US-002
 - Files changed: `scripts/ralph/investigations/2026-06-11-US-002-oracle-evidence-inventory.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
@@ -3614,4 +3613,16 @@
   - No old-coupling review update was needed because this slice found no new Buff coupling.
 - Next step:
   - Continue with US-003 by extracting only the scalar impact helper in `Calculator.py`, while keeping `StunMul.get_stun_array()` / array outputs and broader StunMul behavior out of scope.
+---
+## 2026-06-12 16:13 +08:00 - US-003
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-003-extract-scalar-impact-calculation.md`, `scripts/ralph/investigations/2026-06-12-US-003-impact-helper-extraction.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `Calculator.StunMul.cal_imp()` now delegates to `_calculate_impact(data.static, data.dynamic)`, replacing the duplicate in-method impact scalar expression while preserving the public one-argument helper and existing uncached behavior.
+  - `test_cal_imp_delegates_to_scalar_impact_helper_and_remains_uncached()` replaces implicit impact helper-extraction/cache assumptions with executable focused coverage.
+- Compatibility retained:
+  - Existing impact retained `MultiplierData` oracle rows, reader-built snapshot parity, and `CalculatorBuffAttributeReader.read_impact(...)` parity remain intact.
+  - `Calculator.StunMul.get_stun_array()`, `Calculator.cal_stun()`, stun ratio/res/bonus/received helpers, `Calculator.AnomalyMul.cal_am()`, `Calculator.AnomalyMul.cal_ap()`, `Calculator.AnomalyMul.cal_res_pen()`, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, validation runner wiring, registered samples, and P2-A through P2-G guarded buckets remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed because this slice found no new Buff coupling.
+- Next step:
+  - Continue with US-004 by proving family compatibility and rollback anchors with serial `formula-parity` and `calculator-reads`, without reopening the retained exclusion list.
 ---

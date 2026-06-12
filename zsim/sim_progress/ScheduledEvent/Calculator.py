@@ -146,6 +146,13 @@ def _calculate_anomaly_proficiency(
     )
 
 
+def _calculate_impact(static_statement: Any, dynamic_statement: Any) -> float:
+    return (
+        static_statement.imp * (1 + dynamic_statement.field_imp_percentage)
+        + dynamic_statement.imp
+    )
+
+
 class MultiplierData:
     """
     乘数数据缓存管理类
@@ -1424,8 +1431,7 @@ class Calculator:
 
         @staticmethod
         def cal_imp(data: MultiplierData) -> float:
-            imp = data.static.imp * (1 + data.dynamic.field_imp_percentage) + data.dynamic.imp
-            return imp
+            return _calculate_impact(data.static, data.dynamic)
 
         @staticmethod
         def cal_stun_ratio(data: MultiplierData) -> float:
