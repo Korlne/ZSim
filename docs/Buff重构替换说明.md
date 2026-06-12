@@ -3591,3 +3591,15 @@
 - Next step:
   - Generate the next PRD as a bounded AM/AP/impact production implementation, with focused tests plus serial `formula-parity` and `calculator-reads`; run conditional gates only if the implementation touches their boundaries.
 ---
+## 2026-06-12 15:33 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconfirm-implementation-scope-and-baseline.md`, `scripts/ralph/plans/slices/us-002-converge-ap-to-the-scalar-proficiency-helper.md`, `scripts/ralph/investigations/2026-06-12-US-001-reconfirm-implementation-scope-baseline.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 implementation scope and baseline packet` replaces chat-only scope assumptions with retained Ralph evidence for the bounded AM/AP/impact production implementation PRD.
+  - This story builds a boundary and validation baseline only; it does not replace live production formula code, edit the validation runner, add a dispatch adapter, alter a runtime command port, delete old Buff containers, replace copied-output constructors, or change legacy compatibility paths.
+- Compatibility retained:
+  - `Calculator.AnomalyMul.cal_am()` remains the helper-backed baseline; `Calculator.AnomalyMul.cal_ap()` and `Calculator.StunMul.cal_imp()` remain later bounded implementation candidates.
+  - `Calculator.AnomalyMul.cal_res_pen()`, `anomaly_snapshot`, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, `MultiplierData`, `MulData`, `DynamicStatement`, and validation runner wiring remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed because this baseline-only story found no new Buff coupling.
+- Next step:
+  - Continue with US-002 by converging only `Calculator.AnomalyMul.cal_ap()` to `_calculate_anomaly_proficiency(...)`, with focused tests and serial `formula-parity`, without touching the retained exclusion list.
+---
