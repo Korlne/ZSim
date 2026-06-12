@@ -3555,3 +3555,15 @@
 - Next step:
   - Continue with US-005 by drafting the bounded AM/AP/impact production proposal, including impact scalar as an explicit reviewed candidate while excluding `get_stun_array()` / array outputs unless a separate oracle, validation, registered-sample, and rollback contract is written.
 ---
+## 2026-06-12 13:40 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-draft-the-bounded-am-ap-impact-production-proposal.md`, `scripts/ralph/investigations/2026-06-12-US-005-bounded-am-ap-impact-production-proposal.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 bounded AM/AP/impact production proposal` replaces broad readiness wording with an exact scalar helper-family proposal: AM remains the already-converged baseline, AP may converge to `_calculate_anomaly_proficiency(...)`, and impact may add a scalar `_calculate_impact(...)` helper.
+  - This story builds a proposal boundary only; it does not replace live production formula code, edit the validation runner, add a dispatch adapter, alter a runtime command port, delete old Buff containers, replace copied-output constructors, or change legacy compatibility paths.
+- Compatibility retained:
+  - `Calculator.AnomalyMul.cal_res_pen()`, `CalAnomaly.py`, Vivian AP callsites, copied-output constructors, `AnomalyBar.current_ndarray`, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, and P2-A through P2-G guarded buckets remain retained compatibility / non-goal paths.
+  - `Calculator.StunMul.get_stun_array()`, `Calculator.cal_stun()`, stun ratio/res/bonus/received helpers, array outputs, registered behavior samples, and broader StunMul formula work remain outside this proposal's default production diff.
+  - No old-coupling review update was needed because this proposal-only story found no new Buff coupling.
+- Next step:
+  - Continue with US-006 by defining the serial validation, registered-sample eligibility, and rollback contract before any implementation PRD changes production formula code.
+---
