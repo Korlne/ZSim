@@ -1,6 +1,6 @@
 # Buff公式候选与测试目标清单
 
-更新时间：2026-06-11 20:58 +08:00
+更新时间：2026-06-12 17:12 +08:00
 
 本清单服务于 Phase 3 公式等价测试设计。当前故事只建立候选面和测试目标证据，不替换 `Calculator.py`、`CalAnomaly.py`、复制异常 / 紊乱输出公式，也不改变 `ScheduleDispatchPort`、`RuntimeCommandPort` 或旧容器兼容路径。
 
@@ -124,6 +124,34 @@ Final validation evidence：
 | Retained compatibility | Must stay intact. | 保留 `MultiplierData`、`MulData`、`DynamicStatement`、`AnomalyBar.current_ndarray`、old containers、legacy `buff_add()` / `KickOutBuff()`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`LegacyBuffRuntimeFacade` 与 P2-A through P2-G guarded maintenance。 |
 
 Next default PRD：Phase-3 next-candidate selection / oracle-gap closure。下一轮从 formula/copy-output/registered-route pool 中选择一个 exact bounded candidate，先定义 focused pytest、scoped mypy、rollback、registered sample 条件与 retained validation gates；不得默认重开已完成的 `cal_res_pen()` selector extraction。
+
+## Current implementation PRD US-007 AM/AP/impact bounded implementation handoff
+
+结论：Implemented。AM/AP/impact scalar helper-family 的 bounded implementation 已完成：`Calculator.AnomalyMul.cal_am()` 保持已 helper-backed baseline，`Calculator.AnomalyMul.cal_ap()` 保留 public signature 与 `@lru_cache(maxsize=16)` 并委托 `_calculate_anomaly_proficiency(...)`，`Calculator.StunMul.cal_imp()` 委托新增 scalar `_calculate_impact(...)`。本 handoff 不授权 broad `Calculator.py` / `CalAnomaly.py` rewrite，也不授权删除 retained formula snapshots 或旧 Buff runtime compatibility。
+
+Final validation evidence：
+
+- `uv run pytest tests/simulator/test_buff_attribute_reader.py -q` passed：`134 passed`。
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile formula-parity` passed：base `2 passed` / isolated teams `3 passed` / focused `134 passed` / mypy `9 source files` clean。
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads` passed：base `2 passed` / isolated teams `3 passed` / focused `234 passed` / mypy `22 source files` clean。
+- `implicit-events`、default lifecycle validation 与 main-loop consistency remain conditional future gates：本 implementation 没有触达 copied-output、event-adjacent、dispatch/runtime、listener、dot-runtime、same-tick runtime-write、lifecycle container、validation-runner contract 或 live registered-route semantic diff。
+
+Retained gates and rollback anchors：
+
+- Retained gates：`formula-parity` 继续覆盖 formula oracle / scoped mypy；`calculator-reads` 继续覆盖 reader seam、raw-container guardrail、P2-A / P2-B guardrail、state sync 与 full-crit event-adjacent reader；`implicit-events` 只在后续触达 copied-output / event / dispatch / runtime / listener 分层时追加。
+- Rollback anchors：回退失败 helper diff 时只回退 `_calculate_anomaly_proficiency(...)` 委托、`_calculate_impact(...)` 或对应 focused tests；保留 `Calculator.AnomalyMul.cal_am()`, `cal_ap()`, `Calculator.StunMul.cal_imp()`, retained `MultiplierData` / `MulData` / `DynamicStatement` snapshots、`AnomalyBar.current_ndarray`、copied-output constructors、old containers、legacy `buff_add()` / `KickOutBuff()`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter` 和 `LegacyBuffRuntimeFacade`。
+
+Remaining same-phase candidates：
+
+| Candidate / boundary | Current status | Next rule |
+| --- | --- | --- |
+| `Calculator.StunMul.get_stun_array()` / array outputs | Still oracle candidate; not authorized by `cal_imp()` helper extraction. | Next default PRD may build deterministic array-output oracle / boundary tests before any production proposal. |
+| `Calculator.RegularMul` remaining branches | Direct damage / crit / vulnerability / special / sheer multiplier branches remain retained formula candidates. | Characterize exact branch and rollback anchor first; do not mix with broad `Calculator.py` rewrite. |
+| Copied-output handler/report payload parity | Supporting event-adjacent compatibility evidence; not touched by AM/AP/impact implementation. | Preserve constructors, listener-facing fields, handler report payloads, scheduled publish, listener broadcast, dot runtime and runtime command separation; add `implicit-events` if touched. |
+| Registered-team behavior sample eligibility | Policy retained, no validation-only team created. | Run main-loop consistency only for a real production semantic diff with a registered route and nonzero relevant event count. |
+| P2-A through P2-G guarded maintenance | Completed guarded buckets. | Reopen only on concrete guardrail / focused test / validation evidence naming the failed file, symbol, or gate. |
+
+Next default PRD：Phase-3 array-output / remaining formula oracle closure。Start from `Calculator.StunMul.get_stun_array()` / array outputs or one exact `Calculator.RegularMul` branch, and preserve copied-output, registered-route and P2-A through P2-G candidates in the intake pool.
 
 ## Current US-007 AM/AP/impact proposal Go / No-Go
 

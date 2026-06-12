@@ -3662,3 +3662,14 @@
 - Next step:
   - Continue with US-007 by updating final handoff docs and same-phase candidate pools without collapsing the next-stage plan to only the immediate successor.
 ---
+## 2026-06-12 17:12 +08:00 - US-007
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-007-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/plans/slices/buff-refactor-phase3-am-ap-impact-bounded-production-implementation-next-intake.md`, `scripts/ralph/checkpoints/2026-06-12-us-007-final-handoff-same-phase-candidate-pool.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-007 final handoff docs and same-phase candidate pool` replaces chat-only implementation completion state with documented checklist, next-stage plan, formula-candidate, replacement-note, checkpoint, campaign, and evidence-ledger records.
+  - This story builds a documentation and handoff boundary only; it does not replace live production formula code, validation-runner wiring, dispatch/runtime ports, copied-output constructors, old containers, or registered-team fixtures.
+- Compatibility retained:
+  - AM/AP/impact bounded implementation remains complete; `Calculator.AnomalyMul.cal_res_pen()`, `Calculator.StunMul.get_stun_array()` / array outputs, `Calculator.RegularMul` remaining branches, `CalAnomaly.py`, copied-output handler/report payloads, registered samples, old Buff containers, validation-runner wiring, event/dispatch/runtime boundaries, and broad formula replacement remain retained compatibility / future candidate surfaces.
+  - `docs/旧Buff系统耦合审查结果.md` sections `6.6` through `6.9` remain current because this docs-only story did not change runtime, event, Calculator, or validation boundaries.
+- Next step:
+  - Generate the next Phase-3 PRD from the remaining formula/candidate pool, defaulting to `Calculator.StunMul.get_stun_array()` / array output oracle work or one exact `Calculator.RegularMul` branch while preserving copied-output, registered-route, and P2-A through P2-G guarded-maintenance candidates.
+---
