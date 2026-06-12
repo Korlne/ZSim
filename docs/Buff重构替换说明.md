@@ -3650,3 +3650,15 @@
 - Next step:
   - Continue with US-006 by running the final serial verification and invariant review, reusing this US-005 skip rationale for conditional event/runtime/main-loop gates unless US-006 uncovers new touched-surface evidence.
 ---
+## 2026-06-12 16:56 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-final-serial-verification-and-invariant-review.md`, `scripts/ralph/plans/slices/us-007-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/investigations/2026-06-12-US-006-final-serial-verification.md`, `scripts/ralph/checkpoints/2026-06-12-us-006-final-serial-verification-invariant-review.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 final serial verification and invariant review` replaces chat-only final-gate confidence with recorded verifier evidence: focused reader pytest, serial `formula-parity`, serial `calculator-reads`, an infrastructure checkpoint, and a reviewer verdict against Ralph/Buff invariants.
+  - This story builds a validation/evidence boundary only; it does not replace live production formula code, edit validation-runner wiring, add a dispatch adapter, alter a runtime command port, touch lifecycle containers, create registered-team fixtures, or replace copied-output constructors.
+- Compatibility retained:
+  - `Calculator.AnomalyMul.cal_res_pen()`, `Calculator.RegularMul`, `Calculator.StunMul.get_stun_array()`, `CalAnomaly.py`, copied-output handler/report payloads, registered samples, old Buff containers, validation-runner wiring, event/dispatch/runtime boundaries, and broad formula replacement remain retained compatibility / future candidate surfaces.
+  - `implicit-events`, default lifecycle validation, and main-loop consistency remain conditional future gates tied to actual event/runtime/lifecycle/semantic touch points; this slice skipped them by US-005 touched-surface evidence and its own docs/evidence-only diff.
+  - No old-coupling review update was needed because this final-verification story found no new Buff coupling.
+- Next step:
+  - Continue with US-007 by updating final handoff docs and same-phase candidate pools without collapsing the next-stage plan to only the immediate successor.
+---
