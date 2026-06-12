@@ -3542,3 +3542,16 @@
 - Next step:
   - Continue with US-004 by mapping impact evidence and keeping array-output / copied-output behavior out of the bounded production proposal unless a separate later slice supplies its own evidence and validation contract.
 ---
+## 2026-06-12 13:22 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-map-impact-evidence-and-keep-array-outputs-out-of-scope.md`, `scripts/ralph/investigations/2026-06-12-US-004-impact-evidence-array-scope.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 impact proposal prerequisite packet` replaces implicit reuse of prior impact oracle/readiness artifacts with an explicit proposal contract map for `Calculator.StunMul.cal_imp()`, `CalculatorBuffAttributeReader.read_impact(...)`, `test_cal_imp_retained_multiplier_data_oracle_rows()`, P2-B guardrail coverage, and array-output exclusion.
+  - This story builds a boundary/evidence contract only; it does not replace live production formula code, edit the validation runner, add a dispatch adapter, alter a runtime command port, delete old Buff containers, replace copied-output constructors, or change legacy compatibility paths.
+- Compatibility retained:
+  - `Calculator.StunMul.cal_imp()` remains unchanged and still computes `static.imp * (1 + field_imp_percentage) + imp` through retained `MultiplierData` / `DynamicStatement` inputs.
+  - `Calculator.StunMul.get_stun_array()`, `Calculator.cal_stun()`, stun ratio/res/bonus/received helpers, copied-output constructors, registered behavior samples, and broader StunMul formula work remain same-phase formula oracle candidates outside this AM/AP/impact proposal default scope.
+  - `CalculatorBuffAttributeReader.read_impact(...)`, reader-built `_build_formula_snapshot(context)`, P2-B exact-file guardrails, `Calculator.AnomalyMul.cal_am()`, `Calculator.AnomalyMul.cal_ap()`, `CalAnomaly.py`, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed because this proposal-prerequisite story found no new Buff coupling.
+- Next step:
+  - Continue with US-005 by drafting the bounded AM/AP/impact production proposal, including impact scalar as an explicit reviewed candidate while excluding `get_stun_array()` / array outputs unless a separate oracle, validation, registered-sample, and rollback contract is written.
+---
