@@ -3755,3 +3755,15 @@
 - Next step:
   - Generate the next Phase-3 characterization / proposal-readiness continuation PRD from the broad same-phase pool, choosing one exact candidate such as copied-output handler/report payload parity, registered-team behavior sample eligibility, a remaining `Calculator.RegularMul` / retained-only sheer follow-up, or a named `Calculator.StunMul.get_stun_array()` follow-up while preserving P2-A through P2-G guarded maintenance.
 ---
+## 2026-06-12 22:08 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconfirm-sheer-scope-and-baseline.md`, `scripts/ralph/investigations/2026-06-12-US-001-sheer-scope-baseline.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 sheer scope and baseline packet` replaces chat-only retained-only sheer assumptions with cited docs, targeted `rg`, CodeGraph source evidence, focused test inventory, verifier evidence, and a next-slice recommendation.
+  - This story builds a boundary/readiness packet only; it does not replace live production formula code, introduce a reader-built sheer API, edit validation-runner wiring, add dispatch/runtime adapters, alter listener broadcasts, delete old Buff containers, or touch copied-output constructors.
+- Compatibility retained:
+  - `cal_sheer_dmg_bonus()` remains retained production behavior; `cal_base_attr(..., base_attr=4)` remains retained-only because it depends on runtime `char_instance.sheer_attack_conversion_rate`, while `_CalculatorReadSnapshot` currently carries no `char_instance`.
+  - `Calculator.py`, production `Calculator.RegularMul`, `CalculatorBuffAttributeReader`, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, completed AM/AP/impact work, `cal_res_pen()`, and validation-runner wiring remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed because this evidence-only slice found no new Buff coupling.
+- Next step:
+  - Continue with US-002 by directly characterizing the retained `base_attr=4` sheer runtime dependency and deciding whether a reader snapshot may carry `char_instance` before any production formula replacement.
+---
