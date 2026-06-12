@@ -4676,6 +4676,60 @@ def test_calculator_regular_mul_branch_matrix_characterizes_selected_methods(
     )
 
 
+def test_regular_mul_retained_sheer_base_attr_requires_char_instance_conversion_rate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_attribute_read_fixture(
+        name="直伤矩阵-贯穿 retained only",
+        atk=100.0,
+        hp=200.0,
+        defense=300.0,
+        ap=400.0,
+        damage_ratio=1.5,
+        hit_times=1,
+        diff_multiplier=4,
+        element_type=4,
+        trigger_buff_level=10,
+        enemy_max_def=500.0,
+        enemy_damage_resistance_attrs={"ETHER_damage_resistance": 0.10},
+        char_buff_count=1,
+        enemy_debuff_count=1,
+        enemy_dot_count=0,
+    )
+    fixture.char.sheer_attack_conversion_rate = {0: 0.50, 1: 0.10, 2: 0.20, 3: 0.30}
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(
+            field_atk_percentage=0.10,
+            atk=10.0,
+            field_hp_percentage=0.20,
+            hp=20.0,
+            field_def_percentage=0.30,
+            defense=30.0,
+            field_anomaly_proficiency=0.40,
+            anomaly_proficiency=40.0,
+            sheer_atk=5.0,
+            sheer_dmg_bonus=0.45,
+        ),
+    )
+
+    retained_data = _legacy_multiplier_data(fixture)
+    assert _regular_mul_base_attr(retained_data, 4) == pytest.approx(355.0)
+    assert Calculator.RegularMul.cal_sheer_dmg_bonus(retained_data) == pytest.approx(
+        1.45
+    )
+
+    reader_snapshot_data = _reader_snapshot_data(fixture.context)
+    assert not hasattr(reader_snapshot_data, "char_instance")
+    with pytest.raises(AttributeError, match="char_instance"):
+        _regular_mul_base_attr(reader_snapshot_data, 4)
+    assert Calculator.RegularMul.cal_sheer_dmg_bonus(
+        reader_snapshot_data
+    ) == pytest.approx(1.45)
+
+    _assert_aggregation_calls(aggregation_calls, fixture, times=2)
+
+
 @pytest.mark.parametrize(
     (
         "static_crit_rate",

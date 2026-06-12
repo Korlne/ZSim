@@ -3767,3 +3767,15 @@
 - Next step:
   - Continue with US-002 by directly characterizing the retained `base_attr=4` sheer runtime dependency and deciding whether a reader snapshot may carry `char_instance` before any production formula replacement.
 ---
+## 2026-06-12 22:25 +08:00 - US-002
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-002-characterize-retained-sheer-runtime-dependency.md`, `scripts/ralph/plans/slices/us-003-decide-reader-snapshot-eligibility.md`, `scripts/ralph/checkpoints/2026-06-12-us-002-regularmul-sheer-runtime-dependency.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `test_regular_mul_retained_sheer_base_attr_requires_char_instance_conversion_rate()` replaces implicit retained-only sheer conversion confidence with executable `Calculator.RegularMul.cal_base_attr(..., base_attr=4)` oracle coverage and an explicit current reader-snapshot No-Go.
+  - This story strengthens a test/evidence boundary only; it does not replace live production formula code, add a reader method, extend `_CalculatorReadSnapshot`, edit validation-runner wiring, add dispatch/runtime adapters, alter listener broadcasts, delete old Buff containers, or touch copied-output constructors.
+- Compatibility retained:
+  - `Calculator.py`, production `Calculator.RegularMul`, `CalculatorBuffAttributeReader` public methods, `_CalculatorReadSnapshot`, `MultiplierData`, `DynamicStatement`, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, completed AM/AP/impact work, `cal_res_pen()`, and validation-runner wiring remain untouched.
+  - `cal_base_attr(..., base_attr=4)` remains retained-only because it needs runtime `char_instance.sheer_attack_conversion_rate`; current reader-built snapshots still cannot represent that path.
+  - No old-coupling review update was needed because this test-only slice found no new Buff coupling.
+- Next step:
+  - Continue with US-003 by deciding whether `_CalculatorReadSnapshot` may carry `char_instance` under a bounded oracle/rollback plan or by recording a No-Go without production formula replacement.
+---
