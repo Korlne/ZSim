@@ -1354,11 +1354,7 @@ class Calculator:
         @staticmethod
         @lru_cache(maxsize=16)
         def cal_ap(data: MultiplierData):
-            ap = (
-                data.static.ap * (1 + data.dynamic.field_anomaly_proficiency)
-                + data.dynamic.anomaly_proficiency
-            )
-            return ap
+            return _calculate_anomaly_proficiency(data.static, data.dynamic)
 
         @staticmethod
         def cal_ano_extra_mul(data: MultiplierData) -> float:

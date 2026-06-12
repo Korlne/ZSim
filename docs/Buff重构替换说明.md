@@ -3603,3 +3603,15 @@
 - Next step:
   - Continue with US-002 by converging only `Calculator.AnomalyMul.cal_ap()` to `_calculate_anomaly_proficiency(...)`, with focused tests and serial `formula-parity`, without touching the retained exclusion list.
 ---
+## 2026-06-12 15:54 +08:00 - US-002
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-002-converge-ap-to-the-scalar-proficiency-helper.md`, `scripts/ralph/plans/slices/us-003-extract-scalar-impact-calculation.md`, `scripts/ralph/investigations/2026-06-12-US-002-ap-helper-convergence.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `Calculator.AnomalyMul.cal_ap()` now delegates to `_calculate_anomaly_proficiency(data.static, data.dynamic)`, replacing the duplicate in-method AP scalar expression while preserving the public one-argument helper and `@lru_cache(maxsize=16)`.
+  - `test_cal_ap_delegates_to_scalar_proficiency_helper_and_keeps_cache()` replaces implicit AP helper-convergence/cache assumptions with executable focused coverage.
+- Compatibility retained:
+  - Existing AP retained `MultiplierData` oracle rows, reader-built snapshot parity, and `CalculatorBuffAttributeReader.read_anomaly_proficiency(...)` parity remain intact.
+  - `Calculator.AnomalyMul.cal_am()`, `Calculator.AnomalyMul.cal_res_pen()`, `anomaly_snapshot`, `CalAnomaly.py`, Vivian AP callsites, copied-output constructors, `AnomalyBar.current_ndarray`, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, validation runner wiring, and P2-A through P2-G guarded buckets remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed because this slice found no new Buff coupling.
+- Next step:
+  - Continue with US-003 by extracting only the scalar impact helper in `Calculator.py`, while keeping `StunMul.get_stun_array()` / array outputs and broader StunMul behavior out of scope.
+---

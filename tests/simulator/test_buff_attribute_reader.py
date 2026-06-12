@@ -379,6 +379,7 @@ _CAL_RES_PEN_READER_SNAPSHOT_COMPATIBILITY_CASES = (
 def _reset_formula_oracle_caches() -> None:
     MultiplierData.mul_data_cache.clear()
     MultiplierData.StaticStatement._instance_cache.clear()
+    Calculator.AnomalyMul.cal_ap.cache_clear()
 
 
 @pytest.fixture(autouse=True)
@@ -3027,6 +3028,41 @@ def test_cal_ap_retained_multiplier_data_oracle_rows(
     assert reader_snapshot_value == expected, f"{case.case_id}:reader-snapshot"
     assert reader_value == expected, f"{case.case_id}:reader"
     _assert_aggregation_calls(aggregation_calls, fixture, times=3)
+
+
+def test_cal_ap_delegates_to_scalar_proficiency_helper_and_keeps_cache(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_attribute_read_fixture(ap=300.0)
+    aggregation_calls = _patch_buff_aggregation(monkeypatch, {})
+    retained_data = _legacy_multiplier_data(fixture)
+    helper_calls: list[tuple[Any, Any]] = []
+
+    def fake_calculate_anomaly_proficiency(
+        static_statement: Any, dynamic_statement: Any
+    ) -> np.float64:
+        helper_calls.append((static_statement, dynamic_statement))
+        return np.float64(432.0)
+
+    monkeypatch.setattr(
+        calculator_module,
+        "_calculate_anomaly_proficiency",
+        fake_calculate_anomaly_proficiency,
+    )
+
+    first_value = Calculator.AnomalyMul.cal_ap(retained_data)
+    second_value = Calculator.AnomalyMul.cal_ap(retained_data)
+    cache_info = Calculator.AnomalyMul.cal_ap.cache_info()
+
+    assert first_value == pytest.approx(432.0)
+    assert second_value == pytest.approx(432.0)
+    assert len(helper_calls) == 1
+    assert helper_calls[0][0] is retained_data.static
+    assert helper_calls[0][1] is retained_data.dynamic
+    assert cache_info.hits == 1
+    assert cache_info.misses == 1
+    assert cache_info.maxsize == 16
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
 
 
 @pytest.mark.parametrize(
