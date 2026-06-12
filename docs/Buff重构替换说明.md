@@ -3779,3 +3779,16 @@
 - Next step:
   - Continue with US-003 by deciding whether `_CalculatorReadSnapshot` may carry `char_instance` under a bounded oracle/rollback plan or by recording a No-Go without production formula replacement.
 ---
+## 2026-06-12 22:38 +08:00 - US-003
+- Files changed: `scripts/ralph/plans/slices/us-003-decide-reader-snapshot-eligibility.md`, `scripts/ralph/investigations/2026-06-12-US-003-reader-snapshot-eligibility.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 reader snapshot eligibility packet` replaces implicit hopes for carrying retained sheer conversion through reader-built snapshots with a recorded No-Go decision.
+  - This story builds a decision/evidence boundary only; it does not replace a live production path, add a snapshot field, edit validation-runner wiring, add dispatch/runtime adapters, alter listener broadcasts, delete old Buff containers, create registered-team fixtures, or touch copied-output constructors.
+- Compatibility retained:
+  - `_CalculatorReadSnapshot` remains a five-field minimal compatibility object with `static`, `dynamic`, `judge_node`, `enemy_obj`, and `char_level`.
+  - `cal_base_attr(..., base_attr=4)` remains retained-only because it requires runtime `char_instance.sheer_attack_conversion_rate`; `cal_sheer_dmg_bonus()` remains reader-snapshot-compatible.
+  - `Calculator.py`, production `Calculator.RegularMul`, `CalculatorBuffAttributeReader`, `MultiplierData`, `DynamicStatement`, `CalAnomaly.py`, copied-output constructors, old Buff containers, dispatch/runtime/listener paths, same-tick runtime writes, and validation-runner wiring remain untouched.
+  - No old-coupling review update was needed because this decision-only slice found no new Buff coupling.
+- Next step:
+  - Continue with US-004 by defining registered-route sample conditions for any later sheer production proposal; do not authorize production formula replacement from this No-Go.
+---
