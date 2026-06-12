@@ -3626,3 +3626,15 @@
 - Next step:
   - Continue with US-004 by proving family compatibility and rollback anchors with serial `formula-parity` and `calculator-reads`, without reopening the retained exclusion list.
 ---
+## 2026-06-12 16:24 +08:00 - US-004
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-004-preserve-family-compatibility-and-rollback-anchors.md`, `scripts/ralph/plans/slices/us-005-decide-conditional-runtime-event-and-registered-sample-gates.md`, `scripts/ralph/investigations/2026-06-12-US-004-family-compatibility-rollback-anchors.md`, `scripts/ralph/checkpoints/2026-06-12-us-004-family-compatibility-rollback-anchors.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `test_calculator_am_ap_impact_formula_boundaries_remain_retained_compatibility()` now replaces implicit family rollback assumptions with explicit proof of retained `MultiplierData`, reader snapshot structural compatibility, `MultiplierData.DynamicStatement` translated fields, and `CalculatorBuffAttributeReader` parity for AM, AP, and impact.
+  - This story strengthens a test/evidence boundary only; it does not replace live production formula code, edit the validation runner, add a dispatch adapter, alter a runtime command port, delete old Buff containers, create registered-team fixtures, replace copied-output constructors, or change legacy compatibility paths.
+- Compatibility retained:
+  - `Calculator.AnomalyMul.cal_res_pen()`, `Calculator.RegularMul`, `Calculator.StunMul.get_stun_array()`, copied-output handler/report payloads, registered samples, dispatch/runtime ports, old Buff containers, validation-runner wiring, `CalAnomaly.py`, and broad formula replacement remain retained compatibility / follow-up surfaces.
+  - Serial `formula-parity` and `calculator-reads` passed after the boundary test correction; known pytest-asyncio and async log-writer shutdown noise remains separated from verifier failure.
+  - No old-coupling review update was needed because this proof slice found no new Buff coupling.
+- Next step:
+  - Continue with US-005 by deciding conditional runtime, event, implicit-events, default lifecycle, validation-runner help, and registered-sample gates based only on touched surfaces.
+---

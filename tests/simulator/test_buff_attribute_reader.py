@@ -4490,10 +4490,38 @@ def test_calculator_am_ap_impact_formula_boundaries_remain_retained_compatibilit
     )
 
     retained_data = _legacy_multiplier_data(fixture)
+    reader_snapshot_data = _reader_snapshot_data(fixture.context)
+    expected_dynamic_fields = {
+        "field_anomaly_mastery": 0.2,
+        "anomaly_mastery": 15.0,
+        "field_anomaly_proficiency": 0.25,
+        "anomaly_proficiency": 40.0,
+        "field_imp_percentage": 0.1,
+        "imp": 9.0,
+    }
+
+    assert isinstance(retained_data, MultiplierData)
+    assert not isinstance(reader_snapshot_data, MultiplierData)
+
+    for source_label, data in (
+        ("retained", retained_data),
+        ("reader-snapshot", reader_snapshot_data),
+    ):
+        assert isinstance(data.dynamic, MultiplierData.DynamicStatement), source_label
+        for attr_name, expected_value in expected_dynamic_fields.items():
+            assert getattr(data.dynamic, attr_name) == pytest.approx(
+                expected_value
+            ), f"{source_label}:{attr_name}"
+
     retained_formula_values = {
         "cal_am": Calculator.AnomalyMul.cal_am(retained_data),
         "cal_ap": Calculator.AnomalyMul.cal_ap(retained_data),
         "cal_imp": Calculator.StunMul.cal_imp(retained_data),
+    }
+    reader_snapshot_formula_values = {
+        "cal_am": Calculator.AnomalyMul.cal_am(reader_snapshot_data),
+        "cal_ap": Calculator.AnomalyMul.cal_ap(reader_snapshot_data),
+        "cal_imp": Calculator.StunMul.cal_imp(reader_snapshot_data),
     }
     expected_formula_values = {
         "cal_am": 135.0,
@@ -4510,8 +4538,9 @@ def test_calculator_am_ap_impact_formula_boundaries_remain_retained_compatibilit
 
     assert retained_formula_values == pytest.approx(expected_formula_values)
     # P2-A/P2-B reader parity 只是兼容性证据，不能作为删除 AM/AP/冲击力公式的依据。
+    assert reader_snapshot_formula_values == pytest.approx(retained_formula_values)
     assert reader_values == pytest.approx(retained_formula_values)
-    _assert_aggregation_calls(aggregation_calls, fixture, times=4)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=5)
 
 
 def test_calculator_attribute_formula_boundaries_remain_retained_compatibility(
