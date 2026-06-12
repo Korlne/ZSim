@@ -3567,3 +3567,15 @@
 - Next step:
   - Continue with US-006 by defining the serial validation, registered-sample eligibility, and rollback contract before any implementation PRD changes production formula code.
 ---
+## 2026-06-12 13:53 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-define-validation-registered-sample-and-rollback-contract.md`, `scripts/ralph/investigations/2026-06-12-US-006-validation-registered-sample-rollback-contract.md`, `scripts/ralph/investigations/2026-06-12-US-005-bounded-am-ap-impact-production-proposal.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 validation / registered-sample / rollback contract` replaces implicit follow-up validation assumptions with an explicit implementation-prerequisite contract for scalar AM/AP/impact production work.
+  - This story builds a contract boundary only; it does not replace live production formula code, edit the validation runner, add a dispatch adapter, alter a runtime command port, delete old Buff containers, create registered-team fixtures, replace copied-output constructors, or change legacy compatibility paths.
+- Compatibility retained:
+  - `Calculator.AnomalyMul.cal_am()`, `Calculator.AnomalyMul.cal_ap()`, `Calculator.StunMul.cal_imp()`, `CalAnomaly.py`, Vivian AP callsites, copied-output constructors, `AnomalyBar.current_ndarray`, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, and P2-A through P2-G guarded buckets remain retained compatibility / non-goal paths.
+  - Future implementation must run focused pytest plus serial `formula-parity` and `calculator-reads`; `implicit-events`, default lifecycle validation, validation-runner help/runner tests, and main-loop consistency samples remain conditional and require explicit skip rationale.
+  - No old-coupling review update was needed because this contract-only story found no new Buff coupling.
+- Next step:
+  - Continue with US-007 by updating final handoff docs and deciding proposal Go / No-Go without collapsing the same-phase candidate pool to only one narrow follow-up.
+---
