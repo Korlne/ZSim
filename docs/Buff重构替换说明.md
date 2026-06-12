@@ -3685,3 +3685,14 @@
 - Next step:
   - Continue with US-002 by adding direct `Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()` characterization for shape, dtype, order, and product semantics before any RegularMul or production replacement work.
 ---
+## 2026-06-12 18:00 +08:00 - US-002
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-002-characterize-stun-array-output-contract.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/context/index.md`, `scripts/ralph/context/codegraph-guide.md`, `scripts/ralph/context/progress-snapshot.md`, `scripts/ralph/context/module-boundaries.md`, `scripts/ralph/context/dependency-graph.md`, `scripts/ralph/context/call-chain-graph.md`, `scripts/ralph/plans/slices/us-003-characterize-regularmul-array-output-boundaries.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `test_stun_array_output_contract_preserves_field_order_dtype_and_product()` replaces implicit trust in `Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()` array semantics with executable retained `MultiplierData` oracle coverage for five-field order, shape, `np.float64` dtype, and product consumption.
+  - This story strengthens a test/evidence boundary only; it does not replace live production formula code, introduce a reader-built Stun array API, edit validation-runner wiring, add dispatch/runtime adapters, alter listener broadcasts, delete old Buff containers, or touch copied-output constructors.
+- Compatibility retained:
+  - `Calculator.py`, `Calculator.RegularMul` array outputs, `Calculator.AnomalyMul.cal_res_pen()`, AM/AP/impact helper implementation, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, and validation-runner wiring remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed because this test-only slice discovered no new Buff coupling.
+- Next step:
+  - Continue with US-003 by applying the direct array-contract characterization pattern to `Calculator.RegularMul.get_array_expect()`, `get_array_crit()`, and `get_array_not_crit()` without changing production array construction unless a focused failing test proves a defect.
+---

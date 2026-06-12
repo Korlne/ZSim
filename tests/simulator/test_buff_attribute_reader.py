@@ -3134,6 +3134,83 @@ def test_cal_imp_retained_multiplier_data_oracle_rows(
     _assert_aggregation_calls(aggregation_calls, fixture, times=3)
 
 
+def test_stun_array_output_contract_preserves_field_order_dtype_and_product(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_attribute_read_fixture(
+        name="失衡数组契约",
+        imp=80.0,
+        damage_ratio=1.0,
+        stun_ratio=240.0,
+        hit_times=4,
+        diff_multiplier=0,
+        element_type=3,
+        trigger_buff_level=2,
+        skill_labels={"aftershock_attack": 1},
+        enemy_stun_resistance_attrs={3: 0.20},
+        char_buff_count=1,
+        enemy_debuff_count=1,
+        enemy_dot_count=0,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(
+            field_imp_percentage=0.25,
+            imp=5.0,
+            stun_res=0.15,
+            ex_special_skill_stun_bonus=0.25,
+            stun_bonus=0.10,
+            aftershock_attack_stun_bonus=0.05,
+            received_stun_increase=0.30,
+        ),
+    )
+
+    retained_data = _legacy_multiplier_data(fixture)
+    stun_multipliers = Calculator.StunMul(retained_data)
+    expected_fields = (
+        ("imp", 105.0),
+        ("stun_ratio", 60.0),
+        ("stun_res", 0.65),
+        ("stun_bonus", 1.40),
+        ("stun_received", 1.30),
+    )
+    expected_array = np.array(
+        [expected_value for _, expected_value in expected_fields],
+        dtype=np.float64,
+    )
+
+    stun_array = stun_multipliers.get_stun_array()
+
+    assert tuple(field_name for field_name, _ in expected_fields) == (
+        "imp",
+        "stun_ratio",
+        "stun_res",
+        "stun_bonus",
+        "stun_received",
+    )
+    assert stun_array.shape == (5,)
+    assert stun_array.dtype == np.float64
+    np.testing.assert_allclose(stun_array, expected_array)
+
+    calculator = cast(Calculator, Calculator.__new__(Calculator))
+    calculator.stun_multipliers = stun_multipliers
+    get_stun_array_calls: list[str] = []
+    original_get_stun_array = stun_multipliers.get_stun_array
+
+    def tracking_get_stun_array() -> np.ndarray:
+        get_stun_array_calls.append("get_stun_array")
+        return original_get_stun_array()
+
+    monkeypatch.setattr(stun_multipliers, "get_stun_array", tracking_get_stun_array)
+
+    stun_value = calculator.cal_stun()
+
+    assert get_stun_array_calls == ["get_stun_array"]
+    assert isinstance(stun_value, np.float64)
+    assert stun_value == pytest.approx(np.float64(np.prod(expected_array)))
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+
+
 @pytest.mark.parametrize(
     "case_id,element_type,selected_field,dynamic_attrs",
     _CAL_RES_PEN_READER_SNAPSHOT_COMPATIBILITY_CASES,
