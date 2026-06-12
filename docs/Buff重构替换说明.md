@@ -3829,3 +3829,14 @@
 - Next step:
   - Continue with US-007 final handoff docs and same-phase candidate pool; preserve the broad Phase-3 candidate pool and do not collapse the next PRD to only `RegularMul` sheer conversion.
 ---
+## 2026-06-12 23:47 +08:00 - US-007
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/checkpoints/2026-06-12-us-007-regularmul-sheer-final-handoff-candidate-pool.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/plans/slices/buff-refactor-phase3-regularmul-sheer-reader-snapshot-readiness-next-intake.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-007 final handoff docs and same-phase candidate pool` replaces the US-006 next-slice signal with long-lived docs, checkpoint, campaign, evidence-ledger, PRD and progress records for the RegularMul sheer reader-snapshot readiness PRD.
+  - This story builds a documentation and handoff boundary only; it does not replace live production formula code, add a reader-built sheer API, extend `_CalculatorReadSnapshot`, edit validation-runner wiring, create registered-team fixtures, add dispatch/runtime adapters, alter listener broadcasts, delete old Buff containers, or touch copied-output constructors.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_base_attr(..., base_attr=4)` remains retained-only for runtime `char_instance.sheer_attack_conversion_rate`; `cal_sheer_dmg_bonus()` remains reader-snapshot-compatible for `diff_multiplier == 4`.
+  - `Calculator.py`, production `Calculator.RegularMul`, `CalculatorBuffAttributeReader`, `_CalculatorReadSnapshot`, `MultiplierData`, `DynamicStatement`, `CalAnomaly.py`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, registered teams, and validation-runner wiring remain untouched.
+- Next step:
+  - Generate the next Phase-3 characterization / proposal-readiness continuation PRD from the broad same-phase pool; do not promote `RegularMul` sheer conversion to production proposal without real registered-route sample evidence and an architecture-approved reader-contract plan.
+---
