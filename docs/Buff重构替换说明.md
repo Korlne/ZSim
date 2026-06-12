@@ -3504,3 +3504,16 @@
 - Next step:
   - Generate the next PRD as a bounded AM/AP/impact production proposal, first choosing exact helper scope, rollback anchors, validation profiles, registered-sample conditions, retained boundaries, and non-goals before any implementation story changes production formulas.
 ---
+## 2026-06-12 12:34 +08:00 - US-001
+- Files changed: `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/architecture/invariants.md`, `scripts/ralph/plans/slices/us-001-reconfirm-proposal-only-scope-and-controller-state.md`, `scripts/ralph/plans/slices/us-002-map-am-evidence-to-proposal-prerequisites.md`, `scripts/ralph/investigations/2026-06-12-US-001-am-ap-impact-proposal-only-scope.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 proposal-only scope packet` replaces implicit reliance on the previous oracle-gap handoff with an explicit baseline: the current AM/AP/impact PRD is proposal-only and does not implement production formula replacement.
+  - This story builds a boundary/evidence baseline only; it does not replace a live formula, copied-output constructor, validation runner, dispatch adapter, runtime command port, old Buff container, or legacy compatibility path.
+- Compatibility retained:
+  - `cal_res_pen()` remains completed and is not reopened by this PRD.
+  - P2-A through P2-G remain guarded maintenance only.
+  - `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, copied-output constructors, old containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain retained compatibility / non-goal paths.
+  - No old-coupling review update was needed because this proposal-scope story found no new Buff coupling.
+- Next step:
+  - Continue with US-002 by mapping AM evidence to proposal prerequisites without changing production formula code.
+---
