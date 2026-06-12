@@ -3792,3 +3792,16 @@
 - Next step:
   - Continue with US-004 by defining registered-route sample conditions for any later sheer production proposal; do not authorize production formula replacement from this No-Go.
 ---
+## 2026-06-12 22:49 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-define-registered-route-sample-conditions.md`, `scripts/ralph/investigations/2026-06-12-US-004-registered-route-sample-conditions.md`, `scripts/ralph/checkpoints/2026-06-12-us-004-registered-route-sample-conditions.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 registered-route sample-condition packet` replaces implicit main-loop sample eligibility for retained sheer conversion with a recorded conditional No-Go and future sample gate.
+  - This story builds an evidence/checkpoint boundary only; it does not replace a live production path, add a registered-team fixture, edit APL data, change validation-runner wiring, add dispatch/runtime adapters, alter listener broadcasts, delete old Buff containers, or touch copied-output constructors.
+- Compatibility retained:
+  - Current registered teams remain `青衣雷属性队`, `席德大安比队`, `莱特火属性队`, and `薇薇安物理队`; none include `仪玄` / `Yixuan`, so no real registered sheer sample is available in this slice.
+  - Future sheer main-loop samples must use an existing registered production team and prove nonzero `event_counts.by_element_type["4"]` plus exact route evidence in both snapshots; no validation-only team should be created to satisfy the gate.
+  - `Calculator.py`, production `Calculator.RegularMul`, `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, `MultiplierData`, `DynamicStatement`, `CalAnomaly.py`, copied-output constructors, old Buff containers, dispatch/runtime/listener paths, same-tick runtime writes, and validation-runner wiring remain untouched.
+  - No old-coupling review update was needed because this evidence-only slice found no new Buff coupling.
+- Next step:
+  - Continue with US-005 by deciding proposal readiness and conditional gates from this registered-route No-Go; do not authorize production formula replacement without a real registered sheer route, production semantic diff, nonzero counts, and rollback anchors.
+---
