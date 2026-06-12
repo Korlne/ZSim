@@ -3638,3 +3638,15 @@
 - Next step:
   - Continue with US-005 by deciding conditional runtime, event, implicit-events, default lifecycle, validation-runner help, and registered-sample gates based only on touched surfaces.
 ---
+## 2026-06-12 16:39 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-decide-conditional-runtime-event-and-registered-sample-gates.md`, `scripts/ralph/investigations/2026-06-12-US-005-conditional-validation-gates.md`, `scripts/ralph/checkpoints/2026-06-12-us-005-conditional-validation-gates.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-006-final-serial-verification-and-invariant-review.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 conditional validation gate decision` replaces implicit follow-up assumptions about `implicit-events`, default lifecycle validation, and registered main-loop samples with a touched-surface decision matrix.
+  - This story builds a decision/checkpoint boundary only; it does not replace live production formula code, edit validation-runner wiring, add a dispatch adapter, alter a runtime command port, touch lifecycle containers, create registered-team fixtures, or replace copied-output constructors.
+- Compatibility retained:
+  - Validation runner wiring, `ScheduleDispatchPort`, `RuntimeCommandPort`, lifecycle containers, old Buff containers, copied-output handler/report payloads, registered samples, and live production formula behavior remain untouched.
+  - `implicit-events`, default lifecycle validation, and `run_buff_main_loop_consistency.py` remain conditional future gates: run them when a later slice touches the matching event/runtime/lifecycle/semantic surface and use only real registered routes with nonzero relevant evidence.
+  - No old-coupling review update was needed because this decision-only slice found no new Buff coupling.
+- Next step:
+  - Continue with US-006 by running the final serial verification and invariant review, reusing this US-005 skip rationale for conditional event/runtime/main-loop gates unless US-006 uncovers new touched-surface evidence.
+---
