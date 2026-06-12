@@ -3579,3 +3579,15 @@
 - Next step:
   - Continue with US-007 by updating final handoff docs and deciding proposal Go / No-Go without collapsing the same-phase candidate pool to only one narrow follow-up.
 ---
+## 2026-06-12 14:13 +08:00 - US-007
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-007-update-handoff-docs-and-final-proposal-go-no-go.md`, `scripts/ralph/plans/slices/buff-refactor-phase3-am-ap-impact-bounded-production-proposal-next-intake.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-007 final proposal Go / No-Go handoff` replaces proposal-ready wording with a bounded implementation authorization for the scalar AM/AP/impact helper family only.
+  - This story updates handoff boundaries only; it does not replace live production formula code, edit the validation runner, add a dispatch adapter, alter a runtime command port, delete old Buff containers, create registered-team fixtures, replace copied-output constructors, or change legacy compatibility paths.
+- Compatibility retained:
+  - Later implementation scope is limited to `Calculator.py`: keep AM as the helper-backed baseline, allow AP helper convergence through `_calculate_anomaly_proficiency(...)`, and allow scalar `_calculate_impact(...)` plus `Calculator.StunMul.cal_imp()` delegation.
+  - `Calculator.StunMul.get_stun_array()` / array outputs, `Calculator.RegularMul` remaining branches, copied-output handler/report payload parity, registered-team behavior samples, P2-A through P2-G guarded maintenance, old containers, legacy `buff_add()`, legacy `KickOutBuff()`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, `MultiplierData`, `MulData`, `DynamicStatement`, copied-output constructors, and retained formula snapshots remain retained compatibility / future candidate surfaces.
+  - No old-coupling review update was needed because this docs-only final handoff found no new Buff coupling.
+- Next step:
+  - Generate the next PRD as a bounded AM/AP/impact production implementation, with focused tests plus serial `formula-parity` and `calculator-reads`; run conditional gates only if the implementation touches their boundaries.
+---
