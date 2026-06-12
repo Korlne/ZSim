@@ -3731,3 +3731,15 @@
 - Next step:
   - Continue with US-006 final serial verification and invariant review; do not promote array / RegularMul production replacement unless a later packet names one exact candidate with deterministic oracle, rollback anchors, and registered-sample conditions.
 ---
+## 2026-06-12 19:12 +08:00 - US-006
+- Files changed: `scripts/ralph/investigations/2026-06-12-US-006-final-serial-verification.md`, `scripts/ralph/checkpoints/2026-06-12-us-006-final-serial-verification-invariant-review.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 final serial verification and invariant review` replaces chat-only final-gate confidence for the current array / RegularMul PRD with recorded focused pytest, serial `formula-parity`, serial `calculator-reads`, checkpoint, and reviewer-verdict evidence.
+  - This story builds a validation/evidence boundary only; it does not replace live production formula code, edit validation-runner wiring, add dispatch/runtime adapters, touch lifecycle containers, create registered-team fixtures, or replace copied-output constructors.
+- Compatibility retained:
+  - `Calculator.py`, `Calculator.RegularMul`, `Calculator.StunMul.get_stun_array()`, `Calculator.cal_stun()`, `CalculatorBuffAttributeReader`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, copied-output constructors, old Buff containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcasts, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, and validation-runner wiring remain untouched.
+  - `implicit-events`, default lifecycle validation, and `run_buff_main_loop_consistency.py` remain conditional future gates because neither US-005 nor US-006 touched copied-output, event, dispatch, runtime, listener, same-tick write, lifecycle, validation wiring, production semantic diff, or a registered route with nonzero relevant counts.
+  - No old-coupling review update was needed because this final-verification story found no new Buff coupling.
+- Next step:
+  - Continue with US-007 by updating final handoff docs and same-phase candidate pools without collapsing the next-stage plan to only one narrow follow-up.
+---
