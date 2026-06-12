@@ -3707,3 +3707,15 @@
 - Next step:
   - Continue with US-004 by characterizing bounded `Calculator.RegularMul` branch formulas and rollback anchors without re-proving direct array order/dtype/component mapping.
 ---
+## 2026-06-12 18:42 +08:00 - US-004
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-004-characterize-regularmul-formula-branches.md`, `scripts/ralph/plans/slices/us-005-decide-proposal-readiness-and-conditional-gates.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `test_calculator_regular_mul_branch_matrix_characterizes_selected_methods()` replaces implicit RegularMul branch confidence with executable retained `MultiplierData` oracle coverage for direct damage, crit, defense, resistance, damage vulnerability, stun vulnerability, special multiplier, and sheer damage bonus.
+  - This story strengthens a test/evidence boundary only; it does not replace live production formula code, add reader APIs, edit validation-runner wiring, add dispatch/runtime adapters, alter listener broadcasts, delete old Buff containers, or touch copied-output constructors.
+- Compatibility retained:
+  - Production `Calculator.RegularMul` methods, `CalculatorBuffAttributeReader` public methods, `MultiplierData`, `DynamicStatement`, `Calculator.StunMul.get_stun_array()`, copied-output constructors, old Buff containers, dispatch/runtime ports, listener paths, same-tick runtime writes, and validation-runner wiring remain untouched.
+  - Reader-snapshot parity is proven for the non-sheer branch matrix row; the sheer branch remains retained-only because the current reader snapshot does not carry `char_instance`, which `cal_base_attr(..., base_attr=4)` requires for `sheer_attack_conversion_rate`.
+  - No old-coupling review update was needed because this test-only slice found no new Buff coupling.
+- Next step:
+  - Continue with US-005 by deciding proposal readiness and conditional gates from the now-covered Stun array, RegularMul array, and RegularMul branch evidence without changing production formulas.
+---

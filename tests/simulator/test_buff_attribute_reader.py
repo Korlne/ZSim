@@ -982,6 +982,22 @@ def _regular_mul_defense_mul(data: MultiplierData) -> float:
     return cast(float, _regular_mul_oracle().cal_defense_mul(data))
 
 
+def _regular_mul_branch_matrix_values(data: MultiplierData) -> dict[str, float]:
+    oracle = _regular_mul_oracle()
+    return {
+        "cal_base_dmg": cast(float, oracle.cal_base_dmg(data)),
+        "cal_dmg_bonus": Calculator.RegularMul.cal_dmg_bonus(data),
+        "cal_crit_rate": Calculator.RegularMul.cal_crit_rate(data),
+        "cal_crit_dmg": Calculator.RegularMul.cal_crit_dmg(data),
+        "cal_defense_mul": cast(float, oracle.cal_defense_mul(data)),
+        "cal_res_mul": Calculator.RegularMul.cal_res_mul(data),
+        "cal_dmg_vulnerability": Calculator.RegularMul.cal_dmg_vulnerability(data),
+        "cal_stun_vulnerability": Calculator.RegularMul.cal_stun_vulnerability(data),
+        "cal_special_mul": Calculator.RegularMul.cal_special_mul(data),
+        "cal_sheer_dmg_bonus": Calculator.RegularMul.cal_sheer_dmg_bonus(data),
+    }
+
+
 def _anomaly_mul_ap_mul(data: MultiplierData) -> float:
     return cast(float, _anomaly_mul_oracle().cal_ap_mul(data))
 
@@ -4483,6 +4499,181 @@ def test_calculator_regular_mul_crit_formula_families_preserve_received_boundari
         + retained_dynamic.field_crit_dmg
     )
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+
+
+@pytest.mark.parametrize(
+    (
+        "fixture_kwargs",
+        "dynamic_attrs",
+        "enemy_stunned",
+        "enemy_stun_dmg_take_ratio",
+        "sheer_conversion",
+        "expected_values",
+        "reader_snapshot_supported",
+    ),
+    [
+        pytest.param(
+            {
+                "name": "直伤矩阵-火属性失衡",
+                "atk": 100.0,
+                "crit_rate": 0.20,
+                "crit_damage": 0.50,
+                "damage_ratio": 2.0,
+                "hit_times": 2,
+                "diff_multiplier": 0,
+                "element_type": 1,
+                "trigger_buff_level": 1,
+                "skill_labels": {"aftershock_attack": 1},
+                "enemy_max_def": 500.0,
+                "enemy_damage_resistance_attrs": {"FIRE_damage_resistance": 0.20},
+                "char_buff_count": 1,
+                "enemy_debuff_count": 1,
+                "enemy_dot_count": 0,
+            },
+            {
+                "field_atk_percentage": 0.20,
+                "atk": 10.0,
+                "extra_damage_ratio": 0.10,
+                "base_dmg_increase_percentage": 0.50,
+                "base_dmg_increase": 5.0,
+                "fire_dmg_bonus": 0.30,
+                "special_skill_dmg_bonus": 0.25,
+                "aftershock_attack_dmg_bonus": 0.15,
+                "all_dmg_bonus": 0.10,
+                "crit_rate": 0.10,
+                "field_crit_rate": 0.05,
+                "crit_rate_received_increase": 0.20,
+                "crit_dmg": 0.30,
+                "field_crit_dmg": 0.10,
+                "received_crit_dmg_bonus": 0.40,
+                "percentage_def_reduction": 0.20,
+                "def_reduction": 50.0,
+                "pen_ratio": 0.10,
+                "pen_numeric": 20.0,
+                "fire_dmg_res_decrease": 0.05,
+                "fire_res_pen_increase": 0.07,
+                "all_dmg_res_decrease": 0.03,
+                "all_res_pen_increase": 0.02,
+                "fire_vulnerability": 0.25,
+                "all_vulnerability": 0.10,
+                "stun_vulnerability_increase": 0.40,
+                "stun_vulnerability_increase_all_time": 0.15,
+                "special_multiplier_zone": 0.60,
+            },
+            True,
+            0.50,
+            None,
+            {
+                "cal_base_dmg": 219.5,
+                "cal_dmg_bonus": 1.80,
+                "cal_crit_rate": 0.55,
+                "cal_crit_dmg": 1.30,
+                "cal_defense_mul": 794.0 / (794.0 + 295.0),
+                "cal_res_mul": 0.97,
+                "cal_dmg_vulnerability": 1.35,
+                "cal_stun_vulnerability": 2.05,
+                "cal_special_mul": 1.60,
+                "cal_sheer_dmg_bonus": 1.0,
+            },
+            True,
+            id="fire-stunned-reader-snapshot",
+        ),
+        pytest.param(
+            {
+                "name": "直伤矩阵-贯穿 retained only",
+                "atk": 100.0,
+                "hp": 200.0,
+                "defense": 300.0,
+                "ap": 400.0,
+                "damage_ratio": 1.5,
+                "hit_times": 1,
+                "diff_multiplier": 4,
+                "element_type": 4,
+                "trigger_buff_level": 10,
+                "enemy_max_def": 500.0,
+                "enemy_damage_resistance_attrs": {"ETHER_damage_resistance": 0.10},
+                "char_buff_count": 1,
+                "enemy_debuff_count": 1,
+                "enemy_dot_count": 0,
+            },
+            {
+                "field_atk_percentage": 0.10,
+                "atk": 10.0,
+                "field_hp_percentage": 0.20,
+                "hp": 20.0,
+                "field_def_percentage": 0.30,
+                "defense": 30.0,
+                "field_anomaly_proficiency": 0.40,
+                "anomaly_proficiency": 40.0,
+                "ether_dmg_bonus": 0.20,
+                "all_dmg_bonus": 0.10,
+                "ether_dmg_res_decrease": 0.03,
+                "ether_res_pen_increase": 0.02,
+                "all_dmg_res_decrease": 0.01,
+                "all_res_pen_increase": 0.04,
+                "ether_vulnerability": 0.20,
+                "all_vulnerability": 0.05,
+                "stun_vulnerability_increase": 0.40,
+                "stun_vulnerability_increase_all_time": 0.15,
+                "special_multiplier_zone": 0.20,
+                "sheer_atk": 5.0,
+                "sheer_dmg_bonus": 0.45,
+            },
+            False,
+            0.50,
+            {0: 0.50, 1: 0.10, 2: 0.20, 3: 0.30},
+            {
+                "cal_base_dmg": 532.5,
+                "cal_dmg_bonus": 1.30,
+                "cal_crit_rate": 0.0,
+                "cal_crit_dmg": 0.0,
+                "cal_defense_mul": 1.0,
+                "cal_res_mul": 1.0,
+                "cal_dmg_vulnerability": 1.25,
+                "cal_stun_vulnerability": 1.15,
+                "cal_special_mul": 1.20,
+                "cal_sheer_dmg_bonus": 1.45,
+            },
+            False,
+            id="sheer-retained-only",
+        ),
+    ],
+)
+def test_calculator_regular_mul_branch_matrix_characterizes_selected_methods(
+    monkeypatch: pytest.MonkeyPatch,
+    fixture_kwargs: dict[str, Any],
+    dynamic_attrs: dict[str, float],
+    enemy_stunned: bool,
+    enemy_stun_dmg_take_ratio: float,
+    sheer_conversion: dict[int, float] | None,
+    expected_values: dict[str, float],
+    reader_snapshot_supported: bool,
+) -> None:
+    fixture = _make_attribute_read_fixture(**fixture_kwargs)
+    fixture.enemy.dynamic.stun = enemy_stunned
+    fixture.enemy.stun_DMG_take_ratio = enemy_stun_dmg_take_ratio
+    if sheer_conversion is not None:
+        fixture.char.sheer_attack_conversion_rate = sheer_conversion
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(**dynamic_attrs),
+    )
+
+    retained_data = _legacy_multiplier_data(fixture)
+    assert _regular_mul_branch_matrix_values(retained_data) == pytest.approx(
+        expected_values
+    )
+
+    if reader_snapshot_supported:
+        assert _regular_mul_branch_matrix_values(
+            _reader_snapshot_data(fixture.context)
+        ) == pytest.approx(expected_values)
+
+    _assert_aggregation_calls(
+        aggregation_calls,
+        fixture,
+        times=2 if reader_snapshot_supported else 1,
+    )
 
 
 @pytest.mark.parametrize(
