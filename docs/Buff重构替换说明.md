@@ -3743,3 +3743,15 @@
 - Next step:
   - Continue with US-007 by updating final handoff docs and same-phase candidate pools without collapsing the next-stage plan to only one narrow follow-up.
 ---
+## 2026-06-12 19:30 +08:00 - US-007
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/checkpoints/2026-06-12-us-007-final-handoff-same-phase-candidate-pool.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-007 final handoff docs and same-phase candidate pool` replaces incomplete handoff state for the current array / RegularMul PRD with long-lived checklist, next-stage plan, formula-candidate, replacement-note, checkpoint, campaign, evidence-ledger, PRD, and progress records.
+  - This story builds a documentation and handoff boundary only; it does not replace live production formula code, validation-runner wiring, dispatch/runtime ports, copied-output constructors, old containers, registered-team fixtures, listener broadcasts, or same-tick runtime writes.
+- Compatibility retained:
+  - Stun array, RegularMul arrays, and selected RegularMul branches remain characterization evidence; production proposal remains No-Go for this PRD.
+  - `Calculator.py`, `CalAnomaly.py`, `Calculator.AnomalyMul.cal_res_pen()`, AM/AP/impact helper implementation, `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, copied-output constructors, old Buff containers, validation-runner wiring, event/dispatch/runtime boundaries, registered-team behavior samples, and broad formula replacement remain retained compatibility / future candidate surfaces.
+  - `docs/旧Buff系统耦合审查结果.md` sections `6.6` through `6.9` remain current because this docs-only story did not change runtime, event, Calculator production, validation, or copied-output boundaries.
+- Next step:
+  - Generate the next Phase-3 characterization / proposal-readiness continuation PRD from the broad same-phase pool, choosing one exact candidate such as copied-output handler/report payload parity, registered-team behavior sample eligibility, a remaining `Calculator.RegularMul` / retained-only sheer follow-up, or a named `Calculator.StunMul.get_stun_array()` follow-up while preserving P2-A through P2-G guarded maintenance.
+---
