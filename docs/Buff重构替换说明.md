@@ -3901,3 +3901,40 @@
 - Next step:
   - Continue with US-006 by running retained validation gates serially; keep main-loop consistency skipped unless a later production semantic diff satisfies the registered-route sample contract.
 ---
+## 2026-06-13 15:12 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-run-retained-validation-gates-serially.md`, `scripts/ralph/checkpoints/2026-06-13-us-006-retained-validation-gates-serial.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 serial retained validation checkpoint` replaces chat-only or implicit validation confidence with focused pytest plus serial `formula-parity`, `calculator-reads`, and `implicit-events` verifier evidence.
+  - This story builds validation evidence only; it does not replace live production formula code, copied-output constructors, scheduled event handlers, dispatch/runtime ports, listener broadcasts, same-tick runtime writes, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Focused copied-output/listener/handler pytest passed with `168 passed`; `formula-parity`, `calculator-reads`, and `implicit-events` all exited `0` with scoped mypy success.
+  - Full default validation remains conditional and was not run because this slice did not change lifecycle containers, runtime write paths, or validation-runner behavior.
+  - No old-coupling review update was needed because this validation-only slice found no new Buff coupling.
+- Next step:
+  - Continue with US-007 by deciding proposal readiness and rollback anchors from the retained evidence; do not treat passing retained gates as authorization for a broad formula, copied-output, event/listener/runtime, lifecycle, registered-route, or validation-runner rewrite.
+---
+## 2026-06-13 15:21 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-decide-proposal-readiness-and-rollback-anchors.md`, `scripts/ralph/investigations/2026-06-13-US-007-proposal-readiness-rollback-anchors.md`, `scripts/ralph/checkpoints/2026-06-13-us-007-proposal-readiness-rollback-anchors.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 proposal-readiness and rollback-anchor packet` replaces implicit copied-output production-readiness assumptions with a conditional Go for a later bounded proposal package and an explicit No-Go for immediate implementation or broad `Calculator.py` / `CalAnomaly.py` rewrite.
+  - This story builds decision and rollback evidence only; it does not replace live production formula code, copied-output constructors, scheduled event handlers, dispatch/runtime ports, listener broadcasts, dot runtime registration, same-tick runtime writes, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Rollback anchors remain `CopyAnomalyForOutput.py` constructors, `UpdateAnomaly.spawn_output(...)`, anomaly/disorder/polarity/abloom handlers, focused constructor/listener/handler tests, Ralph evidence docs, and this replacement note.
+  - Listener broadcast, scheduled publish, dot runtime registration, and same-tick runtime writes remain separate retained layers.
+  - The same-phase candidate pool remains broad for US-008 handoff; copied-output proposal packaging, registered-sample eligibility, remaining RegularMul / retained-only sheer follow-up, `StunMul.get_stun_array()` / array-output follow-up, and P2-A through P2-G guarded maintenance remain separate candidate blocks when evidence supports them.
+  - No old-coupling review update was needed because this docs-only decision found no new Buff coupling.
+- Next step:
+  - Continue with US-008 final handoff docs and same-phase candidate pool; carry forward the conditional proposal readiness decision without authorizing production implementation or collapsing the candidate pool to one follow-up.
+---
+## 2026-06-13 15:38 +08:00 - US-008
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-final-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/checkpoints/2026-06-13-us-008-final-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-008 final handoff docs and same-phase candidate pool` replaces implicit next-PRD routing with a durable copied-output bounded proposal default plus a broad same-phase candidate pool.
+  - This story builds handoff and proposal-routing evidence only; it does not replace live production formula code, copied-output constructors, scheduled event handlers, dispatch/runtime ports, listener broadcasts, dot runtime registration, same-tick runtime writes, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Next default PRD is proposal-only for copied-output handler/report parity; immediate implementation, broad `Calculator.py` / `CalAnomaly.py` rewrite, validation-runner rewrite, validation-only registered teams, and retained compatibility deletion remain No-Go.
+  - Same-phase candidates remain available: registered behavior sample eligibility, remaining `Calculator.RegularMul` / retained-only sheer follow-up, `Calculator.StunMul.get_stun_array()` / array-output follow-up, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules.
+  - No old-coupling review update was needed because this docs-only handoff found no new Buff coupling beyond already documented copied-output, formula snapshot, event/runtime, guarded-maintenance, and retained compatibility boundaries.
+- Next step:
+  - Generate the copied-output handler/report bounded proposal package from the default route in `docs/Buff重构下阶段计划草稿.md`; after that proposal, reselect from the same-phase pool instead of auto-collapsing to one implementation path.
+---

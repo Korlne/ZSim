@@ -1,6 +1,6 @@
 # Buff公式候选与测试目标清单
 
-更新时间：2026-06-12 23:47 +08:00
+更新时间：2026-06-13 16:00 +08:00
 
 本清单服务于 Phase 3 公式等价测试设计。当前故事只建立候选面和测试目标证据，不替换 `Calculator.py`、`CalAnomaly.py`、复制异常 / 紊乱输出公式，也不改变 `ScheduleDispatchPort`、`RuntimeCommandPort` 或旧容器兼容路径。
 
@@ -209,6 +209,34 @@ Remaining same-phase candidates：
 | P2-A through P2-G guarded maintenance | Completed guarded buckets. | Reopen only on concrete guardrail / focused test / validation evidence naming the failed file, symbol, or gate. |
 
 Next default PRD：Phase-3 characterization / proposal-readiness continuation。Pick one exact remaining candidate from the table above; do not promote `RegularMul` sheer conversion to production proposal without a real registered-route sample and an architecture-approved reader-contract plan.
+
+## Current copied-output PRD US-008 final handoff
+
+结论：Conditional Go for later bounded proposal package only。当前 copied-output PRD 已完成 constructor field matrix、`UpdateAnomaly.spawn_output(...)` listener boundary、anomaly / disorder / polarity / abloom handler report payload parity、registered behavior sample eligibility、serial retained gates 和 rollback-anchor decision；这些证据允许下一 PRD 写 bounded proposal contract，但不授权立即 production implementation、broad `Calculator.py` / `CalAnomaly.py` rewrite、validation-runner rewrite、registered-team fixture creation 或 retained compatibility 删除。
+
+US-008 verifier evidence：
+
+- `uv run pytest tests/simulator/test_buff_attribute_reader.py tests/simulator/test_update_anomaly_dispatch.py tests/simulator/test_anomaly_handler_runtime_view.py -q` exited `0` with `168 passed`。
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events` exited `0`：base simulator `2 passed`、isolated teams `3 passed`、focused implicit-event suite `246 passed`、scoped mypy `Success: no issues found in 88 source files`，并打印 `[验证完成] 所有步骤通过`。
+- JSON sanity passed for Ralph controller files；UTF-8 / mojibake scan passed for edited Chinese Markdown docs。
+- A raw ad hoc mypy command that included focused test files exposed existing test-fixture typing debt and is not retained as the story gate；the scoped `implicit-events` profile above is the established Buff typecheck/profile gate for this boundary。
+
+Retained gates and compatibility retained：
+
+- Retained gates：proposal / docs-only story 至少保留 JSON sanity、focused typecheck 或 active-story typecheck gate、UTF-8 / mojibake scan；future copied-output source diff 追加 `implicit-events`；future formula / reader diff 继续串行保留 `formula-parity` 与 `calculator-reads`；future live semantic diff 只有真实 registered route 且 nonzero relevant event count 时才追加 main-loop consistency。
+- Compatibility retained：`CopyAnomalyForOutput.py` constructors、`UpdateAnomaly.spawn_output(...)`、anomaly / disorder / polarity / abloom handlers、listener broadcast、scheduled publish、dot runtime registration、same-tick runtime writes、`ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`LegacyBuffRuntimeFacade`、old containers、legacy `buff_add()` / `KickOutBuff()`、`Calculator.py` / `CalAnomaly.py` retained formula snapshots、`MultiplierData` / `MulData` / `DynamicStatement`、`AnomalyBar.current_ndarray`、AM/AP/impact and `cal_res_pen()` bounded implementations, array / RegularMul / sheer characterization evidence all remain retained.
+
+Same-phase candidate pool：
+
+| Candidate / boundary | Current status | Next rule |
+| --- | --- | --- |
+| Copied-output bounded proposal package | Conditional Go for proposal only. | Next default PRD may write exact touched files / symbols, focused tests, scoped mypy, retained gates, registered-sample condition, rollback plan and non-goals; it must not implement production diff by default. |
+| Registered-team behavior sample eligibility | Policy codified; no validation-only team created. | Use a real registered route only for future production semantic diff and require nonzero copied-output / anomaly event count before using the sample as evidence. |
+| `Calculator.RegularMul` remaining branches / retained-only sheer follow-up | Characterization / retained oracle evidence remains No-Go for production proposal. | Reopen only for a named branch or sheer contract gap with deterministic oracle, rollback anchors and registered-sample conditions. |
+| `Calculator.StunMul.get_stun_array()` follow-up | Array contract characterized; no production replacement authorization. | Reopen only for a named array-output follow-up, focused regression or proposal-readiness packet. |
+| P2-A through P2-G guarded maintenance | Completed guarded buckets. | Reopen only on concrete guardrail / focused test / validation evidence naming the failed file, symbol or gate. |
+
+Next default PRD：write the copied-output handler/report bounded proposal package first. After that proposal is complete, reselect from the same-phase pool instead of automatically collapsing into one copied-output implementation path.
 
 ## Current US-007 AM/AP/impact proposal Go / No-Go
 
