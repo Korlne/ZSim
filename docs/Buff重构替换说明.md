@@ -3889,3 +3889,15 @@
 - Next step:
   - Continue with US-005 by codifying registered behavior sample eligibility; do not run main-loop consistency or create validation-only teams unless a real registered route with relevant nonzero copied-output/anomaly events is found.
 ---
+## 2026-06-13 14:45 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-codify-registered-behavior-sample-eligibility.md`, `scripts/ralph/investigations/2026-06-13-US-005-registered-behavior-sample-eligibility.md`, `scripts/ralph/checkpoints/2026-06-13-us-005-registered-behavior-sample-eligibility.md`, `scripts/ralph/plans/slices/us-006-run-retained-validation-gates-serially.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 registered behavior sample eligibility packet` replaces implicit main-loop sample assumptions with a documented conditional gate for real registered routes, nonzero copied-output/anomaly event counts, matching total damage, unchanged buff timelines, and live production semantic diffs.
+  - This story builds an evidence and verifier-policy boundary only; it does not replace live production formula code, copied-output constructors, scheduled event handlers, dispatch/runtime ports, listener broadcasts, same-tick runtime writes, validation-runner wiring, registered teams/APLs, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Current registered teams remain `青衣雷属性队`, `席德大安比队`, `莱特火属性队`, and `薇薇安物理队`; `薇薇安物理队` is the only current anomaly/copied-output route candidate, but no main-loop consistency sample is retained for this docs-only story because there is no live production semantic diff and no JSON report with nonzero relevant counts.
+  - Future production semantic diffs must use a real registered route and include team, APL, stop tick, matching total damage, relevant nonzero event count, and unchanged buff timeline differences; validation-only teams remain forbidden.
+  - No old-coupling review update was needed because this evidence-only slice found no new Buff coupling.
+- Next step:
+  - Continue with US-006 by running retained validation gates serially; keep main-loop consistency skipped unless a later production semantic diff satisfies the registered-route sample contract.
+---
