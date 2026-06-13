@@ -4035,3 +4035,15 @@
 - Next step:
   - Generate the bounded copied-output handler/report implementation PRD only if it carries exact touched files/symbols, focused tests, scoped mypy targets, retained gates, registered-sample conditions, rollback anchors, stop conditions, and non-goals; after that implementation completes, reselect from the broad same-phase pool.
 ---
+## 2026-06-14 06:24 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-lock-implementation-scope-and-diff-contract.md`, `scripts/ralph/investigations/2026-06-14-US-001-implementation-scope-diff-contract.md`, `scripts/ralph/plans/slices/us-002-implement-copied-payload-constructor-boundary.md`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 implementation scope and diff contract` prepares to replace implicit implementation-scope assumptions with an explicit copied-payload / handler-report boundary, rollback tests, stop conditions, and reviewer questions.
+  - This story builds boundary evidence only; it does not replace live production constructors, `UpdateAnomaly.py`, anomaly-family handlers, formula code, validation-runner wiring, registered teams/APLs, dispatch/runtime ports, listener manager implementation, dot runtime adapter implementation, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Later implementation is limited to `_CopiedAnomalyBase`, `NewAnomaly`, `Disorder`, `PolarityDisorder`, `DirgeOfDestinyAnomaly`, `spawn_output(...)`, optional `UpdateAnomaly.update_anomaly(...)` order assertions only, and anomaly/disorder/polarity/abloom handler report payload boundaries.
+  - `Calculator.py`, `CalAnomaly.py`, validation-runner wiring, registered teams/APLs, old Buff containers, dispatch/runtime port implementations, listener manager implementation, dot runtime adapter implementation, lifecycle containers, and retained compatibility deletion remain stop conditions.
+  - `implicit-events` validation/typecheck passed; JSON sanity and edited Markdown/progress UTF-8 / mojibake scans passed. No old-coupling review update was needed because no new Buff coupling was discovered.
+- Next step:
+  - Controller refresh moved the active durable slice to US-002. Continue by implementing copied-payload constructor boundary work only inside `CopyAnomalyForOutput.py`; record implementation No-Go if the diff crosses any US-001 stop condition.
+---
