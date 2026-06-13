@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+import zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput as copied_output_module
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 from zsim.sim_progress.Dot.BaseDot import Dot
 from zsim.sim_progress.Dot.runtime_state import DotRuntimeStateAdapter
@@ -518,6 +519,47 @@ def test_update_anomaly_publishes_new_anomaly_via_dispatch_port_without_raw_queu
     assert not hasattr(published, "execute_tick")
 
 
+def test_update_anomaly_uses_current_schedule_queue_after_event_list_rebind():
+    legacy_event_list = _FailFastEventList()
+    first_queue = _RecordingEventList()
+    sim_instance = _build_sim_instance(first_queue)
+    skill_node = _build_skill_node(element_type=1)
+    chars = [SimpleNamespace(special_resources=lambda *args, **kwargs: None)]
+
+    first_enemy = _build_enemy(sim_instance)
+    first_enemy.anomaly_bars_dict[1] = _build_anomaly_bar(sim_instance, element_type=1)
+    update_anomaly(
+        1,
+        first_enemy,
+        10,
+        legacy_event_list,
+        chars,
+        sim_instance,
+        skill_node,
+        {"alpha": [], "enemy": []},
+    )
+
+    second_queue = _RecordingEventList()
+    sim_instance.schedule_data.event_list = second_queue
+    second_enemy = _build_enemy(sim_instance)
+    second_enemy.anomaly_bars_dict[1] = _build_anomaly_bar(sim_instance, element_type=1)
+    update_anomaly(
+        1,
+        second_enemy,
+        20,
+        legacy_event_list,
+        chars,
+        sim_instance,
+        skill_node,
+        {"alpha": [], "enemy": []},
+    )
+
+    assert len(first_queue) == 1
+    assert len(second_queue) == 1
+    assert first_queue[0] is not second_queue[0]
+    assert second_queue[0].sim_instance is sim_instance
+
+
 def test_update_anomaly_preserves_new_anomaly_then_disorder_order_via_dispatch_port():
     call_order: list[tuple[str, object]] = []
     legacy_event_list = _FailFastEventList()
@@ -848,6 +890,29 @@ def test_anomaly_effect_active_does_not_introduce_runtime_write_ports():
         "sync_enemy_debuff_mirror",
     }
     assert write_method_names.isdisjoint(BuffRuntimeReadPort.__dict__)
+
+
+def test_copied_output_constructors_keep_publish_dot_and_debuff_layers_external():
+    source = inspect.getsource(copied_output_module)
+    forbidden_terms = {
+        "ScheduleDispatchPort",
+        "create_schedule_dispatch_port",
+        "publish_scheduled",
+        "_publish_scheduled_event",
+        "DotRuntimeStateAdapter",
+        "spawn_anomaly_dot",
+        "buff_add_strategy",
+        "RuntimeCommandPort",
+        "create_runtime_command_port",
+        "settle_buffs",
+        "report_dmg_result",
+    }
+
+    for term in forbidden_terms:
+        assert term not in source
+    assert "_copy_source_payload" in source
+    assert "_install_copied_payload" in source
+    assert "_apply_explicit_overrides" in source
 
 
 @pytest.mark.parametrize("dot_index", ["Freez", "Freezdot"])

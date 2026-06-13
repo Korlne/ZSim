@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 from types import SimpleNamespace
 from typing import Any
 
@@ -522,6 +523,31 @@ def test_copied_anomaly_handler_reports_payload_fields_separate_from_settle_port
     assert runtime_view.active_view_calls == 1
     assert runtime_view.legacy_dynamic_calls == 0
     assert runtime_view.legacy_exist_calls == 0
+
+
+def test_handler_report_layers_do_not_publish_dot_or_debuff():
+    handler_modules = {
+        "anomaly": anomaly_module,
+        "disorder": disorder_module,
+        "polarity_disorder": polarity_disorder_module,
+        "abloom": abloom_module,
+    }
+    forbidden_terms = {
+        "ScheduleDispatchPort",
+        "create_schedule_dispatch_port",
+        "publish_scheduled",
+        "_publish_scheduled_event",
+        "DotRuntimeStateAdapter",
+        "spawn_anomaly_dot",
+        "buff_add_strategy",
+        "create_runtime_command_port",
+        "update_anomaly(",
+    }
+
+    for name, module in handler_modules.items():
+        source = inspect.getsource(module)
+        for term in forbidden_terms:
+            assert term not in source, f"{name} handler absorbed {term}"
 
 
 def test_abloom_copied_output_handler_reports_payload_fields(

@@ -4071,3 +4071,16 @@
 - Next step:
   - Continue with US-004 by preserving scheduled publish, dot runtime, and debuff layers without moving those responsibilities into copied-output construction.
 ---
+## 2026-06-14 07:15 +08:00 - US-004
+- Files changed: `tests/simulator/test_update_anomaly_dispatch.py`, `tests/simulator/test_anomaly_handler_runtime_view.py`, `scripts/ralph/plans/slices/us-004-preserve-scheduled-publish-dot-runtime-and-debuff-layers.md`, `scripts/ralph/investigations/2026-06-14-US-004-layer-preservation-boundaries.md`, `scripts/ralph/checkpoints/2026-06-14-us-004-layer-preservation-boundaries.md`, `scripts/ralph/plans/slices/us-005-implement-handler-report-payload-boundary.md`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 layer-preservation anchors` replace implicit reviewer confidence with focused tests for fresh scheduled dispatch creation, copied-output constructor side-effect boundaries, and handler report layer separation.
+  - This story adds characterization tests and Ralph/Buff evidence only; it does not replace live production `UpdateAnomaly.py`, copied-output constructors, anomaly-family handlers, formulas, dispatch/runtime port implementations, listener manager implementation, dot runtime adapters, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - `UpdateAnomaly.update_anomaly(...)` still creates a fresh `ScheduleDispatchPort` from the current `sim_instance`; `_publish_scheduled_event(...)` / `ScheduleDispatchPort.publish_scheduled(...)` still own scheduled publish.
+  - Dot registration/removal remains in `anomaly_effect_active(...)`, `remove_dots_cause_disorder(...)`, and `DotRuntimeStateAdapter`; accompanying debuff writes remain on `buff_add_strategy(...)`.
+  - Handler report modules and copied-output constructors remain guarded from scheduled publish, dot runtime, debuff-write, direct `update_anomaly(...)`, and parallel runtime-write responsibilities.
+  - Focused layer anchors and `implicit-events` validation/typecheck passed. No old-coupling review update was needed because no new Buff coupling was discovered.
+- Next step:
+  - Continue with US-005 handler report payload boundary implementation while preserving the US-004 source guards and the separation between scheduled publish, listener broadcast, dot runtime, debuff writes, and same-tick runtime writes.
+---
