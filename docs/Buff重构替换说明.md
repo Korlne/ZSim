@@ -3938,3 +3938,15 @@
 - Next step:
   - Generate the copied-output handler/report bounded proposal package from the default route in `docs/Buff重构下阶段计划草稿.md`; after that proposal, reselect from the same-phase pool instead of auto-collapsing to one implementation path.
 ---
+## 2026-06-14 00:12 +08:00 - US-001
+- Files changed: `tasks/prd-buff-refactor-phase3-copied-payload-handler-report-bounded-proposal.md`, `scripts/ralph/plans/slices/us-001-reconfirm-proposal-scope-and-prior-evidence.md`, `scripts/ralph/investigations/2026-06-14-US-001-proposal-scope-evidence.md`, `scripts/ralph/checkpoints/2026-06-14-us-001-proposal-scope-evidence.md`, `scripts/ralph/plans/slices/us-002-define-copied-output-constructor-proposal-contract.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 proposal scope evidence packet` replaces stale or chat-only bounded-proposal scope assumptions with an excluded root scan, exact candidate source inventory, retained evidence targets, checkpoint, evidence-ledger, PRD, progress, and refreshed next-slice controller state.
+  - This story builds a proposal-scope evidence boundary only; it does not replace a live production formula path, copied-output constructor, `UpdateAnomaly.py` path, scheduled handler, dispatch/runtime port, listener broadcast, dot runtime registration, same-tick runtime write, validation-runner path, registered team, old Buff container, or retained compatibility path.
+- Compatibility retained:
+  - Root proposal candidates are limited to `CopyAnomalyForOutput.py`, `UpdateAnomaly.py`, and the root anomaly/disorder/polarity-disorder/abloom handlers; old `.codex_worktrees/`, archives, logs, generated output, and run output remain excluded from authoritative proposal inventory.
+  - P2-A through P2-G remain guarded maintenance only and are not part of this default proposal.
+  - Immediate production implementation remains out of scope; no old-coupling review update was needed because this docs-only evidence slice found no new Buff coupling.
+- Next step:
+  - Continue with US-002 by defining the copied-output constructor proposal contract for `NewAnomaly`, `Disorder`, `PolarityDisorder`, and `DirgeOfDestinyAnomaly` without editing production constructors or broadening into implementation.
+---
