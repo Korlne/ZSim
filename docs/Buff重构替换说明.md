@@ -3950,3 +3950,15 @@
 - Next step:
   - Continue with US-002 by defining the copied-output constructor proposal contract for `NewAnomaly`, `Disorder`, `PolarityDisorder`, and `DirgeOfDestinyAnomaly` without editing production constructors or broadening into implementation.
 ---
+## 2026-06-14 00:25 +08:00 - US-002
+- Files changed: `scripts/ralph/plans/slices/us-002-define-copied-output-constructor-proposal-contract.md`, `scripts/ralph/investigations/2026-06-14-US-002-copied-output-constructor-proposal-contract.md`, `scripts/ralph/checkpoints/2026-06-14-us-002-copied-output-constructor-proposal-contract.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 copied-output constructor proposal contract` replaces implicit constructor-scope assumptions with an explicit field-category contract for `_CopiedAnomalyBase`, `NewAnomaly`, `Disorder`, `PolarityDisorder`, and `DirgeOfDestinyAnomaly`.
+  - This story builds proposal and rollback evidence only; it does not replace live production constructor code, formulas, event handlers, scheduled publish paths, listener broadcasts, dot runtime registration, same-tick runtime writes, validation-runner wiring, registered teams/APLs, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - `CopyAnomalyForOutput.py` remains unchanged. Copied payload construction remains separate from scheduled publish, listener broadcast, dot registration, and Buff runtime writes.
+  - Rollback anchors now require focused constructor/listener/handler/abloom test failure before any later constructor rollback is justified.
+  - No old-coupling review update was needed because this docs-only proposal contract found no new Buff coupling.
+- Next step:
+  - Continue with US-003 by defining the `UpdateAnomaly.spawn_output(...)` and publish-layer proposal contract without editing production `UpdateAnomaly.py` or merging constructor, listener, scheduled publish, dot runtime, and same-tick runtime-write layers.
+---
