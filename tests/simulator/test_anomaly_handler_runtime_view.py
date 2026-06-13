@@ -124,6 +124,171 @@ def _build_activation(skill_tag: str = "1001_HANDLER_PAYLOAD"):
     )
 
 
+_HANDLER_REPORT_PARITY_CASES: tuple[dict[str, Any], ...] = (
+    {
+        "case_id": "anomaly",
+        "module": anomaly_module,
+        "handler_cls": AnomalyEventHandler,
+        "event_kind": "anomaly",
+        "calculator_name": "CalAnomaly",
+        "calculator_event_kw": "anomaly_obj",
+        "element_type": 4,
+        "rename_tag": "copied-anomaly-report",
+        "accompany_dot": "Shock",
+        "anomaly_dmg_ratio": 2.15,
+        "uuid": "new-anomaly-report-uuid",
+        "damage": 12.346,
+        "report_has_skill_tag": True,
+        "report_skill_tag": "copied-anomaly-report",
+        "report_has_is_disorder": False,
+        "report_stun": 0,
+        "broadcast_signal": None,
+        "stun_update": None,
+        "settles_buffs": True,
+        "copied_payload_fields": (
+            "element_type",
+            "rename_tag",
+            "accompany_dot",
+            "anomaly_dmg_ratio",
+            "max_duration",
+            "last_active",
+            "UUID",
+        ),
+    },
+    {
+        "case_id": "disorder",
+        "module": disorder_module,
+        "handler_cls": DisorderEventHandler,
+        "event_kind": "disorder",
+        "calculator_name": "CalDisorder",
+        "calculator_event_kw": "disorder_obj",
+        "element_type": 3,
+        "rename_tag": "copied-disorder-report",
+        "accompany_dot": "Shock",
+        "anomaly_dmg_ratio": 2.25,
+        "uuid": "disorder-report-uuid",
+        "damage": 23.456,
+        "report_has_skill_tag": False,
+        "report_has_is_disorder": True,
+        "report_stun": 6.79,
+        "broadcast_signal": LBS.DISORDER_SETTLED,
+        "stun_update": 6.789,
+        "settles_buffs": False,
+        "copied_payload_fields": (
+            "element_type",
+            "rename_tag",
+            "accompany_dot",
+            "anomaly_dmg_ratio",
+            "max_duration",
+            "last_active",
+            "UUID",
+        ),
+    },
+    {
+        "case_id": "polarity-disorder",
+        "module": polarity_disorder_module,
+        "handler_cls": PolarityDisorderEventHandler,
+        "event_kind": "polarity_disorder",
+        "calculator_name": "CalPolarityDisorder",
+        "calculator_event_kw": "disorder_obj",
+        "element_type": 6,
+        "rename_tag": "copied-polarity-report",
+        "accompany_dot": "AuricInk",
+        "anomaly_dmg_ratio": 2.35,
+        "uuid": "polarity-report-uuid",
+        "damage": 34.567,
+        "report_has_skill_tag": True,
+        "report_skill_tag": "极性紊乱",
+        "report_has_is_disorder": True,
+        "report_stun": 0,
+        "broadcast_signal": LBS.DISORDER_SETTLED,
+        "stun_update": None,
+        "settles_buffs": False,
+        "polarity_disorder_ratio": 1.6,
+        "additional_dmg_ap_ratio": 32,
+        "copied_payload_fields": (
+            "element_type",
+            "rename_tag",
+            "accompany_dot",
+            "anomaly_dmg_ratio",
+            "max_duration",
+            "last_active",
+            "UUID",
+            "polarity_disorder_ratio",
+            "additional_dmg_ap_ratio",
+        ),
+    },
+    {
+        "case_id": "abloom",
+        "module": abloom_module,
+        "handler_cls": AbloomEventHandler,
+        "event_kind": "abloom",
+        "calculator_name": "CalAbloom",
+        "calculator_event_kw": "abloom_obj",
+        "element_type": 1,
+        "rename_tag": "copied-abloom-report",
+        "accompany_dot": "Corruption",
+        "anomaly_dmg_ratio": 1.3,
+        "uuid": "abloom-report-uuid",
+        "damage": 45.678,
+        "report_has_skill_tag": True,
+        "report_skill_tag": "异放",
+        "report_has_is_disorder": False,
+        "report_stun": 0,
+        "broadcast_signal": None,
+        "stun_update": None,
+        "settles_buffs": False,
+        "copied_payload_fields": (
+            "element_type",
+            "rename_tag",
+            "accompany_dot",
+            "anomaly_dmg_ratio",
+            "max_duration",
+            "last_active",
+            "UUID",
+        ),
+    },
+)
+
+
+def _build_handler_report_event(case: dict[str, Any], sim_instance: Any):
+    source = _build_copied_output_source(
+        sim_instance,
+        element_type=case["element_type"],
+        rename_tag=case["rename_tag"],
+    )
+    source.accompany_dot = case["accompany_dot"]
+    source.anomaly_dmg_ratio = case["anomaly_dmg_ratio"]
+    source.max_duration = 620
+    source.last_active = 140
+    activation = _build_activation(f"1001_{case['case_id'].upper()}")
+    event_kind = case["event_kind"]
+    if event_kind == "anomaly":
+        event = NewAnomaly(source, active_by=activation, sim_instance=sim_instance)
+    elif event_kind == "disorder":
+        event = Disorder(source, active_by=activation, sim_instance=sim_instance)
+    elif event_kind == "polarity_disorder":
+        event = PolarityDisorder(
+            source,
+            case["polarity_disorder_ratio"],
+            active_by=activation,
+            sim_instance=sim_instance,
+        )
+    elif event_kind == "abloom":
+        event = DirgeOfDestinyAnomaly(
+            source,
+            active_by=activation,
+            sim_instance=sim_instance,
+        )
+    else:
+        raise AssertionError(f"Unknown handler report event kind: {event_kind}")
+    event.UUID = case["uuid"]
+    event.rename_tag = case["rename_tag"]
+    event.accompany_dot = case["accompany_dot"]
+    event.anomaly_dmg_ratio = case["anomaly_dmg_ratio"]
+    return event
+
+
 class _DurationBuffProbe:
     def __init__(
         self,
@@ -535,6 +700,130 @@ def test_polarity_disorder_handler_reports_payload_and_listener_fields(
     assert broadcasts == [{"event": event, "signal": LBS.DISORDER_SETTLED}]
     assert captured["calculator_event"] is event
     assert captured["dynamic_buff"] is runtime_view.active_buff_view
+    assert runtime_view.active_view_calls == 1
+    assert runtime_view.legacy_dynamic_calls == 0
+    assert runtime_view.legacy_exist_calls == 0
+
+
+@pytest.mark.parametrize(
+    "case",
+    _HANDLER_REPORT_PARITY_CASES,
+    ids=lambda case: case["case_id"],
+)
+def test_copied_output_handler_report_payload_fields_match_retained_contracts(
+    monkeypatch: pytest.MonkeyPatch,
+    case: dict[str, Any],
+):
+    runtime_view = _RuntimeViewProbe(
+        {"alpha": [object()], "enemy": [object()]}, {}, allow_legacy=False
+    )
+    captured: dict[str, Any] = {"settle_calls": []}
+    reports: list[dict[str, Any]] = []
+
+    class _RuntimeCommandPortProbe:
+        def update_anomaly(self, **kwargs) -> None:
+            raise AssertionError("handler report parity should not update anomaly state")
+
+        def settle_buffs(self, **kwargs) -> None:
+            captured["settle_calls"].append(kwargs)
+
+    context, broadcasts = _build_context(
+        runtime_view,
+        runtime_command_port=_RuntimeCommandPortProbe(),
+    )
+    context.enemy.dynamic.get_status = lambda: {"enemy_status": case["case_id"]}
+    event = _build_handler_report_event(case, context.sim_instance)
+    calculator_calls: list[dict[str, Any]] = []
+
+    class _FakeCalculator:
+        def __init__(self, **kwargs) -> None:
+            calculator_calls.append(kwargs)
+
+        def cal_anomaly_dmg(self):
+            return case["damage"]
+
+        def cal_disorder_stun(self):
+            return case.get("stun_update", 0)
+
+    monkeypatch.setattr(case["module"], case["calculator_name"], _FakeCalculator)
+    monkeypatch.setattr(
+        case["module"].Report,
+        "report_dmg_result",
+        lambda **kwargs: reports.append(kwargs),
+    )
+
+    case["handler_cls"]().handle(event, context)
+
+    copied_payload = {
+        field_name: getattr(event, field_name)
+        for field_name in case["copied_payload_fields"]
+    }
+    expected_copied_payload = {
+        "element_type": case["element_type"],
+        "rename_tag": case["rename_tag"],
+        "accompany_dot": case["accompany_dot"],
+        "anomaly_dmg_ratio": case["anomaly_dmg_ratio"],
+        "max_duration": 620,
+        "last_active": 140,
+        "UUID": case["uuid"],
+    }
+    if case["event_kind"] == "polarity_disorder":
+        expected_copied_payload.update(
+            {
+                "polarity_disorder_ratio": case["polarity_disorder_ratio"],
+                "additional_dmg_ap_ratio": case["additional_dmg_ap_ratio"],
+            }
+        )
+    assert copied_payload == expected_copied_payload
+
+    assert len(calculator_calls) == 1
+    calculator_call = calculator_calls[0]
+    assert calculator_call[case["calculator_event_kw"]] is event
+    assert calculator_call["enemy_obj"] is context.enemy
+    assert calculator_call["dynamic_buff"] is runtime_view.active_buff_view
+    assert calculator_call["sim_instance"] is context.sim_instance
+
+    expected_report = {
+        "tick": 10,
+        "element_type": case["element_type"],
+        "dmg_expect": round(case["damage"], 2),
+        "is_anomaly": True,
+        "dmg_crit": round(case["damage"], 2),
+        "stun": case["report_stun"],
+        "buildup": 0,
+        "enemy_status": case["case_id"],
+        "UUID": case["uuid"],
+    }
+    if case["report_has_skill_tag"]:
+        expected_report["skill_tag"] = case["report_skill_tag"]
+    if case["report_has_is_disorder"]:
+        expected_report["is_disorder"] = True
+    assert reports == [expected_report]
+
+    listener_broadcasts = [entry for entry in broadcasts if "signal" in entry]
+    if case["broadcast_signal"] is None:
+        assert listener_broadcasts == []
+    else:
+        assert listener_broadcasts == [
+            {"event": event, "signal": case["broadcast_signal"]}
+        ]
+    stun_updates = [entry for entry in broadcasts if "stun" in entry]
+    if case["stun_update"] is None:
+        assert stun_updates == []
+    else:
+        assert stun_updates == [{"stun": pytest.approx(case["stun_update"])}]
+
+    settle_calls = captured["settle_calls"]
+    if case["settles_buffs"]:
+        assert settle_calls == [
+            {
+                "tick": 10,
+                "enemy": context.enemy,
+                "anomaly_bar": event,
+            }
+        ]
+    else:
+        assert settle_calls == []
     assert runtime_view.active_view_calls == 1
     assert runtime_view.legacy_dynamic_calls == 0
     assert runtime_view.legacy_exist_calls == 0

@@ -404,6 +404,43 @@ def test_spawn_output_disorder_modes_broadcast_listener_payload_without_publish(
     assert call_order == [("broadcast", LBS.DISORDER_SPAWN)]
 
 
+def test_spawn_output_mode_two_requires_polarity_ratio_without_side_effects():
+    call_order: list[tuple[str, object]] = []
+    broadcast_events: list[tuple[object, object]] = []
+    recording_queue = _RecordingEventList(call_order)
+    sim_instance = _build_sim_instance(recording_queue)
+    sim_instance.load_data = SimpleNamespace(
+        LOADING_BUFF_DICT={"enemy": _FailFastPendingBuffQueue()}
+    )
+
+    def record_broadcast(*, event: object, signal: object) -> None:
+        call_order.append(("broadcast", signal))
+        broadcast_events.append((event, signal))
+
+    sim_instance.listener_manager = SimpleNamespace(broadcast_event=record_broadcast)
+    source_bar = _build_spawn_output_source_bar(
+        sim_instance,
+        element_type=3,
+        settled=False,
+    )
+    source_snapshot = source_bar.current_ndarray.copy()
+
+    with pytest.raises(ValueError, match="polarity_ratio"):
+        spawn_output(
+            source_bar,
+            2,
+            sim_instance=sim_instance,
+            skill_node=_build_skill_node(element_type=3),
+        )
+
+    assert source_bar.settled is False
+    assert source_bar.current_effective_anomaly == np.float64(0)
+    np.testing.assert_allclose(source_bar.current_ndarray, source_snapshot)
+    assert recording_queue == []
+    assert broadcast_events == []
+    assert call_order == []
+
+
 def test_update_anomaly_publishes_new_anomaly_via_dispatch_port_without_raw_queue_append():
     call_order: list[tuple[str, object]] = []
     legacy_event_list = _FailFastEventList()

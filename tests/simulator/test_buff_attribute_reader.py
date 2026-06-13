@@ -161,6 +161,32 @@ class _CopiedOutputPayloadCase:
     polarity_ratio: float | None = None
 
 
+_COPIED_OUTPUT_FORMULA_INPUT_FIELDS = (
+    "current_ndarray",
+    "element_type",
+    "scaling_factor",
+)
+_COPIED_OUTPUT_EFFECTIVE_ANOMALY_FIELDS = (
+    "current_effective_anomaly",
+    "current_anomaly",
+    "settled",
+)
+_COPIED_OUTPUT_DURATION_FIELDS = (
+    "max_duration",
+    "last_active",
+    "remaining_tick",
+)
+_COPIED_OUTPUT_LISTENER_REPORT_PAYLOAD_ONLY_FIELDS = (
+    "rename_tag",
+    "accompany_dot",
+    "anomaly_dmg_ratio",
+)
+_COPIED_OUTPUT_POLARITY_ONLY_FIELDS = (
+    "polarity_disorder_ratio",
+    "additional_dmg_ap_ratio",
+)
+
+
 @dataclass(frozen=True)
 class _CalAnomalyMultiplierOracleCase:
     case_id: str
@@ -806,6 +832,15 @@ def _copy_output_from_payload_case(
     fixture: _AnomalyFormulaFixture,
 ) -> tuple[Any, SimpleNamespace]:
     runtime_sim = SimpleNamespace(tick=case.runtime_tick)
+    if case.copied_kind == "new_anomaly":
+        return (
+            NewAnomaly(
+                cast(Any, fixture.anomaly_bar),
+                active_by=cast(Any, fixture.activation),
+                sim_instance=cast(Any, runtime_sim),
+            ),
+            runtime_sim,
+        )
     if case.copied_kind == "polarity_disorder":
         assert case.polarity_ratio is not None
         return (
@@ -2395,6 +2430,36 @@ _CAL_ANOMALY_LEVEL_CLAMP_ORACLE_CASES = (
 
 _COPIED_OUTPUT_PAYLOAD_CASES = (
     _CopiedOutputPayloadCase(
+        case_id="new-anomaly-payload-fields",
+        snapshot_case=_AnomalySnapshotOracleCase(
+            case_id="new-anomaly-source-snapshot",
+            snapshot_values=(
+                266.0,
+                1.45,
+                5.0,
+                80.0,
+                1.90,
+                0.25,
+                0.18,
+                12.0,
+                0.27,
+                1.52,
+                1.86,
+            ),
+            scaling_factor=1.40,
+        ),
+        copied_kind="new_anomaly",
+        runtime_tick=410,
+        payload_fields={
+            "element_type": 4,
+            "accompany_dot": "Corruption",
+            "anomaly_dmg_ratio": 2.15,
+            "max_duration": 540,
+            "last_active": 250,
+            "rename_tag": "new-anomaly-payload",
+        },
+    ),
+    _CopiedOutputPayloadCase(
         case_id="disorder-payload-fields",
         snapshot_case=_AnomalySnapshotOracleCase(
             case_id="disorder-source-snapshot",
@@ -3700,7 +3765,7 @@ def test_anomaly_formula_fixture_copies_snapshot_inputs_for_copied_output(
     _COPIED_OUTPUT_PAYLOAD_CASES,
     ids=lambda case: case.case_id,
 )
-def test_disorder_copied_output_preserves_formula_inputs_and_payload_fields(
+def test_copied_payload_constructors_preserve_formula_inputs_and_payload_fields(
     case: _CopiedOutputPayloadCase,
 ) -> None:
     fixture = _make_anomaly_formula_fixture_from_case(case.snapshot_case)
@@ -3710,54 +3775,109 @@ def test_disorder_copied_output_preserves_formula_inputs_and_payload_fields(
     copied, runtime_sim = _copy_output_from_payload_case(case, fixture)
 
     assert copied is not source_bar
-    if case.copied_kind == "polarity_disorder":
-        assert isinstance(copied, PolarityDisorder)
+    if case.copied_kind == "new_anomaly":
+        assert type(copied) is NewAnomaly
+        assert copied.is_disorder is False
+    elif case.copied_kind == "polarity_disorder":
+        assert type(copied) is PolarityDisorder
+        assert copied.is_disorder is True
     else:
         assert type(copied) is Disorder
+        assert copied.is_disorder is True
     assert copied.sim_instance is runtime_sim
     assert copied.activated_by is fixture.activation
     assert copied.activate_by is fixture.activation
-    assert copied.is_disorder is True
     assert copied.settled is True
-    assert copied.element_type == case.payload_fields["element_type"]
-    assert copied.accompany_dot == case.payload_fields["accompany_dot"]
-    assert copied.anomaly_dmg_ratio == pytest.approx(
-        case.payload_fields["anomaly_dmg_ratio"]
-    )
-    assert copied.scaling_factor == pytest.approx(case.snapshot_case.scaling_factor)
-    assert copied.max_duration == pytest.approx(case.payload_fields["max_duration"])
-    assert copied.last_active == case.payload_fields["last_active"]
-    assert copied.remaining_tick() == pytest.approx(
-        case.payload_fields["max_duration"]
-        - (case.runtime_tick - case.payload_fields["last_active"])
-    )
-    source_bar.max_duration = 999
-    source_bar.last_active = 1
-    assert copied.remaining_tick() == pytest.approx(
-        case.payload_fields["max_duration"]
-        - (case.runtime_tick - case.payload_fields["last_active"])
-    )
-    assert copied.rename_tag == case.payload_fields["rename_tag"]
-    assert copied.schedule_priority == 999
-    assert not hasattr(copied, "execute_tick")
-    assert copied.current_effective_anomaly == pytest.approx(
-        fixture.anomaly_bar.current_effective_anomaly
+
+    formula_inputs = {
+        "element_type": copied.element_type,
+        "scaling_factor": copied.scaling_factor,
+    }
+    assert set(_COPIED_OUTPUT_FORMULA_INPUT_FIELDS) == {
+        "current_ndarray",
+        *formula_inputs,
+    }
+    assert formula_inputs == pytest.approx(
+        {
+            "element_type": case.payload_fields["element_type"],
+            "scaling_factor": case.snapshot_case.scaling_factor,
+        }
     )
     assert copied.current_ndarray is not source_bar.current_ndarray
     np.testing.assert_allclose(copied.current_ndarray, source_snapshot)
+
+    effective_anomaly_fields = {
+        "current_effective_anomaly": copied.current_effective_anomaly,
+        "current_anomaly": copied.current_anomaly,
+        "settled": copied.settled,
+    }
+    assert tuple(effective_anomaly_fields) == _COPIED_OUTPUT_EFFECTIVE_ANOMALY_FIELDS
+    assert effective_anomaly_fields == {
+        "current_effective_anomaly": pytest.approx(
+            fixture.anomaly_bar.current_effective_anomaly
+        ),
+        "current_anomaly": pytest.approx(fixture.anomaly_bar.current_anomaly),
+        "settled": True,
+    }
+
+    expected_remaining_tick = case.payload_fields["max_duration"] - (
+        case.runtime_tick - case.payload_fields["last_active"]
+    )
+    duration_fields = {
+        "max_duration": copied.max_duration,
+        "last_active": copied.last_active,
+        "remaining_tick": copied.remaining_tick(),
+    }
+    assert tuple(duration_fields) == _COPIED_OUTPUT_DURATION_FIELDS
+    assert duration_fields == pytest.approx(
+        {
+            "max_duration": case.payload_fields["max_duration"],
+            "last_active": case.payload_fields["last_active"],
+            "remaining_tick": expected_remaining_tick,
+        }
+    )
+    source_bar.max_duration = 999
+    source_bar.last_active = 1
+    assert copied.remaining_tick() == pytest.approx(expected_remaining_tick)
+
+    listener_report_payload_only_fields = {
+        field_name: getattr(copied, field_name)
+        for field_name in _COPIED_OUTPUT_LISTENER_REPORT_PAYLOAD_ONLY_FIELDS
+    }
+    assert set(listener_report_payload_only_fields).isdisjoint(formula_inputs)
+    assert set(listener_report_payload_only_fields).isdisjoint(duration_fields)
+    assert listener_report_payload_only_fields == {
+        "rename_tag": case.payload_fields["rename_tag"],
+        "accompany_dot": case.payload_fields["accompany_dot"],
+        "anomaly_dmg_ratio": pytest.approx(
+            case.payload_fields["anomaly_dmg_ratio"]
+        ),
+    }
+
+    assert copied.schedule_priority == 999
+    assert not hasattr(copied, "execute_tick")
     source_bar.current_ndarray[0, 0] = -10.0
     assert copied.current_ndarray[0, 0] == pytest.approx(source_snapshot[0, 0])
     copied.current_ndarray[0, 1] = -20.0
-    assert source_bar.current_ndarray[0, 1] == pytest.approx(source_snapshot[0, 1])
+    assert source_bar.current_ndarray[0, 1] == pytest.approx(
+        source_snapshot[0, 1]
+    )
 
     if case.copied_kind == "polarity_disorder":
-        assert copied.polarity_disorder_ratio == pytest.approx(
-            cast(float, case.polarity_ratio)
+        polarity_only_fields = {
+            "polarity_disorder_ratio": copied.polarity_disorder_ratio,
+            "additional_dmg_ap_ratio": copied.additional_dmg_ap_ratio,
+        }
+        assert tuple(polarity_only_fields) == _COPIED_OUTPUT_POLARITY_ONLY_FIELDS
+        assert polarity_only_fields == pytest.approx(
+            {
+                "polarity_disorder_ratio": cast(float, case.polarity_ratio),
+                "additional_dmg_ap_ratio": 32,
+            }
         )
-        assert copied.additional_dmg_ap_ratio == 32
     else:
-        assert not hasattr(copied, "polarity_disorder_ratio")
-        assert not hasattr(copied, "additional_dmg_ap_ratio")
+        for field_name in _COPIED_OUTPUT_POLARITY_ONLY_FIELDS:
+            assert not hasattr(copied, field_name)
 
 
 def test_new_anomaly_spawn_output_copies_active_payload_without_publish() -> None:

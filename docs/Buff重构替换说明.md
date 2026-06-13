@@ -3840,3 +3840,52 @@
 - Next step:
   - Generate the next Phase-3 characterization / proposal-readiness continuation PRD from the broad same-phase pool; do not promote `RegularMul` sheer conversion to production proposal without real registered-route sample evidence and an architecture-approved reader-contract plan.
 ---
+## 2026-06-13 13:38 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconfirm-copied-output-scope-and-source-inventory.md`, `scripts/ralph/investigations/2026-06-13-US-001-copied-output-scope-inventory.md`, `scripts/ralph/checkpoints/2026-06-13-us-001-copied-output-scope-inventory.md`, `scripts/ralph/plans/slices/us-002-lock-copied-payload-constructor-field-matrix.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 copied-output root source inventory packet` replaces stale or chat-only copied-output scope assumptions with a root-workspace scan, CodeGraph query evidence, focused target inventory, checkpoint, evidence-ledger, PRD, progress, and next-slice controller state.
+  - This story builds a characterization / proposal-readiness boundary only; it does not replace live production formula code, copied-output constructors, event handlers, dispatch/runtime ports, listener broadcasts, same-tick runtime writes, validation-runner wiring, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Root source candidates are limited to `CopyAnomalyForOutput.py`, `UpdateAnomaly.py`, and the root anomaly/disorder/polarity-disorder/abloom handlers; old `.codex_worktrees/`, archives, logs, generated output, and run output remain excluded from the authoritative inventory.
+  - Completed RegularMul / sheer / AM/AP/impact work and P2 guarded-maintenance compatibility remain separate; this PRD must continue as characterization / proposal-readiness until later stories provide exact payload and handler/report evidence.
+  - No old-coupling review update was needed because this evidence-only slice found no new Buff coupling.
+- Next step:
+  - Continue with US-002 by locking copied payload constructor fields for `NewAnomaly`, `Disorder`, and `PolarityDisorder` without changing production formulas, copied-output constructors, event handlers, dispatch/runtime ports, or retained compatibility paths.
+---
+## 2026-06-13 13:58 +08:00 - US-002
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-002-lock-copied-payload-constructor-field-matrix.md`, `scripts/ralph/investigations/2026-06-13-US-002-copied-payload-constructor-matrix.md`, `scripts/ralph/checkpoints/2026-06-13-us-002-copied-payload-constructor-field-matrix.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 copied payload constructor field matrix` replaces implicit copied-output constructor assumptions with focused test evidence for `NewAnomaly`, `Disorder`, and `PolarityDisorder` field categories.
+  - This story builds characterization coverage only; it does not replace live production constructors, formulas, event handlers, listener broadcasts, dispatch/runtime ports, old Buff containers, validation-runner wiring, or registered behavior samples.
+- Compatibility retained:
+  - `CopyAnomalyForOutput.py` remains unchanged. Copied-output constructors still deep-copy `AnomalyBar`, `Disorder` still sets `is_disorder`, and `PolarityDisorder` still owns `polarity_disorder_ratio` / `additional_dmg_ap_ratio`.
+  - `UpdateAnomaly.spawn_output(...)`, anomaly/disorder/polarity handler report paths, listener broadcasts, scheduled event queue semantics, same-tick runtime writes, old Buff containers, completed RegularMul / sheer / AM/AP/impact work, and P2 guarded-maintenance compatibility remain untouched.
+  - No old-coupling review update was needed because this test-only slice found no new Buff coupling.
+- Next step:
+  - Continue with US-003 by characterizing `UpdateAnomaly.spawn_output(...)` listener boundaries from the locked constructor matrix without changing production event/runtime boundaries.
+---
+## 2026-06-13 14:07 +08:00 - US-003
+- Files changed: `tests/simulator/test_update_anomaly_dispatch.py`, `scripts/ralph/plans/slices/us-003-characterize-updateanomaly-spawn-output-listener-boundaries.md`, `scripts/ralph/investigations/2026-06-13-US-003-spawn-output-listener-boundaries.md`, `scripts/ralph/checkpoints/2026-06-13-us-003-spawn-output-listener-boundaries.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 spawn_output listener-boundary characterization` replaces implicit assumptions about copied-output construction, synchronous listener broadcast, and scheduled publish separation with focused tests and checkpoint evidence.
+  - This story builds characterization coverage only; it does not replace live production constructors, formulas, `UpdateAnomaly.py`, event handlers, listener manager implementation, dispatch/runtime ports, old Buff containers, validation-runner wiring, or registered behavior samples.
+- Compatibility retained:
+  - `spawn_output(...)` mode 0 still constructs `NewAnomaly` after source-bar settlement without direct listener broadcast or scheduled publish.
+  - `spawn_output(...)` modes 1 and 2 still synchronously broadcast `LBS.DISORDER_SPAWN`; scheduled publishes remain owned by `update_anomaly(...)`.
+  - Mode 2 missing `polarity_ratio` remains a `ValueError` path and now proves no listener broadcast, direct scheduled publish, or source-bar settlement occurs first.
+  - No old-coupling review update was needed because this test-only slice found no new Buff coupling.
+- Next step:
+  - Continue with US-004 by characterizing handler/report payload parity for anomaly, disorder, polarity disorder, and abloom paths without changing constructors, event handlers, dispatch/runtime ports, listener broadcasts, or production formula semantics.
+---
+## 2026-06-13 14:40 +08:00 - US-004
+- Files changed: `tests/simulator/test_anomaly_handler_runtime_view.py`, `scripts/ralph/plans/slices/us-004-characterize-handler-report-payload-parity.md`, `scripts/ralph/investigations/2026-06-13-US-004-handler-report-payload-parity.md`, `scripts/ralph/checkpoints/2026-06-13-us-004-handler-report-payload-parity.md`, `scripts/ralph/plans/slices/us-005-codify-registered-behavior-sample-eligibility.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 handler/report payload parity characterization` replaces implicit report/log-facing payload assumptions with a focused four-path inventory for anomaly, disorder, polarity disorder, and abloom copied-output handlers.
+  - This story builds characterization coverage only; it does not replace live production constructors, formulas, `UpdateAnomaly.py`, scheduled event handlers, listener manager implementation, dispatch/runtime ports, old Buff containers, validation-runner wiring, or registered behavior samples.
+- Compatibility retained:
+  - `NewAnomaly`, `Disorder`, `PolarityDisorder`, and `DirgeOfDestinyAnomaly` copied-output constructors remain retained and unchanged.
+  - Handler report fields, calculator event payload identity, `LBS.DISORDER_SETTLED`, disorder stun update, and anomaly `RuntimeCommandPort.settle_buffs(...)` are now focused rollback anchors for future proposal work.
+  - No old-coupling review update was needed because this test-only slice found no new Buff coupling.
+- Next step:
+  - Continue with US-005 by codifying registered behavior sample eligibility; do not run main-loop consistency or create validation-only teams unless a real registered route with relevant nonzero copied-output/anomaly events is found.
+---
