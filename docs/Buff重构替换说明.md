@@ -4010,3 +4010,15 @@
 - Next step:
   - Continue with US-007 proposal Go / No-Go and reviewer questions; carry this retained gate contract forward without treating it as production implementation authorization.
 ---
+## 2026-06-14 01:35 +08:00 - US-007
+- Files changed: `tasks/prd-buff-refactor-phase3-copied-payload-handler-report-bounded-proposal.md`, `scripts/ralph/plans/slices/us-007-decide-proposal-go-no-go-and-reviewer-questions.md`, `scripts/ralph/investigations/2026-06-14-US-007-proposal-go-no-go-reviewer-questions.md`, `scripts/ralph/checkpoints/2026-06-14-us-007-proposal-go-no-go-reviewer-questions.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 proposal Go / No-Go decision packet` replaces implicit implementation-readiness judgment with a conditional Go contract, named blockers, future diff candidates, focused tests, scoped mypy targets, registered-route conditions, rollback anchors, stop conditions, and reviewer questions.
+  - This story builds proposal/reviewer evidence only; it does not replace live production formula code, copied-output constructors, `UpdateAnomaly.py`, scheduled handlers, dispatch/runtime ports, listener broadcasts, dot runtime registration, same-tick runtime writes, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - The later implementation scope, if any, is limited to one coherent copied-output handler/report slice; broad `Calculator.py` / `CalAnomaly.py` rewrite, formula replacement, validation-runner rewrite, registered-team fixture creation, old-container deletion, and layer merging remain excluded.
+  - `ScheduleDispatchPort`, synchronous listener broadcast, dot runtime registration/removal, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain separate retained boundaries.
+  - No old-coupling review update was needed because this docs-only decision packet found no new Buff coupling.
+- Next step:
+  - Continue with US-008 final handoff docs and same-phase candidate pool; carry this conditional Go forward without collapsing future PRD generation to only one copied-output implementation path.
+---
