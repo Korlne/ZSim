@@ -4047,3 +4047,15 @@
 - Next step:
   - Controller refresh moved the active durable slice to US-002. Continue by implementing copied-payload constructor boundary work only inside `CopyAnomalyForOutput.py`; record implementation No-Go if the diff crosses any US-001 stop condition.
 ---
+## 2026-06-14 06:39 +08:00 - US-002
+- Files changed: `zsim/sim_progress/anomaly_bar/CopyAnomalyForOutput.py`, `scripts/ralph/plans/slices/us-002-implement-copied-payload-constructor-boundary.md`, `scripts/ralph/investigations/2026-06-14-US-002-copied-payload-constructor-boundary.md`, `scripts/ralph/checkpoints/2026-06-14-us-002-copied-payload-constructor-boundary.md`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `CopyAnomalyForOutput.py` copied-payload constructor boundary replaces implicit constructor ownership with explicit source-copy, payload-install, explicit-context override, and subclass-owned field markers.
+  - This story implements the constructor boundary only; it does not replace `UpdateAnomaly.spawn_output(...)`, anomaly-family handlers, formulas, dispatch/runtime ports, listener manager implementation, dot runtime adapters, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - `_CopiedAnomalyBase` still deep-copies the source `AnomalyBar`, preserves copied `current_ndarray` / `current_effective_anomaly`, and only overrides `sim_instance` or `activated_by` when explicit inputs are provided.
+  - `Disorder` still sets `is_disorder=True`; `PolarityDisorder` still owns `polarity_disorder_ratio` and `additional_dmg_ap_ratio`; `DirgeOfDestinyAnomaly` still sets `anomaly_dmg_ratio=1.0`.
+  - Focused constructor/spawn-output anchors and `implicit-events` validation/typecheck passed. No old-coupling review update was needed because no new Buff coupling was discovered.
+- Next step:
+  - Continue with US-003 by implementing `UpdateAnomaly.spawn_output(...)` mode boundary while keeping copied construction, synchronous listener broadcast, scheduled publish, dot runtime state, and same-tick runtime writes separate.
+---

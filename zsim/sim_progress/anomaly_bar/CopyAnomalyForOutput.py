@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 
 class _CopiedAnomalyBase(AnomalyBar):
+    _CONSTRUCTOR_OWNED_FIELDS = ()
+
     def __init__(
         self,
         anomaly_bar: AnomalyBar,
@@ -22,8 +24,23 @@ class _CopiedAnomalyBase(AnomalyBar):
         if not isinstance(anomaly_bar, AnomalyBar):
             raise TypeError(f"{anomaly_bar} 涓嶆槸 AnomalyBar 绫诲瀷")
 
-        copied = copy.deepcopy(anomaly_bar)
-        self.__dict__ = copied.__dict__.copy()
+        copied_payload = self._copy_source_payload(anomaly_bar)
+        self._install_copied_payload(copied_payload)
+        self._apply_explicit_overrides(active_by=active_by, sim_instance=sim_instance)
+
+    @staticmethod
+    def _copy_source_payload(anomaly_bar: AnomalyBar) -> AnomalyBar:
+        return copy.deepcopy(anomaly_bar)
+
+    def _install_copied_payload(self, copied_payload: AnomalyBar) -> None:
+        self.__dict__ = copied_payload.__dict__.copy()
+
+    def _apply_explicit_overrides(
+        self,
+        *,
+        active_by: "SkillNode | str | None",
+        sim_instance: "Simulator | None",
+    ) -> None:
         if sim_instance is not None:
             self.sim_instance = sim_instance
         if active_by is not None:
@@ -55,10 +72,12 @@ class _CopiedAnomalyBase(AnomalyBar):
 
 
 class NewAnomaly(_CopiedAnomalyBase):
-    pass
+    _CONSTRUCTOR_OWNED_FIELDS = ()
 
 
 class Disorder(_CopiedAnomalyBase):
+    _CONSTRUCTOR_OWNED_FIELDS = ("is_disorder",)
+
     def __init__(
         self,
         anomaly_bar: AnomalyBar,
@@ -71,6 +90,12 @@ class Disorder(_CopiedAnomalyBase):
 
 
 class PolarityDisorder(Disorder):
+    _CONSTRUCTOR_OWNED_FIELDS = (
+        *Disorder._CONSTRUCTOR_OWNED_FIELDS,
+        "polarity_disorder_ratio",
+        "additional_dmg_ap_ratio",
+    )
+
     def __init__(
         self,
         anomaly_bar: AnomalyBar,
@@ -85,6 +110,8 @@ class PolarityDisorder(Disorder):
 
 
 class DirgeOfDestinyAnomaly(NewAnomaly):
+    _CONSTRUCTOR_OWNED_FIELDS = ("anomaly_dmg_ratio",)
+
     def __init__(
         self,
         anomaly_bar: AnomalyBar,
