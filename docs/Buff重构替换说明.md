@@ -3986,3 +3986,15 @@
 - Next step:
   - Continue with US-005 by codifying registered-route sample conditions; keep main-loop consistency conditional on a live production semantic diff plus real registered-route JSON evidence with nonzero copied-output/anomaly counts.
 ---
+## 2026-06-14 01:14 +08:00 - US-005
+- Files changed: `tasks/prd-buff-refactor-phase3-copied-payload-handler-report-bounded-proposal.md`, `scripts/ralph/plans/slices/us-005-codify-registered-route-sample-conditions.md`, `scripts/ralph/investigations/2026-06-14-US-005-registered-route-sample-conditions.md`, `scripts/ralph/checkpoints/2026-06-14-us-005-registered-route-sample-conditions.md`, `scripts/ralph/plans/slices/us-006-codify-retained-validation-and-typecheck-gates.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 registered-route sample conditions packet` replaces implicit main-loop sample assumptions with an explicit conditional gate for live production semantic diffs, real registered-route JSON evidence, matching total damage, nonzero relevant anomaly/copied-output event counts, and unchanged Buff timeline differences.
+  - This story builds proposal/verifier evidence only; it does not replace live production formula code, copied-output constructors, `UpdateAnomaly.py`, scheduled handlers, dispatch/runtime ports, listener broadcasts, dot runtime registration, same-tick runtime writes, validation-runner wiring, registered teams/APLs, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Current root registered teams remain `青衣雷属性队`, `席德大安比队`, `莱特火属性队`, and `薇薇安物理队`; `薇薇安物理队` is the current anomaly/copied-output candidate only while it remains in root config and its APL carries anomaly-status predicates.
+  - Main-loop consistency remains skipped for docs-only proposal work and cannot be satisfied by validation-only teams, APLs, fake routes, or retained-vs-retained JSON samples.
+  - `implicit-events` validation/typecheck exited `0`; JSON sanity and edited Markdown UTF-8 / mojibake scan passed. No old-coupling review update was needed because no new Buff coupling was discovered.
+- Next step:
+  - Continue with US-006 by codifying retained validation and typecheck gates serially; keep main-loop consistency conditional unless a later production semantic diff satisfies the registered-route sample contract.
+---
