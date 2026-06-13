@@ -41,15 +41,9 @@ def spawn_output(anomaly_bar, mode_number, sim_instance: "Simulator", **kwargs):
         raise TypeError(f"{anomaly_bar}不是AnomalyBar类！")
     skill_node = kwargs.get("skill_node", None)
 
-    # 先处理快照，使其除以总权值。
-    anomaly_bar.anomaly_settled() if mode_number in [0] else None
-    # 老逻辑
-    # anomaly_bar.current_ndarray = (
-    #     anomaly_bar.current_ndarray / anomaly_bar.current_anomaly
-    # )
-    # output = anomaly_bar.element_type, anomaly_bar.current_ndarray
-    output: "AnomalyBar | None" = None
     if mode_number == 0:
+        # 先处理快照，使其除以总权值。
+        anomaly_bar.anomaly_settled()
         output = NewAnomaly(anomaly_bar, active_by=skill_node, sim_instance=sim_instance)
     elif mode_number == 1:
         output = Disorder(anomaly_bar, active_by=skill_node, sim_instance=sim_instance)
@@ -62,7 +56,7 @@ def spawn_output(anomaly_bar, mode_number, sim_instance: "Simulator", **kwargs):
         output = PolarityDisorder(
             anomaly_bar, polarity_ratio, active_by=skill_node, sim_instance=sim_instance
         )
-    if output is None:
+    else:
         raise ValueError("在调用spawn_output函数时，未正确生成一个AnomalyBar实例！")
     # 广播事件
     if mode_number in [1, 2]:

@@ -4059,3 +4059,15 @@
 - Next step:
   - Continue with US-003 by implementing `UpdateAnomaly.spawn_output(...)` mode boundary while keeping copied construction, synchronous listener broadcast, scheduled publish, dot runtime state, and same-tick runtime writes separate.
 ---
+## 2026-06-14 06:59 +08:00 - US-003
+- Files changed: `zsim/sim_progress/Update/UpdateAnomaly.py`, `tests/simulator/test_update_anomaly_dispatch.py`, `scripts/ralph/plans/slices/us-003-implement-spawn-output-mode-boundary.md`, `scripts/ralph/investigations/2026-06-14-US-003-spawn-output-mode-boundary.md`, `scripts/ralph/checkpoints/2026-06-14-us-003-spawn-output-mode-boundary.md`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/plans/slices/us-004-preserve-scheduled-publish-dot-runtime-and-debuff-layers.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `UpdateAnomaly.spawn_output(...)` mode boundary replaces implicit `output is None` invalid-mode fallback with an explicit error branch before copied-output construction, listener broadcast, scheduled publish, or source settlement.
+  - This story implements only the `spawn_output(...)` mode boundary; it does not replace `UpdateAnomaly.update_anomaly(...)`, copied-output constructors, anomaly-family handlers, formulas, dispatch/runtime ports, listener manager implementation, dot runtime adapters, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Mode 0 still settles the source anomaly bar before `NewAnomaly` construction and does not broadcast listeners or publish scheduled events directly.
+  - Modes 1 / 2 still synchronously broadcast `LBS.DISORDER_SPAWN`; mode 2 still requires `polarity_ratio`; invalid mode is now covered by a no-construction/no-side-effect focused test.
+  - Focused spawn-output anchors and `implicit-events` validation/typecheck passed. No old-coupling review update was needed because no new Buff coupling was discovered.
+- Next step:
+  - Continue with US-004 by preserving scheduled publish, dot runtime, and debuff layers without moving those responsibilities into copied-output construction.
+---
