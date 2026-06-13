@@ -3974,3 +3974,15 @@
 - Next step:
   - Continue with US-004 by defining the handler/report payload proposal contract without merging report fields, `LBS.DISORDER_SETTLED`, disorder stun update, anomaly `RuntimeCommandPort.settle_buffs(...)`, dispatch/runtime ports, listener broadcasts, dot runtime state, or same-tick runtime writes.
 ---
+## 2026-06-14 00:53 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-define-handler-report-payload-proposal-contract.md`, `scripts/ralph/investigations/2026-06-14-US-004-handler-report-payload-proposal-contract.md`, `scripts/ralph/checkpoints/2026-06-14-us-004-handler-report-payload-proposal-contract.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 handler/report payload proposal contract` replaces implicit handler report/log payload assumptions with an explicit four-handler contract for `AnomalyEventHandler`, `DisorderEventHandler`, `PolarityDisorderEventHandler`, and `AbloomEventHandler`.
+  - This story builds proposal and rollback evidence only; it does not replace live production handlers, copied-output constructors, formulas, `Report.report_dmg_result(...)`, dispatch/runtime ports, listener manager implementation, validation-runner wiring, registered teams/APLs, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Handler report fields remain retained: tick, skill tag, element type, damage, stun, buildup, enemy status, UUID, anomaly/disorder flags, and fixed `极性紊乱` / `异放` skill tags where applicable.
+  - `LBS.DISORDER_SETTLED` remains a synchronous disorder-family listener broadcast; anomaly `RuntimeCommandPort.settle_buffs(...)` remains the same-tick runtime write boundary and no second write facade is introduced.
+  - No old-coupling review update was needed because this docs-only proposal contract found no new Buff coupling.
+- Next step:
+  - Continue with US-005 by codifying registered-route sample conditions; keep main-loop consistency conditional on a live production semantic diff plus real registered-route JSON evidence with nonzero copied-output/anomaly counts.
+---
