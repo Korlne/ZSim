@@ -4084,3 +4084,15 @@
 - Next step:
   - Continue with US-005 handler report payload boundary implementation while preserving the US-004 source guards and the separation between scheduled publish, listener broadcast, dot runtime, debuff writes, and same-tick runtime writes.
 ---
+## 2026-06-14 07:31 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-implement-handler-report-payload-boundary.md`, `scripts/ralph/investigations/2026-06-14-US-005-handler-report-payload-boundary.md`, `scripts/ralph/checkpoints/2026-06-14-us-005-handler-report-payload-boundary.md`, `scripts/ralph/plans/slices/us-006-run-focused-pytest-scoped-typecheck-and-retained-gates.md`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 handler report payload boundary verification` replaces implicit handler/report payload confidence with focused verifier evidence for anomaly, disorder, polarity disorder, and abloom report fields plus retained listener/runtime boundaries.
+  - This story verifies the production boundary but does not replace live production handler code because the root handlers already match the retained contract.
+- Compatibility retained:
+  - `AnomalyEventHandler.handle(...)` still reports payload fields before routing same-tick Buff settlement through `RuntimeCommandPort.settle_buffs(...)`.
+  - `DisorderEventHandler.handle(...)` and `PolarityDisorderEventHandler.handle(...)` still broadcast `LBS.DISORDER_SETTLED` synchronously before damage/report work; `AbloomEventHandler.handle(...)` remains report-only.
+  - Copied-output constructors, `UpdateAnomaly.py`, formulas, dispatch/runtime port implementations, listener manager implementation, dot runtime adapters, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue with US-006 by running focused pytest, scoped typecheck, and retained validation profiles serially; full default validation remains conditional on lifecycle, runtime-write, or validation-runner behavior changes.
+---
