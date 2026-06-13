@@ -3998,3 +3998,15 @@
 - Next step:
   - Continue with US-006 by codifying retained validation and typecheck gates serially; keep main-loop consistency conditional unless a later production semantic diff satisfies the registered-route sample contract.
 ---
+## 2026-06-14 01:25 +08:00 - US-006
+- Files changed: `tasks/prd-buff-refactor-phase3-copied-payload-handler-report-bounded-proposal.md`, `scripts/ralph/plans/slices/us-006-codify-retained-validation-and-typecheck-gates.md`, `scripts/ralph/checkpoints/2026-06-14-us-006-retained-validation-and-typecheck-gates.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 retained validation and typecheck gate contract` replaces vague validation confidence with exact focused pytest, `formula-parity`, `calculator-reads`, `implicit-events`, JSON sanity, UTF-8 / mojibake, and conditional full-default validation rules.
+  - This story builds proposal/verifier evidence only; it does not replace live production formula code, copied-output constructors, `UpdateAnomaly.py`, scheduled handlers, dispatch/runtime ports, listener broadcasts, dot runtime registration, same-tick runtime writes, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Retained gate commands must run serially; `formula-parity`, `calculator-reads`, and `implicit-events` all exited `0` for this story, with focused pytest `168 passed`.
+  - Full default validation remains conditional on lifecycle container, runtime write path, or validation-runner behavior changes; none of those surfaces changed in this docs-only slice.
+  - No old-coupling review update was needed because this docs-only gate contract found no new Buff coupling.
+- Next step:
+  - Continue with US-007 proposal Go / No-Go and reviewer questions; carry this retained gate contract forward without treating it as production implementation authorization.
+---
