@@ -3962,3 +3962,15 @@
 - Next step:
   - Continue with US-003 by defining the `UpdateAnomaly.spawn_output(...)` and publish-layer proposal contract without editing production `UpdateAnomaly.py` or merging constructor, listener, scheduled publish, dot runtime, and same-tick runtime-write layers.
 ---
+## 2026-06-14 00:39 +08:00 - US-003
+- Files changed: `scripts/ralph/plans/slices/us-003-define-updateanomaly-spawn-output-and-publish-layer-proposal-contract.md`, `scripts/ralph/investigations/2026-06-14-US-003-updateanomaly-spawn-output-publish-contract.md`, `scripts/ralph/checkpoints/2026-06-14-us-003-updateanomaly-spawn-output-publish-contract.md`, `scripts/ralph/plans/slices/us-004-define-handler-report-payload-proposal-contract.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 UpdateAnomaly spawn-output and publish-layer proposal contract` replaces implicit assumptions about copied-output construction, synchronous listener broadcast, scheduled publish, dot runtime state, debuff writes, and same-tick runtime writes with an explicit proposal boundary and rollback anchors.
+  - This story builds proposal and rollback evidence only; it does not replace live production `UpdateAnomaly.py`, copied-output constructors, formulas, event handlers, dispatch/runtime ports, listener manager implementation, dot runtime adapter implementation, validation-runner wiring, registered teams/APLs, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - `spawn_output(...)` mode 0 still constructs `NewAnomaly` without listener broadcast or scheduled publish; modes 1 / 2 still synchronously broadcast `LBS.DISORDER_SPAWN`; missing `polarity_ratio` still fails before side effects.
+  - `update_anomaly(...)` still owns scheduled publish ordering through `ScheduleDispatchPort`; dot registration/removal and accompanying debuff writes remain in `anomaly_effect_active(...)` and `remove_dots_cause_disorder(...)`.
+  - No old-coupling review update was needed because this docs-only proposal contract found no new Buff coupling.
+- Next step:
+  - Continue with US-004 by defining the handler/report payload proposal contract without merging report fields, `LBS.DISORDER_SETTLED`, disorder stun update, anomaly `RuntimeCommandPort.settle_buffs(...)`, dispatch/runtime ports, listener broadcasts, dot runtime state, or same-tick runtime writes.
+---
