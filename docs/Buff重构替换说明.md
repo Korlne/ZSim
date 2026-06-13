@@ -4022,3 +4022,16 @@
 - Next step:
   - Continue with US-008 final handoff docs and same-phase candidate pool; carry this conditional Go forward without collapsing future PRD generation to only one copied-output implementation path.
 ---
+
+## 2026-06-14 01:53 +08:00 - US-008
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `docs/Buff系统重构Checklist.md`, `scripts/ralph/checkpoints/2026-06-14-us-008-final-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-008 final handoff docs and same-phase candidate pool` replaces proposal-only next-stage wording with the current conditional Go result for one later bounded copied-output handler/report implementation PRD.
+  - This story updates handoff / Ralph evidence only; it does not replace live production formula code, copied-output constructors, `UpdateAnomaly.py`, scheduled handlers, dispatch/runtime ports, listener broadcasts, dot runtime registration, same-tick runtime writes, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - The later implementation scope remains limited to one coherent copied-output handler/report slice selected from copied payload constructors, `UpdateAnomaly.spawn_output(...)`, and anomaly/disorder/polarity/abloom handler report paths.
+  - Registered behavior sample eligibility, `Calculator.RegularMul` remaining branches / retained-only sheer follow-up, `Calculator.StunMul.get_stun_array()` / array-output follow-up, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules remain available as same-phase candidates.
+  - `ScheduleDispatchPort`, synchronous listener broadcast, dot runtime registration/removal, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain separate retained boundaries.
+- Next step:
+  - Generate the bounded copied-output handler/report implementation PRD only if it carries exact touched files/symbols, focused tests, scoped mypy targets, retained gates, registered-sample conditions, rollback anchors, stop conditions, and non-goals; after that implementation completes, reselect from the broad same-phase pool.
+---
