@@ -4861,3 +4861,17 @@
 - Next step:
   - Continue to `US-006` retained validation profile gate. Keep validation serial and do not run main-loop consistency without a future live semantic diff plus real registered-route nonzero selected formula relevance.
 ---
+
+## 2026-06-15 04:35 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-retained-validation-profile-gate.md`, `scripts/ralph/checkpoints/2026-06-15-us-006-retained-validation-profile-gate.md`, `scripts/ralph/plans/slices/us-007-reviewer-and-invariant-go-no-go-decision.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 retained validation profile gate` replaces chat-only validation confidence with durable serial `formula-parity` evidence and exact conditional skip reasons for the current personal crit rate proposal-readiness PRD.
+  - This story is validation/evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output constructors/payloads, event/runtime/listener paths, lifecycle containers, old Buff containers, runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_personal_crit_rate(data)` remains the retained public formula path and still computes only `static.crit_rate + dynamic.crit_rate + dynamic.field_crit_rate`.
+  - Required `formula-parity` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused formula suite `145 passed`, and mypy success on `9 source files`; known async shutdown noise appeared only after success markers.
+  - `calculator-reads` was skipped because no reader seams, snapshot construction, reader guardrails, or shared focused reader tests changed.
+  - `implicit-events` and default validation were skipped because no copied-output, event/runtime/listener, dot runtime, lifecycle, runtime write path, validation-runner behavior, registered route, old-container, or retained compatibility surface changed.
+- Next step:
+  - Continue to `US-007` reviewer and invariant Go / No-Go decision. Keep that story to proposal judgment for one later bounded personal crit rate implementation PRD or explicit No-Go; do not introduce production formula, reader, event/runtime, lifecycle, validation-runner, registered-route, or retained compatibility changes.
+---
