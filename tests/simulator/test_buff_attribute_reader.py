@@ -4752,6 +4752,55 @@ def test_regular_mul_personal_crit_damage_delegates_to_module_helper(
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
 
 
+def test_reader_personal_crit_damage_anchor_preserves_full_and_personal_crit_contrast(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    MultiplierData.mul_data_cache.clear()
+    fixture = _make_attribute_read_fixture(
+        name="个人暴击伤害读口锚点",
+        crit_damage=0.5,
+        damage_ratio=1.0,
+        hit_times=1,
+        diff_multiplier=0,
+        char_buff_count=1,
+        enemy_debuff_count=1,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(
+            crit_dmg=0.3,
+            field_crit_dmg=0.2,
+            received_crit_dmg_bonus=0.4,
+        ),
+    )
+    formula_calls: list[MultiplierData] = []
+
+    def fake_cal_personal_crit_dmg(data: MultiplierData) -> float:
+        formula_calls.append(data)
+        return 8.76
+
+    monkeypatch.setattr(
+        Calculator.RegularMul,
+        "cal_personal_crit_dmg",
+        fake_cal_personal_crit_dmg,
+    )
+
+    reader_value = CalculatorBuffAttributeReader().read_personal_crit_damage(
+        fixture.context
+    )
+
+    assert reader_value == pytest.approx(8.76)
+    assert len(formula_calls) == 1
+    formula_data = formula_calls[0]
+    formula_dynamic = cast(Any, formula_data).dynamic
+    assert cast(Any, formula_data).static.crit_damage == pytest.approx(0.5)
+    assert formula_dynamic.crit_dmg == pytest.approx(0.3)
+    assert formula_dynamic.field_crit_dmg == pytest.approx(0.2)
+    assert formula_dynamic.received_crit_dmg_bonus == pytest.approx(0.4)
+    assert Calculator.RegularMul.cal_crit_dmg(formula_data) == pytest.approx(1.4)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+
+
 @pytest.mark.parametrize(
     (
         "fixture_kwargs",

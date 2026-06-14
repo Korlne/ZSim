@@ -4717,3 +4717,16 @@
 - Next step:
   - Continue to `US-003` reader anchor and full/personal contrast verification. Do not broaden into full crit damage replacement, crit-rate reopening, crit expectation, retained-only sheer, registered-team fixture creation, validation-runner rewrite, old-container deletion, or event/runtime/listener work without an explicit later story.
 ---
+
+## 2026-06-15 02:14 +08:00 - US-003
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-003-reader-anchor-and-full-personal-contrast.md`, `scripts/ralph/checkpoints/2026-06-15-us-003-reader-anchor-full-personal-contrast.md`, `scripts/ralph/plans/slices/us-004-focused-oracle-and-regression-coverage.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 reader anchor guardrail` replaces chat-only confidence in `CalculatorBuffAttributeReader.read_personal_crit_damage(context)` with focused test evidence that the reader still delegates to retained `Calculator.RegularMul.cal_personal_crit_dmg(data)` using reader-built snapshot inputs.
+  - This story does not replace a live production formula path; it adds guardrail evidence for the existing reader seam.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_personal_crit_dmg(data)` remains the personal crit damage formula path and preserves `static.crit_damage + dynamic.crit_dmg + dynamic.field_crit_dmg`.
+  - Full `Calculator.RegularMul.cal_crit_dmg(data)` remains the received-damage contrast branch and continues to include `received_crit_dmg_bonus`.
+  - `Soldier0AnbyCoreSkillCritDMGBonus.py`, P2-A through P2-G guardrails, old Buff compatibility paths, event/runtime/listener layers, validation-runner behavior, registered teams/APLs, lifecycle containers, old containers, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-004` focused oracle and regression coverage. Do not broaden into full crit damage replacement, crit-rate reopening, crit expectation, retained-only sheer, registered-team fixture creation, validation-runner rewrite, old-container deletion, or event/runtime/listener work without explicit later-story evidence.
+---
