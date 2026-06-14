@@ -4615,3 +4615,16 @@
 - Next step:
   - Continue to `US-004` focused oracle / proposal-gap closure for `Calculator.RegularMul.cal_personal_crit_dmg(data)` only. Do not broaden into production implementation, full crit damage, `cal_crit_rate(data)`, `cal_crit_expect()`, validation-runner rewrite, registered-team fixture creation, old-container deletion, or event/runtime/listener layer work without an explicit later story.
 ---
+
+## 2026-06-14 22:42 +08:00 - US-004
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-004-close-selected-candidate-oracle-gaps.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-005-define-proposal-boundary-and-rollback-anchors.md`
+- Replacement note:
+  - `US-004 selected personal crit damage branch-matrix row` replaces the remaining deterministic oracle gap for `Calculator.RegularMul.cal_personal_crit_dmg(data)` with focused branch-matrix evidence alongside the existing full crit damage contrast boundary.
+  - This story updates test evidence and Ralph bookkeeping only. It does not replace live production formula code, reader public contracts, validation-runner behavior, registered teams/APLs, copied-output constructors, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_personal_crit_dmg(data)` still reads `static.crit_damage + dynamic.crit_dmg + dynamic.field_crit_dmg`; full `cal_crit_dmg(data)` remains the received-damage contrast branch.
+  - `_CalculatorReadSnapshot` stays unchanged and no runtime `char_instance` access, registered-route fixture, fake APL, main-loop sample, or retained-vs-retained compensation route was added.
+  - Validation evidence: focused oracle / branch-matrix / boundary pytest passed with `27 passed`; retained-only sheer node passed with `1 passed`; `formula-parity` validation passed with base `2 passed`, isolated teams `3 passed`, focused reader `143 passed`, and scoped mypy success on `9 source files`.
+- Next step:
+  - Continue to `US-005` proposal boundary and rollback anchors for `Calculator.RegularMul.cal_personal_crit_dmg(data)` only. Do not broaden into production implementation, registered-route sample creation, `_CalculatorReadSnapshot` expansion, retained-only sheer, full crit damage, crit-rate reopening, or validation-runner rewrite without a later story authorizing it.
+---
