@@ -4563,3 +4563,16 @@
 - Next step:
   - Continue to `US-008` Ralph evidence / next-intake preparation. The long-lived default next PRD is Phase-3 same-phase candidate selection / bounded proposal, not another `cal_crit_rate(data)` implementation follow-up unless regression or reviewer-named evidence reopens it.
 ---
+
+## 2026-06-14 20:23 +08:00 - US-008
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-record-ralph-evidence-and-prepare-next-intake.md`, `scripts/ralph/plans/slices/buff-refactor-phase3-regularmul-crit-rate-bounded-production-implementation-next-intake.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/checkpoints/2026-06-14-us-008-record-ralph-evidence-next-intake.md`
+- Replacement note:
+  - `US-008 Ralph evidence and next-intake record` replaces chat-only completion assumptions with durable Ralph artifact evidence for the current RegularMul crit-rate implementation PRD.
+  - This story is docs/evidence/bookkeeping only. It does not replace live production formula code, reader source, validation-runner behavior, registered teams/APLs, copied-output constructors, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_crit_rate(data)` remains implemented / no-op verified at handoff and is not the next default reopen target.
+  - Same-phase candidates remain available only through named evidence: registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if evidence names one, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules.
+  - Completed copied-output, `cal_res_pen()`, AM/AP/impact, selected Stun, phase-1 surfaces, and P2 guarded buckets remain closed unless root-workspace source, focused regression, guardrail, validation, or reviewer-named evidence reopens them.
+- Next step:
+  - Generate the next PRD as Phase-3 same-phase candidate selection / bounded proposal. The default should select one exact candidate from the retained pool and must not collapse to broad formula rewrite, validation-runner rewrite, registered-team fixture creation, old-container deletion, event/runtime/listener layer merge, or retained compatibility deletion.
+---
