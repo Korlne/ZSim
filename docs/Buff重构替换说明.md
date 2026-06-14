@@ -4781,3 +4781,16 @@
 - Next step:
   - Continue to `US-008` final handoff docs and same-phase candidate pool preservation. Do not collapse the future candidate pool to only personal crit damage or invent registered-route evidence without a future live semantic diff and real route relevance.
 ---
+
+## 2026-06-15 03:09 +08:00 - US-008
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-candidate-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-15-us-008-handoff-docs-same-phase-candidate-pool-preservation.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-008 final handoff docs` replaces stale next-default wording that still treated `Calculator.RegularMul.cal_personal_crit_dmg(data)` as the next implementation PRD with completed implemented / no-op verified handoff evidence.
+  - `Calculator.RegularMul.cal_personal_crit_dmg(data)` now delegates to `_calculate_personal_crit_damage(...)`; this handoff records that state and does not replace additional live formula, reader, validation-runner, registered-route, copied-output, event/runtime/listener, lifecycle, old-container, or retained compatibility paths.
+- Compatibility retained:
+  - The selected personal crit damage formula remains `static.crit_damage + dynamic.crit_dmg + dynamic.field_crit_dmg` and continues to exclude `received_crit_dmg_bonus`; full `Calculator.RegularMul.cal_crit_dmg(data)` remains the received-damage contrast branch.
+  - Same-phase pool remains registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if evidence names one, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules.
+  - No new Buff coupling or coupling-classification change was found, so `docs/旧Buff系统耦合审查结果.md` remains unchanged.
+- Next step:
+  - Generate the next PRD as Phase-3 same-phase candidate selection / bounded proposal. Pick one exact retained-pool surface and keep rollback anchors, focused tests, scoped mypy, registered-sample conditions, retained gates, and non-goals; do not continue by default with another personal crit damage implementation PRD.
+---
