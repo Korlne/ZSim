@@ -570,6 +570,28 @@ Next default PRD：implement exactly `Calculator.AnomalyMul.cal_res_pen()` as a 
 | Registered sample conditions | Do not run a sample in US-003. A later live sample is allowed only after a production semantic diff exists and a real registered team / APL route proves a direct-damage crit path with explicit `stop_tick`, runtime labels, total damage comparison, relevant nonzero formula or damage count, event counts, and Buff timeline comparison. No validation-only team, fake APL, fixture-only route, or retained-vs-retained sample. |
 | Stop conditions | Stop and record No-Go if the candidate requires `_CalculatorReadSnapshot` public contract expansion, validation-runner rewiring, retained compatibility deletion, `cal_crit_expect()` semantics, personal crit replacement, crit damage replacement, damage bonus / defense / resistance / vulnerability cross-product expansion, retained-only sheer route work, old Buff container deletion, or event/runtime/listener layer merge. |
 
+## US-005 selected crit-rate registered sample eligibility audit
+
+本审计属于当前 RegularMul remaining-branch bounded proposal PRD。US-003 已选择 `Calculator.RegularMul.cal_crit_rate(data)`，US-004 已补 focused oracle row；US-005 只审查真实注册队伍 / APL 是否足以支撑 live main-loop consistency sample。结论是 conditional No-Go：当前有真实 direct crit route seed，但没有可证明 `crit_rate_received_increase` 非零的注册路线；本 story 也没有生产语义 diff，因此不运行 `scripts/run_buff_main_loop_consistency.py`。
+
+| Evidence source | Current registered route evidence | Candidate relevance | Verdict |
+| --- | --- | --- | --- |
+| `tests.teams.TeamRegistry` / `auto_register_teams()` | 直接 registry 命令返回 `青衣雷属性队`、`席德大安比队`、`莱特火属性队`、`薇薇安物理队`；`示例冰属性队` 仍未注册。 | 真实注册路线存在，但不能自动证明 selected full crit 的 received-crit 分量非零。 | 仅作为 route pool；禁止 validation-only team / fake APL。 |
+| `莱特火属性队` / `./zsim/data/APLData/莱特-扳机-雨果.toml` | `雨果` 使用 `equip_set4="啄木鸟电音"`；APL 包含 `1291` 行和 `1291|action+=|auto_NA`。`WoodpeckerElectroSet4_NA.special_judge_logic()` 对 trigger level `0` 通过 `CalculatorBuffAttributeReader.read_full_crit_rate(context)` 读取 full crit 后再 RNG。 | 是当前最合适的 future seed；但 `main_loop_consistency` 当前不输出 formula-call count，且 `rg` 未发现生产数据 / 配置会写入非零 `被暴击几率增加` / `crit_rate_received_increase`。 | Conditional No-Go now；只有后续生产语义 diff 和非零相关计数证据同时存在时才可采样。 |
+| `青衣雷属性队` / `席德大安比队` | direct damage / stun / buff 路线存在，部分角色有 2-piece `啄木鸟电音` 或其他 crit-adjacent 装备。 | 未发现当前 4-piece Woodpecker full-crit route 或非零 received-crit route。 | No-Go for this selected candidate sample. |
+| `薇薇安物理队` | anomaly / physical route，已用于其他 copied-output / anomaly sample discussions。 | 不绑定当前 selected `cal_crit_rate()` received-boundary。 | No-Go for this selected candidate sample. |
+
+如果后续生产实现 PRD 真的触碰 `Calculator.RegularMul.cal_crit_rate(data)` 或 `CalculatorBuffAttributeReader.read_full_crit_rate(context)`，并且能证明真实注册路线产生非零相关计数，首选 future sample contract 为：
+
+- Team: `莱特火属性队`
+- APL: `./zsim/data/APLData/莱特-扳机-雨果.toml`
+- Explicit stop tick: `1000`
+- Target branch: 后续 live production semantic-diff branch；当前 docs/proposal branch 不合格。
+- Runtime labels: `retained-cal-crit-rate` vs `candidate-cal-crit-rate`，或由后续 implementation PRD 命名的更具体 labels。
+- Expected nonzero count: `CalculatorBuffAttributeReader.read_full_crit_rate(context)` / selected full-crit formula count `> 0`；若要证明 received-crit 语义，必须额外证明 `crit_rate_received_increase > 0`。当前 `event_counts` 不能替代 formula-call count。
+- Total damage comparison: behavior-preserving replacement 需要 `legacy.total_damage == candidate.total_damage`；非零差异必须阻塞，除非另有语义变更 story 批准。
+- Buff timeline comparison: `differences.buff_timeline.legacy_only_count == 0` 且 `candidate_only_count == 0`。
+
 ## US-003 registered behavior sample eligibility audit
 
 本审计属于当前 candidate-selection PRD 的 docs-only / Guardrail-first slice。US-003 已选择唯一 proposal candidate `Calculator.RegularMul.cal_crit_rate()`，但没有生产语义 diff，因此本节只给出当前 registered team / APL evidence、No-Go / conditional No-Go、以及未来 main-loop sample 的必要条件；不新增 validation-only team、fake APL、fixture-only route，也不运行 retained-vs-retained main-loop sample。

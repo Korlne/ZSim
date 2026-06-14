@@ -4416,3 +4416,17 @@
 - Next step:
   - Continue to `US-005` registered behavior sample eligibility audit for the selected `cal_crit_rate()` candidate. Do not create validation-only teams, fake APLs, fixture-only live routes, or retained-vs-retained main-loop samples.
 ---
+
+## 2026-06-14 17:18 +08:00 - US-005
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-005-audit-registered-behavior-sample-eligibility.md`, `scripts/ralph/investigations/2026-06-14-US-005-crit-rate-registered-sample-eligibility.md`, `scripts/ralph/checkpoints/2026-06-14-us-005-crit-rate-registered-sample-eligibility.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-006-build-the-bounded-proposal-packet.md`
+- Replacement note:
+  - `US-005 crit-rate registered sample eligibility audit` replaces implicit main-loop-sample assumptions with retained conditional No-Go evidence for the selected `Calculator.RegularMul.cal_crit_rate(data)` candidate.
+  - This story does not replace live production formula code, reader source, registered team/APL config, validation-runner behavior, copied-output constructors, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Full crit and personal crit remain separate: full `cal_crit_rate()` includes `crit_rate_received_increase`; personal `cal_personal_crit_rate()` / `read_personal_crit_rate()` excludes received bonus.
+  - `莱特火属性队` / `./zsim/data/APLData/莱特-扳机-雨果.toml` is only a future conditional seed because `雨果` has 4-piece `啄木鸟电音`; current evidence still lacks a real registered nonzero `crit_rate_received_increase` route and current main-loop output does not expose formula-call counts.
+  - `scripts/run_buff_main_loop_consistency.py` remains skipped for this docs/evidence story and may only be required by a later live production semantic diff with a real registered route and nonzero relevant counts.
+  - Validation evidence: `formula-parity` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused reader suite `142 passed`, and scoped mypy success on `9 source files`; known pytest-asyncio and async log-writer shutdown noise remained non-fatal after success markers.
+- Next step:
+  - Continue to `US-006` bounded proposal packet. Keep any future main-loop sample conditional on a later production semantic-diff branch, stop tick `1000`, runtime labels, exact total-damage comparison, unchanged Buff timeline comparison, and nonzero full-crit formula relevance from a real registered route.
+---
