@@ -4497,3 +4497,16 @@
 - Next step:
   - Continue to `US-003` reader and personal-crit contrast verification. Do not broaden into registered-route sampling, validation-runner rewiring, old-container deletion, event/runtime/listener migration, or other `RegularMul` branches unless a later story explicitly authorizes it.
 ---
+
+## 2026-06-14 19:16 +08:00 - US-003
+- Files changed: `scripts/ralph/plans/slices/us-003-preserve-reader-and-personal-crit-contrast-boundaries.md`, `scripts/ralph/plans/slices/us-004-maintain-registered-sample-conditional-no-go.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 reader and personal-crit contrast verification` replaces implicit trust in the helper seam with deterministic focused evidence that the retained reader and formula boundaries still match.
+  - This story verifies an existing boundary only. It does not replace live production formula code, reader source, validation-runner behavior, registered teams/APLs, copied-output constructors, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - `CalculatorBuffAttributeReader.read_full_crit_rate(context)` still builds the retained formula snapshot and delegates to `Calculator.RegularMul.cal_crit_rate(data)`.
+  - Full crit still includes `crit_rate_received_increase`; `Calculator.RegularMul.cal_personal_crit_rate(data)` and `CalculatorBuffAttributeReader.read_personal_crit_rate(context)` still exclude it.
+  - Validation evidence: focused crit pytest exited `0` with `10 passed`; `formula-parity` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused reader suite `143 passed`, and scoped mypy success on `9 source files`.
+- Next step:
+  - Continue to `US-004` registered-sample conditional No-Go. Keep main-loop sample evidence conditional on a later live semantic diff with a real registered route and nonzero selected full-crit relevance.
+---
