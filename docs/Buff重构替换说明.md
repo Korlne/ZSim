@@ -4666,3 +4666,16 @@
 - Next step:
   - Continue to `US-008` handoff-doc synchronization and same-phase candidate pool preservation. Do not start production implementation until the next PRD explicitly names `Calculator.RegularMul.cal_personal_crit_dmg(data)` and carries the retained validation gates.
 ---
+
+## 2026-06-14 23:46 +08:00 - US-008
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-sync-handoff-docs-and-preserve-candidate-pool.md`, `scripts/ralph/checkpoints/2026-06-14-us-008-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-008 handoff-doc sync` replaces stale current-default / selected-candidate routing with long-lived docs that name `Calculator.RegularMul.cal_personal_crit_dmg(data)` / `CalculatorBuffAttributeReader.read_personal_crit_damage(context)` as the Conditional Go target for one later bounded implementation PRD.
+  - This story is docs/evidence/bookkeeping only. It does not replace live production formula code, reader source, validation-runner behavior, registered teams/APLs, copied-output constructors, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - The selected personal crit damage formula remains `static.crit_damage + dynamic.crit_dmg + dynamic.field_crit_dmg` and must continue to exclude `received_crit_dmg_bonus`; full `Calculator.RegularMul.cal_crit_dmg(data)` remains the received-damage contrast branch.
+  - Same-phase candidates remain available: registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if evidence names one, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules.
+  - `docs/旧Buff系统耦合审查结果.md` remains unchanged because this handoff found no new Buff coupling or coupling classification change.
+- Next step:
+  - Continue to `US-009` Ralph evidence / next-intake preparation. The long-lived default next PRD is a bounded `Calculator.RegularMul.cal_personal_crit_dmg(data)` implementation PRD, not broad RegularMul packaging, retained-only sheer shortcut, validation-runner rewrite, registered-team fixture creation, old-container deletion, event/runtime/listener layer merge, or retained compatibility deletion.
+---
