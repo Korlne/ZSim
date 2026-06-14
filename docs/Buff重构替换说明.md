@@ -4954,3 +4954,17 @@
 - Next step:
   - Continue to `US-005` retained validation gate decisions. Keep `formula-parity` and `calculator-reads` serial, and only add `implicit-events`, default validation, or main-loop consistency if the active story's touched surfaces justify them.
 ---
+
+## 2026-06-15 06:21 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-retained-validation-gate-decisions.md`, `scripts/ralph/checkpoints/2026-06-15-us-005-retained-validation-gate-decisions.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-006-registered-sample-eligibility.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 retained validation gate checkpoint` replaces chat-only gate selection with durable serial `formula-parity` evidence and explicit conditional skip rationale for retained reader/event/default validation profiles.
+  - This story is verification/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered routes, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_personal_crit_rate(data)` remains on the bounded helper seam and still excludes `crit_rate_received_increase`.
+  - `CalculatorBuffAttributeReader.read_personal_crit_rate(context)` remains the reader delegate anchor through `_build_formula_snapshot(context)`.
+  - `_CalculatorReadSnapshot`, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, old containers, copied-output payloads, validation-runner contracts, registered routes, and retained compatibility paths remain unchanged.
+  - `calculator-reads`, `implicit-events`, and default validation remain conditional for later slices whose touched surfaces trigger them.
+- Next step:
+  - Continue to `US-006` registered sample eligibility. Do not fabricate registered routes or run main-loop consistency unless a later live semantic diff plus a real registered route with nonzero relevant events justifies it.
+---
