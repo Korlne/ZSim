@@ -1,6 +1,6 @@
 # Buff公式候选与测试目标清单
 
-更新时间：2026-06-14 12:17 +08:00
+更新时间：2026-06-14 13:25 +08:00
 
 本清单服务于 Phase 3 公式等价测试设计。当前故事只建立候选面和测试目标证据，不替换 `Calculator.py`、`CalAnomaly.py`、复制异常 / 紊乱输出公式，也不改变 `ScheduleDispatchPort`、`RuntimeCommandPort` 或旧容器兼容路径。
 
@@ -527,6 +527,32 @@ Future main-loop sample requirements, if a later story proposes one:
 | Validation profiles | Future proposal / implementation 必须串行保留 focused pytest、`formula-parity`、`calculator-reads`；触达 copied-output、event、dispatch/runtime、listener、dot runtime 或 same-tick write 时追加 `implicit-events`。 |
 | Registered route | 只有 future live semantic diff 且真实注册队伍 / APL 在 explicit stop tick 内有 nonzero relevant stun / impact counts 时才运行 main-loop sample；缺 route、缺 count 或只靠 runtime label 都是 No-Go。 |
 | Interface and layer stops | Broad interface change、validation-runner rewrite need、public contract expansion、old-container deletion、layer merge，或未被未来 PRD 命名而编辑 `ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`BuffRuntimeReadPort`，均必须停止并拆出新 slice。 |
+
+## Current candidate-selection PRD US-008 final handoff
+
+结论：Go for one later bounded proposal / implementation PRD only。当前 candidate-selection PRD 选择 `Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()` array output 作为下一默认 bounded surface，并完成 handoff docs；它不替换 production formula、不新增 registered team/APL、不改 validation runner、不删除 old containers，也不合并 scheduled queue、listener broadcast、dot runtime registration 或 same-tick runtime write 分层。
+
+Selected candidate outcome：
+
+- Selected files / symbols：`zsim/sim_progress/ScheduledEvent/Calculator.py::Calculator.StunMul.get_stun_array()`、`Calculator.cal_stun()`；focused oracle 为 `tests/simulator/test_buff_attribute_reader.py::test_stun_array_output_contract_preserves_field_order_dtype_and_product`。
+- Scope boundary：`Calculator.StunMul.cal_imp()` / `_calculate_impact(...)`、all `Calculator.RegularMul` branches、retained-only sheer runtime conversion、copied-output constructors、old containers、dispatch/runtime ports 和 retained compatibility 均保持分离。
+- Next default PRD：只围绕 selected Stun array output 写 one bounded proposal / implementation package；不得扩大为 broad `Calculator.py` / `CalAnomaly.py` rewrite、RegularMul branch bundle、retained-only sheer shortcut、registered-team fixture creation、validation-runner rewrite、old-container deletion 或 layer merge。
+
+Retained gates / verifier evidence：
+
+- Exact focused nodeid、serial `formula-parity`、serial `calculator-reads` 是后续 proposal / implementation 的必备 retained gates；触达 copied-output、event、dispatch/runtime、listener、dot runtime 或 same-tick write 时才追加 `implicit-events`。
+- US-007 final retained gates 已通过：focused reader pytest `140 passed`；`formula-parity` base `2 passed` / isolated teams `3 passed` / focused `140 passed` / mypy `9 source files` clean；`calculator-reads` base `2 passed` / isolated teams `3 passed` / focused `240 passed` / mypy `22 source files` clean；`implicit-events` base `2 passed` / isolated teams `3 passed` / focused `247 passed` / mypy `90 source files` clean。
+- 本 US-008 为 docs-only handoff；typecheck 使用 Ralph docs/tooling scoped mypy，另做 PRD JSON sanity 和 UTF-8 / mojibake scan。
+
+Registered-sample decision：
+
+- Current decision：conditional No-Go。US-008 没有 live semantic diff，因此不运行 `scripts/run_buff_main_loop_consistency.py`，也不创建 validation-only team、fake APL、fixture-only route 或 retained-vs-retained sample。
+- Future sample 只在 later live semantic diff 且真实 registered stun / impact route 在 explicit stop tick 内有 nonzero relevant counts 时运行；必须记录 runtime labels、total damage comparison、relevant event/formula count 和 Buff timeline comparison。
+
+Rollback anchors / same-phase pool：
+
+- Rollback anchors：source methods、focused Stun array oracle、retained Buff docs、本清单、`formula-parity`、`calculator-reads`、conditional `implicit-events`、`MultiplierData` / `DynamicStatement`、old containers、`ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`BuffRuntimeReadPort` 与 `LegacyBuffRuntimeFacade`。
+- Same-phase pool retained：registered behavior sample eligibility、remaining `Calculator.RegularMul` branches / retained-only sheer follow-up、`Calculator.StunMul.get_stun_array()` future follow-up、P2-A through P2-G guarded maintenance、retained compatibility 和 blocker-only reopen rules。
 
 ## US-022 行为样本决策矩阵
 

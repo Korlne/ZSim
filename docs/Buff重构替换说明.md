@@ -4249,3 +4249,16 @@
 - Next step:
   - Continue with US-008 handoff docs and same-phase candidate pool; keep any later implementation PRD bounded by the selected Stun array output contract, retained gates, registered-route stop condition, rollback anchors, and invariant checks.
 ---
+
+## 2026-06-14 13:25 +08:00 - US-008
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/checkpoints/2026-06-14-us-008-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/investigations/2026-06-14-US-008-docs-typecheck-scope.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-008 final handoff docs and same-phase candidate pool` replaces implicit next-cycle routing with long-lived docs that name `Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()` as the selected default bounded proposal / implementation surface.
+  - This story updates handoff docs and Ralph evidence only; it does not replace live production formula code, reader source, copied-output constructors, event/runtime/listener paths, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Focused Stun array oracle, retained `formula-parity` / `calculator-reads` gates, conditional `implicit-events`, registered-route conditional No-Go, rollback anchors, old containers, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, copied-output constructors, and layer-separation invariants remain retained.
+  - Same-phase candidates remain available: registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, `Calculator.StunMul.get_stun_array()` future follow-up, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules.
+  - `docs/旧Buff系统耦合审查结果.md` remains unchanged because this handoff found no new Buff coupling or coupling classification change.
+- Next step:
+  - Generate one bounded `Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()` proposal / implementation PRD; do not directly convert the Markdown PRD into `scripts/ralph/prd.json` until a later explicit Ralph conversion step.
+---
