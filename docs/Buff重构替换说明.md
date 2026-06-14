@@ -4537,3 +4537,16 @@
 - Next step:
   - Continue to `US-006` public contract and rollback anchor review. Do not broaden into production implementation, validation-runner rewrites, registered-team fixtures, old-container deletion, or event/runtime/listener layer changes unless a later story explicitly authorizes that surface.
 ---
+
+## 2026-06-14 19:48 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-review-public-contracts-and-rollback-anchors.md`, `scripts/ralph/investigations/2026-06-14-US-006-public-contract-rollback-anchors.md`, `scripts/ralph/checkpoints/2026-06-14-us-006-public-contract-rollback-anchors.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 public contract and rollback-anchor review` replaces implicit reviewer confidence with explicit evidence for the selected full-crit formula seam, personal-crit contrast, reader adapters, private snapshot adapter, focused crit tests, `formula-parity`, and `calculator-reads`.
+  - This story verifies and records rollback boundaries only. It does not replace live production formula code, reader source, test source, validation-runner behavior, registered teams/APLs, copied-output paths, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Full crit and personal crit remain separate retained boundaries; full `cal_crit_rate()` includes `crit_rate_received_increase`, while personal `cal_personal_crit_rate()` / `read_personal_crit_rate()` excludes it.
+  - `_CalculatorReadSnapshot` remains a private five-field adapter. `formula-parity` and `calculator-reads` remain the retained rollback gates for future formula/read changes.
+  - Validation evidence: focused mypy exited `0` with `Success: no issues found in 2 source files`; known `annotation-unchecked` notes remained non-fatal.
+- Next step:
+  - Continue to `US-007` handoff-doc sync and same-phase candidate-pool preservation. Do not start new production work, validation-runner rewrites, registered-team fixtures, old-container deletion, or event/runtime/listener layer changes from this review slice.
+---
