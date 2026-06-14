@@ -4679,3 +4679,16 @@
 - Next step:
   - Continue to `US-009` Ralph evidence / next-intake preparation. The long-lived default next PRD is a bounded `Calculator.RegularMul.cal_personal_crit_dmg(data)` implementation PRD, not broad RegularMul packaging, retained-only sheer shortcut, validation-runner rewrite, registered-team fixture creation, old-container deletion, event/runtime/listener layer merge, or retained compatibility deletion.
 ---
+
+## 2026-06-15 01:21 +08:00 - US-009
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-009-record-ralph-evidence-and-prepare-next-intake.md`, `scripts/ralph/plans/slices/buff-refactor-phase3-regularmul-remaining-branch-bounded-proposal-readiness-next-intake.md`, `scripts/ralph/checkpoints/2026-06-15-us-009-record-ralph-evidence-next-intake.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-009 Ralph evidence and next-intake closure` replaces chat-only PRD completion assumptions with durable Ralph artifact evidence, verifier commands, reviewer verdict, checkpoint, refreshed campaign state, and PRD completion bookkeeping.
+  - This story is docs/evidence/bookkeeping only. It does not replace live production formula code, reader source, validation-runner behavior, registered teams/APLs, copied-output constructors, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - The selected next implementation PRD remains bounded to `Calculator.RegularMul.cal_personal_crit_dmg(data)` / `CalculatorBuffAttributeReader.read_personal_crit_damage(context)` and must preserve `static.crit_damage + dynamic.crit_dmg + dynamic.field_crit_dmg` while excluding `received_crit_dmg_bonus`.
+  - Same-phase candidates remain available: registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if evidence names one, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules.
+  - `docs/旧Buff系统耦合审查结果.md` remains unchanged because this evidence slice found no new Buff coupling or coupling classification change.
+- Next step:
+  - Generate the next PRD as Phase-3 RegularMul personal crit damage bounded implementation PRD. Do not broaden into full crit damage, `cal_crit_rate(data)`, `cal_crit_expect()`, retained-only sheer, array output, validation-runner rewrite, registered-team fixture creation, old-container deletion, event/runtime/listener layer merge, or retained compatibility deletion.
+---
