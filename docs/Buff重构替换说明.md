@@ -4692,3 +4692,15 @@
 - Next step:
   - Generate the next PRD as Phase-3 RegularMul personal crit damage bounded implementation PRD. Do not broaden into full crit damage, `cal_crit_rate(data)`, `cal_crit_expect()`, retained-only sheer, array output, validation-runner rewrite, registered-team fixture creation, old-container deletion, event/runtime/listener layer merge, or retained compatibility deletion.
 ---
+
+## 2026-06-15 01:43 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-scope-baseline-and-stop-conditions.md`, `scripts/ralph/plans/slices/us-002-personal-crit-damage-helper-seam-implementation.md`, `scripts/ralph/checkpoints/2026-06-15-us-001-scope-baseline-stop-conditions.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 scope baseline` replaces stale candidate-selection routing assumptions with current docs/state/source evidence for one bounded route: `Calculator.RegularMul.cal_personal_crit_dmg(data)` plus `CalculatorBuffAttributeReader.read_personal_crit_damage(context)`.
+  - This story is docs/evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output constructors, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - The selected personal crit damage formula remains `static.crit_damage + dynamic.crit_dmg + dynamic.field_crit_dmg` and continues to exclude `received_crit_dmg_bonus`.
+  - Full `Calculator.RegularMul.cal_crit_dmg(data)` remains the received-damage contrast branch, and the same-phase candidate pool remains available after this PRD.
+- Next step:
+  - Continue to `US-002` for only the personal crit damage helper seam implementation or no-op verification. Stop if the helper would require public interface expansion, `_CalculatorReadSnapshot` expansion, runtime `char_instance`, registered-team fixtures, validation-runner rewrites, old-container deletion, or event/runtime/listener work.
+---
