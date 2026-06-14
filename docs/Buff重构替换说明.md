@@ -4378,3 +4378,16 @@
 - Next step:
   - Continue with US-002 RegularMul remaining branch matrix refresh; reopen Stun, copied-output, `cal_res_pen()`, AM/AP/impact, or P2 guarded buckets only with named root-workspace source, focused test, guardrail, validation, or proposal-readiness evidence.
 ---
+
+## 2026-06-14 16:33 +08:00 - US-002
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-002-refresh-regularmul-remaining-branch-matrix.md`, `scripts/ralph/investigations/2026-06-14-US-002-regularmul-branch-matrix.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-003-select-one-exact-candidate-or-record-no-go.md`
+- Replacement note:
+  - `US-002 RegularMul remaining branch matrix` replaces implicit branch-selection confidence with a durable matrix that names deterministic oracle evidence, missing rows, reader-snapshot dependency, registered-route eligibility, rollback anchors, and current status for the eleven required `Calculator.RegularMul` branches.
+  - This story does not replace a live production path; no production formula, reader API, registered team/APL, copied-output constructor, event/runtime/listener path, validation-runner wiring, lifecycle container, old Buff container, or retained compatibility path changed.
+- Compatibility retained:
+  - Snapshot-compatible RegularMul branches are still retained evidence only until a later story selects one exact candidate and closes branch-specific oracle gaps.
+  - Retained-only sheer remains separate: `cal_base_attr(..., base_attr=4)` still depends on runtime `char_instance.sheer_attack_conversion_rate`; `cal_sheer_dmg_bonus()` does not become proposal-ready without an approved reader contract and real registered Yixuan / 仪玄 route.
+  - Validation evidence: `formula-parity` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused reader suite `141 passed`, and scoped mypy success on `9 source files`; known pytest-asyncio and async log-writer shutdown noise stayed non-fatal after success markers.
+- Next step:
+  - Continue to `US-003` exact RegularMul candidate selection or No-Go. Do not bundle all RegularMul branches, reopen completed Stun/Anomaly/copied-output work by default, create validation-only routes, or broaden into a production `Calculator.py` rewrite.
+---
