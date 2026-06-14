@@ -4928,3 +4928,16 @@
 - Next step:
   - Continue to `US-003` reader anchor and full/personal contrast verification. Do not expand `_CalculatorReadSnapshot`, add received-crit state to the personal path, fabricate registered routes, or reopen unrelated RegularMul branches without new evidence.
 ---
+
+## 2026-06-15 06:00 +08:00 - US-003
+- Files changed: `scripts/ralph/plans/slices/us-003-reader-anchor-and-full-personal-contrast.md`, `scripts/ralph/checkpoints/2026-06-15-us-003-reader-anchor-full-personal-contrast.md`, `scripts/ralph/plans/slices/us-004-focused-oracle-and-scoped-typecheck.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 reader anchor and full/personal contrast verification` replaces stale crit-damage slice evidence with durable personal-crit-rate reader-boundary evidence.
+  - This story is verification/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered routes, copied-output/event/runtime/listener paths, old containers, or retained compatibility paths.
+- Compatibility retained:
+  - `CalculatorBuffAttributeReader.read_personal_crit_rate(context)` still builds `_build_formula_snapshot(context)` and delegates to `Calculator.RegularMul.cal_personal_crit_rate(data)`.
+  - `_CalculatorReadSnapshot` remains private and does not gain `char_instance`, runtime view, array output, copied-output payload, or public field expansion.
+  - Full crit remains on `_calculate_full_crit_rate(...)` / `Calculator.RegularMul.cal_crit_rate(data)` and includes `crit_rate_received_increase`; personal crit remains on `_calculate_personal_crit_rate(...)` / `Calculator.RegularMul.cal_personal_crit_rate(data)` and excludes it.
+- Next step:
+  - Continue to `US-004` focused oracle and scoped typecheck without widening into registered-route fabrication, validation-runner rewrites, event/runtime/listener paths, old-container deletion, or unrelated RegularMul branches.
+---
