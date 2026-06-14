@@ -4404,3 +4404,15 @@
   - Continue to `US-004` focused oracle-gap closure for the selected `cal_crit_rate()` candidate only. Stop if closure would require `_CalculatorReadSnapshot` public contract expansion, validation-runner rewiring, retained compatibility deletion, production formula changes, or bundling the broader crit/damage/defense/resistance/vulnerability/shear surfaces.
   - Post-completion controller refresh moved the durable active slice to `US-004`.
 ---
+
+## 2026-06-14 17:02 +08:00 - US-004
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-004-close-focused-oracle-gaps-for-the-selected-candidate.md`, `scripts/ralph/investigations/2026-06-14-US-004-crit-rate-oracle-gap.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-004 focused oracle row` replaces the selected `Calculator.RegularMul.cal_crit_rate(data)` over-100% uncertainty with deterministic reader/retained parity evidence in `test_p2b_parity_fixture_matches_old_full_and_personal_crit_rate_helpers[over-one-full-crit-received-boundary]`.
+  - This story does not replace live production formula code, reader source, copied-output constructors, CalAnomaly paths, Stun array logic, event/runtime/listener paths, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Full crit and personal crit remain separate: full `cal_crit_rate()` includes `crit_rate_received_increase` and can exceed 1.0; personal `cal_personal_crit_rate()` / `read_personal_crit_rate()` excludes received bonus and remains a retained contrast boundary.
+  - `cal_crit_expect()`, crit damage, damage bonus, defense, resistance, vulnerability, base damage, retained-only sheer, arrays, `_CalculatorReadSnapshot` public fields, validation-runner profiles, registered teams/APLs, old containers, and layer-separation invariants remain unchanged.
+- Next step:
+  - Continue to `US-005` registered behavior sample eligibility audit for the selected `cal_crit_rate()` candidate. Do not create validation-only teams, fake APLs, fixture-only live routes, or retained-vs-retained main-loop samples.
+---

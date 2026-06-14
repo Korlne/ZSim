@@ -4912,6 +4912,17 @@ def test_regular_mul_retained_sheer_base_attr_requires_char_instance_conversion_
             0.1,
             id="received-enemy-debuff",
         ),
+        pytest.param(
+            0.95,
+            0.10,
+            0.05,
+            0.15,
+            1,
+            1,
+            1.25,
+            1.10,
+            id="over-one-full-crit-received-boundary",
+        ),
         pytest.param(0.2, 0.0, 0.0, 0.0, 0, 0, 0.2, 0.2, id="no-buff"),
     ],
 )
