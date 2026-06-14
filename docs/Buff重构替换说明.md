@@ -4968,3 +4968,16 @@
 - Next step:
   - Continue to `US-006` registered sample eligibility. Do not fabricate registered routes or run main-loop consistency unless a later live semantic diff plus a real registered route with nonzero relevant events justifies it.
 ---
+
+## 2026-06-15 06:35 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-registered-sample-eligibility.md`, `scripts/ralph/checkpoints/2026-06-15-us-006-registered-sample-eligibility.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 registered sample eligibility checkpoint` replaces chat-only main-loop sample assumptions with durable Conditional No-Go evidence for this helper-seam PRD.
+  - This story is verification/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered routes, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `scripts/run_buff_main_loop_consistency.py` remains an explicit sample runner and was not executed by default for this behavior-preserving helper extraction.
+  - `Calculator.RegularMul.cal_personal_crit_rate(data)` remains on the bounded helper seam and still excludes `crit_rate_received_increase`.
+  - No validation-only team, fake APL, fixture-only route, retained-vs-retained sample, registered-route data, event/runtime/listener path, or validation-runner behavior was created or changed.
+- Next step:
+  - Continue to `US-007` reviewer invariant and rollback gate. Keep registered behavior sample eligibility in the same-phase pool until a later live production semantic diff plus a real registered direct-crit route proves nonzero selected personal-crit-rate relevance inside an explicit stop tick.
+---
