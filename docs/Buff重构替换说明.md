@@ -4903,3 +4903,16 @@
 - Next step:
   - Generate one bounded personal-crit-rate implementation PRD only if it keeps the exact helper surface, focused personal/full crit tests, scoped mypy, retained `formula-parity`, conditional reader/event gates, registered-sample conditions, rollback anchors, stop conditions, and non-goals. After that PRD, reselect from the same-phase pool instead of chaining another personal-crit-rate follow-up.
 ---
+
+## 2026-06-15 05:41 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-lock-scope-and-baseline.md`, `scripts/ralph/plans/slices/us-002-personal-crit-rate-helper-seam.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 lock-scope baseline` replaces chat-only next-route assumptions with durable evidence that this production-implementation PRD is limited to `Calculator.RegularMul.cal_personal_crit_rate(data)` plus optional module-local `_calculate_personal_crit_rate(static_statement, dynamic_statement)`.
+  - This story does not replace live production formula code, reader code, focused tests, validation-runner behavior, registered routes, copied-output/event/runtime/listener paths, old containers, or retained compatibility paths.
+- Compatibility retained:
+  - Root `Calculator.RegularMul.cal_personal_crit_rate(data)` still computes only `static.crit_rate + dynamic.crit_rate + dynamic.field_crit_rate` and excludes `crit_rate_received_increase`.
+  - `CalculatorBuffAttributeReader.read_personal_crit_rate(context)` remains the reader delegate anchor through `_build_formula_snapshot(context)`.
+  - Full `Calculator.RegularMul.cal_crit_rate(data)` / `_calculate_full_crit_rate(...)`, personal crit damage, Stun, AM/AP/impact, copied-output, dispatch/runtime/listener, same-tick write, old-container, and retained compatibility boundaries remain unchanged.
+- Next step:
+  - Continue to `US-002` only for an equivalent personal crit-rate helper seam or explicit No-Go. Do not broaden into full crit, crit damage, other RegularMul branches, `_CalculatorReadSnapshot` public expansion, registered-route fabrication, validation-runner rewrites, copied-output/event/runtime/lifecycle paths, old-container deletion, or retained compatibility cleanup.
+---
