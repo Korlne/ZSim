@@ -4995,3 +4995,18 @@
 - Next step:
   - Continue to `US-008` handoff docs and same-phase pool preservation. Keep that slice docs/evidence-scoped unless it discovers a concrete source/doc mismatch requiring a smaller blocker slice.
 ---
+
+## 2026-06-15 07:00 +08:00 - US-008
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-15-us-008-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-008 final handoff docs` replaces stale next-default wording that still pointed to personal crit rate as the next implementation with durable evidence that `Calculator.RegularMul.cal_personal_crit_rate(data)` is already implemented / no-op verified through `_calculate_personal_crit_rate(...)`.
+  - This handoff slice does not replace additional live production formula code. The implementation result remains the bounded helper seam added earlier in this PRD: `_calculate_personal_crit_rate(static_statement, dynamic_statement)` computes only `static_statement.crit_rate + dynamic_statement.crit_rate + dynamic_statement.field_crit_rate`.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_personal_crit_rate(data)` keeps its public signature and excludes `crit_rate_received_increase`.
+  - `CalculatorBuffAttributeReader.read_personal_crit_rate(context)` remains the reader delegate anchor through `_build_formula_snapshot(context)`, and `_CalculatorReadSnapshot` remains private without runtime view, `char_instance`, array output, copied-output payload, or public field expansion.
+  - Full `Calculator.RegularMul.cal_crit_rate(data)` / `_calculate_full_crit_rate(...)` remains the received-crit contrast branch; completed personal crit damage, selected Stun, copied-output, AM/AP/impact, `cal_res_pen()`, old containers, event/runtime/listener layers, validation-runner behavior, registered routes, retained compatibility, and P2-A through P2-G guarded buckets remain closed unless new evidence reopens them.
+  - Same-phase pool remains registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if named evidence appears, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules.
+  - No new Buff coupling or coupling-classification change was found, so `docs/旧Buff系统耦合审查结果.md` remains unchanged.
+- Next step:
+  - Generate the next PRD from Phase-3 same-phase candidate selection / bounded proposal, not another personal-crit-rate follow-up. Select one exact retained candidate, record focused tests, scoped mypy, registered-sample conditions, rollback anchors, retained gates, non-goals, and stop conditions before implementation.
+---
