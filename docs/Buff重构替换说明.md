@@ -4471,3 +4471,15 @@
 - Next step:
   - Generate one bounded implementation PRD limited to `Calculator.RegularMul.cal_crit_rate(data)` from this packet, unless reviewer chooses another retained same-phase candidate with named evidence. Do not broaden into whole-Calculator rewrites, RegularMul branch bundling, retained-only sheer expansion, validation-runner rewrites, registered-team fixture creation, old-container deletion, or event/runtime/listener layer merges.
 ---
+
+## 2026-06-14 18:46 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-lock-scope-and-source-baseline.md`, `scripts/ralph/plans/slices/us-002-implement-the-bounded-full-crit-formula-seam.md`, `scripts/ralph/checkpoints/2026-06-14-us-001-lock-scope-source-baseline.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-001 scope/source baseline checkpoint` replaces implicit current-route assumptions with explicit evidence that the active implementation PRD is bounded to `Calculator.RegularMul.cal_crit_rate(data)`.
+  - This story does not replace a live production path, formula body, reader implementation, validation runner, registered sample, event/runtime/listener path, lifecycle container, old Buff container, copied-output path, CalAnomaly path, Stun path, retained-only sheer path, or any other `RegularMul` branch.
+- Compatibility retained:
+  - Root `Calculator.RegularMul.cal_crit_rate(data)` still includes `crit_rate_received_increase`; `CalculatorBuffAttributeReader.read_full_crit_rate(context)` still delegates through the retained formula path.
+  - Full crit and personal crit remain separate boundaries; registered behavior sample proof remains conditional.
+- Next step:
+  - Continue with the next active story only after this baseline is recorded; any production implementation must stay limited to the selected full-crit path and preserve the listed non-goals.
+---
