@@ -4391,3 +4391,16 @@
 - Next step:
   - Continue to `US-003` exact RegularMul candidate selection or No-Go. Do not bundle all RegularMul branches, reopen completed Stun/Anomaly/copied-output work by default, create validation-only routes, or broaden into a production `Calculator.py` rewrite.
 ---
+
+## 2026-06-14 16:43 +08:00 - US-003
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-003-select-one-exact-candidate-or-record-no-go.md`, `scripts/ralph/investigations/2026-06-14-US-003-regularmul-candidate-decision.md`, `scripts/ralph/checkpoints/2026-06-14-us-003-regularmul-candidate-decision.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-004-close-focused-oracle-gaps-for-the-selected-candidate.md`
+- Replacement note:
+  - `US-003 RegularMul candidate decision` replaces implicit branch-selection discussion with one exact selected candidate: `Calculator.RegularMul.cal_crit_rate(data)`.
+  - This story is docs/evidence only. It does not replace live production formula code, reader source, copied-output constructors, event/runtime/listener paths, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Full crit and personal crit remain separate: full `cal_crit_rate()` includes `crit_rate_received_increase`; personal `cal_personal_crit_rate()` / `read_personal_crit_rate()` excludes received bonus and is retained as a contrast boundary.
+  - `Calculator.RegularMul.cal_crit_dmg()`, `cal_personal_crit_dmg()`, `cal_crit_expect()`, damage bonus, defense, resistance, vulnerability, base damage, retained-only sheer, arrays, `_CalculatorReadSnapshot` public fields, validation-runner profiles, registered teams/APLs, old containers, and layer-separation invariants remain unchanged.
+- Next step:
+  - Continue to `US-004` focused oracle-gap closure for the selected `cal_crit_rate()` candidate only. Stop if closure would require `_CalculatorReadSnapshot` public contract expansion, validation-runner rewiring, retained compatibility deletion, production formula changes, or bundling the broader crit/damage/defense/resistance/vulnerability/shear surfaces.
+  - Post-completion controller refresh moved the durable active slice to `US-004`.
+---
