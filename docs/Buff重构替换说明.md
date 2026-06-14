@@ -4768,3 +4768,16 @@
 - Next step:
   - Continue to `US-007` registered sample eligibility and reviewer gate. Do not create validation-only teams, fake APLs, fixture-only routes, event/runtime/listener merges, validation-runner rewrites, old-container deletion, or retained compatibility cleanup.
 ---
+
+## 2026-06-15 03:00 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-registered-sample-eligibility-and-reviewer-gate.md`, `scripts/ralph/checkpoints/2026-06-15-us-007-registered-sample-reviewer-gate.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 registered sample / reviewer gate` replaces chat-only eligibility claims with durable evidence that main-loop consistency remains conditional No-Go for the current personal crit damage implementation PRD.
+  - This story is evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output constructors, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - No validation-only team, fake APL, fixture-only route, retained-vs-retained sample, registered-route config, public contract change, deletion boundary, performance-sensitive path, or phase boundary was created or touched.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, old containers, copied-output constructors, validation-runner behavior, registered routes, and retained compatibility paths remain unchanged.
+  - Focused mypy exited `0` with `Success: no issues found in 2 source files`; existing `annotation-unchecked` notes were non-fatal.
+- Next step:
+  - Continue to `US-008` final handoff docs and same-phase candidate pool preservation. Do not collapse the future candidate pool to only personal crit damage or invent registered-route evidence without a future live semantic diff and real route relevance.
+---
