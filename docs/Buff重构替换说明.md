@@ -4483,3 +4483,17 @@
 - Next step:
   - Continue with the next active story only after this baseline is recorded; any production implementation must stay limited to the selected full-crit path and preserve the listed non-goals.
 ---
+
+## 2026-06-14 19:02 +08:00 - US-002
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-002-implement-the-bounded-full-crit-formula-seam.md`, `scripts/ralph/plans/slices/us-003-preserve-reader-and-personal-crit-contrast-boundaries.md`, `scripts/ralph/checkpoints/2026-06-14-us-002-bounded-full-crit-formula-seam.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `Calculator.RegularMul.cal_crit_rate(data)` helper seam replaces the inline full-crit scalar expression with module-local `_calculate_full_crit_rate(static_statement, dynamic_statement)`.
+  - This story replaces only an internal formula-maintenance boundary; it does not replace reader snapshot construction, validation-runner behavior, registered teams/APLs, old Buff containers, copied-output constructors, event/runtime/listener paths, lifecycle containers, or retained compatibility paths.
+- Compatibility retained:
+  - The exact full crit formula remains `static.crit_rate + dynamic.crit_rate + dynamic.field_crit_rate + dynamic.crit_rate_received_increase`.
+  - `CalculatorBuffAttributeReader.read_full_crit_rate(context)` still delegates to `Calculator.RegularMul.cal_crit_rate(data)`.
+  - Personal crit, crit expectation, crit damage, Stun, Anomaly, retained-only sheer, `_CalculatorReadSnapshot`, `MultiplierData`, `MulData`, `DynamicStatement`, and `Calculator.RegularMul.__init__` remain unchanged.
+  - Validation evidence: focused crit pytest exited `0` with `8 passed`; `formula-parity` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused reader suite `143 passed`, and scoped mypy success on `9 source files`.
+- Next step:
+  - Continue to `US-003` reader and personal-crit contrast verification. Do not broaden into registered-route sampling, validation-runner rewiring, old-container deletion, event/runtime/listener migration, or other `RegularMul` branches unless a later story explicitly authorizes it.
+---

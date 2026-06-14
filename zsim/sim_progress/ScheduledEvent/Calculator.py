@@ -153,6 +153,15 @@ def _calculate_impact(static_statement: Any, dynamic_statement: Any) -> float:
     )
 
 
+def _calculate_full_crit_rate(static_statement: Any, dynamic_statement: Any) -> float:
+    return (
+        static_statement.crit_rate
+        + dynamic_statement.crit_rate
+        + dynamic_statement.field_crit_rate
+        + dynamic_statement.crit_rate_received_increase
+    )
+
+
 def _build_stun_multiplier_array(
     imp: float,
     stun_ratio: float,
@@ -939,13 +948,7 @@ class Calculator:
         @staticmethod
         def cal_crit_rate(data: MultiplierData) -> float:
             """暴击率 = 面板暴击率 + buff暴击率 + 受暴击概率增加"""
-            crit_rate = (
-                data.static.crit_rate
-                + data.dynamic.crit_rate
-                + data.dynamic.field_crit_rate
-                + data.dynamic.crit_rate_received_increase
-            )
-            return crit_rate
+            return _calculate_full_crit_rate(data.static, data.dynamic)
 
         @staticmethod
         def cal_personal_crit_rate(data: MultiplierData) -> float:

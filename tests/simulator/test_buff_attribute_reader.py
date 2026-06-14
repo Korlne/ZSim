@@ -4657,6 +4657,53 @@ def test_calculator_regular_mul_crit_formula_families_preserve_received_boundari
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
 
 
+def test_regular_mul_full_crit_rate_delegates_to_module_helper(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_attribute_read_fixture(
+        name="完整暴击率委托",
+        crit_rate=0.2,
+        damage_ratio=1.0,
+        hit_times=1,
+        diff_multiplier=0,
+        char_buff_count=1,
+        enemy_debuff_count=1,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(
+            crit_rate=0.1,
+            field_crit_rate=0.05,
+            crit_rate_received_increase=0.25,
+        ),
+    )
+    retained_data = _legacy_multiplier_data(fixture)
+    helper_calls: list[tuple[Any, Any]] = []
+
+    def fake_calculate_full_crit_rate(
+        static_statement: Any, dynamic_statement: Any
+    ) -> float:
+        helper_calls.append((static_statement, dynamic_statement))
+        return 9.87
+
+    monkeypatch.setattr(
+        calculator_module,
+        "_calculate_full_crit_rate",
+        fake_calculate_full_crit_rate,
+    )
+
+    first_value = Calculator.RegularMul.cal_crit_rate(retained_data)
+    second_value = Calculator.RegularMul.cal_crit_rate(retained_data)
+
+    assert first_value == pytest.approx(9.87)
+    assert second_value == pytest.approx(9.87)
+    assert helper_calls == [
+        (retained_data.static, retained_data.dynamic),
+        (retained_data.static, retained_data.dynamic),
+    ]
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+
+
 @pytest.mark.parametrize(
     (
         "fixture_kwargs",
