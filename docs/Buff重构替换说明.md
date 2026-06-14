@@ -4135,3 +4135,16 @@
 - Next step:
   - Generate one bounded same-phase candidate-selection / proposal PRD from the documented pool; do not directly convert that Markdown PRD into `scripts/ralph/prd.json` until a later explicit Ralph conversion step.
 ---
+
+## 2026-06-14 09:37 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconfirm-phase-3-candidate-pool-and-baseline.md`, `scripts/ralph/investigations/2026-06-14-US-001-phase3-candidate-baseline.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 Phase-3 candidate baseline packet` replaces implicit carry-over assumptions with cited evidence that the same-phase pool remains registered sample eligibility, remaining `Calculator.RegularMul` / retained-only sheer follow-up, `Calculator.StunMul.get_stun_array()` / array-output follow-up, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules.
+  - This story updates Ralph/Buff evidence only; it does not replace live production formula code, copied-output constructors, `UpdateAnomaly.py`, scheduled handlers, dispatch/runtime ports, listener broadcasts, dot runtime registration, same-tick runtime writes, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Copied-payload handler/report implementation, `cal_res_pen()` selector extraction, AM/AP/impact helper implementation, Stun / RegularMul array characterization, selected RegularMul branch matrix, and retained-only sheer No-Go are completed evidence, not automatic implementation authorization.
+  - `formula-parity` and `calculator-reads` remain serial retained gates for formula/read candidates; `implicit-events` remains conditional for copied-output, event, dispatch, runtime, or listener boundaries.
+  - `scripts/ralph/prd.json` remains unchanged per active story acceptance.
+- Next step:
+  - Continue with US-002 remaining formula surface matrix; select exact candidate evidence without reopening completed scopes unless new root-workspace source, guardrail, focused-test, validation, or registered-route evidence names a concrete blocker.
+---
