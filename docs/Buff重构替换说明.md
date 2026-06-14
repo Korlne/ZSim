@@ -4602,3 +4602,16 @@
 - Next step:
   - Continue to `US-003` exact candidate selection / No-Go. Do not inherit historical `cal_crit_rate(data)` selection, bundle all RegularMul branches, create validation-only teams, expand `_CalculatorReadSnapshot`, or broaden into production implementation without the active story authorizing it.
 ---
+
+## 2026-06-14 22:27 +08:00 - US-003
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-003-select-one-exact-bounded-candidate-or-record-no-go.md`, `scripts/ralph/plans/slices/us-004-close-selected-candidate-oracle-gaps.md`, `scripts/ralph/investigations/2026-06-14-US-003-regularmul-candidate-decision.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-003 RegularMul candidate decision` replaces stale historical `cal_crit_rate(data)` selection assumptions with the current exact candidate `Calculator.RegularMul.cal_personal_crit_dmg(data)`.
+  - This story records docs/evidence/bookkeeping only. It does not replace live production formula code, reader source, validation-runner behavior, registered teams/APLs, copied-output constructors, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Implemented `Calculator.RegularMul.cal_crit_rate(data)` / `_calculate_full_crit_rate(...)` remains closed and no-op verified evidence only.
+  - Full-vs-personal crit boundaries remain separate: selected personal crit damage excludes `received_crit_dmg_bonus`, while full `cal_crit_dmg(data)` remains the received-damage contrast branch.
+  - Non-selected same-phase candidates remain follow-up pool, including base damage / base attr, damage bonus, personal crit rate, full crit damage, defense, resistance, vulnerability, retained-only sheer, arrays, registered behavior sample eligibility, P2 guarded maintenance, and retained compatibility.
+- Next step:
+  - Continue to `US-004` focused oracle / proposal-gap closure for `Calculator.RegularMul.cal_personal_crit_dmg(data)` only. Do not broaden into production implementation, full crit damage, `cal_crit_rate(data)`, `cal_crit_expect()`, validation-runner rewrite, registered-team fixture creation, old-container deletion, or event/runtime/listener layer work without an explicit later story.
+---
