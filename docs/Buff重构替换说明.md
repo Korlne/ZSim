@@ -4096,3 +4096,17 @@
 - Next step:
   - Continue with US-006 by running focused pytest, scoped typecheck, and retained validation profiles serially; full default validation remains conditional on lifecycle, runtime-write, or validation-runner behavior changes.
 ---
+
+## 2026-06-14 07:53 +08:00 - US-006
+- Files changed: `zsim/sim_progress/anomaly_bar/CopyAnomalyForOutput.py`, `tests/simulator/test_update_anomaly_dispatch.py`, `tests/simulator/test_anomaly_handler_runtime_view.py`, `scripts/run_buff_refactor_validation.py`, `scripts/ralph/plans/slices/us-006-run-focused-pytest-scoped-typecheck-and-retained-gates.md`, `scripts/ralph/investigations/2026-06-14-US-006-scoped-mypy-copied-output.md`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `CopyAnomalyForOutput.py` copied-output constructor-owned field annotations prepare the retained copied-payload implementation for scoped mypy coverage by replacing implicit empty-tuple inference with explicit `ClassVar[tuple[str, ...]]` typing.
+  - `scripts/run_buff_refactor_validation.py` scoped mypy target coverage now includes the focused `UpdateAnomaly` and anomaly-handler tests required by US-006.
+  - This story hardens verifier/typecheck evidence only; it does not replace live copied payload construction, `UpdateAnomaly.py`, anomaly-family production handlers, formula code, dispatch/runtime ports, listener broadcasts, dot runtime, lifecycle containers, old Buff containers, or same-tick runtime writes.
+- Compatibility retained:
+  - `NewAnomaly`, `Disorder`, `PolarityDisorder`, and `DirgeOfDestinyAnomaly` keep the same runtime constructor behavior and owned-field values; the final change is annotation-only.
+  - Focused pytest, serial `formula-parity`, serial `calculator-reads`, serial `implicit-events`, and default validation gates passed after the annotation, focused-test typing, and validation-runner target-list fixes.
+  - Known pytest-asyncio warning, mypy untyped-body notes, async log-writer shutdown noise, and wrapper console mojibake were recorded separately from verifier failures.
+- Next step:
+  - Continue with US-007 registered-route/main-loop eligibility and reviewer verdict; keep full default validation conditional on lifecycle, runtime-write, or validation-runner behavior changes.
+---

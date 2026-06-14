@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import inspect
 from types import SimpleNamespace
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
@@ -30,6 +30,10 @@ from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
     NewAnomaly,
     PolarityDisorder,
 )
+
+if TYPE_CHECKING:
+    from zsim.sim_progress.ScheduledEvent.runtime_command import RuntimeCommandPort
+    from zsim.simulator.simulator_class import Simulator
 
 
 class _RuntimeViewProbe(BuffRuntimeReadPort):
@@ -96,9 +100,11 @@ def _build_context(
         tick=10,
         enemy=enemy,
         buff_runtime_view=runtime_view,
-        runtime_command_port=runtime_command_port or SimpleNamespace(),
+        runtime_command_port=cast(
+            "RuntimeCommandPort", runtime_command_port or SimpleNamespace()
+        ),
         action_stack=SimpleNamespace(),
-        sim_instance=sim_instance,
+        sim_instance=cast("Simulator", sim_instance),
     )
     return context, broadcasts
 

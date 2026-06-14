@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from .AnomalyBarClass import AnomalyBar
 
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class _CopiedAnomalyBase(AnomalyBar):
-    _CONSTRUCTOR_OWNED_FIELDS = ()
+    _CONSTRUCTOR_OWNED_FIELDS: ClassVar[tuple[str, ...]] = ()
 
     def __init__(
         self,
@@ -72,11 +72,11 @@ class _CopiedAnomalyBase(AnomalyBar):
 
 
 class NewAnomaly(_CopiedAnomalyBase):
-    _CONSTRUCTOR_OWNED_FIELDS = ()
+    _CONSTRUCTOR_OWNED_FIELDS: ClassVar[tuple[str, ...]] = ()
 
 
 class Disorder(_CopiedAnomalyBase):
-    _CONSTRUCTOR_OWNED_FIELDS = ("is_disorder",)
+    _CONSTRUCTOR_OWNED_FIELDS: ClassVar[tuple[str, ...]] = ("is_disorder",)
 
     def __init__(
         self,
@@ -90,7 +90,7 @@ class Disorder(_CopiedAnomalyBase):
 
 
 class PolarityDisorder(Disorder):
-    _CONSTRUCTOR_OWNED_FIELDS = (
+    _CONSTRUCTOR_OWNED_FIELDS: ClassVar[tuple[str, ...]] = (
         *Disorder._CONSTRUCTOR_OWNED_FIELDS,
         "polarity_disorder_ratio",
         "additional_dmg_ap_ratio",
@@ -110,7 +110,7 @@ class PolarityDisorder(Disorder):
 
 
 class DirgeOfDestinyAnomaly(NewAnomaly):
-    _CONSTRUCTOR_OWNED_FIELDS = ("anomaly_dmg_ratio",)
+    _CONSTRUCTOR_OWNED_FIELDS: ClassVar[tuple[str, ...]] = ("anomaly_dmg_ratio",)
 
     def __init__(
         self,

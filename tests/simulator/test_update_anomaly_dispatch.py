@@ -26,6 +26,10 @@ from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 
+_CallRecord = tuple[str, object]
+_HelperCallRecord = tuple[object, ...]
+
+
 class _FailFastEventList(list):
     def append(self, item):
         raise AssertionError("UpdateAnomaly should publish scheduled events via dispatch port")
@@ -86,7 +90,7 @@ class _RecordingDotRuntimeStateAdapter(DotRuntimeStateAdapter):
     def __init__(
         self,
         dynamic_state,
-        helper_calls: list[tuple[str, object]],
+        helper_calls: list[_HelperCallRecord],
     ) -> None:
         super().__init__(dynamic_state)
         self._helper_calls = helper_calls
@@ -114,9 +118,12 @@ def _record_dot_runtime_state_adapter(monkeypatch, helper_calls):
 
 
 class _RecordingDotDynamicState:
+    _call_order: list[_CallRecord]
+    _recording_enabled: bool
+
     def __init__(
         self,
-        call_order: list[tuple[str, object]],
+        call_order: list[_CallRecord],
         *,
         effect_times: int = 0,
         ready: bool | None = True,
@@ -619,7 +626,7 @@ def test_update_anomaly_records_new_anomaly_field_matrix_with_runtime_dot(
     monkeypatch,
 ):
     call_order: list[tuple[str, object]] = []
-    helper_calls: list[tuple[str, object]] = []
+    helper_calls: list[_HelperCallRecord] = []
     legacy_event_list = _FailFastEventList()
     sim_instance = _build_sim_instance(legacy_event_list, call_order)
     enemy = _build_enemy(sim_instance)
@@ -709,7 +716,7 @@ def test_anomaly_effect_active_replaces_same_index_dot_without_scheduled_publish
     monkeypatch,
 ):
     call_order: list[tuple[str, object]] = []
-    helper_calls: list[tuple[str, object]] = []
+    helper_calls: list[_HelperCallRecord] = []
     sim_instance = _build_sim_instance(_FailFastEventList())
     pending_queue = _FailFastPendingBuffQueue()
     sim_instance.load_data = SimpleNamespace(LOADING_BUFF_DICT={"enemy": pending_queue})
@@ -921,7 +928,7 @@ def test_remove_dots_cause_disorder_publishes_freeze_follow_up_via_dispatch_port
     monkeypatch,
 ):
     call_order: list[tuple[str, object]] = []
-    helper_calls: list[tuple[str, object]] = []
+    helper_calls: list[_HelperCallRecord] = []
     recording_queue = _RecordingEventList(call_order)
     sim_instance = _build_sim_instance(recording_queue)
     enemy = _build_enemy(sim_instance)
@@ -975,7 +982,7 @@ def test_remove_dots_cause_disorder_removes_matching_non_freeze_dot_without_publ
     monkeypatch,
 ):
     call_order: list[tuple[str, object]] = []
-    helper_calls: list[tuple[str, object]] = []
+    helper_calls: list[_HelperCallRecord] = []
     sim_instance = _build_sim_instance(_FailFastEventList())
     sim_instance.schedule_data.change_process_state = lambda: call_order.append(
         ("change_process_state", None)
