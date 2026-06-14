@@ -4589,3 +4589,16 @@
 - Next step:
   - Continue to `US-002` remaining RegularMul branch matrix refresh. Do not start direct production implementation, old-container deletion, validation-runner rewrite, event/runtime/listener layer work, or broad `Calculator.py` / `CalAnomaly.py` rewrite without a named blocker.
 ---
+
+## 2026-06-14 22:12 +08:00 - US-002
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-002-refresh-regularmul-remaining-branch-matrix.md`, `scripts/ralph/plans/slices/us-003-select-one-exact-bounded-candidate-or-record-no-go.md`, `scripts/ralph/investigations/2026-06-14-US-002-regularmul-branch-matrix.md`, `scripts/ralph/checkpoints/2026-06-14-us-002-regularmul-remaining-branch-matrix-refresh.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-002 RegularMul remaining branch matrix refresh` replaces stale handoff-text branch selection with current-root evidence for each candidate's deterministic oracle coverage, missing rows, `_CalculatorReadSnapshot` dependency, registered-route eligibility, rollback anchors, and status.
+  - This story records docs/evidence only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output constructors, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_crit_rate(data)` remains implemented / no-op verified evidence only and is not the selected current next default.
+  - Retained-only sheer remains blocked: `cal_base_attr(..., base_attr=4)` still depends on runtime `char_instance.sheer_attack_conversion_rate`, `_CalculatorReadSnapshot` still carries no `char_instance`, and current `tests/teams` registration has no real `仪玄` / Yixuan route.
+  - Validation evidence: JSON sanity, Ralph tooling py_compile, and scoped mypy all exited `0`; focused reader pytest and Buff validation profiles were skipped because no production/test/reader/validation-runner source changed.
+- Next step:
+  - Continue to `US-003` exact candidate selection / No-Go. Do not inherit historical `cal_crit_rate(data)` selection, bundle all RegularMul branches, create validation-only teams, expand `_CalculatorReadSnapshot`, or broaden into production implementation without the active story authorizing it.
+---

@@ -534,6 +534,10 @@ Next default PRD：implement exactly `Calculator.AnomalyMul.cal_res_pen()` as a 
 
 本矩阵属于当前 RegularMul remaining-branch bounded proposal PRD。它只把 `Calculator.RegularMul` 剩余候选绑定到现有 deterministic oracle、缺口、reader-snapshot 依赖、registered-route 条件和 rollback anchors；不新增生产公式替换授权。每一行都必须作为独立候选审查，除非后续证据证明它们共享同一个 validation profile、rollback path 和 failure mode。保留边界继续包括 `MultiplierData`、`MulData`、`DynamicStatement`、`AnomalyBar.current_ndarray`、copied-output constructors、old Buff containers、`buff_add()`、`KickOutBuff()`、`ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter` 和 `LegacyBuffRuntimeFacade`。已完成的 Stun array / `Calculator.cal_stun()` 证据不属于本表候选。
 
+2026-06-14 22:08 +08:00 refresh：本轮从 current root 重新复核 `zsim/sim_progress/ScheduledEvent/Calculator.py`、`tests/simulator/test_buff_attribute_reader.py` 和 registered-team evidence，并继续排除 `.codex_worktrees/`。`Calculator.RegularMul.cal_crit_rate(data)` 在本矩阵中只保留为 implemented / no-op verified evidence；当前 US-002 不选择下一默认候选，后续 US-003 必须从本矩阵重新选择一个 exact branch 或记录 No-Go，且不得把历史 crit-rate selection 当作当前默认 backlog。
+
+Registered-route nuance：当前存在 `zsim/data/APLData/仪玄-耀嘉音-扳机.toml` 和 API session fixture，但 `tests/teams` 的 `TeamRegistry` 只注册物理 / 火 / 雷代表队，未注册 `仪玄` / Yixuan team。因此 retained-only sheer 仍缺 real registered sheer route evidence；APL 文件存在本身不关闭 `cal_base_attr(..., base_attr=4)` 的生产 proposal blocker。
+
 ### Snapshot-Compatible Branches
 
 | Candidate | Current deterministic oracle evidence | Missing deterministic oracle rows | Reader-snapshot dependency | Registered-route eligibility | Rollback anchors | Current status |
@@ -555,7 +559,7 @@ Next default PRD：implement exactly `Calculator.AnomalyMul.cal_res_pen()` as a 
 | --- | --- | --- | --- | --- | --- | --- |
 | `Calculator.RegularMul.cal_sheer_dmg_bonus()` with companion `cal_base_attr(..., base_attr=4)` | Branch matrix `[sheer-retained-only]` expects `1.45` for `diff_multiplier=4`；`test_regular_mul_retained_sheer_base_attr_requires_char_instance_conversion_rate()` proves `cal_base_attr(..., 4)` depends on `char_instance.sheer_attack_conversion_rate` while `cal_sheer_dmg_bonus()` itself remains a simple snapshot-compatible multiplier. | Production proposal 仍缺 architecture-approved reader-contract plan for runtime `char_instance.sheer_attack_conversion_rate` and real registered sheer route；do not close by adding only another numeric row. | `cal_sheer_dmg_bonus()` alone is snapshot-compatible；the surrounding sheer damage path is retained-only because base attr conversion requires runtime `char_instance`, which `_CalculatorReadSnapshot` does not carry. | 当前 No-Go：无真实 registered `仪玄` / Yixuan route evidence；禁止 validation-only team。 | `cal_sheer_dmg_bonus()`、`cal_base_attr(..., 4)`、retained sheer test、branch matrix、reader snapshot field set、registered-route audit docs。 | Characterized but not proposal-ready; remains retained-only until both reader-contract and registered-route blockers close. |
 
-## US-003 selected RegularMul candidate decision
+## Historical US-003 selected RegularMul candidate decision
 
 结论：选择 `Calculator.RegularMul.cal_crit_rate()` 作为唯一 exact candidate，供后续 bounded proposal / oracle-gap slice 继续推进。本结论只选择候选，不授权生产公式替换；`cal_personal_crit_rate()`、`cal_crit_dmg()`、`cal_personal_crit_dmg()`、`cal_crit_expect()`、damage bonus / defense / resistance / vulnerability / base damage / retained-only sheer / array output 都保持分离边界。
 
