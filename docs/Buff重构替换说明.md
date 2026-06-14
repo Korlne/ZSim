@@ -4273,3 +4273,15 @@
 - Next step:
   - Continue to `US-002` to pin the Stun array oracle before any production helper extraction; do not broaden into RegularMul, validation-runner, registered-team, old-container, dispatch/runtime, listener, dot-runtime, or retained compatibility work.
 ---
+
+## 2026-06-14 14:22 +08:00 - US-002
+- Files changed: `scripts/ralph/plans/slices/us-002-pin-the-stun-array-oracle-before-production-diff.md`, `scripts/ralph/investigations/2026-06-14-US-002-formula-parity-rerun.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 focused Stun array oracle pinning` prepares the later bounded helper extraction by replacing implicit oracle assumptions with confirmed focused evidence for `Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()`.
+  - This story anchors verifier evidence only; it does not replace live production formula code, reader source, copied-output constructors, event/runtime/listener paths, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - The focused oracle already pins field order `imp`, `stun_ratio`, `stun_res`, `stun_bonus`, `stun_received`, shape `(5,)`, dtype `np.float64`, one `get_stun_array()` read by `Calculator.cal_stun()`, `np.float64` return type, and `np.float64(np.prod(expected_array))` product behavior.
+  - `Calculator.py`, focused test source, `Calculator.StunMul.cal_imp()` / `_calculate_impact(...)`, all `Calculator.RegularMul` branches, retained-only sheer, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, listener broadcasts, dot runtime, and old containers remain unchanged.
+- Next step:
+  - Continue to `US-003` for narrow Stun array helper delegation; keep the diff bounded to the selected array output contract and do not broaden into RegularMul, registered-team, validation-runner, event/runtime, listener, dot-runtime, or retained compatibility work.
+---
