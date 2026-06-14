@@ -4743,3 +4743,15 @@
 - Next step:
   - Continue to `US-005` serial retained validation gates: run `formula-parity` first, then `calculator-reads`, and keep any known warning/noise separated from failures. Do not broaden into full crit damage replacement, crit-rate reopening, crit expectation, retained-only sheer, registered-team fixture creation, validation-runner rewrite, old-container deletion, or event/runtime/listener work without explicit later-story evidence.
 ---
+## 2026-06-15 02:39 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-serial-retained-validation-gates.md`, `scripts/ralph/plans/slices/us-006-conditional-event-runtime-gate-decision.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 serial retained validation gates` replaces chat-only release-verifier confidence with durable serial validation evidence for the retained `formula-parity` and `calculator-reads` profiles.
+  - This story is validation/evidence/bookkeeping only. It does not replace live production formula code, reader source, validation-runner behavior, registered teams/APLs, copied-output constructors, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - `formula-parity` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused reader suite `145 passed`, scoped mypy clean on `9 source files`, and `[验证完成] 所有步骤通过`.
+  - `calculator-reads` ran only after `formula-parity` completed and exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused reader/guardrail suite `245 passed`, scoped mypy clean on `22 source files`, and `[验证完成] 所有步骤通过`.
+  - Known pytest-asyncio loop-scope deprecation and post-success async log-writer shutdown traceback remain warning/noise, not validation failures.
+- Next step:
+  - Continue to `US-006` conditional event/runtime gate decision. Decide `implicit-events` and default validation from the actual touched surface; do not broaden into event/runtime/lifecycle, validation-runner rewrite, registered-team fixture creation, old-container deletion, or retained compatibility cleanup without explicit later-story evidence.
+---
