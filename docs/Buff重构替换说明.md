@@ -4457,3 +4457,17 @@
 - Next step:
   - Continue to `US-008` final handoff docs and same-phase candidate pool. Do not start production implementation or broaden beyond the bounded `Calculator.RegularMul.cal_crit_rate(data)` proposal contract.
 ---
+
+## 2026-06-14 18:17 +08:00 - US-008
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/investigations/2026-06-14-US-008-docs-typecheck-scope.md`, `scripts/ralph/checkpoints/2026-06-14-us-008-regularmul-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-008 final handoff docs and same-phase candidate pool` replaces implicit next-cycle routing with long-lived docs that mark `Calculator.RegularMul.cal_crit_rate(data)` as the only selected candidate for one later bounded implementation PRD.
+  - This story does not replace live production code. It records Conditional Go for a future implementation limited to `Calculator.RegularMul.cal_crit_rate(data)` and keeps live sample proof conditional on real registered-route evidence for nonzero selected full-crit relevance and nonzero `crit_rate_received_increase`.
+- Compatibility retained:
+  - Full crit / personal crit separation remains retained: full `cal_crit_rate()` includes `crit_rate_received_increase`; personal `cal_personal_crit_rate()` / `read_personal_crit_rate()` excludes it.
+  - Old containers, `MultiplierData`, `MulData`, `DynamicStatement`, copied-output constructors, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, listener broadcast, dot runtime registration, old Buff write paths, validation-runner behavior, and retained compatibility paths remain unchanged.
+  - Same-phase candidates remain available: registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if evidence names one, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules.
+  - `docs/旧Buff系统耦合审查结果.md` remains unchanged because this handoff found no new Buff coupling or coupling classification change.
+- Next step:
+  - Generate one bounded implementation PRD limited to `Calculator.RegularMul.cal_crit_rate(data)` from this packet, unless reviewer chooses another retained same-phase candidate with named evidence. Do not broaden into whole-Calculator rewrites, RegularMul branch bundling, retained-only sheer expansion, validation-runner rewrites, registered-team fixture creation, old-container deletion, or event/runtime/listener layer merges.
+---
