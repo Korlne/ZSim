@@ -4310,3 +4310,16 @@
 - Next step:
   - Continue to `US-005` runtime/event/registered-sample gate decision; do not treat this compatibility evidence as proof of copied-output, event/runtime, listener, lifecycle, registered-route, or main-loop semantics.
 ---
+
+## 2026-06-14 15:03 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-decide-runtime-event-and-registered-sample-gates.md`, `scripts/ralph/plans/slices/us-006-final-serial-verification-and-invariant-review.md`, `scripts/ralph/investigations/2026-06-14-US-005-runtime-event-registered-sample-gates.md`, `scripts/ralph/checkpoints/2026-06-14-us-005-runtime-event-registered-sample-gates.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 runtime/event/registered-sample gate decision` replaces implicit runtime validation assumptions with a recorded conditional gate decision for the Stun array helper extraction PRD.
+  - This story does not replace a live production path; no production source, focused tests, validation-runner wiring, registered routes/APLs, copied-output constructors/handlers, event/runtime/listener paths, lifecycle containers, old Buff containers, or formula implementations changed.
+- Compatibility retained:
+  - The implemented diff is behavior-preserving helper extraction, not a live semantic diff. `Calculator.StunMul.get_stun_array()` field order, `np.float64` dtype, and `Calculator.cal_stun()` product consumer remain governed by the focused Stun oracle and `formula-parity`.
+  - `implicit-events`, default lifecycle validation, and main-loop consistency remain conditional and were skipped because US-005 touched no copied-output, event, dispatch/runtime, listener-facing, dot runtime, validation wiring, lifecycle, same-tick runtime write, registered-route, or production semantic behavior.
+  - Validation evidence: `formula-parity` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused reader suite `141 passed`, and mypy `9 source files` clean; known pytest-asyncio and async log-writer shutdown noise remained after success markers.
+- Next step:
+  - Continue to `US-006` final serial verification and invariant review. Run broader event/lifecycle/main-loop gates only if their trigger surfaces become active in a later story.
+---
