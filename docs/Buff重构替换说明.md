@@ -4550,3 +4550,16 @@
 - Next step:
   - Continue to `US-007` handoff-doc sync and same-phase candidate-pool preservation. Do not start new production work, validation-runner rewrites, registered-team fixtures, old-container deletion, or event/runtime/listener layer changes from this review slice.
 ---
+
+## 2026-06-14 20:05 +08:00 - US-007
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-007-sync-buff-handoff-docs-without-collapsing-the-candidate-pool.md`, `scripts/ralph/plans/slices/us-008-record-ralph-evidence-and-prepare-next-intake.md`, `scripts/ralph/investigations/2026-06-14-US-007-docs-typecheck.md`, `scripts/ralph/checkpoints/2026-06-14-us-007-sync-buff-handoff-docs-candidate-pool.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/context_index.py`
+- Replacement note:
+  - `US-007 handoff-doc sync` replaces stale next-cycle routing with long-lived docs that mark `Calculator.RegularMul.cal_crit_rate(data)` implemented / no-op verified at handoff while preserving the same-phase candidate pool.
+  - This story records implementation status and verifier evidence. It does not replace another live production formula path, reader contract, copied-output constructor, event/runtime/listener path, validation-runner behavior, registered team/APL, lifecycle container, old Buff container, or retained compatibility path.
+- Compatibility retained:
+  - Full crit and personal crit remain separate retained boundaries; full `cal_crit_rate()` includes `crit_rate_received_increase`, while personal `cal_personal_crit_rate()` / `read_personal_crit_rate()` excludes it.
+  - Same-phase candidates remain available: registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if evidence names one, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules.
+  - `docs/旧Buff系统耦合审查结果.md` remains unchanged because this handoff found no new Buff coupling or coupling classification change.
+- Next step:
+  - Continue to `US-008` Ralph evidence / next-intake preparation. The long-lived default next PRD is Phase-3 same-phase candidate selection / bounded proposal, not another `cal_crit_rate(data)` implementation follow-up unless regression or reviewer-named evidence reopens it.
+---
