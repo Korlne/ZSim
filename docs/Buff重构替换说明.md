@@ -4323,3 +4323,17 @@
 - Next step:
   - Continue to `US-006` final serial verification and invariant review. Run broader event/lifecycle/main-loop gates only if their trigger surfaces become active in a later story.
 ---
+
+## 2026-06-14 15:15 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-final-serial-verification-and-invariant-review.md`, `scripts/ralph/plans/slices/us-007-record-rollback-anchors-and-replacement-note.md`, `scripts/ralph/checkpoints/2026-06-14-us-006-final-serial-verification-invariant-review.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 final serial verification and invariant review` replaces chat-only final-gate confidence with recorded focused pytest, serial `formula-parity`, serial `calculator-reads`, an infrastructure checkpoint, and a reviewer verdict against Ralph/Buff invariants.
+  - This story does not replace a live production path; no production source, focused tests, validation-runner wiring, registered routes/APLs, copied-output constructors/handlers, event/runtime/listener paths, lifecycle containers, old Buff containers, or formula implementations changed.
+- Compatibility retained:
+  - `Calculator.StunMul.get_stun_array()` field order, `np.float64` dtype, and `Calculator.cal_stun()` product consumer remain governed by the focused Stun oracle and retained `formula-parity` / `calculator-reads` gates.
+  - `Calculator.StunMul.cal_imp()` / `_calculate_impact(...)`, all `Calculator.RegularMul` branches, retained-only sheer, `MultiplierData`, `MulData`, `DynamicStatement`, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, listener broadcasts, dot runtime, and old containers remain retained or out of scope.
+  - Validation evidence: focused reader pytest exited `0` with `141 passed`; `formula-parity` exited `0` with focused reader suite `141 passed` and mypy `9 source files` clean; `calculator-reads` exited `0` with focused reader suite `241 passed` and mypy `22 source files` clean.
+  - `implicit-events`, default lifecycle validation, and main-loop consistency remain conditional and were skipped because US-005 and US-006 touched no copied-output, event, dispatch/runtime, listener-facing, dot runtime, validation wiring, lifecycle, same-tick runtime write, registered-route, validation-runner, or production semantic behavior.
+- Next step:
+  - Continue to `US-007` rollback anchors and replacement note; do not broaden into `Calculator.py` / `CalAnomaly.py` rewrites, old-container deletion, validation-runner rewrites, registered-team fixture creation, or layer merges.
+---
