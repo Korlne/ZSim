@@ -4941,3 +4941,16 @@
 - Next step:
   - Continue to `US-004` focused oracle and scoped typecheck without widening into registered-route fabrication, validation-runner rewrites, event/runtime/listener paths, old-container deletion, or unrelated RegularMul branches.
 ---
+
+## 2026-06-15 06:13 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-focused-oracle-and-scoped-typecheck.md`, `scripts/ralph/plans/slices/us-005-retained-validation-gate-decisions.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 focused oracle and scoped typecheck` replaces chat-only confidence in the helper extraction with durable oracle/typecheck evidence and rollback anchors.
+  - This story is verification/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered routes, copied-output/event/runtime/listener paths, old containers, or retained compatibility paths.
+- Compatibility retained:
+  - `regular-crit-received-boundary`, full/personal crit parity, and crit-family received-boundary tests already lock full crit as including `crit_rate_received_increase` and personal crit as excluding it; no new oracle row was needed.
+  - Focused pytest exited `0` with `35 passed, 110 deselected`; scoped mypy exited `0` with `Success: no issues found in 2 source files`.
+  - Rollback anchors remain `Calculator.py`, `test_buff_attribute_reader.py`, `docs/Buff公式候选与测试目标清单.md`, this replacement note, serial `formula-parity`, and conditional `calculator-reads`.
+- Next step:
+  - Continue to `US-005` retained validation gate decisions. Keep `formula-parity` and `calculator-reads` serial, and only add `implicit-events`, default validation, or main-loop consistency if the active story's touched surfaces justify them.
+---
