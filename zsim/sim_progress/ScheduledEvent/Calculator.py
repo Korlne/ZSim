@@ -162,6 +162,14 @@ def _calculate_full_crit_rate(static_statement: Any, dynamic_statement: Any) -> 
     )
 
 
+def _calculate_personal_crit_damage(static_statement: Any, dynamic_statement: Any) -> float:
+    return (
+        static_statement.crit_damage
+        + dynamic_statement.crit_dmg
+        + dynamic_statement.field_crit_dmg
+    )
+
+
 def _build_stun_multiplier_array(
     imp: float,
     stun_ratio: float,
@@ -997,10 +1005,7 @@ class Calculator:
         @staticmethod
         def cal_personal_crit_dmg(data: MultiplierData) -> float:
             """面板暴击伤害 = 静态面板暴击伤害 + buff暴击伤害"""
-            personal_crit_dmg = (
-                data.static.crit_damage + data.dynamic.crit_dmg + data.dynamic.field_crit_dmg
-            )
-            return personal_crit_dmg
+            return _calculate_personal_crit_damage(data.static, data.dynamic)
 
         def cal_defense_mul(self, data: MultiplierData) -> float:
             """

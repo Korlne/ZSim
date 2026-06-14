@@ -4705,6 +4705,53 @@ def test_regular_mul_full_crit_rate_delegates_to_module_helper(
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
 
 
+def test_regular_mul_personal_crit_damage_delegates_to_module_helper(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_attribute_read_fixture(
+        name="个人暴击伤害委托",
+        crit_damage=0.5,
+        damage_ratio=1.0,
+        hit_times=1,
+        diff_multiplier=0,
+        char_buff_count=1,
+        enemy_debuff_count=1,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(
+            crit_dmg=0.3,
+            field_crit_dmg=0.2,
+            received_crit_dmg_bonus=0.4,
+        ),
+    )
+    retained_data = _legacy_multiplier_data(fixture)
+    helper_calls: list[tuple[Any, Any]] = []
+
+    def fake_calculate_personal_crit_damage(
+        static_statement: Any, dynamic_statement: Any
+    ) -> float:
+        helper_calls.append((static_statement, dynamic_statement))
+        return 8.76
+
+    monkeypatch.setattr(
+        calculator_module,
+        "_calculate_personal_crit_damage",
+        fake_calculate_personal_crit_damage,
+    )
+
+    first_value = Calculator.RegularMul.cal_personal_crit_dmg(retained_data)
+    second_value = Calculator.RegularMul.cal_personal_crit_dmg(retained_data)
+
+    assert first_value == pytest.approx(8.76)
+    assert second_value == pytest.approx(8.76)
+    assert helper_calls == [
+        (retained_data.static, retained_data.dynamic),
+        (retained_data.static, retained_data.dynamic),
+    ]
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+
+
 @pytest.mark.parametrize(
     (
         "fixture_kwargs",

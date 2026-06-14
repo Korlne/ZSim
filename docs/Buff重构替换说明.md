@@ -4704,3 +4704,16 @@
 - Next step:
   - Continue to `US-002` for only the personal crit damage helper seam implementation or no-op verification. Stop if the helper would require public interface expansion, `_CalculatorReadSnapshot` expansion, runtime `char_instance`, registered-team fixtures, validation-runner rewrites, old-container deletion, or event/runtime/listener work.
 ---
+
+## 2026-06-15 01:59 +08:00 - US-002
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-002-personal-crit-damage-helper-seam-implementation.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 personal crit damage helper seam` replaces the inline `Calculator.RegularMul.cal_personal_crit_dmg(data)` sum with module-local `_calculate_personal_crit_damage(static_statement, dynamic_statement)`.
+  - The helper computes only `static.crit_damage + dynamic.crit_dmg + dynamic.field_crit_dmg`; same-story focused coverage proves `cal_personal_crit_dmg(data)` delegates to the helper.
+- Compatibility retained:
+  - The public `Calculator.RegularMul.cal_personal_crit_dmg(data)` signature and return semantics remain unchanged, and `CalculatorBuffAttributeReader.read_personal_crit_damage(context)` remains the reader anchor.
+  - `received_crit_dmg_bonus`, full `Calculator.RegularMul.cal_crit_dmg(data)`, full/personal crit rate, `cal_crit_expect()`, arrays, `_CalculatorReadSnapshot`, `char_instance`, registered teams/APLs, validation-runner wiring, copied-output constructors, old Buff containers, dispatch/runtime/listener paths, lifecycle containers, same-tick runtime writes, and retained compatibility paths remain unchanged.
+  - Validation evidence: focused pytest exited `0` with `12 passed, 132 deselected`; scoped mypy exited `0` with `Success: no issues found in 2 source files`. Existing pytest-asyncio and mypy untyped-body notes were non-fatal.
+- Next step:
+  - Continue to `US-003` reader anchor and full/personal contrast verification. Do not broaden into full crit damage replacement, crit-rate reopening, crit expectation, retained-only sheer, registered-team fixture creation, validation-runner rewrite, old-container deletion, or event/runtime/listener work without an explicit later story.
+---
