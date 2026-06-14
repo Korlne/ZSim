@@ -4755,3 +4755,16 @@
 - Next step:
   - Continue to `US-006` conditional event/runtime gate decision. Decide `implicit-events` and default validation from the actual touched surface; do not broaden into event/runtime/lifecycle, validation-runner rewrite, registered-team fixture creation, old-container deletion, or retained compatibility cleanup without explicit later-story evidence.
 ---
+
+## 2026-06-15 02:49 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-conditional-event-runtime-gate-decision.md`, `scripts/ralph/plans/slices/us-007-registered-sample-eligibility-and-reviewer-gate.md`, `scripts/ralph/checkpoints/2026-06-15-us-006-conditional-event-runtime-gate-decision.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 conditional event/runtime gate decision` replaces unconditional validation-profile escalation with a recorded touched-surface decision for the committed personal crit damage implementation diff.
+  - This story is evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output constructors, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - The branch diff remains bounded to `Calculator.RegularMul.cal_personal_crit_dmg(data)`, `_calculate_personal_crit_damage(...)`, and focused personal-crit-damage reader/formula tests.
+  - `implicit-events` remains conditional and was skipped because no copied-output, event queue, dispatch/runtime, listener, dot runtime, same-tick runtime write, old-container, lifecycle, registered-route, or validation-runner surface changed.
+  - Default validation remains conditional and was skipped because no lifecycle container, same-tick runtime write path, default validation behavior, or validation-runner contract changed.
+- Next step:
+  - Continue to `US-007` registered sample eligibility and reviewer gate. Do not create validation-only teams, fake APLs, fixture-only routes, event/runtime/listener merges, validation-runner rewrites, old-container deletion, or retained compatibility cleanup.
+---
