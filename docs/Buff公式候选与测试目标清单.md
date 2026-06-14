@@ -347,6 +347,44 @@ Stop conditions：
 - Old-container deletion：需要删除 / 绕过 old Buff containers、legacy `buff_add()` / `KickOutBuff()`、`MultiplierData`、`MulData` 或 `DynamicStatement` 才能通过。
 - Layer merge：event queue semantics、synchronous listener broadcasts、dot runtime registration 与 same-tick runtime writes 被合并，或在未被未来 PRD 命名时编辑 `ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`BuffRuntimeReadPort`。
 
+## Current Stun array bounded implementation PRD US-008 final handoff
+
+结论：Implemented / no-op verified at handoff。生产实现已在 US-003 完成：`Calculator.StunMul.get_stun_array()` 委托 `_build_stun_multiplier_array(...)` 负责五字段 `np.float64` array construction，`Calculator.cal_stun()` 仍按原路径读取数组、执行 `np.prod(...)`，并返回 `np.float64`。US-008 只同步 handoff docs、Ralph evidence、checkpoint 和 completion bookkeeping，不再制造额外 source churn，也不回滚该 helper。
+
+Implementation outcome / verifier evidence：
+
+- Source outcome：`zsim/sim_progress/ScheduledEvent/Calculator.py::Calculator.StunMul.get_stun_array()` -> `_build_stun_multiplier_array(...)` -> `Calculator.cal_stun()` 的 flow 保持单一 bounded surface；`Calculator.StunMul.cal_imp()` / `_calculate_impact(...)`、所有 `Calculator.RegularMul` branch 与 retained-only sheer runtime conversion 继续分离。
+- Retained verifier evidence：focused reader pytest exited `0` with `141 passed`；`formula-parity` exited `0` with focused reader suite `141 passed` and mypy clean on `9 source files`；`calculator-reads` exited `0` with focused reader suite `241 passed` and mypy clean on `22 source files`。
+- Current US-008 docs-only gate：story-scoped typecheck, JSON sanity, UTF-8 / mojibake scan, `git diff --check`, and campaign dashboard refresh must pass before `passes=true`。
+
+Retained gates / registered sample decision：
+
+- Formula / reader follow-up gates：future formula or reader work keeps serial `formula-parity` then `calculator-reads` unless the active story proves a narrower docs-only gate is sufficient。
+- Event/runtime follow-up gate：future copied-output / event / dispatch / runtime / listener / dot-runtime / same-tick write work adds `implicit-events`。
+- Registered behavior sample：still conditional No-Go for this implementation handoff。Run main-loop consistency only for a future live production semantic diff with real registered route JSON, explicit stop tick, runtime labels, matching total damage, unchanged Buff timeline differences, and nonzero relevant stun / formula / event counts；do not create validation-only teams/APLs。
+
+Rollback anchors：
+
+- Source anchors：`Calculator.StunMul.get_stun_array()`、`_build_stun_multiplier_array(...)`、`Calculator.cal_stun()`、focused Stun array oracle、retained Buff handoff docs、`formula-parity`、`calculator-reads`、conditional `implicit-events`。
+- Retained compatibility anchors：`Calculator.StunMul.cal_imp()` / `_calculate_impact(...)`、all `Calculator.RegularMul` branches、retained-only sheer、`MultiplierData`、`MulData`、`DynamicStatement`、old containers、copied-output constructors、`ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`BuffRuntimeReadPort`、`LegacyBuffRuntimeFacade`。
+
+Stop conditions：
+
+- Reopen or rollback only if focused Stun array oracle, retained profile, story-scoped typecheck, or root-workspace source evidence names a concrete regression in field order, dtype, shape, product consumer, helper delegation, or validation profile scope。
+- Stop and split if the next proposal needs broad `Calculator.py` / `CalAnomaly.py` rewrite、RegularMul bundling、retained-only sheer `_CalculatorReadSnapshot` expansion、registered-team fixture creation、validation-runner rewrite、old-container deletion、layer merge, or retained compatibility deletion。
+
+Same-phase candidate pool：
+
+| Candidate / boundary | Current status | Next rule |
+| --- | --- | --- |
+| Registered behavior sample eligibility | Policy retained; no live semantic diff in this PRD. | Use only for future real registered-route evidence with nonzero relevant counts. |
+| `Calculator.RegularMul` remaining branches / retained-only sheer follow-up | Still retained / characterized; not resolved by Stun helper implementation. | Reopen only for named exact branch or sheer contract gap with deterministic oracle, rollback anchors, registered-sample conditions, and retained gates. |
+| Future `Calculator.StunMul.get_stun_array()` follow-up | Current helper extraction implemented and verified. | Reopen only if future evidence names a new array-output gap, focused regression, or proposal-readiness packet. |
+| P2-A through P2-G guarded maintenance | Completed guarded buckets. | Reopen only on concrete guardrail / focused test / validation evidence naming the failed file, symbol, or gate. |
+| Retained compatibility / blocker-only reopen | No new coupling classification in this implementation handoff. | Reopen only with root-workspace source, guardrail, focused test, validation, or real registered-route blocker evidence. |
+
+Next default PRD：Phase-3 same-phase candidate selection / bounded proposal PRD。Choose one exact bounded slice from the retained pool, record focused tests, scoped mypy, rollback anchors, registered-sample conditions, retained gates and non-goals, and do not directly convert the new Markdown PRD into `scripts/ralph/prd.json` in the same generation step。
+
 ## Current copied-output PRD US-008 final handoff
 
 结论：Conditional Go for later bounded proposal package only。当前 copied-output PRD 已完成 constructor field matrix、`UpdateAnomaly.spawn_output(...)` listener boundary、anomaly / disorder / polarity / abloom handler report payload parity、registered behavior sample eligibility、serial retained gates 和 rollback-anchor decision；这些证据允许下一 PRD 写 bounded proposal contract，但不授权立即 production implementation、broad `Calculator.py` / `CalAnomaly.py` rewrite、validation-runner rewrite、registered-team fixture creation 或 retained compatibility 删除。

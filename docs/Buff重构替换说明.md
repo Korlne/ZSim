@@ -4352,3 +4352,16 @@
 - Next step:
   - Continue to `US-008` handoff docs and same-phase candidate pool; do not broaden this rollback note into `Calculator.py` / `CalAnomaly.py` rewrites, RegularMul bundling, retained-only sheer expansion, copied-output changes, old-container deletion, validation-runner rewrites, registered-team fixture creation, or event/runtime/listener layer merges.
 ---
+
+## 2026-06-14 15:43 +08:00 - US-008
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/checkpoints/2026-06-14-us-008-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-008 final handoff docs and same-phase candidate pool` replaces implicit next-cycle routing with long-lived docs that mark the selected Stun array implementation as implemented / no-op verified at handoff.
+  - `Calculator.StunMul.get_stun_array()` now remains anchored to `_build_stun_multiplier_array(...)`; `Calculator.cal_stun()` remains the existing product consumer. This handoff does not replace additional live production code.
+- Compatibility retained:
+  - Focused Stun array oracle, retained `formula-parity` / `calculator-reads` gates, conditional `implicit-events`, registered-route conditional No-Go, rollback anchors, old containers, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, copied-output constructors, and layer-separation invariants remain retained.
+  - Same-phase candidates remain available: registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if evidence names one, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules.
+  - `docs/旧Buff系统耦合审查结果.md` remains unchanged because this handoff found no new Buff coupling or coupling classification change.
+- Next step:
+  - Generate a Phase-3 same-phase candidate selection / bounded proposal PRD from the retained pool; do not automatically produce another narrow Stun implementation follow-up or directly convert the Markdown PRD into `scripts/ralph/prd.json` in the same generation step.
+---
