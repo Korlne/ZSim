@@ -4430,3 +4430,17 @@
 - Next step:
   - Continue to `US-006` bounded proposal packet. Keep any future main-loop sample conditional on a later production semantic-diff branch, stop tick `1000`, runtime labels, exact total-damage comparison, unchanged Buff timeline comparison, and nonzero full-crit formula relevance from a real registered route.
 ---
+
+## 2026-06-14 17:42 +08:00 - US-006
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-006-build-the-bounded-proposal-packet.md`, `scripts/ralph/investigations/2026-06-14-US-006-bounded-proposal-packet.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-007-run-retained-gates-and-reviewer-invariant-check.md`
+- Replacement note:
+  - `US-006 bounded proposal packet` replaces implicit implementation-readiness assumptions with a durable Conditional Go contract for one later PRD limited to `Calculator.RegularMul.cal_crit_rate(data)`.
+  - This story only builds a boundary/proposal packet. It does not replace live production formula code, reader source, copied-output constructors, event/runtime/listener paths, validation-runner behavior, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Full crit and personal crit remain separate: full `cal_crit_rate()` includes `crit_rate_received_increase`; personal `cal_personal_crit_rate()` / `read_personal_crit_rate()` excludes received bonus and remains the contrast boundary.
+  - Rollback anchors retain source methods, focused crit tests, Buff docs, `formula-parity`, `calculator-reads`, and conditional `implicit-events`.
+  - Live sample proof remains blocked until `莱特火属性队` / `./zsim/data/APLData/莱特-扳机-雨果.toml` or another real registered route proves nonzero full-crit formula relevance and nonzero `crit_rate_received_increase`; current main-loop output lacks formula-call counts.
+  - Validation evidence: focused crit pytest exited `0` with `6 passed`; `formula-parity` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused reader suite `142 passed`, and scoped mypy success on `9 source files`; `calculator-reads` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused suite `242 passed`, and scoped mypy success on `22 source files`.
+- Next step:
+  - Continue to `US-007` retained gates and reviewer invariant check. Do not start production implementation, broaden into `cal_crit_expect()` / other `RegularMul` branches, create validation-only routes, delete retained compatibility, rewrite validation-runner behavior, delete old containers, or merge event/runtime/listener layers.
+---
