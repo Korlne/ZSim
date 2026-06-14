@@ -4524,3 +4524,16 @@
 - Next step:
   - Continue to `US-005` retained formula and reader gates. Keep `implicit-events`, default lifecycle validation, and main-loop consistency conditional on touched surfaces and real registered-route relevance.
 ---
+
+## 2026-06-14 19:38 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-run-retained-formula-and-reader-gates-serially.md`, `scripts/ralph/checkpoints/2026-06-14-us-005-retained-formula-reader-gates.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-006-review-public-contracts-and-rollback-anchors.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 retained serial gates` replaces implicit post-implementation confidence with deterministic, serial verifier evidence for the selected full-crit formula and calculator reader contracts.
+  - This story verifies existing boundaries only. It does not replace live production formula code, reader source, test source, validation-runner behavior, registered teams/APLs, copied-output paths, event/runtime/listener paths, dot runtime, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Full crit and personal crit remain separate retained boundaries; full `cal_crit_rate()` includes `crit_rate_received_increase`, while personal `cal_personal_crit_rate()` / `read_personal_crit_rate()` excludes it.
+  - Validation evidence: selected crit nodes exited `0` with `10 passed`; full reader suite exited `0` with `143 passed`; `formula-parity` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused reader suite `143 passed`, and scoped mypy success on `9 source files`; `calculator-reads` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused reader/guardrail suite `243 passed`, and scoped mypy success on `22 source files`.
+  - `implicit-events` and full default validation remain skipped by touched-surface evidence: this verifier slice touched no copied-output, event, dispatch/runtime, listener, dot-runtime, same-tick runtime write, lifecycle, validation-runner, or old-container surface.
+- Next step:
+  - Continue to `US-006` public contract and rollback anchor review. Do not broaden into production implementation, validation-runner rewrites, registered-team fixtures, old-container deletion, or event/runtime/listener layer changes unless a later story explicitly authorizes that surface.
+---
