@@ -5010,3 +5010,16 @@
 - Next step:
   - Generate the next PRD from Phase-3 same-phase candidate selection / bounded proposal, not another personal-crit-rate follow-up. Select one exact retained candidate, record focused tests, scoped mypy, registered-sample conditions, rollback anchors, retained gates, non-goals, and stop conditions before implementation.
 ---
+
+## 2026-06-15 07:33 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconcile-current-intake-and-select-exact-candidate.md`, `scripts/ralph/investigations/2026-06-15-US-001-active-route-candidate-intake.md`, `scripts/ralph/checkpoints/2026-06-15-us-001-intake-verdict.md`, `scripts/ralph/plans/slices/us-002-baseline-full-crit-damage-source-and-oracle-coverage.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-001 current intake reconciliation` replaces stale completed-surface route assumptions with current-root evidence that the active default is Phase 3 same-phase candidate selection / bounded proposal for full crit damage proposal-readiness.
+  - This story records route and candidate evidence only; it does not replace a live production formula path, reader source, focused test, validation profile, dispatch adapter, runtime port, listener path, registered route, old container, or retained compatibility path.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_crit_dmg(data)` remains open and inline as the full crit-damage candidate for later source / oracle inventory; recent `cal_crit_rate(data)`, `cal_personal_crit_dmg(data)`, and `cal_personal_crit_rate(data)` implementation handoffs remain closed evidence and are not reopened by this slice.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, validation-runner behavior, old containers, registered routes, and retained compatibility paths remain unchanged.
+  - No new Buff coupling or coupling-classification change was found, so `docs/旧Buff系统耦合审查结果.md` remains unchanged.
+- Next step:
+  - Continue only to `US-002` for current root source and oracle coverage inventory for `Calculator.RegularMul.cal_crit_dmg(data)`. Do not implement formula helpers, add public full-crit-damage reader APIs, fabricate registered routes, or broaden into unrelated RegularMul / CalAnomaly / Stun / copied-output / event-runtime-listener work in the intake slice.
+---
