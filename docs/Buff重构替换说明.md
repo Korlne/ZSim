@@ -4981,3 +4981,17 @@
 - Next step:
   - Continue to `US-007` reviewer invariant and rollback gate. Keep registered behavior sample eligibility in the same-phase pool until a later live production semantic diff plus a real registered direct-crit route proves nonzero selected personal-crit-rate relevance inside an explicit stop tick.
 ---
+
+## 2026-06-15 06:47 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-reviewer-invariant-and-rollback-gate.md`, `scripts/ralph/investigations/2026-06-15-US-007-reviewer-invariant-rollback-gate.md`, `scripts/ralph/checkpoints/2026-06-15-us-007-reviewer-invariant-and-rollback-gate.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 reviewer invariant and rollback gate` replaces chat-only reviewer confidence with durable invariant, changed-file boundary, compatibility, and rollback-anchor evidence for the current personal crit-rate implementation PRD.
+  - This story is evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered routes, copied-output constructors/payloads, event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_personal_crit_rate(data)` remains the public personal crit-rate formula path and delegates to `_calculate_personal_crit_rate(...)`, which still excludes `crit_rate_received_increase`.
+  - `CalculatorBuffAttributeReader.read_personal_crit_rate(context)` remains the reader delegate anchor through `_build_formula_snapshot(context)`, and `_CalculatorReadSnapshot` remains private without runtime view, `char_instance`, array output, copied-output payload, or public field expansion.
+  - Full `Calculator.RegularMul.cal_crit_rate(data)` / `_calculate_full_crit_rate(...)` remains the received-crit contrast branch and still includes `crit_rate_received_increase`.
+  - Focused crit tests, retained `formula-parity`, conditional `calculator-reads`, retained Buff docs, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, old containers, copied-output constructors, validation-runner behavior, registered routes, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-008` handoff docs and same-phase pool preservation. Keep that slice docs/evidence-scoped unless it discovers a concrete source/doc mismatch requiring a smaller blocker slice.
+---
