@@ -4297,3 +4297,16 @@
 - Next step:
   - Continue to `US-004` to preserve formula/reader compatibility boundaries around this helper extraction; do not broaden into RegularMul, registered samples, validation-runner wiring, event/runtime, listener, dot-runtime, or retained compatibility work.
 ---
+
+## 2026-06-14 14:48 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-preserve-formula-reader-compatibility-boundaries.md`, `scripts/ralph/plans/slices/us-005-decide-runtime-event-and-registered-sample-gates.md`, `scripts/ralph/investigations/2026-06-14-US-004-formula-reader-compatibility-boundaries.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 formula/reader compatibility evidence` prepares to replace implicit post-helper confidence with saved `rg`, CodeGraph, verifier, and reviewer evidence around `CalculatorBuffAttributeReader`, `_CalculatorReadSnapshot`, `MultiplierData`, `CalAnomaly.MulData`, `DynamicStatement`, and `Calculator.cal_stun()`.
+  - This story does not replace a live production path; no production source, focused tests, validation-runner wiring, registered routes/APLs, copied-output constructors/handlers, event/runtime/listener paths, lifecycle containers, old Buff containers, or formula implementations changed.
+- Compatibility retained:
+  - `Calculator.cal_stun()` still reads `self.stun_multipliers.get_stun_array()`, computes `np.prod(multipliers)`, and returns `np.float64(stun)`.
+  - `CalculatorBuffAttributeReader`, `_CalculatorReadSnapshot`, `MultiplierData`, `DynamicStatement`, the `CalAnomaly.py` `MulData` alias, retained formula snapshots, Stun array field order, `np.float64` dtype, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, listener broadcasts, dot runtime, and old containers remain unchanged.
+  - Serial gates passed: `formula-parity` and `calculator-reads` exited `0`; known pytest-asyncio and async log-writer shutdown noise remained after success markers.
+- Next step:
+  - Continue to `US-005` runtime/event/registered-sample gate decision; do not treat this compatibility evidence as proof of copied-output, event/runtime, listener, lifecycle, registered-route, or main-loop semantics.
+---
