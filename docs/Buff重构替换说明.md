@@ -4174,3 +4174,15 @@
 - Next step:
   - Continue with US-002 remaining formula surface matrix; select exact candidate evidence without reopening completed scopes unless new root-workspace source, guardrail, focused-test, validation, or registered-route evidence names a concrete blocker.
 ---
+
+## 2026-06-14 11:40 +08:00 - US-002
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `scripts/ralph/plans/slices/us-002-build-remaining-formula-surface-matrix.md`, `scripts/ralph/investigations/2026-06-14-US-002-remaining-formula-surface-matrix.md`, `scripts/ralph/checkpoints/2026-06-14-us-002-remaining-formula-surface-matrix.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 remaining formula surface matrix` replaces implicit same-phase formula candidate grouping with one exact per-surface matrix for the requested `Calculator.RegularMul` methods, `Calculator.StunMul.get_stun_array()`, and the actual `Calculator.cal_stun()` array-output consumer path.
+  - This story updates evidence only; it does not replace live production formula code, reader source, copied-output constructors, event/runtime/listener paths, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, copied-output constructors, old containers, legacy `buff_add()` / `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcast, dot runtime, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain retained boundaries.
+  - Existing focused oracle evidence stays characterization-only. The matrix does not authorize broad `Calculator.py` / `CalAnomaly.py` rewrite, registered-team fixture creation, old-container deletion, layer merging, or retained compatibility deletion.
+- Next step:
+  - Continue with US-003 registered behavior sample eligibility using the matrix as input; keep registered samples conditional on future live semantic diffs plus real route evidence.
+---
