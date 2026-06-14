@@ -4875,3 +4875,17 @@
 - Next step:
   - Continue to `US-007` reviewer and invariant Go / No-Go decision. Keep that story to proposal judgment for one later bounded personal crit rate implementation PRD or explicit No-Go; do not introduce production formula, reader, event/runtime, lifecycle, validation-runner, registered-route, or retained compatibility changes.
 ---
+
+## 2026-06-15 04:56 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-reviewer-and-invariant-go-no-go-decision.md`, `scripts/ralph/investigations/2026-06-15-US-007-personal-crit-rate-go-no-go-decision.md`, `scripts/ralph/checkpoints/2026-06-15-us-007-personal-crit-rate-go-no-go-decision.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-candidate-pool-preservation.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 personal crit rate Go / No-Go packet` replaces chat-only reviewer judgment with durable conditional Go evidence for one later bounded implementation PRD.
+  - This story is decision/evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output constructors/payloads, event/runtime/listener paths, lifecycle containers, old Buff containers, runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - The only future allowed production surface is `Calculator.RegularMul.cal_personal_crit_rate(data)` plus an optional module-local `_calculate_personal_crit_rate(static_statement, dynamic_statement)` helper that preserves `static.crit_rate + dynamic.crit_rate + dynamic.field_crit_rate`.
+  - `CalculatorBuffAttributeReader.read_personal_crit_rate(context)` remains a retained delegate anchor through `_build_formula_snapshot(context)`.
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, old containers, copied-output constructors, listener broadcast, dot runtime registration/removal, and retained compatibility remain untouched anchors.
+  - Main-loop registered-route evidence remains conditional on a later live semantic diff plus real registered-route nonzero selected personal-crit-rate relevance.
+- Next step:
+  - Continue to `US-008` handoff docs and same-phase candidate pool preservation. Carry the conditional Go forward without collapsing the future candidate pool to only personal crit rate.
+---
