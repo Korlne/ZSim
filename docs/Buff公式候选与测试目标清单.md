@@ -385,6 +385,22 @@ Same-phase candidate pool：
 
 Next default PRD：Phase-3 same-phase candidate selection / bounded proposal PRD。Choose one exact bounded slice from the retained pool, record focused tests, scoped mypy, rollback anchors, registered-sample conditions, retained gates and non-goals, and do not directly convert the new Markdown PRD into `scripts/ralph/prd.json` in the same generation step。
 
+## Current route reconciliation PRD US-001
+
+结论：stale Stun default 已关闭。`Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()` selected implementation 的 handoff 状态是 implemented / no-op verified；它只在新证据命名 focused oracle gap、validation failure、root-workspace source regression 或 proposal-readiness packet 时重开。当前默认路线改为 `Calculator.RegularMul` remaining branch bounded proposal-readiness：先刷新 branch matrix，再选择一个 exact candidate 或记录 No-Go。
+
+Completed evidence / retained pool：
+
+| Surface | Current status | Reopen rule |
+| --- | --- | --- |
+| Copied-output handler/report implementation | Implemented with retained copied-payload / listener / scheduled-publish / dot-runtime boundaries. | 只有 copied-output focused regression、guardrail failure、validation failure 或 named production semantic diff 才重开。 |
+| `Calculator.AnomalyMul.cal_res_pen()` | Implemented as behavior-preserving selector extraction. | 不作为下一默认 PRD 重开；只有 focused regression、validation failure 或明确语义 follow-up 才重开。 |
+| AM/AP/impact helper implementation | AM baseline retained；AP 委托 `_calculate_anomaly_proficiency(...)`；impact 委托 `_calculate_impact(...)`。 | 不因 RegularMul work 回滚；只有 named helper-family evidence 才重开。 |
+| Selected Stun implementation | Implemented / no-op verified at handoff；`get_stun_array()` 委托 `_build_stun_multiplier_array(...)`。 | 只按 named Stun evidence 重开，不作为默认 backlog。 |
+| P2-A through P2-G guarded buckets | Completed guarded maintenance buckets. | 只由 concrete guardrail / focused test / validation evidence naming failed file, symbol, or gate 触发。 |
+
+Current production conclusions exclude `.codex_worktrees/`, `scripts/ralph/archive/`, `scripts/ralph/run-logs/`, logs, and generated history; use root-workspace source, focused tests, and retained validation profiles for future decisions.
+
 ## Current copied-output PRD US-008 final handoff
 
 结论：Conditional Go for later bounded proposal package only。当前 copied-output PRD 已完成 constructor field matrix、`UpdateAnomaly.spawn_output(...)` listener boundary、anomaly / disorder / polarity / abloom handler report payload parity、registered behavior sample eligibility、serial retained gates 和 rollback-anchor decision；这些证据允许下一 PRD 写 bounded proposal contract，但不授权立即 production implementation、broad `Calculator.py` / `CalAnomaly.py` rewrite、validation-runner rewrite、registered-team fixture creation 或 retained compatibility 删除。

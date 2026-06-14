@@ -4365,3 +4365,16 @@
 - Next step:
   - Generate a Phase-3 same-phase candidate selection / bounded proposal PRD from the retained pool; do not automatically produce another narrow Stun implementation follow-up or directly convert the Markdown PRD into `scripts/ralph/prd.json` in the same generation step.
 ---
+
+## 2026-06-14 16:14 +08:00 - US-001
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-001-reconcile-current-route-and-completed-scope.md`, `scripts/ralph/checkpoints/2026-06-14-us-001-route-completed-scope-reconciliation.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-001 route / completed-scope reconciliation` replaces stale next-cycle routing that still treated selected Stun implementation as default backlog with the latest handoff state: Stun is implemented / no-op verified, and current default work is `Calculator.RegularMul` remaining branch proposal-readiness.
+  - This story updates docs and Ralph evidence only; it does not replace live production formula code, reader source, copied-output constructors, event/runtime/listener paths, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.StunMul.get_stun_array()` remains delegated to `_build_stun_multiplier_array(...)`, and `Calculator.cal_stun()` remains the product consumer with retained field order and `np.float64` dtype.
+  - Copied-output implementation, `Calculator.AnomalyMul.cal_res_pen()` selector extraction, AM/AP/impact helper implementation, selected Stun implementation, and P2-A through P2-G guarded buckets are completed evidence, not default implementation backlog.
+  - Current production conclusions exclude `.codex_worktrees/`, `scripts/ralph/archive/`, `scripts/ralph/run-logs/`, logs, and generated history.
+- Next step:
+  - Continue with US-002 RegularMul remaining branch matrix refresh; reopen Stun, copied-output, `cal_res_pen()`, AM/AP/impact, or P2 guarded buckets only with named root-workspace source, focused test, guardrail, validation, or proposal-readiness evidence.
+---
