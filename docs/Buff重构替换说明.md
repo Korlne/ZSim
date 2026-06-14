@@ -5023,3 +5023,17 @@
 - Next step:
   - Continue only to `US-002` for current root source and oracle coverage inventory for `Calculator.RegularMul.cal_crit_dmg(data)`. Do not implement formula helpers, add public full-crit-damage reader APIs, fabricate registered routes, or broaden into unrelated RegularMul / CalAnomaly / Stun / copied-output / event-runtime-listener work in the intake slice.
 ---
+
+## 2026-06-15 07:45 +08:00 - US-002
+- Files changed: `scripts/ralph/plans/slices/us-002-baseline-full-crit-damage-source-and-oracle-coverage.md`, `scripts/ralph/checkpoints/2026-06-15-us-002-baseline-full-crit-damage-source-and-oracle-coverage.md`, `scripts/ralph/plans/slices/us-003-add-focused-label-branch-oracle-evidence.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 full crit damage source and oracle inventory` replaces chat-only baseline assumptions with durable current-root evidence for `Calculator.RegularMul.cal_crit_dmg(data)`.
+  - This story is evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered routes, copied-output/event/runtime/listener paths, old containers, or retained compatibility paths.
+- Compatibility retained:
+  - Full `Calculator.RegularMul.cal_crit_dmg(data)` still includes `static.crit_damage`, `dynamic.crit_dmg`, `dynamic.field_crit_dmg`, optional `dynamic.aftershock_attack_crit_dmg_bonus`, `dynamic.received_crit_dmg_bonus`, and the `min(5, crit_dmg)` cap.
+  - Completed `Calculator.RegularMul.cal_personal_crit_dmg(data)` / `_calculate_personal_crit_damage(...)` remains contrast evidence only and is not bundled into this full crit damage proposal-readiness PRD.
+  - `CalculatorBuffAttributeReader.read_full_crit_damage(...)` is not a public root API and is not authorized by this PRD.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, old containers, validation-runner behavior, registered routes, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-003` only for focused deterministic label-branch oracle evidence. Do not implement helper extraction, add public full-crit-damage reader APIs, expand `_CalculatorReadSnapshot`, fabricate registered routes, or broaden into unrelated RegularMul / CalAnomaly / Stun / copied-output / event-runtime-listener work.
+---
