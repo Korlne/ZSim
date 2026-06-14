@@ -305,6 +305,27 @@ RegularMul / sheer 保留决定：
 - 本轮不选择 `RegularMul` branch；full crit、personal crit、personal crit damage、damage vulnerability、stun vulnerability、special multiplier 与 sheer 差异继续分开。
 - Retained-only sheer 仍为 No-Go；不得为了 Go 而给 `_CalculatorReadSnapshot` 增加 runtime-only 字段。
 
+## Current candidate-selection PRD US-005 focused oracle / typecheck contract
+
+结论：`Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()` 的 verifier contract 已固定为现有本地 oracle nodeid 与 retained validation profiles；本 story 不新增 broad suite、不改 validation runner、不触达 production formula / reader / event-runtime 分层。
+
+Focused pytest contract：
+
+- Exact nodeid：`uv run pytest tests/simulator/test_buff_attribute_reader.py::test_stun_array_output_contract_preserves_field_order_dtype_and_product -q`。
+- 该用例锁定 `get_stun_array()` 五字段顺序 `imp`, `stun_ratio`, `stun_res`, `stun_bonus`, `stun_received`，shape `(5,)`，`np.float64` dtype，以及 `Calculator.cal_stun()` 对数组的一次读取和 `np.prod(...)` consumer 行为。
+- Runner retained profile 中的 `FORMULA_PARITY_FOCUSED_TEST_TARGETS = ["tests/simulator/test_buff_attribute_reader.py"]` 保持不变；它是 formula oracle profile 的文件级最小门禁，不替代上面的 story-local exact nodeid。
+
+Scoped typecheck / retained gates：
+
+- `formula-parity` 仍通过 `scripts/run_buff_refactor_validation.py` 维护 scoped mypy target：`Calculator.py`、`CalAnomaly.py`、anomaly-bar files、selected BuffXLogic reader files 与 validation runner；该 profile 还追加 focused reader test file。
+- `calculator-reads` 仍保留 reader seam、raw-container guardrail、AM/AP guardrail、P2-B guardrail、state sync 与 full-crit event-adjacent reader coverage。
+- 本 slice 未改 copied-output、event、dispatch/runtime、listener、lifecycle、same-tick runtime write 或 validation wiring，因此不追加 `implicit-events`；后续若触达这些分层必须串行追加。
+
+Reviewer verdict / non-goals：
+
+- Changed surface 仅限 docs/Ralph evidence/bookkeeping；`Calculator.py`、reader source、copied-output constructors、registered teams/APLs、old Buff containers、dispatch/runtime ports、listener broadcast 与 retained compatibility paths 均保持不变。
+- 该 contract 只准备后续 bounded proposal / rollback slice；不授权 production formula replacement、RegularMul 打包、retained-only sheer `_CalculatorReadSnapshot` 扩容或 main-loop sample。
+
 ## Current copied-output PRD US-008 final handoff
 
 结论：Conditional Go for later bounded proposal package only。当前 copied-output PRD 已完成 constructor field matrix、`UpdateAnomaly.spawn_output(...)` listener boundary、anomaly / disorder / polarity / abloom handler report payload parity、registered behavior sample eligibility、serial retained gates 和 rollback-anchor decision；这些证据允许下一 PRD 写 bounded proposal contract，但不授权立即 production implementation、broad `Calculator.py` / `CalAnomaly.py` rewrite、validation-runner rewrite、registered-team fixture creation 或 retained compatibility 删除。

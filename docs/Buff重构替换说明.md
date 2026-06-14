@@ -4212,3 +4212,15 @@
 - Next step:
   - Continue with US-005 focused oracle and typecheck contract for the selected Stun array output only; do not broaden into RegularMul, retained-only sheer, copied-output, registered-team creation, or production implementation.
 ---
+
+## 2026-06-14 12:32 +08:00 - US-005
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-005-define-focused-oracle-and-typecheck-contract.md`, `scripts/ralph/plans/slices/us-006-define-rollback-anchors-and-stop-conditions.md`, `scripts/ralph/investigations/2026-06-14-US-005-focused-oracle-typecheck-contract.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-005 focused oracle and typecheck contract` prepares to replace implicit proposal-readiness evidence with the exact pytest nodeid `tests/simulator/test_buff_attribute_reader.py::test_stun_array_output_contract_preserves_field_order_dtype_and_product` plus retained `formula-parity` / `calculator-reads` profile gates.
+  - This story builds verifier evidence only; it does not replace live production formula code, reader source, copied-output constructors, event/runtime/listener paths, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.StunMul.get_stun_array()` field order, `np.float64` dtype, `Calculator.cal_stun()` product behavior, `Calculator.StunMul.cal_imp()` / `_calculate_impact(...)`, all `Calculator.RegularMul` branches, retained-only sheer, `MultiplierData` / `DynamicStatement`, old containers, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain retained.
+  - `implicit-events` remains conditional because no copied-output, event, dispatch/runtime, listener-facing, lifecycle, validation-wiring, same-tick runtime, or production semantic surface changed.
+- Next step:
+  - Continue with US-006 rollback anchors and stop conditions for the selected Stun array output contract; keep production implementation, RegularMul bundling, retained-only sheer expansion, main-loop samples, and old-path deletion out of scope.
+---
