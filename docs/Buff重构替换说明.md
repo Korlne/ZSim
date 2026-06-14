@@ -4285,3 +4285,15 @@
 - Next step:
   - Continue to `US-003` for narrow Stun array helper delegation; keep the diff bounded to the selected array output contract and do not broaden into RegularMul, registered-team, validation-runner, event/runtime, listener, dot-runtime, or retained compatibility work.
 ---
+
+## 2026-06-14 14:34 +08:00 - US-003
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-003-implement-narrow-stun-array-helper-delegation.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `Calculator.py::_build_stun_multiplier_array(...)` replaces the inline five-field `np.float64` array construction responsibility previously embedded inside `Calculator.StunMul.get_stun_array()`.
+  - This story builds a rollbackable module-local boundary only; it does not replace scalar Stun formulas, formula reader APIs, copied-output constructors, event/runtime/listener paths, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Field order `imp`, `stun_ratio`, `stun_res`, `stun_bonus`, `stun_received`, shape `(5,)`, dtype `np.float64`, and `Calculator.cal_stun()` product behavior remain pinned by focused tests.
+  - `Calculator.StunMul.cal_imp()` / `_calculate_impact(...)`, `cal_stun_ratio()`, `cal_stun_res()`, `cal_stun_bonus()`, `cal_stun_received()`, all `Calculator.RegularMul` branches, `CalAnomaly.py`, copied-output constructors, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, listener broadcasts, dot runtime, and old containers remain unchanged.
+- Next step:
+  - Continue to `US-004` to preserve formula/reader compatibility boundaries around this helper extraction; do not broaden into RegularMul, registered samples, validation-runner wiring, event/runtime, listener, dot-runtime, or retained compatibility work.
+---

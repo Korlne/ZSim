@@ -3300,6 +3300,42 @@ def test_stun_array_output_contract_preserves_field_order_dtype_and_product(
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
 
 
+def test_stun_array_delegates_to_module_helper(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    stun_multipliers = Calculator.StunMul.__new__(Calculator.StunMul)
+    stun_multipliers.imp = 101.0
+    stun_multipliers.stun_ratio = 2.0
+    stun_multipliers.stun_res = 0.75
+    stun_multipliers.stun_bonus = 1.25
+    stun_multipliers.stun_received = 1.5
+    helper_calls: list[tuple[float, float, float, float, float]] = []
+    expected_array = np.array([9.0, 8.0, 7.0, 6.0, 5.0], dtype=np.float64)
+
+    def fake_build_stun_multiplier_array(
+        imp: float,
+        stun_ratio: float,
+        stun_res: float,
+        stun_bonus: float,
+        stun_received: float,
+    ) -> np.ndarray:
+        helper_calls.append(
+            (imp, stun_ratio, stun_res, stun_bonus, stun_received)
+        )
+        return expected_array
+
+    monkeypatch.setattr(
+        calculator_module,
+        "_build_stun_multiplier_array",
+        fake_build_stun_multiplier_array,
+    )
+
+    stun_array = stun_multipliers.get_stun_array()
+
+    assert helper_calls == [(101.0, 2.0, 0.75, 1.25, 1.5)]
+    assert stun_array is expected_array
+
+
 def test_regular_mul_array_outputs_preserve_field_order_dtype_and_crit_split(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -153,6 +153,25 @@ def _calculate_impact(static_statement: Any, dynamic_statement: Any) -> float:
     )
 
 
+def _build_stun_multiplier_array(
+    imp: float,
+    stun_ratio: float,
+    stun_res: float,
+    stun_bonus: float,
+    stun_received: float,
+) -> np.ndarray:
+    return np.array(
+        [
+            imp,
+            stun_ratio,
+            stun_res,
+            stun_bonus,
+            stun_received,
+        ],
+        dtype=np.float64,
+    )
+
+
 class MultiplierData:
     """
     乘数数据缓存管理类
@@ -1417,17 +1436,13 @@ class Calculator:
             self.stun_received = self.cal_stun_received(data)
 
         def get_stun_array(self) -> np.ndarray:
-            stun_array = np.array(
-                [
-                    self.imp,
-                    self.stun_ratio,
-                    self.stun_res,
-                    self.stun_bonus,
-                    self.stun_received,
-                ],
-                dtype=np.float64,
+            return _build_stun_multiplier_array(
+                self.imp,
+                self.stun_ratio,
+                self.stun_res,
+                self.stun_bonus,
+                self.stun_received,
             )
-            return stun_array
 
         @staticmethod
         def cal_imp(data: MultiplierData) -> float:
