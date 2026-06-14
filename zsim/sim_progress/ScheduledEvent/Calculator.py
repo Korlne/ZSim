@@ -162,6 +162,14 @@ def _calculate_full_crit_rate(static_statement: Any, dynamic_statement: Any) -> 
     )
 
 
+def _calculate_personal_crit_rate(static_statement: Any, dynamic_statement: Any) -> float:
+    return (
+        static_statement.crit_rate
+        + dynamic_statement.crit_rate
+        + dynamic_statement.field_crit_rate
+    )
+
+
 def _calculate_personal_crit_damage(static_statement: Any, dynamic_statement: Any) -> float:
     return (
         static_statement.crit_damage
@@ -961,10 +969,7 @@ class Calculator:
         @staticmethod
         def cal_personal_crit_rate(data: MultiplierData) -> float:
             """个人实时暴击率 = 面板暴击率 + buff暴击率"""
-            crit_rate = (
-                data.static.crit_rate + data.dynamic.crit_rate + data.dynamic.field_crit_rate
-            )
-            return crit_rate
+            return _calculate_personal_crit_rate(data.static, data.dynamic)
 
         @staticmethod
         def cal_crit_dmg(data: MultiplierData) -> float:

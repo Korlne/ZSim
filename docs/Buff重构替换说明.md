@@ -4916,3 +4916,15 @@
 - Next step:
   - Continue to `US-002` only for an equivalent personal crit-rate helper seam or explicit No-Go. Do not broaden into full crit, crit damage, other RegularMul branches, `_CalculatorReadSnapshot` public expansion, registered-route fabrication, validation-runner rewrites, copied-output/event/runtime/lifecycle paths, old-container deletion, or retained compatibility cleanup.
 ---
+
+## 2026-06-15 05:51 +08:00 - US-002
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `scripts/ralph/plans/slices/us-002-personal-crit-rate-helper-seam.md`, `scripts/ralph/plans/slices/us-003-reader-anchor-and-full-personal-contrast.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `_calculate_personal_crit_rate(static_statement, dynamic_statement)` prepares to replace the inline body of `Calculator.RegularMul.cal_personal_crit_rate(data)` as the bounded local personal-crit-rate formula seam.
+  - The helper computes only `static_statement.crit_rate + dynamic_statement.crit_rate + dynamic_statement.field_crit_rate`.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_personal_crit_rate(data)` keeps its public signature and return semantics while delegating to the module-local helper.
+  - `_calculate_full_crit_rate(...)` remains the full crit contrast branch and still includes `crit_rate_received_increase`; personal crit, the new helper, crit damage, personal crit damage, reader snapshot contracts, event/runtime/listener paths, validation-runner behavior, copied-output payloads, old containers, and retained compatibility paths were not broadened.
+- Next step:
+  - Continue to `US-003` reader anchor and full/personal contrast verification. Do not expand `_CalculatorReadSnapshot`, add received-crit state to the personal path, fabricate registered routes, or reopen unrelated RegularMul branches without new evidence.
+---
