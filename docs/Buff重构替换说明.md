@@ -4654,3 +4654,15 @@
 - Next step:
   - Continue to `US-007` reviewer and invariant gate. Do not start production implementation, validation-runner rewrite, registered-route fixture creation, old-container deletion, copied-output/event/runtime/listener changes, lifecycle changes, or retained compatibility deletion from this verifier slice.
 ---
+
+## 2026-06-14 23:30 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-reviewer-and-invariant-gate.md`, `scripts/ralph/investigations/2026-06-14-US-007-reviewer-invariant-gate.md`, `scripts/ralph/checkpoints/2026-06-14-us-007-reviewer-invariant-gate.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 reviewer invariant gate` prepares a later production implementation PRD to replace only the `Calculator.RegularMul.cal_personal_crit_dmg(data)` route if authorized. This story does not replace a live production formula path.
+  - The later implementation boundary must preserve `static.crit_damage + dynamic.crit_dmg + dynamic.field_crit_dmg`, keep `CalculatorBuffAttributeReader.read_personal_crit_damage(context)` as the reader anchor, and preserve the full-vs-personal received-crit contrast.
+- Compatibility retained:
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, synchronous listener broadcasts, copied-output constructors, old Buff containers, validation-runner wiring, lifecycle containers, registered routes, and retained compatibility paths remain untouched.
+  - Existing raw queue / old-container compatibility surfaces remain retained and documented; this slice introduces no new raw queue or container passthrough.
+- Next step:
+  - Continue to `US-008` handoff-doc synchronization and same-phase candidate pool preservation. Do not start production implementation until the next PRD explicitly names `Calculator.RegularMul.cal_personal_crit_dmg(data)` and carries the retained validation gates.
+---
