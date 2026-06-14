@@ -4848,3 +4848,16 @@
 - Next step:
   - Continue to `US-005` registered behavior sample eligibility audit. Do not create validation-only teams, fake APLs, fixture-only routes, `cal_crit_rate()` reopenings, full/personal crit bundles, validation-runner rewrites, old-container deletion, or event/runtime/listener layer merges.
 ---
+
+## 2026-06-15 04:24 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-registered-behavior-sample-eligibility-audit.md`, `scripts/ralph/investigations/2026-06-15-US-005-registered-behavior-sample-eligibility.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 registered behavior sample eligibility audit` replaces chat-only main-loop sample assumptions with durable Conditional No-Go evidence for the current personal crit rate proposal-readiness PRD.
+  - This story is evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output constructors/payloads, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Existing registered teams/APLs remain unchanged: `席德大安比队`, `莱特火属性队`, `薇薇安物理队`, and `青衣雷属性队`.
+  - Main-loop consistency was skipped because there is no live production semantic diff and no real registered route currently proves nonzero selected `Calculator.RegularMul.cal_personal_crit_rate(data)` relevance inside an explicit stop tick.
+  - A future eligible sample must include `team`, `apl`, `stop_tick`, runtime labels, total damage comparison, relevant nonzero count, event counts, Buff timeline comparison, and `matches=true`.
+- Next step:
+  - Continue to `US-006` retained validation profile gate. Keep validation serial and do not run main-loop consistency without a future live semantic diff plus real registered-route nonzero selected formula relevance.
+---
