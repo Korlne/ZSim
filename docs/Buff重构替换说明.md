@@ -4576,3 +4576,16 @@
 - Next step:
   - Generate the next PRD as Phase-3 same-phase candidate selection / bounded proposal. The default should select one exact candidate from the retained pool and must not collapse to broad formula rewrite, validation-runner rewrite, registered-team fixture creation, old-container deletion, event/runtime/listener layer merge, or retained compatibility deletion.
 ---
+
+## 2026-06-14 21:54 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconcile-route-and-completed-scope.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 route and completed-scope reconciliation` replaces stale backlog assumptions with durable Ralph evidence that previous RegularMul crit-rate, selected Stun, copied-output, phase-1, AM/AP/impact, `cal_res_pen()`, and P2 guarded surfaces remain completed unless concrete guardrail / focused test / validation / root-source evidence reopens them.
+  - This story only reconciles the next PRD route and evidence. It does not replace live production formula code, reader source, validation-runner behavior, registered teams/APLs, copied-output constructors, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.StunMul.get_stun_array()` remains implemented through `_build_stun_multiplier_array(...)`; `Calculator.cal_stun()` remains the product consumer.
+  - `Calculator.RegularMul.cal_crit_rate(data)` remains implemented / no-op verified at handoff through `_calculate_full_crit_rate(...)` and is not the default reopen target.
+  - Same-phase candidate work remains routed to remaining RegularMul candidate matrix refresh / bounded proposal readiness rather than stale completed backlog.
+- Next step:
+  - Continue to `US-002` remaining RegularMul branch matrix refresh. Do not start direct production implementation, old-container deletion, validation-runner rewrite, event/runtime/listener layer work, or broad `Calculator.py` / `CalAnomaly.py` rewrite without a named blocker.
+---
