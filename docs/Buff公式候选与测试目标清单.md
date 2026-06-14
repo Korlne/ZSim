@@ -242,6 +242,43 @@ Same-phase candidate pool：
 
 Next default PRD：generate one later bounded copied-output handler/report implementation PRD from the proposal package. After that implementation completes, reselect from the same-phase candidate pool instead of automatically producing another copied-output follow-up.
 
+## Current copied-payload handler/report bounded implementation PRD US-008 final handoff
+
+结论：Implemented with retained boundaries。当前 implementation PRD 已完成 copied-payload constructor boundary、`UpdateAnomaly.spawn_output(...)` mode boundary、scheduled publish / dot runtime / debuff layer-preservation anchors、handler report payload boundary、scoped mypy coverage 和 registered-route No-Go verdict；它不授权 broad `Calculator.py` / `CalAnomaly.py` rewrite、validation-runner rewrite、registered-team fixture creation、old-container deletion、listener / scheduled publish / dot runtime / same-tick runtime write layer merge 或 retained compatibility 删除。
+
+Implementation result：
+
+- `CopyAnomalyForOutput.py` copied-payload constructors now have explicit source-copy / payload-install / explicit-context override / subclass-owned field boundaries, while retaining copied `current_ndarray`, `current_effective_anomaly`, `Disorder.is_disorder`, `PolarityDisorder` polarity fields, and `DirgeOfDestinyAnomaly.anomaly_dmg_ratio` behavior.
+- `UpdateAnomaly.spawn_output(...)` now keeps invalid mode / missing `polarity_ratio` failure before copied-output construction, listener broadcast, scheduled publish, or source settlement side effects.
+- Layer-preservation tests keep direct `spawn_output(...)` separated from scheduled publish, synchronous listener broadcast, dot runtime registration/removal, debuff writes, pending Buff queue writes, and same-tick runtime command writes.
+- Handler report payload evidence keeps anomaly, disorder, polarity disorder, and abloom report fields separate from listener settlement broadcast, disorder stun update, and anomaly `RuntimeCommandPort.settle_buffs(...)`.
+
+US-008 verifier evidence：
+
+- `uv run pytest tests/simulator/test_buff_attribute_reader.py tests/simulator/test_update_anomaly_dispatch.py tests/simulator/test_anomaly_handler_runtime_view.py -q` exited `0` with `172 passed`.
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile formula-parity` exited `0`：base simulator `2 passed`、isolated teams `3 passed`、focused formula-parity suite `140 passed`、scoped mypy `Success: no issues found in 9 source files`.
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads` exited `0`：base simulator `2 passed`、isolated teams `3 passed`、focused calculator-reads suite `240 passed`、scoped mypy `Success: no issues found in 22 source files`.
+- `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events` exited `0`：base simulator `2 passed`、isolated teams `3 passed`、focused implicit-event suite `247 passed`、scoped mypy `Success: no issues found in 90 source files`.
+- `uv run python scripts/run_buff_refactor_validation.py` exited `0`：base simulator `2 passed`、isolated teams `3 passed`、focused lifecycle suite `18 passed`、scoped mypy `Success: no issues found in 9 source files`.
+- `uv run pytest tests/simulator/test_main_loop_consistency.py -q` exited `0` with `6 passed`; retained-vs-retained main-loop sample remains skipped because there is no live production semantic diff and no target copied-output payload route to prove.
+
+Retained gates and compatibility retained：
+
+- Retained gates：future formula / reader work continues to run `formula-parity` / `calculator-reads` serially；future copied-output / event / dispatch / runtime / listener work runs `implicit-events`；future lifecycle / runtime-write / validation-runner behavior changes run the default profile；future live semantic diff only adds main-loop consistency when a real registered route has nonzero relevant copied-output/anomaly counts.
+- Compatibility retained：`Calculator.py` / `CalAnomaly.py` formulas, `MultiplierData` / `MulData` / `DynamicStatement`, `AnomalyBar.current_ndarray`, old containers, legacy `buff_add()` / `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcast, dot runtime registration/removal, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, AM/AP/impact helper implementation, `cal_res_pen()` selector extraction, and array / RegularMul / sheer characterization evidence all remain retained.
+
+Same-phase candidate pool：
+
+| Candidate / boundary | Current status | Next rule |
+| --- | --- | --- |
+| Registered-team behavior sample eligibility | Policy retained; `薇薇安物理队` remains only a future copied-output/anomaly candidate after route preflight. | Use only for future live semantic diff with real registered-route JSON and nonzero relevant copied-output/anomaly counts; do not create validation-only teams/APLs. |
+| `Calculator.RegularMul` remaining branches / retained-only sheer follow-up | Characterization evidence remains No-Go for production proposal. | Reopen only for a named branch or sheer contract gap with deterministic oracle, rollback anchors and registered-sample conditions. |
+| `Calculator.StunMul.get_stun_array()` / array-output follow-up | Array contract characterized; no production replacement authorization. | Reopen only for a named array-output follow-up, focused regression or proposal-readiness packet. |
+| P2-A through P2-G guarded maintenance | Completed guarded buckets. | Reopen only on concrete guardrail / focused test / validation evidence naming the failed file, symbol or gate. |
+| Retained compatibility / blocker-only reopen | No new coupling classification in this implementation handoff. | Reopen only with root-workspace source, guardrail, focused test, validation, or real registered-route blocker evidence. |
+
+Next default PRD：Phase-3 same-phase candidate selection / bounded proposal PRD。Choose one exact bounded slice from the same-phase pool, record focused tests, scoped mypy, rollback anchors, registered sample conditions, retained gates and non-goals, and do not directly convert the new Markdown PRD into `scripts/ralph/prd.json` in the same generation step.
+
 ## Current copied-output PRD US-008 final handoff
 
 结论：Conditional Go for later bounded proposal package only。当前 copied-output PRD 已完成 constructor field matrix、`UpdateAnomaly.spawn_output(...)` listener boundary、anomaly / disorder / polarity / abloom handler report payload parity、registered behavior sample eligibility、serial retained gates 和 rollback-anchor decision；这些证据允许下一 PRD 写 bounded proposal contract，但不授权立即 production implementation、broad `Calculator.py` / `CalAnomaly.py` rewrite、validation-runner rewrite、registered-team fixture creation 或 retained compatibility 删除。

@@ -4122,3 +4122,16 @@
 - Next step:
   - Continue with US-008 final handoff docs and same-phase candidate pool; keep registered-route main-loop consistency conditional on future live production semantic diffs plus real route nonzero copied-output/anomaly evidence.
 ---
+
+## 2026-06-14 08:35 +08:00 - US-008
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-final-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/investigations/2026-06-14-US-008-docs-typecheck-scope.md`, `scripts/ralph/checkpoints/2026-06-14-us-008-final-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-008 final handoff docs and same-phase candidate pool` replaces copied-output implementation as the automatic next default with a Phase-3 same-phase candidate selection / bounded proposal PRD.
+  - The completed implementation boundary remains `CopyAnomalyForOutput.py` copied-payload constructor ownership, `UpdateAnomaly.spawn_output(...)` mode failure ordering, layer-preservation anchors, handler report payload boundary, scoped mypy coverage, and registered-route No-Go evidence.
+- Compatibility retained:
+  - `Calculator.py` / `CalAnomaly.py`, `MultiplierData` / `MulData` / `DynamicStatement`, `AnomalyBar.current_ndarray`, old containers, legacy `buff_add()` / `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcast, dot runtime, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, AM/AP/impact helper implementation, `cal_res_pen()` selector extraction, and array / RegularMul / sheer characterization evidence remain retained.
+  - Registered behavior sample eligibility, remaining `Calculator.RegularMul` / retained-only sheer follow-up, `Calculator.StunMul.get_stun_array()` / array-output follow-up, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules remain available as same-phase candidates.
+  - No old-coupling review update was needed because this final handoff found no new Buff coupling or coupling classification change.
+- Next step:
+  - Generate one bounded same-phase candidate-selection / proposal PRD from the documented pool; do not directly convert that Markdown PRD into `scripts/ralph/prd.json` until a later explicit Ralph conversion step.
+---
