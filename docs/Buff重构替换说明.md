@@ -4199,3 +4199,16 @@
 - Next step:
   - Continue with US-004 exact bounded proposal candidate selection; if the selected candidate lacks a real route or nonzero count proof, record No-Go instead of preparing production diff or main-loop sample.
 ---
+
+## 2026-06-14 12:17 +08:00 - US-004
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-004-select-one-exact-bounded-proposal-candidate.md`, `scripts/ralph/investigations/2026-06-14-US-004-exact-bounded-candidate-selection.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-004 exact bounded candidate selection` replaces the broad same-phase candidate pool for the next proposal-contract stories with one selected surface: `Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()` array output.
+  - This story updates docs and Ralph evidence only; it does not replace live production formula code, reader source, copied-output constructors, event/runtime/listener paths, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.StunMul.cal_imp()` / `_calculate_impact(...)`, all `Calculator.RegularMul` branches, and retained-only sheer remain separate retained boundaries.
+  - Field order, `np.float64` dtype, `Calculator.cal_stun()` product behavior, `MultiplierData` / `DynamicStatement`, old containers, copied-output constructors, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain retained.
+  - Main-loop consistency remains blocked until a future live semantic diff names a real registered route with nonzero relevant stun / impact counts, explicit stop tick, runtime labels, total damage comparison, and Buff timeline comparison.
+- Next step:
+  - Continue with US-005 focused oracle and typecheck contract for the selected Stun array output only; do not broaden into RegularMul, retained-only sheer, copied-output, registered-team creation, or production implementation.
+---

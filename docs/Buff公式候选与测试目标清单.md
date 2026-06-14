@@ -1,6 +1,6 @@
 # Buff公式候选与测试目标清单
 
-更新时间：2026-06-13 16:00 +08:00
+更新时间：2026-06-14 12:17 +08:00
 
 本清单服务于 Phase 3 公式等价测试设计。当前故事只建立候选面和测试目标证据，不替换 `Calculator.py`、`CalAnomaly.py`、复制异常 / 紊乱输出公式，也不改变 `ScheduleDispatchPort`、`RuntimeCommandPort` 或旧容器兼容路径。
 
@@ -278,6 +278,32 @@ Same-phase candidate pool：
 | Retained compatibility / blocker-only reopen | No new coupling classification in this implementation handoff. | Reopen only with root-workspace source, guardrail, focused test, validation, or real registered-route blocker evidence. |
 
 Next default PRD：Phase-3 same-phase candidate selection / bounded proposal PRD。Choose one exact bounded slice from the same-phase pool, record focused tests, scoped mypy, rollback anchors, registered sample conditions, retained gates and non-goals, and do not directly convert the new Markdown PRD into `scripts/ralph/prd.json` in the same generation step.
+
+## Current candidate-selection PRD US-004 exact bounded candidate decision
+
+结论：选择 `Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()` array output 作为下一步 bounded proposal contract 的唯一候选面；production implementation 与 main-loop sample 仍为 No-Go，直到后续 live semantic diff 证明真实注册路线、相关 stun / impact 非零事件或公式计数、显式 stop tick、runtime labels、total damage comparison 与 Buff timeline comparison。
+
+Selected files / symbols：
+
+- `zsim/sim_progress/ScheduledEvent/Calculator.py`：`Calculator.StunMul.get_stun_array()`、`Calculator.cal_stun()`。
+- `tests/simulator/test_buff_attribute_reader.py`：`test_stun_array_output_contract_preserves_field_order_dtype_and_product()`。
+- 明确分离：`Calculator.StunMul.cal_imp()` / `_calculate_impact(...)`、所有 `Calculator.RegularMul` branch、retained-only sheer runtime conversion。
+
+Focused tests / scoped mypy / retained gates：
+
+- Focused pytest：`uv run pytest tests/simulator/test_buff_attribute_reader.py::test_stun_array_output_contract_preserves_field_order_dtype_and_product -q`。
+- Scoped mypy / formula gate：`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile formula-parity`，沿用该 profile 中的 `Calculator.py`、`CalAnomaly.py`、anomaly-bar files、selected reader callsites、validation runner 与 `test_buff_attribute_reader.py` scope。
+- Retained gates：formula / reader work 继续保留 `formula-parity` 与 `calculator-reads`；触达 copied-output、event、dispatch/runtime 或 listener 分层时才追加 `implicit-events`。
+
+Rollback anchors / stop conditions：
+
+- Rollback anchors：当前 `get_stun_array()` 五字段顺序、`np.float64` dtype、`Calculator.cal_stun()` 的 `np.prod(...)` consumer、当前 `cal_imp()` helper implementation、`MultiplierData` / `DynamicStatement`、focused test、validation profile wiring、old containers、copied-output constructors、`ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter` 与 `LegacyBuffRuntimeFacade`。
+- Stop conditions：字段顺序 / dtype / product 行为不匹配、合并 `cal_imp()` helper、扩大 public contract、broad `Calculator.py` / `CalAnomaly.py` rewrite、RegularMul branch 打包、为 sheer 强行加 `_CalculatorReadSnapshot` 或 `char_instance` passthrough、validation-runner rewrite need、缺少真实路线 / 非零计数的 live diff、或 retained gate failure，均产生 No-Go 并停止进入 implementation。
+
+RegularMul / sheer 保留决定：
+
+- 本轮不选择 `RegularMul` branch；full crit、personal crit、personal crit damage、damage vulnerability、stun vulnerability、special multiplier 与 sheer 差异继续分开。
+- Retained-only sheer 仍为 No-Go；不得为了 Go 而给 `_CalculatorReadSnapshot` 增加 runtime-only 字段。
 
 ## Current copied-output PRD US-008 final handoff
 
