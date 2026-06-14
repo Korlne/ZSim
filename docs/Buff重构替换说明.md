@@ -4337,3 +4337,18 @@
 - Next step:
   - Continue to `US-007` rollback anchors and replacement note; do not broaden into `Calculator.py` / `CalAnomaly.py` rewrites, old-container deletion, validation-runner rewrites, registered-team fixture creation, or layer merges.
 ---
+
+## 2026-06-14 15:28 +08:00 - US-007
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-007-record-rollback-anchors-and-replacement-note.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-007 rollback anchors and replacement note` replaces chat-only rollback guidance with this retained handoff entry for the bounded `Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()` Stun array implementation.
+  - Rollback anchors are `Calculator.StunMul.get_stun_array()`, module-local `_build_stun_multiplier_array(...)`, `Calculator.cal_stun()`, focused oracle `tests/simulator/test_buff_attribute_reader.py::test_stun_array_output_contract_preserves_field_order_dtype_and_product`, retained `formula-parity` / `calculator-reads` gates, conditional `implicit-events`, and retained Buff docs.
+  - Helper extraction was not a no-op in this PRD: the helper already exists from US-003, and this story records verification/evidence only without manufacturing additional source churn.
+- Compatibility retained:
+  - `Calculator.StunMul.cal_imp()` / `_calculate_impact(...)`, all `Calculator.RegularMul` branches, retained-only sheer, `MultiplierData`, `MulData`, `DynamicStatement`, old containers, copied-output constructors, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, and `LegacyBuffRuntimeFacade` remain retained or out of scope.
+  - `implicit-events` remains conditional because US-007 changed only docs/Ralph evidence and completion bookkeeping; no copied-output, event, dispatch/runtime, listener-facing, dot runtime, validation wiring, lifecycle, same-tick runtime write, registered-route, or production semantic behavior changed.
+  - Validation evidence: `formula-parity` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused reader suite `141 passed`, and mypy success on `9 source files`; `calculator-reads` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused reader suite `241 passed`, and mypy success on `22 source files`.
+  - Known warning/noise remained non-fatal after success markers: pytest-asyncio default fixture loop-scope warning and async log-writer shutdown traceback.
+- Next step:
+  - Continue to `US-008` handoff docs and same-phase candidate pool; do not broaden this rollback note into `Calculator.py` / `CalAnomaly.py` rewrites, RegularMul bundling, retained-only sheer expansion, copied-output changes, old-container deletion, validation-runner rewrites, registered-team fixture creation, or event/runtime/listener layer merges.
+---
