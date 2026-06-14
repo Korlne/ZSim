@@ -4628,3 +4628,16 @@
 - Next step:
   - Continue to `US-005` proposal boundary and rollback anchors for `Calculator.RegularMul.cal_personal_crit_dmg(data)` only. Do not broaden into production implementation, registered-route sample creation, `_CalculatorReadSnapshot` expansion, retained-only sheer, full crit damage, crit-rate reopening, or validation-runner rewrite without a later story authorizing it.
 ---
+
+## 2026-06-14 22:58 +08:00 - US-005
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-005-define-proposal-boundary-and-rollback-anchors.md`, `scripts/ralph/plans/slices/us-006-run-retained-gates-serially.md`, `scripts/ralph/investigations/2026-06-14-US-005-proposal-boundary-rollback-anchors.md`, `scripts/ralph/checkpoints/2026-06-14-us-005-proposal-boundary-rollback-anchors.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-005 proposal boundary and rollback anchors` prepares a later bounded implementation PRD to replace only `Calculator.RegularMul.cal_personal_crit_dmg(data)` with an equivalent local scalar helper if authorized.
+  - This story is docs/evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output constructors, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - The selected personal crit damage formula still reads `static.crit_damage + dynamic.crit_dmg + dynamic.field_crit_dmg`; full `Calculator.RegularMul.cal_crit_dmg(data)` remains the received-damage contrast branch.
+  - `_CalculatorReadSnapshot` remains private and does not carry `char_instance`; `CalculatorBuffAttributeReader.read_personal_crit_damage(context)` remains the reader anchor.
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, copied-output constructors, old Buff containers, `buff_add()`, `KickOutBuff()`, listener broadcast, dot runtime registration/removal, `formula-parity`, and `calculator-reads` remain retained boundaries.
+- Next step:
+  - Continue to `US-006` retained gate verification. Run selected focused pytest first, then serial `formula-parity` and `calculator-reads`; keep `implicit-events`, default lifecycle validation, and main-loop consistency conditional on future touched surfaces or live registered semantic diff evidence.
+---
