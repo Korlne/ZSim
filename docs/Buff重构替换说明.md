@@ -4510,3 +4510,17 @@
 - Next step:
   - Continue to `US-004` registered-sample conditional No-Go. Keep main-loop sample evidence conditional on a later live semantic diff with a real registered route and nonzero selected full-crit relevance.
 ---
+
+## 2026-06-14 19:29 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-maintain-registered-sample-conditional-no-go.md`, `scripts/ralph/checkpoints/2026-06-14-us-004-registered-sample-conditional-no-go.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-005-run-retained-formula-and-reader-gates-serially.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 registered-sample conditional No-Go` replaces implicit live-sample pressure with an explicit retained rule: a live main-loop sample is future-only unless a real production semantic diff and real registered route prove nonzero selected full-crit relevance plus nonzero `crit_rate_received_increase`.
+  - This story verifies and records a boundary only. It does not replace live production formula code, reader source, registered teams/APLs, validation-runner behavior, event/runtime/listener paths, lifecycle containers, old Buff containers, copied-output paths, or retained compatibility paths.
+- Compatibility retained:
+  - `scripts/run_buff_main_loop_consistency.py` remains an explicit future entrypoint, not default evidence for this behavior-preserving slice.
+  - `莱特火属性队` with `./zsim/data/APLData/莱特-扳机-雨果.toml` remains a future conditional seed only.
+  - No validation-only teams, fake APLs, fixture-only routes, or retained-vs-retained main-loop samples were created.
+  - Validation evidence: focused mypy exited `0` with `Success: no issues found in 2 source files`; known non-failure noise was existing `annotation-unchecked` notes.
+- Next step:
+  - Continue to `US-005` retained formula and reader gates. Keep `implicit-events`, default lifecycle validation, and main-loop consistency conditional on touched surfaces and real registered-route relevance.
+---
