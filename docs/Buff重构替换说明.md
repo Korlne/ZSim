@@ -4641,3 +4641,16 @@
 - Next step:
   - Continue to `US-006` retained gate verification. Run selected focused pytest first, then serial `formula-parity` and `calculator-reads`; keep `implicit-events`, default lifecycle validation, and main-loop consistency conditional on future touched surfaces or live registered semantic diff evidence.
 ---
+
+## 2026-06-14 23:17 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-run-retained-gates-serially.md`, `scripts/ralph/plans/slices/us-007-reviewer-and-invariant-gate.md`, `scripts/ralph/checkpoints/2026-06-14-us-006-retained-gates-serial-verification.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 retained serial gates` replaces implicit proposal-readiness confidence with deterministic serial verifier evidence for the selected `Calculator.RegularMul.cal_personal_crit_dmg(data)` route.
+  - This story verifies existing boundaries only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output constructors, event/runtime/listener paths, dot runtime, lifecycle containers, old Buff containers, same-tick runtime writes, or retained compatibility paths.
+- Compatibility retained:
+  - The selected personal crit damage formula still reads `static.crit_damage + dynamic.crit_dmg + dynamic.field_crit_dmg`; full `Calculator.RegularMul.cal_crit_dmg(data)` remains the received-damage contrast branch.
+  - `formula-parity` and `calculator-reads` are retained serial gates for a later bounded implementation PRD. `implicit-events`, default validation, and main-loop consistency remain conditional future gates tied to touched surfaces.
+  - Known `pytest_asyncio` loop-scope warnings and post-success async log-writer shutdown output remain warning/noise, not verifier failures, when exit status and success markers show the command passed.
+- Next step:
+  - Continue to `US-007` reviewer and invariant gate. Do not start production implementation, validation-runner rewrite, registered-route fixture creation, old-container deletion, copied-output/event/runtime/listener changes, lifecycle changes, or retained compatibility deletion from this verifier slice.
+---
