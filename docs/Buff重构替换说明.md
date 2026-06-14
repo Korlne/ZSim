@@ -4186,3 +4186,16 @@
 - Next step:
   - Continue with US-003 registered behavior sample eligibility using the matrix as input; keep registered samples conditional on future live semantic diffs plus real route evidence.
 ---
+
+## 2026-06-14 12:01 +08:00 - US-003
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-003-audit-registered-behavior-sample-eligibility.md`, `scripts/ralph/plans/slices/us-004-select-one-exact-bounded-proposal-candidate.md`, `scripts/ralph/investigations/2026-06-14-US-003-registered-behavior-sample-eligibility.md`, `scripts/ralph/checkpoints/2026-06-14-us-003-registered-behavior-sample-eligibility.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-003 registered behavior sample eligibility audit` replaces implicit sample pressure with explicit No-Go / conditional No-Go conditions before any future formula semantic diff.
+  - This story updates docs and Ralph evidence only; it does not replace live production formula code, reader source, copied-output constructors, event/runtime/listener paths, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Retained-only sheer remains blocked because no real registered Yixuan route exists; no validation-only team, fake APL, fixture-only route, or retained-vs-retained main-loop sample was created.
+  - Stun/impact and direct RegularMul candidates remain conditional on a later live production semantic diff plus real registered route, relevant nonzero event or formula count, explicit stop tick, runtime labels, total damage comparison, and Buff timeline comparison.
+  - `MultiplierData`, `MulData`, `DynamicStatement`, `AnomalyBar.current_ndarray`, old containers, legacy `buff_add()` / `KickOutBuff()`, `ScheduleDispatchPort`, listener broadcast, dot runtime, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain retained boundaries.
+- Next step:
+  - Continue with US-004 exact bounded proposal candidate selection; if the selected candidate lacks a real route or nonzero count proof, record No-Go instead of preparing production diff or main-loop sample.
+---
