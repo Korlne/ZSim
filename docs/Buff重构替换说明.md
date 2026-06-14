@@ -4444,3 +4444,16 @@
 - Next step:
   - Continue to `US-007` retained gates and reviewer invariant check. Do not start production implementation, broaden into `cal_crit_expect()` / other `RegularMul` branches, create validation-only routes, delete retained compatibility, rewrite validation-runner behavior, delete old containers, or merge event/runtime/listener layers.
 ---
+
+## 2026-06-14 17:55 +08:00 - US-007
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-007-run-retained-gates-and-reviewer-invariant-check.md`, `scripts/ralph/checkpoints/2026-06-14-us-007-retained-gates-reviewer-invariant-check.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-candidate-pool.md`
+- Replacement note:
+  - `US-007 retained verifier gate` replaces assertion-only proposal readiness with deterministic retained gate evidence and reviewer invariant verdict for the current `Calculator.RegularMul.cal_crit_rate(data)` proposal packet.
+  - This story verifies a boundary and does not replace live production formula code, reader source, copied-output constructors, event/runtime/listener paths, validation-runner behavior, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Full crit and personal crit remain separate retained boundaries; full `cal_crit_rate()` includes `crit_rate_received_increase`, while personal `cal_personal_crit_rate()` / `read_personal_crit_rate()` excludes it.
+  - Validation evidence: focused reader pytest exited `0` with `142 passed`; `formula-parity` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused reader suite `142 passed`, and scoped mypy success on `9 source files`; `calculator-reads` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused reader/guardrail suite `242 passed`, and scoped mypy success on `22 source files`.
+  - `implicit-events` and full default validation remain skipped by touched-surface evidence: this PRD branch changed docs/Ralph evidence plus focused formula-oracle test evidence, not copied-output, event, dispatch/runtime, listener, dot-runtime, same-tick runtime write, lifecycle, validation-runner, or old-container surfaces.
+- Next step:
+  - Continue to `US-008` final handoff docs and same-phase candidate pool. Do not start production implementation or broaden beyond the bounded `Calculator.RegularMul.cal_crit_rate(data)` proposal contract.
+---
