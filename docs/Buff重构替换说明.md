@@ -4794,3 +4794,16 @@
 - Next step:
   - Generate the next PRD as Phase-3 same-phase candidate selection / bounded proposal. Pick one exact retained-pool surface and keep rollback anchors, focused tests, scoped mypy, registered-sample conditions, retained gates, and non-goals; do not continue by default with another personal crit damage implementation PRD.
 ---
+
+## 2026-06-15 03:34 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-active-route-and-candidate-intake.md`, `scripts/ralph/investigations/2026-06-15-US-001-active-route-candidate-intake.md`, `scripts/ralph/checkpoints/2026-06-15-us-001-active-route-candidate-intake.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-002-personal-crit-rate-source-and-reader-contract-audit.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 active route intake` replaces stale or chat-only routing assumptions with durable evidence that the current default is Phase-3 same-phase candidate selection / bounded proposal.
+  - This story is docs/controller evidence only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output constructors, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Copied-output handler/report implementation, `Calculator.AnomalyMul.cal_res_pen()` selector extraction, AM/AP/impact helper implementation, selected Stun implementation, `Calculator.RegularMul.cal_crit_rate(data)`, and `Calculator.RegularMul.cal_personal_crit_dmg(data)` remain closed prior work and are not reopened by this PRD intake.
+  - `.codex_worktrees/` remains excluded from current production evidence; CodeGraph historical-worktree hits were treated as navigation noise.
+  - Focused Ralph typecheck exited `0` with `Success: no issues found in 2 source files`, and `py_compile` over the same controller scripts exited `0`.
+- Next step:
+  - Continue to `US-002` personal crit rate source and reader contract audit. Keep the next slice limited to `Calculator.RegularMul.cal_personal_crit_rate(data)`, `CalculatorBuffAttributeReader.read_personal_crit_rate(context)`, focused oracle/reader evidence, rollback anchors, and explicit No-Go conditions.
+---
