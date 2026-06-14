@@ -4821,3 +4821,16 @@
 - Next step:
   - Continue to `US-003` deterministic oracle and focused test gap review. Keep the scope limited to personal crit rate oracle/reader evidence; stop if a later slice needs production helper extraction, snapshot expansion, registered routes, validation-runner rewrite, copied-output/event/runtime/lifecycle work, or old-container access.
 ---
+
+## 2026-06-15 04:00 +08:00 - US-003
+- Files changed: `scripts/ralph/plans/slices/us-003-deterministic-oracle-and-focused-test-gap-review.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-004-proposal-boundary-rollback-anchors-and-stop-conditions.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 deterministic oracle review` replaces informal personal crit rate parity confidence with durable focused-test evidence that existing rows are sufficient for later bounded work.
+  - This story is review/evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output constructors/payloads, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Existing focused rows cover personal-only field/flat crit rate, received-only full-vs-personal contrast, and over-one full crit received-boundary behavior.
+  - `Calculator.RegularMul.cal_personal_crit_rate(data)` still excludes `crit_rate_received_increase`; `Calculator.RegularMul.cal_crit_rate(data)` and `_calculate_full_crit_rate(...)` remain unchanged full-crit contrast anchors.
+  - No new deterministic row was needed; `cal_crit_rate()`, `cal_crit_dmg()`, `cal_personal_crit_dmg()`, `cal_crit_expect()`, damage bonus, defense, resistance, vulnerability, base damage, retained-only sheer, and Stun arrays remained out of selected scope.
+- Next step:
+  - Continue to `US-004` proposal boundary, rollback anchors, and stop conditions. Keep any later production proposal limited to personal crit rate helper extraction or record an explicit No-Go if it would touch full crit, crit damage, arrays, runtime/event/lifecycle layers, validation-runner wiring, registered routes, or retained compatibility cleanup.
+---
