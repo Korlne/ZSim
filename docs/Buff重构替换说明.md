@@ -4110,3 +4110,15 @@
 - Next step:
   - Continue with US-007 registered-route/main-loop eligibility and reviewer verdict; keep full default validation conditional on lifecycle, runtime-write, or validation-runner behavior changes.
 ---
+## 2026-06-14 08:21 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-decide-registered-route-main-loop-eligibility-and-reviewer-verdict.md`, `scripts/ralph/investigations/2026-06-14-US-007-main-loop-eligibility-reviewer-verdict.md`, `scripts/ralph/checkpoints/2026-06-14-us-007-main-loop-eligibility-reviewer-verdict.md`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 registered-route/main-loop eligibility verdict` replaces implicit live-sample pressure with an explicit No-Go for retained-vs-retained main-loop sampling when there is no live production semantic diff.
+  - This story updates reviewer and Ralph evidence only; it does not replace live copied payload construction, `UpdateAnomaly.py`, anomaly-family production handlers, formula code, dispatch/runtime ports, listener broadcasts, dot runtime, lifecycle containers, registered teams/APLs, old Buff containers, or same-tick runtime writes.
+- Compatibility retained:
+  - `薇薇安物理队` remains a future copied-output/anomaly route candidate only after a later semantic diff preflight proves the target copied payload route with nonzero relevant counts; validation-only teams/APLs/routes remain forbidden.
+  - `ScheduleDispatchPort` stayed queue-only, listener broadcasts stayed synchronous, dot runtime stayed separate, anomaly settlement stayed on `RuntimeCommandPort.settle_buffs(...)`, no second write facade was introduced, and retained old-container compatibility remained intact.
+  - Focused main-loop tests and `implicit-events` validation/typecheck passed; known pytest-asyncio warning, mypy untyped-body notes, and async log-writer shutdown noise remained separate from verifier failures.
+- Next step:
+  - Continue with US-008 final handoff docs and same-phase candidate pool; keep registered-route main-loop consistency conditional on future live production semantic diffs plus real route nonzero copied-output/anomaly evidence.
+---
