@@ -4834,3 +4834,17 @@
 - Next step:
   - Continue to `US-004` proposal boundary, rollback anchors, and stop conditions. Keep any later production proposal limited to personal crit rate helper extraction or record an explicit No-Go if it would touch full crit, crit damage, arrays, runtime/event/lifecycle layers, validation-runner wiring, registered routes, or retained compatibility cleanup.
 ---
+
+## 2026-06-15 04:10 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-proposal-boundary-rollback-anchors-and-stop-conditions.md`, `scripts/ralph/investigations/2026-06-15-US-004-proposal-boundary-rollback-anchors.md`, `scripts/ralph/checkpoints/2026-06-15-us-004-proposal-boundary-rollback-anchors.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 proposal boundary packet` replaces chat-only bounded-proposal assumptions with durable rollback anchors and stop conditions for `Calculator.RegularMul.cal_personal_crit_rate(data)`.
+  - This story does not replace live production formula code. It defines the only later production surface and the only acceptable module-local scalar-helper shape if a future implementation PRD proceeds.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_personal_crit_rate(data)` remains the retained public formula path and still computes only `static.crit_rate + dynamic.crit_rate + dynamic.field_crit_rate`.
+  - Any future `_calculate_personal_crit_rate(static_statement, dynamic_statement)` helper must preserve that exact expression and must not accept received crit, judge, enemy, `char_instance`, runtime views, arrays, copied-output payloads, or full/personal bundled state.
+  - Rollback anchors retain the current method body, `CalculatorBuffAttributeReader.read_personal_crit_rate(context)` delegate, focused personal/full crit tests, `formula-parity`, `calculator-reads`, and Buff handoff docs.
+  - No production source, focused test source, validation-runner behavior, registered teams/APLs, copied-output constructors/payloads, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths changed.
+- Next step:
+  - Continue to `US-005` registered behavior sample eligibility audit. Do not create validation-only teams, fake APLs, fixture-only routes, `cal_crit_rate()` reopenings, full/personal crit bundles, validation-runner rewrites, old-container deletion, or event/runtime/listener layer merges.
+---
