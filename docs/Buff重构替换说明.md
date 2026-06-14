@@ -4262,3 +4262,14 @@
 - Next step:
   - Generate one bounded `Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()` proposal / implementation PRD; do not directly convert the Markdown PRD into `scripts/ralph/prd.json` until a later explicit Ralph conversion step.
 ---
+
+## 2026-06-14 14:02 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconfirm-stun-array-implementation-scope.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-001 Stun array implementation scope reconfirmation` prepares the later bounded implementation by replacing chat-only scope assumptions with saved Ralph evidence for the approved `Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()` surface.
+  - This story updates scope, validation, and reviewer evidence only; it does not replace live production formula code, reader source, copied-output constructors, event/runtime/listener paths, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Current-root Stun array field order, `np.float64` dtype, `Calculator.cal_stun()` product consumer, focused oracle, `formula-parity` scoped typecheck, `Calculator.StunMul.cal_imp()` / `_calculate_impact(...)`, all `Calculator.RegularMul` branches, retained-only sheer, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, listener broadcasts, dot runtime, and old containers remain unchanged.
+- Next step:
+  - Continue to `US-002` to pin the Stun array oracle before any production helper extraction; do not broaden into RegularMul, validation-runner, registered-team, old-container, dispatch/runtime, listener, dot-runtime, or retained compatibility work.
+---
