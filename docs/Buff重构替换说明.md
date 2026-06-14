@@ -4730,3 +4730,16 @@
 - Next step:
   - Continue to `US-004` focused oracle and regression coverage. Do not broaden into full crit damage replacement, crit-rate reopening, crit expectation, retained-only sheer, registered-team fixture creation, validation-runner rewrite, old-container deletion, or event/runtime/listener work without explicit later-story evidence.
 ---
+
+## 2026-06-15 02:25 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-focused-oracle-and-regression-coverage.md`, `scripts/ralph/plans/slices/us-005-serial-retained-validation-gates.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 focused oracle coverage` replaces assertion-only confidence in the personal crit damage helper seam with verified deterministic oracle evidence already present in `tests/simulator/test_buff_attribute_reader.py`.
+  - This story is a no-op source/test verification slice. It does not replace a live production formula path because existing coverage already proves `regular-crit-received-boundary`, migrated personal crit damage parity, crit-family received-boundary behavior, and the `regular_mul_branch_matrix` contrast.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_personal_crit_dmg(data)` remains delegated to `_calculate_personal_crit_damage(...)` and preserves `static.crit_damage + dynamic.crit_dmg + dynamic.field_crit_dmg`.
+  - Full `Calculator.RegularMul.cal_crit_dmg(data)` remains the received-damage contrast branch and continues to include `received_crit_dmg_bonus`.
+  - `Calculator.py`, focused reader tests, formula matrix docs, `formula-parity`, `calculator-reads`, event/runtime/listener layers, validation-runner behavior, registered teams/APLs, lifecycle containers, old containers, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-005` serial retained validation gates: run `formula-parity` first, then `calculator-reads`, and keep any known warning/noise separated from failures. Do not broaden into full crit damage replacement, crit-rate reopening, crit expectation, retained-only sheer, registered-team fixture creation, validation-runner rewrite, old-container deletion, or event/runtime/listener work without explicit later-story evidence.
+---
