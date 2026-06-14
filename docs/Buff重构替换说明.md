@@ -4807,3 +4807,17 @@
 - Next step:
   - Continue to `US-002` personal crit rate source and reader contract audit. Keep the next slice limited to `Calculator.RegularMul.cal_personal_crit_rate(data)`, `CalculatorBuffAttributeReader.read_personal_crit_rate(context)`, focused oracle/reader evidence, rollback anchors, and explicit No-Go conditions.
 ---
+
+## 2026-06-15 03:47 +08:00 - US-002
+- Files changed: `scripts/ralph/plans/slices/us-002-personal-crit-rate-source-and-reader-contract-audit.md`, `scripts/ralph/investigations/2026-06-15-US-002-personal-crit-rate-contract-audit.md`, `scripts/ralph/checkpoints/2026-06-15-us-002-personal-crit-rate-contract-audit.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-003-deterministic-oracle-and-focused-test-gap-review.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 personal crit rate contract audit` replaces chat-only confidence in the selected source / reader boundary with durable evidence for `Calculator.RegularMul.cal_personal_crit_rate(data)` and `CalculatorBuffAttributeReader.read_personal_crit_rate(context)`.
+  - This story is audit/evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output constructors/payloads, event/runtime/listener paths, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_personal_crit_rate(data)` still computes only `static.crit_rate + dynamic.crit_rate + dynamic.field_crit_rate`.
+  - `CalculatorBuffAttributeReader.read_personal_crit_rate(context)` still builds `_CalculatorReadSnapshot` through `_build_formula_snapshot(context)` and delegates to the public formula.
+  - `crit_rate_received_increase` remains excluded from personal crit rate; `Calculator.RegularMul.cal_crit_rate(data)` and `_calculate_full_crit_rate(...)` remain unchanged full-crit contrast anchors.
+  - No `_CalculatorReadSnapshot` public field expansion, `char_instance`, runtime view, array output, copied-output payload, old Buff container access, event/runtime/listener change, lifecycle change, or retained compatibility deletion occurred.
+- Next step:
+  - Continue to `US-003` deterministic oracle and focused test gap review. Keep the scope limited to personal crit rate oracle/reader evidence; stop if a later slice needs production helper extraction, snapshot expansion, registered routes, validation-runner rewrite, copied-output/event/runtime/lifecycle work, or old-container access.
+---
