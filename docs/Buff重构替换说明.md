@@ -4236,3 +4236,16 @@
 - Next step:
   - Continue with US-007 final retained gates and reviewer verdict; do not convert this rollback contract into production formula implementation.
 ---
+
+## 2026-06-14 13:13 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-run-final-retained-gates-and-reviewer-verdict.md`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/checkpoints/2026-06-14-us-007-final-retained-gates-reviewer-verdict.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 final retained gates and reviewer verdict` prepares to replace implicit proposal-readiness approval with exact retained gate evidence and a bounded reviewer verdict for `Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()` array output.
+  - This story verifies evidence only; it does not replace live production formula code, reader source, copied-output constructors, event/runtime/listener paths, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Focused reader pytest, `formula-parity`, `calculator-reads`, and `implicit-events` all exited `0`; known pytest-asyncio warning, mypy untyped-body notes, and async log-writer shutdown traceback remained non-fatal after success markers.
+  - Event queue semantics, synchronous listener broadcasts, dot runtime registration, same-tick runtime writes, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, old containers, and copied-output constructors remain unchanged.
+  - Default lifecycle and main-loop consistency validation remain skipped because this docs/verifier slice changed no production semantics, lifecycle container, validation runner, runtime write path, or registered-route behavior.
+- Next step:
+  - Continue with US-008 handoff docs and same-phase candidate pool; keep any later implementation PRD bounded by the selected Stun array output contract, retained gates, registered-route stop condition, rollback anchors, and invariant checks.
+---
