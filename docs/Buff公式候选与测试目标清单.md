@@ -326,6 +326,27 @@ Reviewer verdict / non-goals：
 - Changed surface 仅限 docs/Ralph evidence/bookkeeping；`Calculator.py`、reader source、copied-output constructors、registered teams/APLs、old Buff containers、dispatch/runtime ports、listener broadcast 与 retained compatibility paths 均保持不变。
 - 该 contract 只准备后续 bounded proposal / rollback slice；不授权 production formula replacement、RegularMul 打包、retained-only sheer `_CalculatorReadSnapshot` 扩容或 main-loop sample。
 
+## Current candidate-selection PRD US-006 rollback anchors / stop conditions
+
+结论：`Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()` 的 rollback anchors 和 stop conditions 已固定；本 story 仍为 docs-only / Guardrail-first，不改 production formula、reader source、validation runner、registered teams/APLs、copied-output constructors、old containers 或 event/runtime/listener/dot 分层。
+
+Rollback anchors：
+
+- Source methods：`zsim/sim_progress/ScheduledEvent/Calculator.py::Calculator.StunMul.get_stun_array()` 与 `Calculator.cal_stun()`；`Calculator.StunMul.cal_imp()` / `_calculate_impact(...)`、所有 `Calculator.RegularMul` branch 与 retained-only sheer runtime conversion 继续作为分离的 retained boundaries。
+- Focused test：`tests/simulator/test_buff_attribute_reader.py::test_stun_array_output_contract_preserves_field_order_dtype_and_product`，锁定五字段顺序、shape、`np.float64` dtype、一次 `get_stun_array()` 调用、`np.prod(...)` product consumer 与 aggregation count。
+- Retained docs：本清单、`docs/Buff重构替换说明.md`、`docs/Buff系统重构Checklist.md`、`docs/旧Buff系统耦合审查结果.md`、`docs/Buff重构下阶段计划草稿.md`。
+- Validation profiles：focused pytest nodeid、serial `formula-parity`、serial `calculator-reads`，以及未来触达 copied-output / event / dispatch-runtime / listener / dot-runtime / same-tick runtime write 时的 `implicit-events`。
+
+Stop conditions：
+
+- Formula mismatch：数组字段顺序、shape、dtype、字段语义或 `Calculator.cal_stun()` product 行为与 focused oracle 不一致。
+- Missing deterministic oracle：未来 diff 没有 exact focused test 锁定 changed field、branch、consumer path、neutral/default row 或 product behavior。
+- Missing registered route for live semantic diff：真实注册队伍 / APL 没有在 explicit stop tick 内产生 nonzero relevant stun / impact count；不得创建 validation-only team 或 retained-vs-retained sample。
+- Broad interface change / public contract expansion：需要改 public signature、`_CalculatorReadSnapshot`、`BuffRuntimeReadPort`、copied-output payload、report/runtime surface 或 reader/runtime view 才能通过。
+- Validation-runner rewrite need：需要重写 runner behavior、help text 或 profile orchestration，而不是复用 focused tests 与 retained profiles。
+- Old-container deletion：需要删除 / 绕过 old Buff containers、legacy `buff_add()` / `KickOutBuff()`、`MultiplierData`、`MulData` 或 `DynamicStatement` 才能通过。
+- Layer merge：event queue semantics、synchronous listener broadcasts、dot runtime registration 与 same-tick runtime writes 被合并，或在未被未来 PRD 命名时编辑 `ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`BuffRuntimeReadPort`。
+
 ## Current copied-output PRD US-008 final handoff
 
 结论：Conditional Go for later bounded proposal package only。当前 copied-output PRD 已完成 constructor field matrix、`UpdateAnomaly.spawn_output(...)` listener boundary、anomaly / disorder / polarity / abloom handler report payload parity、registered behavior sample eligibility、serial retained gates 和 rollback-anchor decision；这些证据允许下一 PRD 写 bounded proposal contract，但不授权立即 production implementation、broad `Calculator.py` / `CalAnomaly.py` rewrite、validation-runner rewrite、registered-team fixture creation 或 retained compatibility 删除。
@@ -493,6 +514,19 @@ Future main-loop sample requirements, if a later story proposes one:
 - Name the exact production semantic diff, formula branch, route, stop tick, legacy/candidate runtime labels, total damage comparison, relevant nonzero event or formula count, and Buff timeline comparison.
 - Keep focused formula oracle / reader tests and retained validation profiles as the primary proof; main-loop consistency is supplemental live-route evidence only.
 - If no eligible route exists for the selected candidate, record No-Go or conditional No-Go and keep the later production diff blocked.
+
+## US-006 selected Stun rollback / stop contract
+
+本 contract 属于当前 candidate-selection PRD。它只定义 selected Stun array candidate 的 rollback anchors 和 stop conditions，不新增 production implementation authorization。
+
+| Contract area | Retained rule |
+| --- | --- |
+| Source anchors | 保留 `Calculator.StunMul.get_stun_array()` 与 `Calculator.cal_stun()` 当前 body；`Calculator.StunMul.cal_imp()` / `_calculate_impact(...)`、`RegularMul` branches、retained-only sheer、`MultiplierData` / `DynamicStatement`、old containers、copied-output constructors、dispatch/runtime/listener/dot layers 均不与本候选合并。 |
+| Focused oracle | `test_stun_array_output_contract_preserves_field_order_dtype_and_product()` 是 exact nodeid；缺少 deterministic oracle、字段顺序 / dtype / product mismatch 或 aggregation count drift 都是 stop condition。 |
+| Retained docs | 本清单、`docs/Buff重构替换说明.md`、`docs/Buff系统重构Checklist.md`、`docs/旧Buff系统耦合审查结果.md`、`docs/Buff重构下阶段计划草稿.md` 继续作为 rollback 证据；后续 PRD 不得只改 Ralph bookkeeping 而删除这些 retained references。 |
+| Validation profiles | Future proposal / implementation 必须串行保留 focused pytest、`formula-parity`、`calculator-reads`；触达 copied-output、event、dispatch/runtime、listener、dot runtime 或 same-tick write 时追加 `implicit-events`。 |
+| Registered route | 只有 future live semantic diff 且真实注册队伍 / APL 在 explicit stop tick 内有 nonzero relevant stun / impact counts 时才运行 main-loop sample；缺 route、缺 count 或只靠 runtime label 都是 No-Go。 |
+| Interface and layer stops | Broad interface change、validation-runner rewrite need、public contract expansion、old-container deletion、layer merge，或未被未来 PRD 命名而编辑 `ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`BuffRuntimeReadPort`，均必须停止并拆出新 slice。 |
 
 ## US-022 行为样本决策矩阵
 

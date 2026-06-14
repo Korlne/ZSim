@@ -4224,3 +4224,15 @@
 - Next step:
   - Continue with US-006 rollback anchors and stop conditions for the selected Stun array output contract; keep production implementation, RegularMul bundling, retained-only sheer expansion, main-loop samples, and old-path deletion out of scope.
 ---
+
+## 2026-06-14 12:47 +08:00 - US-006
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-006-define-rollback-anchors-and-stop-conditions.md`, `scripts/ralph/investigations/2026-06-14-US-006-rollback-anchors-stop-conditions.md`, `scripts/ralph/checkpoints/2026-06-14-us-006-rollback-anchors-stop-conditions.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-006 rollback anchors and stop conditions` prepares to replace implicit proposal-safety assumptions with explicit retained anchors for `Calculator.StunMul.get_stun_array()` / `Calculator.cal_stun()` and named stop conditions before any future production implementation PRD.
+  - This story updates docs and Ralph evidence only; it does not replace live production formula code, reader source, copied-output constructors, event/runtime/listener paths, validation-runner wiring, registered teams/APLs, lifecycle containers, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Source anchors, focused Stun array pytest, retained Buff docs, `formula-parity`, `calculator-reads`, and conditional `implicit-events` remain the required rollback / verifier layers.
+  - Event queue semantics, synchronous listener broadcasts, dot runtime registration, and same-tick runtime writes remain separate retained layers; `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, old containers, and copied-output constructors remain unchanged.
+- Next step:
+  - Continue with US-007 final retained gates and reviewer verdict; do not convert this rollback contract into production formula implementation.
+---
