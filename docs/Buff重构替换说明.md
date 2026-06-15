@@ -5295,3 +5295,15 @@
 - Next step:
   - Continue to `US-007` focused oracle and typecheck contract for the selected `cal_dmg_bonus()` branch. Stop with No-Go if the contract requires broad RegularMul bundling, public snapshot expansion, registered fixture creation, validation-runner rewrite, layer merge, old-container deletion, or retained compatibility cleanup.
 ---
+
+## 2026-06-15 14:58 +08:00 - US-007
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-007-define-focused-oracle-and-typecheck-contract.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-008-run-retained-formula-and-reader-gates-serially.md`
+- Replacement note:
+  - `US-007 focused oracle and typecheck contract` replaces chat-only readiness for the selected `Calculator.RegularMul.cal_dmg_bonus(data)` branch with durable focused pytest nodeids, scoped mypy target, retained gates, rollback anchors, and stop conditions.
+  - This story is docs/evidence/bookkeeping only. It does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Existing `regular-dmg-bonus-character-field-stack` oracle coverage remains the local proof for the fire / normal attack / `aftershock_attack` / all-damage stack; no duplicate broad suite was added.
+  - `Calculator.RegularMul.cal_dmg_bonus(data)`, all adjacent RegularMul branches, `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, `MultiplierData`, `DynamicStatement`, validation profiles, registered-route policy, explicit ports/adapters, old containers, and layer-separation invariants remain unchanged.
+- Next step:
+  - Continue to `US-008` retained formula and reader gates serially. Keep `calculator-reads`, `implicit-events`, default validation, and main-loop consistency conditional on touched-surface evidence rather than widening this focused contract.
+---

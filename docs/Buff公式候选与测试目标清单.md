@@ -600,6 +600,20 @@ Next slice signal：continue `US-004` retained-only sheer No-Go revalidation fir
 | Rollback anchors | Current `cal_dmg_bonus(data)` body、`_FORMULA_ORACLE_TABLE_CASES` row、`_regular_mul_branch_matrix_values(...)`、selected focused tests、`Calculator.RegularMul.__init__`、`MultiplierData`、`DynamicStatement`、`_CalculatorReadSnapshot`、this matrix、`formula-parity` and conditional `calculator-reads`。 |
 | Stop conditions | Stop with No-Go for all-element cross-product migration、base damage / crit / defense / resistance / vulnerability / stun vulnerability / special multiplier bundling、retained-only sheer route work、`_CalculatorReadSnapshot` or public reader expansion、validation-runner rewrite、registered-team/APL fabrication、old-container deletion、event/runtime/listener layer merge or retained compatibility deletion。 |
 
+## Current same-phase candidate selection PRD US-007 focused oracle and typecheck contract
+
+2026-06-15 14:58 +08:00 结论：selected `Calculator.RegularMul.cal_dmg_bonus(data)` candidate already has deterministic local oracle coverage, so this story does not add a broad suite or a duplicate test row. The retained contract is the existing `_FORMULA_ORACLE_TABLE_CASES` row `regular-dmg-bonus-character-field-stack`, which proves the exact fire / normal attack / `aftershock_attack` / all-damage stack as `1 + 0.15 + 0.25 + 0.30 + 0.10 + 0.20 == 2.0`.
+
+Focused pytest contract：
+
+- `uv run pytest "tests/simulator/test_buff_attribute_reader.py::test_formula_oracle_table_cases_drive_expected_fields_and_reader_parity[regular-dmg-bonus-character-field-stack]" "tests/simulator/test_buff_attribute_reader.py::test_calculator_regular_mul_branch_matrix_characterizes_selected_methods[fire-stunned-reader-snapshot]" -q`
+
+Scoped typecheck contract：
+
+- `uv run python -m mypy zsim/sim_progress/ScheduledEvent/Calculator.py tests/simulator/test_buff_attribute_reader.py --follow-imports skip --ignore-missing-imports`
+
+Future implementation PRD must preserve the selected row, keep the focused pytest nodeids above as the first proof layer, and run the scoped mypy command whenever `Calculator.py` or `tests/simulator/test_buff_attribute_reader.py` is touched. Later production formula diff still retains `formula-parity`; reader / snapshot changes add `calculator-reads`; copied-output, event, dispatch/runtime, listener, dot-runtime, same-tick write, old-container, validation-runner, or retained compatibility changes add the relevant conditional gate instead of widening this contract.
+
 Non-selected matrix rows stay separate：`cal_base_dmg()` / `cal_base_attr(0/1/2/3)`、`cal_crit_expect()`、`cal_defense_mul()`、`cal_res_mul()`、`cal_dmg_vulnerability()`、`cal_stun_vulnerability()`、`cal_special_mul()`、retained-only sheer、registered behavior sample eligibility、P2-A through P2-G guarded maintenance、future Stun follow-up and retained compatibility remain retained pool entries, not deleted scope。
 
 ## Current US-003 selected RegularMul candidate decision
