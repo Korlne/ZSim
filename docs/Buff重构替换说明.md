@@ -5307,3 +5307,15 @@
 - Next step:
   - Continue to `US-008` retained formula and reader gates serially. Keep `calculator-reads`, `implicit-events`, default validation, and main-loop consistency conditional on touched-surface evidence rather than widening this focused contract.
 ---
+
+## 2026-06-15 15:12 +08:00 - US-008
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-run-retained-formula-and-reader-gates-serially.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-009-check-event-runtime-boundaries-and-conditional-gates.md`
+- Replacement note:
+  - `US-008 retained formula and reader gate evidence` replaces chat-only production-readiness claims with serial `formula-parity` and `calculator-reads` validation evidence for the selected `Calculator.RegularMul.cal_dmg_bonus(data)` proposal path.
+  - This story is validation/evidence/bookkeeping only. It does not replace or edit live production formula code, reader source, `_CalculatorReadSnapshot`, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_dmg_bonus(data)`, all adjacent `RegularMul` branches, `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, `MultiplierData`, `DynamicStatement`, validation profiles, registered-route policy, explicit ports/adapters, old containers, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, and retained compatibility paths remain unchanged.
+  - Known pytest-asyncio warning, async log-writer shutdown traceback, mypy annotation notes, and console mojibake were treated as non-fatal only because both retained gates exited `0` and reported success markers.
+- Next step:
+  - Continue to `US-009` event/runtime conditional gate review. Run `implicit-events` or default validation only if touched-surface evidence shows event queue, dispatch/runtime, listener, dot runtime, lifecycle, same-tick runtime write, validation-runner behavior, old-container, copied-output, or retained compatibility surfaces changed.
+---
