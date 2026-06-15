@@ -567,19 +567,61 @@ def test_update_anomaly_uses_current_schedule_queue_after_event_list_rebind():
     assert second_queue[0].sim_instance is sim_instance
 
 
-def test_update_anomaly_preserves_new_anomaly_then_disorder_order_via_dispatch_port():
+@pytest.mark.parametrize(
+    ("element_type", "should_publish_new_anomaly"),
+    [
+        pytest.param(1, True, id="non-ice-new-anomaly-published"),
+        pytest.param(2, False, id="ice-new-anomaly-not-published"),
+    ],
+)
+def test_update_anomaly_preserves_disorder_branch_order_state_and_optional_new_publish(
+    monkeypatch,
+    element_type,
+    should_publish_new_anomaly,
+):
     call_order: list[tuple[str, object]] = []
+    broadcast_events: list[tuple[object, object]] = []
+    helper_calls: list[_HelperCallRecord] = []
     legacy_event_list = _FailFastEventList()
     sim_instance = _build_sim_instance(legacy_event_list, call_order)
+    sim_instance.decibel_manager.update = lambda **kwargs: call_order.append(
+        ("decibel", kwargs["key"])
+    )
+    sim_instance.schedule_data.change_process_state = lambda: call_order.append(
+        ("change_process_state", None)
+    )
+
+    def record_broadcast(*, event: object, signal: object) -> None:
+        call_order.append(("broadcast", signal))
+        broadcast_events.append((event, signal))
+
+    sim_instance.listener_manager = SimpleNamespace(broadcast_event=record_broadcast)
     enemy = _build_enemy(sim_instance)
-    current_bar = _build_anomaly_bar(sim_instance, element_type=1)
+    current_bar = _build_anomaly_bar(sim_instance, element_type=element_type)
+    current_bar.accompany_dot = "NewShock"
+    current_bar.anomaly_dmg_ratio = 2.25
+    current_bar.scaling_factor = 1.5
+    current_bar.basic_max_duration = 420
+    current_bar.ndarray_box = [
+        (element_type, np.float64(40), np.array([[2.0, 4.0]], dtype=np.float64)),
+        (element_type, np.float64(60), np.array([[6.0, 8.0]], dtype=np.float64)),
+    ]
     previous_bar = _build_anomaly_bar(sim_instance, element_type=3)
     previous_bar.active = True
-    enemy.anomaly_bars_dict[1] = current_bar
+    previous_bar.settled = True
+    previous_bar.current_effective_anomaly = np.float64(100)
+    previous_bar.current_ndarray = np.array([[9.0, 11.0]], dtype=np.float64)
+    previous_bar.ndarray_box = []
+    previous_bar.max_duration = 315
+    previous_bar.last_active = 5
+    previous_bar.accompany_dot = "OldShock"
+    enemy.anomaly_bars_dict[element_type] = current_bar
     enemy.anomaly_bars_dict[3] = previous_bar
     enemy.dynamic.active_anomaly_bar_dict[3] = previous_bar
     setattr(enemy.dynamic, enemy.trans_anomaly_effect_to_str[3], True)
-    skill_node = _build_skill_node(element_type=1)
+    old_dot = _FakeDot(index="OldShock", call_order=call_order)
+    enemy.dynamic.dynamic_dot_list = _RecordingDotRuntimeList(call_order, [old_dot])
+    skill_node = _build_skill_node(element_type=element_type)
     chars = [
         SimpleNamespace(
             special_resources=lambda anomaly: call_order.append(
@@ -587,12 +629,25 @@ def test_update_anomaly_preserves_new_anomaly_then_disorder_order_via_dispatch_p
             )
         )
     ]
+    new_dot = _FakeDot(index="NewShock", call_order=call_order)
+    spawn_calls: list[tuple[object, int, object, object]] = []
+
+    def fake_spawn_anomaly_dot(element_type, timenow, *, bar, sim_instance):
+        spawn_calls.append((element_type, timenow, bar, sim_instance))
+        return new_dot
+
+    monkeypatch.setattr(
+        update_anomaly_module,
+        "spawn_anomaly_dot",
+        fake_spawn_anomaly_dot,
+    )
+    _record_dot_runtime_state_adapter(monkeypatch, helper_calls)
 
     recording_queue = _RecordingEventList(call_order)
     sim_instance.schedule_data.event_list = recording_queue
 
     update_anomaly(
-        1,
+        element_type,
         enemy,
         10,
         legacy_event_list,
@@ -602,24 +657,92 @@ def test_update_anomaly_preserves_new_anomaly_then_disorder_order_via_dispatch_p
         {"alpha": [], "enemy": []},
     )
 
-    assert len(recording_queue) == 2
-    new_anomaly = recording_queue[0]
-    disorder = recording_queue[1]
-    assert call_order == [
+    assert len(spawn_calls) == 1
+    new_anomaly = spawn_calls[0][2]
+    disorder = recording_queue[-1]
+    expected_order = [
+        ("decibel", "anomaly"),
         ("broadcast", LBS.ANOMALY),
         ("broadcast", LBS.DISORDER_SPAWN),
-        ("publish", new_anomaly),
-        ("special_resources", disorder),
-        ("publish", disorder),
+        ("dot_end", "OldShock"),
+        ("dot_remove", "OldShock"),
+        ("change_process_state", None),
+        ("dot_append", "NewShock"),
     ]
-    assert new_anomaly.element_type == 1
+    if should_publish_new_anomaly:
+        expected_order.append(("publish", new_anomaly))
+    expected_order.extend(
+        [
+            ("special_resources", disorder),
+            ("publish", disorder),
+            ("decibel", "disorder"),
+            ("change_process_state", None),
+        ]
+    )
+    assert call_order == expected_order
+    if should_publish_new_anomaly:
+        assert recording_queue == [new_anomaly, disorder]
+    else:
+        assert recording_queue == [disorder]
+    assert broadcast_events == [
+        (enemy.dynamic.active_anomaly_bar_dict[element_type], LBS.ANOMALY),
+        (disorder, LBS.DISORDER_SPAWN),
+    ]
+    assert helper_calls == [
+        ("from_enemy", enemy),
+        ("remove_all", (old_dot,)),
+        ("from_enemy", enemy),
+        ("replace_by_index", new_dot, 10),
+    ]
+
+    assert enemy.dynamic.active_anomaly_bar_dict[3] is None
+    assert previous_bar.active is False
+    assert getattr(enemy.dynamic, enemy.trans_anomaly_effect_to_str[3]) is False
+    assert getattr(enemy.dynamic, enemy.trans_anomaly_effect_to_str[element_type]) is True
+    assert enemy.dynamic.frozen is (element_type == 2)
+    assert old_dot.ended_at == 10
+    assert enemy.dynamic.dynamic_dot_list == [new_dot]
+
+    active_bar = enemy.dynamic.active_anomaly_bar_dict[element_type]
+    assert active_bar is not current_bar
+    assert active_bar.active is True
+    assert active_bar.settled is True
+    assert current_bar.current_anomaly == np.float64(0)
+    assert current_bar.current_effective_anomaly == np.float64(0)
+    assert current_bar.ndarray_box == []
+    np.testing.assert_array_equal(
+        current_bar.current_ndarray,
+        np.zeros((1, 1), dtype=np.float64),
+    )
+
+    assert spawn_calls == [(element_type, 10, new_anomaly, sim_instance)]
+    assert new_anomaly.element_type == element_type
     assert new_anomaly.activated_by is skill_node
+    assert new_anomaly.activate_by is skill_node
     assert new_anomaly.is_disorder is False
+    assert new_anomaly.accompany_dot == "NewShock"
     assert new_anomaly.schedule_priority == 999
+    assert not hasattr(new_anomaly, "execute_tick")
+    assert new_anomaly.current_effective_anomaly == np.float64(100)
+    np.testing.assert_allclose(
+        new_anomaly.current_ndarray,
+        np.array([[4.4, 6.4]], dtype=np.float64),
+    )
+
     assert disorder.element_type == 3
     assert disorder.activated_by is skill_node
+    assert disorder.activate_by is skill_node
     assert disorder.is_disorder is True
+    assert disorder.settled is True
+    assert disorder.current_effective_anomaly == np.float64(100)
+    np.testing.assert_allclose(
+        disorder.current_ndarray,
+        np.array([[9.0, 11.0]], dtype=np.float64),
+    )
+    assert disorder.remaining_tick() == pytest.approx(310)
+    assert disorder.accompany_dot == "OldShock"
     assert disorder.schedule_priority == 999
+    assert not hasattr(disorder, "execute_tick")
 
 
 def test_update_anomaly_records_new_anomaly_field_matrix_with_runtime_dot(

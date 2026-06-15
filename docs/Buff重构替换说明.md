@@ -5731,3 +5731,16 @@
 - Next step:
   - Continue to `US-004` disorder and polarity copied-output boundary characterization. Do not merge disorder, polarity, dot runtime, listener, or same-tick Buff write changes into the completed US-003 mode 0 slice.
 ---
+
+## 2026-06-16 03:35 +08:00 - US-004
+- Files changed: `tests/simulator/test_update_anomaly_dispatch.py`, `scripts/ralph/plans/slices/us-004-disorder-and-polarity-copied-output-boundary.md`, `scripts/ralph/investigations/2026-06-16-US-004-disorder-polarity-copied-output-boundary.md`, `scripts/ralph/checkpoints/2026-06-16-us-004-disorder-polarity-copied-output-boundary.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 disorder / polarity copied-output boundary characterization` replaces implicit assumptions about mode 1 / 2 listener payloads and disorder branch order with focused oracle tests and checkpoint evidence.
+  - This story builds a characterization boundary only; it does not replace live production `CopyAnomalyForOutput.py`, `UpdateAnomaly.py`, handler/report payloads, formulas, dispatch/runtime ports, old containers, or retained compatibility behavior.
+- Compatibility retained:
+  - Mode 1 / 2 `LBS.DISORDER_SPAWN` remains synchronous listener broadcast with the copied output object as payload and remains separate from scheduled publish.
+  - Disorder branch retains previous flag clear, new flag set, dot removal, optional new-anomaly publish, `special_resources(disorder)`, disorder publish, decibel update, process-state change, and source reset ordering.
+  - Focused pytest exited `0` with `8 passed`, copied-output/formula nodeids exited `0` with `11 passed`, handler payload nodeids exited `0` with `6 passed`, and scoped mypy exited `0` with `Success: no issues found in 5 source files`.
+- Next step:
+  - Continue to `US-005` dot runtime and same-tick Buff write separation. Do not merge same-tick Buff write routing or production copied-output/formula changes into the completed US-004 characterization slice.
+---
