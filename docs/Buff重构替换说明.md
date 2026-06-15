@@ -5664,3 +5664,17 @@
 - Next step:
   - Continue to `US-007` serial formula/read validation gates. Keep `implicit-events` conditional on new copied-output, event/runtime/listener, dot-runtime, same-tick write, validation-runner, old-container, or retained compatibility changes.
 ---
+
+## 2026-06-16 02:16 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-serial-formula-and-reader-validation.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 serial formula/read validation evidence` replaces chat-only confidence for the CalAnomaly helper-family batch with serial focused pytest, scoped mypy, `formula-parity`, and `calculator-reads` verifier results.
+  - This story does not replace or edit live production formula code, focused test source, copied-output constructors, handler/report payloads, validation-runner behavior, event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, public reader/snapshot APIs, or retained compatibility paths.
+- Compatibility retained:
+  - Focused CalAnomaly helper-family pytest exited `0` with `18 passed`; scoped mypy over `CalAnomaly.py` and `test_buff_attribute_reader.py` exited `0` with `Success: no issues found in 2 source files`.
+  - `formula-parity` exited `0` with base simulator, isolated teams, focused formula regression, and 9-file scoped mypy passing.
+  - `calculator-reads` was run for retained `MulData` / formula-read compatibility coverage and exited `0` with base simulator, isolated teams, focused reader regression, and 22-file scoped mypy passing.
+  - `implicit-events` and full validation were skipped by condition because US-007 changed no copied-output, event/runtime/listener, dot-runtime, validation-runner, lifecycle, runtime-write, old-container, or retained compatibility surface.
+- Next step:
+  - Continue to `US-008` final handoff, same-phase pool, and invariant review. Keep the next PRD route sourced from the Buff refactor architecture plan and current evidence ledger rather than reopening completed helper seams.
+---
