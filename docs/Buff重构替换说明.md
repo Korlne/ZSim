@@ -5233,3 +5233,15 @@
 - Next step:
   - Continue to `US-002` remaining same-phase candidate matrix. Choose from the retained pool instead of reopening completed surfaces without new current-root evidence.
 ---
+
+## 2026-06-15 13:42 +08:00 - US-002
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `scripts/ralph/plans/slices/us-002-build-remaining-same-phase-candidate-matrix.md`, `scripts/ralph/investigations/2026-06-15-US-002-remaining-same-phase-candidate-matrix.md`, `scripts/ralph/checkpoints/2026-06-15-us-002-remaining-same-phase-candidate-matrix.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-002 current RegularMul same-phase matrix` replaces broad retained-pool assumptions with a per-candidate evidence matrix for remaining `Calculator.RegularMul` scalar branches, retained-only sheer follow-up, registered-sample eligibility, P2-A through P2-G guarded maintenance, future Stun reopen-only status, and retained compatibility.
+  - This story is docs/evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Existing `Calculator.RegularMul`, `Calculator.StunMul.get_stun_array()`, `Calculator.cal_stun()`, `MultiplierData`, `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, old containers, explicit ports/adapters, validation profiles, registered-route policy, and layer-separation boundaries remain unchanged.
+  - Completed surfaces remain no-reopen by default: copied-output handler/report implementation, `cal_res_pen()`, AM/AP/impact, selected Stun array implementation, full crit rate, personal crit rate, personal crit damage, and full crit damage.
+- Next step:
+  - Continue to `US-003` and choose one exact matrix candidate or record No-Go. Do not convert retained-pool entries into implementation work without named oracle gaps, source evidence, focused regression, validation failure, and rollback anchors.
+---
