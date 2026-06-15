@@ -5507,3 +5507,15 @@
 - Next step:
   - Generate the next PRD as Phase-3 same-phase candidate selection / bounded proposal. Preserve registered behavior sample eligibility, remaining RegularMul / retained-only sheer, future Stun evidence, P2 guarded maintenance, retained compatibility, and blocker-only reopen rules instead of following one stale callsite.
 ---
+
+## 2026-06-15 22:56 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconcile-superseded-selection-loop-and-batch-scope.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-002-complete-non-sheer-base-attribute-oracle-matrix.md`
+- Replacement note:
+  - `US-001 route reconciliation` replaces the superseded 4/10 same-phase candidate-selection backlog with the current Phase-3 non-sheer base damage / base-attribute implementation-batch route.
+  - This story records controller and doc evidence only; it does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, event/runtime/listener paths, old Buff containers, or retained compatibility paths.
+- Compatibility retained:
+  - Active scope is limited to future work on `Calculator.RegularMul.cal_base_dmg(data)` and non-sheer `Calculator.RegularMul.cal_base_attr(base_attr in 0..3, data)`.
+  - `base_attr=4`, `cal_sheer_dmg_bonus(data)`, public `CalculatorBuffAttributeReader` API expansion, `_CalculatorReadSnapshot` expansion, completed crit / scalar helper / AM/AP/impact / Stun / copied-output surfaces, old-container deletion, and retained compatibility deletion remain excluded.
+- Next step:
+  - Continue to `US-002` for direct non-sheer base-attribute oracle closure. Keep any branch that requires sheer runtime fields, public snapshot expansion, registered-route fabrication, or validation-runner changes inside same-PRD No-Go / stop-and-split handling.
+---
