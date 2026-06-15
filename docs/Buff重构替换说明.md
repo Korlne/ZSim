@@ -5270,3 +5270,16 @@
 - Next step:
   - Continue to `US-005` registered behavior sample eligibility. Treat Yixuan APL presence as source evidence to inspect, not as permission to fabricate an eligible registered sample.
 ---
+
+## 2026-06-15 14:28 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-audit-registered-behavior-sample-eligibility.md`, `scripts/ralph/investigations/2026-06-15-US-005-registered-behavior-sample-eligibility.md`, `scripts/ralph/checkpoints/2026-06-15-us-005-registered-behavior-sample-eligibility.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-006-select-one-exact-bounded-proposal-candidate-or-no-go.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 registered behavior sample eligibility packet` replaces stale personal-crit sample assumptions with durable current-root full-crit sample eligibility evidence for `Calculator.RegularMul.cal_crit_rate(data)` / `CalculatorBuffAttributeReader.read_full_crit_rate(context)`.
+  - This story is evidence/bookkeeping only. It does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Effective current-root registered teams remain `青衣雷属性队`, `席德大安比队`, `莱特火属性队`, and `薇薇安物理队`; no validation-only team, fake APL, fixture-only route, or retained-vs-retained sample was created.
+  - `scripts/run_buff_main_loop_consistency.py` remains skipped until a future live production semantic diff has a real registered route and nonzero selected full-crit formula/event relevance inside an explicit stop tick.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, validation-runner behavior, old containers, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-006` exact bounded proposal candidate selection or No-Go. Do not promote a live behavior sample unless the future sample contract names team, APL, stop tick, runtime labels, total damage comparison, relevant nonzero formula/event counts, full event counts, Buff timeline comparison, and rollback anchors.
+---
