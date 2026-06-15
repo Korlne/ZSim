@@ -5207,3 +5207,16 @@
 - Next step:
   - Continue to `US-008` final handoff docs and same-phase pool preservation. Do not broaden into public full-crit-damage reader APIs, snapshot expansion, broad `Calculator.py` / `CalAnomaly.py` rewrites, registered fixture creation, layer merging, old-container deletion, or retained compatibility cleanup.
 ---
+## 2026-06-15 12:13 +08:00 - US-008
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-15-us-008-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-008 full crit damage final handoff docs` replaces stale implementation-next routing with durable evidence that `Calculator.RegularMul.cal_crit_dmg(data)` is already implemented / no-op verified through module-local `_calculate_full_crit_damage(...)`.
+  - This story is handoff/docs/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_crit_dmg(data)` remains the public full-crit-damage formula path and now delegates to `_calculate_full_crit_damage(...)` while preserving the public signature, current `SkillNode` assertion, `aftershock_attack` label branch, `received_crit_dmg_bonus`, and `min(5, crit_dmg)` cap.
+  - `CalculatorBuffAttributeReader.read_full_crit_damage(...)` remains absent and unauthorized; `_CalculatorReadSnapshot`, adjacent RegularMul formulas, retained-only sheer, Stun arrays, CalAnomaly formulas, copied-output, event/runtime/listener, validation-runner behavior, old containers, registered routes, and retained compatibility paths remain unchanged.
+  - Same-phase pool remains registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if named evidence appears, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules.
+  - No new Buff coupling or coupling-classification change was found, so `docs/旧Buff系统耦合审查结果.md` remains unchanged.
+- Next step:
+  - Generate a Phase-3 same-phase candidate selection / bounded proposal PRD from the retained pool. Do not continue by generating another full-crit-damage implementation follow-up unless focused regression, validation failure, root-workspace source evidence, or reviewer-named evidence reopens it.
+---

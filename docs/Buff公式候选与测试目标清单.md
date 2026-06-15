@@ -767,6 +767,19 @@ Rollback anchors / same-phase pool：
 - Rollback anchors：`Calculator.RegularMul.cal_crit_dmg(data)` current body、any future helper if authorized、focused full-crit oracle rows、full-vs-personal contrast tests、本清单、`docs/Buff重构下阶段计划草稿.md`、`docs/Buff重构替换说明.md`、retained `formula-parity`、conditional `calculator-reads` / `implicit-events`、old containers、`ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`BuffRuntimeReadPort` 与 `LegacyBuffRuntimeFacade`。
 - Same-phase pool retained：registered behavior sample eligibility、remaining `Calculator.RegularMul` branches / retained-only sheer follow-up、future `Calculator.StunMul.get_stun_array()` follow-up if named evidence appears、P2-A through P2-G guarded maintenance、retained compatibility 和 blocker-only reopen rules。
 
+## Current RegularMul full crit damage implementation PRD US-008 final handoff
+
+结论：Implemented / no-op verified at handoff。`Calculator.RegularMul.cal_crit_dmg(data)` 已委托 module-local `_calculate_full_crit_damage(static_statement, dynamic_statement, judge_node)`；helper 继续计算 static crit damage、dynamic crit damage、field crit damage、`aftershock_attack` label bonus、`received_crit_dmg_bonus`，并保留 `min(5, crit_dmg)` cap。full `Calculator.RegularMul.cal_crit_dmg(data)` 仍是 received-damage branch；personal `Calculator.RegularMul.cal_personal_crit_dmg(data)` / `CalculatorBuffAttributeReader.read_personal_crit_damage(context)` 仍排除 received crit damage。
+
+| Contract area | US-008 implementation handoff |
+| --- | --- |
+| Implemented / no-op verified surface | `zsim/sim_progress/ScheduledEvent/Calculator.py::Calculator.RegularMul.cal_crit_dmg(data)` and module-local `_calculate_full_crit_damage(static_statement, dynamic_statement, judge_node)` only. |
+| Exact validation commands | `uv run pytest tests/simulator/test_buff_attribute_reader.py -q -k "crit_formula_families or full_crit_damage or reader_personal_crit_damage_anchor"`；`uv run python -m mypy zsim/sim_progress/ScheduledEvent/Calculator.py tests/simulator/test_buff_attribute_reader.py --follow-imports skip --ignore-missing-imports`；focused docs `git diff --check -- docs/Buff重构下阶段计划草稿.md docs/Buff系统重构Checklist.md docs/Buff公式候选与测试目标清单.md docs/Buff重构替换说明.md`；Ralph JSON sanity；UTF-8 / U+FFFD / mojibake scan. |
+| Reviewer / invariant verdict | PASS. Changed files stay inside US-008 handoff docs and Ralph evidence/bookkeeping. Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, dispatch/runtime ports, old containers, validation-runner behavior, registered routes, and retained compatibility paths remain unchanged. |
+| Rollback anchors | `Calculator.RegularMul.cal_crit_dmg(data)`, `_calculate_full_crit_damage(...)`, focused full-crit oracle rows, full-vs-personal crit damage tests, `Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, retained `formula-parity`, conditional `calculator-reads`, retained Buff docs, old containers, and layer-separation invariants. |
+| Same-phase pool retained | Registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if named evidence appears, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules. |
+| Next default route | Phase-3 same-phase candidate selection / bounded proposal PRD. Do not continue by generating another full-crit-damage implementation PRD unless focused regression, validation failure, root-workspace source evidence, or reviewer-named evidence reopens it. |
+
 ## US-022 行为样本决策矩阵
 
 本矩阵只定义何时需要 registered-team main-loop consistency sample；它不新增 validation profile，不替换生产公式，不把 `--legacy-runtime` / `--candidate-runtime` label 当作真实 runtime switch。
