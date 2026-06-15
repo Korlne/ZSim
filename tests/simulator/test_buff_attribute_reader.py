@@ -6241,6 +6241,49 @@ def test_anomaly_bar_current_ndarray_reset_deepcopy_and_shallow_copy_matrix() ->
         source_snapshot_before_deepcopy[0, 1]
     )
 
+    active_change_bar = AnomalyBar(sim_instance=cast(Any, sim_instance), element_type=0)
+    active_change_bar.current_ndarray = _make_anomaly_snapshot()
+    active_change_bar.current_effective_anomaly = np.float64(22.0)
+    active_change_bar.current_anomaly = np.float64(88.0)
+    active_change_bar.ndarray_box = [
+        (
+            0,
+            np.float64(22.0),
+            active_change_bar.current_ndarray.copy(),
+        )
+    ]
+    active_change_bar.basic_max_duration = 480
+    active_change_bar.settled = True
+    active_change_snapshot = active_change_bar.current_ndarray
+    active_change_snapshot_values = active_change_bar.current_ndarray.copy()
+    active_change_box = active_change_bar.ndarray_box
+    activation_update = SimpleNamespace(
+        skill_tag="101_snapshot_test",
+        skill=SimpleNamespace(char_obj=SimpleNamespace(NAME="激活角色")),
+    )
+
+    active_change_bar.change_info_cause_active(
+        333,
+        cast(Any, activation_update),
+        cast(Any, {"enemy": []}),
+    )
+
+    assert active_change_bar.ready is False
+    assert active_change_bar.anomaly_times == 1
+    assert active_change_bar.last_active == 333
+    assert active_change_bar.active is True
+    assert active_change_bar.activated_by is activation_update
+    assert active_change_bar.max_duration == 480
+    assert active_change_bar.current_ndarray is active_change_snapshot
+    np.testing.assert_allclose(
+        active_change_bar.current_ndarray,
+        active_change_snapshot_values,
+    )
+    assert active_change_bar.current_effective_anomaly == pytest.approx(22.0)
+    assert active_change_bar.current_anomaly == pytest.approx(88.0)
+    assert active_change_bar.ndarray_box is active_change_box
+    assert active_change_bar.settled is True
+
     output_reset_bar = AnomalyBar(sim_instance=cast(Any, sim_instance), element_type=0)
     output_reset_bar.current_ndarray = _make_anomaly_snapshot()
     output_reset_bar.current_effective_anomaly = np.float64(30.0)

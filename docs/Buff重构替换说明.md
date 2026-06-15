@@ -5703,3 +5703,17 @@
 - Next step:
   - Continue to `US-002` for the bounded `AnomalyBar.current_ndarray` lifecycle / reset / copy matrix, keeping the US-001 No-Go guard active.
 ---
+
+## 2026-06-16 03:10 +08:00 - US-002
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-002-anomalybar-current-ndarray-field-matrix.md`, `scripts/ralph/checkpoints/2026-06-16-us-002-anomalybar-current-ndarray-field-matrix.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 AnomalyBar.current_ndarray oracle matrix` replaces chat-only lifecycle confidence with focused retained-behavior tests and checkpoint evidence.
+  - This story builds an oracle boundary only; it does not replace live production formula, copied-output constructor, `UpdateAnomaly.py`, event/runtime/listener, old-container, or retained compatibility behavior.
+- Compatibility retained:
+  - `anomaly_settled()` still drains `ndarray_box`, expands snapshot width, writes weighted-average `current_ndarray`, records `current_effective_anomaly`, and sets `settled=True`.
+  - `reset_current_info_cause_output()` and `reset_myself()` keep the retained `(1, 1)` reset shape.
+  - Deep copy and copied outputs remain non-aliased for `current_ndarray`; `create_new_from_existing(...)` remains intentionally shallow-aliased.
+  - Focused pytest exited `0` with `5 passed`; scoped mypy exited `0` with `Success: no issues found in 3 source files`.
+- Next step:
+  - Continue to `US-003` for the bounded mode 0 `NewAnomaly` write path. Do not merge disorder, polarity, dot runtime, listener, or same-tick Buff write changes into the completed US-002 oracle slice.
+---
