@@ -26,6 +26,60 @@ if TYPE_CHECKING:
     from zsim.simulator.simulator_class import Simulator
 
 
+def _assemble_final_multiplier_vector(
+    dmg_sp: np.ndarray,
+    *,
+    k_level: float | np.float64,
+    active_crit: float | np.float64,
+    def_mul: float | np.float64,
+    res_mul: float | np.float64,
+    vulnerability_mul: float | np.float64,
+    snapshot_impact: float | np.float64,
+    snapshot_stun_bonus: float | np.float64,
+    stun_vulnerability: float | np.float64,
+    special_mul: float | np.float64,
+) -> np.ndarray:
+    """组装异常最终伤害乘区，顺序必须与旧公式保持一致。"""
+    # self.dmg_sp 以 array 形式储存，顺序为：基础伤害区、增伤区、异常精通区、等级、异常增伤区、异常暴击区、穿透率、穿透值、抗性穿透、冲击力、失衡值增幅
+    base_dmg = dmg_sp[0, 0]
+    dmg_bonus = dmg_sp[0, 1]
+    am_mul = dmg_sp[0, 2]
+    anomaly_bonus = dmg_sp[0, 4]
+    return np.array(
+        [
+            base_dmg,
+            dmg_bonus,
+            am_mul,
+            k_level,
+            anomaly_bonus,
+            active_crit,
+            def_mul,
+            res_mul,
+            vulnerability_mul,
+            snapshot_impact,
+            snapshot_stun_bonus,
+            stun_vulnerability,
+            special_mul,
+        ],
+        dtype=np.float64,
+    )
+
+
+def _calculate_anomaly_damage_expectation(
+    final_multipliers: np.ndarray,
+    *,
+    snapshot_impact: float | np.float64,
+    snapshot_stun_bonus: float | np.float64,
+    scaling_factor: float | np.float64,
+) -> np.float64:
+    """计算异常伤害期望，保留旧公式中的冲击力与失衡值增幅抵消。"""
+    return np.float64(
+        np.prod(final_multipliers)
+        / (snapshot_impact * snapshot_stun_bonus)
+        * scaling_factor
+    )
+
+
 class CalAnomaly:
     def __init__(
         self,
@@ -192,32 +246,18 @@ class CalAnomaly:
         stun_mul,
     ) -> np.ndarray:
         """将计算结果写入 self.final_multipliers"""
-        # self.dmg_sp 以 array 形式储存，顺序为：基础伤害区、增伤区、异常精通区、等级、异常增伤区、异常暴击区、穿透率、穿透值、抗性穿透、冲击力、失衡值增幅
-        base_dmg = self.dmg_sp[0, 0]
-        dmg_bonus = self.dmg_sp[0, 1]
-        am_mul = self.dmg_sp[0, 2]
-        anomaly_bonus = self.dmg_sp[0, 4]
-        active_crit = active_crit
-        # 将所有乘数放入一个数组
-        results = np.array(
-            [
-                base_dmg,
-                dmg_bonus,
-                am_mul,
-                k_level,
-                anomaly_bonus,
-                active_crit,
-                def_mul,
-                res_mul,
-                vulnerability_mul,
-                imp_mul,
-                stun_mul,
-                stun_vulnerability,
-                special_mul,
-            ],
-            dtype=np.float64,
+        return _assemble_final_multiplier_vector(
+            self.dmg_sp,
+            k_level=k_level,
+            active_crit=active_crit,
+            def_mul=def_mul,
+            res_mul=res_mul,
+            vulnerability_mul=vulnerability_mul,
+            snapshot_impact=imp_mul,
+            snapshot_stun_bonus=stun_mul,
+            stun_vulnerability=stun_vulnerability,
+            special_mul=special_mul,
         )
-        return results
 
     def cal_anomaly_dmg(self) -> np.float64:
         """计算异常伤害期望"""
@@ -225,10 +265,11 @@ class CalAnomaly:
         在v0.3.5a1中，由于爱丽丝的核心被动Dot会以固定比例造成属性异常伤害，
         所以我们为属性异常伤害期望计算添加了缩放比例的乘算逻辑
         """
-        return np.float64(
-            np.prod(self.final_multipliers)
-            / (self.dmg_sp[0, 9] * self.dmg_sp[0, 10])
-            * self.anomaly_obj.scaling_factor
+        return _calculate_anomaly_damage_expectation(
+            self.final_multipliers,
+            snapshot_impact=np.float64(self.dmg_sp[0, 9]),
+            snapshot_stun_bonus=np.float64(self.dmg_sp[0, 10]),
+            scaling_factor=self.anomaly_obj.scaling_factor,
         )
 
 

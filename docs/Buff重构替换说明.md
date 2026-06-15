@@ -5597,3 +5597,16 @@
 - Next step:
   - Continue to `US-002` only for bounded `CalAnomaly.set_final_multipliers(...)` / `CalAnomaly.cal_anomaly_dmg()` helper work, using the US-001 packet as scope evidence and stopping/splitting if any No-Go trigger appears.
 ---
+
+## 2026-06-16 00:54 +08:00 - US-002
+- Files changed: `zsim/sim_progress/ScheduledEvent/CalAnomaly.py`, `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-002-calanomaly-final-multiplier-and-damage-helpers.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-003-caldisorder-formula-helper-group.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `_assemble_final_multiplier_vector(...)` replaces the inline final multiplier array assembly inside `CalAnomaly.set_final_multipliers(...)` with a module-local helper seam.
+  - `_calculate_anomaly_damage_expectation(...)` replaces the inline final anomaly damage expectation arithmetic inside `CalAnomaly.cal_anomaly_dmg()` with a module-local helper seam.
+- Compatibility retained:
+  - Public/retained method seams `CalAnomaly.set_final_multipliers(...)` and `CalAnomaly.cal_anomaly_dmg()` remain the call anchors.
+  - Final multiplier order, product / snapshot impact / snapshot stun bonus / `AnomalyBar.scaling_factor` behavior, settled snapshot validation, `MulData` construction, `AnomalyBar.current_ndarray` identity, and `cal_k_level()` clamp/log behavior remain retained.
+  - No copied-output constructor, handler/report payload, event queue, synchronous listener broadcast, same-tick runtime write, dispatch/runtime port, validation-runner, public reader/snapshot API, old-container, registered-route, lifecycle, or retained compatibility surface changed.
+- Next step:
+  - Continue to `US-003` for bounded `CalDisorder` helper seams, reusing focused disorder oracle coverage and keeping copied payload / listener-facing sentinel fields outside formula expectations.
+---

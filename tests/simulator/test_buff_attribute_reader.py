@@ -6344,6 +6344,69 @@ def test_cal_anomaly_level_clamp_remains_retained_lookup(
     assert log_messages == list(case.expected_log_messages)
 
 
+def test_cal_anomaly_final_multiplier_helper_preserves_order_and_damage_expectation() -> None:
+    snapshot = _make_anomaly_snapshot(
+        (100.0, 1.10, 2.0, 60.0, 1.30, 999.0, 0.05, 8.0, 0.10, 1.20, 1.40)
+    )
+    final_multipliers = cal_anomaly_module._assemble_final_multiplier_vector(
+        snapshot,
+        k_level=np.float64(2.0),
+        active_crit=np.float64(1.10),
+        def_mul=np.float64(0.5),
+        res_mul=np.float64(0.7),
+        vulnerability_mul=np.float64(0.9),
+        snapshot_impact=np.float64(snapshot[0, 9]),
+        snapshot_stun_bonus=np.float64(snapshot[0, 10]),
+        stun_vulnerability=np.float64(0.8),
+        special_mul=np.float64(1.2),
+    )
+
+    expected_multipliers = np.array(
+        [
+            100.0,
+            1.10,
+            2.0,
+            2.0,
+            1.30,
+            1.10,
+            0.5,
+            0.7,
+            0.9,
+            1.20,
+            1.40,
+            0.8,
+            1.2,
+        ],
+        dtype=np.float64,
+    )
+    np.testing.assert_allclose(final_multipliers, expected_multipliers)
+    assert final_multipliers.dtype == np.dtype(np.float64)
+    assert final_multipliers.shape == (len(_CAL_ANOMALY_FINAL_MULTIPLIER_ORDER),)
+    final_multiplier_by_slot = {
+        label: final_multipliers[index]
+        for index, label in enumerate(_CAL_ANOMALY_FINAL_MULTIPLIER_ORDER)
+    }
+    assert list(final_multiplier_by_slot) == list(_CAL_ANOMALY_FINAL_MULTIPLIER_ORDER)
+    assert final_multiplier_by_slot["snapshot_impact"] == pytest.approx(snapshot[0, 9])
+    assert final_multiplier_by_slot["snapshot_stun_bonus"] == pytest.approx(
+        snapshot[0, 10]
+    )
+
+    damage = cal_anomaly_module._calculate_anomaly_damage_expectation(
+        final_multipliers,
+        snapshot_impact=np.float64(snapshot[0, 9]),
+        snapshot_stun_bonus=np.float64(snapshot[0, 10]),
+        scaling_factor=np.float64(1.25),
+    )
+
+    assert isinstance(damage, np.float64)
+    assert damage == pytest.approx(
+        np.prod(expected_multipliers)
+        / (expected_multipliers[9] * expected_multipliers[10])
+        * 1.25
+    )
+
+
 @pytest.mark.parametrize(
     "case",
     _ANOMALY_MUL_SNAPSHOT_ORACLE_CASES,
