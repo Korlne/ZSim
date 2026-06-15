@@ -5784,3 +5784,16 @@
 - Next step:
   - Generate the next PRD as enemy dynamic / `AnomalyBar.__get_duration_enemy_buffs()` anomaly-duration read matrix bounded characterization or same-PRD Go / No-Go closure. Preserve retained-only sheer blocker package, registered behavior sample eligibility only for live semantic diffs, future Stun evidence only when named, P2-A through P2-G guarded maintenance only on concrete blockers, retained compatibility, and blocker-only phase-1 reopen rules as same-phase pool entries.
 ---
+
+## 2026-06-16 04:58 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-scope-preflight-and-source-matrix.md`, `scripts/ralph/checkpoints/2026-06-16-us-001-scope-preflight-and-source-matrix.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 anomaly-duration source path and matrix` replaces chat-only scope confidence with current-root source evidence, excluded-source guardrails, and a story-local duration-read test matrix.
+  - This story builds a survey / evidence boundary only; it does not replace live production `AnomalyBarClass.py`, `UpdateAnomaly.py`, runtime command wiring, dispatch/listener/dot runtime paths, old Buff containers, formula code, or retained compatibility behavior.
+- Compatibility retained:
+  - `AnomalyBar.__get_duration_enemy_buffs(...)` keeps runtime-view precedence through `BuffRuntimeReadPort.get_active_buffs("enemy")` and retains legacy fallback / `TypeError` / `None` behavior.
+  - `BuffRuntimeReadPort` remains read-only; no public reader-contract expansion was needed.
+  - Focused typecheck exited `0` with `Success: no issues found in 4 source files`.
+- Next step:
+  - Continue to `US-002` runtime-view precedence coverage. Do not reopen completed `UpdateAnomaly.py` write-path or Phase 2 runtime/facade work without named current-root blocker evidence.
+---
