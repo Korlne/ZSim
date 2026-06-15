@@ -5638,3 +5638,17 @@
 - Next step:
   - Continue to `US-005` for the bounded `CalAbloom` ratio helper and keep copied payload / event/runtime boundary checks outside formula helper arithmetic unless the active slice requires them.
 ---
+
+## 2026-06-16 01:44 +08:00 - US-005
+- Files changed: `zsim/sim_progress/ScheduledEvent/CalAnomaly.py`, `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-005-calabloom-ratio-helper.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `_apply_abloom_anomaly_damage_ratio(...)` replaces the inline `CalAbloom.__init__` Abloom ratio multiplication with a module-local in-place helper seam.
+  - This story builds only the formula helper boundary; it does not replace Abloom handler report payload, listener broadcast, scheduled publish, copied-output constructor, or runtime command behavior.
+- Compatibility retained:
+  - The helper mutates the same inherited `final_multipliers` vector object and preserves the old `final_multipliers[0] *= abloom_obj.anomaly_dmg_ratio` behavior.
+  - Copied `current_ndarray`, retained `MultiplierData.dynamic`, `anomaly_dmg_ratio`, `scaling_factor`, snapshot impact/stun slots, and final multiplier vector expectations remain covered by `test_cal_abloom_formula_inputs_and_fixture_blockers`.
+  - `schedule_priority`, `rename_tag`, and `accompany_dot` remain output-only sentinel fields outside formula expectations.
+  - Focused pytest exited `0` with `2 passed`; scoped mypy exited `0` with `Success: no issues found in 2 source files`.
+- Next step:
+  - Continue to `US-006` for copied-output and event/runtime boundary gate evidence. Do not reopen Abloom formula arithmetic, handler payloads, listener broadcasts, scheduled publish, copied-output constructors, runtime command behavior, or retained compatibility surfaces without a new active slice.
+---

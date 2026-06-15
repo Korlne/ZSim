@@ -167,6 +167,16 @@ def _calculate_polarity_disorder_base_damage(
     )
 
 
+def _apply_abloom_anomaly_damage_ratio(
+    final_multipliers: np.ndarray,
+    *,
+    anomaly_dmg_ratio: float | np.float64,
+) -> np.ndarray:
+    """应用紊乱绽放异常伤害倍率，并保留原乘区向量对象。"""
+    final_multipliers[0] *= anomaly_dmg_ratio
+    return final_multipliers
+
+
 class CalAnomaly:
     def __init__(
         self,
@@ -461,4 +471,7 @@ class CalAbloom(CalAnomaly):
         sim_instance: "Simulator",
     ):
         super().__init__(abloom_obj, enemy_obj, dynamic_buff, sim_instance=sim_instance)
-        self.final_multipliers[0] *= abloom_obj.anomaly_dmg_ratio
+        _apply_abloom_anomaly_damage_ratio(
+            self.final_multipliers,
+            anomaly_dmg_ratio=abloom_obj.anomaly_dmg_ratio,
+        )

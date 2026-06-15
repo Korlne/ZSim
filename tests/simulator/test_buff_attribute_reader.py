@@ -6805,6 +6805,32 @@ def test_cal_abloom_formula_inputs_and_fixture_blockers(
     for attr_name, value in case.copied_payload_sentinel_fields.items():
         setattr(abloom_payload, attr_name, value)
 
+    original_apply_abloom_ratio = cal_anomaly_module._apply_abloom_anomaly_damage_ratio
+    helper_calls: list[tuple[np.ndarray, float, float]] = []
+
+    def _spy_apply_abloom_ratio(
+        final_multipliers: np.ndarray,
+        *,
+        anomaly_dmg_ratio: float | np.float64,
+    ) -> np.ndarray:
+        helper_calls.append(
+            (
+                final_multipliers,
+                float(final_multipliers[0]),
+                float(anomaly_dmg_ratio),
+            )
+        )
+        return original_apply_abloom_ratio(
+            final_multipliers,
+            anomaly_dmg_ratio=anomaly_dmg_ratio,
+        )
+
+    monkeypatch.setattr(
+        cal_anomaly_module,
+        "_apply_abloom_anomaly_damage_ratio",
+        _spy_apply_abloom_ratio,
+    )
+
     calculator = cal_anomaly_module.CalAbloom(
         abloom_obj=abloom_payload,
         enemy_obj=cast(Any, fixture.enemy),
@@ -6812,6 +6838,13 @@ def test_cal_abloom_formula_inputs_and_fixture_blockers(
         sim_instance=cast(Any, fixture.sim_instance),
     )
 
+    assert len(helper_calls) == 1
+    helper_vector, helper_base_multiplier, helper_ratio = helper_calls[0]
+    assert helper_vector is calculator.final_multipliers
+    assert helper_base_multiplier == pytest.approx(
+        base_case.expected_final_multipliers[0]
+    )
+    assert helper_ratio == pytest.approx(case.anomaly_dmg_ratio)
     assert abloom_payload.current_ndarray is not fixture.anomaly_bar.current_ndarray
     np.testing.assert_allclose(
         abloom_payload.current_ndarray,
@@ -6853,10 +6886,16 @@ def test_cal_abloom_formula_inputs_and_fixture_blockers(
         "snapshot_stun_bonus": calculator.final_multipliers[10],
         "cal_anomaly_dmg": calculator.cal_anomaly_dmg(),
     }
+    formula_expectation_fields = (
+        set(snapshot_inputs) | set(dynamic_inputs) | set(deterministic_fields)
+    )
 
     assert snapshot_inputs == pytest.approx(base_case.expected_snapshot_fields)
     assert dynamic_inputs == pytest.approx(base_case.expected_dynamic_fields)
     assert deterministic_fields == pytest.approx(case.expected_deterministic_fields)
+    assert set(case.copied_payload_sentinel_fields).isdisjoint(
+        formula_expectation_fields
+    )
     np.testing.assert_allclose(
         calculator.final_multipliers,
         np.array(case.expected_final_multipliers, dtype=np.float64),
