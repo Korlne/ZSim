@@ -5155,3 +5155,16 @@
 - Next step:
   - Continue to `US-004` oracle/contrast preservation for this exact bounded helper seam. Do not broaden into public reader APIs, snapshot expansion, adjacent formulas, event/runtime/listener layers, validation-runner rewrites, old-container deletion, or retained compatibility cleanup.
 ---
+
+## 2026-06-15 11:15 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-preserve-oracle-and-contrast-tests.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-005-run-retained-validation-gates-serially.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 executable oracle/contrast evidence` replaces chat-only confidence for the bounded `_calculate_full_crit_damage(...)` seam with passing focused pytest and scoped mypy evidence.
+  - This story preserves existing test anchors only. It does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Existing aftershock label exact/cap rows remain executable and still prove full crit damage includes `received_crit_dmg_bonus` while personal crit damage remains excluded from it.
+  - `CalculatorBuffAttributeReader.read_personal_crit_damage(context)` still delegates to the personal formula path, and `CalculatorBuffAttributeReader.read_full_crit_damage(...)` remains absent and unauthorized.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, old containers, validation-runner behavior, registered routes, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-005` retained validation gates serially. Run `formula-parity`; run broader retained profiles only when the touched-surface criteria require them.
+---
