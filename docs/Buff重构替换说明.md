@@ -5343,3 +5343,16 @@
 - Next step:
   - Continue to `US-011` handoff docs and same-phase pool preservation. Any later implementation PRD must stay limited to the selected `cal_dmg_bonus()` branch or stop at the packet's No-Go conditions.
 ---
+
+## 2026-06-15 15:50 +08:00 - US-011
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-011-preserve-same-phase-pool-in-handoff-docs.md`, `scripts/ralph/checkpoints/2026-06-15-us-011-preserve-same-phase-pool-in-handoff-docs.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-012-final-prd-evidence-and-conversion-readiness.md`
+- Replacement note:
+  - `US-011 handoff docs` replaces stale same-phase-candidate routing with durable handoff evidence that the selected proposal outcome is Conditional Go / No-Go for exactly `Calculator.RegularMul.cal_dmg_bonus(data)` / `regular-dmg-bonus-character-field-stack`.
+  - This story is docs/evidence/bookkeeping only. It does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Next default is one bounded implementation PRD for the selected `cal_dmg_bonus()` branch, with focused oracle / scoped mypy, serial `formula-parity` / `calculator-reads`, conditional `implicit-events` / default validation, registered-sample Conditional No-Go, rollback anchors, and stop conditions retained.
+  - Same-phase pool remains registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if named evidence appears, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules.
+  - No new Buff coupling or coupling-classification change was found, so `docs/旧Buff系统耦合审查结果.md` remains unchanged.
+- Next step:
+  - Continue to `US-012` final PRD evidence and conversion readiness. Any later implementation PRD must stay limited to the selected `cal_dmg_bonus()` branch or stop at the packet's No-Go conditions; future automation may still reselect from the retained same-phase pool when new evidence names a different candidate.
+---

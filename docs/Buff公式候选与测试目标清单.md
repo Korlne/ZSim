@@ -1,6 +1,6 @@
 # Buff公式候选与测试目标清单
 
-更新时间：2026-06-14 13:25 +08:00
+更新时间：2026-06-15 15:50 +08:00
 
 本清单服务于 Phase 3 公式等价测试设计。当前故事只建立候选面和测试目标证据，不替换 `Calculator.py`、`CalAnomaly.py`、复制异常 / 紊乱输出公式，也不改变 `ScheduleDispatchPort`、`RuntimeCommandPort` 或旧容器兼容路径。
 
@@ -29,6 +29,23 @@
 - 单文件 focused：`uv run pytest tests/simulator/test_buff_attribute_reader.py -q`。
 - Phase-3 oracle gap closure profile：`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile formula-parity`，当前最小 pytest 目标为 `test_buff_attribute_reader.py`。
 - 保留的 broader reader seam profile：`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads`，覆盖 `test_buff_attribute_reader.py`、`test_buff_raw_container_guardrail.py`、`test_migrated_am_ap_reader_guardrail.py`、`test_migrated_p2b_reader_guardrail.py`、`test_buff_attribute_state_sync.py`、`test_full_crit_event_adjacent_reader.py`。
+
+## Current same-phase candidate selection PRD US-011 handoff
+
+结论：selected candidate outcome 保持 US-010 proposal packet 的 Conditional Go / No-Go，只允许后续生成 one bounded implementation PRD for exactly `Calculator.RegularMul.cal_dmg_bonus(data)`，目标栈为 `regular-dmg-bonus-character-field-stack`（fire / normal attack / `aftershock_attack` / all-damage）。当前 US-011 只同步 handoff docs、Ralph evidence 与 completion bookkeeping，不替换 production formula、reader source、focused test source、validation-runner behavior、registered teams/APLs、old containers、event/runtime/listener layers 或 retained compatibility。
+
+Selected files / symbols：
+
+- `zsim/sim_progress/ScheduledEvent/Calculator.py::Calculator.RegularMul.cal_dmg_bonus(data)`。
+- Optional future helper seam must be module-local and behavior-preserving; public method signature, current `SkillNode` assumption, element branch, trigger-level branch, `aftershock_attack` label branch and all-damage addition remain rollback anchors.
+- Focused evidence anchors remain `test_formula_oracle_table_cases_drive_expected_fields_and_reader_parity[regular-dmg-bonus-character-field-stack]` and `test_calculator_regular_mul_branch_matrix_characterizes_selected_methods[fire-stunned-reader-snapshot]`.
+
+Retained boundaries / same-phase pool：
+
+- Retained gates：selected focused pytest nodeids and scoped mypy first; serial `formula-parity` and `calculator-reads` remain required for formula / reader implementation work; `implicit-events`, default validation, and main-loop consistency stay conditional on touched surface and registered-route evidence.
+- Registered behavior sample remains Conditional No-Go until a future live production semantic diff has a real registered route, explicit stop tick, runtime labels, total damage comparison, relevant nonzero selected-formula/event counts, full event counts, Buff timeline comparison, differences, and rollback anchors.
+- Unresolved same-phase candidates remain available for future reselection: registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if named evidence appears, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules.
+- No new Buff coupling or coupling-classification evidence was discovered in this docs/evidence slice, so `docs/旧Buff系统耦合审查结果.md` does not need an update.
 
 ## US-014 formula-parity validation profile 决策
 
