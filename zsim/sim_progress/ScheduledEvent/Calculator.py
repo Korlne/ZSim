@@ -203,6 +203,10 @@ def _calculate_full_crit_damage(
     return min(5, crit_dmg)
 
 
+def _calculate_crit_expectation(crit_rate: float, crit_damage: float) -> float:
+    return 1 + min(1, crit_rate) * crit_damage
+
+
 def _calculate_damage_bonus(
     static_statement: Any, dynamic_statement: Any, judge_node: SkillNode
 ) -> float:
@@ -1177,17 +1181,7 @@ class Calculator:
 
         def cal_crit_expect(self, data: MultiplierData) -> float:
             """暴击期望 = 1 + 暴击率 * 暴击伤害"""
-            if (
-                data.char_instance is not None
-                and data.char_instance.crit_balancing
-                and self.crit_rate > 1
-            ):
-                # 目前不使用溢出补偿
-                return 1 + min(1, self.crit_rate) * self.crit_dmg
-                # 配平算法下的暴击溢出补偿，为了解决配平仅能适配静态面板的问题
-                # return 1 + ((self.crit_rate - 1) * 2 + self.crit_dmg)
-            else:
-                return 1 + min(1, self.crit_rate) * self.crit_dmg
+            return _calculate_crit_expectation(self.crit_rate, self.crit_dmg)
 
         @staticmethod
         def cal_personal_crit_dmg(data: MultiplierData) -> float:

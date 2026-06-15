@@ -5430,3 +5430,15 @@
 - Next step:
   - Continue to `US-005` for the conditional crit expectation helper. Stop at No-Go if focused oracle coverage or public-contract boundaries are not narrow enough.
 ---
+
+## 2026-06-15 19:11 +08:00 - US-005
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-005-conditional-crit-expectation-helper.md`, `scripts/ralph/plans/slices/us-006-conditional-non-sheer-base-damage-and-base-attribute-group.md`, `scripts/ralph/investigations/2026-06-15-US-005-crit-expect-helper.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `_calculate_crit_expectation(crit_rate, crit_damage)` prepares to replace the retained inline `Calculator.RegularMul.cal_crit_expect(data)` formula body while deriving only from the completed full crit rate and full crit damage scalar values.
+  - Focused crit expectation coverage adds scalar clamp, full received-field contrast, branch-matrix visibility, and helper-delegation evidence without editing completed `cal_crit_rate(data)`, `cal_personal_crit_rate(data)`, `cal_personal_crit_dmg(data)`, or `cal_crit_dmg(data)` helper seams.
+- Compatibility retained:
+  - The current formula remains `1 + min(1, full_crit_rate) * full_crit_damage`; over-100% crit rate still clamps to `1`, and received crit rate / received crit damage continue to flow through the already-completed full crit methods.
+  - `CalculatorBuffAttributeReader`, public `_CalculatorReadSnapshot` contract, sibling `RegularMul` branches, registered routes, validation-runner behavior, explicit ports/adapters, old containers, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-006` for non-sheer base damage / base attribute helper seams. Keep `base_attr=4` and `cal_sheer_dmg_bonus(data)` excluded unless a later slice records explicit oracle and snapshot evidence.
+---

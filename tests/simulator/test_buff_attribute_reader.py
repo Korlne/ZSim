@@ -1017,6 +1017,13 @@ def _regular_mul_defense_mul(data: MultiplierData) -> float:
     return cast(float, _regular_mul_oracle().cal_defense_mul(data))
 
 
+def _regular_mul_crit_expect(data: MultiplierData) -> float:
+    oracle = _regular_mul_oracle()
+    oracle.crit_rate = Calculator.RegularMul.cal_crit_rate(data)
+    oracle.crit_dmg = Calculator.RegularMul.cal_crit_dmg(data)
+    return cast(float, oracle.cal_crit_expect(data))
+
+
 def _regular_mul_branch_matrix_values(data: MultiplierData) -> dict[str, float]:
     oracle = _regular_mul_oracle()
     return {
@@ -1024,6 +1031,7 @@ def _regular_mul_branch_matrix_values(data: MultiplierData) -> dict[str, float]:
         "cal_dmg_bonus": Calculator.RegularMul.cal_dmg_bonus(data),
         "cal_crit_rate": Calculator.RegularMul.cal_crit_rate(data),
         "cal_crit_dmg": Calculator.RegularMul.cal_crit_dmg(data),
+        "cal_crit_expect": _regular_mul_crit_expect(data),
         "cal_personal_crit_dmg": Calculator.RegularMul.cal_personal_crit_dmg(data),
         "cal_defense_mul": cast(float, oracle.cal_defense_mul(data)),
         "cal_res_mul": Calculator.RegularMul.cal_res_mul(data),
@@ -4644,6 +4652,7 @@ def test_calculator_am_ap_impact_formula_family_matches_reader_snapshot_parity(
                 "cal_crit_rate": 0.2,
                 "cal_personal_crit_rate": 0.2,
                 "cal_crit_dmg": 0.5,
+                "cal_crit_expect": 1.1,
                 "cal_personal_crit_dmg": 0.5,
             },
             0.0,
@@ -4661,6 +4670,7 @@ def test_calculator_am_ap_impact_formula_family_matches_reader_snapshot_parity(
                 "cal_crit_rate": 0.35,
                 "cal_personal_crit_rate": 0.35,
                 "cal_crit_dmg": 1.0,
+                "cal_crit_expect": 1.35,
                 "cal_personal_crit_dmg": 1.0,
             },
             0.0,
@@ -4680,6 +4690,7 @@ def test_calculator_am_ap_impact_formula_family_matches_reader_snapshot_parity(
                 "cal_crit_rate": 0.6,
                 "cal_personal_crit_rate": 0.35,
                 "cal_crit_dmg": 1.4,
+                "cal_crit_expect": 1.84,
                 "cal_personal_crit_dmg": 1.0,
             },
             0.25,
@@ -4718,6 +4729,7 @@ def test_calculator_regular_mul_crit_formula_families_preserve_received_boundari
             retained_data
         ),
         "cal_crit_dmg": Calculator.RegularMul.cal_crit_dmg(retained_data),
+        "cal_crit_expect": _regular_mul_crit_expect(retained_data),
         "cal_personal_crit_dmg": Calculator.RegularMul.cal_personal_crit_dmg(
             retained_data
         ),
@@ -4735,6 +4747,9 @@ def test_calculator_regular_mul_crit_formula_families_preserve_received_boundari
     )
     assert values["cal_crit_dmg"] - values["cal_personal_crit_dmg"] == pytest.approx(
         retained_dynamic.received_crit_dmg_bonus
+    )
+    assert values["cal_crit_expect"] == pytest.approx(
+        1 + min(1, values["cal_crit_rate"]) * values["cal_crit_dmg"]
     )
     assert values["cal_personal_crit_dmg"] == pytest.approx(
         cast(Any, retained_data).static.crit_damage
@@ -5091,6 +5106,75 @@ def test_regular_mul_full_crit_rate_delegates_to_module_helper(
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
 
 
+@pytest.mark.parametrize(
+    ("crit_rate", "crit_damage", "expected_value"),
+    [
+        pytest.param(0.60, 1.40, 1.84, id="uses-full-crit-scalars"),
+        pytest.param(1.25, 1.40, 2.40, id="clamps-over-100-percent-rate"),
+    ],
+)
+def test_regular_mul_crit_expect_scalar_helper_preserves_current_formula(
+    crit_rate: float,
+    crit_damage: float,
+    expected_value: float,
+) -> None:
+    assert calculator_module._calculate_crit_expectation(
+        crit_rate,
+        crit_damage,
+    ) == pytest.approx(expected_value)
+
+
+def test_regular_mul_crit_expect_delegates_to_module_helper(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_attribute_read_fixture(
+        name="暴击期望委托",
+        crit_rate=0.2,
+        crit_damage=0.5,
+        damage_ratio=1.0,
+        hit_times=1,
+        diff_multiplier=0,
+        char_buff_count=1,
+        enemy_debuff_count=1,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(
+            crit_rate=0.1,
+            field_crit_rate=0.05,
+            crit_rate_received_increase=0.25,
+            crit_dmg=0.3,
+            field_crit_dmg=0.2,
+            received_crit_dmg_bonus=0.4,
+        ),
+    )
+    retained_data = _legacy_multiplier_data(fixture)
+    regular_mul = _regular_mul_oracle()
+    regular_mul.crit_rate = Calculator.RegularMul.cal_crit_rate(retained_data)
+    regular_mul.crit_dmg = Calculator.RegularMul.cal_crit_dmg(retained_data)
+    helper_calls: list[tuple[float, float]] = []
+
+    def fake_calculate_crit_expectation(
+        crit_rate: float,
+        crit_damage: float,
+    ) -> float:
+        helper_calls.append((crit_rate, crit_damage))
+        return 7.65
+
+    monkeypatch.setattr(
+        calculator_module,
+        "_calculate_crit_expectation",
+        fake_calculate_crit_expectation,
+    )
+
+    value = regular_mul.cal_crit_expect(retained_data)
+
+    assert value == pytest.approx(7.65)
+    assert len(helper_calls) == 1
+    assert helper_calls[0] == pytest.approx((0.60, 1.40))
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+
+
 def test_regular_mul_personal_crit_damage_delegates_to_module_helper(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -5314,6 +5398,7 @@ def test_full_crit_damage_reader_api_and_snapshot_contract_stay_bounded(
                 "cal_dmg_bonus": 1.80,
                 "cal_crit_rate": 0.55,
                 "cal_crit_dmg": 1.30,
+                "cal_crit_expect": 1.715,
                 "cal_personal_crit_dmg": 0.90,
                 "cal_defense_mul": 794.0 / (794.0 + 295.0),
                 "cal_res_mul": 0.97,
@@ -5374,6 +5459,7 @@ def test_full_crit_damage_reader_api_and_snapshot_contract_stay_bounded(
                 "cal_dmg_bonus": 1.30,
                 "cal_crit_rate": 0.0,
                 "cal_crit_dmg": 0.0,
+                "cal_crit_expect": 1.0,
                 "cal_personal_crit_dmg": 0.0,
                 "cal_defense_mul": 1.0,
                 "cal_res_mul": 1.0,
