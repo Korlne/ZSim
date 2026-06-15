@@ -5117,3 +5117,16 @@
 - Next step:
   - Generate one bounded full-crit-damage implementation PRD only if it preserves the documented formula behavior and retained gates. After that PRD completes or records No-Go, reselect from the broader same-phase pool instead of chaining stale single-branch follow-ups.
 ---
+
+## 2026-06-15 10:26 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconcile-intake-and-active-route.md`, `scripts/ralph/checkpoints/2026-06-15-us-001-reconcile-intake-active-route.md`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-002-lock-the-full-crit-damage-helper-boundary.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-001 active-route reconciliation checkpoint` replaces stale route assumptions with durable evidence that the current default is one bounded implementation PRD for `Calculator.RegularMul.cal_crit_dmg(data)`.
+  - This story is docs/bookkeeping only. It does not replace live production formula code, focused test source, reader source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_crit_dmg(data)` remains the retained inline production formula until a later story explicitly implements the bounded helper seam.
+  - The prior proposal-readiness PRD remains complete and records Conditional Go only for this exact full-crit-damage implementation surface.
+  - `CalculatorBuffAttributeReader.read_full_crit_damage(...)` remains absent and unauthorized; `_CalculatorReadSnapshot`, old containers, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, registered routes, validation-runner behavior, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-002` to lock the helper boundary from current root source before any production edit. Stop with No-Go if source/docs/state name a different route, a completed implementation, or any public-reader/snapshot/registered-fixture/adjacent-formula/layer-merge requirement.
+---
