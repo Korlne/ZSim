@@ -5481,3 +5481,16 @@
 - Next step:
   - Continue to `US-009` registered behavior sample decision and rollback packet. Keep main-loop consistency conditional on a real production semantic diff and real registered-route evidence; do not create validation-only teams or retained-vs-retained samples.
 ---
+
+## 2026-06-15 20:13 +08:00 - US-009
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-009-registered-behavior-sample-decision-and-rollback-packet.md`, `scripts/ralph/investigations/2026-06-15-US-009-registered-behavior-sample-rollback-packet.md`, `scripts/ralph/checkpoints/2026-06-15-us-009-registered-sample-rollback-packet.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-010-handoff-docs-same-phase-pool-and-invariant-review.md`
+- Replacement note:
+  - `US-009 registered behavior sample and rollback packet` replaces chat-only main-loop/sample judgment with durable evidence that the current RegularMul scalar helper-family PRD has no live production semantic diff, no eligible registered route sample, and explicit rollback anchors for every implemented helper group and conditional No-Go branch.
+  - This story does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Main-loop consistency remains skipped because no real registered route proves nonzero selected formula/event relevance inside an explicit stop tick; no validation-only team, fake APL, fixture-only route, or retained-vs-retained sample was created.
+  - Rollback anchors now cover damage bonus, resistance/vulnerability/special, defense, crit expectation, non-sheer base No-Go, retained-only sheer exclusion, main-loop sample No-Go, and broad public-boundary/event/runtime/validation-runner No-Go triggers.
+  - Scoped mypy exited `0` with `Success: no issues found in 2 source files`; JSON sanity, UTF-8/mojibake scan, focused diff check, and source diff guard passed.
+- Next step:
+  - Continue to `US-010` handoff docs, same-phase pool, and invariant review. Keep the next PRD route evidence-based and do not collapse the same-phase candidate pool to a single stale callsite.
+---
