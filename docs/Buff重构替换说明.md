@@ -5331,3 +5331,15 @@
 - Next step:
   - Continue to `US-010` proposal packet and reviewer rollback gate. Keep future implementation scoped to the selected `cal_dmg_bonus()` branch unless a separate PRD records a concrete blocker.
 ---
+
+## 2026-06-15 15:37 +08:00 - US-010
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-010-write-proposal-packet-and-reviewer-rollback-gate.md`, `scripts/ralph/investigations/2026-06-15-US-010-proposal-rollback-gate.md`, `scripts/ralph/checkpoints/2026-06-15-us-010-proposal-rollback-gate.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-010 proposal rollback gate packet` replaces chat-only next-PRD readiness with a reviewer-ready Conditional Go / No-Go gate for exactly `Calculator.RegularMul.cal_dmg_bonus(data)`.
+  - This story is proposal/evidence/bookkeeping only. It does not replace or edit live production formula code, reader source, `_CalculatorReadSnapshot`, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_dmg_bonus(data)` remains the retained inline source method; the selected formula stack remains `regular-dmg-bonus-character-field-stack`.
+  - Focused oracle rows, retained `formula-parity` / `calculator-reads`, conditional `implicit-events` / default validation, registered-route policy, explicit ports/adapters, old containers, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-011` handoff docs and same-phase pool preservation. Any later implementation PRD must stay limited to the selected `cal_dmg_bonus()` branch or stop at the packet's No-Go conditions.
+---
