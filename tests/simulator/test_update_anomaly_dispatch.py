@@ -632,6 +632,9 @@ def test_update_anomaly_records_new_anomaly_field_matrix_with_runtime_dot(
     enemy = _build_enemy(sim_instance)
     source_bar = _build_anomaly_bar(sim_instance, element_type=3)
     source_bar.accompany_dot = "Shock"
+    source_bar.anomaly_dmg_ratio = 2.25
+    source_bar.scaling_factor = 1.5
+    source_bar.basic_max_duration = 420
     source_bar.ndarray_box = [
         (3, np.float64(40), np.array([[2.0, 4.0]], dtype=np.float64)),
         (3, np.float64(60), np.array([[6.0, 8.0]], dtype=np.float64)),
@@ -690,7 +693,9 @@ def test_update_anomaly_records_new_anomaly_field_matrix_with_runtime_dot(
 
     assert published.element_type == 3
     assert published.activated_by is skill_node
+    assert published.activate_by is skill_node
     assert published.is_disorder is False
+    assert published.sim_instance is sim_instance
     assert published.current_effective_anomaly == np.float64(100)
     np.testing.assert_allclose(
         published.current_ndarray,
@@ -698,6 +703,14 @@ def test_update_anomaly_records_new_anomaly_field_matrix_with_runtime_dot(
     )
     assert published.schedule_priority == 999
     assert not hasattr(published, "execute_tick")
+    assert published.anomaly_dmg_ratio == pytest.approx(2.25)
+    assert published.scaling_factor == pytest.approx(1.5)
+    assert published.basic_max_duration == 420
+    assert published.max_duration == 420
+    assert published.last_active == 14
+    assert published.duration_buff_list is None
+    assert published.duration_buff_key_list is None
+    assert published.accompany_dot == "Shock"
     assert spawn_calls == [(3, 14, published, sim_instance)]
     assert helper_calls == [
         ("from_enemy", enemy),
@@ -710,6 +723,72 @@ def test_update_anomaly_records_new_anomaly_field_matrix_with_runtime_dot(
         ("dot_append", "Shock"),
         ("publish", published),
     ]
+
+
+@pytest.mark.parametrize("element_type", [2, 5])
+@pytest.mark.parametrize(
+    ("initial_frozen", "should_publish"),
+    [(False, False), (True, True)],
+)
+def test_update_anomaly_ice_frost_mode_zero_publishes_only_when_currently_frozen(
+    element_type,
+    initial_frozen,
+    should_publish,
+):
+    call_order: list[tuple[str, object]] = []
+    legacy_event_list = _FailFastEventList()
+    sim_instance = _build_sim_instance(legacy_event_list, call_order)
+    enemy = _build_enemy(sim_instance)
+    enemy.dynamic.frozen = initial_frozen
+    enemy.anomaly_bars_dict[element_type] = _build_anomaly_bar(
+        sim_instance,
+        element_type=element_type,
+    )
+    skill_node = _build_skill_node(element_type=element_type)
+    chars = [
+        SimpleNamespace(
+            special_resources=lambda anomaly: call_order.append(
+                ("special_resources", anomaly)
+            )
+        )
+    ]
+    recording_queue = _RecordingEventList(call_order)
+    sim_instance.schedule_data.event_list = recording_queue
+
+    update_anomaly(
+        element_type,
+        enemy,
+        18,
+        legacy_event_list,
+        chars,
+        sim_instance,
+        skill_node,
+        {"alpha": [], "enemy": []},
+    )
+
+    special_payloads = [
+        payload for action, payload in call_order if action == "special_resources"
+    ]
+    assert len(special_payloads) == 1
+    new_anomaly = special_payloads[0]
+    assert enemy.dynamic.frozen is True
+    assert (
+        enemy.dynamic.active_anomaly_bar_dict[element_type].element_type
+        == element_type
+    )
+    if should_publish:
+        assert recording_queue == [new_anomaly]
+        assert call_order == [
+            ("broadcast", LBS.ANOMALY),
+            ("special_resources", new_anomaly),
+            ("publish", new_anomaly),
+        ]
+    else:
+        assert recording_queue == []
+        assert call_order == [
+            ("broadcast", LBS.ANOMALY),
+            ("special_resources", new_anomaly),
+        ]
 
 
 def test_anomaly_effect_active_replaces_same_index_dot_without_scheduled_publish(

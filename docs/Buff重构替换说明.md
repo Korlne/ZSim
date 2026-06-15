@@ -5717,3 +5717,17 @@
 - Next step:
   - Continue to `US-003` for the bounded mode 0 `NewAnomaly` write path. Do not merge disorder, polarity, dot runtime, listener, or same-tick Buff write changes into the completed US-002 oracle slice.
 ---
+
+## 2026-06-16 03:22 +08:00 - US-003
+- Files changed: `tests/simulator/test_update_anomaly_dispatch.py`, `scripts/ralph/plans/slices/us-003-mode-0-new-anomaly-write-path.md`, `scripts/ralph/investigations/2026-06-16-US-003-mode-0-new-anomaly-write-path.md`, `scripts/ralph/checkpoints/2026-06-16-us-003-mode-0-new-anomaly-write-path.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 mode 0 NewAnomaly write-path characterization` replaces implicit scheduled payload/order assumptions with focused test evidence for `UpdateAnomaly.update_anomaly(...)` mode 0.
+  - This story builds a characterization boundary only; it does not replace live production `UpdateAnomaly.py`, copied-output constructors, formulas, handler/report payloads, dispatch/runtime ports, old containers, or retained compatibility behavior.
+- Compatibility retained:
+  - `ScheduleDispatchPort` remains queue-only and is created on demand from the current `sim_instance`; the legacy positional `event_list` remains fail-fast in focused tests.
+  - Synchronous listener broadcast, `special_resources(...)`, runtime dot replacement, scheduled publish, and source-bar reset remain distinct layers and retain their observed order.
+  - Ice/frost mode 0 semantics remain unnormalized: the new anomaly is scheduled only when the current `frozen` state already requires it.
+  - Focused pytest exited `0` with `8 passed`; scoped mypy exited `0` with `Success: no issues found in 2 source files`.
+- Next step:
+  - Continue to `US-004` disorder and polarity copied-output boundary characterization. Do not merge disorder, polarity, dot runtime, listener, or same-tick Buff write changes into the completed US-003 mode 0 slice.
+---
