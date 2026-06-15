@@ -5063,3 +5063,16 @@
 - Next step:
   - Continue to `US-005` bounded proposal and rollback anchors. Keep the next slice proposal-scoped unless it explicitly permits production helper extraction; do not add a public full-crit-damage reader API or broaden into unrelated RegularMul / CalAnomaly / Stun / copied-output / event-runtime-listener work.
 ---
+
+## 2026-06-15 08:31 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-define-bounded-proposal-and-rollback-anchors.md`, `scripts/ralph/investigations/2026-06-15-US-005-full-crit-damage-proposal-rollback-anchors.md`, `scripts/ralph/checkpoints/2026-06-15-us-005-full-crit-damage-proposal-rollback-anchors.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 full crit damage proposal packet` replaces chat-only implementation-boundary confidence with a durable proposal / rollback artifact for exactly `Calculator.RegularMul.cal_crit_dmg(data)`.
+  - This story is evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered routes, copied-output/event/runtime/listener paths, old containers, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_crit_dmg(data)` remains the retained inline production formula and still preserves the `aftershock_attack` label branch, `received_crit_dmg_bonus`, and `min(5, crit_dmg)` cap.
+  - Any later helper must be private, module-local, behavior-preserving, and keep the current public method signature plus `SkillNode` assertion. This PRD still does not authorize `CalculatorBuffAttributeReader.read_full_crit_damage(...)`.
+  - `Calculator.RegularMul.cal_crit_expect(data)`, damage bonus, defense, resistance, vulnerability, retained-only sheer, public snapshot fields, validation-runner behavior, registered teams/APLs, old containers, event/runtime/listener layers, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-006` registered sample eligibility for this exact full crit damage surface. Keep `US-006` evidence-scoped unless it finds a concrete current-root blocker that needs a smaller reversible slice.
+---
