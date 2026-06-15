@@ -1394,6 +1394,92 @@ _FORMULA_ORACLE_TABLE_CASES = (
         ),
     ),
     _FormulaOracleCase(
+        case_id="regular-crit_dmg-aftershock-label-and-received-exact",
+        fixture_kwargs={
+            "name": "直伤暴伤-aftershock标签精确行",
+            "crit_damage": 0.50,
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "skill_labels": {"aftershock_attack": 1},
+            "char_buff_count": 1,
+            "enemy_debuff_count": 1,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "crit_dmg": 0.30,
+            "field_crit_dmg": 0.10,
+            "aftershock_attack_crit_dmg_bonus": 0.20,
+            "received_crit_dmg_bonus": 0.40,
+        },
+        expected_dynamic_fields={
+            "crit_dmg": 0.30,
+            "field_crit_dmg": 0.10,
+            "aftershock_attack_crit_dmg_bonus": 0.20,
+            "received_crit_dmg_bonus": 0.40,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_crit_dmg",
+                expected_value=1.50,
+                retained_value=lambda data: Calculator.RegularMul.cal_crit_dmg(data),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_personal_crit_dmg",
+                expected_value=0.90,
+                retained_value=lambda data: Calculator.RegularMul.cal_personal_crit_dmg(
+                    data
+                ),
+                reader_value=lambda reader, context: reader.read_personal_crit_damage(
+                    context
+                ),
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="regular-crit_dmg-aftershock-label-and-received-cap",
+        fixture_kwargs={
+            "name": "直伤暴伤-aftershock标签上限行",
+            "crit_damage": 0.50,
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 0,
+            "skill_labels": {"aftershock_attack": 1},
+            "char_buff_count": 1,
+            "enemy_debuff_count": 1,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "crit_dmg": 0.30,
+            "field_crit_dmg": 0.10,
+            "aftershock_attack_crit_dmg_bonus": 3.80,
+            "received_crit_dmg_bonus": 0.90,
+        },
+        expected_dynamic_fields={
+            "crit_dmg": 0.30,
+            "field_crit_dmg": 0.10,
+            "aftershock_attack_crit_dmg_bonus": 3.80,
+            "received_crit_dmg_bonus": 0.90,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_crit_dmg",
+                expected_value=5.00,
+                retained_value=lambda data: Calculator.RegularMul.cal_crit_dmg(data),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_personal_crit_dmg",
+                expected_value=0.90,
+                retained_value=lambda data: Calculator.RegularMul.cal_personal_crit_dmg(
+                    data
+                ),
+                reader_value=lambda reader, context: reader.read_personal_crit_damage(
+                    context
+                ),
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
         case_id="anomaly-mastery-proficiency-buildup-base-damage",
         fixture_kwargs={
             "name": "异常乘区-火积蓄基础伤害",

@@ -5037,3 +5037,16 @@
 - Next step:
   - Continue to `US-003` only for focused deterministic label-branch oracle evidence. Do not implement helper extraction, add public full-crit-damage reader APIs, expand `_CalculatorReadSnapshot`, fabricate registered routes, or broaden into unrelated RegularMul / CalAnomaly / Stun / copied-output / event-runtime-listener work.
 ---
+
+## 2026-06-15 08:00 +08:00 - US-003
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-003-add-focused-label-branch-oracle-evidence.md`, `scripts/ralph/checkpoints/2026-06-15-us-003-focused-label-branch-oracle-evidence.md`, `scripts/ralph/plans/slices/us-004-verify-contrast-boundaries-and-snapshot-contract.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `regular-crit_dmg-aftershock-label-and-received-exact` and `regular-crit_dmg-aftershock-label-and-received-cap` replace inferred label-branch parity with deterministic full crit damage oracle evidence.
+  - This story builds test evidence only. It does not replace live production formula code, reader source, validation-runner behavior, registered routes, copied-output/event/runtime/listener paths, old containers, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_crit_dmg(data)` remains the retained inline production formula and still caps with `min(5, crit_dmg)`.
+  - `Calculator.RegularMul.cal_personal_crit_dmg(data)` / `_calculate_personal_crit_damage(...)` remains completed contrast evidence and still excludes label and received full-crit-damage bonuses.
+  - `CalculatorBuffAttributeReader.read_full_crit_damage(...)` remains absent and unauthorized by this PRD.
+- Next step:
+  - Continue to `US-004` contrast-boundary and snapshot-contract verification. Do not implement helper extraction, add public full-crit-damage reader APIs, fabricate registered routes, or broaden into unrelated RegularMul / CalAnomaly / Stun / copied-output / event-runtime-listener work.
+---
