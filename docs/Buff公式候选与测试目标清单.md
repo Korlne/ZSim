@@ -780,6 +780,16 @@ Rollback anchors / same-phase pool：
 | Same-phase pool retained | Registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if named evidence appears, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules. |
 | Next default route | Phase-3 same-phase candidate selection / bounded proposal PRD. Do not continue by generating another full-crit-damage implementation PRD unless focused regression, validation failure, root-workspace source evidence, or reviewer-named evidence reopens it. |
 
+## Current route reconciliation US-001 no-reopen surfaces
+
+结论：current-root route remains Phase-3 same-phase candidate selection / bounded proposal。以下 surface 均为 completed / no-reopen evidence，不是默认实现 backlog：copied-output handler/report implementation、`Calculator.AnomalyMul.cal_res_pen()` selector extraction、AM/AP/impact helper implementation、selected `Calculator.StunMul.get_stun_array()` array implementation、`Calculator.RegularMul.cal_crit_rate(data)` full crit rate、`Calculator.RegularMul.cal_personal_crit_rate(data)` personal crit rate、`Calculator.RegularMul.cal_personal_crit_dmg(data)` personal crit damage、`Calculator.RegularMul.cal_crit_dmg(data)` full crit damage。
+
+| Reopen rule | Evidence boundary |
+| --- | --- |
+| Allowed only with new current-root evidence | focused regression, validation failure, root-workspace source evidence, guardrail, or reviewer-named evidence that identifies the completed surface. |
+| Excluded evidence | `.codex_worktrees/`, `scripts/ralph/archive/`, `scripts/ralph/run-logs/`, logs, generated history, and historical worktree evidence. |
+| Retained next route | Same-phase candidate selection / bounded proposal from registered sample eligibility, remaining RegularMul / retained-only sheer, future Stun evidence, P2 guarded maintenance, retained compatibility, or blocker-only reopen rules. |
+
 ## US-022 行为样本决策矩阵
 
 本矩阵只定义何时需要 registered-team main-loop consistency sample；它不新增 validation profile，不替换生产公式，不把 `--legacy-runtime` / `--candidate-runtime` label 当作真实 runtime switch。

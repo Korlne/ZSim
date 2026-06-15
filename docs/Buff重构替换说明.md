@@ -5220,3 +5220,16 @@
 - Next step:
   - Generate a Phase-3 same-phase candidate selection / bounded proposal PRD from the retained pool. Do not continue by generating another full-crit-damage implementation follow-up unless focused regression, validation failure, root-workspace source evidence, or reviewer-named evidence reopens it.
 ---
+
+## 2026-06-15 13:28 +08:00 - US-001
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-001-reconcile-current-route-and-completed-surfaces.md`, `scripts/ralph/checkpoints/2026-06-15-us-001-reconcile-current-route-and-completed-surfaces.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-002-build-remaining-same-phase-candidate-matrix.md`
+- Replacement note:
+  - `US-001 current route reconciliation` replaces stale follow-up assumptions with durable evidence that the current default is Phase-3 same-phase candidate selection / bounded proposal.
+  - This story is docs/evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Completed surfaces remain no-reopen by default: copied-output handler/report implementation, `cal_res_pen()`, AM/AP/impact, selected Stun array implementation, full crit rate, personal crit rate, personal crit damage, and full crit damage.
+  - Current-root conclusions exclude `.codex_worktrees/`, `scripts/ralph/archive/`, `scripts/ralph/run-logs/`, logs, generated history, and historical worktree evidence.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, validation-runner behavior, registered routes, old containers, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-002` remaining same-phase candidate matrix. Choose from the retained pool instead of reopening completed surfaces without new current-root evidence.
+---
