@@ -3626,6 +3626,7 @@
 - Next step:
   - Continue with US-004 by proving family compatibility and rollback anchors with serial `formula-parity` and `calculator-reads`, without reopening the retained exclusion list.
 ---
+
 ## 2026-06-12 16:24 +08:00 - US-004
 - Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-004-preserve-family-compatibility-and-rollback-anchors.md`, `scripts/ralph/plans/slices/us-005-decide-conditional-runtime-event-and-registered-sample-gates.md`, `scripts/ralph/investigations/2026-06-12-US-004-family-compatibility-rollback-anchors.md`, `scripts/ralph/checkpoints/2026-06-12-us-004-family-compatibility-rollback-anchors.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
 - Replacement note:
@@ -5180,4 +5181,17 @@
   - `calculator-reads`, `implicit-events`, and default validation were skipped by concrete touched-surface criteria, not by omission.
 - Next step:
   - Continue to `US-006` registered sample eligibility. Do not run main-loop consistency or invent registered-route evidence unless a later slice changes live semantics and proves a real registered direct-damage route with nonzero selected full-crit-damage relevance inside an explicit stop tick.
+---
+
+## 2026-06-15 11:40 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-decide-registered-sample-eligibility.md`, `scripts/ralph/investigations/2026-06-15-US-006-registered-sample-eligibility.md`, `scripts/ralph/checkpoints/2026-06-15-us-006-full-crit-damage-registered-sample-eligibility.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 registered sample eligibility packet` replaces chat-only main-loop sample judgment with durable Conditional No-Go evidence for the behavior-preserving full-crit-damage helper implementation.
+  - This story is evidence/bookkeeping only. It does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_crit_dmg(data)` remains delegated through `_calculate_full_crit_damage(...)` with the public signature, `SkillNode` assertion, label branch, `received_crit_dmg_bonus`, and `min(5, crit_dmg)` cap retained.
+  - Existing registered teams/APLs remain unchanged, and `scripts/run_buff_main_loop_consistency.py` remains Conditional No-Go until a future live semantic diff plus a real registered direct-damage route proves nonzero selected full-crit-damage relevance inside an explicit stop tick.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, validation-runner behavior, old containers, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-007` reviewer invariant and rollback gate for the completed helper seam. Do not run main-loop consistency or invent registered-route evidence unless a later slice satisfies the documented eligibility contract.
 ---
