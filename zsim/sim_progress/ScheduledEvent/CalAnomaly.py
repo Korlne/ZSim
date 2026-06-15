@@ -153,6 +153,20 @@ def _calculate_disorder_stun_multiplier(
     )
 
 
+def _calculate_polarity_disorder_base_damage(
+    *,
+    base_disorder_damage: float | np.float64,
+    yanagi_ap: float | np.float64,
+    polarity_disorder_ratio: float | np.float64,
+    additional_dmg_ap_ratio: float | np.float64,
+) -> np.float64:
+    """计算极性紊乱最终基础伤害，保留柳异常精通追加项。"""
+    return np.float64(
+        (base_disorder_damage * polarity_disorder_ratio)
+        + (yanagi_ap * additional_dmg_ap_ratio)
+    )
+
+
 class CalAnomaly:
     def __init__(
         self,
@@ -409,9 +423,27 @@ class CalPolarityDisorder(CalDisorder):
             enemy_obj=enemy_obj, dynamic_buff=dynamic_buff, character_obj=yanagi_obj
         )
         ap = Cal.AnomalyMul.cal_ap(yanagi_mul)
-        self.final_multipliers[0] = (
-            self.final_multipliers[0] * disorder_obj.polarity_disorder_ratio
-        ) + (ap * disorder_obj.additional_dmg_ap_ratio)
+        self.final_multipliers[0] = self.cal_polarity_disorder_base_dmg(
+            np.float64(self.final_multipliers[0]),
+            np.float64(ap),
+            polarity_disorder_ratio=disorder_obj.polarity_disorder_ratio,
+            additional_dmg_ap_ratio=disorder_obj.additional_dmg_ap_ratio,
+        )
+
+    def cal_polarity_disorder_base_dmg(
+        self,
+        base_disorder_damage: np.float64,
+        yanagi_ap: np.float64,
+        *,
+        polarity_disorder_ratio: float | np.float64,
+        additional_dmg_ap_ratio: float | np.float64,
+    ) -> np.float64:
+        return _calculate_polarity_disorder_base_damage(
+            base_disorder_damage=base_disorder_damage,
+            yanagi_ap=yanagi_ap,
+            polarity_disorder_ratio=polarity_disorder_ratio,
+            additional_dmg_ap_ratio=additional_dmg_ap_ratio,
+        )
 
     def __find_yanagi(self) -> Yanagi | None:
         yanagi_obj: Character | None = self.sim_instance.char_data.char_obj_dict.get("柳", None)

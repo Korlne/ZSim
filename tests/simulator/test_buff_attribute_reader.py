@@ -7084,6 +7084,12 @@ def test_cal_polarity_disorder_formula_inputs_and_payload_boundary(
             character_obj=yanagi,
         )
     ) == pytest.approx(case.expected_yanagi_ap)
+    assert calculator.cal_polarity_disorder_base_dmg(
+        np.float64(case.expected_base_disorder_dmg),
+        np.float64(case.expected_yanagi_ap),
+        polarity_disorder_ratio=case.polarity_disorder_ratio,
+        additional_dmg_ap_ratio=case.additional_dmg_ap_ratio,
+    ) == pytest.approx(case.expected_final_multipliers[0])
     np.testing.assert_allclose(
         calculator.final_multipliers,
         np.array(case.expected_final_multipliers, dtype=np.float64),

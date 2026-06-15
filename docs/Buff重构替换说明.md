@@ -5624,3 +5624,17 @@
 - Next step:
   - Continue to `US-004` for bounded `CalPolarityDisorder` helper work while keeping copied payload / listener-facing sentinel fields outside formula expectations.
 ---
+
+## 2026-06-16 01:22 +08:00 - US-004
+- Files changed: `zsim/sim_progress/ScheduledEvent/CalAnomaly.py`, `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-004-calpolaritydisorder-formula-helper.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `_calculate_polarity_disorder_base_damage(...)` replaces the inline final `CalPolarityDisorder` base-damage adjustment with a module-local helper seam.
+  - `CalPolarityDisorder.cal_polarity_disorder_base_dmg(...)` keeps the retained class-level formula anchor explicit while delegating only the final arithmetic.
+- Compatibility retained:
+  - `__find_yanagi()` remains the Yanagi source and still raises `AssertionError("没柳你哪来的极性紊乱")` when the registered object is missing or not `Yanagi`.
+  - `MulData(enemy_obj=..., dynamic_buff=..., character_obj=yanagi_obj)` construction and `Calculator.AnomalyMul.cal_ap(...)` input behavior remain in `CalPolarityDisorder.__init__`.
+  - `polarity_disorder_ratio` and `additional_dmg_ap_ratio` still drive the same final base multiplier formula, covered by `test_cal_polarity_disorder_formula_inputs_and_payload_boundary`.
+  - No copied-output constructor, handler/report payload, event queue, listener, runtime write, validation-runner, reader API, old-container, or retained compatibility surface changed.
+- Next step:
+  - Continue to `US-005` for the bounded `CalAbloom` ratio helper and keep copied payload / event/runtime boundary checks outside formula helper arithmetic unless the active slice requires them.
+---
