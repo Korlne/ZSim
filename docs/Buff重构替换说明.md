@@ -5406,3 +5406,15 @@
 - Next step:
   - Continue to `US-003` for the resistance / vulnerability / special scalar group. Reuse the same helper-seam pattern only where focused oracle coverage and scoped mypy remain deterministic.
 ---
+
+## 2026-06-15 18:38 +08:00 - US-003
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-003-resistance-vulnerability-and-special-scalar-group.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `_calculate_resistance_multiplier(...)`, `_calculate_damage_vulnerability(...)`, `_calculate_stun_vulnerability(...)`, and `_calculate_special_multiplier(...)` prepare to replace the retained inline bodies of `Calculator.RegularMul.cal_res_mul(...)`, `cal_dmg_vulnerability(...)`, `cal_stun_vulnerability(data)`, and `cal_special_mul(data)` while preserving the public static method signatures.
+  - `test_regular_mul_branch_matrix_res_vulnerability_and_special_delegate_to_module_helpers()` adds seam-specific delegation evidence without duplicating existing `regular_mul_branch_matrix` numeric rows.
+- Compatibility retained:
+  - Optional element override, `snapshot_res_pen`, all-res stack, all-vulnerability stack, enemy dynamic stun read, stunned/non-stunned vulnerability, and special multiplier behavior remain covered by branch-matrix and focused delegation verification.
+  - `CalculatorBuffAttributeReader`, `_CalculatorReadSnapshot`, CalAnomaly behavior, registered routes, validation-runner behavior, explicit ports/adapters, old containers, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-004` for the conditional defense helper group. Stop at No-Go if focused oracle coverage or public-contract boundaries are not narrow enough.
+---

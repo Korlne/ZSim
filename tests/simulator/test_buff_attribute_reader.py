@@ -4797,6 +4797,132 @@ def test_regular_mul_damage_bonus_delegates_to_module_helper(
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
 
 
+def test_regular_mul_branch_matrix_res_vulnerability_and_special_delegate_to_module_helpers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_attribute_read_fixture(
+        name="抗性易伤特殊倍率委托",
+        damage_ratio=1.0,
+        hit_times=1,
+        diff_multiplier=0,
+        element_type=1,
+        char_buff_count=1,
+        enemy_debuff_count=1,
+    )
+    fixture.enemy.dynamic.stun = True
+    fixture.enemy.stun_DMG_take_ratio = 0.5
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(
+            fire_dmg_res_decrease=0.05,
+            fire_res_pen_increase=0.07,
+            all_dmg_res_decrease=0.03,
+            all_res_pen_increase=0.02,
+            fire_vulnerability=0.25,
+            all_vulnerability=0.10,
+            stun_vulnerability_increase=0.40,
+            stun_vulnerability_increase_all_time=0.15,
+            special_multiplier_zone=0.60,
+        ),
+    )
+    retained_data = _legacy_multiplier_data(fixture)
+    helper_calls: list[tuple[Any, ...]] = []
+
+    def fake_calculate_resistance_multiplier(
+        enemy_obj: Any,
+        dynamic_statement: Any,
+        element_type: Any,
+        *,
+        snapshot_res_pen: float = 0,
+    ) -> float:
+        helper_calls.append(
+            (
+                "resistance",
+                enemy_obj,
+                dynamic_statement,
+                element_type,
+                snapshot_res_pen,
+            )
+        )
+        return 0.42
+
+    def fake_calculate_damage_vulnerability(
+        dynamic_statement: Any, element_type: Any
+    ) -> float:
+        helper_calls.append(("damage-vulnerability", dynamic_statement, element_type))
+        return 1.23
+
+    def fake_calculate_stun_vulnerability(
+        enemy_obj: Any, dynamic_statement: Any
+    ) -> float:
+        helper_calls.append(("stun-vulnerability", enemy_obj, dynamic_statement))
+        return 2.34
+
+    def fake_calculate_special_multiplier(dynamic_statement: Any) -> float:
+        helper_calls.append(("special", dynamic_statement))
+        return 3.45
+
+    monkeypatch.setattr(
+        calculator_module,
+        "_calculate_resistance_multiplier",
+        fake_calculate_resistance_multiplier,
+    )
+    monkeypatch.setattr(
+        calculator_module,
+        "_calculate_damage_vulnerability",
+        fake_calculate_damage_vulnerability,
+    )
+    monkeypatch.setattr(
+        calculator_module,
+        "_calculate_stun_vulnerability",
+        fake_calculate_stun_vulnerability,
+    )
+    monkeypatch.setattr(
+        calculator_module,
+        "_calculate_special_multiplier",
+        fake_calculate_special_multiplier,
+    )
+
+    assert isinstance(retained_data.judge_node, SkillNode)
+    judge_node = retained_data.judge_node
+    assert Calculator.RegularMul.cal_res_mul(retained_data) == pytest.approx(0.42)
+    assert Calculator.RegularMul.cal_res_mul(
+        retained_data,
+        element_type=3,
+        snapshot_res_pen=0.44,
+    ) == pytest.approx(0.42)
+    assert Calculator.RegularMul.cal_dmg_vulnerability(retained_data) == pytest.approx(
+        1.23
+    )
+    assert Calculator.RegularMul.cal_dmg_vulnerability(
+        retained_data,
+        element_type=4,
+    ) == pytest.approx(1.23)
+    assert Calculator.RegularMul.cal_stun_vulnerability(retained_data) == pytest.approx(
+        2.34
+    )
+    assert Calculator.RegularMul.cal_special_mul(retained_data) == pytest.approx(3.45)
+    assert helper_calls == [
+        (
+            "resistance",
+            retained_data.enemy_obj,
+            retained_data.dynamic,
+            judge_node.element_type,
+            0,
+        ),
+        ("resistance", retained_data.enemy_obj, retained_data.dynamic, 3, 0.44),
+        (
+            "damage-vulnerability",
+            retained_data.dynamic,
+            judge_node.element_type,
+        ),
+        ("damage-vulnerability", retained_data.dynamic, 4),
+        ("stun-vulnerability", retained_data.enemy_obj, retained_data.dynamic),
+        ("special", retained_data.dynamic),
+    ]
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+
+
 def test_regular_mul_full_crit_rate_delegates_to_module_helper(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

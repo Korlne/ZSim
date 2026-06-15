@@ -278,6 +278,89 @@ def _calculate_damage_bonus(
     )
 
 
+def _calculate_resistance_multiplier(
+    enemy_obj: Any,
+    dynamic_statement: Any,
+    element_type: ElementType,
+    *,
+    snapshot_res_pen: float = 0,
+) -> float:
+    # 获取抗性区，初始化为0
+    if element_type == 0:
+        element_res = (
+            enemy_obj.PHY_damage_resistance
+            - dynamic_statement.physical_dmg_res_decrease
+            - dynamic_statement.physical_res_pen_increase
+        )
+    elif element_type == 1:
+        element_res = (
+            enemy_obj.FIRE_damage_resistance
+            - dynamic_statement.fire_dmg_res_decrease
+            - dynamic_statement.fire_res_pen_increase
+        )
+    elif element_type == 2 or element_type == 5:
+        element_res = (
+            enemy_obj.ICE_damage_resistance
+            - dynamic_statement.ice_dmg_res_decrease
+            - dynamic_statement.ice_res_pen_increase
+        )
+    elif element_type == 3:
+        element_res = (
+            enemy_obj.ELECTRIC_damage_resistance
+            - dynamic_statement.electric_dmg_res_decrease
+            - dynamic_statement.electric_res_pen_increase
+        )
+    elif element_type in [4, 6]:
+        element_res = (
+            enemy_obj.ETHER_damage_resistance
+            - dynamic_statement.ether_dmg_res_decrease
+            - dynamic_statement.ether_res_pen_increase
+        )
+    else:
+        raise AssertionError(INVALID_ELEMENT_ERROR)
+    return (
+        1
+        - element_res
+        + dynamic_statement.all_dmg_res_decrease
+        + dynamic_statement.all_res_pen_increase
+        + snapshot_res_pen
+    )
+
+
+def _calculate_damage_vulnerability(
+    dynamic_statement: Any, element_type: ElementType
+) -> float:
+    if element_type == 0:
+        element_vulnerability = dynamic_statement.physical_vulnerability
+    elif element_type == 1:
+        element_vulnerability = dynamic_statement.fire_vulnerability
+    elif element_type == 2 or element_type == 5:
+        element_vulnerability = dynamic_statement.ice_vulnerability
+    elif element_type == 3:
+        element_vulnerability = dynamic_statement.electric_vulnerability
+    elif element_type in [4, 6]:
+        element_vulnerability = dynamic_statement.ether_vulnerability
+    else:
+        raise AssertionError(INVALID_ELEMENT_ERROR)
+    return 1 + element_vulnerability + dynamic_statement.all_vulnerability
+
+
+def _calculate_stun_vulnerability(enemy_obj: Any, dynamic_statement: Any) -> float:
+    stun_status: bool = enemy_obj.dynamic.stun
+    if stun_status:
+        return (
+            1
+            + enemy_obj.stun_DMG_take_ratio
+            + dynamic_statement.stun_vulnerability_increase
+            + dynamic_statement.stun_vulnerability_increase_all_time
+        )
+    return 1 + dynamic_statement.stun_vulnerability_increase_all_time
+
+
+def _calculate_special_multiplier(dynamic_statement: Any) -> float:
+    return 1 + dynamic_statement.special_multiplier_zone
+
+
 def _build_stun_multiplier_array(
     imp: float,
     stun_ratio: float,
@@ -1125,49 +1208,12 @@ class Calculator:
             if element_type is None:
                 assert isinstance(data.judge_node, SkillNode)
                 element_type = data.judge_node.element_type
-            # 获取抗性区，初始化为0
-            if element_type == 0:
-                element_res = (
-                    data.enemy_obj.PHY_damage_resistance
-                    - data.dynamic.physical_dmg_res_decrease
-                    - data.dynamic.physical_res_pen_increase
-                )
-            elif element_type == 1:
-                element_res = (
-                    data.enemy_obj.FIRE_damage_resistance
-                    - data.dynamic.fire_dmg_res_decrease
-                    - data.dynamic.fire_res_pen_increase
-                )
-            elif element_type == 2 or element_type == 5:
-                element_res = (
-                    data.enemy_obj.ICE_damage_resistance
-                    - data.dynamic.ice_dmg_res_decrease
-                    - data.dynamic.ice_res_pen_increase
-                )
-            elif element_type == 3:
-                element_res = (
-                    data.enemy_obj.ELECTRIC_damage_resistance
-                    - data.dynamic.electric_dmg_res_decrease
-                    - data.dynamic.electric_res_pen_increase
-                )
-            elif element_type in [4, 6]:
-                element_res = (
-                    data.enemy_obj.ETHER_damage_resistance
-                    - data.dynamic.ether_dmg_res_decrease
-                    - data.dynamic.ether_res_pen_increase
-                )
-            else:
-                raise AssertionError(INVALID_ELEMENT_ERROR)
-            res_mul = (
-                1
-                - element_res
-                + data.dynamic.all_dmg_res_decrease
-                + data.dynamic.all_res_pen_increase
-                + snapshot_res_pen
+            res_mul = _calculate_resistance_multiplier(
+                data.enemy_obj,
+                data.dynamic,
+                element_type,
+                snapshot_res_pen=snapshot_res_pen,
             )
-            # if snapshot_res_pen == 0:
-            #     if isinstance(data.judge_node, SkillNode) and data.judge_node.char_name == "仪玄" and data.judge_node.skill.trigger_buff_level in [2, 6]:
-            #         print(element_res, data.dynamic.all_dmg_res_decrease, data.dynamic.all_res_pen_increase)
             return res_mul
 
         @staticmethod
@@ -1180,20 +1226,10 @@ class Calculator:
             if element_type is None:
                 assert isinstance(data.judge_node, SkillNode)
                 element_type = data.judge_node.element_type
-            # 获取抗性区，初始化为0
-            if element_type == 0:
-                element_vulnerability = data.dynamic.physical_vulnerability
-            elif element_type == 1:
-                element_vulnerability = data.dynamic.fire_vulnerability
-            elif element_type == 2 or element_type == 5:
-                element_vulnerability = data.dynamic.ice_vulnerability
-            elif element_type == 3:
-                element_vulnerability = data.dynamic.electric_vulnerability
-            elif element_type in [4, 6]:
-                element_vulnerability = data.dynamic.ether_vulnerability
-            else:
-                raise AssertionError(INVALID_ELEMENT_ERROR)
-            dmg_vulnerability = 1 + element_vulnerability + data.dynamic.all_vulnerability
+            dmg_vulnerability = _calculate_damage_vulnerability(
+                data.dynamic,
+                element_type,
+            )
             return dmg_vulnerability
 
         @staticmethod
@@ -1202,21 +1238,11 @@ class Calculator:
             失衡时：失衡易伤区 = 1 + 怪物失衡易伤 + 失衡易伤增幅 + 全时段失衡易伤（扳机核心被动那种）
             非失衡时：失衡易伤区 = 1 + 全时段失衡易伤（扳机核心被动那种）
             """
-            stun_status: bool = data.enemy_obj.dynamic.stun
-            if stun_status:
-                stun_vulnerability = (
-                    1
-                    + data.enemy_obj.stun_DMG_take_ratio
-                    + data.dynamic.stun_vulnerability_increase
-                    + data.dynamic.stun_vulnerability_increase_all_time
-                )
-            else:
-                stun_vulnerability = 1 + data.dynamic.stun_vulnerability_increase_all_time
-            return stun_vulnerability
+            return _calculate_stun_vulnerability(data.enemy_obj, data.dynamic)
 
         @staticmethod
         def cal_special_mul(data: MultiplierData) -> float:
-            return 1 + data.dynamic.special_multiplier_zone
+            return _calculate_special_multiplier(data.dynamic)
 
         @staticmethod
         def cal_sheer_dmg_bonus(data: MultiplierData) -> float:
