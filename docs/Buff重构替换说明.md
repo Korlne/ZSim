@@ -5771,3 +5771,16 @@
 - Next step:
   - Continue to `US-007` final handoff docs and same-phase candidate pool preservation. Do not generate another generic selection PRD from the completed retained field matrix.
 ---
+
+## 2026-06-16 04:20 +08:00 - US-007
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-007-final-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-16-us-007-final-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`
+- Replacement note:
+  - `US-007 final handoff docs and same-phase pool preservation` replaces chat-only next-route confidence with durable handoff docs, rollback anchors, verifier evidence, reviewer invariant verdict, and a concrete next default PRD route.
+  - This story only closes a documentation / Ralph evidence boundary; it does not replace live production `AnomalyBarClass.py`, `UpdateAnomaly.py`, `Calculator.py`, `CalAnomaly.py`, copied-output constructors, handler/report payloads, validation-runner behavior, registered teams/APLs, event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime writes, public reader/snapshot APIs, or retained compatibility paths.
+- Compatibility retained:
+  - `AnomalyBar.current_ndarray` and `UpdateAnomaly.py` write-path field matrix evidence remains retained from US-002 through US-006; US-006 records No-Go for additional production work inside this PRD.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit dispatch/runtime ports, dot runtime registration/removal, copied-output constructors, old containers, retained formula/read compatibility, validation-runner behavior, and registered routes remain unchanged.
+  - Focused pytest, scoped mypy, `formula-parity`, `implicit-events`, and `calculator-reads` evidence from US-006 remains the retained behavior gate; US-007 adds docs diff, JSON sanity, UTF-8 / mojibake scan, scoped Ralph tooling typecheck, checkpoint, and reviewer verdict.
+- Next step:
+  - Generate the next PRD as enemy dynamic / `AnomalyBar.__get_duration_enemy_buffs()` anomaly-duration read matrix bounded characterization or same-PRD Go / No-Go closure. Preserve retained-only sheer blocker package, registered behavior sample eligibility only for live semantic diffs, future Stun evidence only when named, P2-A through P2-G guarded maintenance only on concrete blockers, retained compatibility, and blocker-only phase-1 reopen rules as same-phase pool entries.
+---
