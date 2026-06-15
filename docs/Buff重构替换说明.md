@@ -5245,3 +5245,15 @@
 - Next step:
   - Continue to `US-003` and choose one exact matrix candidate or record No-Go. Do not convert retained-pool entries into implementation work without named oracle gaps, source evidence, focused regression, validation failure, and rollback anchors.
 ---
+
+## 2026-06-15 14:01 +08:00 - US-003
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-003-audit-remaining-regularmul-direct-damage-branches.md`, `scripts/ralph/investigations/2026-06-15-US-003-regularmul-direct-damage-branch-audit.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-003 RegularMul direct-damage branch audit` replaces chat-only branch risk judgment with durable classification for non-sheer `Calculator.RegularMul` base damage, damage bonus, defense, resistance, vulnerability, stun vulnerability, special multiplier, and crit expectation surfaces.
+  - This story is audit/docs/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Completed crit helper seams remain no-reopen contrast anchors; retained-only sheer remains excluded from the non-sheer direct-damage audit except as contrast.
+  - `Calculator.RegularMul`, `CalculatorBuffAttributeReader`, `_CalculatorReadSnapshot`, `tests/simulator/test_buff_attribute_reader.py`, explicit ports/adapters, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, validation profiles, registered-route policy, old containers, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-004` retained-only sheer No-Go revalidation. Later candidate selection must choose one exact surface or record No-Go; if the selected surface lacks rows, close the focused oracle/typecheck contract before any production proposal.
+---
