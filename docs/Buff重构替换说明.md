@@ -5652,3 +5652,15 @@
 - Next step:
   - Continue to `US-006` for copied-output and event/runtime boundary gate evidence. Do not reopen Abloom formula arithmetic, handler payloads, listener broadcasts, scheduled publish, copied-output constructors, runtime command behavior, or retained compatibility surfaces without a new active slice.
 ---
+
+## 2026-06-16 01:59 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-conditional-copied-output-and-event-boundary-gate.md`, `scripts/ralph/investigations/2026-06-16-US-006-copied-output-event-boundary-gate.md`, `scripts/ralph/checkpoints/2026-06-16-us-006-copied-output-event-boundary-gate.md`, `scripts/ralph/plans/slices/us-007-serial-formula-and-reader-validation.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 copied-output / event boundary gate packet` replaces chat-only boundary confidence with durable current-root `rg`, CodeGraph, branch/worktree/staged diff-filter evidence, checkpoint, and reviewer verdict.
+  - This story does not replace or edit live production formula code, focused test source, copied-output constructors, handler/report payloads, validation-runner behavior, registered teams/APLs, event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, public reader/snapshot APIs, or retained compatibility paths.
+- Compatibility retained:
+  - `CopyAnomalyForOutput.py`, `UpdateAnomaly.py`, anomaly/disorder/polarity/abloom handlers, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, old containers, listener broadcast, dot runtime registration, and validation-runner behavior remain unchanged.
+  - `implicit-events` was skipped because `base_to_head`, worktree, and staged diff filters all reported `boundary_hits=0`; scoped mypy exited `0` with `Success: no issues found in 2 source files`.
+- Next step:
+  - Continue to `US-007` serial formula/read validation gates. Keep `implicit-events` conditional on new copied-output, event/runtime/listener, dot-runtime, same-tick write, validation-runner, old-container, or retained compatibility changes.
+---
