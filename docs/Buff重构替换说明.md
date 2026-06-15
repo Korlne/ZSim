@@ -5454,3 +5454,16 @@
 - Next step:
   - Continue to `US-007` public contract review. A future implementation slice for this base group must first add direct `base_attr=2/3` oracle rows with reader-snapshot parity and no `char_instance` passthrough.
 ---
+
+## 2026-06-15 19:41 +08:00 - US-007
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-007-public-contract-and-retained-boundary-review.md`, `scripts/ralph/investigations/2026-06-15-US-007-public-contract-boundary-review.md`, `scripts/ralph/checkpoints/2026-06-15-us-007-public-contract-boundary-review.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-008-serial-formula-and-reader-validation-gates.md`
+- Replacement note:
+  - `US-007 public contract review packet` replaces chat-only reviewer assurance with durable current-root evidence for `Calculator.RegularMul`, `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, dispatch/runtime/read-port/facade contracts, old containers, listener broadcast, dot runtime registration, and event queue semantics.
+  - This story does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Current-root callable `Calculator.RegularMul` method shape remains retained; the recorded `cal_pen_ratio(...)` annotation-only nuance is covered by the required `implicit-events` gate and does not change call arity, keyword-only behavior, or defaults.
+  - `_CalculatorReadSnapshot` remains private and unchanged; no public `CalculatorBuffAttributeReader` damage-bonus / full-damage API was introduced.
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, old containers, synchronous listener broadcast, dot runtime registration, and event queue semantics remain untouched.
+- Next step:
+  - Continue to `US-008` serial formula and reader validation gates. If validation or review rejects the annotation-only `cal_pen_ratio(...)` nuance, split a separate production-authorized rollback slice before any broad validation/handoff claim.
+---
