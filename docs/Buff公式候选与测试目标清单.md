@@ -4,6 +4,8 @@
 
 本清单服务于 Phase 3 公式等价测试设计。当前故事只建立候选面和测试目标证据，不替换 `Calculator.py`、`CalAnomaly.py`、复制异常 / 紊乱输出公式，也不改变 `ScheduleDispatchPort`、`RuntimeCommandPort` 或旧容器兼容路径。
 
+当前 PRD 生成入口以 `docs/Buff重构下阶段计划草稿.md` 的 `## 合理 PRD 形状硬约束` 和 `## 当前默认下一步` 为准。本文历史 handoff 中保留的 `same-phase candidate selection / bounded proposal` 只代表当时的 pool-retention / no-reopen 记录；后续不得据此单独生成新的 full-cycle selection / proposal PRD。
+
 ## 扫描边界
 
 - 根工作区扫描排除：`.codex_worktrees/`、`__pycache__/`、`archive/`、`.git/`、生成日志、Ralph 历史归档和历史重复副本。
@@ -49,6 +51,21 @@ Retained boundaries / same-phase pool：
 - Unresolved same-phase candidates remain available for future reselection after the batch: registered behavior sample eligibility, retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if named evidence appears, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules.
 - No new Buff coupling or coupling-classification evidence was discovered in this docs/evidence slice, so `docs/旧Buff系统耦合审查结果.md` does not need an update.
 
+## Current RegularMul non-sheer base implementation PRD US-006 final handoff
+
+结论：Implemented / no-op verified for the non-sheer base damage / base-attribute implementation batch. This section supersedes the earlier US-010 No-Go for non-sheer `cal_base_dmg(data)` / `cal_base_attr(base_attr in 0..3, data)` only; retained-only sheer and the broader retained pool remain separate.
+
+| Contract area | Current non-sheer base handoff |
+| --- | --- |
+| Implemented / no-op verified surfaces | `Calculator.RegularMul.cal_base_attr(base_attr in 0..3, data)` -> `_calculate_non_sheer_base_attribute(base_attr, static_statement, dynamic_statement)`；`Calculator.RegularMul.cal_base_dmg(data)` -> `_calculate_base_damage(damage_ratio, attr, dynamic_statement)` after retained `SkillNode` / `diff_multiplier` / `cal_base_attr(base_attr, data)` ordering. |
+| No-Go / retained-only surfaces | `base_attr=4`, `cal_sheer_dmg_bonus(data)`, runtime `char_instance.sheer_attack_conversion_rate`, public `CalculatorBuffAttributeReader` API expansion, `_CalculatorReadSnapshot` expansion, registered team / APL creation, validation-runner rewrite, event/runtime/listener paths, old-container deletion, and retained compatibility cleanup remain excluded. |
+| Validation evidence | Focused pytest nodeids for five `regular-base-*` oracle rows plus base-damage helper formula/delegation coverage exited `0` with `8 passed`; scoped mypy over `Calculator.py` and `test_buff_attribute_reader.py` exited `0` with `Success: no issues found in 2 source files`; serial `formula-parity` exited `0` with base `2 passed`, isolated `3 passed`, focused formula `159 passed`, mypy clean for 9 files, and `[验证完成] 所有步骤通过`; serial `calculator-reads` exited `0` with base `2 passed`, isolated `3 passed`, focused reader `259 passed`, mypy clean for 22 files, and `[验证完成] 所有步骤通过`. |
+| Rollback anchors | `Calculator.RegularMul.cal_base_attr(...)`, `_calculate_non_sheer_base_attribute(...)`, `Calculator.RegularMul.cal_base_dmg(data)`, `_calculate_base_damage(...)`, `regular-base-dmg-neutral-atk`, `regular-base-dmg-dynamic-atk`, `regular-base-attr-static-hp`, `regular-base-attr-dynamic-defense`, `regular-base-attr-dynamic-anomaly-proficiency`, base-damage helper tests, retained `formula-parity`, retained `calculator-reads`, and this doc set. |
+| Retained boundaries | Public method signatures and call shape remain retained; `_CalculatorReadSnapshot` stays private and unchanged; no public base-damage reader API, registered route, validation-runner behavior, old container, event queue, dispatch/runtime port, listener broadcast, dot runtime registration, same-tick runtime write, copied-output path, lifecycle container, or retained compatibility behavior changed. |
+| Registered sample decision | Conditional No-Go. This PRD is behavior-preserving helper extraction / docs handoff, with no live production semantic diff and no real registered route evidence requiring a main-loop sample; no validation-only team, fake APL, fixture-only route, or retained-vs-retained sample should be created. |
+| Next route / anti-loop | Future Phase 3 PRDs should be implementation batches or same-PRD Go / No-Go closures. Do not regenerate a standalone full-cycle same-phase candidate-selection / proposal-readiness PRD for this completed non-sheer micro-surface. Registered behavior sample eligibility, retained-only sheer, future Stun evidence only on named regression, P2 guarded maintenance only on concrete blocker evidence, retained compatibility, and blocker-only reopen rules remain retained pool entries, not active defaults. |
+| Coupling review | No new Buff coupling or coupling-classification evidence was discovered, so `docs/旧Buff系统耦合审查结果.md` remains unchanged. |
+
 ## Current RegularMul scalar helper-family implementation PRD US-010 final handoff
 
 结论：Implemented / no-op verified for the bounded helper-family batch, with explicit No-Go retained for non-sheer base damage / base attr and retained-only sheer. This PRD updates handoff evidence only in US-010; production helper seams were completed by earlier stories in the same PRD and remain behavior-preserving.
@@ -60,7 +77,7 @@ Retained boundaries / same-phase pool：
 | Validation evidence | Focused RegularMul pytest exited `0` with `28 passed`; scoped formula/read mypy exited `0` with `Success: no issues found in 9 source files`; `formula-parity` exited `0` with base `2 passed`, isolated `3 passed`, focused formula `154 passed`, and mypy clean for 9 files; `calculator-reads` exited `0` with base `2 passed`, isolated `3 passed`, focused reader `254 passed`, and mypy clean for 22 files. US-010 adds docs scoped mypy, JSON sanity, UTF-8 / mojibake scan, focused `git diff --check`, checkpoint, and reviewer verdict. |
 | Retained boundaries | Public `Calculator.RegularMul` method signatures and call shape remain retained; `_CalculatorReadSnapshot` stays private and unchanged; no public damage/full-damage reader API, registered team/APL, validation-runner behavior, old container, event queue, dispatch/runtime port, listener broadcast, dot runtime registration, same-tick runtime write, copied-output path, lifecycle container, or retained compatibility behavior changed. |
 | Registered sample decision | Conditional No-Go. The batch has no live production semantic diff and no real registered route evidence proving nonzero selected formula/event relevance inside an explicit stop tick; no validation-only team, fake APL, fixture-only route, or retained-vs-retained sample should be created. |
-| Next route | Default next PRD is Phase-3 same-phase candidate selection / bounded proposal. It must choose one exact surface from the retained pool and preserve registered behavior sample eligibility, remaining RegularMul / retained-only sheer follow-up, future Stun evidence, P2 guarded maintenance, retained compatibility, and blocker-only reopen rules. |
+| Next route | Default next PRD is Phase-3 `Calculator.RegularMul` non-sheer base damage / base-attribute bounded implementation batch, or No-Go closure inside that same PRD. Do not generate another full-cycle same-phase candidate-selection / proposal-readiness PRD unless current-root source, focused tests, validation, or reviewer evidence contradicts the retained route. |
 
 ## US-014 formula-parity validation profile 决策
 
@@ -309,7 +326,7 @@ Same-phase candidate pool：
 | P2-A through P2-G guarded maintenance | Completed guarded buckets. | Reopen only on concrete guardrail / focused test / validation evidence naming the failed file, symbol or gate. |
 | Retained compatibility / blocker-only reopen | No new coupling classification in this implementation handoff. | Reopen only with root-workspace source, guardrail, focused test, validation, or real registered-route blocker evidence. |
 
-Next default PRD：Phase-3 same-phase candidate selection / bounded proposal PRD。Choose one exact bounded slice from the same-phase pool, record focused tests, scoped mypy, rollback anchors, registered sample conditions, retained gates and non-goals, and do not directly convert the new Markdown PRD into `scripts/ralph/prd.json` in the same generation step.
+Historical next-default note：this older handoff kept the same-phase pool available. It is no longer the current default route. Future PRD generation must follow `docs/Buff重构下阶段计划草稿.md` `## 合理 PRD 形状硬约束` and `## 当前默认下一步`, so generic candidate-selection / proposal-readiness must be folded into an implementation PRD preflight unless there is contradictory current-root evidence.
 
 ## Current candidate-selection PRD US-004 exact bounded candidate decision
 
@@ -415,7 +432,7 @@ Same-phase candidate pool：
 | P2-A through P2-G guarded maintenance | Completed guarded buckets. | Reopen only on concrete guardrail / focused test / validation evidence naming the failed file, symbol, or gate. |
 | Retained compatibility / blocker-only reopen | No new coupling classification in this implementation handoff. | Reopen only with root-workspace source, guardrail, focused test, validation, or real registered-route blocker evidence. |
 
-Next default PRD：Phase-3 same-phase candidate selection / bounded proposal PRD。Choose one exact bounded slice from the retained pool, record focused tests, scoped mypy, rollback anchors, registered-sample conditions, retained gates and non-goals, and do not directly convert the new Markdown PRD into `scripts/ralph/prd.json` in the same generation step。
+Historical next-default note：this older handoff kept the same-phase pool available. It is no longer the current PRD route; use `docs/Buff重构下阶段计划草稿.md` for the current implementation-batch default, and fold any selection/proposal checks into that PRD preflight.
 
 ## Current route reconciliation PRD US-001
 
@@ -743,7 +760,7 @@ Non-selected matrix rows stay separate：`cal_base_dmg()` / `cal_base_attr(0/1/2
 | Reviewer / invariant verdict | PASS. Changed files stay inside US-008 handoff docs and Ralph evidence/bookkeeping. Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, dispatch/runtime ports, old containers, validation-runner behavior, registered routes, and retained compatibility paths remain unchanged. |
 | Rollback anchors | `Calculator.RegularMul.cal_personal_crit_dmg(data)`, `_calculate_personal_crit_damage(...)`, `CalculatorBuffAttributeReader.read_personal_crit_damage(context)`, `_CalculatorReadSnapshot`, focused personal crit damage / branch-matrix / crit-family tests, `formula-parity`, `calculator-reads`, retained Buff docs, old containers, and layer-separation invariants. |
 | Same-phase pool retained | Registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if evidence names one, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules. |
-| Next default route | Phase-3 same-phase candidate selection / bounded proposal PRD. Do not continue by generating another personal-crit-damage implementation PRD unless focused regression, validation failure, root-workspace source evidence, or reviewer-named evidence reopens it. |
+| Next default route | Historical no-reopen note only. Do not generate another personal-crit-damage implementation PRD; also do not generate a generic same-phase candidate-selection PRD from this row. Use the current default in `docs/Buff重构下阶段计划草稿.md`. |
 
 ## Current personal crit rate implementation PRD US-008 final handoff
 
@@ -758,7 +775,7 @@ Non-selected matrix rows stay separate：`cal_base_dmg()` / `cal_base_attr(0/1/2
 | Reviewer verdict | PASS from US-007 and US-008 handoff scope: changed files stay in docs / Ralph evidence / bookkeeping. Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, old containers, validation-runner behavior, registered routes, and retained compatibility remain unchanged. |
 | Go / No-Go verdict | Implemented / no-op verified. Reopen only on focused regression, validation failure, root-workspace source evidence, or reviewer-named evidence that identifies a concrete bug; stop and split if any future work needs received-crit inclusion, `_CalculatorReadSnapshot` public expansion, full/personal crit bundling, `cal_crit_expect()` semantics, broad formula branch work, registered-team fixture creation, validation-runner rewrite, old-container deletion, event/runtime/listener layer merge, or retained compatibility deletion. |
 | Same-phase pool retained | Registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if named evidence appears, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules. |
-| Next default route | Phase-3 same-phase candidate selection / bounded proposal PRD. Do not continue with another personal-crit-rate follow-up unless focused regression, validation failure, root-workspace source evidence, or reviewer-named evidence reopens it. |
+| Next default route | Historical no-reopen note only. Do not generate another personal-crit-rate follow-up; also do not generate a generic same-phase candidate-selection PRD from this row. Use the current default in `docs/Buff重构下阶段计划草稿.md`. |
 
 ## Current implementation PRD US-007 selected crit-rate implementation handoff
 
@@ -867,17 +884,17 @@ Rollback anchors / same-phase pool：
 | Reviewer / invariant verdict | PASS. Changed files stay inside US-008 handoff docs and Ralph evidence/bookkeeping. Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, dispatch/runtime ports, old containers, validation-runner behavior, registered routes, and retained compatibility paths remain unchanged. |
 | Rollback anchors | `Calculator.RegularMul.cal_crit_dmg(data)`, `_calculate_full_crit_damage(...)`, focused full-crit oracle rows, full-vs-personal crit damage tests, `Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, retained `formula-parity`, conditional `calculator-reads`, retained Buff docs, old containers, and layer-separation invariants. |
 | Same-phase pool retained | Registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if named evidence appears, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules. |
-| Next default route | Phase-3 same-phase candidate selection / bounded proposal PRD. Do not continue by generating another full-crit-damage implementation PRD unless focused regression, validation failure, root-workspace source evidence, or reviewer-named evidence reopens it. |
+| Next default route | Historical no-reopen note only. Do not generate another full-crit-damage implementation PRD; also do not generate a generic same-phase candidate-selection PRD from this row. Use the current default in `docs/Buff重构下阶段计划草稿.md`. |
 
 ## Current route reconciliation US-001 no-reopen surfaces
 
-结论：current-root route remains Phase-3 same-phase candidate selection / bounded proposal。以下 surface 均为 completed / no-reopen evidence，不是默认实现 backlog：copied-output handler/report implementation、`Calculator.AnomalyMul.cal_res_pen()` selector extraction、AM/AP/impact helper implementation、selected `Calculator.StunMul.get_stun_array()` array implementation、`Calculator.RegularMul.cal_crit_rate(data)` full crit rate、`Calculator.RegularMul.cal_personal_crit_rate(data)` personal crit rate、`Calculator.RegularMul.cal_personal_crit_dmg(data)` personal crit damage、`Calculator.RegularMul.cal_crit_dmg(data)` full crit damage、current RegularMul scalar helper-family batch (`cal_dmg_bonus` / resistance-vulnerability-special group / defense group / `cal_crit_expect`)。
+结论：completed / no-reopen surfaces remain closed, but this section is no longer the current PRD route. Current route is defined by `docs/Buff重构下阶段计划草稿.md` and should not return to a generic same-phase candidate-selection / bounded-proposal cycle. 以下 surface 均为 completed / no-reopen evidence，不是默认实现 backlog：copied-output handler/report implementation、`Calculator.AnomalyMul.cal_res_pen()` selector extraction、AM/AP/impact helper implementation、selected `Calculator.StunMul.get_stun_array()` array implementation、`Calculator.RegularMul.cal_crit_rate(data)` full crit rate、`Calculator.RegularMul.cal_personal_crit_rate(data)` personal crit rate、`Calculator.RegularMul.cal_personal_crit_dmg(data)` personal crit damage、`Calculator.RegularMul.cal_crit_dmg(data)` full crit damage、current RegularMul scalar helper-family batch (`cal_dmg_bonus` / resistance-vulnerability-special group / defense group / `cal_crit_expect`)。
 
 | Reopen rule | Evidence boundary |
 | --- | --- |
 | Allowed only with new current-root evidence | focused regression, validation failure, root-workspace source evidence, guardrail, or reviewer-named evidence that identifies the completed surface. |
 | Excluded evidence | `.codex_worktrees/`, `scripts/ralph/archive/`, `scripts/ralph/run-logs/`, logs, generated history, and historical worktree evidence. |
-| Retained next route | Same-phase candidate selection / bounded proposal from registered sample eligibility, remaining RegularMul / retained-only sheer, future Stun evidence, P2 guarded maintenance, retained compatibility, or blocker-only reopen rules. |
+| Retained next route | Preserve the retained pool as evidence, but fold selection/proposal checks into the next implementation batch preflight. Do not create another standalone same-phase candidate-selection PRD from this table. |
 
 ## US-022 行为样本决策矩阵
 

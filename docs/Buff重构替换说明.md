@@ -5571,3 +5571,16 @@
 - Next step:
   - Continue to `US-006` handoff docs and anti-loop preservation. Keep final handoff sourced from the current validation evidence and do not reopen retained-only sheer, public snapshot expansion, registered-route, event/runtime/listener, old-container, or retained compatibility surfaces without a new active slice.
 ---
+
+## 2026-06-16 00:01 +08:00 - US-006
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-006-handoff-docs-and-anti-loop-preservation.md`, `scripts/ralph/plans/slices/buff-refactor-phase3-regularmul-nonsheer-base-damage-base-attr-bounded-implementation-next-intake.md`, `scripts/ralph/checkpoints/2026-06-16-us-006-handoff-docs-and-anti-loop-preservation.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-006 handoff docs` replaces stale non-sheer base damage / base-attribute route text with durable implemented / no-op verified evidence for `_calculate_non_sheer_base_attribute(...)` and `_calculate_base_damage(...)`.
+  - This handoff story does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `base_attr=4`, `cal_sheer_dmg_bonus(data)`, public `CalculatorBuffAttributeReader` API expansion, `_CalculatorReadSnapshot` expansion, registered-route creation, validation-runner rewrite, event/runtime/listener changes, old-container deletion, and retained compatibility cleanup remain excluded.
+  - Registered behavior sample eligibility, retained-only sheer, future Stun evidence only on named regression, P2 guarded maintenance only on concrete blocker evidence, retained compatibility, and blocker-only reopen rules remain retained pool entries, not active defaults.
+  - No new Buff coupling or coupling-classification evidence was found, so `docs/旧Buff系统耦合审查结果.md` stays unchanged.
+- Next step:
+  - Generate future Phase 3 PRDs as implementation batches or same-PRD Go / No-Go closures sourced from current-root evidence. Do not create standalone full-cycle same-phase candidate-selection / proposal-readiness PRDs for one completed micro-surface.
+---
