@@ -146,6 +146,32 @@ def _calculate_anomaly_proficiency(
     )
 
 
+def _calculate_non_sheer_base_attribute(
+    base_attr: int, static_statement: Any, dynamic_statement: Any
+) -> float:
+    if base_attr == 0:
+        return (
+            static_statement.atk * (1 + dynamic_statement.field_atk_percentage)
+            + dynamic_statement.atk
+        )
+    if base_attr == 1:
+        return (
+            static_statement.hp * (1 + dynamic_statement.field_hp_percentage)
+            + dynamic_statement.hp
+        )
+    if base_attr == 2:
+        return (
+            static_statement.defense * (1 + dynamic_statement.field_def_percentage)
+            + dynamic_statement.defense
+        )
+    if base_attr == 3:
+        return (
+            static_statement.ap * (1 + dynamic_statement.field_anomaly_proficiency)
+            + dynamic_statement.anomaly_proficiency
+        )
+    raise AssertionError(INVALID_ELEMENT_ERROR)
+
+
 def _calculate_impact(static_statement: Any, dynamic_statement: Any) -> float:
     return (
         static_statement.imp * (1 + dynamic_statement.field_imp_percentage)
@@ -1097,23 +1123,9 @@ class Calculator:
 
         def cal_base_attr(self, base_attr: int, data: MultiplierData):
             """根据base_attr来计算对应属性的值"""
-            if base_attr == 0:
-                # 攻击力 = 局外攻击力 * 局内百分比攻击力 + 局内固定攻击力
-                attr = data.static.atk * (1 + data.dynamic.field_atk_percentage) + data.dynamic.atk
-            # 属性为生命值
-            elif base_attr == 1:
-                attr = data.static.hp * (1 + data.dynamic.field_hp_percentage) + data.dynamic.hp
-            # 属性为防御力
-            elif base_attr == 2:
-                attr = (
-                    data.static.defense * (1 + data.dynamic.field_def_percentage)
-                    + data.dynamic.defense
-                )
-            # 属性为精通
-            elif base_attr == 3:
-                attr = (
-                    data.static.ap * (1 + data.dynamic.field_anomaly_proficiency)
-                    + data.dynamic.anomaly_proficiency
+            if base_attr in [0, 1, 2, 3]:
+                return _calculate_non_sheer_base_attribute(
+                    base_attr, data.static, data.dynamic
                 )
             elif base_attr == 4:
                 assert data.char_instance is not None

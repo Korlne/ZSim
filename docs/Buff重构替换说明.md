@@ -5532,3 +5532,16 @@
 - Next step:
   - Continue to `US-003` for the non-sheer `cal_base_attr(base_attr in 0..3, data)` helper seam. Keep retained-only sheer and public snapshot expansion out of that implementation.
 ---
+
+## 2026-06-15 23:22 +08:00 - US-003
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `scripts/ralph/plans/slices/us-003-implement-non-sheer-base-attribute-helper-seam.md`, `scripts/ralph/checkpoints/2026-06-15-us-003-non-sheer-base-attr-helper-seam.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `_calculate_non_sheer_base_attribute(base_attr, static_statement, dynamic_statement)` replaces the inline non-sheer `Calculator.RegularMul.cal_base_attr(base_attr in 0..3, data)` branch math with a module-local helper seam.
+  - This story does not replace `base_attr=4`, `cal_sheer_dmg_bonus(data)`, public reader/snapshot APIs, registered teams/APLs, validation-runner behavior, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Public `Calculator.RegularMul.cal_base_attr(base_attr, data)` signature and call shape remain unchanged.
+  - `base_attr=4` still uses the existing `char_instance.sheer_attack_conversion_rate` conversion path; no `char_instance` passthrough or `_CalculatorReadSnapshot` expansion was added.
+  - Focused oracle pytest exited `0` with `4 passed, 152 deselected`; scoped mypy exited `0` with `Success: no issues found in 2 source files` plus existing unchecked-body notes only.
+- Next step:
+  - Continue to `US-004` for the `cal_base_dmg(data)` caller helper seam or same-PRD No-Go. Keep retained-only sheer, public snapshot expansion, registered-route creation, and validation-runner changes out of that slice.
+---
