@@ -5356,3 +5356,15 @@
 - Next step:
   - Continue to `US-012` final PRD evidence and conversion readiness. Any later implementation PRD must stay limited to the selected `cal_dmg_bonus()` branch or stop at the packet's No-Go conditions; future automation may still reselect from the retained same-phase pool when new evidence names a different candidate.
 ---
+
+## 2026-06-15 16:06 +08:00 - US-012
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-012-final-prd-evidence-and-conversion-readiness.md`, `scripts/ralph/checkpoints/2026-06-15-us-012-final-prd-evidence-and-conversion-readiness.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-012 final evidence package` replaces chat-only completion confidence with durable JSON sanity, diff-check, encoding scan, reviewer verdict, staged-set, dashboard, evidence-ledger, progress, and checkpoint evidence.
+  - This story is docs/evidence/bookkeeping only. It does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Markdown PRD input remains separate from `scripts/ralph/prd.json`; Ralph JSON conversion remains a later explicit step.
+  - Next likely PRD is bounded implementation for exactly `Calculator.RegularMul.cal_dmg_bonus(data)` / `regular-dmg-bonus-character-field-stack`, while same-phase proposal-readiness, guarded maintenance, retained compatibility, and No-Go/blocker closure remain available only when new evidence names them.
+- Next step:
+  - Generate or convert the next bounded implementation PRD explicitly; do not treat US-012 bookkeeping as that conversion.
+---
