@@ -80,6 +80,79 @@ def _calculate_anomaly_damage_expectation(
     )
 
 
+def _calculate_disorder_base_damage(
+    *,
+    element_type: ElementType,
+    base_mul: float | np.float64,
+    remaining_tick: float | np.float64,
+    disorder_basic_mul_map: Mapping[ElementType | Literal["all"], float],
+) -> np.float64:
+    """
+    计算紊乱的基础伤害。
+
+    紊乱基础伤害 = (各属性异常剩余倍率 + 各属性紊乱基础倍率) * (1 + 紊乱基础倍率增幅)
+    """
+    t_s = np.float64(remaining_tick / 60)
+    disorder_base_ratio_increase = (
+        disorder_basic_mul_map[element_type] + disorder_basic_mul_map["all"]
+    )
+    match element_type:
+        case 0:  # 强击紊乱
+            _atk = base_mul / 7.13
+            _ratio = np.floor(t_s) * 0.075 + 4.5 + disorder_base_ratio_increase
+        case 1:  # 灼烧紊乱
+            _atk = base_mul / 0.5
+            _ratio = np.floor(t_s / 0.5) * 0.5 + 4.5 + disorder_base_ratio_increase
+        case 2:  # 霜寒紊乱
+            _atk = base_mul / 5
+            _ratio = np.floor(t_s) * 0.075 + 4.5 + disorder_base_ratio_increase
+        case 3:  # 感电紊乱
+            _atk = base_mul / 1.25
+            _ratio = np.floor(t_s) * 1.25 + 4.5 + disorder_base_ratio_increase
+        case 4:  # 侵蚀紊乱
+            _atk = base_mul / 0.625
+            _ratio = np.floor(t_s / 0.5) * 0.625 + 4.5 + disorder_base_ratio_increase
+        case 5:  # 烈霜紊乱
+            _atk = base_mul / 5
+            _ratio = np.floor(t_s) * 0.75 + 6 + disorder_base_ratio_increase
+        case 6:  # 玄墨侵蚀紊乱
+            _atk = base_mul / 0.625
+            _ratio = np.floor(t_s / 0.5) * 0.625 + 4.5 + disorder_base_ratio_increase
+        case _:
+            raise AssertionError(f"Invalid Element Type {element_type}")
+    return np.float64(_atk * _ratio)
+
+
+def _calculate_disorder_extra_multiplier(
+    ano_extra_bonus: Mapping[ElementType | Literal["all", -1], float],
+) -> np.float64:
+    return np.float64(1 + ano_extra_bonus[-1])
+
+
+def _calculate_disorder_stun_multiplier(
+    *,
+    impact: float | np.float64,
+    snapshot_stun_bonus: float | np.float64,
+    stun_res: float | np.float64,
+    received_stun_increase: float | np.float64,
+    v_char_level: int,
+) -> np.float64:
+    stun_ratio = 2
+    k_level_for_stun = 1 + v_char_level * 0.0075
+    return np.float64(
+        np.prod(
+            [
+                impact,
+                stun_ratio,
+                stun_res,
+                snapshot_stun_bonus,
+                received_stun_increase,
+                k_level_for_stun,
+            ]
+        )
+    )
+
+
 class CalAnomaly:
     def __init__(
         self,
@@ -292,47 +365,12 @@ class CalDisorder(CalAnomaly):
         self.final_multipliers[4] = self.cal_disorder_extra_mul()
 
     def cal_disorder_base_dmg(self, base_mul: np.float64) -> np.float64:
-        """
-        计算紊乱的基础伤害
-
-        紊乱基础伤害 = (各属性异常剩余倍率 + 各属性紊乱基础倍率) * (1 + 紊乱基础倍率增幅)
-        """
-        t_s = np.float64(self.anomaly_obj.remaining_tick() / 60)
-        disorder_base_dmg: np.float64
-        # 计算紊乱基础倍率增幅
-        disorder_basic_mul_map = self.data.dynamic.disorder_basic_mul_map
-        disorder_base_ratio_increase = (
-            disorder_basic_mul_map[self.element_type] + disorder_basic_mul_map["all"]
+        return _calculate_disorder_base_damage(
+            element_type=self.element_type,
+            base_mul=base_mul,
+            remaining_tick=np.float64(self.anomaly_obj.remaining_tick()),
+            disorder_basic_mul_map=self.data.dynamic.disorder_basic_mul_map,
         )
-        # 计算紊乱基础伤害
-        match self.element_type:
-            case 0:  # 强击紊乱
-                _atk = base_mul / 7.13
-                _ratio = np.floor(t_s) * 0.075 + 4.5 + disorder_base_ratio_increase
-            case 1:  # 灼烧紊乱
-                _atk = base_mul / 0.5
-                _ratio = np.floor(t_s / 0.5) * 0.5 + 4.5 + disorder_base_ratio_increase
-            case 2:  # 霜寒紊乱
-                _atk = base_mul / 5
-                _ratio = np.floor(t_s) * 0.075 + 4.5 + disorder_base_ratio_increase
-            case 3:  # 感电紊乱
-                _atk = base_mul / 1.25
-                _ratio = np.floor(t_s) * 1.25 + 4.5 + disorder_base_ratio_increase
-            case 4:  # 侵蚀紊乱
-                _atk = base_mul / 0.625
-                _ratio = np.floor(t_s / 0.5) * 0.625 + 4.5 + disorder_base_ratio_increase
-            case 5:  # 烈霜紊乱
-                _atk = base_mul / 5
-                _ratio = np.floor(t_s) * 0.75 + 6 + disorder_base_ratio_increase
-            case 6:  # 玄墨侵蚀紊乱
-                _atk = base_mul / 0.625
-                _ratio = np.floor(t_s / 0.5) * 0.625 + 4.5 + disorder_base_ratio_increase
-            case _:
-                raise AssertionError(f"Invalid Element Type {self.element_type}")
-        disorder_base_dmg = _atk * _ratio
-        # from zsim.define import ELEMENT_TYPE_MAPPING as ETM
-        # print(f"111111，计算紊乱！{ETM[self.element_type]}属性的紊乱，攻击力为：{_atk:.2f}，倍率为：{_ratio:.2f}, 紊乱倍率加成为：{disorder_base_ratio_increase}")
-        return np.float64(disorder_base_dmg)
 
     def cal_disorder_extra_mul(self) -> np.float64:
         """
@@ -341,18 +379,19 @@ class CalDisorder(CalAnomaly):
         紊乱的额外增伤本身只有一个词条：紊乱额外伤害增幅（disorder_dmg_mul），该词条本身是对所有紊乱通用的，
         所以若是要实现“X属性紊乱伤害增幅”，则必须通过buff label的"specified_disorder_element_type"加以限制。
         """
-        map: dict[ElementType | Literal["all", -1], float] = self.data.dynamic.ano_extra_bonus
-        return np.float64(1 + map[-1])
+        return _calculate_disorder_extra_multiplier(self.data.dynamic.ano_extra_bonus)
 
     def cal_disorder_stun(self) -> np.float64:
-        imp = self.final_multipliers[9]
-        stun_ratio = 2
+        imp = np.float64(self.final_multipliers[9])
         stun_res = Cal.StunMul.cal_stun_res(self.data, self.element_type)
-        stun_bonus = self.final_multipliers[10]
+        stun_bonus = np.float64(self.final_multipliers[10])
         stun_received = Cal.StunMul.cal_stun_received(self.data)
-        k_level_for_stun = 1 + self.v_char_level * 0.0075
-        return np.float64(
-            np.prod([imp, stun_ratio, stun_res, stun_bonus, stun_received, k_level_for_stun])
+        return _calculate_disorder_stun_multiplier(
+            impact=imp,
+            snapshot_stun_bonus=stun_bonus,
+            stun_res=stun_res,
+            received_stun_increase=stun_received,
+            v_char_level=self.v_char_level,
         )
 
 

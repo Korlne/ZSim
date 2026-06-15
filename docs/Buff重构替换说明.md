@@ -5610,3 +5610,17 @@
 - Next step:
   - Continue to `US-003` for bounded `CalDisorder` helper seams, reusing focused disorder oracle coverage and keeping copied payload / listener-facing sentinel fields outside formula expectations.
 ---
+
+## 2026-06-16 01:07 +08:00 - US-003
+- Files changed: `zsim/sim_progress/ScheduledEvent/CalAnomaly.py`, `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-003-caldisorder-formula-helper-group.md`, `scripts/ralph/plans/slices/us-004-calpolaritydisorder-formula-helper.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `_calculate_disorder_base_damage(...)` replaces the inline `CalDisorder.cal_disorder_base_dmg(...)` branch arithmetic with a module-local helper seam.
+  - `_calculate_disorder_extra_multiplier(...)` replaces the inline `CalDisorder.cal_disorder_extra_mul()` `ano_extra_bonus[-1]` arithmetic with a module-local helper seam.
+  - `_calculate_disorder_stun_multiplier(...)` replaces the inline `CalDisorder.cal_disorder_stun()` stun product arithmetic with a module-local helper seam.
+- Compatibility retained:
+  - Retained `CalDisorder` methods remain the public call anchors and still read copied `Disorder` payload snapshots through the existing constructor path.
+  - Element branches `0..6`, remaining-tick floor behavior, `disorder_basic_mul_map` element + all stacking, `ano_extra_bonus[-1]`, `stun_res`, `received_stun_increase`, and virtual-character-level stun coefficient behavior remain covered by `test_cal_disorder_formula_inputs_remain_separate_from_copied_payload`.
+  - No copied-output constructor, handler/report payload, event queue, listener, runtime write, validation-runner, reader API, old-container, or retained compatibility surface changed.
+- Next step:
+  - Continue to `US-004` for bounded `CalPolarityDisorder` helper work while keeping copied payload / listener-facing sentinel fields outside formula expectations.
+---

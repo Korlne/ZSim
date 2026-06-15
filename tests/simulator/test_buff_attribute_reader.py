@@ -6932,12 +6932,30 @@ def test_cal_disorder_formula_inputs_remain_separate_from_copied_payload(
     assert calculator.cal_disorder_base_dmg(
         np.float64(case.snapshot_values[0])
     ) == pytest.approx(case.expected_final_multipliers[0])
+    assert cal_anomaly_module._calculate_disorder_base_damage(
+        element_type=case.element_type,
+        base_mul=np.float64(case.snapshot_values[0]),
+        remaining_tick=disorder_payload.remaining_tick(),
+        disorder_basic_mul_map=calculator.data.dynamic.disorder_basic_mul_map,
+    ) == pytest.approx(case.expected_final_multipliers[0])
     assert calculator.cal_disorder_extra_mul() == pytest.approx(
         case.expected_final_multipliers[4]
     )
+    assert cal_anomaly_module._calculate_disorder_extra_multiplier(
+        calculator.data.dynamic.ano_extra_bonus
+    ) == pytest.approx(case.expected_final_multipliers[4])
     assert calculator.cal_disorder_stun() == pytest.approx(
         case.expected_disorder_stun
     )
+    assert cal_anomaly_module._calculate_disorder_stun_multiplier(
+        impact=np.float64(calculator.final_multipliers[9]),
+        snapshot_stun_bonus=np.float64(calculator.final_multipliers[10]),
+        stun_res=Calculator.StunMul.cal_stun_res(
+            calculator.data, calculator.element_type
+        ),
+        received_stun_increase=Calculator.StunMul.cal_stun_received(calculator.data),
+        v_char_level=calculator.v_char_level,
+    ) == pytest.approx(case.expected_disorder_stun)
     product_with_snapshot_impact_and_stun = np.prod(case.expected_final_multipliers)
     assert calculator.cal_anomaly_dmg() == pytest.approx(
         product_with_snapshot_impact_and_stun
