@@ -5418,3 +5418,15 @@
 - Next step:
   - Continue to `US-004` for the conditional defense helper group. Stop at No-Go if focused oracle coverage or public-contract boundaries are not narrow enough.
 ---
+
+## 2026-06-15 18:53 +08:00 - US-004
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-004-conditional-defense-helper-group.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `_calculate_defense_multiplier(...)`, `_calculate_recipient_defense(...)`, `_calculate_pen_ratio(...)`, and `_calculate_attacker_level_coefficient(...)` prepare to replace the retained inline defense helper bodies behind `Calculator.RegularMul.cal_defense_mul(data)`, `cal_recipient_def(...)`, `cal_pen_ratio(...)`, and `cal_k_attacker(...)` while preserving the public method signatures.
+  - `test_regular_mul_branch_matrix_defense_group_delegates_to_module_helpers()` adds seam-specific delegation evidence without duplicating existing `regular_mul_branch_matrix` and `_FORMULA_ORACLE_TABLE_CASES` numeric rows.
+- Compatibility retained:
+  - Attacker level clamp, enemy defense reduction, static/dynamic penetration ratio, static/dynamic penetration numeric, addon penetration arguments, recipient effective-defense floor, reader-snapshot supported fire branch, and retained-only sheer defense skip remain covered by existing oracle rows plus focused delegation verification.
+  - `CalculatorBuffAttributeReader`, `_CalculatorReadSnapshot`, sibling `RegularMul` branches, registered routes, validation-runner behavior, explicit ports/adapters, old containers, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-005` for the conditional crit expectation helper. Stop at No-Go if focused oracle coverage or public-contract boundaries are not narrow enough.
+---

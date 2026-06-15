@@ -4797,6 +4797,127 @@ def test_regular_mul_damage_bonus_delegates_to_module_helper(
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
 
 
+def test_regular_mul_branch_matrix_defense_group_delegates_to_module_helpers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_attribute_read_fixture(
+        name="防御乘区委托",
+        static_statement_attrs={"PEN_ratio": 0.10, "PEN_numeric": 20.0},
+        damage_ratio=1.0,
+        hit_times=1,
+        diff_multiplier=0,
+        element_type=1,
+        enemy_max_def=500.0,
+        char_buff_count=0,
+        enemy_debuff_count=1,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(
+            percentage_def_reduction=0.25,
+            def_reduction=50.0,
+            pen_ratio=0.15,
+            pen_numeric=30.0,
+        ),
+    )
+    retained_data = _legacy_multiplier_data(fixture)
+    regular_mul = _regular_mul_oracle()
+    helper_calls: list[tuple[Any, ...]] = []
+
+    def fake_calculate_attacker_level_coefficient(attacker_level: int) -> int:
+        helper_calls.append(("k-attacker", attacker_level))
+        return 777
+
+    def fake_calculate_pen_ratio(
+        static_statement: Any,
+        dynamic_statement: Any,
+        *,
+        addon_pen_ratio: float = 0.0,
+    ) -> float:
+        helper_calls.append(
+            ("pen-ratio", static_statement, dynamic_statement, addon_pen_ratio)
+        )
+        return 0.33
+
+    def fake_calculate_recipient_defense(
+        enemy_obj: Any,
+        static_statement: Any,
+        dynamic_statement: Any,
+        pen_ratio: float,
+        *,
+        addon_pen_ratio: float = 0.0,
+        addon_pen_numeric: float = 0.0,
+    ) -> float:
+        helper_calls.append(
+            (
+                "recipient-defense",
+                enemy_obj,
+                static_statement,
+                dynamic_statement,
+                pen_ratio,
+                addon_pen_ratio,
+                addon_pen_numeric,
+            )
+        )
+        return 123.0
+
+    monkeypatch.setattr(
+        calculator_module,
+        "_calculate_attacker_level_coefficient",
+        fake_calculate_attacker_level_coefficient,
+    )
+    monkeypatch.setattr(
+        calculator_module,
+        "_calculate_pen_ratio",
+        fake_calculate_pen_ratio,
+    )
+    monkeypatch.setattr(
+        calculator_module,
+        "_calculate_recipient_defense",
+        fake_calculate_recipient_defense,
+    )
+
+    assert regular_mul.cal_defense_mul(retained_data) == pytest.approx(
+        777.0 / (777.0 + 123.0)
+    )
+    assert Calculator.RegularMul.cal_pen_ratio(
+        retained_data,
+        addon_pen_ratio=0.12,
+    ) == pytest.approx(0.33)
+    assert Calculator.RegularMul.cal_recipient_def(
+        retained_data,
+        0.44,
+        addon_pen_ratio=0.04,
+        addon_pen_numeric=5.0,
+    ) == pytest.approx(123.0)
+    assert Calculator.RegularMul.cal_k_attacker(99) == 777
+    assert helper_calls == [
+        ("k-attacker", 60),
+        ("pen-ratio", retained_data.static, retained_data.dynamic, 0.0),
+        (
+            "recipient-defense",
+            retained_data.enemy_obj,
+            retained_data.static,
+            retained_data.dynamic,
+            0.33,
+            0.0,
+            0.0,
+        ),
+        ("pen-ratio", retained_data.static, retained_data.dynamic, 0.12),
+        (
+            "recipient-defense",
+            retained_data.enemy_obj,
+            retained_data.static,
+            retained_data.dynamic,
+            0.44,
+            0.04,
+            5.0,
+        ),
+        ("k-attacker", 99),
+    ]
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+
+
 def test_regular_mul_branch_matrix_res_vulnerability_and_special_delegate_to_module_helpers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

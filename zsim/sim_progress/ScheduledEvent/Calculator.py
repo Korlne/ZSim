@@ -278,6 +278,78 @@ def _calculate_damage_bonus(
     )
 
 
+def _calculate_pen_ratio(
+    static_statement: Any,
+    dynamic_statement: Any,
+    *,
+    addon_pen_ratio: float = 0.0,
+) -> float:
+    return static_statement.pen_ratio + dynamic_statement.pen_ratio + addon_pen_ratio
+
+
+def _calculate_recipient_defense(
+    enemy_obj: Any,
+    static_statement: Any,
+    dynamic_statement: Any,
+    pen_ratio: float,
+    *,
+    addon_pen_ratio: float = 0.0,
+    addon_pen_numeric: float = 0.0,
+) -> float:
+    # 受击方防御
+    recipient_def = (
+        enemy_obj.max_DEF * (1 - dynamic_statement.percentage_def_reduction)
+        - dynamic_statement.def_reduction
+    )
+    # 穿透值
+    pen_numeric = static_statement.pen_numeric + dynamic_statement.pen_numeric + addon_pen_numeric
+    # 受击方有效防御
+    return max(0.0, recipient_def * (1 - pen_ratio - addon_pen_ratio) - pen_numeric)
+
+
+def _calculate_attacker_level_coefficient(attacker_level: int) -> int:
+    # 定义域检查
+    if attacker_level < 0:
+        report_to_log(f"角色等级{attacker_level}过低，将被设置为0")
+        attacker_level = 0
+    elif attacker_level > 60:
+        report_to_log(f"角色等级{attacker_level}过高，将被设置为60")
+        attacker_level = 60
+    # 攻击方等级系数
+    # fmt: off
+    values: list[int] = [
+        0, 50, 54, 58, 62, 66, 71, 76, 82, 88, 94,
+        100, 107, 114, 121, 129, 137, 145, 153, 162,
+        172, 181, 191, 201, 211, 222, 233, 245, 258,
+        268, 281, 293, 306, 319, 333, 347, 362, 377,
+        393, 409, 421, 436, 452, 469, 485, 502, 519,
+        537, 556, 573, 592, 612, 629, 649, 669, 689,
+        709, 730, 751, 772, 794,
+    ]
+    # fmt: on
+    return values[attacker_level]
+
+
+def _calculate_defense_multiplier(
+    enemy_obj: Any,
+    static_statement: Any,
+    dynamic_statement: Any,
+    base_attr: int,
+    attacker_level: int,
+) -> float:
+    if base_attr == 4:
+        return 1.0
+    k_attacker = _calculate_attacker_level_coefficient(attacker_level)
+    pen_ratio = _calculate_pen_ratio(static_statement, dynamic_statement)
+    effective_def = _calculate_recipient_defense(
+        enemy_obj,
+        static_statement,
+        dynamic_statement,
+        pen_ratio,
+    )
+    return k_attacker / (effective_def + k_attacker)
+
+
 def _calculate_resistance_multiplier(
     enemy_obj: Any,
     dynamic_statement: Any,
@@ -1132,19 +1204,14 @@ class Calculator:
             """
             assert isinstance(data.judge_node, SkillNode)
             base_attr = data.judge_node.skill.diff_multiplier
-            if base_attr != 4:
-                attacker_level: int = data.char_level if data.char_level is not None else 1
-                # 攻击方等级系数
-                k_attacker = self.cal_k_attacker(attacker_level)
-                # 穿透率
-                pen_ratio = self.cal_pen_ratio(data)
-                # 受击方有效防御
-                effective_def = self.cal_recipient_def(data, pen_ratio)
-                # 防御区
-                defense_mul = k_attacker / (effective_def + k_attacker)
-            else:
-                defense_mul = 1
-            return defense_mul
+            attacker_level: int = data.char_level if data.char_level is not None else 1
+            return _calculate_defense_multiplier(
+                data.enemy_obj,
+                data.static,
+                data.dynamic,
+                base_attr,
+                attacker_level,
+            )
 
         @staticmethod
         def cal_recipient_def(
@@ -1154,48 +1221,26 @@ class Calculator:
             addon_pen_ratio: float = 0.0,
             addon_pen_numeric: float = 0.0,
         ) -> float:
-            # 受击方防御
-            recipient_def = (
-                data.enemy_obj.max_DEF * (1 - data.dynamic.percentage_def_reduction)
-                - data.dynamic.def_reduction
+            return _calculate_recipient_defense(
+                data.enemy_obj,
+                data.static,
+                data.dynamic,
+                pen_ratio,
+                addon_pen_ratio=addon_pen_ratio,
+                addon_pen_numeric=addon_pen_numeric,
             )
-            # 穿透值
-            pen_numeric: float = (
-                data.static.pen_numeric + data.dynamic.pen_numeric + addon_pen_numeric
-            )
-            # 受击方有效防御
-            effective_def: float = max(
-                0.0, recipient_def * (1 - pen_ratio - addon_pen_ratio) - pen_numeric
-            )
-            return effective_def
 
         @staticmethod
-        def cal_pen_ratio(data: MultiplierData, *, addon_pen_ratio=0.0):
-            return data.static.pen_ratio + data.dynamic.pen_ratio + addon_pen_ratio
+        def cal_pen_ratio(data: MultiplierData, *, addon_pen_ratio: float = 0.0) -> float:
+            return _calculate_pen_ratio(
+                data.static,
+                data.dynamic,
+                addon_pen_ratio=addon_pen_ratio,
+            )
 
         @staticmethod
         def cal_k_attacker(attacker_level: int) -> int:
-            # 定义域检查
-            if attacker_level < 0:
-                report_to_log(f"角色等级{attacker_level}过低，将被设置为0")
-                attacker_level = 0
-            elif attacker_level > 60:
-                report_to_log(f"角色等级{attacker_level}过高，将被设置为60")
-                attacker_level = 60
-            # 攻击方等级系数
-            # fmt: off
-            values: list[int] = [
-                0, 50, 54, 58, 62, 66, 71, 76, 82, 88, 94,
-                100, 107, 114, 121, 129, 137, 145, 153, 162,
-                172, 181, 191, 201, 211, 222, 233, 245, 258,
-                268, 281, 293, 306, 319, 333, 347, 362, 377,
-                393, 409, 421, 436, 452, 469, 485, 502, 519,
-                537, 556, 573, 592, 612, 629, 649, 669, 689,
-                709, 730, 751, 772, 794,
-            ]
-            # fmt: on
-            k_attacker = values[attacker_level]
-            return k_attacker
+            return _calculate_attacker_level_coefficient(attacker_level)
 
         @staticmethod
         def cal_res_mul(
