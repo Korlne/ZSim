@@ -5691,3 +5691,15 @@
 - Next step:
   - Default next PRD: `AnomalyBar.current_ndarray` / `UpdateAnomaly.py` write-path field matrix bounded characterization or same-PRD Go / No-Go closure, while retaining enemy dynamic / duration reads, retained-only sheer blocker package, registered behavior sample eligibility, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only phase-1 reopen rules as same-phase pool entries.
 ---
+
+## 2026-06-16 02:58 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-intake-matrix-and-no-reopen-guard.md`, `scripts/ralph/investigations/2026-06-16-US-001-current-root-intake.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 current-root intake matrix` replaces chat-only next-route confidence with durable doc/state/source/test anchor evidence for the `AnomalyBar.current_ndarray` / `UpdateAnomaly.py` write-path field matrix.
+  - This story only builds a no-reopen evidence boundary; it does not replace a live production formula path or runtime path.
+- Compatibility retained:
+  - `AnomalyBarClass.py`, `UpdateAnomaly.py`, focused test source, copied-output constructors, handler/report payloads, validation-runner behavior, public reader/snapshot APIs, old containers, retained compatibility paths, event queues, listener broadcasts, dot runtime, and same-tick runtime writes remain unchanged.
+  - No new Buff coupling or coupling-classification evidence was found, so `docs/旧Buff系统耦合审查结果.md` remains unchanged in this iteration.
+- Next step:
+  - Continue to `US-002` for the bounded `AnomalyBar.current_ndarray` lifecycle / reset / copy matrix, keeping the US-001 No-Go guard active.
+---
