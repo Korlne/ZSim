@@ -5678,3 +5678,16 @@
 - Next step:
   - Continue to `US-008` final handoff, same-phase pool, and invariant review. Keep the next PRD route sourced from the Buff refactor architecture plan and current evidence ledger rather than reopening completed helper seams.
 ---
+
+## 2026-06-16 02:28 +08:00 - US-008
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-final-handoff-same-phase-pool-and-invariant-review.md`, `scripts/ralph/checkpoints/2026-06-16-us-008-final-handoff-same-phase-pool.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`
+- Replacement note:
+  - `US-008 final handoff docs and same-phase pool` replaces chat-only next-route confidence with durable handoff docs, rollback anchors, retained-boundary verdict, checkpoint, and next default PRD routing.
+  - This story does not replace or edit live production formula code, focused test source, copied-output constructors, `UpdateAnomaly.py`, handler/report payloads, validation-runner behavior, event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, public reader/snapshot APIs, or retained compatibility paths.
+- Compatibility retained:
+  - CalAnomaly helper-family implementation evidence remains `US-002` through `US-005`; copied-output / event boundary confidence remains `US-006`; serial formula/read validation remains `US-007`.
+  - `AnomalyBar.current_ndarray`, `UpdateAnomaly.py` write paths, copied-output constructors, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, listener broadcasts, dot runtime registration, old containers, retained formula snapshots, and P2-A through P2-G guarded buckets remain retained.
+  - No new Buff coupling or coupling-classification evidence was found, so `docs/旧Buff系统耦合审查结果.md` remains unchanged in this iteration.
+- Next step:
+  - Default next PRD: `AnomalyBar.current_ndarray` / `UpdateAnomaly.py` write-path field matrix bounded characterization or same-PRD Go / No-Go closure, while retaining enemy dynamic / duration reads, retained-only sheer blocker package, registered behavior sample eligibility, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only phase-1 reopen rules as same-phase pool entries.
+---
