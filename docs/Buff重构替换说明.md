@@ -5089,3 +5089,16 @@
 - Next step:
   - Continue to `US-007` retained validation gates. Keep validation serial and do not run main-loop consistency unless a later live production semantic diff plus a real registered direct-damage route proves nonzero selected full-crit-damage relevance inside an explicit stop tick.
 ---
+
+## 2026-06-15 09:09 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-run-retained-validation-gates-serially.md`, `scripts/ralph/checkpoints/2026-06-15-us-007-retained-validation-gates-serial.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 retained validation gate checkpoint` replaces chat-only validation confidence with durable serial `formula-parity` evidence plus touched-surface skip rationales for retained profiles.
+  - This story is evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_crit_dmg(data)` remains the retained inline production formula for the full-crit-damage proposal-readiness PRD.
+  - `CalculatorBuffAttributeReader`, `_CalculatorReadSnapshot`, `tests/simulator/test_buff_attribute_reader.py`, `scripts/run_buff_refactor_validation.py`, old containers, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, registered routes, and retained compatibility paths remain unchanged.
+  - `calculator-reads`, `implicit-events`, and default validation were skipped by concrete touched-surface criteria, not by omission.
+- Next step:
+  - Continue to `US-008` handoff docs and same-phase pool preservation. Keep handoff docs broad enough for future PRD generation and do not collapse the same-phase pool to this validation slice.
+---
