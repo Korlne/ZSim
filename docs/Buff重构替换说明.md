@@ -5758,3 +5758,16 @@
 - Next step:
   - Continue to `US-006` serial validation and same-PRD Go / No-Go. Do not expand the completed implementation characterization into production refactoring without a new focused regression.
 ---
+
+## 2026-06-16 04:11 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-serial-validation-and-same-prd-go-no-go.md`, `scripts/ralph/investigations/2026-06-16-US-006-serial-validation-go-no-go.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 serial validation and same-PRD Go / No-Go` replaces chat-only validation confidence with a durable serial verifier packet and No-Go decision for further production work inside this PRD.
+  - This story only closes a validation / decision boundary; it does not replace live production `AnomalyBarClass.py`, `UpdateAnomaly.py`, `Calculator.py`, `CalAnomaly.py`, copied-output constructors, handler/report payloads, validation-runner behavior, event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime writes, public reader/snapshot APIs, or retained compatibility paths.
+- Compatibility retained:
+  - Focused pytest exited `0` with `50 passed`; scoped mypy exited `0` with `Success: no issues found in 7 source files`.
+  - Serial `formula-parity`, `implicit-events`, and `calculator-reads` profiles all exited `0`; full validation and registered main-loop consistency remain skipped by unchanged lifecycle/runtime/old-container/runner surfaces and no live semantic diff / real registered route evidence.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, reader/formula compatibility, old containers, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-007` final handoff docs and same-phase candidate pool preservation. Do not generate another generic selection PRD from the completed retained field matrix.
+---
