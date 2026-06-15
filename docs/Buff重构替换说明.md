@@ -5076,3 +5076,16 @@
 - Next step:
   - Continue to `US-006` registered sample eligibility for this exact full crit damage surface. Keep `US-006` evidence-scoped unless it finds a concrete current-root blocker that needs a smaller reversible slice.
 ---
+
+## 2026-06-15 09:05 +08:00 - US-006
+- Files changed: `tasks/prd-buff-refactor-phase3-regularmul-full-crit-damage-bounded-proposal-readiness.md`, `scripts/ralph/plans/slices/us-006-decide-registered-sample-eligibility.md`, `scripts/ralph/investigations/2026-06-15-US-006-registered-sample-eligibility.md`, `scripts/ralph/checkpoints/2026-06-15-us-006-full-crit-damage-registered-sample-eligibility.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 registered sample eligibility decision` replaces chat-only main-loop sample assumptions with durable Conditional No-Go evidence for this full-crit-damage proposal-readiness PRD.
+  - This story is evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Existing registered teams/APLs remain unchanged: `青衣雷属性队`, `席德大安比队`, `莱特火属性队`, and `薇薇安物理队`; `示例冰属性队` remains ineligible because it is not registered and its APL file is missing.
+  - Main-loop consistency remains skipped because there is no live production semantic diff and no current registered route proves nonzero selected `Calculator.RegularMul.cal_crit_dmg(data)` relevance inside an explicit stop tick.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, old containers, validation-runner behavior, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-007` retained validation gates. Keep validation serial and do not run main-loop consistency unless a later live production semantic diff plus a real registered direct-damage route proves nonzero selected full-crit-damage relevance inside an explicit stop tick.
+---
