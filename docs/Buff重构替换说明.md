@@ -5558,3 +5558,16 @@
 - Next step:
   - Continue to `US-005` serial formula and reader validation gates. Keep `formula-parity` and `calculator-reads` serial, and keep `implicit-events` conditional on copied-output/event/runtime/listener or validation-runner surfaces.
 ---
+
+## 2026-06-15 23:50 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-run-serial-formula-and-reader-validation-gates.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-006-handoff-docs-and-anti-loop-preservation.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 retained serial validation gates` replaces chat-only confidence in the current non-sheer base-attribute / base-damage helper seams with durable focused pytest, scoped mypy, `formula-parity`, and `calculator-reads` evidence.
+  - This validation slice does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `_calculate_non_sheer_base_attribute(...)` and `_calculate_base_damage(...)` remain the only current PRD helper seams under validation.
+  - `base_attr=4`, `cal_sheer_dmg_bonus(data)`, public `_CalculatorReadSnapshot` expansion, registered route creation, validation-runner rewrites, implicit-event paths, main-loop consistency, old-container deletion, and retained compatibility cleanup remain excluded.
+  - Focused pytest exited `0` with `8 passed`; scoped mypy exited `0` with `Success: no issues found in 2 source files`; `formula-parity` and `calculator-reads` both exited `0` with `[验证完成] 所有步骤通过`.
+- Next step:
+  - Continue to `US-006` handoff docs and anti-loop preservation. Keep final handoff sourced from the current validation evidence and do not reopen retained-only sheer, public snapshot expansion, registered-route, event/runtime/listener, old-container, or retained compatibility surfaces without a new active slice.
+---
