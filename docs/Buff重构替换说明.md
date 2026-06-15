@@ -5519,3 +5519,16 @@
 - Next step:
   - Continue to `US-002` for direct non-sheer base-attribute oracle closure. Keep any branch that requires sheer runtime fields, public snapshot expansion, registered-route fabrication, or validation-runner changes inside same-PRD No-Go / stop-and-split handling.
 ---
+
+## 2026-06-15 23:15 +08:00 - US-002
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-002-complete-non-sheer-base-attribute-oracle-matrix.md`, `scripts/ralph/plans/slices/us-003-implement-non-sheer-base-attribute-helper-seam.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 non-sheer base_attr oracle matrix` replaces the prior direct oracle gap for `Calculator.RegularMul.cal_base_attr(base_attr=2/3, data)` with deterministic retained `MultiplierData` and reader-snapshot parity rows.
+  - This story builds test evidence only; it does not replace or edit live production formula code, reader source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Existing `base_attr=0` and `base_attr=1` oracle rows remain unchanged.
+  - `base_attr=4`, `cal_sheer_dmg_bonus(data)`, public `_CalculatorReadSnapshot` expansion, and `char_instance` passthrough remain explicitly excluded.
+  - Focused pytest exited `0` with `4 passed, 152 deselected`; scoped mypy exited `0` with `Success: no issues found in 2 source files` plus existing unchecked-body notes only.
+- Next step:
+  - Continue to `US-003` for the non-sheer `cal_base_attr(base_attr in 0..3, data)` helper seam. Keep retained-only sheer and public snapshot expansion out of that implementation.
+---

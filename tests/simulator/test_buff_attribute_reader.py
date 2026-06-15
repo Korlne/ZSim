@@ -1122,6 +1122,84 @@ _FORMULA_ORACLE_TABLE_CASES = (
         ),
     ),
     _FormulaOracleCase(
+        case_id="regular-base-attr-dynamic-defense",
+        fixture_kwargs={
+            "name": "regular base attr defense dynamic",
+            "defense": 240.0,
+            "damage_ratio": 2.5,
+            "hit_times": 1,
+            "diff_multiplier": 2,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 1,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "field_def_percentage": 0.5,
+            "defense": 30.0,
+            "extra_damage_ratio": 0.2,
+            "base_dmg_increase_percentage": 0.1,
+            "base_dmg_increase": 7.0,
+        },
+        expected_dynamic_fields={
+            "field_def_percentage": 0.5,
+            "defense": 30.0,
+            "extra_damage_ratio": 0.2,
+            "base_dmg_increase_percentage": 0.1,
+            "base_dmg_increase": 7.0,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_base_attr_defense",
+                expected_value=390.0,
+                retained_value=lambda data: _regular_mul_base_attr(data, 2),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_base_dmg",
+                expected_value=1165.3,
+                retained_value=_regular_mul_base_dmg,
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
+        case_id="regular-base-attr-dynamic-anomaly-proficiency",
+        fixture_kwargs={
+            "name": "regular base attr anomaly proficiency dynamic",
+            "ap": 400.0,
+            "damage_ratio": 3.6,
+            "hit_times": 3,
+            "diff_multiplier": 3,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 1,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "field_anomaly_proficiency": 0.25,
+            "anomaly_proficiency": 50.0,
+            "extra_damage_ratio": 0.3,
+            "base_dmg_increase_percentage": 0.2,
+            "base_dmg_increase": 12.0,
+        },
+        expected_dynamic_fields={
+            "field_anomaly_proficiency": 0.25,
+            "anomaly_proficiency": 50.0,
+            "extra_damage_ratio": 0.3,
+            "base_dmg_increase_percentage": 0.2,
+            "base_dmg_increase": 12.0,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_base_attr_anomaly_proficiency",
+                expected_value=550.0,
+                retained_value=lambda data: _regular_mul_base_attr(data, 3),
+            ),
+            _FormulaOracleExpectation(
+                label="cal_base_dmg",
+                expected_value=1002.0,
+                retained_value=_regular_mul_base_dmg,
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
         case_id="regular-base-dmg-dynamic-atk",
         fixture_kwargs={
             "name": "直伤基础-动态攻击",
