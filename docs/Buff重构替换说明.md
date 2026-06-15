@@ -5467,3 +5467,17 @@
 - Next step:
   - Continue to `US-008` serial formula and reader validation gates. If validation or review rejects the annotation-only `cal_pen_ratio(...)` nuance, split a separate production-authorized rollback slice before any broad validation/handoff claim.
 ---
+
+## 2026-06-15 19:59 +08:00 - US-008
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-serial-formula-and-reader-validation-gates.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-008 serial formula and reader validation evidence` replaces chat-only retained-gate claims with durable serial focused pytest, scoped mypy, `formula-parity`, and `calculator-reads` results for the current RegularMul scalar helper-family batch.
+  - This story does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Focused pytest exited `0` with `28 passed`; scoped mypy exited `0` with `Success: no issues found in 9 source files`.
+  - `formula-parity` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused formula tests `154 passed`, and mypy clean for 9 source files.
+  - `calculator-reads` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused reader tests `254 passed`, and mypy clean for 22 source files.
+  - `implicit-events` and full default validation remain skipped because no copied-output, event/runtime/listener, dot-runtime, same-tick runtime write, validation-runner, lifecycle, runtime write, or broad validation behavior surface changed.
+- Next step:
+  - Continue to `US-009` registered behavior sample decision and rollback packet. Keep main-loop consistency conditional on a real production semantic diff and real registered-route evidence; do not create validation-only teams or retained-vs-retained samples.
+---
