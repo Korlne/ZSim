@@ -5584,3 +5584,16 @@
 - Next step:
   - Generate future Phase 3 PRDs as implementation batches or same-PRD Go / No-Go closures sourced from current-root evidence. Do not create standalone full-cycle same-phase candidate-selection / proposal-readiness PRDs for one completed micro-surface.
 ---
+
+## 2026-06-16 00:40 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-preflight-scope-and-no-reopen-guard.md`, `scripts/ralph/investigations/2026-06-16-US-001-calanomaly-scope-preflight.md`, `scripts/ralph/plans/slices/us-002-calanomaly-final-multiplier-and-damage-helpers.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 CalAnomaly scope preflight packet` replaces chat-only current-root scope confirmation with durable doc/state/source/test anchors, verifier evidence, reviewer verdict, and No-Go guard for the CalAnomaly helper-family PRD.
+  - This story is evidence/bookkeeping only. It does not replace or edit live production formula code, focused test source, copied-output constructors, handler/report payloads, validation-runner behavior, registered teams/APLs, event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, public reader/snapshot APIs, or retained compatibility paths.
+- Compatibility retained:
+  - Completed RegularMul, copied-output, `cal_res_pen()`, AM/AP/impact, selected Stun, port/facade, guarded P2, old-container, event/runtime/listener, and retained compatibility surfaces remain no-reopen by default.
+  - `CalAnomaly.py` current-root anchors are recorded for later bounded helper slices only; broad `CalAnomaly.py` rewrite, copied-output constructor changes, handler/report payload changes, validation-runner rewrite, public reader/snapshot expansion, old-container deletion, registered fixture creation, and event/runtime/listener layer merge remain No-Go triggers.
+  - Focused pytest exited `0` with `17 passed, 142 deselected`; scoped mypy exited `0` with `Success: no issues found in 2 source files`.
+- Next step:
+  - Continue to `US-002` only for bounded `CalAnomaly.set_final_multipliers(...)` / `CalAnomaly.cal_anomaly_dmg()` helper work, using the US-001 packet as scope evidence and stopping/splitting if any No-Go trigger appears.
+---
