@@ -5364,7 +5364,33 @@
   - This story is docs/evidence/bookkeeping only. It does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
 - Compatibility retained:
   - Markdown PRD input remains separate from `scripts/ralph/prd.json`; Ralph JSON conversion remains a later explicit step.
-  - Next likely PRD is bounded implementation for exactly `Calculator.RegularMul.cal_dmg_bonus(data)` / `regular-dmg-bonus-character-field-stack`, while same-phase proposal-readiness, guarded maintenance, retained compatibility, and No-Go/blocker closure remain available only when new evidence names them.
+  - Superseded by the later `route-correction` note below: the next likely PRD is a RegularMul scalar helper-family bounded implementation batch anchored by `Calculator.RegularMul.cal_dmg_bonus(data)` / `regular-dmg-bonus-character-field-stack`, while same-phase proposal-readiness, guarded maintenance, retained compatibility, and No-Go/blocker closure remain available only when shared blockers or new evidence name them.
 - Next step:
   - Generate or convert the next bounded implementation PRD explicitly; do not treat US-012 bookkeeping as that conversion.
+---
+
+## 2026-06-15 17:31 +08:00 - route-correction
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `RegularMul scalar helper-family batch PRD guidance` replaces the latest single-surface `exactly Calculator.RegularMul.cal_dmg_bonus(data)` next-PRD guidance with one bounded implementation batch for adjacent `Calculator.RegularMul` scalar helper seams that share file ownership, validation profile, rollback anchors, and no runtime/event/listener/registered-route contract changes.
+  - This is docs / routing guidance only. It does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `cal_dmg_bonus(data)` remains the required first anchor and `regular-dmg-bonus-character-field-stack` remains the focused oracle anchor.
+  - `cal_res_mul(...)`, `cal_dmg_vulnerability(...)`, `cal_stun_vulnerability(data)`, and `cal_special_mul(data)` are now required sibling batch candidates; `cal_defense_mul(data)` / defense helper functions, `cal_crit_expect(data)`, and non-sheer `cal_base_dmg(data)` / `cal_base_attr(base_attr in 0..3, data)` are conditional batch candidates only after focused oracle coverage and no public reader / snapshot expansion are proven.
+  - `base_attr=4`, `cal_sheer_dmg_bonus(data)`, registered behavior sample eligibility, event/runtime/listener paths, old containers, retained compatibility cleanup, completed copied-output / `cal_res_pen()` / AM/AP/impact / selected Stun / crit helper seams, and broad `Calculator.py` / `CalAnomaly.py` rewrite remain excluded.
+- Next step:
+  - Generate the next Markdown PRD as a RegularMul scalar helper-family bounded implementation batch, not another same-phase candidate-selection / proposal-readiness PRD and not a single-callsite `cal_dmg_bonus()` PRD.
+---
+
+## 2026-06-15 18:10 +08:00 - US-001
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-001-preflight-scope-oracle-and-stop-conditions.md`, `scripts/ralph/investigations/2026-06-15-US-001-regularmul-scalar-preflight.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-002-damage-bonus-helper-seam.md`
+- Replacement note:
+  - `US-001 RegularMul scalar preflight packet` replaces chat-only batch readiness with a durable current-root scope, oracle, rollback-anchor, and No-Go packet for the RegularMul scalar helper-family PRD.
+  - This story is preflight/evidence/bookkeeping only. It does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Required anchors remain retained production methods: `Calculator.RegularMul.cal_dmg_bonus(data)`, `cal_res_mul(...)`, `cal_dmg_vulnerability(...)`, `cal_stun_vulnerability(data)`, and `cal_special_mul(data)`.
+  - Conditional anchors remain gated by focused oracle coverage and public-contract limits: defense helper group, `cal_crit_expect(data)`, and non-sheer `cal_base_dmg(data)` / `cal_base_attr(base_attr in 0..3, data)`.
+  - Public `_CalculatorReadSnapshot` expansion, a new public `CalculatorBuffAttributeReader` damage-bonus API, registered fixture creation, validation-runner rewrite, old-container deletion, event/runtime/listener layer merge, and retained compatibility cleanup remain No-Go conditions.
+- Next step:
+  - Continue to `US-002` and implement only the bounded `Calculator.RegularMul.cal_dmg_bonus(data)` helper seam, reusing the `regular-dmg-bonus-character-field-stack` oracle and the scoped mypy gate.
 ---
