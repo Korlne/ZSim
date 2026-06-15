@@ -5050,3 +5050,16 @@
 - Next step:
   - Continue to `US-004` contrast-boundary and snapshot-contract verification. Do not implement helper extraction, add public full-crit-damage reader APIs, fabricate registered routes, or broaden into unrelated RegularMul / CalAnomaly / Stun / copied-output / event-runtime-listener work.
 ---
+
+## 2026-06-15 08:16 +08:00 - US-004
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-004-verify-contrast-boundaries-and-snapshot-contract.md`, `scripts/ralph/investigations/2026-06-15-US-004-contrast-boundary-snapshot-contract.md`, `scripts/ralph/checkpoints/2026-06-15-us-004-contrast-boundary-snapshot-contract.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `test_full_crit_damage_reader_api_and_snapshot_contract_stay_bounded` replaces chat-only contrast-boundary review with executable guardrail evidence for full crit damage received-damage inclusion, personal crit damage exclusion, private snapshot field bounds, and absence of `CalculatorBuffAttributeReader.read_full_crit_damage(...)`.
+  - This story builds test/evidence only. It does not replace live production formula code, reader source, validation-runner behavior, registered routes, copied-output/event/runtime/listener paths, old containers, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_crit_dmg(data)` remains the retained inline production formula and still includes `received_crit_dmg_bonus`.
+  - `Calculator.RegularMul.cal_personal_crit_dmg(data)` / `_calculate_personal_crit_damage(...)` and `CalculatorBuffAttributeReader.read_personal_crit_damage(context)` remain the personal contrast path and still exclude `received_crit_dmg_bonus`.
+  - `_CalculatorReadSnapshot` remains private with only `static`, `dynamic`, `judge_node`, `enemy_obj`, and `char_level`; no `char_instance`, runtime view, array output, copied-output payload, or public field expansion was added.
+- Next step:
+  - Continue to `US-005` bounded proposal and rollback anchors. Keep the next slice proposal-scoped unless it explicitly permits production helper extraction; do not add a public full-crit-damage reader API or broaden into unrelated RegularMul / CalAnomaly / Stun / copied-output / event-runtime-listener work.
+---

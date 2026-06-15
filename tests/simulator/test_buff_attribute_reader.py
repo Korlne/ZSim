@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import copy
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 import inspect
 from pathlib import Path
 from types import SimpleNamespace
@@ -4885,6 +4885,66 @@ def test_reader_personal_crit_damage_anchor_preserves_full_and_personal_crit_con
     assert formula_dynamic.received_crit_dmg_bonus == pytest.approx(0.4)
     assert Calculator.RegularMul.cal_crit_dmg(formula_data) == pytest.approx(1.4)
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+
+
+def test_full_crit_damage_reader_api_and_snapshot_contract_stay_bounded(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    MultiplierData.mul_data_cache.clear()
+    snapshot_cls = getattr(calculator_module, "_CalculatorReadSnapshot")
+    snapshot_fields = [field_info.name for field_info in fields(snapshot_cls)]
+    forbidden_snapshot_fields = {
+        "char_instance",
+        "runtime_view",
+        "array_output",
+        "copied_output_payload",
+    }
+
+    assert snapshot_cls.__name__.startswith("_")
+    assert snapshot_fields == [
+        "static",
+        "dynamic",
+        "judge_node",
+        "enemy_obj",
+        "char_level",
+    ]
+    assert forbidden_snapshot_fields.isdisjoint(snapshot_fields)
+    assert not hasattr(CalculatorBuffAttributeReader(), "read_full_crit_damage")
+
+    fixture = _make_attribute_read_fixture(
+        name="完整暴伤读口边界",
+        crit_damage=0.5,
+        damage_ratio=1.0,
+        hit_times=1,
+        diff_multiplier=0,
+        char_buff_count=1,
+        enemy_debuff_count=1,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(
+            crit_dmg=0.3,
+            field_crit_dmg=0.2,
+            received_crit_dmg_bonus=0.4,
+        ),
+    )
+
+    retained_data = _legacy_multiplier_data(fixture)
+    retained_dynamic = cast(Any, retained_data).dynamic
+    full_crit_damage = Calculator.RegularMul.cal_crit_dmg(retained_data)
+    personal_crit_damage = Calculator.RegularMul.cal_personal_crit_dmg(retained_data)
+    reader_personal_crit_damage = (
+        CalculatorBuffAttributeReader().read_personal_crit_damage(fixture.context)
+    )
+
+    assert full_crit_damage == pytest.approx(1.4)
+    assert personal_crit_damage == pytest.approx(1.0)
+    assert reader_personal_crit_damage == pytest.approx(personal_crit_damage)
+    assert full_crit_damage - personal_crit_damage == pytest.approx(
+        retained_dynamic.received_crit_dmg_bonus
+    )
+    assert retained_dynamic.received_crit_dmg_bonus == pytest.approx(0.4)
+    _assert_aggregation_calls(aggregation_calls, fixture, times=2)
 
 
 @pytest.mark.parametrize(
