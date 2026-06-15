@@ -5143,3 +5143,15 @@
 - Next step:
   - Continue to `US-003` only for the bounded helper/delegation production diff if it preserves this exact boundary. Stop with No-Go if implementation requires public reader API expansion, snapshot expansion, registered fixture creation, adjacent formula changes, layer merge, old-container deletion, or retained compatibility cleanup.
 ---
+
+## 2026-06-15 10:58 +08:00 - US-003
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `scripts/ralph/plans/slices/us-003-implement-the-bounded-helper-delegation.md`, `scripts/ralph/plans/slices/us-004-preserve-oracle-and-contrast-tests.md`, `scripts/ralph/checkpoints/2026-06-15-us-003-bounded-helper-delegation.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `Calculator.RegularMul.cal_crit_dmg(data)` now delegates to module-local `_calculate_full_crit_damage(static_statement, dynamic_statement, judge_node)` for the bounded full crit damage seam.
+- Compatibility retained:
+  - The public `Calculator.RegularMul.cal_crit_dmg(data)` signature and `SkillNode` assertion remain in place.
+  - Full crit damage still includes `static.crit_damage`, `dynamic.crit_dmg`, `dynamic.field_crit_dmg`, optional `dynamic.aftershock_attack_crit_dmg_bonus`, `dynamic.received_crit_dmg_bonus`, and the `min(5, crit_dmg)` cap.
+  - `CalculatorBuffAttributeReader.read_full_crit_damage(...)` remains absent and unauthorized; `_CalculatorReadSnapshot`, adjacent RegularMul formulas, retained-only sheer, Stun arrays, CalAnomaly formulas, copied-output, event/runtime/listener, validation-runner behavior, old containers, registered routes, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-004` oracle/contrast preservation for this exact bounded helper seam. Do not broaden into public reader APIs, snapshot expansion, adjacent formulas, event/runtime/listener layers, validation-runner rewrites, old-container deletion, or retained compatibility cleanup.
+---

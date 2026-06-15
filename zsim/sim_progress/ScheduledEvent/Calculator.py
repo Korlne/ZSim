@@ -178,6 +178,31 @@ def _calculate_personal_crit_damage(static_statement: Any, dynamic_statement: An
     )
 
 
+def _calculate_full_crit_damage(
+    static_statement: Any, dynamic_statement: Any, judge_node: SkillNode
+) -> float:
+    if (
+        judge_node.skill.labels is not None
+        and judge_node.skill.labels.get("aftershock_attack") == 1
+    ):
+        label_crit_dmg_bonus = dynamic_statement.aftershock_attack_crit_dmg_bonus
+    else:
+        label_crit_dmg_bonus = 0
+
+    buff_crit_dmg_bonus = (
+        dynamic_statement.crit_dmg
+        + dynamic_statement.field_crit_dmg
+        + label_crit_dmg_bonus
+    )
+
+    crit_dmg = (
+        static_statement.crit_damage
+        + buff_crit_dmg_bonus
+        + dynamic_statement.received_crit_dmg_bonus
+    )
+    return min(5, crit_dmg)
+
+
 def _build_stun_multiplier_array(
     imp: float,
     stun_ratio: float,
@@ -974,24 +999,12 @@ class Calculator:
         @staticmethod
         def cal_crit_dmg(data: MultiplierData) -> float:
             """暴击伤害 = 静态面板暴击伤害 + buff暴击伤害 + 受暴击伤害增加"""
-            # 获取指定label暴伤
             assert isinstance(data.judge_node, SkillNode)
-            if (
-                data.judge_node.skill.labels is not None
-                and data.judge_node.skill.labels.get("aftershock_attack") == 1
-            ):
-                label_crit_dmg_bonus = data.dynamic.aftershock_attack_crit_dmg_bonus
-            else:
-                label_crit_dmg_bonus = 0
-
-            buff_crit_dmg_bonus = (
-                data.dynamic.crit_dmg + data.dynamic.field_crit_dmg + label_crit_dmg_bonus
+            return _calculate_full_crit_damage(
+                data.static,
+                data.dynamic,
+                data.judge_node,
             )
-
-            crit_dmg = (
-                data.static.crit_damage + buff_crit_dmg_bonus + data.dynamic.received_crit_dmg_bonus
-            )
-            return min(5, crit_dmg)
 
         def cal_crit_expect(self, data: MultiplierData) -> float:
             """暴击期望 = 1 + 暴击率 * 暴击伤害"""
