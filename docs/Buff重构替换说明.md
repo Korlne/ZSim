@@ -5283,3 +5283,15 @@
 - Next step:
   - Continue to `US-006` exact bounded proposal candidate selection or No-Go. Do not promote a live behavior sample unless the future sample contract names team, APL, stop tick, runtime labels, total damage comparison, relevant nonzero formula/event counts, full event counts, Buff timeline comparison, and rollback anchors.
 ---
+
+## 2026-06-15 14:46 +08:00 - US-006
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-006-select-one-exact-bounded-proposal-candidate-or-no-go.md`, `scripts/ralph/investigations/2026-06-15-US-006-select-one-exact-bounded-candidate.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-006 exact candidate decision packet` replaces loose retained-pool survey output with a single durable candidate decision: `Calculator.RegularMul.cal_dmg_bonus(data)` limited to the fire / normal attack / `aftershock_attack` / all-damage stack represented by `regular-dmg-bonus-character-field-stack`.
+  - This story is docs/evidence/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_dmg_bonus(data)` remains the retained production formula; all adjacent RegularMul branches, retained-only sheer, selected Stun implementation, `_CalculatorReadSnapshot`, `MultiplierData`, `DynamicStatement`, validation profiles, registered-route policy, explicit ports/adapters, old containers, and layer-separation invariants remain unchanged.
+  - Main-loop consistency remains skipped because this slice has no live production semantic diff and no real registered route with nonzero selected `cal_dmg_bonus()` relevance inside an explicit stop tick.
+- Next step:
+  - Continue to `US-007` focused oracle and typecheck contract for the selected `cal_dmg_bonus()` branch. Stop with No-Go if the contract requires broad RegularMul bundling, public snapshot expansion, registered fixture creation, validation-runner rewrite, layer merge, old-container deletion, or retained compatibility cleanup.
+---
