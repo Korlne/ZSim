@@ -5257,3 +5257,16 @@
 - Next step:
   - Continue to `US-004` retained-only sheer No-Go revalidation. Later candidate selection must choose one exact surface or record No-Go; if the selected surface lacks rows, close the focused oracle/typecheck contract before any production proposal.
 ---
+
+## 2026-06-15 14:17 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-revalidate-retained-only-sheer-no-go.md`, `scripts/ralph/investigations/2026-06-15-US-004-retained-only-sheer-no-go.md`, `scripts/ralph/checkpoints/2026-06-15-us-004-retained-only-sheer-no-go.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 retained-only sheer No-Go packet` replaces chat-only sheer route / snapshot judgment with durable source, route, and reader-snapshot evidence.
+  - This story is evidence/bookkeeping only. It does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_base_attr(..., base_attr=4)` still requires runtime `data.char_instance.sheer_attack_conversion_rate`; `_CalculatorReadSnapshot` remains private and unexpanded with no `char_instance` passthrough.
+  - `Calculator.RegularMul.cal_sheer_dmg_bonus(data)` remains compatible with the current reader-built snapshot only for retained existing behavior and does not authorize public snapshot expansion.
+  - Current-root Yixuan data/APL exists, but no registered `tests/teams` Yixuan route was found; no validation-only team, fake APL, or fixture-only route was added.
+- Next step:
+  - Continue to `US-005` registered behavior sample eligibility. Treat Yixuan APL presence as source evidence to inspect, not as permission to fabricate an eligible registered sample.
+---
