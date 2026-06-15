@@ -5545,3 +5545,16 @@
 - Next step:
   - Continue to `US-004` for the `cal_base_dmg(data)` caller helper seam or same-PRD No-Go. Keep retained-only sheer, public snapshot expansion, registered-route creation, and validation-runner changes out of that slice.
 ---
+
+## 2026-06-15 23:38 +08:00 - US-004
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-004-implement-base-damage-caller-helper-or-same-prd-no-go.md`, `scripts/ralph/plans/slices/us-005-run-serial-formula-and-reader-validation-gates.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `_calculate_base_damage(damage_ratio, attr, dynamic_statement)` replaces the inline final arithmetic in `Calculator.RegularMul.cal_base_dmg(data)` with a module-local helper seam after `diff_multiplier` and `cal_base_attr(base_attr, data)` resolve the base attribute.
+  - Same-PRD No-Go remains recorded for `base_attr=4` / sheer, public snapshot expansion, registered-route creation, validation-runner behavior, event/runtime/listener changes, old-container deletion, and retained compatibility cleanup.
+- Compatibility retained:
+  - Public `Calculator.RegularMul.cal_base_dmg(data)` signature and relative call order remain unchanged.
+  - Existing non-sheer `cal_base_attr(base_attr in 0..3, data)` helper seam remains the caller anchor; `base_attr=4`, `cal_sheer_dmg_bonus(data)`, and `char_instance.sheer_attack_conversion_rate` stay on the retained path.
+  - Focused pytest exited `0` with `9 passed, 150 deselected`; scoped mypy exited `0` with `Success: no issues found in 2 source files` plus existing unchecked-body notes only.
+- Next step:
+  - Continue to `US-005` serial formula and reader validation gates. Keep `formula-parity` and `calculator-reads` serial, and keep `implicit-events` conditional on copied-output/event/runtime/listener or validation-runner surfaces.
+---

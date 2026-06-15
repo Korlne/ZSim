@@ -172,6 +172,14 @@ def _calculate_non_sheer_base_attribute(
     raise AssertionError(INVALID_ELEMENT_ERROR)
 
 
+def _calculate_base_damage(
+    damage_ratio: float, attr: float, dynamic_statement: Any
+) -> float:
+    return ((damage_ratio + dynamic_statement.extra_damage_ratio) * attr) * (
+        1 + dynamic_statement.base_dmg_increase_percentage
+    ) + dynamic_statement.base_dmg_increase
+
+
 def _calculate_impact(static_statement: Any, dynamic_statement: Any) -> float:
     return (
         static_statement.imp * (1 + dynamic_statement.field_imp_percentage)
@@ -1114,9 +1122,7 @@ class Calculator:
             base_attr = data.judge_node.skill.diff_multiplier
             # 属性为攻击力
             attr = self.cal_base_attr(base_attr, data)
-            base_dmg = ((dmg_ratio + data.dynamic.extra_damage_ratio) * attr) * (
-                1 + data.dynamic.base_dmg_increase_percentage
-            ) + data.dynamic.base_dmg_increase
+            base_dmg = _calculate_base_damage(dmg_ratio, attr, data.dynamic)
             # if data.judge_node.char_name == "雅":
             #     print(f"雅的基础乘区为：{dmg_ratio:.2f}, 基础攻击力{data.static.atk:.2f} 局内百分比 {data.dynamic.field_atk_percentage:.2f}固定攻击力{data.dynamic.atk:.2f}")
             return base_dmg

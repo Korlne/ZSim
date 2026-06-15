@@ -4890,6 +4890,105 @@ def test_regular_mul_damage_bonus_delegates_to_module_helper(
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
 
 
+@pytest.mark.parametrize(
+    ("damage_ratio", "attr", "dynamic_attrs", "expected_value"),
+    [
+        pytest.param(2.0, 100.0, {}, 200.0, id="neutral"),
+        pytest.param(
+            1.2,
+            550.0,
+            {
+                "extra_damage_ratio": 0.3,
+                "base_dmg_increase_percentage": 0.2,
+                "base_dmg_increase": 12.0,
+            },
+            1002.0,
+            id="dynamic-ap",
+        ),
+    ],
+)
+def test_regular_mul_base_damage_scalar_helper_preserves_current_formula(
+    damage_ratio: float,
+    attr: float,
+    dynamic_attrs: dict[str, float],
+    expected_value: float,
+) -> None:
+    dynamic_statement_attrs = {
+        "extra_damage_ratio": 0.0,
+        "base_dmg_increase_percentage": 0.0,
+        "base_dmg_increase": 0.0,
+    }
+    dynamic_statement_attrs.update(dynamic_attrs)
+    dynamic_statement = SimpleNamespace(**dynamic_statement_attrs)
+
+    assert calculator_module._calculate_base_damage(
+        damage_ratio,
+        attr,
+        dynamic_statement,
+    ) == pytest.approx(expected_value)
+
+
+def test_regular_mul_base_damage_delegates_to_module_helper_and_base_attr_call(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_attribute_read_fixture(
+        name="base damage delegate",
+        damage_ratio=3.6,
+        hit_times=3,
+        diff_multiplier=3,
+        char_buff_count=1,
+        enemy_debuff_count=1,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(
+            extra_damage_ratio=0.3,
+            base_dmg_increase_percentage=0.2,
+            base_dmg_increase=12.0,
+        ),
+    )
+    retained_data = _legacy_multiplier_data(fixture)
+    regular_mul = _regular_mul_oracle()
+    base_attr_calls: list[tuple[Any, int, MultiplierData]] = []
+    helper_calls: list[tuple[float, float, Any]] = []
+
+    def fake_cal_base_attr(
+        self: Any, base_attr: int, data: MultiplierData
+    ) -> float:
+        base_attr_calls.append((self, base_attr, data))
+        return 444.0
+
+    def fake_calculate_base_damage(
+        damage_ratio: float, attr: float, dynamic_statement: Any
+    ) -> float:
+        helper_calls.append((damage_ratio, attr, dynamic_statement))
+        return 8.88
+
+    monkeypatch.setattr(
+        Calculator.RegularMul,
+        "cal_base_attr",
+        fake_cal_base_attr,
+    )
+    monkeypatch.setattr(
+        calculator_module,
+        "_calculate_base_damage",
+        fake_calculate_base_damage,
+    )
+
+    assert regular_mul.cal_base_dmg(retained_data) == pytest.approx(8.88)
+    assert len(base_attr_calls) == 1
+    called_self, called_base_attr, called_data = base_attr_calls[0]
+    assert called_self is regular_mul
+    assert called_base_attr == 3
+    assert called_data is retained_data
+    assert len(helper_calls) == 1
+    called_damage_ratio, called_attr, called_dynamic = helper_calls[0]
+    assert called_damage_ratio == pytest.approx(1.2)
+    assert called_attr == pytest.approx(444.0)
+    assert called_dynamic is retained_data.dynamic
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+
+
 def test_regular_mul_branch_matrix_defense_group_delegates_to_module_helpers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
