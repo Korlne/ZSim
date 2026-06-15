@@ -5168,3 +5168,16 @@
 - Next step:
   - Continue to `US-005` retained validation gates serially. Run `formula-parity`; run broader retained profiles only when the touched-surface criteria require them.
 ---
+
+## 2026-06-15 11:24 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-run-retained-validation-gates-serially.md`, `scripts/ralph/plans/slices/us-006-decide-registered-sample-eligibility.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 serial retained validation evidence` replaces chat-only validation confidence with durable `formula-parity` command evidence and touched-surface skip rationales for retained gates.
+  - This story is validation/bookkeeping only. It does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_crit_dmg(data)` remains delegated through `_calculate_full_crit_damage(...)` with the public signature, `SkillNode` assertion, label branch, `received_crit_dmg_bonus`, and `min(5, crit_dmg)` cap retained.
+  - `CalculatorBuffAttributeReader`, `_CalculatorReadSnapshot`, `tests/simulator/test_buff_attribute_reader.py`, `scripts/run_buff_refactor_validation.py`, old containers, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, registered routes, and retained compatibility paths remain unchanged.
+  - `calculator-reads`, `implicit-events`, and default validation were skipped by concrete touched-surface criteria, not by omission.
+- Next step:
+  - Continue to `US-006` registered sample eligibility. Do not run main-loop consistency or invent registered-route evidence unless a later slice changes live semantics and proves a real registered direct-damage route with nonzero selected full-crit-damage relevance inside an explicit stop tick.
+---
