@@ -5102,3 +5102,18 @@
 - Next step:
   - Continue to `US-008` handoff docs and same-phase pool preservation. Keep handoff docs broad enough for future PRD generation and do not collapse the same-phase pool to this validation slice.
 ---
+
+## 2026-06-15 09:17 +08:00 - US-008
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-15-us-008-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-008 full crit damage final handoff` replaces single-slice routing assumptions with durable next-intake evidence: Conditional Go for one later bounded implementation PRD limited to `Calculator.RegularMul.cal_crit_dmg(data)` plus an optional behavior-preserving module-local helper.
+  - This story is handoff/docs/bookkeeping only. It does not replace live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_crit_dmg(data)` remains the retained inline production formula for this proposal-readiness PRD until a later implementation PRD explicitly lands the bounded helper seam.
+  - Any later helper must preserve static crit damage, dynamic crit damage, field crit damage, `aftershock_attack` label bonus, `received_crit_dmg_bonus`, `min(5, crit_dmg)` cap, public signature, and current `SkillNode` assumption.
+  - `CalculatorBuffAttributeReader.read_full_crit_damage(...)` remains absent and unauthorized; `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, old containers, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, registered routes, validation-runner behavior, and retained compatibility paths remain unchanged.
+  - Same-phase pool remains registered behavior sample eligibility, remaining `Calculator.RegularMul` branches / retained-only sheer follow-up, future `Calculator.StunMul.get_stun_array()` follow-up if named evidence appears, P2-A through P2-G guarded maintenance, retained compatibility, and blocker-only reopen rules.
+  - No new Buff coupling or coupling-classification change was found, so `docs/旧Buff系统耦合审查结果.md` remains unchanged.
+- Next step:
+  - Generate one bounded full-crit-damage implementation PRD only if it preserves the documented formula behavior and retained gates. After that PRD completes or records No-Go, reselect from the broader same-phase pool instead of chaining stale single-branch follow-ups.
+---

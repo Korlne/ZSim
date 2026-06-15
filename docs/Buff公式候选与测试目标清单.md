@@ -741,6 +741,32 @@ Rollback anchors / same-phase pool：
 - Rollback anchors：source methods、focused Stun array oracle、retained Buff docs、本清单、`formula-parity`、`calculator-reads`、conditional `implicit-events`、`MultiplierData` / `DynamicStatement`、old containers、`ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`BuffRuntimeReadPort` 与 `LegacyBuffRuntimeFacade`。
 - Same-phase pool retained：registered behavior sample eligibility、remaining `Calculator.RegularMul` branches / retained-only sheer follow-up、`Calculator.StunMul.get_stun_array()` future follow-up、P2-A through P2-G guarded maintenance、retained compatibility 和 blocker-only reopen rules。
 
+## Current RegularMul full crit damage proposal-readiness US-008 final handoff
+
+结论：Conditional Go for one later bounded implementation PRD only。当前 proposal-readiness PRD 选择 `Calculator.RegularMul.cal_crit_dmg(data)` 作为 later implementation default；本 PRD 不替换 production formula、不新增 public reader API、不扩展 `_CalculatorReadSnapshot`、不新增 registered team/APL、不改 validation runner、不删除 old containers，也不合并 scheduled queue、listener broadcast、dot runtime registration 或 same-tick runtime write 分层。
+
+Selected candidate outcome：
+
+- Selected files / symbols：`zsim/sim_progress/ScheduledEvent/Calculator.py::Calculator.RegularMul.cal_crit_dmg(data)`；focused oracle / contrast anchors 为 `test_calculator_regular_mul_crit_formula_families_preserve_received_boundaries`、`test_regular_mul_branch_matrix_characterizes_selected_methods` 中的 `regular-crit_dmg-aftershock-label-and-received-*` rows、`test_reader_personal_crit_damage_anchor_preserves_full_and_personal_crit_contrast` 和 `test_full_crit_damage_reader_api_and_snapshot_contract_stay_bounded`。
+- Future helper boundary：只允许 module-local、behavior-preserving extraction，必须保持 static crit damage、dynamic crit damage、field crit damage、`aftershock_attack` label bonus、`received_crit_dmg_bonus` 和 `min(5, crit_dmg)` cap 行为，保留 public signature 与 current `SkillNode` assumption。
+- No-Go boundaries：不得新增 `CalculatorBuffAttributeReader.read_full_crit_damage(...)`、不得扩展 `_CalculatorReadSnapshot`、不得捆绑 full / personal crit damage、crit rate、damage bonus、defense、resistance、vulnerability、retained-only sheer、arrays、copied-output、event/runtime/listener layers、validation-runner rewrite、registered-team fixture creation、old-container deletion 或 retained compatibility cleanup。
+
+Retained gates / verifier evidence：
+
+- US-007 retained `formula-parity` gate 已通过：base simulator `2 passed`、isolated teams `3 passed`、focused formula parity `148 passed`、mypy `Success: no issues found in 9 source files`。
+- US-008 focused verifier：`uv run pytest tests/simulator/test_buff_attribute_reader.py -q -k "crit_formula_families or full_crit_damage or reader_personal_crit_damage_anchor"` exited `0` with `5 passed, 143 deselected`；`uv run python -m mypy zsim/sim_progress/ScheduledEvent/Calculator.py tests/simulator/test_buff_attribute_reader.py --follow-imports skip --ignore-missing-imports` exited `0` with `Success: no issues found in 2 source files`。
+- `calculator-reads`、`implicit-events`、default validation 和 main-loop consistency 仍按 touched-surface 条件触发；本 docs-only handoff 未触达 reader seam / snapshot / guardrail shared tests、copied-output、event/runtime/listener、dot runtime、lifecycle、same-tick runtime write、validation-runner contract、old-container 或 registered-route live semantic surface。
+
+Registered-sample decision：
+
+- Current decision：conditional No-Go。当前 proposal-readiness / docs-only handoff 没有 live production semantic diff，因此不运行 `scripts/run_buff_main_loop_consistency.py`，也不创建 validation-only team、fake APL、fixture-only route 或 retained-vs-retained sample。
+- Future sample 只在 later live semantic diff 且真实 registered direct-damage route 在 explicit stop tick 内有 nonzero selected full-crit-damage relevance 时运行；必须记录 runtime labels、total damage comparison、relevant formula/event count、event counts 和 Buff timeline comparison。
+
+Rollback anchors / same-phase pool：
+
+- Rollback anchors：`Calculator.RegularMul.cal_crit_dmg(data)` current body、any future helper if authorized、focused full-crit oracle rows、full-vs-personal contrast tests、本清单、`docs/Buff重构下阶段计划草稿.md`、`docs/Buff重构替换说明.md`、retained `formula-parity`、conditional `calculator-reads` / `implicit-events`、old containers、`ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`BuffRuntimeReadPort` 与 `LegacyBuffRuntimeFacade`。
+- Same-phase pool retained：registered behavior sample eligibility、remaining `Calculator.RegularMul` branches / retained-only sheer follow-up、future `Calculator.StunMul.get_stun_array()` follow-up if named evidence appears、P2-A through P2-G guarded maintenance、retained compatibility 和 blocker-only reopen rules。
+
 ## US-022 行为样本决策矩阵
 
 本矩阵只定义何时需要 registered-team main-loop consistency sample；它不新增 validation profile，不替换生产公式，不把 `--legacy-runtime` / `--candidate-runtime` label 当作真实 runtime switch。
