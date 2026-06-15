@@ -5130,3 +5130,16 @@
 - Next step:
   - Continue to `US-002` to lock the helper boundary from current root source before any production edit. Stop with No-Go if source/docs/state name a different route, a completed implementation, or any public-reader/snapshot/registered-fixture/adjacent-formula/layer-merge requirement.
 ---
+
+## 2026-06-15 10:43 +08:00 - US-002
+- Files changed: `scripts/ralph/plans/slices/us-002-lock-the-full-crit-damage-helper-boundary.md`, `scripts/ralph/investigations/2026-06-15-US-002-full-crit-damage-helper-boundary.md`, `scripts/ralph/checkpoints/2026-06-15-us-002-full-crit-damage-helper-boundary.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 full crit damage helper boundary packet` replaces chat-only helper-seam confidence with durable source, No-Go, and verifier evidence for the later `_calculate_full_crit_damage(static_statement, dynamic_statement, judge_node)` candidate.
+  - This story prepares a boundary only. It does not replace live production formula code and does not add the helper/delegation hunk; `US-003` owns any production implementation.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_crit_dmg(data)` remains inline and still includes `static.crit_damage`, `dynamic.crit_dmg`, `dynamic.field_crit_dmg`, optional `dynamic.aftershock_attack_crit_dmg_bonus`, `dynamic.received_crit_dmg_bonus`, and `min(5, crit_dmg)`.
+  - The public `Calculator.RegularMul.cal_crit_dmg(data)` signature and current `SkillNode` assertion remain intact.
+  - `CalculatorBuffAttributeReader.read_full_crit_damage(...)` remains absent and unauthorized; `_CalculatorReadSnapshot`, registered fixtures, adjacent RegularMul formulas, validation-runner behavior, old containers, event/runtime/listener layers, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-003` only for the bounded helper/delegation production diff if it preserves this exact boundary. Stop with No-Go if implementation requires public reader API expansion, snapshot expansion, registered fixture creation, adjacent formula changes, layer merge, old-container deletion, or retained compatibility cleanup.
+---
