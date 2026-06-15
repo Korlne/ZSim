@@ -203,6 +203,81 @@ def _calculate_full_crit_damage(
     return min(5, crit_dmg)
 
 
+def _calculate_damage_bonus(
+    static_statement: Any, dynamic_statement: Any, judge_node: SkillNode
+) -> float:
+    element_type = judge_node.element_type
+    # 获取属性伤害加成，初始化为1.0
+    if element_type == 0:
+        element_dmg_bonus = (
+            static_statement.phy_dmg_bonus + dynamic_statement.phy_dmg_bonus
+        )
+    elif element_type == 1:
+        element_dmg_bonus = (
+            static_statement.fire_dmg_bonus + dynamic_statement.fire_dmg_bonus
+        )
+    elif element_type == 3:
+        element_dmg_bonus = (
+            static_statement.electric_dmg_bonus + dynamic_statement.electric_dmg_bonus
+        )
+    elif element_type == 2 or element_type == 5:
+        element_dmg_bonus = (
+            static_statement.ice_dmg_bonus + dynamic_statement.ice_dmg_bonus
+        )
+    elif element_type in [4, 6]:
+        element_dmg_bonus = (
+            static_statement.ether_dmg_bonus + dynamic_statement.ether_dmg_bonus
+        )
+    else:
+        raise ValueError(
+            f"Invalid element type: {element_type}, must be a integer in 0~6"
+        )
+
+    # 获取指定Tag增伤
+    trigger_buff_level = judge_node.skill.trigger_buff_level
+    if trigger_buff_level == 0:
+        trigger_dmg_bonus = dynamic_statement.normal_attack_dmg_bonus
+    elif trigger_buff_level == 1:
+        trigger_dmg_bonus = dynamic_statement.special_skill_dmg_bonus
+    elif trigger_buff_level == 2:
+        trigger_dmg_bonus = dynamic_statement.ex_special_skill_dmg_bonus
+    elif trigger_buff_level == 3:
+        trigger_dmg_bonus = dynamic_statement.dash_attack_dmg_bonus
+    elif trigger_buff_level == 4:
+        trigger_dmg_bonus = dynamic_statement.counter_attack_dmg_bonus
+    elif trigger_buff_level == 5:
+        trigger_dmg_bonus = dynamic_statement.qte_dmg_bonus
+    elif trigger_buff_level == 6:
+        trigger_dmg_bonus = dynamic_statement.ultimate_dmg_bonus
+    elif trigger_buff_level == 7:
+        trigger_dmg_bonus = dynamic_statement.quick_aid_dmg_bonus
+    elif trigger_buff_level == 8:
+        trigger_dmg_bonus = dynamic_statement.defensive_aid_dmg_bonus
+    elif trigger_buff_level == 9:
+        trigger_dmg_bonus = dynamic_statement.assault_aid_dmg_bonus
+    elif trigger_buff_level == 10:
+        trigger_dmg_bonus = 0
+    else:
+        raise AssertionError("Invalid trigger_level")
+
+    # 获取指定label增伤
+    if (
+        judge_node.skill.labels is not None
+        and judge_node.skill.labels.get("aftershock_attack") == 1
+    ):
+        label_dmg_bonus = dynamic_statement.aftershock_attack_dmg_bonus
+    else:
+        label_dmg_bonus = 0
+
+    return (
+        1
+        + element_dmg_bonus
+        + trigger_dmg_bonus
+        + label_dmg_bonus
+        + dynamic_statement.all_dmg_bonus
+    )
+
+
 def _build_stun_multiplier_array(
     imp: float,
     stun_ratio: float,
@@ -923,68 +998,7 @@ class Calculator:
             进攻类型增伤即针对于角色进攻类型(斩击(Slash)、打击(Strike)和穿透(Pierce))的增伤。全类型增伤就是未作类型限定的增伤。
             """
             assert isinstance(data.judge_node, SkillNode)
-            element_type = data.judge_node.element_type
-            # 获取属性伤害加成，初始化为1.0
-            if element_type == 0:
-                element_dmg_bonus = data.static.phy_dmg_bonus + data.dynamic.phy_dmg_bonus
-            elif element_type == 1:
-                element_dmg_bonus = data.static.fire_dmg_bonus + data.dynamic.fire_dmg_bonus
-            elif element_type == 3:
-                element_dmg_bonus = data.static.electric_dmg_bonus + data.dynamic.electric_dmg_bonus
-            elif element_type == 2 or element_type == 5:
-                element_dmg_bonus = data.static.ice_dmg_bonus + data.dynamic.ice_dmg_bonus
-            elif element_type in [4, 6]:
-                element_dmg_bonus = data.static.ether_dmg_bonus + data.dynamic.ether_dmg_bonus
-            else:
-                raise ValueError(f"Invalid element type: {element_type}, must be a integer in 0~6")
-            # 获取指定Tag增伤
-            trigger_buff_level = data.judge_node.skill.trigger_buff_level
-            if trigger_buff_level == 0:
-                trigger_dmg_bonus = data.dynamic.normal_attack_dmg_bonus
-            elif trigger_buff_level == 1:
-                trigger_dmg_bonus = data.dynamic.special_skill_dmg_bonus
-            elif trigger_buff_level == 2:
-                trigger_dmg_bonus = data.dynamic.ex_special_skill_dmg_bonus
-            elif trigger_buff_level == 3:
-                trigger_dmg_bonus = data.dynamic.dash_attack_dmg_bonus
-            elif trigger_buff_level == 4:
-                trigger_dmg_bonus = data.dynamic.counter_attack_dmg_bonus
-            elif trigger_buff_level == 5:
-                trigger_dmg_bonus = data.dynamic.qte_dmg_bonus
-            elif trigger_buff_level == 6:
-                trigger_dmg_bonus = data.dynamic.ultimate_dmg_bonus
-            elif trigger_buff_level == 7:
-                trigger_dmg_bonus = data.dynamic.quick_aid_dmg_bonus
-            elif trigger_buff_level == 8:
-                trigger_dmg_bonus = data.dynamic.defensive_aid_dmg_bonus
-            elif trigger_buff_level == 9:
-                trigger_dmg_bonus = data.dynamic.assault_aid_dmg_bonus
-            elif trigger_buff_level == 10:
-                trigger_dmg_bonus = 0
-            else:
-                raise AssertionError("Invalid trigger_level")
-            # 获取指定label增伤
-            if (
-                data.judge_node.skill.labels is not None
-                and data.judge_node.skill.labels.get("aftershock_attack") == 1
-            ):
-                label_dmg_bonus = data.dynamic.aftershock_attack_dmg_bonus
-            else:
-                label_dmg_bonus = 0
-            dmg_bonus = (
-                1
-                + element_dmg_bonus
-                + trigger_dmg_bonus
-                + label_dmg_bonus
-                + data.dynamic.all_dmg_bonus
-            )
-            # if "Cinema_1" in data.judge_node.skill_tag:
-            #     print(element_dmg_bonus, trigger_dmg_bonus, label_dmg_bonus, data.dynamic.all_dmg_bonus)
-            # if "1291_CorePassive" in data.judge_node.skill_tag:
-            #     print(
-            #         f"元素类增伤：{element_dmg_bonus}, 技能类型增伤：{trigger_dmg_bonus}, 标签增伤：{label_dmg_bonus}, 全类型增伤：{data.dynamic.all_dmg_bonus}",
-            #     )
-            return dmg_bonus
+            return _calculate_damage_bonus(data.static, data.dynamic, data.judge_node)
 
         @staticmethod
         def cal_crit_rate(data: MultiplierData) -> float:

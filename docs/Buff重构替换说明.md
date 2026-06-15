@@ -5394,3 +5394,15 @@
 - Next step:
   - Continue to `US-002` and implement only the bounded `Calculator.RegularMul.cal_dmg_bonus(data)` helper seam, reusing the `regular-dmg-bonus-character-field-stack` oracle and the scoped mypy gate.
 ---
+
+## 2026-06-15 18:27 +08:00 - US-002
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `tests/simulator/test_buff_attribute_reader.py`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-002-damage-bonus-helper-seam.md`, `scripts/ralph/investigations/2026-06-15-US-002-damage-bonus-helper-seam.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `_calculate_damage_bonus(static_statement, dynamic_statement, judge_node)` prepares to replace the retained inline `Calculator.RegularMul.cal_dmg_bonus(data)` formula body while preserving the public static method signature and current `SkillNode` assertion.
+  - `test_regular_mul_damage_bonus_delegates_to_module_helper()` adds seam-specific delegation evidence without duplicating the existing `regular-dmg-bonus-character-field-stack` oracle row.
+- Compatibility retained:
+  - Element mapping, trigger-level mapping, `aftershock_attack` label bonus, and `all_dmg_bonus` stack remain covered by `regular-dmg-bonus-character-field-stack` and focused delegation verification.
+  - `CalculatorBuffAttributeReader`, `_CalculatorReadSnapshot`, sibling `RegularMul` branches, registered routes, validation-runner behavior, explicit ports/adapters, old containers, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-003` for the resistance / vulnerability / special scalar group. Reuse the same helper-seam pattern only where focused oracle coverage and scoped mypy remain deterministic.
+---

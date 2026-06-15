@@ -4744,6 +4744,59 @@ def test_calculator_regular_mul_crit_formula_families_preserve_received_boundari
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
 
 
+def test_regular_mul_damage_bonus_delegates_to_module_helper(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_attribute_read_fixture(
+        name="增伤委托",
+        static_statement_attrs={"FIRE_DMG_bonus": 0.15},
+        damage_ratio=1.0,
+        hit_times=1,
+        diff_multiplier=0,
+        element_type=1,
+        trigger_buff_level=0,
+        skill_labels={"aftershock_attack": 1},
+        char_buff_count=1,
+        enemy_debuff_count=0,
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(
+            fire_dmg_bonus=0.25,
+            normal_attack_dmg_bonus=0.30,
+            aftershock_attack_dmg_bonus=0.10,
+            all_dmg_bonus=0.20,
+        ),
+    )
+    retained_data = _legacy_multiplier_data(fixture)
+    helper_calls: list[tuple[Any, Any, Any]] = []
+
+    def fake_calculate_damage_bonus(
+        static_statement: Any,
+        dynamic_statement: Any,
+        judge_node: SkillNode,
+    ) -> float:
+        helper_calls.append((static_statement, dynamic_statement, judge_node))
+        return 6.54
+
+    monkeypatch.setattr(
+        calculator_module,
+        "_calculate_damage_bonus",
+        fake_calculate_damage_bonus,
+    )
+
+    first_value = Calculator.RegularMul.cal_dmg_bonus(retained_data)
+    second_value = Calculator.RegularMul.cal_dmg_bonus(retained_data)
+
+    assert first_value == pytest.approx(6.54)
+    assert second_value == pytest.approx(6.54)
+    assert helper_calls == [
+        (retained_data.static, retained_data.dynamic, retained_data.judge_node),
+        (retained_data.static, retained_data.dynamic, retained_data.judge_node),
+    ]
+    _assert_aggregation_calls(aggregation_calls, fixture, times=1)
+
+
 def test_regular_mul_full_crit_rate_delegates_to_module_helper(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
