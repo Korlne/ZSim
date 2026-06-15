@@ -5494,3 +5494,16 @@
 - Next step:
   - Continue to `US-010` handoff docs, same-phase pool, and invariant review. Keep the next PRD route evidence-based and do not collapse the same-phase candidate pool to a single stale callsite.
 ---
+
+## 2026-06-15 20:23 +08:00 - US-010
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-010-handoff-docs-same-phase-pool-and-invariant-review.md`, `scripts/ralph/plans/slices/buff-refactor-phase3-regularmul-scalar-helper-family-bounded-implementation-next-intake.md`, `scripts/ralph/checkpoints/2026-06-15-us-010-handoff-docs-same-phase-pool-invariant-review.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-010 handoff docs and same-phase pool` replaces stale RegularMul scalar-helper routing with durable implemented / No-Go status, retained validation evidence, reviewer invariant verdict, and a current default next PRD that reselects from the same-phase pool.
+  - This story does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Current helper-family implemented / no-op verified surfaces are damage bonus, resistance / vulnerability / special, defense helper group, and crit expectation; non-sheer base damage / base attr remains No-Go and retained-only sheer remains a separate follow-up.
+  - `formula-parity` and `calculator-reads` retained gates from US-008 remain the batch evidence; registered main-loop sample stays Conditional No-Go because there is no live production semantic diff or eligible real route.
+  - No new Buff coupling or coupling-classification evidence was found, so `docs/旧Buff系统耦合审查结果.md` stays unchanged.
+- Next step:
+  - Generate the next PRD as Phase-3 same-phase candidate selection / bounded proposal. Preserve registered behavior sample eligibility, remaining RegularMul / retained-only sheer, future Stun evidence, P2 guarded maintenance, retained compatibility, and blocker-only reopen rules instead of following one stale callsite.
+---
