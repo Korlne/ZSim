@@ -5319,3 +5319,15 @@
 - Next step:
   - Continue to `US-009` event/runtime conditional gate review. Run `implicit-events` or default validation only if touched-surface evidence shows event queue, dispatch/runtime, listener, dot runtime, lifecycle, same-tick runtime write, validation-runner behavior, old-container, copied-output, or retained compatibility surfaces changed.
 ---
+
+## 2026-06-15 15:23 +08:00 - US-009
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-009-check-event-runtime-boundaries-and-conditional-gates.md`, `scripts/ralph/investigations/2026-06-15-US-009-event-runtime-conditional-gates.md`, `scripts/ralph/checkpoints/2026-06-15-us-009-event-runtime-conditional-gates.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-010-write-proposal-packet-and-reviewer-rollback-gate.md`
+- Replacement note:
+  - `US-009 event/runtime conditional gate evidence` replaces chat-only touched-surface classification with durable branch-diff, CodeGraph, retained-layer, `implicit-events`, and default validation evidence.
+  - This story is validation/evidence/bookkeeping only. It does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output constructors, event/runtime/listener paths, dot runtime registration, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, event queue semantics, synchronous listener broadcasts, dot runtime registration, scheduled publish, same-tick runtime writes, old containers, validation profiles, and retained compatibility paths remain unchanged.
+  - `Calculator.RegularMul.cal_dmg_bonus(data)` remains the selected proposal candidate only; no production implementation diff is authorized by this story.
+- Next step:
+  - Continue to `US-010` proposal packet and reviewer rollback gate. Keep future implementation scoped to the selected `cal_dmg_bonus()` branch unless a separate PRD records a concrete blocker.
+---
