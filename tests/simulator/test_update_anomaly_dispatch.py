@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+import zsim.sim_progress.Buff.BuffAddStrategy as buff_add_strategy_module
 import zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput as copied_output_module
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 from zsim.sim_progress.Dot.BaseDot import Dot
@@ -1083,22 +1084,100 @@ def test_anomaly_effect_active_debuff_branch_uses_existing_buff_add_path(
 
 
 def test_anomaly_effect_active_does_not_introduce_runtime_write_ports():
-    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import (
+        BuffRuntimeReadPort,
+        LegacyBuffRuntimeFacade,
+    )
+    from zsim.sim_progress.ScheduledEvent.runtime_command import (
+        LegacyRuntimeCommandAdapter,
+        RuntimeCommandPort,
+    )
 
-    source = inspect.getsource(update_anomaly_module.anomaly_effect_active)
-    assert "RuntimeCommandPort" not in source
-    assert "create_runtime_command_port" not in source
-    assert "BuffRuntimeReadPort" not in source
-    assert "DotRuntimeStateAdapter.from_enemy" in source
+    anomaly_source = inspect.getsource(update_anomaly_module.anomaly_effect_active)
+    remove_source = inspect.getsource(update_anomaly_module.remove_dots_cause_disorder)
+    buff_add_source = inspect.getsource(buff_add_strategy_module)
+    legacy_facade_source = inspect.getsource(LegacyBuffRuntimeFacade)
+
+    anomaly_forbidden_terms = {
+        "ScheduleDispatchPort",
+        "create_schedule_dispatch_port",
+        "publish_scheduled",
+        "_publish_scheduled_event",
+        "RuntimeCommandPort",
+        "LegacyRuntimeCommandAdapter",
+        "create_runtime_command_port",
+        "BuffRuntimeReadPort",
+        "LegacyBuffRuntimeFacade",
+        "create_legacy_buff_runtime_facade",
+        "listener_manager",
+        "broadcast_event",
+        "global_stats",
+        "DYNAMIC_BUFF_DICT",
+        "LOADING_BUFF_DICT",
+        "dynamic_debuff_list",
+    }
+    for term in anomaly_forbidden_terms:
+        assert term not in anomaly_source
+    assert "buff_add_strategy" in anomaly_source
+    assert "spawn_anomaly_dot" in anomaly_source
+    assert "DotRuntimeStateAdapter.from_enemy" in anomaly_source
+    assert "replace_by_index" in anomaly_source
+
+    remove_forbidden_terms = {
+        "buff_add_strategy",
+        "RuntimeCommandPort",
+        "LegacyRuntimeCommandAdapter",
+        "create_runtime_command_port",
+        "BuffRuntimeReadPort",
+        "LegacyBuffRuntimeFacade",
+        "create_legacy_buff_runtime_facade",
+        "listener_manager",
+        "broadcast_event",
+        "global_stats",
+        "DYNAMIC_BUFF_DICT",
+        "LOADING_BUFF_DICT",
+        "dynamic_debuff_list",
+    }
+    for term in remove_forbidden_terms:
+        assert term not in remove_source
+    assert "_publish_scheduled_event" in remove_source
+    assert "DotRuntimeStateAdapter.from_enemy" in remove_source
+    assert "remove_all" in remove_source
+    assert "change_process_state" in remove_source
+
+    buff_add_forbidden_terms = {
+        "ScheduleDispatchPort",
+        "create_schedule_dispatch_port",
+        "publish_scheduled",
+        "RuntimeCommandPort",
+        "create_runtime_command_port",
+        "BuffRuntimeReadPort",
+        "listener_manager",
+        "broadcast_event",
+    }
+    for term in buff_add_forbidden_terms:
+        assert term not in buff_add_source
+    assert "create_legacy_buff_runtime_facade" in buff_add_source
+    assert "exist_buff_dict" in buff_add_source
+    assert "DYNAMIC_BUFF_DICT" in buff_add_source
+    assert "LOADING_BUFF_DICT" in buff_add_source
+    assert "dynamic_debuff_list" in buff_add_source
+
+    assert RuntimeCommandPort is not LegacyRuntimeCommandAdapter
+    assert "publish_scheduled" not in inspect.getsource(RuntimeCommandPort)
+    assert "publish_scheduled" not in inspect.getsource(LegacyRuntimeCommandAdapter)
+    assert "publish_scheduled" not in legacy_facade_source
 
     write_method_names = {
-        "append_pending_buff",
+        "enqueue_pending_buff",
         "clear_pending_buffs",
         "remove_active_buff",
         "append_active_buff",
         "sync_enemy_debuff_mirror",
     }
     assert write_method_names.isdisjoint(BuffRuntimeReadPort.__dict__)
+    for method_name in write_method_names:
+        assert hasattr(LegacyBuffRuntimeFacade, method_name)
 
 
 def test_copied_output_constructors_keep_publish_dot_and_debuff_layers_external():

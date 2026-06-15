@@ -5744,3 +5744,17 @@
 - Next step:
   - Continue to `US-005` dot runtime and same-tick Buff write separation. Do not merge same-tick Buff write routing or production copied-output/formula changes into the completed US-004 characterization slice.
 ---
+
+## 2026-06-16 03:46 +08:00 - US-005
+- Files changed: `tests/simulator/test_update_anomaly_dispatch.py`, `scripts/ralph/plans/slices/us-005-dot-runtime-and-same-tick-buff-write-separation.md`, `scripts/ralph/investigations/2026-06-16-US-005-dot-runtime-write-separation.md`, `scripts/ralph/checkpoints/2026-06-16-us-005-dot-runtime-write-separation.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 dot runtime / same-tick Buff write characterization` replaces implicit layer-separation confidence with focused tests and checkpoint evidence for `anomaly_effect_active(...)`, `remove_dots_cause_disorder(...)`, and retained `buff_add_strategy(...)` delegation.
+  - This story builds a characterization boundary only; it does not replace live production `UpdateAnomaly.py`, `DotRuntimeStateAdapter`, `BuffAddStrategy.py`, dispatch/runtime ports, listener broadcast, copied-output constructors, formulas, old containers, or retained compatibility behavior.
+- Compatibility retained:
+  - Dot runtime replacement/removal remains `DotRuntimeStateAdapter` work; freeze follow-up remains the only scheduled publish in `remove_dots_cause_disorder(...)`.
+  - Debuffs remain same-tick `buff_add_strategy(...)` writes through the existing legacy runtime facade path and are not converted to `ScheduleDispatchPort`, listener broadcast, or a second write facade.
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, listener broadcast, dot runtime registration/removal, and old containers remain separate retained layers.
+  - Focused pytest exited `0` with `8 passed`; `implicit-events` validation exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused slice `247 passed`, and mypy `Success: no issues found in 90 source files`.
+- Next step:
+  - Continue to `US-006` serial validation and same-PRD Go / No-Go. Do not expand the completed implementation characterization into production refactoring without a new focused regression.
+---
