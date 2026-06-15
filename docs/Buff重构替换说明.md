@@ -5442,3 +5442,15 @@
 - Next step:
   - Continue to `US-006` for non-sheer base damage / base attribute helper seams. Keep `base_attr=4` and `cal_sheer_dmg_bonus(data)` excluded unless a later slice records explicit oracle and snapshot evidence.
 ---
+
+## 2026-06-15 19:25 +08:00 - US-006
+- Files changed: `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-006-conditional-non-sheer-base-damage-and-base-attribute-group.md`, `scripts/ralph/investigations/2026-06-15-US-006-non-sheer-base-attr-no-go.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-006 non-sheer base attr No-Go packet` replaces chat-only uncertainty for `Calculator.RegularMul.cal_base_dmg(data)` / `cal_base_attr(base_attr in 0..3, data)` with durable missing-oracle evidence.
+  - This story does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - Current oracle coverage remains limited to non-sheer `base_attr=0` and `base_attr=1`; `base_attr=2` and `base_attr=3` need direct deterministic rows before any helper seam can proceed.
+  - `base_attr=4`, `cal_sheer_dmg_bonus(data)`, public `_CalculatorReadSnapshot` expansion, and `char_instance` passthrough remain explicitly excluded.
+- Next step:
+  - Continue to `US-007` public contract review. A future implementation slice for this base group must first add direct `base_attr=2/3` oracle rows with reader-snapshot parity and no `char_instance` passthrough.
+---
