@@ -5195,3 +5195,15 @@
 - Next step:
   - Continue to `US-007` reviewer invariant and rollback gate for the completed helper seam. Do not run main-loop consistency or invent registered-route evidence unless a later slice satisfies the documented eligibility contract.
 ---
+
+## 2026-06-15 11:53 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-reviewer-invariant-and-rollback-gate.md`, `scripts/ralph/investigations/2026-06-15-US-007-reviewer-invariant-rollback-gate.md`, `scripts/ralph/checkpoints/2026-06-15-us-007-reviewer-invariant-and-rollback-gate.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 reviewer invariant and rollback gate` replaces chat-only completion confidence with durable reviewer evidence for the full-crit-damage helper seam and its rollback anchors.
+  - This story is evidence/bookkeeping only. It does not replace or edit live production formula code, reader source, focused test source, validation-runner behavior, registered teams/APLs, copied-output/event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime write paths, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_crit_dmg(data)` remains delegated through `_calculate_full_crit_damage(...)` with the public signature, `SkillNode` assertion, `aftershock_attack` label branch, `received_crit_dmg_bonus`, and `min(5, crit_dmg)` cap retained.
+  - `CalculatorBuffAttributeReader.read_full_crit_damage(...)` remains absent and unauthorized; `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, focused full-crit oracle rows, full-vs-personal contrast tests, retained `formula-parity`, conditional `calculator-reads`, old containers, explicit ports/adapters, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, validation-runner behavior, registered routes, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-008` final handoff docs and same-phase pool preservation. Do not broaden into public full-crit-damage reader APIs, snapshot expansion, broad `Calculator.py` / `CalAnomaly.py` rewrites, registered fixture creation, layer merging, old-container deletion, or retained compatibility cleanup.
+---
