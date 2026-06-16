@@ -6015,3 +6015,18 @@
 - Next step:
   - Continue to `US-003` event runtime and guarded maintenance audit. Do not promote formula/readiness retained-pool entries into the active default without new current-root evidence.
 ---
+
+## 2026-06-16 13:51 +08:00 - US-003
+- Files changed: `scripts/ralph/plans/slices/us-003-event-runtime-and-guarded-maintenance-audit.md`, `scripts/ralph/investigations/2026-06-16-US-003-event-runtime-guarded-maintenance-audit.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 event/runtime guarded-maintenance audit` replaces generic P2 / event-runtime backlog ambiguity with current-root scan evidence, CodeGraph boundary checks, and serial `implicit-events` verifier evidence.
+  - This story is evidence-only; it does not replace live production event/runtime code, focused test source, validation-runner behavior, listener broadcast behavior, dot runtime behavior, old Buff containers, same-tick runtime writes, public reader/snapshot APIs, copied-output behavior, formula paths, or retained compatibility paths.
+- Compatibility retained:
+  - P2-A through P2-G remain completed guarded-maintenance buckets unless future current-root guardrail, focused test, validation failure, or reviewer evidence names a concrete failing file, symbol, behavior, and rollback boundary.
+  - `ScheduleDispatchPort` remains queue-only and on-demand; no raw `event_list` discovery or long-lived cached dispatch adapter was introduced.
+  - `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain the same-tick runtime write / old-container facade boundary; no second write facade was introduced.
+  - `BuffRuntimeReadPort` remains read-only; listener broadcast, scheduled queue publish, dot runtime registration/removal, and runtime writes remain separate layers.
+  - Serial `implicit-events` exited `0` with base `2 passed`, isolated teams `3 passed`, focused `259 passed`, and mypy success on `90 source files`; mypy unchecked-body notes and async log-writer shutdown traceback remain non-gate noise.
+- Next step:
+  - Continue to `US-004` registered behavior sample eligibility gate. Do not fabricate validation-only teams or retained-vs-retained samples without live semantic diff and registered route evidence.
+---
