@@ -5849,3 +5849,18 @@
 - Next step:
   - Controller refresh selected `us-006-serial-validation-and-reviewer-gate` with `remaining=2`; continue to serial duration-read validation and reviewer gate. Do not turn US-006 into production formula work unless validation exposes a current-root blocker.
 ---
+
+## 2026-06-16 09:57 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-serial-validation-and-reviewer-gate.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-007-final-go-no-go-handoff-and-pool-preservation.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 serial validation and reviewer gate` replaces chat-only confidence in the anomaly-duration runtime-view matrix with durable focused pytest, scoped mypy, serial `calculator-reads`, serial `implicit-events`, explicit skip rationale, and reviewer invariant evidence.
+  - This story closes a validation boundary only; it does not replace live production `AnomalyBarClass.py`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeReadAdapter`, runtime command wiring, dispatch/listener/dot runtime paths, formulas, old Buff containers, validation-runner behavior, copied-output behavior, or retained compatibility behavior.
+- Compatibility retained:
+  - All 13 `test_anomaly_bar_duration_*` nodeids exited `0` with `13 passed`.
+  - Scoped mypy exited `0` with `Success: no issues found in 3 source files`.
+  - `calculator-reads` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused slice `260 passed`, and mypy clean for `22 source files`.
+  - `implicit-events` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused slice `259 passed`, and mypy clean for `90 source files`.
+  - Default validation remains skipped because this slice changed no production lifecycle, runtime write, old-container, validation-runner, dispatch, listener, copied-output, formula, or runtime read-path behavior.
+- Next step:
+  - Controller refresh selected `us-007-final-go-no-go-handoff-and-pool-preservation` with `remaining=1`; continue to final handoff docs and same-phase candidate pool preservation. Do not emit the completion sentinel until US-007 passes and required handoff docs are updated.
+---
