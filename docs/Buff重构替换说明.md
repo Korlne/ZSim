@@ -6322,3 +6322,16 @@
 - Next step:
   - Continue to `US-005` registered behavior and performance gate conditions. Do not treat US-004 validation success as formula deletion readiness or public contract expansion approval.
 ---
+
+## 2026-06-17 01:28 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-preserve-completed-guarded-maintenance-surfaces.md`, `scripts/ralph/investigations/2026-06-17-US-006-guarded-maintenance-surfaces.md`, `scripts/ralph/checkpoints/2026-06-17-us-006-guarded-maintenance-surfaces.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-007-exact-blocker-or-deletion-candidate-go-no-go-packet.md`
+- Replacement note:
+  - `US-006 guarded-maintenance packet and checkpoint` replaces stale/chat-only no-reopen confidence with current-root `rg`, CodeGraph symbol evidence, retained gate / rollback-anchor preservation, and reviewer invariant evidence.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Retained-only sheer remains helper/oracle-covered but blocked by public reader/snapshot and real registered-route conditions.
+  - Completed RegularMul, CalAnomaly, selected Stun, AM/AP/impact, copied-output, anomaly-bar readiness, anomaly-duration runtime-view, and P2-A through P2-G guarded buckets remain no-reopen unless a future packet names focused regression, validation failure, current-root source evidence, guardrail failure, or reviewer-named blocker.
+  - `docs/Buff公式候选与测试目标清单.md` keeps the retained validation gates and rollback anchors instead of collapsing them into a generic Phase-3 same-phase selection loop or single-branch cleanup PRD.
+- Next step:
+  - Continue to `US-007` exact blocker or deletion candidate Go / No-Go packet. Start from this no-reopen baseline and require exact file / symbol / behavior evidence before proposing cleanup or deletion.
+---

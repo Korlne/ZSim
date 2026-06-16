@@ -1,6 +1,6 @@
 # Buff公式候选与测试目标清单
 
-更新时间：2026-06-16 21:21 +08:00
+更新时间：2026-06-17 01:28 +08:00
 
 本清单服务于 Phase 3 公式等价测试设计。当前故事只建立候选面和测试目标证据，不替换 `Calculator.py`、`CalAnomaly.py`、复制异常 / 紊乱输出公式，也不改变 `ScheduleDispatchPort`、`RuntimeCommandPort` 或旧容器兼容路径。
 
@@ -28,6 +28,7 @@ Next default route now moves to Phase-4 deletion-readiness / phase-boundary inta
 - Event/runtime/P2 guarded buckets：P2-A through P2-G、scheduled publish、direct context helpers、dot runtime-state、BuffAddStrategy facade-write、`ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`LegacyBuffRuntimeFacade` 与 `BuffRuntimeReadPort` 只作为 guarded-maintenance evidence。
 - Future reopen 规则：必须命名 focused regression、validation failure、current-root source evidence、guardrail failure，或 reviewer-named blocker，并带 file / symbol / behavior、validation entrypoint 与 rollback anchor。
 - 非目标：不得从上述 retained compatibility 名称生成 generic Phase-3 same-phase selection loop、single-branch cleanup PRD、broad `Calculator.py` / `CalAnomaly.py` rewrite、old-container deletion、public reader/snapshot expansion、registered-route fabrication，或 scheduled publish / listener broadcast / dot runtime / same-tick runtime write layer merge。
+- 2026-06-17 US-006 reconfirmation：current-root `rg` / CodeGraph 预检未发现 focused regression、validation failure、guardrail failure、reviewer-named blocker 或 exact source blocker；本节 rollback anchors 与 retained gates 保持原样，后续只允许 blocker-driven narrow slice。
 
 ## 扫描边界
 
