@@ -6070,3 +6070,15 @@
 - Next step:
   - Continue to `US-007` handoff docs and same-phase candidate pool preservation. Keep the next route docs-only unless new current-root evidence names a concrete production surface, rollback boundary, and validation trigger.
 ---
+
+## 2026-06-16 14:58 +08:00 - US-007
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-007-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/plans/slices/buff-refactor-phase3-candidate-pool-closure-and-exact-intake-next-intake.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-007 final handoff docs` replaces ambiguous Phase-3 same-phase selection routing with a durable Phase-3 closure / No-Go handoff and a Phase-4 deletion-readiness / phase-boundary intake default.
+  - This story updates docs and Ralph evidence only; it does not replace live production formula paths, validation runner wiring, registered routes, old containers, event/runtime/listener layers, public reader/snapshot APIs, copied-output behavior, or retained compatibility paths.
+- Compatibility retained:
+  - Same-phase pool entries remain retained evidence: retained-only sheer helper-complete / blocked, completed / no-reopen RegularMul / CalAnomaly / Stun / AM/AP/impact / copied-output / anomaly-bar readiness, P2 guarded maintenance, registered behavior sample eligibility, retained compatibility, and blocker-only reopen rules.
+  - Public contract expansion, deletion, performance-sensitive changes, validation-runner rewrites, registered-route fabrication, event/runtime/listener layer merges, and retained compatibility deletion remain No-Go without a new evidence-backed slice.
+- Next step:
+  - Generate the next PRD as Phase-4 deletion-readiness / phase-boundary intake from the checklist and retained coupling docs; prove unused / behavior-preserving residuals before any deletion implementation.
+---

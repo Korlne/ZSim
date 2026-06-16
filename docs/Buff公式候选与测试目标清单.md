@@ -1,10 +1,23 @@
 # Buff公式候选与测试目标清单
 
-更新时间：2026-06-16 02:28 +08:00
+更新时间：2026-06-16 14:58 +08:00
 
 本清单服务于 Phase 3 公式等价测试设计。当前故事只建立候选面和测试目标证据，不替换 `Calculator.py`、`CalAnomaly.py`、复制异常 / 紊乱输出公式，也不改变 `ScheduleDispatchPort`、`RuntimeCommandPort` 或旧容器兼容路径。
 
 当前 PRD 生成入口以 `docs/Buff重构下阶段计划草稿.md` 的 `## 合理 PRD 形状硬约束` 和 `## 当前默认下一步` 为准。本文历史 handoff 中保留的 `same-phase candidate selection / bounded proposal` 只代表当时的 pool-retention / no-reopen 记录；后续不得据此单独生成新的 full-cycle selection / proposal PRD。
+
+## Current Phase-3 closure / No-Go handoff
+
+2026-06-16 candidate-pool closure / exact-intake PRD 结论：没有新的 exact bounded production candidate。Phase-3 formula / readiness / copied-output / anomaly-bar 候选池当前只作为 retained evidence 和 future reopen pool 保留，不作为下一默认实现 backlog。
+
+| Pool entry | Current status | Validation entrypoints | Non-goals |
+| --- | --- | --- | --- |
+| Retained-only sheer (`base_attr=4`, `cal_sheer_dmg_bonus(data)`) | Helper-complete but blocked by public reader/snapshot and real registered-route conditions. | `uv run pytest tests/simulator/test_buff_attribute_reader.py -q`; `formula-parity`; `calculator-reads`; conditional `implicit-events`. | No public `_CalculatorReadSnapshot` / reader expansion, no registered-route fabrication, no retained-vs-retained sample. |
+| Completed formula / output surfaces | RegularMul helpers, `Calculator.AnomalyMul.cal_res_pen()`, AM/AP/impact, selected Stun, CalAnomaly helper family, copied-output handler/report, `AnomalyBar.current_ndarray`, `UpdateAnomaly.py`, and anomaly-duration runtime-view matrix are completed / no-reopen. | Rerun touched focused pytest first; then `formula-parity` / `calculator-reads`; add `implicit-events` only when event/runtime/listener/copy-output surfaces are touched. | No broad `Calculator.py` / `CalAnomaly.py` rewrite and no deletion of retained formula snapshots. |
+| Registered behavior sample eligibility | Conditional only: future samples require live production semantic diff, real registered route, explicit stop tick, nonzero relevant counts, total damage comparison, event counts, Buff timeline comparison, differences, and rollback anchors. | `uv run pytest tests/simulator/test_main_loop_consistency.py -q`; `scripts/run_buff_main_loop_consistency.py` only after all eligibility gates pass. | No validation-only team, fake APL, fixture-only route, retained-vs-retained sample, or runtime-label-as-mode-switch assumption. |
+| Event/runtime guarded maintenance | P2-A through P2-G, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, and `BuffRuntimeReadPort` stay guarded-maintenance unless concrete blocker evidence appears. | `implicit-events` for dispatch/runtime/listener/dot/same-tick write changes; focused source guardrails first. | No layer merge, second write facade, cached dispatch adapter, raw queue reopen, or old-container cleanup. |
+
+Next default route now moves to Phase-4 deletion-readiness / phase-boundary intake in `docs/Buff重构下阶段计划草稿.md`; this list remains the evidence source for any future Phase-3 blocker-driven reopen.
 
 ## 扫描边界
 
