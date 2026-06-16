@@ -6182,3 +6182,15 @@
 - Next step:
   - Continue to `US-003` event/runtime/listener guardrail refresh. Do not treat US-002 as deletion authorization.
 ---
+
+## 2026-06-16 20:06 +08:00 - US-003
+- Files changed: `scripts/ralph/plans/slices/us-003-refresh-event-runtime-listener-boundary-guardrails.md`, `scripts/ralph/plans/slices/us-004-refresh-formula-snapshot-and-reader-contract-evidence.md`, `scripts/ralph/investigations/2026-06-16-US-003-event-runtime-guarded-maintenance-audit.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-003 event/runtime/listener guardrail refresh` replaces chat-only boundary confidence with current-root scan, CodeGraph, focused pytest, and `implicit-events` verifier evidence.
+  - This story is evidence / bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / same-tick runtime-write / dot runtime layers.
+- Compatibility retained:
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, listener broadcast, dot runtime registration/removal, scheduled handler requeue, copied-output constructors, old container identity, and closed deleted-event-list guardrails remain unchanged.
+  - Root production AST scan found no reopened `find_event_list`, `check_preparation(..., event_list=...)`, `get_prepared(..., event_list=...)`, `record.event_list`, or `BuffRecordBaseClass.event_list` surface.
+- Next step:
+  - Continue to `US-004` formula snapshot and reader contract evidence. Do not infer formula deletion/readiness from event/runtime guardrail evidence.
+---
