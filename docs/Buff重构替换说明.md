@@ -5947,3 +5947,18 @@
 - Next step:
   - Continue to `US-006` only if the helper extraction stays private, module-local, and behavior-preserving; otherwise record No-Go and route to the same-phase retained pool.
 ---
+
+## 2026-06-16 12:13 +08:00 - US-006
+- Files changed: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `scripts/ralph/plans/slices/us-006-optional-behavior-preserving-helper-seam.md`, `scripts/ralph/plans/slices/us-007-serial-validation-and-conditional-gates.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `_calculate_sheer_base_attribute(...)` replaces the inline retained `Calculator.RegularMul.cal_base_attr(..., base_attr=4)` sheer conversion block with a private module-local helper seam.
+  - `_calculate_sheer_damage_bonus(...)` replaces the inline retained `Calculator.RegularMul.cal_sheer_dmg_bonus(data)` branch with a private module-local helper seam.
+- Compatibility retained:
+  - Public `Calculator.RegularMul.cal_base_attr(base_attr, data)` and `Calculator.RegularMul.cal_sheer_dmg_bonus(data)` signatures remain unchanged.
+  - `base_attr=4` still depends on `char_instance.sheer_attack_conversion_rate`, recursive non-sheer base-attr reads, `dynamic.sheer_atk`, and the existing nonzero `field_sheer_atk_percentage` error.
+  - `cal_sheer_dmg_bonus(data)` still returns `1.0` unless `SkillNode.skill.diff_multiplier == 4`, then returns `1 + dynamic.sheer_dmg_bonus`.
+  - `CalculatorBuffAttributeReader`, `_CalculatorReadSnapshot`, registered fixtures, validation-runner behavior, event queue, dispatch/runtime ports, listener broadcasts, same-tick writes, old containers, lifecycle paths, and retained compatibility paths remain unchanged.
+  - Focused US-002 pytest exited `0` with `32 passed, 130 deselected`; scoped mypy exited `0` with `Success: no issues found in 2 source files` plus known unchecked-body notes only.
+- Next step:
+  - Continue to `US-007` serial validation and conditional gates. Keep `formula-parity` and `calculator-reads` serial, and keep `implicit-events` / default validation conditional on event-adjacent, validation-runner, lifecycle, runtime write, or broader boundary changes.
+---

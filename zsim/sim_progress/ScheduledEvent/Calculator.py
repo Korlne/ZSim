@@ -2,7 +2,7 @@ from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass, field
 import json
 from functools import lru_cache
-from typing import Any, Literal, Mapping, Protocol, Sequence, cast
+from typing import Any, Callable, Literal, Mapping, Protocol, Sequence, cast
 
 import numpy as np
 
@@ -170,6 +170,33 @@ def _calculate_non_sheer_base_attribute(
             + dynamic_statement.anomaly_proficiency
         )
     raise AssertionError(INVALID_ELEMENT_ERROR)
+
+
+def _calculate_sheer_base_attribute(
+    character_obj: Any,
+    dynamic_statement: Any,
+    base_attribute_reader: Callable[[int], float],
+) -> float:
+    if not hasattr(character_obj, "sheer_attack_conversion_rate"):
+        raise AttributeError(
+            f"{character_obj.NAME}作为命破属性代理人，必须拥有贯穿力转化字典！"
+        )
+    base_sheer_atk = 0
+    assert character_obj.sheer_attack_conversion_rate is not None
+    for key, value in character_obj.sheer_attack_conversion_rate.items():
+        if key not in [0, 1, 2, 3]:
+            raise ValueError(f"无法解析的贯穿力转化率key：{key}")
+        if value <= 0:
+            continue
+        base_sheer_atk += base_attribute_reader(key) * value
+    else:
+        if dynamic_statement.field_sheer_atk_percentage != 0:
+            raise ValueError(
+                "警告！检测到非0的“局内贯穿力%Buff”，该效果目前还无法处理，请注意检查buff_effect"
+            )
+        current_sheer_atk = base_sheer_atk + dynamic_statement.sheer_atk
+        attr = current_sheer_atk
+    return attr
 
 
 def _calculate_base_damage(
@@ -469,6 +496,15 @@ def _calculate_stun_vulnerability(enemy_obj: Any, dynamic_statement: Any) -> flo
 
 def _calculate_special_multiplier(dynamic_statement: Any) -> float:
     return 1 + dynamic_statement.special_multiplier_zone
+
+
+def _calculate_sheer_damage_bonus(
+    judge_node: SkillNode, dynamic_statement: Any
+) -> float:
+    if judge_node.skill.diff_multiplier != 4:
+        return 1.0
+    else:
+        return 1 + dynamic_statement.sheer_dmg_bonus
 
 
 def _build_stun_multiplier_array(
@@ -1135,31 +1171,11 @@ class Calculator:
                 )
             elif base_attr == 4:
                 assert data.char_instance is not None
-                #  贯穿力属性的实时计算
-                if not hasattr(data.char_instance, "sheer_attack_conversion_rate"):
-                    raise AttributeError(
-                        f"{data.char_instance.NAME}作为命破属性代理人，必须拥有贯穿力转化字典！"
-                    )
-                base_sheer_atk = 0
-                assert data.char_instance.sheer_attack_conversion_rate is not None
-                for (
-                    key,
-                    value,
-                ) in data.char_instance.sheer_attack_conversion_rate.items():
-                    if key not in [0, 1, 2, 3]:
-                        raise ValueError(f"无法解析的贯穿力转化率key：{key}")
-                    if value <= 0:
-                        continue
-                    base_sheer_atk += self.cal_base_attr(base_attr=key, data=data) * value
-                else:
-                    if data.dynamic.field_sheer_atk_percentage != 0:
-                        raise ValueError(
-                            "警告！检测到非0的“局内贯穿力%Buff”，该效果目前还无法处理，请注意检查buff_effect"
-                        )
-                    current_sheer_atk = base_sheer_atk + data.dynamic.sheer_atk
-                    attr = current_sheer_atk
-                    # if data.dynamic.sheer_atk != 0:
-                    #     print(f"检测到 {data.char_instance.NAME} 的局内固定贯穿力Buff：{data.dynamic.sheer_atk}, 基础贯穿力：{base_sheer_atk}")
+                attr = _calculate_sheer_base_attribute(
+                    data.char_instance,
+                    data.dynamic,
+                    lambda key: self.cal_base_attr(base_attr=key, data=data),
+                )
             else:
                 raise AssertionError(INVALID_ELEMENT_ERROR)
             return attr
@@ -1305,10 +1321,7 @@ class Calculator:
         def cal_sheer_dmg_bonus(data: MultiplierData) -> float:
             """计算贯穿伤害增幅区——贯穿伤害增加是一个独立乘区！"""
             assert isinstance(data.judge_node, SkillNode)
-            if data.judge_node.skill.diff_multiplier != 4:
-                return 1.0
-            else:
-                return 1 + data.dynamic.sheer_dmg_bonus
+            return _calculate_sheer_damage_bonus(data.judge_node, data.dynamic)
 
     class AnomalyMul:
         """
