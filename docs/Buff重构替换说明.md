@@ -5892,3 +5892,16 @@
 - Next step:
   - Continue to `US-002` to lock retained sheer source and oracle matrix. Do not expand public reader contracts, `_CalculatorReadSnapshot`, validation runners, registered teams, old containers, event/runtime/listener layers, or retained compatibility paths in the next slice.
 ---
+
+## 2026-06-16 11:20 +08:00 - US-002
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-002-lock-the-retained-sheer-source-and-oracle-matrix.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `regular-sheer-dmg-bonus-retained-snapshot` oracle coverage replaces historical-note-only confidence for `Calculator.RegularMul.cal_sheer_dmg_bonus(data)` with deterministic retained / reader-snapshot evidence.
+  - Existing retained sheer tests continue to lock `Calculator.RegularMul.cal_base_attr(..., base_attr=4)` through `char_instance.sheer_attack_conversion_rate` and `dynamic.sheer_atk`; this story does not replace a live production formula path.
+- Compatibility retained:
+  - Public `Calculator.RegularMul` method signatures remain unchanged.
+  - `_CalculatorReadSnapshot` still has no `char_instance`, so `base_attr=4` remains retained-only while `cal_sheer_dmg_bonus(data)` stays snapshot-compatible.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, validation-runner behavior, registered routes/APLs, old containers, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-003` reader / snapshot contract eligibility. Do not add public reader APIs, expand `_CalculatorReadSnapshot`, create registered fixtures, or edit event/runtime/listener layers without that active slice authorizing it.
+---

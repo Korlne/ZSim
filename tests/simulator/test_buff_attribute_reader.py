@@ -1349,6 +1349,36 @@ _FORMULA_ORACLE_TABLE_CASES = (
         ),
     ),
     _FormulaOracleCase(
+        case_id="regular-sheer-dmg-bonus-retained-snapshot",
+        fixture_kwargs={
+            "name": "直伤乘区-贯穿伤害增幅",
+            "damage_ratio": 1.0,
+            "hit_times": 1,
+            "diff_multiplier": 4,
+            "element_type": 4,
+            "char_buff_count": 1,
+            "enemy_debuff_count": 0,
+            "enemy_dot_count": 0,
+        },
+        dynamic_attrs={
+            "sheer_atk": 5.0,
+            "sheer_dmg_bonus": 0.45,
+        },
+        expected_dynamic_fields={
+            "sheer_atk": 5.0,
+            "sheer_dmg_bonus": 0.45,
+        },
+        expectations=(
+            _FormulaOracleExpectation(
+                label="cal_sheer_dmg_bonus",
+                expected_value=1.45,
+                retained_value=lambda data: Calculator.RegularMul.cal_sheer_dmg_bonus(
+                    data
+                ),
+            ),
+        ),
+    ),
+    _FormulaOracleCase(
         case_id="regular-defense-res-vulnerability-received-stack",
         fixture_kwargs={
             "name": "直伤乘区-敌方与受击字段堆叠",
