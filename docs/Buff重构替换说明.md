@@ -6120,3 +6120,15 @@
 - Next step:
   - Continue to `US-004` deletion candidate eligibility and stop conditions. Use the US-003 packet as readiness input, but require candidate-specific current-root evidence before any Go / No-Go judgment.
 ---
+
+## 2026-06-16 17:23 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-deletion-candidate-eligibility-and-stop-conditions.md`, `scripts/ralph/investigations/2026-06-16-US-004-deletion-candidate-eligibility-no-go.md`, `scripts/ralph/checkpoints/2026-06-16-us-004-deletion-candidate-eligibility-no-go.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-005-registered-behavior-and-performance-gate.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 deletion candidate eligibility No-Go packet` replaces family-level deletion ambiguity with retained-boundary / Conditional No-Go decisions and explicit stop conditions.
+  - This story is evidence-only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers, lifecycle entrypoints, explicit ports/adapters, listener broadcasts, Dot runtime registration, runtime read/write boundaries, closed event-list guardrails, and retained compatibility paths remain unchanged.
+  - `MultiplierData`, `MulData`, `DynamicStatement`, and scheduled handler requeue paths remain Conditional No-Go until a future exact slice proves unused or behavior-preserving removal without crossing formula snapshot, copied-output/anomaly, queue-semantics, or public-contract stop conditions.
+- Next step:
+  - Continue to `US-005` registered behavior and performance gate. Run live samples only for a future candidate with a real production semantic diff, real registered route, explicit stop tick, nonzero relevant counts, and rollback anchors.
+---
