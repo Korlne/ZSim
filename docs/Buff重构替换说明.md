@@ -6146,3 +6146,15 @@
 - Next step:
   - Continue to `US-006` final Go / No-Go and handoff preservation. Keep focused guardrails plus validation profiles as the verifier gate unless new current-root evidence names an exact candidate and rollback boundary.
 ---
+
+## 2026-06-16 18:01 +08:00 - US-006
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/investigations/2026-06-16-US-006-final-no-go-handoff-preservation.md`, `scripts/ralph/checkpoints/2026-06-16-us-006-final-no-go-handoff-preservation.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-006 final No-Go packet` replaces ambiguous Phase-4 deletion implementation routing with a durable retained-boundary decision and a preserved same-phase candidate pool.
+  - This story is handoff / evidence / bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot contracts, or merge event queue / listener broadcast / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers and lifecycle entrypoints, event/runtime/listener/dot layers, `MultiplierData` / `MulData` / `DynamicStatement`, public reader/snapshot contracts, scheduled handler requeue paths, validation profiles, registered behavior gates, and retained compatibility paths remain unchanged.
+  - No new Buff coupling or changed coupling classification was discovered, so `docs/旧Buff系统耦合审查结果.md` remains unchanged.
+- Next step:
+  - Do not generate a deletion implementation PRD by default. Future PRDs should perform retained-boundary evidence refresh or exact blocker work unless new current-root evidence names one deletion candidate, validation entrypoint, live-route/performance conditions when applicable, and rollback anchor.
+---
