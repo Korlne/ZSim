@@ -5878,3 +5878,17 @@
 - Next step:
   - Generate the next PRD as remaining `Calculator.RegularMul` / retained-only sheer blocker package bounded evidence review or same-PRD Go / No-Go closure. Preserve registered behavior sample eligibility only for future live semantic diffs, future `Calculator.StunMul.get_stun_array()` evidence only when named, P2-A through P2-G guarded maintenance only on concrete blockers, retained compatibility, and blocker-only phase-1 reopen rules as same-phase pool entries.
 ---
+
+## 2026-06-16 11:07 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconcile-current-default-and-no-reopen-boundaries.md`, `scripts/ralph/checkpoints/2026-06-16-us-001-retained-sheer-no-reopen-boundary.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-001 retained sheer no-reopen boundary checkpoint` replaces chat-only route confidence with durable current-root doc/source evidence, CodeGraph / `rg` query terms, stop conditions, scoped typecheck evidence, and reviewer verdict.
+  - This story only builds a docs / Ralph evidence boundary; it does not replace live production `Calculator.py`, `CalAnomaly.py`, focused test source, validation-runner behavior, registered teams/APLs, event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime writes, public reader/snapshot APIs, copied-output behavior, formula paths, or retained compatibility paths.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_base_attr(..., base_attr=4)` remains retained-only and runtime-dependent on `char_instance.sheer_attack_conversion_rate`.
+  - `Calculator.RegularMul.cal_sheer_dmg_bonus(data)` remains snapshot-compatible alone, but the full retained-only sheer path remains blocked without reader-contract and real registered-route evidence.
+  - Completed copied-output handler/report implementation, `Calculator.AnomalyMul.cal_res_pen()`, AM/AP/impact helpers, selected Stun array implementation, RegularMul crit helper seams, RegularMul scalar helper-family, non-sheer base damage/base-attr, CalAnomaly helper-family, and anomaly-duration runtime-view matrix remain no-reopen by default.
+  - Scoped typecheck exited `0` with `Success: no issues found in 3 source files`; the raw unscoped mypy command was recorded as unrelated repo-wide import/type noise and is not the active gate.
+- Next step:
+  - Continue to `US-002` to lock retained sheer source and oracle matrix. Do not expand public reader contracts, `_CalculatorReadSnapshot`, validation runners, registered teams, old containers, event/runtime/listener layers, or retained compatibility paths in the next slice.
+---
