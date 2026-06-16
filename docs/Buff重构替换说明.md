@@ -6043,3 +6043,16 @@
 - Next step:
   - Continue to `US-005` exact candidate or Phase-3 closure decision. Keep main-loop consistency conditional on a future production semantic diff, real registered route evidence, explicit stop tick, nonzero relevant counts, and documented runtime-label / mode-switch status.
 ---
+
+## 2026-06-16 14:23 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-exact-candidate-or-phase-3-closure-decision.md`, `scripts/ralph/investigations/2026-06-16-US-005-phase-3-closure-no-go.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-006-serial-validation-and-reviewer-gate.md`
+- Replacement note:
+  - `US-005 Phase-3 closure / No-Go decision` replaces ambiguous exact-candidate routing with a durable decision packet.
+  - This story is evidence-only; it does not replace live production `Calculator.py`, `CalAnomaly.py`, focused test source, validation-runner behavior, registered teams/APLs, event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime writes, public reader/snapshot APIs, copied-output behavior, formula paths, or retained compatibility paths.
+- Compatibility retained:
+  - Retained-only sheer remains helper-complete but blocked by public reader/snapshot and registered-route conditions.
+  - Completed RegularMul, CalAnomaly, Stun, AM/AP/impact, copied-output, anomaly-bar readiness, and P2 guarded-maintenance surfaces remain no-reopen unless future current-root evidence names a concrete regression.
+  - Registered behavior sampling remains conditional on a future live semantic diff, real registered route, explicit stop tick, nonzero relevant counts, and runtime-label / mode-switch status.
+- Next step:
+  - Continue to `US-006` serial validation and reviewer gate. Do not promote retained-only, conditional, guarded-maintenance, or blocker-only pool entries into production implementation without new current-root evidence.
+---
