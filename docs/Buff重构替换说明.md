@@ -6282,3 +6282,16 @@
 - Next step:
   - Continue to `US-003` event/runtime/listener boundary guardrail refresh. Do not treat this retained-compatibility evidence as deletion authorization.
 ---
+
+## 2026-06-17 00:38 +08:00 - US-003
+- Files changed: `scripts/ralph/investigations/2026-06-16-US-003-event-runtime-guarded-maintenance-audit.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-004-refresh-formula-snapshot-and-reader-contract-evidence.md`
+- Replacement note:
+  - `US-003 event/runtime/listener guardrail packet` replaces stale boundary confidence with current-root `rg`, AST, CodeGraph source/impact, focused guardrail pytest, and `implicit-events` validation evidence.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `ScheduleDispatchPort` remains queue-only and created on demand from the current `sim_instance` / `schedule_data`; no cached dispatch adapter or raw producer queue passthrough was added.
+  - `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` remain the existing same-tick write boundary; `BuffRuntimeReadPort` remains read-only; `LegacyBuffRuntimeFacade` remains the old-container facade.
+  - Listener broadcasts, dot runtime registration/removal, copied-output constructors, and scheduled handler requeue remain separate layers. The one current-root `event_list=` keyword is the retained scheduler-internal `ProcessFreezLikeDots(...)` handoff, not reopened `JudgeTools.find_event_list` discovery.
+- Next step:
+  - Continue to `US-004` formula snapshot and reader contract evidence. Do not infer formula deletion/readiness from event/runtime/listener guardrail evidence.
+---
