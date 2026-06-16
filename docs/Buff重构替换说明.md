@@ -6245,3 +6245,16 @@
 - Next step:
   - Continue to `US-008` handoff docs and same-phase pool preservation. Preserve the broad retained-boundary candidate pool instead of collapsing the next PRD to one narrow cleanup path.
 ---
+
+## 2026-06-16 22:14 +08:00 - US-008
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-16-us-008-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-008 final handoff docs` replaces the final open handoff state with durable long-lived docs, Ralph evidence, checkpoint, dashboard, progress, and PRD completion bookkeeping.
+  - This story is docs / Ralph evidence / bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / same-tick runtime-write layers.
+- Compatibility retained:
+  - Current default next PRD remains Phase-4 retained-compatibility boundary preservation / evidence refresh, not deletion implementation.
+  - Same-phase candidate blocks remain available for future PRD generation: old containers / lifecycle compatibility, event/runtime/listener layers, formula snapshot and reader contracts, registered behavior / performance gates, completed guarded-maintenance surfaces, retained compatibility, and blocker-only reopen rules.
+  - No new Buff coupling or changed coupling classification was discovered in this docs-only final handoff, so `docs/旧Buff系统耦合审查结果.md` remains unchanged.
+- Next step:
+  - Future PRD generation should follow `docs/Buff重构方案.md` and this next-stage draft; deletion implementation requires exact current-root file / symbol / behavior evidence, verifier, rollback anchor, and live-route / performance conditions where applicable.
+---

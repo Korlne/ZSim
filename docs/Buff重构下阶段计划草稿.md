@@ -3,7 +3,8 @@
 ## 当前状态
 
 - 当前总路线已重置；最新权威 PRD 入口以本文 `## 当前默认下一步` 为准，下面保留的 2026-06-07 到 2026-06-16 handoff bullets 是历史 ledger，不得覆盖当前默认入口。
-- 当前有效阶段是 Phase 4 retained-boundary preservation：Phase-4 deletion-readiness / phase-boundary intake 已完成最终 No-Go，没有 retained family 证明 unused / behavior-preserving deletion；下一轮不默认生成删除实现 PRD，只能从 `## 当前默认下一步` 的 retained candidate pool 中按 current-root source、focused regression、validation failure、guardrail 或 reviewer-named evidence 命名的具体 blocker 开窄 PRD。
+- 当前有效阶段是 Phase 4 retained-boundary preservation：Phase-4 deletion-readiness / phase-boundary intake 已完成最终 No-Go，没有 retained family 证明 unused / behavior-preserving deletion；下一轮不默认生成删除实现 PRD。PRD 应从 `## 当前默认下一步` 的 retained candidate pool 中横向合并同阶段、同验证 profile、同 rollback anchor 的 maintenance / evidence-refresh / blocker-discovery 工作；需要保持窄的是 PRD 内的 US，而不是把每个 blocker 拆成单独 PRD。只有 evidence 要求不同 verifier / rollback，或确实进入 deletion implementation，才 stop-and-split。
+- 2026-06-16 `US-008` final handoff 已在 `US-001` through `US-007` evidence complete 之后同步：当前默认下一 PRD 仍是 Phase-4 retained-compatibility boundary preservation / evidence refresh campaign；same-phase candidate pool 必须继续保留 old containers / lifecycle compatibility、event/runtime/listener layers、formula snapshot and reader contracts、registered behavior / performance gates、completed guarded-maintenance surfaces 和 blocker-only reopen rules。
 - 若下方历史 handoff bullet 仍写“下一默认 PRD 返回 Phase-3 same-phase candidate selection / bounded proposal”，一律视为当时的 no-reopen / pool-retention 记录，不得作为当前 PRD 生成入口。当前入口只能取 `## 合理 PRD 形状硬约束` 与 `## 当前默认下一步`。
 - Buff 系统现已明确要求采用事件驱动架构。
 - 阶段 1 当前实现基线已经落地：
@@ -22,12 +23,12 @@
 - PRD-10 没有保留删除 blocker 或生产 fallback，也没有发现新的 producer-level planned-event writer 或新的 handler/helper same-tick legacy getter 加写入协作；`data_struct/schedule_dispatch.py` adapter queue access 仍是 `ScheduleDispatchPort` 兼容语义下唯一允许的底层队列触点。
 - 2026-06-07 `PRD-11` 已完成旧容器隔离与 Buff runtime facade 扩展主体：`LegacyBuffRuntimeFacade` 以引用方式包住 `exist_buff_dict`、`LOADING_BUFF_DICT`、`DYNAMIC_BUFF_DICT` 与 `enemy.dynamic.dynamic_debuff_list`；`Simulator.main_loop()` 的 tick sweep / pending activation 和 live `Update_Buff` active removal 已走 facade，no-new-raw-container guardrail 与主循环一致性样本已通过。
 - PRD-11 没有删除旧容器，也没有把 `BuffRuntimeReadPort` 扩成写口；`RuntimeCommandPort` 仍是 scheduled handlers 的 same-tick 写边界，`--legacy-runtime` / `--candidate-runtime` 仍只是报告标签。
-- PRD-11 收口后，下一轮 Ralph PRD 仍应留在阶段 1，默认入口从旧容器 facade 主体扩展转向“`ScheduledEvent` 对 Buff runtime facade 的依赖收口”；除非 guardrail 暴露新的具体证据，不再围绕 `find_event_list` / `record.event_list` / `event_list=True` 或已完成的 facade 主体重复开薄切片。
+- PRD-11 收口后，下一轮 Ralph PRD 仍应留在阶段 1，默认入口从旧容器 facade 主体扩展转向“`ScheduledEvent` 对 Buff runtime facade 的依赖收口”；除非 guardrail 暴露新的具体证据，不再围绕 `find_event_list` / `record.event_list` / `event_list=True` 或已完成的 facade 主体重复拆成单点 follow-up。
 - 2026-06-07 `PRD-12 US-024` 已完成阶段 1 closure decision：候选块 B/C/D/E 均已有 audit、代表性实现或 guardrail / validation evidence，`implicit-events`、`calculator-reads` 与默认 lifecycle validation profile 在 US-024 串行复跑通过，未输出 phase-1 blocker package。
 - PRD-12 closure 不删除旧容器，也不把 sample CLI label 当 live runtime switch；`exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT`、legacy `buff_add()`、legacy `KickOutBuff()`、Calculator / CalAnomaly 公式快照、handler requeue、damage continuation、dot runtime registration 与 listener broadcast 都仍按各自 retained boundary 保留。
 - 2026-06-08 gap-closure blocker PRD 已把 `docs/查漏补缺.md` 中的 `ScheduleBuffSettle.py` guardrail / validation 覆盖缺口收敛为 retained-boundary 守门：`ScheduleBuffSettle.py` 进入 raw old-container guardrail 扫描和 `lifecycle` / `implicit-events` scoped mypy targets，分类为 `legacy ScheduleBuffSettle command-adapter internals`。这不是 live runtime path 替换，也不重开已闭合 producer batch。
 - 2026-06-08 gap-closure blocker PRD 已完整关闭：root-workspace source scan 排除 `.codex_worktrees/` 后未发现新的 production-level raw `event_list` producer，也未发现 handler/helper 直接调用 `ScheduleBuffSettle(...)`；CodeGraph 命中的 `.codex_worktrees/` direct caller 仅作为历史快照证据处理。`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`ScheduleDispatchPort`、`BuffRuntimeReadPort` 与 `LegacyBuffRuntimeFacade` retained boundaries 保持 intact。
-- 本 blocker PRD 已完整关闭，默认路线返回阶段 2；只有新的 guardrail / validation / root-workspace source scan 证据暴露 phase-1 production blocker 时，才回到阶段 1 窄修复。
+- 本 blocker PRD 已完整关闭，默认路线返回阶段 2；只有新的 guardrail / validation / root-workspace source scan 证据暴露 phase-1 production blocker 时，才回到阶段 1 blocker 修复，并按 verifier / rollback 决定并入同阶段 PRD 或 stop-and-split。
 - 阶段 1 / 阶段 2 的源码复扫必须把 `.codex_worktrees/` 视为本地历史 worktree 快照并默认排除；除非明确审计归档分支，不能把其中的 CodeGraph / `rg` 命中当作当前生产 blocker。最终 blocker 结论必须回到根工作区源码、focused tests 和 validation profiles。
 - 2026-06-08 阶段 2 第一轮分类 PRD 已完成：`docs/BuffXLogic阶段2全量分类与复用矩阵.md` 现在持有非排他分类 schema、149 个 root-workspace `BuffXLogic` census、helper / record / reader / event-adapter / state-sync / handler / listener pattern catalog、风险矩阵与 ranked follow-up pool。
 - 当前默认下一 Ralph story 仍沿 [Buff重构方案.md](./Buff重构方案.md) 的阶段顺序推进；US-012 已完成阶段 2 closure / phase-3 formula snapshot readiness decision，US-014 已新增 scoped `formula-parity` profile，US-015 已同步 handoff docs 与下一候选池，US-016 已完成 final serial validation / Go / No-Go，US-025 已给出 serial gate green evidence，US-026 完成最终 handoff，replacement blocker closure PRD 已把 `Calculator.AnomalyMul.cal_res_pen()` 收敛为唯一 proposal-eligible bounded domain。
@@ -77,19 +78,32 @@
 - 同文件、同 owner、同 rollback anchor、同 validation profile、同 public-contract 风险的公式 helper seam 必须横向合并。若一个候选只会产生 1 个 oracle row 或 1 个 helper delegation，应并入 sibling formulas 的 batch；不能为它单独生成“选择 -> oracle -> contract -> sample -> validation -> proposal -> handoff”的完整大 cycle。
 - Registered behavior sample eligibility、public contract review、serial validation profile、reviewer invariant 和 handoff docs 是横切 gate。它们默认合并到对应 implementation / validation / handoff story；只有触达 public reader contract、validation-runner behavior、registered fixture creation、old-container deletion、event/runtime/listener layer merge 或 retained compatibility deletion 时，才拆成独立 US。
 - 如果一个候选当前只够 No-Go，不够 implementation，则输出 blocker / No-Go packet 并回到同族候选块继续推进；不要再生成一轮候选池重选 PRD。若整个同族候选块都 No-Go，handoff 必须明确“下一个可实现候选块”或“需要人工 phase-boundary review”，而不是把默认写回 generic same-phase selection。
+- Phase 4 retained-boundary preservation 默认不是窄 blocker PRD。合理形状是一个 retained-boundary maintenance / evidence-refresh campaign。
+- Phase 4 campaign 应横向覆盖同阶段 candidate pool 中共享 current-root source audit、focused guardrail / regression、validation entrypoint、registered-route / performance 条件和 rollback anchor 的项；US 负责分片执行和验收。
+- Phase 4 PRD 应把 checklist 阶段 4 项、retained coupling、final No-Go packet、validation entrypoints 和 focused tests 合并成多个可验证 stories。
+- 只有 new evidence 命名 exact deletion candidate 且 verifier / rollback 与当前 campaign 不兼容，或 story 会触达 public reader expansion、validation-runner rewrite、event / listener changes、old-container deletion、retained compatibility deletion，才另开 PRD 或 stop-and-split。
 - 后续 `prd` skill 取材时以本节和 `## 当前默认下一步` 为权威入口；下面历史 handoff ledger 中写着“当前默认 PRD 返回 same-phase candidate selection / bounded proposal”的旧句，只作为当时的 no-reopen 证据，不得覆盖当前入口。
 
 ## 当前默认下一步
 
 ### 下一轮默认 Ralph PRD
 
-Phase-4 下一默认 Ralph PRD 形状：retained-compatibility boundary preservation / evidence refresh（当前默认 / no-immediate-deletion）。本 PRD 已完成 deletion-readiness / phase-boundary intake，最终决策为 No-Go：没有 current-root source、focused regression、guardrail、validation failure 或 reviewer-named evidence 证明任一 retained family 可以 unused / behavior-preserving deletion。下一 PRD 不默认生成删除实现；只有新证据同时命名 exact file / symbol / behavior、focused guardrail 或 regression、validation entrypoint、registered-route / performance 条件（若触达 live semantic 或性能面）和 rollback anchor 时，才 stop-and-split 成单独 deletion-readiness implementation PRD。
+Phase-4 下一默认 Ralph PRD 形状：retained-compatibility boundary preservation / evidence refresh campaign（当前默认 / no-immediate-deletion）。
 
-下一轮 PRD generator 应从 `docs/Buff系统重构Checklist.md` 的阶段 4 项、`docs/旧Buff系统耦合审查结果.md` 的 retained coupling、本文 retained-boundary ledger、`docs/Buff公式候选与测试目标清单.md` 的 validation entrypoints、当前 focused tests 和本轮 final No-Go packet 取材。它不是新的 Phase-3 same-phase selection loop，也不是某个已完成 formula branch 的 follow-up。未来如果仍无 exact deletion candidate，应生成 retained-boundary maintenance / evidence-refresh PRD，保留候选池并记录 No-Go，而不是制造 cleanup diff。
+- 决策基线：本 PRD 已完成 deletion-readiness / phase-boundary intake，最终决策为 No-Go；没有 current-root source、focused regression、guardrail、validation failure 或 reviewer-named evidence 证明任一 retained family 可以 unused / behavior-preserving deletion。
+- PRD 形状：下一 PRD 不默认生成删除实现，也不按单个 blocker 逐个开窄 PRD；它应把同阶段、同 verifier gate、同 rollback anchor 的 source audit、guardrail / regression refresh、validation entrypoint refresh、registered-route / performance 条件检查和 No-Go / blocker 记录放在同一个 PRD 内。
+- 拆分条件：只有新证据同时命名 exact file / symbol / behavior、focused guardrail 或 regression、validation entrypoint、registered-route / performance 条件（若触达 live semantic 或性能面）和 rollback anchor，且指向 deletion implementation 或不兼容 verifier / rollback 时，才 stop-and-split 成单独 deletion-readiness implementation PRD。
+
+下一轮 PRD generator 应从 `docs/Buff系统重构Checklist.md` 的阶段 4 项、`docs/旧Buff系统耦合审查结果.md` 的 retained coupling、本文 retained-boundary ledger、`docs/Buff公式候选与测试目标清单.md` 的 validation entrypoints、当前 focused tests 和本轮 final No-Go packet 取材。
+
+- 这不是新的 Phase-3 same-phase selection loop，也不是某个已完成 formula branch 的 follow-up。
+- 它应产出一个可容纳多个窄 US 的 retained-boundary maintenance / evidence-refresh PRD。
+- 未来如果仍无 exact deletion candidate，应保留候选池并记录 No-Go，而不是制造 cleanup diff 或把兼容任务拆成多个薄 PRD。
 
 ### Current Phase-4 deletion-readiness / retained-boundary final handoff
 
 - Final No-Go evidence:
+  - `US-008` final handoff was written only after `US-001` through `US-007` were complete in `scripts/ralph/prd.json` and their evidence ledger / checkpoint records were present.
   - `scripts/ralph/investigations/2026-06-16-US-006-final-no-go-handoff-preservation.md` records No-Go for a Phase-4 deletion implementation PRD as the next default.
   - `US-002` retained-reference census found broad current-root retained references across old containers / lifecycle entrypoints, event/runtime boundaries, listener broadcasts, dot runtime registration, scheduled handler requeue paths and formula snapshot carriers.
   - `US-003` maps those retained families to guardrails and validation profiles, but does not prove removability.
@@ -97,6 +111,7 @@ Phase-4 下一默认 Ralph PRD 形状：retained-compatibility boundary preserva
   - `US-005` records Conditional No-Go for live consistency and runtime benchmark samples without an exact semantic candidate, real registered route, explicit stop tick, nonzero relevant counts, performance-sensitive touched surface and rollback anchor.
 - Current default next PRD:
   - Phase-4 retained-compatibility boundary preservation / evidence refresh. A future deletion implementation PRD is not the default; it is allowed only after a new current-root packet names exact file / symbol / behavior, unused-or-behavior-preserving proof, focused guardrail or regression, validation profile, rollback anchor, and registered-route / performance evidence when applicable.
+  - Route authority remains [Buff重构方案.md](./Buff重构方案.md) plus this next-stage draft: the next PRD must follow the architecture phase route and may not jump to deletion implementation without exact evidence.
 - Same-phase retained candidate pool for future generation:
   - Old containers and lifecycle compatibility: `exist_buff_dict`, `DYNAMIC_BUFF_DICT`, `LOADING_BUFF_DICT`, `dynamic_buff`, `loading_buff`, legacy `buff_add()`, legacy `KickOutBuff()`, `BuffLoadLoop()`, `Update_Buff` and `ScheduleBuffSettle` remain object-identity / lifecycle compatibility boundaries. Work direction is evidence refresh or exact blocker repair only; validation entrypoints are raw-container guardrails, lifecycle profile when touched and `implicit-events` when event/runtime adjacent. Non-goals: old-container deletion, broad lifecycle rewrite and retained compatibility deletion.
   - Event/runtime/listener layers: `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, listener broadcasts, dot runtime registration and scheduled handler requeue remain separated retained layers. Work direction is guardrail maintenance or exact file-specific repair; validation entrypoints are `implicit-events`, `test_schedule_dispatch.py`, `test_runtime_command_port.py` and file-specific dispatch/runtime tests. Non-goals: layer merge, second write facade, raw queue passthrough and cached dispatch adapters.
@@ -250,7 +265,7 @@ Phase-4 下一默认 Ralph PRD 形状：retained-compatibility boundary preserva
 
 - P2-G direct simulator context helpers 已补齐为 completed guarded bucket；P2-A through P2-G 没有剩余同阶段默认实现 backlog。
 - Phase-3 formula parity suite design、P2-D / P2-E / P2-F / P2-G guarded maintenance、retained compatibility 与 blocker-only reopen rules 都保留为后续候选块，不能因为 P2-G 或 readiness decision 已完成就从候选池删除。
-- P2-A / P2-B / P2-C / P2-D / P2-E / P2-F / P2-G 不再作为默认实现 backlog；后续只在 source guardrail、reader parity、trigger-state no-write / order tests、dispatch tests、dot runtime-state guardrails、P2-F forced-write guardrail、P2-G direct-context guardrail 或 validation profile 暴露具体回归时开窄 blocker。
+- P2-A / P2-B / P2-C / P2-D / P2-E / P2-F / P2-G 不再作为默认实现 backlog；后续只在 source guardrail、reader parity、trigger-state no-write / order tests、dispatch tests、dot runtime-state guardrails、P2-F forced-write guardrail、P2-G direct-context guardrail 或 validation profile 暴露具体回归时形成 blocker evidence。若 verifier / rollback 与当前同阶段 PRD 兼容，应并入同一 PRD；否则 stop-and-split。
 - Formula snapshots、CalAnomaly internals、old containers、legacy `buff_add()` / `KickOutBuff()` 和 deleted raw queue discovery surfaces 仍是 retained compatibility / phase-3 / blocker-only 项；下一轮默认转向 remaining formula oracle / proposal-readiness，不直接删除 retained compatibility。
 - AM/AP/impact bounded implementation、array-output / RegularMul oracle readiness PRD、RegularMul sheer reader-snapshot readiness PRD、retained-only sheer blocker closure PRD、copied-output handler/report parity / proposal / bounded implementation PRD 均已完成最终 handoff；后续不再把 `cal_am()`、`cal_ap()`、`cal_imp()` helper-family、copied-output handler/report implementation、已完成的 Stun / RegularMul array contract、selected branch matrix 或 retained-only sheer 当默认 implementation backlog。
 - Current RegularMul crit-rate implementation PRD 已完成 handoff：`Calculator.RegularMul.cal_crit_rate(data)` 已 marked implemented / no-op verified，full crit 保留 `crit_rate_received_increase`，personal crit 保留排除 received crit 的 contrast boundary。当前默认 PRD 改为 Phase-3 same-phase candidate selection / bounded proposal PRD；registered behavior sample 仍为 conditional No-Go，直到 future live semantic diff 且真实 registered route 证明 nonzero selected formula relevance 与候选相关输入。remaining `Calculator.RegularMul` branches / retained-only sheer、future `Calculator.StunMul.get_stun_array()` follow-up with named evidence、P2-A through P2-G guarded maintenance、retained compatibility 和 blocker-only reopen rules 仍保留为后续候选。
@@ -472,9 +487,10 @@ US-022 将 Phase 3 公式 / 行为域细分为以下 registered-team trigger；�
   输出至少包含 `team`、`apl`、`stop_tick`、`total_runtime_ms`、`hotspots` 与 `comparisons`；`--apl` 可选。
 - 两个命令里的 `--legacy-runtime` / `--candidate-runtime` 当前都只是报告标签；只有 live simulator 真正消费 `config.buff_runtime.mode` 后，它们才应承载真实 runtime 切换语义。
 
-## 下一轮 PRD 的验证要求
+## 历史 PRD 验证要求 ledger（不得作为当前入口）
 
-- 当前默认 PRD 改为 Phase-3 same-phase candidate-pool closure / exact bounded candidate selection：retained-only sheer helper seam、non-sheer base damage/base attr、anomaly-duration runtime-view matrix、write-path field matrix、CalAnomaly helper-family、copied-payload handler/report implementation、`Calculator.AnomalyMul.cal_res_pen()` selector extraction、AM/AP/impact helper implementation、selected Stun implementation、completed RegularMul helper implementations 和 P2 guarded buckets 均是 completed / no-reopen evidence。下一轮不得继续沿任一已完成单一 surface 自动生成 follow-up；必须先复用 current-root CodeGraph / focused test / retained gate evidence，选择一个由 source / guardrail / validation / reviewer evidence 命名的 exact candidate，或记录没有同阶段 candidate 剩余并提出 Phase-3 closure / next-phase route。若需要 public reader-contract expansion、old-container deletion、validation-runner rewrite、event/listener changes、registered-route fabrication 或 retained compatibility deletion，应在同一 PRD 内 No-Go / stop-and-split。
+- 本节是历史 handoff 验证 ledger，只保留用于回溯 gate 和 no-reopen 证据；不得覆盖 `## 合理 PRD 形状硬约束` 或 `## 当前默认下一步`。
+- 历史记录（已 superseded，非当前默认）：当前默认 PRD 改为 Phase-3 same-phase candidate-pool closure / exact bounded candidate selection：retained-only sheer helper seam、non-sheer base damage/base attr、anomaly-duration runtime-view matrix、write-path field matrix、CalAnomaly helper-family、copied-payload handler/report implementation、`Calculator.AnomalyMul.cal_res_pen()` selector extraction、AM/AP/impact helper implementation、selected Stun implementation、completed RegularMul helper implementations 和 P2 guarded buckets 均是 completed / no-reopen evidence。下一轮不得继续沿任一已完成单一 surface 自动生成 follow-up；必须先复用 current-root CodeGraph / focused test / retained gate evidence，选择一个由 source / guardrail / validation / reviewer evidence 命名的 exact candidate，或记录没有同阶段 candidate 剩余并提出 Phase-3 closure / next-phase route。若需要 public reader-contract expansion、old-container deletion、validation-runner rewrite、event/listener changes、registered-route fabrication 或 retained compatibility deletion，应在同一 PRD 内 No-Go / stop-and-split。
 - 若触达 event-adjacent copied-output、validation wiring、dispatch/runtime boundaries，追加：`uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`。
 - 若触达生命周期容器、runtime 写路径或更广 validation script 行为，追加：`uv run python scripts/run_buff_refactor_validation.py`。
 - 若维护已完成 P2-D scheduled publish ordering / adapter parity bucket，必须保留 exact-file source guardrail、file-specific dispatch tests、adapter 按需创建与 `ScheduleData.reset_myself()` 后 event_list rebinding 证据；不要把 guardrail 扩成阻断 P2-E / P2-F / P2-G，也不要新增 raw queue passthrough 或 runtime write facade。
@@ -548,7 +564,7 @@ PRD-12 已按候选块 B/C/D/E 完成阶段 1 基础设施收口样本、guardra
   - PRD-12 已完成 raw runtime exposure audit、compatibility getter narrowing、same-tick helper classification / routing、construction centralization 与 no-new-raw-runtime guardrail。
   - `ScheduledEvent` 构造层仍保留 raw `dynamic_buff`、`exist_buff_dict`、`loading_buff` compatibility boundary；这是 retained boundary，不是 phase-1 blocker。
 - 可拆工作方向：
-  - 当前只保留 blocker-driven follow-up：如果 guardrail 发现新的 handler legacy getter 调用、raw runtime passthrough 或 same-tick 写协作，再按文件 / 符号开窄故事。
+  - 当前只保留 blocker-driven follow-up：如果 guardrail 发现新的 handler legacy getter 调用、raw runtime passthrough 或 same-tick 写协作，再按文件 / 符号补一个窄 US。
   - 不从已闭合的 `SkillEventHandler` / `AnomalyEventHandler` 文本重复开迁移故事。
 - 必须保留：
   - handler requeue 的 `.event_list.append(...)` 语义。
@@ -644,7 +660,7 @@ PRD-12 已按候选块 B/C/D/E 完成阶段 1 基础设施收口样本、guardra
 
 ## Phase 2 分类 PRD 后的下一轮调查提纲
 
-阶段 2 第一轮已完成“XLogic 全量分析与复用收敛”的分类与设计产物，P2-A AM/AP reader + computed count state-sync package、P2-B crit / impact reader family package、P2-C trigger-state read-only gates、P2-D scheduled publish ordering / adapter parity、P2-E dot runtime-state / initialization、P2-F BuffAddStrategy caller / facade-write design 和 P2-G direct simulator context helpers 均已完成 guarded scope。下一轮 PRD 不再重复 census，也不继续沿已迁移 AM/AP、impact / crit、trigger-state、scheduled-publish、dot runtime-state、forced Buff write 或 direct simulator context 文件做薄切片；当前默认应做 phase-2 closure / phase-3 formula snapshot readiness decision：
+阶段 2 第一轮已完成“XLogic 全量分析与复用收敛”的分类与设计产物，P2-A AM/AP reader + computed count state-sync package、P2-B crit / impact reader family package、P2-C trigger-state read-only gates、P2-D scheduled publish ordering / adapter parity、P2-E dot runtime-state / initialization、P2-F BuffAddStrategy caller / facade-write design 和 P2-G direct simulator context helpers 均已完成 guarded scope。下一轮 PRD 不再重复 census，也不继续沿已迁移 AM/AP、impact / crit、trigger-state、scheduled-publish、dot runtime-state、forced Buff write 或 direct simulator context 文件做单点 follow-up；当前默认应做 phase-2 closure / phase-3 formula snapshot readiness decision：
 
 - P2-A through P2-G 哪些 guardrail / focused tests / validation profiles 已证明 completed bucket，不应继续生成默认 implementation backlog。
 - 是否还有同阶段候选必须由 root-workspace source scan、guardrail failure、focused test failure 或 validation profile failure 证明；没有证据时，只保留 guarded maintenance / blocker-only follow-up。

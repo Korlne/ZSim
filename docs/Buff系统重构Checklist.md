@@ -78,12 +78,9 @@
 ## 阶段 4：旧 Buff 残余删除
 
 - [x] Phase-4 deletion-readiness / phase-boundary intake 已完成最终 No-Go：US-002 / US-003 / US-004 / US-005 / US-006 证明当前没有 retained family 满足 unused / behavior-preserving deletion；旧容器、lifecycle entrypoints、explicit ports/adapters、listener / dot runtime、runtime read/write、formula snapshot carriers、scheduled handler requeue 和 retained compatibility 继续保留。
-- [ ] 后续 deletion implementation PRD 只能在新证据命名 exact file / symbol / behavior、focused guardrail 或 regression、validation entrypoint、registered-route / performance 条件（如适用）和 rollback anchor 后生成；不得把本阶段 No-Go 外推成默认清理 diff。
-- [ ] 删除不再使用的旧 Buff 入口。
-- [ ] 删除不再使用的旧适配器。
-- [ ] 删除旧 `MultiplierData` 直连路径。
-- [ ] 删除旧容器同步残余逻辑。
-- [ ] 删除无用文档和无用兼容说明。
+- [x] Completed：Phase-4 retained-compatibility boundary preservation PRD 已完成 `US-008` final handoff；`docs/Buff重构下阶段计划草稿.md`、replacement notes、Ralph evidence ledger、campaign dashboard、checkpoint、progress 和 PRD completion bit 均记录当前默认 route 与 same-phase candidate pool。`US-008` 未发现新 Buff coupling 或既有 coupling classification 变化，因此不更新 [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md)。
+- [ ] In-progress / next default：下一默认 PRD 仍是 Phase-4 retained-compatibility boundary preservation / evidence refresh campaign，不是 deletion implementation。它应横向合并同 verifier / rollback 的 old containers / lifecycle compatibility、event/runtime/listener layers、formula snapshot / reader contracts、registered behavior / performance gates、completed guarded-maintenance surfaces 和 blocker-only reopen evidence refresh。
+- [ ] Blocked：deletion implementation、旧 Buff 入口删除、旧适配器删除、旧 `MultiplierData` 直连路径删除、旧容器同步残余逻辑删除、retained compatibility 删除和无用兼容说明清理均 blocked，直到新 current-root evidence 同时命名 exact file / symbol / behavior、focused guardrail 或 regression、validation entrypoint、registered-route / performance 条件（如适用）和 rollback anchor。
 
 ## 阶段 5：一致性与性能收口
 
