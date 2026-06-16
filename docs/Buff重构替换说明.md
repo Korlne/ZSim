@@ -5905,3 +5905,18 @@
 - Next step:
   - Continue to `US-003` reader / snapshot contract eligibility. Do not add public reader APIs, expand `_CalculatorReadSnapshot`, create registered fixtures, or edit event/runtime/listener layers without that active slice authorizing it.
 ---
+
+## 2026-06-16 11:28 +08:00 - US-003
+- Files changed: `tests/simulator/test_buff_attribute_reader.py`, `scripts/ralph/plans/slices/us-003-decide-reader-and-snapshot-contract-eligibility.md`, `scripts/ralph/investigations/2026-06-16-US-003-reader-snapshot-contract-eligibility.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 reader / snapshot contract eligibility` replaces chat-only confidence in retained-only sheer contract safety with a durable investigation packet and focused guard test.
+  - This story strengthens a test / evidence boundary only; it does not replace live production `Calculator.py`, `Calculator.RegularMul` formulas, public reader APIs, `_CalculatorReadSnapshot`, registered teams/APLs, validation-runner behavior, event/runtime/listener paths, old Buff containers, or retained compatibility behavior.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_base_attr(..., base_attr=4)` remains retained-only and runtime-dependent on `char_instance.sheer_attack_conversion_rate`.
+  - `Calculator.RegularMul.cal_sheer_dmg_bonus(data)` remains snapshot-compatible through existing `dynamic.sheer_dmg_bonus` and `SkillNode.diff_multiplier` reads.
+  - `CalculatorBuffAttributeReader` still exposes only anomaly mastery/proficiency, impact, full crit rate, personal crit rate, and personal crit damage readers.
+  - `_CalculatorReadSnapshot` remains private with only `static`, `dynamic`, `judge_node`, `enemy_obj`, and `char_level`.
+  - Focused pytest exited `0` with `31 passed, 131 deselected`; scoped mypy exited `0` with `Success: no issues found in 2 source files`.
+- Next step:
+  - Continue to `US-004` registered-route evidence without fabricating validation-only teams, fake APLs, or fixture-only routes. Public reader/snapshot expansion remains a stop-and-split trigger.
+---

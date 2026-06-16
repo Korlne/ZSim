@@ -5538,6 +5538,39 @@ def test_full_crit_damage_reader_api_and_snapshot_contract_stay_bounded(
     _assert_aggregation_calls(aggregation_calls, fixture, times=2)
 
 
+def test_regular_mul_sheer_reader_snapshot_contract_stays_module_local() -> None:
+    snapshot_cls = getattr(calculator_module, "_CalculatorReadSnapshot")
+    snapshot_fields = [field_info.name for field_info in fields(snapshot_cls)]
+    public_reader_methods = {
+        name
+        for name, value in vars(CalculatorBuffAttributeReader).items()
+        if name.startswith("read_") and callable(value)
+    }
+
+    assert snapshot_cls.__name__.startswith("_")
+    assert snapshot_fields == [
+        "static",
+        "dynamic",
+        "judge_node",
+        "enemy_obj",
+        "char_level",
+    ]
+    assert public_reader_methods == {
+        "read_anomaly_mastery",
+        "read_anomaly_proficiency",
+        "read_impact",
+        "read_full_crit_rate",
+        "read_personal_crit_rate",
+        "read_personal_crit_damage",
+    }
+    assert {
+        "read_base_attr",
+        "read_base_sheer_atk",
+        "read_sheer_atk",
+        "read_sheer_dmg_bonus",
+    }.isdisjoint(public_reader_methods)
+
+
 @pytest.mark.parametrize(
     (
         "fixture_kwargs",
