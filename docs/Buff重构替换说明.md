@@ -6056,3 +6056,17 @@
 - Next step:
   - Continue to `US-006` serial validation and reviewer gate. Do not promote retained-only, conditional, guarded-maintenance, or blocker-only pool entries into production implementation without new current-root evidence.
 ---
+
+## 2026-06-16 14:39 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-serial-validation-and-reviewer-gate.md`, `scripts/ralph/checkpoints/2026-06-16-us-006-serial-validation-reviewer-gate.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-007-handoff-docs-and-same-phase-pool-preservation.md`
+- Replacement note:
+  - `US-006 serial validation / reviewer gate` replaces chat-only validation confidence with durable touched-surface gate evidence, skip rules, focused docs checks, typecheck evidence, and reviewer invariant verdict.
+  - This story is Ralph evidence / validation-matrix only; it does not replace live production `Calculator.py`, `CalAnomaly.py`, focused test behavior, validation-runner behavior, registered teams/APLs, event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime writes, public reader/snapshot APIs, copied-output behavior, formula paths, or retained compatibility paths.
+- Compatibility retained:
+  - Focused pytest remains required before retained validation profiles only when source or focused-test behavior changes; no such behavior changed in this docs-only slice.
+  - `formula-parity` and `calculator-reads` remain serial gates for formula/readiness source or focused-test changes, but were skipped here because no formula/readiness or focused-test surface changed.
+  - `implicit-events` remains serial for event-adjacent, dispatch/runtime, listener/dot runtime, validation-wiring, and same-tick write surfaces, but was skipped here because none were touched.
+  - Default `run_buff_refactor_validation.py` remains limited to lifecycle container, runtime write path, or broader validation-runner behavior changes; none were touched.
+- Next step:
+  - Continue to `US-007` handoff docs and same-phase candidate pool preservation. Keep the next route docs-only unless new current-root evidence names a concrete production surface, rollback boundary, and validation trigger.
+---
