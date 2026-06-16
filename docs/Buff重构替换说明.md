@@ -6258,3 +6258,15 @@
 - Next step:
   - Future PRD generation should follow `docs/Buff重构方案.md` and this next-stage draft; deletion implementation requires exact current-root file / symbol / behavior evidence, verifier, rollback anchor, and live-route / performance conditions where applicable.
 ---
+
+## 2026-06-16 23:43 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconfirm-phase-4-route-and-scope.md`, `scripts/ralph/investigations/2026-06-16-US-001-phase4-route-scope.md`, `scripts/ralph/checkpoints/2026-06-16-us-001-phase4-route-scope.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-002-refresh-old-container-and-lifecycle-compatibility-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 Phase-4 route scope packet` replaces stale Phase-3 same-phase or deletion-routing assumptions with current-root evidence that the active default is Phase-4 retained-boundary evidence refresh.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers, lifecycle compatibility paths, event/runtime/listener/dot layers, formula snapshot carriers, public reader/snapshot contracts, validation profiles, registered behavior gates, completed Phase-3/P2 guarded-maintenance surfaces, and retained compatibility paths remain unchanged.
+  - Deletion implementation remains No-Go unless a separate future packet names an exact current-root candidate, verifier, rollback anchor, and live-route/performance conditions where applicable.
+- Next step:
+  - Continue to `US-002` old-container and lifecycle compatibility evidence refresh using the same current-root exclusions.
+---
