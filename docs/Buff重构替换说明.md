@@ -6233,3 +6233,15 @@
 - Next step:
   - Continue to `US-007` serial validation and reviewer invariant gate. Do not generate a generic Phase-3 same-phase selection loop or single-branch cleanup PRD from retained compatibility names.
 ---
+
+## 2026-06-16 21:50 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-serial-validation-and-reviewer-invariant-gate.md`, `scripts/ralph/checkpoints/2026-06-16-us-007-serial-validation-reviewer-gate.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-pool-preservation.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 serial validation matrix and checkpoint` replaces assertion-only reviewer confidence with durable command exits, focused evidence, warning/noise classification, and invariant verdict.
+  - This story is Ralph/Buff evidence and completion bookkeeping only; it does not replace live production Buff code, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, delete old containers, or merge event queue / listener broadcast / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers, event/runtime/listener/dot boundaries, formula snapshot carriers, public reader/snapshot APIs, validation profiles, registered behavior gates, and retained compatibility paths remain unchanged.
+  - Live main-loop consistency and runtime benchmark commands remain conditional on a future exact production semantic/performance candidate with real route, stop tick, nonzero relevant counts, and rollback anchors.
+- Next step:
+  - Continue to `US-008` handoff docs and same-phase pool preservation. Preserve the broad retained-boundary candidate pool instead of collapsing the next PRD to one narrow cleanup path.
+---
