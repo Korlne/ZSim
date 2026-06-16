@@ -6207,3 +6207,17 @@
 - Next step:
   - Continue to `US-005` registered behavior and performance gate conditions. Do not treat US-004 validation success as formula deletion readiness or public contract expansion approval.
 ---
+
+## 2026-06-16 21:03 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-refresh-registered-behavior-and-performance-gate-conditions.md`, `scripts/ralph/investigations/2026-06-16-US-005-refresh-registered-behavior-performance-gates.md`, `scripts/ralph/checkpoints/2026-06-16-us-005-refresh-registered-behavior-performance-gates.md`, `scripts/ralph/plans/slices/us-006-preserve-completed-phase-3-and-p2-guarded-maintenance-boundaries.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-005 registered behavior / performance gate refresh` replaces stale sample eligibility assumptions with current-root runner, label, validation, and Conditional No-Go evidence.
+  - This story is Ralph/Buff evidence and verifier-gate bookkeeping only; it does not replace live production Buff code, change simulator runtime selection, add registered routes/APLs, alter formulas, delete old containers, or merge event queue / listener broadcast / same-tick runtime-write layers.
+- Compatibility retained:
+  - `scripts/run_buff_main_loop_consistency.py` and `scripts/run_buff_runtime_benchmark.py` remain real entrypoints.
+  - `--legacy-runtime` / `--candidate-runtime` remain report labels until live simulator code consumes `config.buff_runtime.mode`.
+  - Live main-loop consistency remains conditional on a future exact semantic candidate with a real registered route, explicit stop tick, nonzero relevant counts, and rollback anchor.
+  - Runtime benchmark remains conditional on a future performance-sensitive runtime, lifecycle, dispatch, formula, or container behavior change.
+- Next step:
+  - Continue to `US-006` completed Phase-3 and P2 guarded-maintenance boundary preservation. Keep live sample and benchmark commands skipped unless their explicit eligibility gates are met.
+---
