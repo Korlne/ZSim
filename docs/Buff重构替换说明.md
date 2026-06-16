@@ -6270,3 +6270,15 @@
 - Next step:
   - Continue to `US-002` old-container and lifecycle compatibility evidence refresh using the same current-root exclusions.
 ---
+
+## 2026-06-17 00:08 +08:00 - US-002
+- Files changed: `scripts/ralph/plans/slices/us-002-refresh-old-container-and-lifecycle-compatibility-evidence.md`, `scripts/ralph/investigations/2026-06-16-US-002-old-container-lifecycle-compatibility.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-002 old-container lifecycle compatibility packet` replaces cleanup assumptions with a current-root source census, CodeGraph lifecycle evidence, raw-container guardrail collector counts, and `implicit-events` validation evidence.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / same-tick runtime-write layers.
+- Compatibility retained:
+  - `exist_buff_dict`, `DYNAMIC_BUFF_DICT`, `LOADING_BUFF_DICT`, `dynamic_buff`, `loading_buff`, `LegacyBuffRuntimeFacade`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffLoadLoop()`, legacy `buff_add()`, legacy `KickOutBuff()`, `Update_Buff` no-facade fallback, and `ScheduleBuffSettle(...)` remain retained compatibility surfaces.
+  - Guardrail collector evidence reported `239` raw old-container findings and `117` ScheduledEvent runtime findings with `0` disallowed findings; exact production blocker candidate count remains `0`.
+- Next step:
+  - Continue to `US-003` event/runtime/listener boundary guardrail refresh. Do not treat this retained-compatibility evidence as deletion authorization.
+---
