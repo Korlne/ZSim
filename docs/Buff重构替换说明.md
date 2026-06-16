@@ -5989,3 +5989,16 @@
 - Next step:
   - Generate the next PRD as Phase-3 same-phase candidate-pool closure / exact bounded candidate selection. Preserve registered behavior sample eligibility only for future live semantic diffs, future Stun evidence only when named, P2 guarded maintenance only on concrete blockers, retained compatibility, blocker-only phase-1 reopen rules, and retained-only sheer helper-complete / blocked evidence as same-phase pool entries.
 ---
+
+## 2026-06-16 13:24 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-current-default-and-no-reopen-preflight.md`, `scripts/ralph/investigations/2026-06-16-US-001-candidate-pool-closure-preflight.md`, `scripts/ralph/checkpoints/2026-06-16-us-001-candidate-pool-closure-preflight.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-001 candidate-pool closure preflight` replaces stale generic selection / bounded-proposal ledger routing with current-root evidence, prior-PRD completion proof, targeted `rg` terms, CodeGraph query terms, a no-reopen table, and a checkpointed reviewer boundary.
+  - This story is closure / exact-intake evidence only; it does not replace live production `Calculator.py`, `CalAnomaly.py`, `AnomalyBarClass.py`, `UpdateAnomaly.py`, validation-runner behavior, registered teams/APLs, event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime writes, public reader/snapshot APIs, copied-output behavior, formula paths, or retained compatibility paths.
+- Compatibility retained:
+  - Prior retained-sheer PRD remains complete: 8/8 stories passed and its controller state was `activeSlice.status=awaiting-next-prd`.
+  - Completed copied-output, Anomaly, Stun, RegularMul, CalAnomaly, anomaly-duration, write-path, Phase-1/2 guarded, retained compatibility, and retained-only sheer helper-complete / blocked surfaces remain no-reopen by default.
+  - Historical `same-phase candidate selection / bounded proposal` text remains pool-retention / no-reopen ledger only unless current-root source, focused regression, guardrail, validation failure, or reviewer-named evidence contradicts the latest draft/checklist.
+- Next step:
+  - Continue to `US-002` formula / readiness candidate evidence audit. Do not promote retained-only sheer, future Stun, registered-sample eligibility, P2 guarded maintenance, retained compatibility, or stale generic proposal text into the active default without named current-root evidence.
+---
