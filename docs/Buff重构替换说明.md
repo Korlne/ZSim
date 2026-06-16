@@ -5962,3 +5962,17 @@
 - Next step:
   - Continue to `US-007` serial validation and conditional gates. Keep `formula-parity` and `calculator-reads` serial, and keep `implicit-events` / default validation conditional on event-adjacent, validation-runner, lifecycle, runtime write, or broader boundary changes.
 ---
+
+## 2026-06-16 12:25 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-serial-validation-and-conditional-gates.md`, `scripts/ralph/checkpoints/2026-06-16-us-007-serial-validation-gates.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-pool-preservation.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 serial validation gates` replaces historical-note-only validation confidence with retained `formula-parity` and `calculator-reads` command evidence plus a checkpointed reviewer verdict.
+  - This story is validation / Ralph evidence only; it does not replace live production `Calculator.py`, formula implementations, public reader/snapshot APIs, validation-runner behavior, registered teams/APLs, event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime writes, copied-output behavior, or retained compatibility paths.
+- Compatibility retained:
+  - `formula-parity` ran before `calculator-reads`; both exited `0` with `[验证完成] 所有步骤通过`.
+  - `implicit-events` remains conditional and was skipped because this PRD slice changed no event-adjacent copied-output, validation wiring, dispatch/runtime boundary, listener/dot runtime path, or same-tick runtime write surface.
+  - Default broad validation remains conditional and was skipped because this PRD slice changed no lifecycle container, runtime write path, or broader validation script behavior.
+  - Known pytest-asyncio loop-scope warnings, mypy unchecked-body notes, and post-success async log-writer shutdown tracebacks remain non-gate noise.
+- Next step:
+  - Continue to `US-008` handoff docs and same-phase pool preservation. Do not reopen production formula/read/event/runtime surfaces during handoff without new evidence.
+---
