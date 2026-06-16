@@ -6030,3 +6030,16 @@
 - Next step:
   - Continue to `US-004` registered behavior sample eligibility gate. Do not fabricate validation-only teams or retained-vs-retained samples without live semantic diff and registered route evidence.
 ---
+
+## 2026-06-16 14:07 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-registered-behavior-sample-eligibility-gate.md`, `scripts/ralph/investigations/2026-06-16-US-004-registered-behavior-sample-eligibility.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-005-exact-candidate-or-phase-3-closure-decision.md`
+- Replacement note:
+  - `US-004 registered behavior sample eligibility gate` replaces informal main-loop sampling judgment with a durable Conditional No-Go packet and current-root route audit.
+  - This story is eligibility evidence only; it does not replace live production simulator code, Buff formulas, runtime mode handling, validation-runner behavior, registered teams/APLs, event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime writes, public reader/snapshot APIs, copied-output behavior, formula paths, or retained compatibility paths.
+- Compatibility retained:
+  - Current registered routes are only route evidence: `席德大安比队`, `莱特火属性队`, `薇薇安物理队`, and `青衣雷属性队`; `tests/teams/ice_teams.py` remains unregistered because `IceTeamConfigs.register_all()` is commented out.
+  - `--legacy-runtime` and `--candidate-runtime` remain report labels until live simulator code consumes `config.buff_runtime.mode`.
+  - Main-loop consistency was not run because no eligible production semantic diff plus selected registered route and nonzero relevant counts exists in this slice.
+- Next step:
+  - Continue to `US-005` exact candidate or Phase-3 closure decision. Keep main-loop consistency conditional on a future production semantic diff, real registered route evidence, explicit stop tick, nonzero relevant counts, and documented runtime-label / mode-switch status.
+---
