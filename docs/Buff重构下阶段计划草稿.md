@@ -4,7 +4,8 @@
 
 - 当前总路线已重置；最新权威 PRD 入口以本文 `## 当前默认下一步` 为准，下面保留的 2026-06-07 到 2026-06-16 handoff bullets 是历史 ledger，不得覆盖当前默认入口。
 - 当前有效阶段是 Phase 4 retained-boundary preservation：Phase-4 deletion-readiness / phase-boundary intake 已完成最终 No-Go，没有 retained family 证明 unused / behavior-preserving deletion；下一轮不默认生成删除实现 PRD。PRD 应从 `## 当前默认下一步` 的 retained candidate pool 中横向合并同阶段、同验证 profile、同 rollback anchor 的 maintenance / evidence-refresh / blocker-discovery 工作；需要保持窄的是 PRD 内的 US，而不是把每个 blocker 拆成单独 PRD。只有 evidence 要求不同 verifier / rollback，或确实进入 deletion implementation，才 stop-and-split。
-- 2026-06-16 `US-008` final handoff 已在 `US-001` through `US-007` evidence complete 之后同步：当前默认下一 PRD 仍是 Phase-4 retained-compatibility boundary preservation / evidence refresh campaign；same-phase candidate pool 必须继续保留 old containers / lifecycle compatibility、event/runtime/listener layers、formula snapshot and reader contracts、registered behavior / performance gates、completed guarded-maintenance surfaces 和 blocker-only reopen rules。
+- 2026-06-17 `US-009` final handoff 已在 `US-001` through `US-008` evidence complete 之后同步：当前默认下一 PRD 仍是 Phase-4 retained-compatibility boundary preservation / evidence refresh / blocker-discovery campaign；same-phase candidate pool 必须继续保留 old containers / lifecycle compatibility、event/runtime/listener layers、formula snapshot and reader contracts、registered behavior / performance gates、completed guarded-maintenance surfaces、retained compatibility 和 blocker-only reopen rules。
+- `US-009` 未发现新 Buff coupling 或既有 coupling classification 变化；[旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md) 保持不变。除非 future current-root source / focused regression / guardrail / validation / reviewer evidence 同时命名 exact candidate、verifier 和 rollback anchor，否则不得把本 handoff 推导为 phase transition。
 - 若下方历史 handoff bullet 仍写“下一默认 PRD 返回 Phase-3 same-phase candidate selection / bounded proposal”，一律视为当时的 no-reopen / pool-retention 记录，不得作为当前 PRD 生成入口。当前入口只能取 `## 合理 PRD 形状硬约束` 与 `## 当前默认下一步`。
 - Buff 系统现已明确要求采用事件驱动架构。
 - 阶段 1 当前实现基线已经落地：
@@ -100,24 +101,61 @@ Phase-4 下一默认 Ralph PRD 形状：retained-compatibility boundary preserva
 - 它应产出一个可容纳多个窄 US 的 retained-boundary maintenance / evidence-refresh PRD。
 - 未来如果仍无 exact deletion candidate，应保留候选池并记录 No-Go，而不是制造 cleanup diff 或把兼容任务拆成多个薄 PRD。
 
-### Current Phase-4 deletion-readiness / retained-boundary final handoff
+### Current Phase-4 retained-boundary evidence refresh final handoff
 
-- Final No-Go evidence:
-  - `US-008` final handoff was written only after `US-001` through `US-007` were complete in `scripts/ralph/prd.json` and their evidence ledger / checkpoint records were present.
-  - `scripts/ralph/investigations/2026-06-16-US-006-final-no-go-handoff-preservation.md` records No-Go for a Phase-4 deletion implementation PRD as the next default.
+- Final No-Go / preservation evidence:
+  - `US-009` final handoff was written only after `US-001` through `US-008` were complete in `scripts/ralph/prd.json` and their evidence ledger / checkpoint records were present.
   - `US-002` retained-reference census found broad current-root retained references across old containers / lifecycle entrypoints, event/runtime boundaries, listener broadcasts, dot runtime registration, scheduled handler requeue paths and formula snapshot carriers.
   - `US-003` maps those retained families to guardrails and validation profiles, but does not prove removability.
   - `US-004` records no retained family satisfies the Go bar for unused / behavior-preserving deletion; formula snapshot carriers and scheduled handler requeue paths remain Conditional No-Go.
   - `US-005` records Conditional No-Go for live consistency and runtime benchmark samples without an exact semantic candidate, real registered route, explicit stop tick, nonzero relevant counts, performance-sensitive touched surface and rollback anchor.
+  - `US-006` preserves completed guarded-maintenance surfaces as no-reopen evidence; `US-007` records deletion implementation No-Go; `US-008` records serial verifier / reviewer invariant evidence.
 - Current default next PRD:
-  - Phase-4 retained-compatibility boundary preservation / evidence refresh. A future deletion implementation PRD is not the default; it is allowed only after a new current-root packet names exact file / symbol / behavior, unused-or-behavior-preserving proof, focused guardrail or regression, validation profile, rollback anchor, and registered-route / performance evidence when applicable.
-  - Route authority remains [Buff重构方案.md](./Buff重构方案.md) plus this next-stage draft: the next PRD must follow the architecture phase route and may not jump to deletion implementation without exact evidence.
+  - Phase-4 retained-compatibility boundary preservation / evidence refresh / blocker-discovery campaign remains the default. A future deletion implementation PRD is not the default; it is allowed only after a new current-root packet names exact file / symbol / behavior, unused-or-behavior-preserving proof, focused guardrail or regression, validation profile, rollback anchor, and registered-route / performance evidence when applicable.
+  - Route authority remains [Buff重构方案.md](./Buff重构方案.md) plus this next-stage draft: the next PRD must follow the architecture phase route and may not jump to deletion implementation, Phase-3 narrow follow-up, or retained compatibility deletion without exact evidence.
 - Same-phase retained candidate pool for future generation:
-  - Old containers and lifecycle compatibility: `exist_buff_dict`, `DYNAMIC_BUFF_DICT`, `LOADING_BUFF_DICT`, `dynamic_buff`, `loading_buff`, legacy `buff_add()`, legacy `KickOutBuff()`, `BuffLoadLoop()`, `Update_Buff` and `ScheduleBuffSettle` remain object-identity / lifecycle compatibility boundaries. Work direction is evidence refresh or exact blocker repair only; validation entrypoints are raw-container guardrails, lifecycle profile when touched and `implicit-events` when event/runtime adjacent. Non-goals: old-container deletion, broad lifecycle rewrite and retained compatibility deletion.
-  - Event/runtime/listener layers: `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, listener broadcasts, dot runtime registration and scheduled handler requeue remain separated retained layers. Work direction is guardrail maintenance or exact file-specific repair; validation entrypoints are `implicit-events`, `test_schedule_dispatch.py`, `test_runtime_command_port.py` and file-specific dispatch/runtime tests. Non-goals: layer merge, second write facade, raw queue passthrough and cached dispatch adapters.
-  - Formula snapshot and reader contracts: `MultiplierData`, `MulData`, `DynamicStatement`, `Calculator.py`, `CalAnomaly.py`, `_CalculatorReadSnapshot` and `CalculatorBuffAttributeReader` remain retained formula/read contract boundaries. Reopen only for current-root formula/read regression or oracle gap with exact rollback; validation entrypoints are `formula-parity`, `calculator-reads` and `tests/simulator/test_buff_attribute_reader.py`. Non-goals: public contract expansion, broad formula rewrite and formula carrier deletion by assertion.
-  - Registered behavior and performance gates: `scripts/run_buff_main_loop_consistency.py` and `scripts/run_buff_runtime_benchmark.py` remain real entrypoints, but `--legacy-runtime` / `--candidate-runtime` remain report labels until live simulator code consumes runtime mode. Run live samples only for future live semantic diff with real registered route, explicit stop tick, nonzero relevant counts and rollback anchors; run benchmark only for performance-sensitive touched surfaces. Non-goals: validation-runner rewrite, registered-route fabrication and retained-vs-retained samples.
-  - Completed Phase-3 / guarded-maintenance surfaces: retained-only sheer is helper-complete / blocked; RegularMul, CalAnomaly, Stun, AM/AP/impact, copied-output, anomaly-bar readiness and P2-A through P2-G guarded buckets are completed or no-reopen evidence. Reopen only with focused regression, validation failure, current-root source evidence, guardrail failure or reviewer-named blocker.
+  - Candidate block A - old containers and lifecycle compatibility:
+    - Candidate files / symbols: `zsim/simulator/dataclasses.py`, `zsim/simulator/simulator_class.py`, `zsim/sim_progress/Buff/BuffLoad.py`, `zsim/sim_progress/Buff/BuffAdd.py`, `zsim/sim_progress/Update/Update_Buff.py`, `zsim/sim_progress/ScheduledEvent/ScheduleBuffSettle.py`, `LegacyBuffRuntimeFacade`, `exist_buff_dict`, `DYNAMIC_BUFF_DICT`, `LOADING_BUFF_DICT`, `dynamic_buff`, `loading_buff`, legacy `buff_add()` and legacy `KickOutBuff()`.
+    - Known coupling: object identity, pending / active / exist lifecycle, enemy debuff mirror and same-tick lifecycle writes remain retained compatibility surfaces.
+    - Ralph-sized work directions: refresh current-root raw-container census, repair exact guardrail / focused regression failures, or document blocker-only No-Go with rollback anchors.
+    - Retained boundaries: old container identity, existing main-loop lifecycle order, `RuntimeCommandPort` same-tick write boundary and `BuffRuntimeReadPort` read-only semantics.
+    - Validation entrypoints: raw-container guardrails, lifecycle profile when lifecycle paths are touched, `implicit-events` when event/runtime adjacent, plus focused lifecycle pytest named by the blocker.
+    - Non-goals: old-container deletion, broad lifecycle rewrite, enemy debuff single-source rewrite, retained compatibility deletion or cleanup by assertion.
+  - Candidate block B - event/runtime/listener layers:
+    - Candidate files / symbols: `zsim/sim_progress/data_struct/schedule_dispatch.py`, `zsim/sim_progress/ScheduledEvent/runtime_command.py`, `zsim/sim_progress/ScheduledEvent/buff_runtime.py`, `zsim/sim_progress/ScheduledEvent/event_handlers/*`, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, listener broadcasts, dot runtime registration and scheduled handler requeue.
+    - Known coupling: event queue semantics, synchronous listener broadcasts, dot runtime writes and same-tick runtime writes are intentionally separate retained layers.
+    - Ralph-sized work directions: maintain guardrails, repair exact file-specific boundary regressions, or add focused coverage for one named producer / handler while preserving relative order.
+    - Retained boundaries: on-demand dispatch adapters, queue-only dispatch, existing runtime command facade, listener broadcast separation and handler requeue behavior.
+    - Validation entrypoints: `implicit-events`, `tests/simulator/test_schedule_dispatch.py`, `tests/simulator/test_runtime_command_port.py`, and file-specific dispatch/runtime/listener tests.
+    - Non-goals: layer merge, second write facade, raw queue passthrough, cached dispatch adapters, broad handler rewrite or listener-to-queue conversion.
+  - Candidate block C - formula snapshot and reader contracts:
+    - Candidate files / symbols: `zsim/sim_progress/ScheduledEvent/Calculator.py`, `zsim/sim_progress/ScheduledEvent/CalAnomaly.py`, `zsim/sim_progress/ScheduledEvent/event_handlers/attribute_reader.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `_CalculatorReadSnapshot` and `CalculatorBuffAttributeReader`.
+    - Known coupling: formula helpers, private reader snapshots, retained `MultiplierData` compatibility and selected runtime-only fields still gate formula/read changes.
+    - Ralph-sized work directions: reopen only for current-root formula/read regression, oracle gap, guardrail failure or reviewer-named blocker with explicit rollback.
+    - Retained boundaries: public reader surface, private snapshot field set, retained formula carriers, old containers and event/runtime layers.
+    - Validation entrypoints: `formula-parity`, `calculator-reads`, `tests/simulator/test_buff_attribute_reader.py`, scoped mypy on changed formula/read files.
+    - Non-goals: public contract expansion, broad `Calculator.py` / `CalAnomaly.py` rewrite, formula carrier deletion, validation-only oracle rows or formula deletion by assertion.
+  - Candidate block D - registered behavior and performance gates:
+    - Candidate files / symbols: `scripts/run_buff_main_loop_consistency.py`, `scripts/run_buff_runtime_benchmark.py`, `zsim/utils/main_loop_consistency.py`, `zsim/utils/runtime_benchmark.py`, registered team / APL fixtures and `--legacy-runtime` / `--candidate-runtime` report labels.
+    - Known coupling: live behavior samples and benchmarks are real entrypoints, but runtime mode flags remain report labels until live simulator code consumes them.
+    - Ralph-sized work directions: run or extend samples only for future live semantic diff with real registered route, explicit stop tick, nonzero relevant counts and rollback anchors; run benchmark only for performance-sensitive touched surfaces.
+    - Retained boundaries: existing validation-runner contracts, registered data authenticity, old containers, event/runtime/listener separation and formula/read rollback anchors.
+    - Validation entrypoints: the two runner CLIs, focused runner pytest, scoped mypy for runner/utils, and the touched Buff validation profile.
+    - Non-goals: validation-runner rewrite, registered-route fabrication, fake APL / validation-only team creation, retained-vs-retained samples or performance runs without a touched performance surface.
+  - Candidate block E - completed guarded-maintenance surfaces:
+    - Candidate files / symbols: retained-only sheer, completed RegularMul helper seams, CalAnomaly helper seams, selected Stun array, AM/AP/impact helpers, copied-output handler/report boundaries, anomaly-bar readiness and P2-A through P2-G guarded buckets.
+    - Known coupling: these are completed / no-reopen evidence, not active implementation backlog.
+    - Ralph-sized work directions: only reopen if focused regression, validation failure, current-root source evidence, guardrail failure or reviewer-named blocker names a concrete file / symbol / behavior.
+    - Retained boundaries: rollback anchors, focused tests, serial validation profiles, old containers, retained compatibility and layer-separation invariants.
+    - Validation entrypoints: corresponding focused tests, `formula-parity`, `calculator-reads`, `implicit-events`, and source guardrails named by the blocker.
+    - Non-goals: generic Phase-3 same-phase selection loop, single completed branch cleanup PRD, broad formula rewrite or deleting retained compatibility because a helper seam is complete.
+  - Candidate block F - blocker-only deletion readiness:
+    - Candidate files / symbols: any future exact deletion candidate named by current-root source, guardrail, validation, focused regression or reviewer evidence.
+    - Known coupling: no current retained family has unused / behavior-preserving deletion proof after this PRD.
+    - Ralph-sized work directions: produce an investigation packet first, then split only if verifier / rollback differs from this retained-boundary campaign.
+    - Retained boundaries: all old containers, lifecycle compatibility, event/runtime/listener layers, formula snapshots/readers, registered behavior/performance gates and completed guarded-maintenance surfaces remain in force until the packet proves otherwise.
+    - Validation entrypoints: candidate-specific focused tests, guardrails, relevant Buff validation profile, registered-route / performance evidence when applicable, UTF-8/docs checks for handoff updates.
+    - Non-goals: automatic deletion implementation, old adapter deletion, `MultiplierData` direct-path deletion, compatibility cleanup or phase transition by inference.
 - Preserved non-goals:
   - No public contract expansion, deletion by assertion, performance-sensitive rewrite, validation-runner rewrite, registered-route fabrication, event/runtime/listener layer merge, retained compatibility deletion, broad `Calculator.py` / `CalAnomaly.py` rewrite, or old-container cleanup without a smaller evidence-backed deletion-readiness packet.
   - No automatic production deletion implementation follows this PRD.

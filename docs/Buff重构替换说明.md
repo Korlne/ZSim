@@ -6359,3 +6359,15 @@
 - Next step:
   - Continue to `US-009` handoff docs and same-phase pool preservation. Do not emit the completion sentinel until the final handoff docs are updated and all PRD stories pass.
 ---
+
+## 2026-06-17 02:12 +08:00 - US-009
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-009-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-17-us-009-handoff-docs-same-phase-pool.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-009 final handoff docs and same-phase pool` replaces US-008-only handoff state with completed Phase-4 PRD state, one concrete retained-boundary default next PRD, and a broad same-phase candidate pool for future PRD generation.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers / lifecycle compatibility, event/runtime/listener layers, formula snapshot and reader contracts, registered behavior / performance gates, completed guarded-maintenance surfaces, retained compatibility paths, and blocker-only reopen rules remain unchanged.
+  - No new Buff coupling or changed coupling classification was discovered, so `docs/旧Buff系统耦合审查结果.md` remains unchanged.
+- Next step:
+  - Future PRD generation should keep the Phase-4 retained-compatibility boundary preservation / evidence refresh / blocker-discovery default and broad same-phase pool unless future current-root source, focused regression, guardrail, validation, or reviewer evidence proves an exact phase-transition candidate.
+---
