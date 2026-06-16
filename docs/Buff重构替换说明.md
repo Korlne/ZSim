@@ -5836,3 +5836,16 @@
 - Next step:
   - Continue to `US-005` duration-affecting Buff variant matrix for fixed, percentage, count-scaled, multi-Buff, and clamp oracle rows. Do not turn US-005 into a production formula change unless oracle evidence exposes a retained-behavior gap.
 ---
+
+## 2026-06-16 09:46 +08:00 - US-005
+- Files changed: `tests/simulator/test_anomaly_handler_runtime_view.py`, `scripts/ralph/plans/slices/us-005-duration-affecting-buff-variant-matrix.md`, `scripts/ralph/plans/slices/us-006-serial-validation-and-reviewer-gate.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 duration-affecting Buff variant matrix` replaces chat-only confidence in retained anomaly-duration arithmetic with focused oracle tests for fixed, percentage, count-scaled, multi-Buff, and clamp variants.
+  - This story strengthens a test boundary only; it does not replace live production `AnomalyBarClass.py`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeReadAdapter`, runtime command wiring, dispatch/listener/dot runtime paths, formulas, old Buff containers, validation-runner behavior, or retained compatibility behavior.
+- Compatibility retained:
+  - The retained formula remains `basic_max_duration * (1 + summed_pct) + summed_fixed`, with fixed and percentage effects scaled by `Buff.dy.count` and final `max(..., 0)` clamping.
+  - Runtime-view duration reads still use `buff_runtime_view.get_active_buffs("enemy")` and keep fail-fast legacy dynamic container coverage through the existing helper.
+  - Focused US-005 nodeids exited `0` with `5 passed`; scoped mypy exited `0` with `Success: no issues found in 3 source files`; `implicit-events` exited `0` with typecheck `Success: no issues found in 90 source files` and `[验证完成] 所有步骤通过`.
+- Next step:
+  - Controller refresh selected `us-006-serial-validation-and-reviewer-gate` with `remaining=2`; continue to serial duration-read validation and reviewer gate. Do not turn US-006 into production formula work unless validation exposes a current-root blocker.
+---

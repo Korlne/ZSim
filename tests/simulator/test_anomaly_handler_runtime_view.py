@@ -470,6 +470,122 @@ def test_anomaly_bar_duration_ignores_unknown_effect_keys():
     assert runtime_view.active_buff_beneficiaries == ["enemy"]
 
 
+def test_anomaly_bar_duration_applies_fixed_duration_delta_from_key_list():
+    bar = _build_duration_bar()
+    enemy_buffs = [
+        _DurationBuffProbe(
+            index=_DURATION_TARGET_INDEX,
+            active=True,
+            count=1,
+            effect_dct={"感电时间延长": 45},
+        )
+    ]
+
+    runtime_view = _activate_duration_bar_with_runtime_view(bar, enemy_buffs)
+
+    assert bar.max_duration == 645
+    assert runtime_view.active_buff_calls == 1
+    assert runtime_view.active_buff_beneficiaries == ["enemy"]
+
+
+def test_anomaly_bar_duration_applies_percentage_duration_delta_from_key_list():
+    bar = _build_duration_bar()
+    enemy_buffs = [
+        _DurationBuffProbe(
+            index=_DURATION_TARGET_INDEX,
+            active=True,
+            count=1,
+            effect_dct={"所有异常时间延长百分比": 0.25},
+        )
+    ]
+
+    runtime_view = _activate_duration_bar_with_runtime_view(bar, enemy_buffs)
+
+    assert bar.max_duration == pytest.approx(750)
+    assert runtime_view.active_buff_calls == 1
+    assert runtime_view.active_buff_beneficiaries == ["enemy"]
+
+
+def test_anomaly_bar_duration_scales_fixed_and_percentage_effects_by_count():
+    bar = _build_duration_bar()
+    enemy_buffs = [
+        _DurationBuffProbe(
+            index=_DURATION_TARGET_INDEX,
+            active=True,
+            count=3,
+            effect_dct={
+                "感电时间延长": 10,
+                "所有异常时间延长百分比": 0.05,
+            },
+        )
+    ]
+
+    runtime_view = _activate_duration_bar_with_runtime_view(bar, enemy_buffs)
+
+    assert bar.max_duration == pytest.approx(720)
+    assert runtime_view.active_buff_calls == 1
+    assert runtime_view.active_buff_beneficiaries == ["enemy"]
+
+
+def test_anomaly_bar_duration_accumulates_multiple_matching_buffs_order_independently():
+    enemy_buffs = [
+        _DurationBuffProbe(
+            index=_DURATION_TARGET_INDEX,
+            active=True,
+            count=1,
+            effect_dct={
+                "感电时间延长": 15,
+                "所有异常时间延长百分比": 0.1,
+            },
+        ),
+        _DurationBuffProbe(
+            index=_DURATION_TARGET_INDEX,
+            active=True,
+            count=2,
+            effect_dct={
+                "感电时间延长": -5,
+                "所有异常时间延长百分比": 0.05,
+            },
+        ),
+    ]
+
+    first_bar = _build_duration_bar()
+    second_bar = _build_duration_bar()
+    first_runtime_view = _activate_duration_bar_with_runtime_view(first_bar, enemy_buffs)
+    second_runtime_view = _activate_duration_bar_with_runtime_view(
+        second_bar,
+        list(reversed(enemy_buffs)),
+    )
+
+    assert first_bar.max_duration == pytest.approx(725)
+    assert second_bar.max_duration == pytest.approx(first_bar.max_duration)
+    assert first_runtime_view.active_buff_calls == 1
+    assert second_runtime_view.active_buff_calls == 1
+    assert first_runtime_view.active_buff_beneficiaries == ["enemy"]
+    assert second_runtime_view.active_buff_beneficiaries == ["enemy"]
+
+
+def test_anomaly_bar_duration_clamps_negative_effects_at_zero():
+    bar = _build_duration_bar()
+    enemy_buffs = [
+        _DurationBuffProbe(
+            index=_DURATION_TARGET_INDEX,
+            active=True,
+            count=1,
+            effect_dct={
+                "感电时间延长": -100,
+                "所有异常时间延长百分比": -1.0,
+            },
+        )
+    ]
+
+    runtime_view = _activate_duration_bar_with_runtime_view(bar, enemy_buffs)
+
+    assert bar.max_duration == 0
+    assert runtime_view.active_buff_calls == 1
+    assert runtime_view.active_buff_beneficiaries == ["enemy"]
+
+
 def test_anomaly_bar_duration_read_accepts_legacy_enemy_fallback_without_runtime_view():
     enemy_buffs = _build_duration_enemy_buffs()
     bar = _build_duration_bar()
