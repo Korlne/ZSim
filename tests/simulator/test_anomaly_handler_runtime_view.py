@@ -327,10 +327,45 @@ class _FailFastLegacyDynamicBuff(dict):
         raise AssertionError("runtime view path should not read legacy dynamic_buff_dict")
 
 
+_DURATION_TARGET_INDEX = "Buff-角色-丽娜-组队被动-延长感电"
+
+
+def _build_duration_enemy_buffs() -> list[_DurationBuffProbe]:
+    return [
+        _DurationBuffProbe(
+            index=_DURATION_TARGET_INDEX,
+            active=True,
+            count=2,
+            effect_dct={
+                "感电时间延长": 30,
+                "所有异常时间延长百分比": 0.1,
+            },
+        ),
+        _DurationBuffProbe(
+            index=_DURATION_TARGET_INDEX,
+            active=False,
+            count=99,
+            effect_dct={
+                "感电时间延长": 999,
+                "所有异常时间延长百分比": 9.9,
+            },
+        ),
+        _DurationBuffProbe(
+            index="Buff-其他",
+            active=True,
+            count=99,
+            effect_dct={
+                "感电时间延长": 999,
+                "所有异常时间延长百分比": 9.9,
+            },
+        ),
+    ]
+
+
 def _build_duration_bar() -> AnomalyBar:
     bar = AnomalyBar(sim_instance=SimpleNamespace(), element_type=3)
     bar.basic_max_duration = 600
-    bar.duration_buff_list = ["Buff-角色-丽娜-组队被动-延长感电"]
+    bar.duration_buff_list = [_DURATION_TARGET_INDEX]
     bar.duration_buff_key_list = [
         "感电时间延长",
         "所有异常时间延长百分比",
@@ -338,36 +373,44 @@ def _build_duration_bar() -> AnomalyBar:
     return bar
 
 
+def test_anomaly_bar_duration_read_accepts_legacy_enemy_fallback_without_runtime_view():
+    enemy_buffs = _build_duration_enemy_buffs()
+    bar = _build_duration_bar()
+
+    bar.change_info_cause_active(
+        10,
+        skill_node=SimpleNamespace(skill_tag="1001_TEST"),
+        dynamic_buff_dict={"enemy": enemy_buffs},
+    )
+
+    assert bar.max_duration == 780
+
+
+def test_anomaly_bar_duration_read_missing_legacy_enemy_raises_type_error():
+    bar = _build_duration_bar()
+
+    with pytest.raises(TypeError, match="旧 dynamic_buff_dict 缺少 enemy Buff 列表"):
+        bar.change_info_cause_active(
+            10,
+            skill_node=SimpleNamespace(skill_tag="1001_TEST"),
+            dynamic_buff_dict={},
+        )
+
+
+def test_anomaly_bar_duration_read_none_dynamic_buff_dict_returns_empty_enemy_sequence():
+    bar = _build_duration_bar()
+
+    bar.change_info_cause_active(
+        10,
+        skill_node=SimpleNamespace(skill_tag="1001_TEST"),
+        dynamic_buff_dict=cast(Any, None),
+    )
+
+    assert bar.max_duration == 600
+
+
 def test_anomaly_bar_duration_read_uses_runtime_view_without_legacy_dynamic_container():
-    target_index = "Buff-角色-丽娜-组队被动-延长感电"
-    matching_buff = _DurationBuffProbe(
-        index=target_index,
-        active=True,
-        count=2,
-        effect_dct={
-            "感电时间延长": 30,
-            "所有异常时间延长百分比": 0.1,
-        },
-    )
-    inactive_buff = _DurationBuffProbe(
-        index=target_index,
-        active=False,
-        count=99,
-        effect_dct={
-            "感电时间延长": 999,
-            "所有异常时间延长百分比": 9.9,
-        },
-    )
-    unrelated_buff = _DurationBuffProbe(
-        index="Buff-其他",
-        active=True,
-        count=99,
-        effect_dct={
-            "感电时间延长": 999,
-            "所有异常时间延长百分比": 9.9,
-        },
-    )
-    enemy_buffs = [matching_buff, inactive_buff, unrelated_buff]
+    enemy_buffs = _build_duration_enemy_buffs()
     skill_node = SimpleNamespace(skill_tag="1001_TEST")
 
     legacy_bar = _build_duration_bar()

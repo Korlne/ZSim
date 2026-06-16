@@ -5810,3 +5810,16 @@
 - Next step:
   - Continue to `US-003` legacy fallback and missing enemy matrix. Do not weaken the US-002 runtime-view precedence guard or reopen completed `UpdateAnomaly.py` / Phase 2 runtime-facade surfaces without named current-root blocker evidence.
 ---
+
+## 2026-06-16 09:15 +08:00 - US-003
+- Files changed: `tests/simulator/test_anomaly_handler_runtime_view.py`, `scripts/ralph/plans/slices/us-003-legacy-fallback-and-missing-enemy-matrix.md`, `scripts/ralph/investigations/2026-06-16-US-003-legacy-fallback-matrix.md`, `scripts/ralph/checkpoints/2026-06-16-us-003-legacy-fallback-missing-enemy-matrix.md`, `scripts/ralph/plans/slices/us-004-no-buff-and-nonmatching-buff-duration-cases.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 legacy fallback and missing enemy matrix` replaces chat-only confidence in retained no-runtime-view duration reads with focused tests for legacy `dynamic_buff_dict["enemy"]`, missing legacy `"enemy"` `TypeError`, and `dynamic_buff_dict is None`.
+  - This story strengthens a test boundary only; it does not replace live production `AnomalyBarClass.py`, `LegacyBuffRuntimeReadAdapter`, runtime command wiring, dispatch/listener/dot runtime paths, formulas, old Buff containers, or retained compatibility behavior.
+- Compatibility retained:
+  - Runtime-view precedence from US-002 remains guarded by the existing fail-fast legacy dynamic container test.
+  - Legacy `dynamic_buff_dict["enemy"]` fallback remains valid without runtime view, missing legacy `"enemy"` still raises the existing `TypeError`, and `dynamic_buff_dict is None` still behaves as an empty enemy sequence.
+  - Focused US-003 nodeids exited `0` with `3 passed`; preserved runtime-view guard exited `0` with `1 passed`; scoped mypy exited `0` with `Success: no issues found in 3 source files`; `implicit-events` exited `0` with focused slice `250 passed` and mypy clean for `90 source files`.
+- Next step:
+  - Controller refresh selected `us-004-no-buff-and-nonmatching-buff-duration-cases` with `remaining=4`; continue to US-004 no-buff and nonmatching Buff duration cases. Do not replace retained legacy fallback or broaden into duration-affecting variant work inside completed US-003.
+---
