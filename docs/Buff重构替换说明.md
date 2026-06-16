@@ -5920,3 +5920,16 @@
 - Next step:
   - Continue to `US-004` registered-route evidence without fabricating validation-only teams, fake APLs, or fixture-only routes. Public reader/snapshot expansion remains a stop-and-split trigger.
 ---
+
+## 2026-06-16 11:43 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-check-registered-route-evidence-without-fabricating-samples.md`, `scripts/ralph/investigations/2026-06-16-US-004-registered-route-sheer-evidence.md`, `scripts/ralph/checkpoints/2026-06-16-us-004-registered-route-sheer-evidence.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 registered-route sheer evidence packet` replaces chat-only registered-sample confidence with durable source-backed Conditional No-Go evidence.
+  - This story builds an evidence boundary only; it does not replace live production `Calculator.py`, public reader/snapshot APIs, registered teams/APLs, validation-runner behavior, event/runtime/listener paths, old Buff containers, lifecycle paths, or retained compatibility behavior.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_base_attr(..., base_attr=4)` remains retained-only and runtime-dependent on `char_instance.sheer_attack_conversion_rate`.
+  - `Calculator.RegularMul.cal_sheer_dmg_bonus(data)` remains snapshot-compatible, but no current registered team/APL route reaches the Yixuan `diff_multiplier=4` data through `run_buff_main_loop_consistency.py`.
+  - Registered behavior sample eligibility remains Conditional No-Go; no validation-only team, fake APL, fixture-only route, retained-vs-retained main-loop run, or production semantic change was created.
+- Next step:
+  - Continue to `US-005` Go / No-Go closure using US-002 formula/oracle evidence, US-003 reader/snapshot eligibility, and US-004 registered-route Conditional No-Go evidence.
+---
