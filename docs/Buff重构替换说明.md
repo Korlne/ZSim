@@ -6095,3 +6095,16 @@
 - Next step:
   - Continue to `US-002` retained reference census before any cleanup candidate is proposed.
 ---
+
+## 2026-06-16 16:50 +08:00 - US-002
+- Files changed: `scripts/ralph/plans/slices/us-002-retained-reference-census.md`, `scripts/ralph/investigations/2026-06-16-US-002-retained-reference-census.md`, `scripts/ralph/checkpoints/2026-06-16-us-002-retained-reference-census.md`, `scripts/ralph/plans/slices/us-003-guardrail-and-validation-profile-readiness.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 retained reference census` replaces ad hoc retained-reference assumptions with current-root file, symbol, test, validation-profile, risk, and rollback evidence.
+  - This story is an evidence census only; it does not replace a live production Buff path, delete an old container, change validation runner wiring, expand public reader/snapshot APIs, fabricate registered routes, or merge event/runtime/listener/dot layers.
+- Compatibility retained:
+  - Old containers and entrypoints remain retained: `exist_buff_dict`, `DYNAMIC_BUFF_DICT`, `LOADING_BUFF_DICT`, `dynamic_buff`, `loading_buff`, legacy `buff_add()`, `KickOutBuff()`, `BuffLoadLoop()`, `Update_Buff`, `ScheduleBuffSettle`, `MultiplierData`, `MulData`, and `DynamicStatement`.
+  - Event/runtime boundaries remain retained and separated: `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, listener broadcasts, dot runtime registration, and scheduled handler requeue paths.
+  - Deleted event-list surfaces remain closed by current-root evidence unless guardrails later report new production evidence.
+- Next step:
+  - Continue to `US-003` guardrail and validation profile readiness; map this census to deterministic guardrails before any deletion candidate is judged.
+---
