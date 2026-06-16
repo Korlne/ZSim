@@ -5976,3 +5976,16 @@
 - Next step:
   - Continue to `US-008` handoff docs and same-phase pool preservation. Do not reopen production formula/read/event/runtime surfaces during handoff without new evidence.
 ---
+
+## 2026-06-16 12:45 +08:00 - US-008
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-16-us-008-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/buff-refactor-phase3-regularmul-retained-sheer-blocker-closure-next-intake.md`
+- Replacement note:
+  - `US-008 handoff docs and same-phase pool preservation` replaces chat-only next-route confidence with durable handoff docs, exact oracle / helper / No-Go evidence, reviewer invariant verdict, and a concrete next-intake signal.
+  - PRD verdict: this PRD only added private module-local helper seams plus evidence. It did not replace a live public path, expand `CalculatorBuffAttributeReader`, expand `_CalculatorReadSnapshot`, create registered fixtures, rewrite validation runners, edit event/runtime/listener layers, delete old containers, or remove retained compatibility.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_base_attr(..., base_attr=4)` still depends on runtime `char_instance.sheer_attack_conversion_rate`; `_CalculatorReadSnapshot` still has no `char_instance`.
+  - `Calculator.RegularMul.cal_sheer_dmg_bonus(data)` remains snapshot-compatible for `diff_multiplier == 4`, backed by `regular-sheer-dmg-bonus-retained-snapshot`.
+  - Serial `formula-parity` and `calculator-reads` evidence remains the retained behavior gate; `implicit-events` and default validation remain conditional because US-008 changes no event/runtime/listener, lifecycle, validation-runner, registered-route, old-container, or retained compatibility surface.
+- Next step:
+  - Generate the next PRD as Phase-3 same-phase candidate-pool closure / exact bounded candidate selection. Preserve registered behavior sample eligibility only for future live semantic diffs, future Stun evidence only when named, P2 guarded maintenance only on concrete blockers, retained compatibility, blocker-only phase-1 reopen rules, and retained-only sheer helper-complete / blocked evidence as same-phase pool entries.
+---
