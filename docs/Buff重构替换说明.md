@@ -6082,3 +6082,16 @@
 - Next step:
   - Generate the next PRD as Phase-4 deletion-readiness / phase-boundary intake from the checklist and retained coupling docs; prove unused / behavior-preserving residuals before any deletion implementation.
 ---
+
+## 2026-06-16 16:31 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-phase-4-route-and-boundary-preflight.md`, `scripts/ralph/investigations/2026-06-16-US-001-phase-4-boundary-preflight.md`, `scripts/ralph/checkpoints/2026-06-16-us-001-phase-4-boundary-preflight.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 Phase-4 boundary preflight` prepares the Phase-4 deletion-readiness evidence boundary and replaces chat-only route assumptions with durable Ralph evidence.
+  - This story only builds a phase-boundary / deletion-readiness control-plane record; it does not replace a live production Buff path and does not delete retained compatibility behavior.
+- Compatibility retained:
+  - Phase-3 completed surfaces remain no-reopen unless current-root source, focused tests, guardrails, validation, or reviewer-named evidence identifies a concrete blocker.
+  - Old Buff containers, event/runtime/listener layers, formula/readiness paths, validation-runner behavior, and retained compatibility paths remain unchanged.
+  - Deletion remains No-Go until a later story proves unused behavior-preserving removal and explicitly says to stop-and-split.
+- Next step:
+  - Continue to `US-002` retained reference census before any cleanup candidate is proposed.
+---
