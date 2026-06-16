@@ -5933,3 +5933,17 @@
 - Next step:
   - Continue to `US-005` Go / No-Go closure using US-002 formula/oracle evidence, US-003 reader/snapshot eligibility, and US-004 registered-route Conditional No-Go evidence.
 ---
+
+## 2026-06-16 11:59 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-close-go-no-go-for-retained-only-sheer.md`, `scripts/ralph/investigations/2026-06-16-US-005-retained-only-sheer-go-no-go.md`, `scripts/ralph/checkpoints/2026-06-16-us-005-retained-only-sheer-go-no-go.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-006-optional-behavior-preserving-helper-seam.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 retained-only sheer Go / No-Go packet` replaces loop-prone blocker selection with a durable narrow Go decision for one optional private/module-local helper seam in `Calculator.py`.
+  - This story builds an evidence boundary only; it does not replace live production `Calculator.py`, public reader/snapshot APIs, registered teams/APLs, validation-runner behavior, event/runtime/listener paths, old Buff containers, lifecycle paths, or retained compatibility behavior.
+- Compatibility retained:
+  - `Calculator.RegularMul.cal_base_attr(..., base_attr=4)` remains retained-only and runtime-dependent on `char_instance.sheer_attack_conversion_rate`.
+  - `Calculator.RegularMul.cal_sheer_dmg_bonus(data)` remains snapshot-compatible for `diff_multiplier == 4`.
+  - Reader/snapshot expansion and registered-route sampling remain blocked unless a future active story supplies new source and route evidence.
+  - Scoped mypy exited `0` with `Success: no issues found in 2 source files`.
+- Next step:
+  - Continue to `US-006` only if the helper extraction stays private, module-local, and behavior-preserving; otherwise record No-Go and route to the same-phase retained pool.
+---
