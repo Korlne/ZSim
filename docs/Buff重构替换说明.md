@@ -6132,3 +6132,17 @@
 - Next step:
   - Continue to `US-005` registered behavior and performance gate. Run live samples only for a future candidate with a real production semantic diff, real registered route, explicit stop tick, nonzero relevant counts, and rollback anchors.
 ---
+
+## 2026-06-16 17:40 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-registered-behavior-and-performance-gate.md`, `scripts/ralph/investigations/2026-06-16-US-005-registered-behavior-performance-gate.md`, `scripts/ralph/checkpoints/2026-06-16-us-005-registered-behavior-performance-gate.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-006-final-go-no-go-and-handoff-preservation.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 registered behavior / performance gate packet` replaces chat-only sample judgment with durable Conditional No-Go evidence for live consistency and runtime benchmark commands.
+  - This story is Ralph evidence / verifier-gate only; it does not replace live production Buff code, change simulator runtime selection, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, or merge event queue / listener broadcast / same-tick runtime-write layers.
+- Compatibility retained:
+  - `scripts/run_buff_main_loop_consistency.py` and `scripts/run_buff_runtime_benchmark.py` remain real entrypoints.
+  - `--legacy-runtime` / `--candidate-runtime` remain report labels until live simulator code consumes `config.buff_runtime.mode`.
+  - Live main-loop consistency remains conditional on a future exact cleanup candidate with a real production semantic diff, real registered route, explicit stop tick, nonzero relevant event/formula counts, and rollback anchors.
+  - Runtime benchmark remains conditional on a future performance-sensitive runtime, lifecycle, dispatch, formula, or container behavior change.
+- Next step:
+  - Continue to `US-006` final Go / No-Go and handoff preservation. Keep focused guardrails plus validation profiles as the verifier gate unless new current-root evidence names an exact candidate and rollback boundary.
+---
