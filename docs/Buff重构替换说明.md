@@ -6158,3 +6158,15 @@
 - Next step:
   - Do not generate a deletion implementation PRD by default. Future PRDs should perform retained-boundary evidence refresh or exact blocker work unless new current-root evidence names one deletion candidate, validation entrypoint, live-route/performance conditions when applicable, and rollback anchor.
 ---
+
+## 2026-06-16 19:27 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconfirm-phase-4-route-and-current-root-scope.md`, `scripts/ralph/investigations/2026-06-16-US-001-phase4-route-scope-reconfirmation.md`, `scripts/ralph/checkpoints/2026-06-16-us-001-phase4-route-scope.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/campaign-dashboard.md`
+- Replacement note:
+  - `US-001 Phase-4 route scope reconfirmation` replaces stale Phase-3 or historical-worktree routing assumptions with current-root retained-boundary evidence.
+  - This story is docs / Ralph evidence / bookkeeping only; it does not replace a live production Buff path and does not implement deletion.
+- Compatibility retained:
+  - Old containers, lifecycle entrypoints, event/runtime/listener/dot layers, formula snapshot carriers, public reader/snapshot contracts, validation profiles, registered behavior gates, completed Phase-3/P2 guarded-maintenance surfaces, and retained compatibility paths remain unchanged.
+  - Deletion implementation remains No-Go unless a separate future PRD names an exact current-root candidate, verifier, rollback anchor, and live-route/performance conditions when applicable.
+- Next step:
+  - Continue to `US-002` old container and lifecycle compatibility evidence refresh using the same current-root scan exclusions.
+---
