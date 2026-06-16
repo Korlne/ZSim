@@ -6295,3 +6295,16 @@
 - Next step:
   - Continue to `US-004` formula snapshot and reader contract evidence. Do not infer formula deletion/readiness from event/runtime/listener guardrail evidence.
 ---
+
+## 2026-06-17 00:54 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-refresh-formula-snapshot-and-reader-contract-evidence.md`, `scripts/ralph/investigations/2026-06-16-US-004-formula-snapshot-reader-contract-evidence.md`, `scripts/ralph/plans/slices/us-005-refresh-registered-behavior-and-performance-gate-conditions.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-004 formula snapshot and reader contract evidence refresh` replaces stale/chat-only formula contract confidence with current-root `rg`, CodeGraph caller/impact checks, focused reader pytest, `formula-parity`, and `calculator-reads` verifier evidence.
+  - This story is evidence / bookkeeping only; it does not replace live production `Calculator.py`, `CalAnomaly.py`, formula behavior, focused test source, validation-runner behavior, public reader/snapshot APIs, registered teams/APLs, event/runtime/listener layers, old containers, copied-output paths, lifecycle paths, same-tick runtime writes, or retained compatibility behavior.
+- Compatibility retained:
+  - `MultiplierData`, `MulData`, and `DynamicStatement` remain retained formula/read compatibility carriers.
+  - `_CalculatorReadSnapshot` remains private with only `static`, `dynamic`, `judge_node`, `enemy_obj`, and `char_level`; `CalculatorBuffAttributeReader` keeps its existing six-method public reader surface.
+  - Completed Phase-3 formula/readiness surfaces remain no-reopen unless future current-root source, focused tests, validation, or reviewer evidence names a concrete regression.
+- Next step:
+  - Continue to `US-005` registered behavior and performance gate conditions. Do not treat US-004 validation success as formula deletion readiness or public contract expansion approval.
+---
