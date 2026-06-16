@@ -373,6 +373,103 @@ def _build_duration_bar() -> AnomalyBar:
     return bar
 
 
+def _activate_duration_bar_with_runtime_view(
+    bar: AnomalyBar,
+    enemy_buffs: list[_DurationBuffProbe],
+) -> _RuntimeViewProbe:
+    runtime_view = _RuntimeViewProbe(
+        {"enemy": enemy_buffs},
+        {},
+        allow_legacy=False,
+        allow_active_view=False,
+    )
+    bar.change_info_cause_active(
+        10,
+        skill_node=SimpleNamespace(skill_tag="1001_TEST"),
+        dynamic_buff_dict=_FailFastLegacyDynamicBuff(),
+        buff_runtime_view=runtime_view,
+    )
+    return runtime_view
+
+
+def test_anomaly_bar_duration_without_duration_buff_metadata_preserves_basic_duration():
+    bar = _build_duration_bar()
+    bar.duration_buff_list = None
+
+    runtime_view = _activate_duration_bar_with_runtime_view(
+        bar,
+        _build_duration_enemy_buffs(),
+    )
+
+    assert bar.max_duration == 600
+    assert runtime_view.active_buff_calls == 0
+    assert runtime_view.active_view_calls == 0
+    assert runtime_view.legacy_dynamic_calls == 0
+    assert runtime_view.legacy_exist_calls == 0
+
+
+def test_anomaly_bar_duration_empty_enemy_sequence_preserves_basic_duration():
+    bar = _build_duration_bar()
+
+    runtime_view = _activate_duration_bar_with_runtime_view(bar, [])
+
+    assert bar.max_duration == 600
+    assert runtime_view.active_buff_calls == 1
+    assert runtime_view.active_buff_beneficiaries == ["enemy"]
+    assert runtime_view.legacy_dynamic_calls == 0
+
+
+def test_anomaly_bar_duration_ignores_inactive_matching_and_active_unrelated_buffs():
+    bar = _build_duration_bar()
+    enemy_buffs = [
+        _DurationBuffProbe(
+            index=_DURATION_TARGET_INDEX,
+            active=False,
+            count=99,
+            effect_dct={
+                "感电时间延长": 999,
+                "所有异常时间延长百分比": 9.9,
+            },
+        ),
+        _DurationBuffProbe(
+            index="Buff-其他",
+            active=True,
+            count=99,
+            effect_dct={
+                "感电时间延长": 999,
+                "所有异常时间延长百分比": 9.9,
+            },
+        ),
+    ]
+
+    runtime_view = _activate_duration_bar_with_runtime_view(bar, enemy_buffs)
+
+    assert bar.max_duration == 600
+    assert runtime_view.active_buff_calls == 1
+    assert runtime_view.active_buff_beneficiaries == ["enemy"]
+
+
+def test_anomaly_bar_duration_ignores_unknown_effect_keys():
+    bar = _build_duration_bar()
+    enemy_buffs = [
+        _DurationBuffProbe(
+            index=_DURATION_TARGET_INDEX,
+            active=True,
+            count=99,
+            effect_dct={
+                "未知持续时间延长": 999,
+                "未知持续时间延长百分比": 9.9,
+            },
+        )
+    ]
+
+    runtime_view = _activate_duration_bar_with_runtime_view(bar, enemy_buffs)
+
+    assert bar.max_duration == 600
+    assert runtime_view.active_buff_calls == 1
+    assert runtime_view.active_buff_beneficiaries == ["enemy"]
+
+
 def test_anomaly_bar_duration_read_accepts_legacy_enemy_fallback_without_runtime_view():
     enemy_buffs = _build_duration_enemy_buffs()
     bar = _build_duration_bar()

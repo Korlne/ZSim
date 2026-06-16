@@ -5823,3 +5823,16 @@
 - Next step:
   - Controller refresh selected `us-004-no-buff-and-nonmatching-buff-duration-cases` with `remaining=4`; continue to US-004 no-buff and nonmatching Buff duration cases. Do not replace retained legacy fallback or broaden into duration-affecting variant work inside completed US-003.
 ---
+
+## 2026-06-16 09:34 +08:00 - US-004
+- Files changed: `tests/simulator/test_anomaly_handler_runtime_view.py`, `scripts/ralph/plans/slices/us-004-no-buff-and-nonmatching-buff-duration-cases.md`, `scripts/ralph/checkpoints/2026-06-16-us-004-no-buff-nonmatching-duration.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-005-duration-affecting-buff-variant-matrix.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 no-buff and nonmatching duration cases` replaces chat-only confidence in anomaly-duration filtering with focused oracle tests for no duration Buff metadata, empty runtime enemy Buff sequences, inactive matching Buffs, active unrelated Buffs, and unknown duration effect keys.
+  - This story strengthens a test boundary only; it does not replace live production `AnomalyBarClass.py`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeReadAdapter`, runtime command wiring, dispatch/listener/dot runtime paths, formulas, old Buff containers, validation-runner behavior, or retained compatibility behavior.
+- Compatibility retained:
+  - `duration_buff_list is None` preserves `basic_max_duration` without reading runtime enemy Buffs.
+  - Duration metadata with empty enemy Buffs, inactive matching Buffs, active unrelated Buffs, or unknown effect keys preserves the base duration.
+  - Focused US-004 nodeids exited `0` with `4 passed`; scoped mypy exited `0` with `Success: no issues found in 3 source files`; `implicit-events` exited `0` with focused slice `254 passed` and mypy clean for `90 source files`.
+- Next step:
+  - Continue to `US-005` duration-affecting Buff variant matrix for fixed, percentage, count-scaled, multi-Buff, and clamp oracle rows. Do not turn US-005 into a production formula change unless oracle evidence exposes a retained-behavior gap.
+---
