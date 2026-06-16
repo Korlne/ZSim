@@ -37,7 +37,14 @@ if TYPE_CHECKING:
 
 
 class _RuntimeViewProbe(BuffRuntimeReadPort):
-    def __init__(self, dynamic_buff, exist_buff_dict, *, allow_legacy: bool) -> None:
+    def __init__(
+        self,
+        dynamic_buff,
+        exist_buff_dict,
+        *,
+        allow_legacy: bool,
+        allow_active_view: bool = True,
+    ) -> None:
         self.active_buff_view = {
             beneficiary: tuple(buffs) for beneficiary, buffs in dynamic_buff.items()
         }
@@ -47,7 +54,9 @@ class _RuntimeViewProbe(BuffRuntimeReadPort):
         self.legacy_dynamic_buff = dynamic_buff
         self.legacy_exist_buff_dict = exist_buff_dict
         self.allow_legacy = allow_legacy
+        self.allow_active_view = allow_active_view
         self.active_buff_calls = 0
+        self.active_buff_beneficiaries: list[str] = []
         self.active_view_calls = 0
         self.snapshot_view_calls = 0
         self.legacy_dynamic_calls = 0
@@ -55,10 +64,13 @@ class _RuntimeViewProbe(BuffRuntimeReadPort):
 
     def get_active_buffs(self, beneficiary: str):
         self.active_buff_calls += 1
+        self.active_buff_beneficiaries.append(beneficiary)
         return self.active_buff_view.get(beneficiary, ())
 
     def get_active_buff_view(self):
         self.active_view_calls += 1
+        if not self.allow_active_view:
+            raise AssertionError("duration read should use get_active_buffs('enemy')")
         return self.active_buff_view
 
     def get_exist_buff_snapshot(self, beneficiary: str):
@@ -365,7 +377,12 @@ def test_anomaly_bar_duration_read_uses_runtime_view_without_legacy_dynamic_cont
         dynamic_buff_dict={"enemy": enemy_buffs},
     )
 
-    runtime_view = _RuntimeViewProbe({"enemy": enemy_buffs}, {}, allow_legacy=False)
+    runtime_view = _RuntimeViewProbe(
+        {"enemy": enemy_buffs},
+        {},
+        allow_legacy=False,
+        allow_active_view=False,
+    )
     runtime_bar = _build_duration_bar()
     runtime_bar.change_info_cause_active(
         10,
@@ -376,6 +393,7 @@ def test_anomaly_bar_duration_read_uses_runtime_view_without_legacy_dynamic_cont
 
     assert runtime_bar.max_duration == legacy_bar.max_duration == 780
     assert runtime_view.active_buff_calls == 1
+    assert runtime_view.active_buff_beneficiaries == ["enemy"]
     assert runtime_view.active_view_calls == 0
     assert runtime_view.legacy_dynamic_calls == 0
     assert runtime_view.legacy_exist_calls == 0

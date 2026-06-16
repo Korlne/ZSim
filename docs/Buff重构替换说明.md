@@ -5797,3 +5797,16 @@
 - Next step:
   - Continue to `US-002` runtime-view precedence coverage. Do not reopen completed `UpdateAnomaly.py` write-path or Phase 2 runtime/facade work without named current-root blocker evidence.
 ---
+
+## 2026-06-16 09:02 +08:00 - US-002
+- Files changed: `tests/simulator/test_anomaly_handler_runtime_view.py`, `scripts/ralph/plans/slices/us-002-runtime-view-precedence-coverage.md`, `scripts/ralph/checkpoints/2026-06-16-us-002-runtime-view-precedence-coverage.md`, `scripts/ralph/plans/slices/us-003-legacy-fallback-and-missing-enemy-matrix.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 runtime-view precedence coverage` replaces chat-only confidence in anomaly-duration runtime reads with focused coverage proving exactly one `buff_runtime_view.get_active_buffs("enemy")` call, fail-fast rejection of `get_active_buff_view()` / legacy helper drift, and parity with the legacy duration result for the same enemy Buff list.
+  - This story strengthens a test boundary only; it does not replace live production `AnomalyBarClass.py`, runtime command wiring, dispatch/listener/dot runtime paths, old Buff containers, formula code, or retained compatibility behavior.
+- Compatibility retained:
+  - Legacy duration result parity remains `780` for the same enemy Buff list.
+  - Focused nodeid exited `0` with `1 passed`; full touched file exited `0` with `14 passed`; scoped mypy exited `0` with `Success: no issues found in 3 source files`.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, old containers, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-003` legacy fallback and missing enemy matrix. Do not weaken the US-002 runtime-view precedence guard or reopen completed `UpdateAnomaly.py` / Phase 2 runtime-facade surfaces without named current-root blocker evidence.
+---
