@@ -5864,3 +5864,17 @@
 - Next step:
   - Controller refresh selected `us-007-final-go-no-go-handoff-and-pool-preservation` with `remaining=1`; continue to final handoff docs and same-phase candidate pool preservation. Do not emit the completion sentinel until US-007 passes and required handoff docs are updated.
 ---
+
+## 2026-06-16 10:30 +08:00 - US-007
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff公式候选与测试目标清单.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-007-final-go-no-go-handoff-and-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-16-us-007-final-go-no-go-handoff-and-pool-preservation.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`
+- Replacement note:
+  - `US-007 final handoff and same-phase pool preservation` replaces chat-only next-route confidence with durable handoff docs, duration-read matrix evidence, rollback anchors, retained validation gates, reviewer invariant verdict, and a concrete next default PRD route.
+  - This story only closes a documentation / Ralph evidence boundary; it does not replace live production `AnomalyBarClass.py`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeReadAdapter`, `Calculator.py`, `CalAnomaly.py`, validation-runner behavior, registered teams/APLs, event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime writes, public reader/snapshot APIs, copied-output behavior, formula paths, or retained compatibility paths.
+- Compatibility retained:
+  - `AnomalyBar.__get_duration_enemy_buffs(...)` keeps runtime-view precedence through `BuffRuntimeReadPort.get_active_buffs("enemy")` and retains legacy fallback / `TypeError` / `None` behavior.
+  - Duration formula compatibility remains `basic_max_duration * (1 + summed_pct) + summed_fixed`, with fixed and percentage effects scaled by `Buff.dy.count` and final `max(..., 0)` clamp.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit dispatch/runtime ports, copied-output constructors, old containers, retained formula/read compatibility, validation-runner behavior, and registered routes remain unchanged.
+  - Focused duration matrix, scoped mypy, serial `calculator-reads`, and serial `implicit-events` evidence remain the retained behavior gate; US-007 adds docs diff, JSON sanity, UTF-8 / mojibake scan, scoped Ralph tooling typecheck, checkpoint, and reviewer verdict.
+- Next step:
+  - Generate the next PRD as remaining `Calculator.RegularMul` / retained-only sheer blocker package bounded evidence review or same-PRD Go / No-Go closure. Preserve registered behavior sample eligibility only for future live semantic diffs, future `Calculator.StunMul.get_stun_array()` evidence only when named, P2-A through P2-G guarded maintenance only on concrete blockers, retained compatibility, and blocker-only phase-1 reopen rules as same-phase pool entries.
+---
