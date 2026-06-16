@@ -6170,3 +6170,15 @@
 - Next step:
   - Continue to `US-002` old container and lifecycle compatibility evidence refresh using the same current-root scan exclusions.
 ---
+
+## 2026-06-16 19:49 +08:00 - US-002
+- Files changed: `scripts/ralph/plans/slices/us-002-refresh-old-container-and-lifecycle-compatibility-evidence.md`, `scripts/ralph/plans/slices/us-003-refresh-event-runtime-listener-boundary-guardrails.md`, `scripts/ralph/investigations/2026-06-16-US-002-old-container-lifecycle-compatibility.md`, `docs/旧Buff系统耦合审查结果.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-002 old-container lifecycle packet` replaces ad hoc cleanup assumptions with a current-root classification of old-container owner, facade, lifecycle fallback, same-tick command adapter, guardrail, and historical/docs-only references.
+  - This story is docs / Ralph evidence / bookkeeping only; it does not replace live production Buff code, delete old containers, change guardrail behavior, or alter lifecycle/default-profile runtime behavior.
+- Compatibility retained:
+  - `LegacyBuffRuntimeFacade`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffLoadLoop()`, legacy `buff_add()`, legacy `KickOutBuff()`, `Update_Buff` no-facade fallback, `ScheduleBuffSettle(...)`, old container identity, pending/active lifecycle semantics, registry/template sync, BuffXLogic formula/read snapshots, event queue, listener broadcast, and validation-runner behavior remain unchanged.
+  - `docs/旧Buff系统耦合审查结果.md` was updated only to record refreshed retained-boundary classifications; no new production coupling block was discovered.
+- Next step:
+  - Continue to `US-003` event/runtime/listener guardrail refresh. Do not treat US-002 as deletion authorization.
+---
