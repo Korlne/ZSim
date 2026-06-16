@@ -6108,3 +6108,15 @@
 - Next step:
   - Continue to `US-003` guardrail and validation profile readiness; map this census to deterministic guardrails before any deletion candidate is judged.
 ---
+
+## 2026-06-16 17:08 +08:00 - US-003
+- Files changed: `scripts/ralph/plans/slices/us-003-guardrail-and-validation-profile-readiness.md`, `scripts/ralph/investigations/2026-06-16-US-003-guardrail-validation-readiness.md`, `scripts/ralph/plans/slices/us-004-deletion-candidate-eligibility-and-stop-conditions.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 guardrail and validation profile readiness` replaces informal deletion-readiness confidence with a retained-family to guardrail/profile evidence map.
+  - This story is evidence-only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes, alter formulas, or merge event queue / listener broadcast / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers, event/runtime/listener/dot boundaries, formula snapshot carriers, public reader/snapshot APIs, validation profiles, and retained compatibility paths remain unchanged.
+  - Guardrails remain deterministic: AST visitors, structured JSON/TOML/CSV parsing, behavior/contract tests, and current-root/exclusion discipline define production evidence.
+- Next step:
+  - Continue to `US-004` deletion candidate eligibility and stop conditions. Use the US-003 packet as readiness input, but require candidate-specific current-root evidence before any Go / No-Go judgment.
+---
