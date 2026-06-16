@@ -6347,3 +6347,15 @@
 - Next step:
   - Continue to `US-008` serial validation and reviewer invariant gate. Treat this packet as the deletion/removal boundary decision and avoid implementation until a future candidate-specific PRD supplies exact proof.
 ---
+
+## 2026-06-17 01:58 +08:00 - US-008
+- Files changed: `scripts/ralph/plans/slices/us-008-serial-validation-and-reviewer-invariant-gate.md`, `scripts/ralph/checkpoints/2026-06-17-us-008-serial-validation-reviewer-invariant-gate.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-009-handoff-docs-and-same-phase-pool-preservation.md`
+- Replacement note:
+  - `US-008 serial validation matrix and checkpoint` replaces assertion-only completion confidence with durable serial command exits, focused evidence, warning/noise classification, and reviewer invariant verdict.
+  - This story builds a verifier / evidence boundary only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers, lifecycle fallbacks, `LegacyBuffRuntimeFacade`, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, formula carriers, private reader snapshots, validation profiles, registered-route gates, performance gates, and retained compatibility paths remain unchanged.
+  - Focused pytest and `implicit-events`, `formula-parity`, and `calculator-reads` profiles all exited `0`; bare default validation stayed skipped because no lifecycle container, runtime write path, validation-runner behavior, or broader Buff behavior changed.
+- Next step:
+  - Continue to `US-009` handoff docs and same-phase pool preservation. Do not emit the completion sentinel until the final handoff docs are updated and all PRD stories pass.
+---
