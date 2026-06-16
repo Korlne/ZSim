@@ -86,6 +86,15 @@ CodeGraph 当前导航结论：
 - `--legacy-runtime` / `--candidate-runtime` 当前仍只是 consistency / benchmark 报告标签，不是 live runtime switch。
 - `.codex_worktrees/` 是历史 worktree 快照；阶段 2 源码复扫默认排除，除非故事明确要求审计归档分支。
 
+## Current US-006 guarded-maintenance reconciliation（2026-06-16）
+
+本节把阶段 2 `BuffXLogic` 分类矩阵与 `docs/Buff公式候选与测试目标清单.md`、Ralph retained evidence 对齐。P2-A through P2-G 已完成的 reader、state、scheduled publish、dot runtime-state、BuffAddStrategy facade-write、direct context helper 与 event/runtime/listener 分层 bucket 默认保持 guarded-maintenance，不作为自动 backlog 重新打开。
+
+- No-reopen 默认：`ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`LegacyBuffRuntimeFacade`、`BuffRuntimeReadPort`、旧容器身份、listener broadcast、dot runtime registration/removal、same-tick runtime write 与已关闭的 `event_list` discovery surface 都保持当前兼容边界。
+- Future reopen 规则：后续 PRD 必须先提供 focused regression、validation failure、current-root source evidence、guardrail failure，或 reviewer-named blocker，并明确 file / symbol / behavior 与 rollback anchor。
+- 验证入口：触达 dispatch / listener / dot / runtime write / BuffAddStrategy / scheduled publish 时先跑 focused guardrail，再串行跑 `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`；触达 formula / reader snapshot 时改用 `calculator-reads`，必要时追加 formula-focused pytest。
+- 非目标：不从 retained compatibility 名称生成 generic Phase-3 same-phase selection loop，不生成单分支 cleanup PRD，不删除 retained compatibility，不合并 scheduled queue / listener broadcast / dot runtime / same-tick runtime write 四层语义。
+
 ## US-002 全量 Census
 
 生成时间：2026-06-08 09:38 +08:00。本文节只更新分类证据和交接信息，不改动任何 XLogic 生产行为。

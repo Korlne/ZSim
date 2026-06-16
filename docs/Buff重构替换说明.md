@@ -6221,3 +6221,15 @@
 - Next step:
   - Continue to `US-006` completed Phase-3 and P2 guarded-maintenance boundary preservation. Keep live sample and benchmark commands skipped unless their explicit eligibility gates are met.
 ---
+
+## 2026-06-16 21:24 +08:00 - US-006
+- Files changed: `docs/BuffXLogic阶段2全量分类与复用矩阵.md`, `docs/Buff公式候选与测试目标清单.md`, `scripts/ralph/plans/slices/us-006-preserve-completed-phase-3-and-p2-guarded-maintenance-boundaries.md`, `scripts/ralph/investigations/2026-06-16-US-006-guarded-maintenance-boundary-preservation.md`, `scripts/ralph/checkpoints/2026-06-16-us-006-guarded-maintenance-boundary-preservation.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-007-serial-validation-and-reviewer-invariant-gate.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 guarded-maintenance boundary packet` replaces ambiguous retained-bucket backlog assumptions with current-root no-reopen evidence for completed Phase-3 and P2-A through P2-G buckets.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, change validation-runner behavior, add registered routes/APLs, alter formulas, delete old containers, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Retained-only sheer, completed RegularMul / CalAnomaly / Stun / AM/AP/impact / copied-output / anomaly-bar readiness, direct context helpers, dot runtime-state, BuffAddStrategy facade-write, scheduled publish, P2-A through P2-G guarded buckets, old containers, public reader/snapshot contracts, and retained compatibility paths remain no-reopen by default.
+  - Future reopen requires focused regression, validation failure, current-root source evidence, guardrail failure, or reviewer-named blocker with file / symbol / behavior and rollback anchor.
+- Next step:
+  - Continue to `US-007` serial validation and reviewer invariant gate. Do not generate a generic Phase-3 same-phase selection loop or single-branch cleanup PRD from retained compatibility names.
+---

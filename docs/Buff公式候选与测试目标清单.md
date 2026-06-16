@@ -1,6 +1,6 @@
 # Buff公式候选与测试目标清单
 
-更新时间：2026-06-16 14:58 +08:00
+更新时间：2026-06-16 21:21 +08:00
 
 本清单服务于 Phase 3 公式等价测试设计。当前故事只建立候选面和测试目标证据，不替换 `Calculator.py`、`CalAnomaly.py`、复制异常 / 紊乱输出公式，也不改变 `ScheduleDispatchPort`、`RuntimeCommandPort` 或旧容器兼容路径。
 
@@ -18,6 +18,16 @@
 | Event/runtime guarded maintenance | P2-A through P2-G, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, and `BuffRuntimeReadPort` stay guarded-maintenance unless concrete blocker evidence appears. | `implicit-events` for dispatch/runtime/listener/dot/same-tick write changes; focused source guardrails first. | No layer merge, second write facade, cached dispatch adapter, raw queue reopen, or old-container cleanup. |
 
 Next default route now moves to Phase-4 deletion-readiness / phase-boundary intake in `docs/Buff重构下阶段计划草稿.md`; this list remains the evidence source for any future Phase-3 blocker-driven reopen.
+
+## Current US-006 guarded-maintenance preservation
+
+本节把 Phase-3 formula / readiness evidence 与 `docs/BuffXLogic阶段2全量分类与复用矩阵.md`、Ralph retained evidence 对齐。以下 bucket 默认保持 no-reopen / guarded-maintenance，只在未来 PRD 提供 concrete blocker evidence 时进入窄切片：
+
+- Retained-only sheer：`Calculator.RegularMul.cal_base_attr(..., base_attr=4)` 与 `cal_sheer_dmg_bonus(data)` 已有 helper / oracle evidence，但 public reader/snapshot contract 与真实 registered-route 条件仍阻塞 production proposal。
+- Completed formula / output surfaces：RegularMul helpers、`Calculator.AnomalyMul.cal_res_pen()`、AM/AP/impact、selected Stun、CalAnomaly helper family、copied-output handler/report、`AnomalyBar.current_ndarray` 与 anomaly-duration runtime-view matrix 保持 completed / no-reopen。
+- Event/runtime/P2 guarded buckets：P2-A through P2-G、scheduled publish、direct context helpers、dot runtime-state、BuffAddStrategy facade-write、`ScheduleDispatchPort`、`RuntimeCommandPort`、`LegacyRuntimeCommandAdapter`、`LegacyBuffRuntimeFacade` 与 `BuffRuntimeReadPort` 只作为 guarded-maintenance evidence。
+- Future reopen 规则：必须命名 focused regression、validation failure、current-root source evidence、guardrail failure，或 reviewer-named blocker，并带 file / symbol / behavior、validation entrypoint 与 rollback anchor。
+- 非目标：不得从上述 retained compatibility 名称生成 generic Phase-3 same-phase selection loop、single-branch cleanup PRD、broad `Calculator.py` / `CalAnomaly.py` rewrite、old-container deletion、public reader/snapshot expansion、registered-route fabrication，或 scheduled publish / listener broadcast / dot runtime / same-tick runtime write layer merge。
 
 ## 扫描边界
 
