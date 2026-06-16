@@ -6002,3 +6002,16 @@
 - Next step:
   - Continue to `US-002` formula / readiness candidate evidence audit. Do not promote retained-only sheer, future Stun, registered-sample eligibility, P2 guarded maintenance, retained compatibility, or stale generic proposal text into the active default without named current-root evidence.
 ---
+
+## 2026-06-16 13:44 +08:00 - US-002
+- Files changed: `scripts/ralph/plans/slices/us-002-formula-and-readiness-candidate-evidence-audit.md`, `scripts/ralph/investigations/2026-06-16-US-002-formula-readiness-candidate-evidence-audit.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 formula/readiness candidate evidence audit` replaces candidate-pool ambiguity with current-root source/test/profile evidence and a durable Go / No-Go table.
+  - This story is evidence-only; it does not replace live production `Calculator.py`, `CalAnomaly.py`, `anomaly_bar` code, focused test source, validation-runner behavior, registered teams/APLs, event/runtime/listener paths, lifecycle containers, old Buff containers, same-tick runtime writes, public reader/snapshot APIs, copied-output behavior, formula paths, or retained compatibility paths.
+- Compatibility retained:
+  - Retained-only sheer remains helper-complete but blocked by both public reader/snapshot and real registered-route blockers.
+  - Completed RegularMul, `cal_res_pen()`, AM/AP/impact, Stun, CalAnomaly helper-family, copied-output, and AnomalyBar readiness surfaces remain no-reopen unless future current-root evidence names a concrete regression.
+  - Serial verifier gates passed: focused `test_buff_attribute_reader.py` `162 passed`, `formula-parity` focused `162 passed` with mypy success on `9 source files`, and `calculator-reads` focused `262 passed` with mypy success on `22 source files`.
+- Next step:
+  - Continue to `US-003` event runtime and guarded maintenance audit. Do not promote formula/readiness retained-pool entries into the active default without new current-root evidence.
+---
