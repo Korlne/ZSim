@@ -6588,3 +6588,15 @@
 - Next step:
   - Generate the next PRD from `docs/Buff重构下阶段计划草稿.md` as a Phase-4 retained-compatibility boundary preservation / evidence refresh / blocker-discovery campaign unless a future current-root packet proves an exact deletion or phase-transition candidate.
 ---
+
+## 2026-06-17 14:17 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconcile-controller-state-and-phase-4-route.md`, `scripts/ralph/investigations/2026-06-17-US-001-controller-phase4-route.md`, `scripts/ralph/checkpoints/2026-06-17-us-001-controller-phase4-route.md`, `scripts/ralph/plans/slices/us-002-refresh-old-container-and-lifecycle-compatibility-evidence.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-001 controller route reconciliation` replaces stale controller/backlog assumptions with current PRD/state/doc evidence and a saved Phase-4 retained-boundary route plan.
+  - This story only builds route evidence and Ralph bookkeeping; it does not replace a live production Buff path.
+- Compatibility retained:
+  - Old containers / lifecycle compatibility, event/runtime/listener layers, formula snapshot and reader contracts, registered behavior / performance gates, completed guarded-maintenance surfaces, retained compatibility paths, and blocker-only reopen rules remain unchanged.
+  - Deletion implementation, Phase 3 narrow follow-up, old-container cleanup, generic candidate-selection loops, public reader expansion, validation-runner rewrite, and retained compatibility deletion remain non-default routes.
+- Next step:
+  - Continue to `US-002` old-container and lifecycle compatibility evidence refresh. Do not infer deletion readiness from this route-reconciliation pass.
+---
