@@ -6395,3 +6395,15 @@
 - Next step:
   - Continue to `US-003` event/runtime/listener boundary guardrail refresh. Do not treat this retained-compatibility evidence as cleanup or deletion authorization.
 ---
+
+## 2026-06-17 08:54 +08:00 - US-003
+- Files changed: `scripts/ralph/investigations/2026-06-16-US-003-event-runtime-guarded-maintenance-audit.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-003 event/runtime/listener boundary guardrail refresh` replaces stale boundary confidence with current-root `rg`, CodeGraph impact/source evidence, focused guardrail tests, `implicit-events` validation, and reviewer invariant evidence.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete `event_list` compatibility internals, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `ScheduleDispatchPort`, `create_schedule_dispatch_port()`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, scheduler-internal requeue, listener broadcasts, dot runtime state, copied-output constructors, and the explicit `check_preparation(..., event_list=...)` rejection path remain unchanged.
+  - Live `zsim` scan found `0` `find_event_list` matches; docs, Ralph evidence, worktree mirrors, and guardrail fixtures remain classification evidence rather than production reopen evidence.
+- Next step:
+  - Continue to `US-004` formula snapshot and reader contract evidence. Do not infer formula/read-path deletion readiness from event/runtime/listener validation success.
+---
