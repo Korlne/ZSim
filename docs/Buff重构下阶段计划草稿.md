@@ -3,10 +3,10 @@
 ## 当前状态
 
 - 当前总路线已重置；最新权威 PRD 入口以本文 `## 当前默认下一步` 为准，下面保留的 2026-06-07 到 2026-06-16 handoff bullets 是历史 ledger，不得覆盖当前默认入口。
-- 当前有效阶段是 Phase 4 retained-boundary preservation：Phase-4 deletion-readiness / phase-boundary intake 已完成最终 No-Go，没有 retained family 证明 unused / behavior-preserving deletion；下一轮不默认生成删除实现 PRD，也不得在没有新证据时继续生成第二个同形态 evidence-refresh / blocker-discovery campaign。PRD 生成器必须先执行路由三选一：若已有 exact implementation candidate，则生成 bounded implementation PRD；若新证据命名 exact deletion candidate，则生成 deletion-readiness implementation packet；若两者都没有，则 stop for human phase-boundary review。候选池继续保留为取材证据，不再自动等同于下一轮调查 backlog。
-- 2026-06-17 `US-009` final handoff 已在 `US-001` through `US-008` evidence complete 之后同步，并补齐 docs gate / JSON sanity / UTF-8 scan / scoped Ralph typecheck evidence：same-phase candidate pool 必须继续保留 old containers / lifecycle compatibility、event/runtime/listener layers、formula snapshot and reader contracts、registered behavior / performance gates、completed guarded-maintenance surfaces、retained compatibility 和 blocker-only reopen rules。防反馈锁路由决定：当前不 split to deletion-readiness implementation packet，因为没有 exact deletion candidate；也不再把 Phase-4 retained-boundary evidence refresh 写回默认下一 PRD。若 PRD 生成预检不能从候选池或新证据命名 exact implementation candidate，则默认结果是 stop for human review，而不是继续调查型 Ralph cycle。
-- `US-009` 未发现新 Buff coupling 或既有 coupling classification 变化；[旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md) 保持不变。除非 future current-root source / focused regression / guardrail / validation / reviewer evidence 同时命名 exact candidate、verifier 和 rollback anchor，否则不得把本 handoff 推导为 phase transition。
-- 若下方历史 handoff bullet 仍写“下一默认 PRD 返回 Phase-3 same-phase candidate selection / bounded proposal”，一律视为当时的 no-reopen / pool-retention 记录，不得作为当前 PRD 生成入口。当前入口只能取 `## 合理 PRD 形状硬约束` 与 `## 当前默认下一步`。
+- 当前有效阶段经 2026-06-18 Phase 3 checklist reconciliation / exact-candidate recommender PRD 收敛为 docs/control-plane No-Go / stop-for-review：`docs/Buff系统重构Checklist.md` 的 Phase 3 顶层项已被映射为 completed、blocked、retained-No-Go 或 conditional exact-candidate status；verifier coverage matrix 已同步；US-004 当前根工作区证据未命名新的 exact production implementation 或 deletion candidate。下一轮默认不得自动生成 generic Phase-3 same-phase selection loop，也不得回退到 Phase-4 retained-boundary evidence refresh。
+- 当前权威 route：停止自动 PRD 生成并等待 human phase-boundary review，除非新的 current-root source / focused regression / guardrail / validation failure / reviewer evidence 命名 exact file / symbol / behavior、verifier、rollback anchor，以及必要的 registered-route / performance 条件。same-phase candidate pool 必须继续保留 old containers / lifecycle compatibility、event/runtime/listener layers、formula snapshot and reader contracts、registered behavior / performance gates、completed guarded-maintenance surfaces、retained compatibility 和 blocker-only reopen rules；pool retention 只是取材范围，不是 active backlog。
+- 2026-06-18 reconciliation PRD 未发现新 Buff coupling 或既有 coupling classification 变化；[旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md) 保持不变。除非后续证据命名 exact candidate、verifier 和 rollback anchor，否则不得把 checklist 顶层状态、retained pool 或历史 handoff 句子推导为生产 diff、删除 diff、public reader expansion、validation-runner rewrite 或 retained compatibility cleanup。
+- 若下方历史 handoff bullet 仍写“下一默认 PRD 返回 Phase-3 same-phase candidate selection / bounded proposal”、Phase-4 retained-boundary refresh、或 checklist reconciliation / recommender package，一律视为当时的 no-reopen / pool-retention / completed-control-plane 记录，不得作为当前 PRD 生成入口。当前入口只能取 `## 合理 PRD 形状硬约束` 与 `## 当前默认下一步`。
 - Buff 系统现已明确要求采用事件驱动架构。
 - 阶段 1 当前实现基线已经落地：
   - `ScheduleDispatchPort` 已接入 `SchedulePreload`、`QuickAssistSystem`、`UpdateAnomaly`、`BattleEventListener` 中的 `AliceDotTriggerListener`、代表性 `AlicePolarizedAssaultTrigger -> PolarizedAssaultEvent` planned-event 链，以及已收口的 `ElegantVanitySpRecover`、`LunarNoviluna`、`MagneticStormCharlieSpRecover`、`SeedAdditionalAbilityTrigger`、`SliceofTimeExtraResources`、`CannonRotor`、`YanagiPolarityDisorderTrigger`、`HugoCorePassiveTotalizeTrigger`、`DecibelManager`、`MiyabiCoreSkill_IceFire`、`YixuanCinema1Trigger`、`VivianDotTrigger`、`VivianCorePassiveTrigger`、`VivianCinema6Trigger`、`Character/Yuzuha` cinema-6 energy 分支与 `EnemyUniqueMechanic/BreakingLegManager` part-break refresh。
@@ -90,18 +90,15 @@
 
 ### 下一轮默认 Ralph PRD
 
-Phase-4 下一默认路由：anti-feedback route gate（当前默认 / no automatic evidence-refresh loop）。
+Phase-3 当前默认路由：No-Go / stop-for-review after checklist reconciliation。
 
-- 决策基线：本 PRD 已完成 deletion-readiness / phase-boundary intake，最终决策为 No-Go；没有 current-root source、focused regression、guardrail、validation failure 或 reviewer-named evidence 证明任一 retained family 可以 unused / behavior-preserving deletion。
-- 下一步先做路由选择，而不是直接生成同形态 Ralph PRD。PRD generator 必须从保留候选池、checklist 未完成项、旧耦合审查分组、focused tests 和最新验证结果中寻找 exact implementation candidate；若找到，则生成 bounded implementation PRD，并把必要调查压缩为 preflight / validation / handoff gate。
-- 若新证据命名 exact deletion candidate，且同时给出 exact file / symbol / behavior、unused-or-behavior-preserving proof、focused guardrail 或 regression、validation entrypoint、rollback anchor 和 registered-route / performance 条件（若适用），则生成 deletion-readiness implementation packet。
-- 若既没有 exact implementation candidate，也没有 exact deletion candidate，则 stop for human phase-boundary review。不得把“保留候选池仍存在”或“docs / verifier evidence internally consistent”作为继续生成 evidence-refresh campaign 的理由。
-
-下一轮 PRD generator 应从 `docs/Buff系统重构Checklist.md` 的阶段 4 项、`docs/旧Buff系统耦合审查结果.md` 的 retained coupling、本文 retained-boundary ledger、`docs/Buff公式候选与测试目标清单.md` 的 validation entrypoints、当前 focused tests 和本轮 final No-Go packet 取材。
-
-- 这不是新的 Phase-3 same-phase selection loop，也不是某个已完成 formula branch 的 follow-up。
-- 这也不是新的 Phase-4 retained-boundary evidence-refresh campaign；上一轮同形态 campaign 已完成 No-Go / handoff 后，后续自动 PRD 必须以 exact implementation candidate 或 exact deletion-readiness candidate 为入口。
-- 未来如果仍无 exact candidate，应保留候选池并记录 stop-for-review，而不是制造 cleanup diff、把兼容任务拆成多个薄 PRD，或继续生成调查型 Ralph cycle。
+- 决策基线：Phase-4 deletion-readiness / retained-boundary preservation 已完成 No-Go；Phase-3 checklist reconciliation / verifier coverage / exact-candidate recommendation PRD 也已完成 docs/control-plane 收敛。`docs/Buff系统重构Checklist.md` 的顶层项不再是未汇总 route authority，历史 Phase-3 “same-phase candidate selection / bounded proposal” 和历史 Phase-4 evidence refresh 都不得作为 active default。
+- Exact implementation candidate：当前没有。US-004 记录 current-root docs/evidence 未命名新的 production implementation 或 deletion candidate；US-006 final handoff 只保留 candidate pool 与 stop conditions，不把 retained pool 转换为 backlog。
+- 下一动作：停止自动生成下一 Ralph PRD，交由 human phase-boundary review。只有新的 current-root source / focused regression / guardrail / validation failure / reviewer evidence 命名 exact file / symbol / behavior、verifier、rollback anchor、registered-route / performance 条件（若适用）时，才可从下方 candidate pool 生成 bounded implementation / blocker / deletion-readiness PRD。
+- 可取材的 retained pool：registered behavior sample eligibility（仅 live semantic diff 且真实 registered route / nonzero counts 时）、P2-A through P2-G guarded maintenance（仅 concrete blocker 时）、retained-only sheer / RegularMul / Stun / copied-output / CalAnomaly completed surfaces（默认 no-reopen，除非 named regression）、old containers / lifecycle compatibility、event/runtime/listener layers、formula snapshot and reader contracts、blocker-only phase-1 reopen rules。
+- Verifier / rollback anchor：future docs/control-plane changes use docs diff check、Ralph JSON sanity、UTF-8 / U+FFFD / mojibake scan、`python scripts/ralph/prd_context.py --project-root .` and scoped Ralph tooling typecheck when tooling Python changes. Future production candidates must add candidate-specific focused tests, serial Buff validation profile, and rollback anchors named by exact file / symbol / behavior.
+- 非目标：不生成 generic Phase-3 same-phase selection loop；不重开任何已完成 formula/helper surface；不做 broad `Calculator.py` / `CalAnomaly.py` rewrite；不新增 validation-only registered team；不删除 old containers / retained compatibility；不把 Phase 3 顶层状态直接解释为 production authorization；不继续 Phase-4 retained-boundary evidence-refresh。
+- Handoff 要求：任何后续 PRD 必须从 preserved candidate pool 中命名 exact candidate 或明确 No-Go / stop-for-review；不得只复制本 handoff 再产生一轮调查型 Ralph cycle。
 
 ### Current Phase-4 retained-boundary evidence refresh follow-up final handoff
 

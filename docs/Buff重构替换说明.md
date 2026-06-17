@@ -33,6 +33,17 @@
   - Do not generate an automatic next Ralph PRD from the retained candidate pool alone. If future preflight names an exact implementation candidate, generate a bounded implementation PRD; if it names an exact deletion candidate with proof, verifier and rollback anchor, split to deletion-readiness implementation packet; otherwise stop for human phase-boundary review.
 ---
 
+## 2026-06-18 02:31 +08:00 - US-006
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-006-final-handoff-and-candidate-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-18-us-006-final-handoff-candidate-pool-preservation.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-006 final handoff and candidate pool preservation` replaces stale active-route authority with a docs/control-plane No-Go / stop-for-review route and a preserved same-phase candidate pool.
+  - This PRD is docs/control-plane reconciliation only; it does not replace live production Buff code, focused test behavior, validation-runner behavior, old containers, event/runtime/listener layers, formula/read contracts, registered routes, or retained compatibility paths.
+- Compatibility retained:
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, no cached dispatch adapters, completed-surface no-reopen rules, and serial validation discipline remain intact.
+- Next step:
+  - Stop automatic next-PRD generation for this route unless future current-root evidence names an exact file / symbol / behavior, verifier, rollback anchor, and registered-route / performance conditions where applicable.
+---
+
 ## 2026-06-18 01:53 +08:00 - US-001
 - Files changed: `scripts/ralph/plans/slices/us-001-reconcile-current-route-authority.md`, `scripts/ralph/investigations/2026-06-18-US-001-route-reconciliation.md`, `scripts/ralph/checkpoints/2026-06-18-us-001-route-authority.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
 - Replacement note:
