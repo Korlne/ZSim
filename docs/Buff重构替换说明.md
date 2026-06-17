@@ -6721,3 +6721,15 @@
 - Next step:
   - Continue to `US-003` event/runtime/listener boundary guardrails. Do not infer cleanup or deletion readiness from US-002 validation success.
 ---
+
+## 2026-06-17 20:50 +08:00 - US-003
+- Files changed: `scripts/ralph/investigations/2026-06-16-US-003-event-runtime-guarded-maintenance-audit.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-003 event/runtime/listener boundary guardrail refresh` replaces stale or partial retained-boundary confidence with current-run targeted `rg`, CodeGraph source/impact evidence, AST no-reopen counts, focused guardrail tests, `implicit-events` validation, and reviewer invariant evidence.
+  - This story is evidence / Ralph completion bookkeeping only; it does not replace live production Buff code, delete old event-list compatibility internals, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `ScheduleDispatchPort`, `create_schedule_dispatch_port()`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, listener broadcasts, dot runtime state, scheduler-internal requeue, copied-output constructors, and explicit deleted-`event_list` guardrails remain unchanged.
+  - Current-root AST scan found `0` `find_event_list` definitions/imports/calls, `0` `check_preparation(..., event_list=...)` / `get_prepared(..., event_list=...)` calls, `0` `record.event_list` / `BuffRecordBaseClass.event_list` surfaces, and `0` cached dispatch adapter attribute assignments.
+- Next step:
+  - Continue to `US-004` formula snapshot and reader contract evidence. Do not infer formula/read-path deletion readiness from event/runtime/listener validation success.
+---
