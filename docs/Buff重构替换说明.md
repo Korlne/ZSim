@@ -6697,3 +6697,15 @@
 - Next step:
   - Continue to `US-008` serial validation and reviewer invariant gate. Treat this packet as a deletion/removal boundary, not as cleanup authorization.
 ---
+
+## 2026-06-17 19:54 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconcile-latest-handoff-and-phase-4-route.md`, `scripts/ralph/investigations/2026-06-17-US-001-latest-handoff-phase4-route.md`, `scripts/ralph/checkpoints/2026-06-17-us-001-latest-handoff-phase4-route.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-001 latest handoff and Phase 4 route reconciliation` replaces stale completed-PRD / prior-dashboard route assumptions with current PRD, migration-board, handoff-doc, targeted `rg`, CodeGraph, checkpoint, and verifier evidence.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, touch performance-sensitive paths, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers / lifecycle compatibility, event/runtime/listener layers, formula snapshot and reader contracts, registered behavior / performance gates, completed guarded-maintenance surfaces, retained compatibility paths, and blocker-only reopen rules remain unchanged.
+  - Active default remains Phase 4 retained-compatibility boundary preservation / evidence refresh / blocker discovery; deletion implementation, Phase 3 narrow follow-up, old-container cleanup, generic same-phase candidate selection, public reader/snapshot expansion, validation-runner rewrite, phase transition, and retained compatibility deletion remain non-default.
+- Next step:
+  - Continue to `US-002` old-container and lifecycle compatibility evidence refresh. Do not infer deletion readiness from this route-reconciliation pass.
+---
