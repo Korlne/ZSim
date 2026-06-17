@@ -6686,6 +6686,18 @@
   - Continue to `US-006` guarded-maintenance surface reconciliation. Do not run main-loop or runtime benchmark evidence unless a later story names a live semantic diff, touched performance surface, exact registered candidate, and rollback anchor.
 ---
 
+## 2026-06-17 22:34 +08:00 - US-007
+- Files changed: `scripts/ralph/investigations/2026-06-17-US-007-exact-go-no-go-packet.md`, `scripts/ralph/checkpoints/2026-06-17-us-007-exact-go-no-go-packet.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-008-run-serial-validation-and-reviewer-invariant-gate.md`
+- Replacement note:
+  - `US-007 exact blocker / deletion Go-No-Go packet` replaces broad deletion-routing pressure with a current-cycle `No-Go` decision built from US-002 through US-006 evidence and strict deletion Go criteria.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, delete old adapters, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, delete `MultiplierData` direct paths, touch performance-sensitive paths, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers / lifecycle compatibility, event/runtime/listener layers, formula snapshot and reader contracts, registered behavior / performance gates, completed guarded-maintenance surfaces, retained compatibility paths, and blocker-only reopen rules remain unchanged.
+  - Candidate blocks A through F remain preserved. Deletion implementation remains `No-Go` unless a future candidate-specific PRD names exact current-root file / symbol / behavior evidence, behavior-preserving proof, focused guardrail or regression, validation entrypoint, rollback anchor, and registered-route / performance conditions where applicable.
+- Next step:
+  - Continue to `US-008` serial validation and reviewer invariant gate. Treat this packet as a deletion/removal boundary, not as cleanup authorization.
+---
+
 ## 2026-06-17 22:06 +08:00 - US-006
 - Files changed: `scripts/ralph/investigations/2026-06-17-US-006-guarded-maintenance-surfaces.md`, `scripts/ralph/checkpoints/2026-06-17-us-006-guarded-maintenance-surfaces.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
 - Replacement note:
