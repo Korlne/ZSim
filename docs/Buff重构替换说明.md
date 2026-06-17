@@ -6733,3 +6733,15 @@
 - Next step:
   - Continue to `US-004` formula snapshot and reader contract evidence. Do not infer formula/read-path deletion readiness from event/runtime/listener validation success.
 ---
+
+## 2026-06-17 21:19 +08:00 - US-004
+- Files changed: `scripts/ralph/investigations/2026-06-16-US-004-formula-snapshot-reader-contract-evidence.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-004-refresh-formula-snapshot-and-reader-contract-evidence.md`, `scripts/ralph/plans/slices/us-005-refresh-registered-behavior-and-performance-gate-eligibility.md`
+- Replacement note:
+  - `US-004 formula snapshot / reader contract evidence refresh` replaces stale deletion or public-reader-expansion assumptions with current-root `rg`, CodeGraph source/impact evidence, focused reader pytest, `calculator-reads` validation, and reviewer invariant evidence.
+  - This story is evidence / Ralph completion bookkeeping only; it does not replace live production Buff code, delete formula carriers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, retained formula methods, validation profiles, and retained compatibility paths remain unchanged.
+  - `formula-parity` stayed skipped because no formula source, formula tests, oracle rows, formula validation wiring, helper contracts, or reader snapshot contracts changed; `implicit-events` stayed skipped because no copied-output, event/runtime, listener, dot-runtime, dispatch, or same-tick write boundary changed.
+- Next step:
+  - Continue to `US-005` registered behavior and performance eligibility. Do not treat formula/read validation success as deletion readiness or public reader/snapshot expansion authorization.
+---
