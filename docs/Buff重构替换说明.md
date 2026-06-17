@@ -42,6 +42,19 @@
   - Continue to `US-006` completed guarded-maintenance surface preservation. Do not create validation-only teams, fake APLs, fixture-only routes, retained-vs-retained samples, or report-label-only comparisons.
 ---
 
+## 2026-06-17 09:45 +08:00 - US-006
+- Files changed: `scripts/ralph/investigations/2026-06-17-US-006-guarded-maintenance-surfaces.md`, `scripts/ralph/checkpoints/2026-06-17-us-006-guarded-maintenance-surfaces.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-006 guarded-maintenance surface preservation` replaces cleanup-routing assumptions with current-root no-reopen evidence for completed Phase-3 and P2 guarded buckets.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Retained-only sheer remains helper/oracle-covered but blocked by public reader/snapshot and real registered-route conditions.
+  - Completed RegularMul, CalAnomaly, selected Stun, AM/AP/impact, copied-output, anomaly-bar readiness, anomaly-duration runtime-view, scheduled publish, direct context helpers, dot runtime-state, BuffAddStrategy facade-write, and P2-A through P2-G guarded buckets remain no-reopen unless a future packet names focused regression, validation failure, current-root source evidence, guardrail failure, or reviewer-named blocker.
+  - `calculator-reads` and `implicit-events` passed serially; `formula-parity` remains conditional because no formula behavior, oracle row, formula/read source, validation-runner wiring, or reader/snapshot contract changed.
+- Next step:
+  - Continue to `US-007` exact blocker or deletion candidate Go / No-Go packet. Start from this no-reopen baseline and require exact file / symbol / behavior evidence before proposing cleanup or deletion.
+---
+
 ## 2026-06-11 09:16 +08:00 - US-001
 - Files changed: `scripts/ralph/investigations/2026-06-11-US-001-phase3-blocker-scope.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/prd.json`
 - Replacement note:
