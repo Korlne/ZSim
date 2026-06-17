@@ -6515,3 +6515,15 @@
 - Next step:
   - Continue to `US-004` formula snapshot and reader contract evidence. Do not infer formula/read-path deletion readiness from event/runtime/listener validation success.
 ---
+
+## 2026-06-17 12:12 +08:00 - US-004
+- Files changed: `scripts/ralph/investigations/2026-06-16-US-004-formula-snapshot-reader-contract-evidence.md`, `scripts/ralph/plans/slices/us-004-refresh-formula-snapshot-and-reader-contract-evidence.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-004 formula snapshot / reader contract evidence refresh` replaces stale reopen assumptions with current-run `rg`, CodeGraph caller/impact/source evidence, focused reader pytest, `calculator-reads` validation, and reviewer invariant evidence.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete formula carriers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, `AnomalyBar.current_ndarray`, copied-output formula paths, retained-only sheer blockers, old containers, validation profiles, and retained compatibility paths remain unchanged.
+  - `formula-parity` stayed skipped because no formula source, formula tests, oracle rows, formula validation wiring, or reader/snapshot contracts changed; `implicit-events` stayed skipped because no copied-output, event/runtime, listener, dot-runtime, dispatch, or same-tick write boundary changed.
+- Next step:
+  - Continue to `US-005` registered behavior and performance eligibility. Do not treat formula/read validation success as deletion readiness or public reader/snapshot expansion authorization.
+---
