@@ -6479,3 +6479,15 @@
 - Next step:
   - Continue to `US-004` formula snapshot and reader contract evidence. Do not infer formula/read-path deletion readiness from event/runtime/listener validation success.
 ---
+
+## 2026-06-17 11:32 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconfirm-phase-4-default-and-controller-scope.md`, `scripts/ralph/checkpoints/2026-06-17-us-001-reconfirm-phase-4-default-controller-scope.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-001 route reconfirmation checkpoint` replaces stale Phase 3 / deletion-ready routing assumptions with current controller and PRD-intake evidence that the active default is Phase 4 retained-compatibility boundary preservation / evidence refresh / blocker discovery.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / runtime-write layers.
+- Compatibility retained:
+  - Old containers / lifecycle compatibility, event/runtime/listener layers, formula snapshot and reader contracts, registered behavior / performance gates, completed guarded-maintenance surfaces, retained compatibility paths, and blocker-only reopen rules remain unchanged.
+  - Deletion implementation, retained compatibility removal, Phase 3 narrow follow-up, and generic same-phase candidate selection remain non-default routes.
+- Next step:
+  - Continue to `US-002` old-container and lifecycle retained boundary evidence refresh. Require exact current-root file / symbol / behavior evidence before proposing cleanup, deletion, or route splitting.
+---
