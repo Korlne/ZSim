@@ -6709,3 +6709,15 @@
 - Next step:
   - Continue to `US-002` old-container and lifecycle compatibility evidence refresh. Do not infer deletion readiness from this route-reconciliation pass.
 ---
+
+## 2026-06-17 20:19 +08:00 - US-002
+- Files changed: `scripts/ralph/plans/slices/us-002-refresh-old-container-and-lifecycle-compatibility-delta.md`, `scripts/ralph/investigations/2026-06-17-US-002-old-container-lifecycle-compatibility-delta.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-003-refresh-event-runtime-listener-boundary-guardrails.md`
+- Replacement note:
+  - `US-002 old-container lifecycle compatibility delta packet` replaces stale cleanup/deletion assumptions with refreshed current-root `rg`, CodeGraph source evidence, guardrail evidence, `implicit-events` validation evidence, and reviewer invariant evidence.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, delete old adapters, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `exist_buff_dict`, `DYNAMIC_BUFF_DICT`, `LOADING_BUFF_DICT`, `dynamic_buff`, `loading_buff`, `BuffLoadLoop()`, legacy `buff_add()`, legacy `KickOutBuff()`, `Update_Buff` no-facade fallback, `ScheduleBuffSettle(...)`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, old container identity, pending-to-active order, enemy debuff mirror compatibility, lifecycle fallbacks, and retained compatibility paths remain unchanged.
+  - No exact current-root blocker or deletion candidate was found; bare default validation stayed skipped because lifecycle container behavior and runtime write paths did not change.
+- Next step:
+  - Continue to `US-003` event/runtime/listener boundary guardrails. Do not infer cleanup or deletion readiness from US-002 validation success.
+---
