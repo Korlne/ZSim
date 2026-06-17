@@ -44,6 +44,17 @@
   - Continue to `US-002` Phase-3 top-level checklist reconciliation. Treat broad unchecked checklist headings as evidence-routing work, not production authorization.
 ---
 
+## 2026-06-18 02:10 +08:00 - US-003
+- Files changed: `docs/Buff公式候选与测试目标清单.md`, `scripts/ralph/plans/slices/us-003-build-verifier-coverage-matrix.md`, `scripts/ralph/evidence-ledger-shards/closed-evidence.md`, `scripts/ralph/checkpoints/2026-06-18-us-003-verifier-coverage-matrix.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-003 verifier coverage matrix` replaces scattered verifier-selection rules with a boundary-family matrix for completed Phase-3 formula/helper surfaces, P2-A through P2-G guarded-maintenance buckets, old containers / lifecycle compatibility, event-runtime-listener layers, formula snapshot / reader contracts, and registered behavior / performance gates.
+- Compatibility retained:
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, touch performance-sensitive paths, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+  - `calculator-reads`, `formula-parity`, `implicit-events`, default validation, main-loop consistency JSON, and runtime benchmark JSON remain future touched-surface gates; Buff validation profiles must run serially.
+- Next step:
+  - Continue to `US-004` exact candidate recommendation or No-Go packet. Use the matrix to select verifiers, not to infer implementation authority.
+---
+
 ## 2026-06-17 17:00 +08:00 - US-006
 - Files changed: `scripts/ralph/investigations/2026-06-17-US-006-guarded-maintenance-surfaces.md`, `scripts/ralph/checkpoints/2026-06-17-us-006-guarded-maintenance-surfaces.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
 - Replacement note:
