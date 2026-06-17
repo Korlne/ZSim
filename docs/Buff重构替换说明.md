@@ -6503,3 +6503,15 @@
 - Next step:
   - Continue to `US-003` event/runtime/listener boundary guardrail refresh. Do not treat this retained-boundary evidence as cleanup or deletion authorization.
 ---
+
+## 2026-06-17 12:00 +08:00 - US-003
+- Files changed: `scripts/ralph/investigations/2026-06-16-US-003-event-runtime-guarded-maintenance-audit.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-004-refresh-formula-snapshot-and-reader-contract-evidence.md`
+- Replacement note:
+  - `US-003 event/runtime/listener boundary guardrail refresh` replaces stale retained-boundary confidence with current-run `rg`, CodeGraph caller/impact/source evidence, AST no-reopen counts, focused guardrail tests, `implicit-events` validation, and reviewer invariant evidence.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete `event_list` compatibility internals, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `ScheduleDispatchPort`, `create_schedule_dispatch_port()`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeFacade`, scheduler-internal requeue, listener broadcasts, dot runtime state, copied-output constructors, and the explicit deleted-`event_list` guardrails remain unchanged.
+  - Current-root AST scan found `0` `find_event_list` imports/calls, `0` `check_preparation(..., event_list=...)` / `get_prepared(..., event_list=...)` calls, `0` `record.event_list` / `BuffRecordBaseClass.event_list` surfaces, and `0` cached dispatch adapter attribute assignments.
+- Next step:
+  - Continue to `US-004` formula snapshot and reader contract evidence. Do not infer formula/read-path deletion readiness from event/runtime/listener validation success.
+---
