@@ -19,6 +19,18 @@
   - 下一轮应继续收口的旧路径
 ```
 
+## 2026-06-17 10:30 +08:00 - US-009
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/checkpoints/2026-06-17-us-009-final-handoff-same-phase-pool.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-009 final handoff docs and same-phase pool preservation` replaces a narrow cleanup-routing risk with a durable Phase-4 retained-boundary default plus a broad same-phase candidate pool for future PRD generation.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers, lifecycle fallbacks, `LegacyBuffRuntimeFacade`, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, formula carriers, private reader snapshots, completed guarded-maintenance surfaces, retained compatibility, registered behavior / performance gates, and blocker-only reopen rules remain unchanged.
+  - `docs/旧Buff系统耦合审查结果.md` remains unchanged because this handoff found no new Buff coupling and no existing coupling classification change.
+- Next step:
+  - The next default PRD should remain Phase-4 retained-compatibility boundary preservation / evidence refresh / blocker discovery. It must not jump to deletion implementation or collapse to one narrow cleanup step unless a future current-root packet names exact file / symbol / behavior evidence, verifier entrypoint, rollback anchor, and registered-route / performance conditions when applicable.
+---
+
 ## 2026-06-17 09:14 +08:00 - US-004
 - Files changed: `scripts/ralph/investigations/2026-06-16-US-004-formula-snapshot-reader-contract-evidence.md`, `scripts/ralph/plans/slices/us-004-refresh-formula-snapshot-and-reader-contract-evidence.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
 - Replacement note:
