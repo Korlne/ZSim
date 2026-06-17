@@ -6371,3 +6371,15 @@
 - Next step:
   - Future PRD generation should keep the Phase-4 retained-compatibility boundary preservation / evidence refresh / blocker-discovery default and broad same-phase pool unless future current-root source, focused regression, guardrail, validation, or reviewer evidence proves an exact phase-transition candidate.
 ---
+
+## 2026-06-17 08:21 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconfirm-phase-4-default-and-controller-scope.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-002-refresh-old-container-and-lifecycle-blocker-evidence.md`
+- Replacement note:
+  - `US-001 route reconfirmation evidence` replaces stale Phase-3 / completed-campaign routing assumptions with current-default evidence from `scripts/ralph/context/prd-intake.md`, `docs/Buff重构下阶段计划草稿.md:88-115`, Buff checklist current-default rows, old coupling review sections `6.6` through `6.9`, controller state, and verifier exits.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / runtime-write layers.
+- Compatibility retained:
+  - Phase-4 retained-boundary preservation / evidence refresh / blocker-discovery remains the default; deletion implementation, old-container cleanup, and Phase-3 same-phase candidate selection are not authorized by this slice.
+  - Current-root scans exclude `.codex_worktrees/`, `.git/`, `__pycache__/`, Ralph archive/context/log/run-log folders, `logs/`, and `results/`; historical worktree hits are not production routing evidence.
+- Next step:
+  - Continue to `US-002` old-container and lifecycle blocker evidence refresh. Require exact current-root file / symbol / behavior evidence before proposing cleanup or deletion.
+---
