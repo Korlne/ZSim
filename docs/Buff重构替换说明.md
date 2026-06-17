@@ -19,6 +19,18 @@
   - 下一轮应继续收口的旧路径
 ```
 
+## 2026-06-17 17:00 +08:00 - US-006
+- Files changed: `scripts/ralph/investigations/2026-06-17-US-006-guarded-maintenance-surfaces.md`, `scripts/ralph/checkpoints/2026-06-17-us-006-guarded-maintenance-surfaces.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-006 guarded-maintenance surface reconciliation` replaces automatic backlog / cleanup assumptions with current-run no-reopen evidence for completed P2-A through P2-G buckets and completed Phase-3 formula/output surfaces.
+  - This story is evidence / Ralph completion bookkeeping only; it does not replace live production Buff code, delete old containers, change focused tests or validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - RegularMul helper families, `Calculator.AnomalyMul.cal_res_pen()`, AM/AP/impact helpers, selected Stun, CalAnomaly helper family, copied-output handler/report, `AnomalyBar.current_ndarray`, `UpdateAnomaly.py`, anomaly-duration runtime-view matrix, retained-only sheer blockers, and P2-A through P2-G guarded buckets remain no-reopen unless future evidence names exact file / symbol / behavior plus verifier and rollback anchor.
+  - `implicit-events` and `calculator-reads` passed serially in this run; `formula-parity` remains skipped because no formula source, formula tests, oracle rows, formula validation wiring, or reader/snapshot contracts changed.
+- Next step:
+  - Continue to `US-007` exact blocker or deletion candidate Go / No-Go packet. Treat same-phase candidate pool entries as reopen evidence only, not implementation backlog.
+---
+
 ## 2026-06-17 14:45 +08:00 - US-002
 - Files changed: `scripts/ralph/investigations/2026-06-17-US-002-old-container-lifecycle-compatibility-evidence-follow-up.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-003-refresh-event-runtime-listener-boundary-guardrails.md`
 - Replacement note:
