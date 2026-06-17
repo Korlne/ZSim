@@ -19,6 +19,17 @@
   - 下一轮应继续收口的旧路径
 ```
 
+## 2026-06-17 09:14 +08:00 - US-004
+- Files changed: `scripts/ralph/investigations/2026-06-16-US-004-formula-snapshot-reader-contract-evidence.md`, `scripts/ralph/plans/slices/us-004-refresh-formula-snapshot-and-reader-contract-evidence.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - This story refreshes the formula snapshot / reader contract evidence and does not replace a live production formula path.
+  - The investigation packet replaces implicit formula/read deletion-readiness assumptions with current-root evidence for `MultiplierData`, `MulData`, `DynamicStatement`, `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, `Calculator.py`, `CalAnomaly.py`, and the absent `event_handlers/attribute_reader.py` path.
+- Compatibility retained:
+  - Old paths still retained in this iteration: `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, private `_CalculatorReadSnapshot`, public `CalculatorBuffAttributeReader` six-method reader surface, completed Phase-3 formula/output surfaces, retained-only sheer blockers, old containers, event/runtime/listener layers, copied-output paths, lifecycle paths, same-tick runtime writes, and retained compatibility behavior.
+- Next step:
+  - `US-005` should refresh registered behavior / performance gate eligibility without creating validation-only teams, fake APLs, retained-vs-retained samples, or runtime/performance samples without an exact semantic candidate.
+---
+
 ## 2026-06-11 09:16 +08:00 - US-001
 - Files changed: `scripts/ralph/investigations/2026-06-11-US-001-phase3-blocker-scope.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/prd.json`
 - Replacement note:
