@@ -6686,6 +6686,18 @@
   - Continue to `US-006` guarded-maintenance surface reconciliation. Do not run main-loop or runtime benchmark evidence unless a later story names a live semantic diff, touched performance surface, exact registered candidate, and rollback anchor.
 ---
 
+## 2026-06-17 22:06 +08:00 - US-006
+- Files changed: `scripts/ralph/investigations/2026-06-17-US-006-guarded-maintenance-surfaces.md`, `scripts/ralph/checkpoints/2026-06-17-us-006-guarded-maintenance-surfaces.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-006 guarded-maintenance surface reconciliation` replaces stale completed-surface backlog pressure with current-run no-reopen evidence from targeted `rg`, CodeGraph current-root pinning, focused guardrail/test anchors, and serial validation profiles.
+  - This story is evidence / Ralph completion bookkeeping only; it does not replace live production Buff code, edit formula source, change focused tests, alter validation-runner behavior, add registered routes/APLs, expand public reader/snapshot APIs, delete old containers, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - P2-A through P2-G guarded buckets, `Calculator.AnomalyMul.cal_res_pen()`, AM/AP/impact helpers, RegularMul helper families, selected Stun array, CalAnomaly helper family, copied-output handler/report, `AnomalyBar.current_ndarray`, `UpdateAnomaly.py`, anomaly-duration runtime-view, retained-only sheer blockers, old containers, ports/adapters, and retained compatibility paths remain no-reopen by default.
+  - `implicit-events` and `calculator-reads` passed; `formula-parity` stayed skipped because no formula source, formula tests, oracle rows, or validation wiring changed.
+- Next step:
+  - Continue to `US-007` exact blocker or deletion Go / No-Go packet. Require exact current-root file / symbol / behavior evidence, verifier, and rollback anchor before proposing cleanup or deletion.
+---
+
 ## 2026-06-17 17:15 +08:00 - US-007
 - Files changed: `scripts/ralph/investigations/2026-06-17-US-007-exact-go-no-go-packet.md`, `scripts/ralph/checkpoints/2026-06-17-us-007-exact-go-no-go-packet.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-008-run-serial-validation-and-reviewer-invariant-gate.md`
 - Replacement note:
