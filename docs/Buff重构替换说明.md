@@ -6624,3 +6624,27 @@
 - Next step:
   - Continue to `US-004` formula snapshot and reader contract evidence. Do not infer formula/read-path deletion readiness from event/runtime/listener validation success.
 ---
+
+## 2026-06-17 15:30 +08:00 - US-004
+- Files changed: `scripts/ralph/investigations/2026-06-16-US-004-formula-snapshot-reader-contract-evidence.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-004 formula snapshot / reader contract evidence refresh` replaces stale deletion or public-reader-expansion assumptions with current-run `rg`, CodeGraph source/impact, AST contract, focused reader pytest, `calculator-reads` validation, and reviewer invariant evidence.
+  - This story is evidence / Ralph completion bookkeeping only; it does not replace live production Buff code, delete formula carriers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `Calculator.py`, `CalAnomaly.py`, `MultiplierData`, `MulData`, `DynamicStatement`, `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, retained formula methods, validation profiles, and retained compatibility paths remain unchanged.
+  - `formula-parity` stayed skipped because no formula source, formula tests, oracle rows, formula validation wiring, or reader/snapshot contracts changed; `implicit-events` stayed skipped because no copied-output, event/runtime, listener, dot-runtime, dispatch, or same-tick write boundary changed.
+- Next step:
+  - Continue to `US-005` registered behavior and performance eligibility. Do not treat formula/read validation success as deletion readiness or public reader/snapshot expansion authorization.
+---
+
+## 2026-06-17 16:37 +08:00 - US-005
+- Files changed: `scripts/ralph/investigations/2026-06-17-US-005-registered-performance-eligibility.md`, `scripts/ralph/checkpoints/2026-06-17-us-005-registered-performance-eligibility.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/plans/slices/us-005-refresh-registered-behavior-and-performance-eligibility.md`
+- Replacement note:
+  - `US-005 registered behavior / performance eligibility evidence` replaces stale pressure to run expensive retained-vs-retained samples with a current-run Conditional No-Go based on targeted `rg`, CodeGraph runner/report inspection, prior-story notes, and verifier evidence.
+  - This story is evidence / Ralph completion bookkeeping only; it does not replace live production Buff code, create registered teams/APLs, add fixture-only routes, change validation-runner behavior, implement `config.buff_runtime.mode`, alter formulas, touch performance-sensitive production paths, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `run_buff_main_loop_consistency.py`, `run_buff_runtime_benchmark.py`, `zsim/utils/main_loop_consistency.py`, and `zsim/utils/runtime_benchmark.py` remain unchanged.
+  - `--legacy-runtime` and `--candidate-runtime` stay report labels until live simulator code consumes `config.buff_runtime.mode`; main-loop consistency and runtime benchmark samples remain gated behind real registered team/APL, explicit stop tick, live mode distinction, comparison evidence, differences, and rollback anchors.
+- Next step:
+  - Continue to `US-006` guarded-maintenance surface reconciliation. Do not run main-loop or runtime benchmark evidence unless a later story names a live semantic diff, touched performance surface, exact registered candidate, and rollback anchor.
+---
