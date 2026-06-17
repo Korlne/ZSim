@@ -67,6 +67,18 @@
   - Continue to `US-008` serial validation and reviewer invariant gate. Treat this packet as the deletion/removal boundary decision and avoid implementation until a future candidate-specific PRD supplies exact proof.
 ---
 
+## 2026-06-17 10:14 +08:00 - US-008
+- Files changed: `scripts/ralph/plans/slices/us-008-run-serial-validation-and-reviewer-invariant-gate.md`, `scripts/ralph/checkpoints/2026-06-17-us-008-serial-validation-reviewer-invariant-gate.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-009-handoff-docs-and-same-phase-pool-preservation.md`
+- Replacement note:
+  - `US-008 serial validation matrix and reviewer checkpoint` replaces assertion-only completion confidence with deterministic serial command exits, focused evidence, warning/noise classification, and reviewer invariant verdict.
+  - This story builds a verifier / evidence boundary only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers, lifecycle fallbacks, `LegacyBuffRuntimeFacade`, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, formula carriers, private reader snapshots, validation profiles, registered-route gates, performance gates, and retained compatibility paths remain unchanged.
+  - Focused pytest and `implicit-events`, `calculator-reads`, and `formula-parity` all exited `0`; bare default validation, live main-loop consistency, and runtime benchmark stayed skipped by the recorded no-touched-surface / no-exact-candidate rules.
+- Next step:
+  - Continue to `US-009` handoff docs and same-phase pool preservation. Do not emit the completion sentinel until final handoff docs are updated and all PRD stories pass.
+---
+
 ## 2026-06-11 09:16 +08:00 - US-001
 - Files changed: `scripts/ralph/investigations/2026-06-11-US-001-phase3-blocker-scope.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/prd.json`
 - Replacement note:
