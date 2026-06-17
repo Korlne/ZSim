@@ -6686,6 +6686,18 @@
   - Continue to `US-006` guarded-maintenance surface reconciliation. Do not run main-loop or runtime benchmark evidence unless a later story names a live semantic diff, touched performance surface, exact registered candidate, and rollback anchor.
 ---
 
+## 2026-06-17 22:58 +08:00 - US-008
+- Files changed: `scripts/ralph/plans/slices/us-008-run-serial-validation-and-reviewer-invariant-gate.md`, `scripts/ralph/plans/slices/us-009-handoff-docs-and-next-candidate-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-17-us-008-serial-validation-reviewer-gate.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-008 serial validation and reviewer invariant gate` replaces validation-assumption handoff with current-run serial verifier evidence across focused Ralph/wrapper tests and the `implicit-events`, `calculator-reads`, and `formula-parity` Buff validation profiles.
+  - This story is evidence / Ralph completion bookkeeping only; it does not replace live production Buff code, edit focused test source, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, delete old containers, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers, lifecycle compatibility, event/runtime/listener layers, formula snapshot and reader contracts, registered behavior / performance gates, completed guarded-maintenance surfaces, retained compatibility paths, explicit ports/adapters, no cached dispatch adapter rule, and no-reopen rules remain unchanged.
+  - Serial validation passed for `implicit-events`, `calculator-reads`, and `formula-parity`; bare default validation stayed skipped because no lifecycle/runtime-write behavior changed.
+- Next step:
+  - Continue to `US-009` handoff docs and same-phase candidate pool preservation. Do not infer cleanup or deletion authorization from validation success alone.
+---
+
 ## 2026-06-17 22:34 +08:00 - US-007
 - Files changed: `scripts/ralph/investigations/2026-06-17-US-007-exact-go-no-go-packet.md`, `scripts/ralph/checkpoints/2026-06-17-us-007-exact-go-no-go-packet.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-008-run-serial-validation-and-reviewer-invariant-gate.md`
 - Replacement note:
