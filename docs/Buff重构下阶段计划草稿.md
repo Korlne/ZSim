@@ -4,7 +4,7 @@
 
 - 当前总路线已重置；最新权威 PRD 入口以本文 `## 当前默认下一步` 为准，下面保留的 2026-06-07 到 2026-06-16 handoff bullets 是历史 ledger，不得覆盖当前默认入口。
 - 当前有效阶段是 Phase 4 retained-boundary preservation：Phase-4 deletion-readiness / phase-boundary intake 已完成最终 No-Go，没有 retained family 证明 unused / behavior-preserving deletion；下一轮不默认生成删除实现 PRD。PRD 应从 `## 当前默认下一步` 的 retained candidate pool 中横向合并同阶段、同验证 profile、同 rollback anchor 的 maintenance / evidence-refresh / blocker-discovery 工作；需要保持窄的是 PRD 内的 US，而不是把每个 blocker 拆成单独 PRD。只有 evidence 要求不同 verifier / rollback，或确实进入 deletion implementation，才 stop-and-split。
-- 2026-06-17 `US-009` final handoff 已在 `US-001` through `US-008` evidence complete 之后同步，并补齐 docs gate / JSON sanity / UTF-8 scan / scoped Ralph typecheck evidence：当前默认下一 PRD 仍是 Phase-4 retained-compatibility boundary preservation / evidence refresh / blocker-discovery campaign；same-phase candidate pool 必须继续保留 old containers / lifecycle compatibility、event/runtime/listener layers、formula snapshot and reader contracts、registered behavior / performance gates、completed guarded-maintenance surfaces、retained compatibility 和 blocker-only reopen rules。
+- 2026-06-17 `US-009` final handoff 已在 `US-001` through `US-008` evidence complete 之后同步，并补齐 docs gate / JSON sanity / UTF-8 scan / scoped Ralph typecheck evidence：当前默认下一 PRD 仍是 Phase-4 retained-compatibility boundary preservation / evidence refresh / blocker-discovery campaign；same-phase candidate pool 必须继续保留 old containers / lifecycle compatibility、event/runtime/listener layers、formula snapshot and reader contracts、registered behavior / performance gates、completed guarded-maintenance surfaces、retained compatibility 和 blocker-only reopen rules。最终路由决定：stay in Phase 4 retained-boundary evidence refresh；当前不 split to deletion-readiness implementation packet，也不 stop for human review。
 - `US-009` 未发现新 Buff coupling 或既有 coupling classification 变化；[旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md) 保持不变。除非 future current-root source / focused regression / guardrail / validation / reviewer evidence 同时命名 exact candidate、verifier 和 rollback anchor，否则不得把本 handoff 推导为 phase transition。
 - 若下方历史 handoff bullet 仍写“下一默认 PRD 返回 Phase-3 same-phase candidate selection / bounded proposal”，一律视为当时的 no-reopen / pool-retention 记录，不得作为当前 PRD 生成入口。当前入口只能取 `## 合理 PRD 形状硬约束` 与 `## 当前默认下一步`。
 - Buff 系统现已明确要求采用事件驱动架构。
@@ -101,7 +101,7 @@ Phase-4 下一默认 Ralph PRD 形状：retained-compatibility boundary preserva
 - 它应产出一个可容纳多个窄 US 的 retained-boundary maintenance / evidence-refresh PRD。
 - 未来如果仍无 exact deletion candidate，应保留候选池并记录 No-Go，而不是制造 cleanup diff 或把兼容任务拆成多个薄 PRD。
 
-### Current Phase-4 retained-boundary evidence refresh final handoff
+### Current Phase-4 retained-boundary evidence refresh follow-up final handoff
 
 - Final No-Go / preservation evidence:
   - `US-009` final handoff was written only after `US-001` through `US-008` were complete in `scripts/ralph/prd.json` and their evidence ledger / checkpoint records were present.
@@ -114,6 +114,7 @@ Phase-4 下一默认 Ralph PRD 形状：retained-compatibility boundary preserva
   - `US-009` docs gate adds focused `git diff --check`, Ralph JSON sanity, UTF-8 / U+FFFD / mojibake scan, Ralph PRD encoding pytest and scoped Ralph tooling typecheck. Production Buff validation remains inherited from `US-008` serial verifier evidence because this handoff changes no production source, focused test source, validation-runner behavior, lifecycle/runtime write path, registered route, performance-sensitive path or retained compatibility behavior.
 - Current default next PRD:
   - Phase-4 retained-compatibility boundary preservation / evidence refresh / blocker-discovery campaign remains the default. A future deletion implementation PRD is not the default; it is allowed only after a new current-root packet names exact file / symbol / behavior, unused-or-behavior-preserving proof, focused guardrail or regression, validation profile, rollback anchor, and registered-route / performance evidence when applicable.
+  - Final handoff routing decision: keep the next PRD in Phase 4 retained-boundary evidence refresh. Do not split to an exact deletion-readiness implementation packet now, because this PRD found no exact deletion candidate. Do not stop for human review now, because the docs, PRD state, verifier evidence and candidate pool are internally consistent.
   - Route authority remains [Buff重构方案.md](./Buff重构方案.md) plus this next-stage draft: the next PRD must follow the architecture phase route and may not jump to deletion implementation, Phase-3 narrow follow-up, or retained compatibility deletion without exact evidence.
   - The default PRD should be broad enough to carry multiple narrow US slices sharing verifier / rollback anchors. Do not collapse it to one cleanup task, one historical Phase-3 follow-up, or one already-completed guarded surface.
 - Same-phase retained candidate pool for future generation:

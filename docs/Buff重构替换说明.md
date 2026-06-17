@@ -19,6 +19,19 @@
   - 下一轮应继续收口的旧路径
 ```
 
+## 2026-06-17 18:14 +08:00 - US-009
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-009-handoff-docs-and-next-candidate-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-17-us-009-final-handoff-next-pool-preservation.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-009 handoff docs and next candidate pool preservation` replaces the active `8/9` handoff state with final PRD completion evidence, a concrete Phase-4 retained-boundary default next PRD, and the broad same-phase candidate pool required for future PRD generation.
+  - Story preservation notes for this PRD: `US-001` preserved Phase-4 routing authority; `US-002` preserved old-container / lifecycle compatibility evidence; `US-003` preserved event/runtime/listener boundary guardrails; `US-004` preserved formula snapshot / reader contracts; `US-005` preserved registered behavior / performance preconditions; `US-006` preserved completed guarded-maintenance no-reopen evidence; `US-007` preserved deletion implementation No-Go; `US-008` preserved serial verifier evidence; `US-009` preserves the final handoff and candidate pool.
+  - This story is handoff / Ralph evidence / bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, touch performance-sensitive paths, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers / lifecycle compatibility, event/runtime/listener layers, formula snapshot and reader contracts, registered behavior / performance gates, completed guarded-maintenance surfaces, retained compatibility paths, and blocker-only reopen rules remain unchanged.
+  - No new Buff coupling or changed coupling classification was discovered, so `docs/旧Buff系统耦合审查结果.md` remains unchanged.
+- Next step:
+  - Generate the next PRD as a Phase-4 retained-compatibility boundary preservation / evidence refresh / blocker-discovery campaign. Do not split to deletion implementation, Phase-3 narrow follow-up, or human-review stop unless future current-root evidence names exact candidate, verifier, rollback anchor, and registered-route / performance conditions where applicable.
+---
+
 ## 2026-06-17 17:00 +08:00 - US-006
 - Files changed: `scripts/ralph/investigations/2026-06-17-US-006-guarded-maintenance-surfaces.md`, `scripts/ralph/checkpoints/2026-06-17-us-006-guarded-maintenance-surfaces.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
 - Replacement note:
