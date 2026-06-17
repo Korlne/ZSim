@@ -55,6 +55,18 @@
   - Continue to `US-007` exact blocker or deletion candidate Go / No-Go packet. Start from this no-reopen baseline and require exact file / symbol / behavior evidence before proposing cleanup or deletion.
 ---
 
+## 2026-06-17 09:59 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-produce-exact-blocker-or-deletion-go-no-go-packet.md`, `scripts/ralph/investigations/2026-06-17-US-007-exact-go-no-go-packet.md`, `scripts/ralph/checkpoints/2026-06-17-us-007-exact-go-no-go-packet.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-007 exact blocker / deletion Go-No-Go packet` replaces cleanup assumptions with a durable `No-Go` decision built from US-002 through US-006 evidence and strict candidate criteria.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers, lifecycle fallbacks, `LegacyBuffRuntimeFacade`, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, formula carriers, private reader snapshots, completed Phase-3/P2 guarded surfaces, validation profiles, registered-route gates, performance gates, and retained compatibility paths remain unchanged.
+  - The retained candidate pool remains broad; future deletion requires one exact current-root file / symbol / behavior candidate with behavior-preserving proof, focused guardrail/regression, validation profile, rollback anchor, and registered-route/performance evidence when applicable.
+- Next step:
+  - Continue to `US-008` serial validation and reviewer invariant gate. Treat this packet as the deletion/removal boundary decision and avoid implementation until a future candidate-specific PRD supplies exact proof.
+---
+
 ## 2026-06-11 09:16 +08:00 - US-001
 - Files changed: `scripts/ralph/investigations/2026-06-11-US-001-phase3-blocker-scope.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/prd.json`
 - Replacement note:
