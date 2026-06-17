@@ -6527,3 +6527,15 @@
 - Next step:
   - Continue to `US-005` registered behavior and performance eligibility. Do not treat formula/read validation success as deletion readiness or public reader/snapshot expansion authorization.
 ---
+
+## 2026-06-17 12:27 +08:00 - US-005
+- Files changed: `scripts/ralph/investigations/2026-06-17-US-005-registered-behavior-performance-eligibility.md`, `scripts/ralph/checkpoints/2026-06-17-us-005-registered-behavior-performance-eligibility.md`, `scripts/ralph/plans/slices/us-005-refresh-registered-behavior-and-performance-eligibility.md`, `scripts/ralph/plans/slices/us-006-reconcile-completed-guarded-maintenance-surfaces.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-005 registered behavior / performance eligibility packet` replaces any implicit expectation to run live samples with a Conditional No-Go gate based on current-run `rg`, CodeGraph source evidence, and completed-story touched-surface review.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, change validation-runner behavior, add registered routes/APLs, alter formulas, touch performance-sensitive runtime paths, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `scripts/run_buff_main_loop_consistency.py`, `scripts/run_buff_runtime_benchmark.py`, `zsim/utils/main_loop_consistency.py`, and `zsim/utils/runtime_benchmark.py` remain unchanged real entrypoints; their required report fields stay available for future exact candidates.
+  - Live main-loop consistency and runtime benchmark samples stay skipped because `US-001` through `US-004` introduced no live production semantic diff, performance-sensitive path, registered route/APL change, exact candidate, or rollback anchor; running them now would be retained-vs-retained sampling.
+- Next step:
+  - Continue to `US-006` guarded-maintenance surface reconciliation. Reopen live sample eligibility only with a real registered team/APL, explicit stop tick, runtime labels, required comparison fields, differences, and rollback anchors.
+---
