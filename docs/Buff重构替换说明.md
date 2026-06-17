@@ -6552,3 +6552,15 @@
 - Next step:
   - Continue to `US-006` guarded-maintenance surface reconciliation. Reopen live sample eligibility only with a real registered team/APL, explicit stop tick, runtime labels, required comparison fields, differences, and rollback anchors.
 ---
+
+## 2026-06-17 13:00 +08:00 - US-007
+- Files changed: `scripts/ralph/investigations/2026-06-17-US-007-exact-go-no-go-packet.md`, `scripts/ralph/checkpoints/2026-06-17-us-007-exact-go-no-go-packet.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-007 exact blocker / deletion Go-No-Go packet` replaces deletion-routing assumptions with a durable `No-Go` decision built from US-002 through US-006 current-root evidence and strict deletion Go criteria.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, touch performance-sensitive paths, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers / lifecycle compatibility, event/runtime/listener layers, formula snapshot and reader contracts, registered behavior / performance gates, completed guarded-maintenance surfaces, retained compatibility paths, and blocker-only reopen rules remain unchanged.
+  - Deletion implementation remains `No-Go` unless a future candidate-specific PRD names exact current-root file / symbol / behavior evidence, behavior-preserving proof, focused guardrail or regression, validation entrypoint, rollback anchor, and registered-route / performance conditions where applicable.
+- Next step:
+  - Continue to `US-008` serial validation and reviewer invariant gate. Treat this packet as a deletion/removal boundary, not as cleanup authorization.
+---
