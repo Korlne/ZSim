@@ -6838,3 +6838,13 @@
 - Next step:
   - Continue to `US-006` guarded-maintenance surface reconciliation. Do not run main-loop or runtime benchmark evidence unless a later story names a live semantic diff, touched performance surface, exact registered candidate, and rollback anchor.
 ---
+## 2026-06-18 02:16 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-exact-candidate-recommendation-or-no-go-packet.md`, `scripts/ralph/investigations/2026-06-18-US-004-exact-candidate-recommendation-no-go.md`, `scripts/ralph/checkpoints/2026-06-18-us-004-exact-candidate-recommendation-no-go.md`, `scripts/ralph/evidence-ledger-shards/open-evidence-gaps.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-005-ralph-control-plane-and-encoding-verification.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 exact candidate recommendation / No-Go packet` replaces implicit next-cycle inference from retained pools with a durable stop-for-review recommendation.
+- Compatibility retained:
+  - No production Buff code, focused tests, validation-runner behavior, registered route, old container, event/runtime/listener layer, public reader/snapshot API, or retained compatibility path changed.
+  - Completed surfaces remain no-reopen: RegularMul helpers, `Calculator.AnomalyMul.cal_res_pen()`, AM/AP/impact, selected Stun, CalAnomaly helper family, copied-output handler/report, `AnomalyBar.current_ndarray`, `UpdateAnomaly.py`, anomaly-duration runtime-view, retained-only sheer blockers, and P2-A through P2-G.
+- Next step:
+  - Continue to `US-005` Ralph control-plane and encoding verification; do not generate a generic Phase-3 same-phase selection loop or repeated Phase-4 evidence refresh unless new current-root evidence names an exact candidate.
+---
