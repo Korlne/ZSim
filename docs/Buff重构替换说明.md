@@ -19,6 +19,19 @@
   - 下一轮应继续收口的旧路径
 ```
 
+## 2026-06-17 12:43 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-reconcile-completed-guarded-maintenance-surfaces.md`, `scripts/ralph/investigations/2026-06-17-US-006-guarded-maintenance-surfaces.md`, `scripts/ralph/checkpoints/2026-06-17-us-006-guarded-maintenance-surfaces.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-007-produce-exact-blocker-or-deletion-go-no-go-packet.md`
+- Replacement note:
+  - `US-006 guarded-maintenance surface reconciliation` replaces automatic cleanup assumptions with current-root no-reopen evidence for completed P2-A through P2-G buckets and completed Phase-3 formula/output surfaces.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Retained-only sheer remains helper/oracle-covered but blocked by public reader/snapshot and real registered-route conditions.
+  - RegularMul helper families, `Calculator.AnomalyMul.cal_res_pen()`, AM/AP/impact, selected Stun, CalAnomaly helper family, copied-output handler/report, `AnomalyBar.current_ndarray`, `UpdateAnomaly.py`, anomaly-duration runtime-view matrix, scheduled publish, direct context helpers, dot runtime-state, BuffAddStrategy facade-write, and P2-A through P2-G guarded buckets remain no-reopen unless a future packet names focused regression, validation failure, current-root source evidence, guardrail failure, or reviewer-named blocker with rollback anchor.
+  - `calculator-reads` and `implicit-events` passed serially; `formula-parity` and default validation remain conditional because no touched surface required them.
+- Next step:
+  - Continue to `US-007` exact blocker or deletion candidate Go / No-Go packet. Start from this no-reopen baseline and require exact file / symbol / behavior evidence before proposing cleanup or deletion.
+---
+
 ## 2026-06-17 10:30 +08:00 - US-009
 - Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/checkpoints/2026-06-17-us-009-final-handoff-same-phase-pool.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
 - Replacement note:
