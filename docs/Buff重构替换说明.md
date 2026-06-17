@@ -6564,3 +6564,15 @@
 - Next step:
   - Continue to `US-008` serial validation and reviewer invariant gate. Treat this packet as a deletion/removal boundary, not as cleanup authorization.
 ---
+
+## 2026-06-17 13:17 +08:00 - US-008
+- Files changed: `scripts/ralph/plans/slices/us-008-run-serial-validation-and-reviewer-invariant-gate.md`, `scripts/ralph/checkpoints/2026-06-17-us-008-serial-validation-reviewer-gate.md`, `scripts/ralph/evidence-ledger.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-008 serial validation and reviewer invariant gate` replaces chat-only or stale validation confidence with a durable touched-surface matrix, serial verifier evidence, checkpoint, evidence-ledger entry, and reviewer verdict.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, touch performance-sensitive paths, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers / lifecycle compatibility, event/runtime/listener layers, formula snapshot and reader contracts, registered behavior / performance gates, completed guarded-maintenance surfaces, retained compatibility paths, and blocker-only reopen rules remain unchanged.
+  - Serial verifiers passed: PRD encoding `2 passed`, wrapper pytest `12 passed`, `implicit-events` focused `259 passed` with mypy success on `90 source files`, `calculator-reads` focused `262 passed` with mypy success on `22 source files`, and `formula-parity` focused `162 passed` with mypy success on `9 source files`.
+- Next step:
+  - Continue to `US-009` final handoff docs and next pool preservation. Keep deletion, cleanup, validation-runner rewrite, public reader/snapshot expansion, event/listener changes, old-container deletion, and retained compatibility deletion split behind candidate-specific evidence.
+---
