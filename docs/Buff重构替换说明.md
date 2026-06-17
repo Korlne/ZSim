@@ -19,6 +19,18 @@
   - 下一轮应继续收口的旧路径
 ```
 
+## 2026-06-17 14:45 +08:00 - US-002
+- Files changed: `scripts/ralph/investigations/2026-06-17-US-002-old-container-lifecycle-compatibility-evidence-follow-up.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-003-refresh-event-runtime-listener-boundary-guardrails.md`
+- Replacement note:
+  - `US-002 old-container / lifecycle compatibility evidence follow-up` replaces stale cleanup assumptions with a current-root retained-compatibility audit for old Buff containers, lifecycle order, facade-backed writes, fallback entrypoints, and guardrail buckets.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change focused tests or validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / same-tick runtime-write layers.
+- Compatibility retained:
+  - `exist_buff_dict`, `LOADING_BUFF_DICT`, `DYNAMIC_BUFF_DICT`, `dynamic_buff`, `loading_buff`, `BuffLoadLoop()`, legacy `buff_add()`, legacy `KickOutBuff()`, `Update_Buff.py`, `ScheduleBuffSettle.py`, `LegacyBuffRuntimeFacade`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, enemy debuff mirror compatibility, and same-tick lifecycle writes remain retained boundaries.
+  - Current-root audit found `0` exact blocker candidates; raw-container guardrail and `implicit-events` validation passed.
+- Next step:
+  - Continue to `US-003` event/runtime/listener boundary guardrail refresh. Do not convert this retained-compatibility evidence into cleanup or deletion authorization without exact file / symbol / behavior evidence, focused verifier, validation profile, and rollback anchor.
+---
+
 ## 2026-06-17 12:43 +08:00 - US-006
 - Files changed: `scripts/ralph/plans/slices/us-006-reconcile-completed-guarded-maintenance-surfaces.md`, `scripts/ralph/investigations/2026-06-17-US-006-guarded-maintenance-surfaces.md`, `scripts/ralph/checkpoints/2026-06-17-us-006-guarded-maintenance-surfaces.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-007-produce-exact-blocker-or-deletion-go-no-go-packet.md`
 - Replacement note:
