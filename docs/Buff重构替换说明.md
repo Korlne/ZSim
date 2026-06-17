@@ -30,6 +30,18 @@
   - `US-005` should refresh registered behavior / performance gate eligibility without creating validation-only teams, fake APLs, retained-vs-retained samples, or runtime/performance samples without an exact semantic candidate.
 ---
 
+## 2026-06-17 09:31 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-refresh-registered-behavior-and-performance-gate-eligibility.md`, `scripts/ralph/investigations/2026-06-17-US-005-registered-behavior-performance-gate-eligibility.md`, `scripts/ralph/checkpoints/2026-06-17-us-005-registered-behavior-performance-gate-eligibility.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-006-preserve-completed-guarded-maintenance-surfaces.md`
+- Replacement note:
+  - `US-005 registered behavior / performance gate eligibility` replaces report-label-only sample assumptions with an explicit Conditional No-Go gate for live consistency samples and runtime benchmarks.
+  - This story builds a validation eligibility boundary only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `scripts/run_buff_main_loop_consistency.py` and `scripts/run_buff_runtime_benchmark.py` remain real CLI wrappers, while `--legacy-runtime` and `--candidate-runtime` remain report labels until live simulator code consumes a runtime mode.
+  - Live main-loop consistency remains conditional on an exact production semantic diff, real registered route, explicit stop tick, nonzero relevant counts, and rollback anchors; runtime benchmark remains conditional on a performance-sensitive runtime, lifecycle, dispatch, formula, or container change.
+- Next step:
+  - Continue to `US-006` completed guarded-maintenance surface preservation. Do not create validation-only teams, fake APLs, fixture-only routes, retained-vs-retained samples, or report-label-only comparisons.
+---
+
 ## 2026-06-11 09:16 +08:00 - US-001
 - Files changed: `scripts/ralph/investigations/2026-06-11-US-001-phase3-blocker-scope.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/prd.json`
 - Replacement note:
