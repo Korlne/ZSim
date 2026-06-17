@@ -6576,3 +6576,15 @@
 - Next step:
   - Continue to `US-009` final handoff docs and next pool preservation. Keep deletion, cleanup, validation-runner rewrite, public reader/snapshot expansion, event/listener changes, old-container deletion, and retained compatibility deletion split behind candidate-specific evidence.
 ---
+
+## 2026-06-17 13:36 +08:00 - US-009
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-009-final-handoff-docs-and-next-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-17-us-009-final-handoff-next-pool-preservation.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-009 final handoff docs and next pool preservation` replaces US-008-only completion state with current final handoff evidence, a concrete Phase-4 retained-boundary default next PRD, and the broad same-phase candidate pool required for future PRD generation.
+  - This story only refreshes retained-boundary evidence and preserves compatibility; it does not replace a live production path, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, touch performance-sensitive paths, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers / lifecycle compatibility, event/runtime/listener layers, formula snapshot and reader contracts, registered behavior / performance gates, completed guarded-maintenance surfaces, retained compatibility paths, and blocker-only reopen rules remain unchanged.
+  - No new Buff coupling or changed coupling classification was discovered, so `docs/旧Buff系统耦合审查结果.md` remains unchanged.
+- Next step:
+  - Generate the next PRD from `docs/Buff重构下阶段计划草稿.md` as a Phase-4 retained-compatibility boundary preservation / evidence refresh / blocker-discovery campaign unless a future current-root packet proves an exact deletion or phase-transition candidate.
+---
