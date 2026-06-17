@@ -6698,6 +6698,17 @@
   - Continue to `US-006` guarded-maintenance surface reconciliation. Do not run main-loop or runtime benchmark evidence unless a later story names a live semantic diff, touched performance surface, exact registered candidate, and rollback anchor.
 ---
 
+## 2026-06-18 02:00 +08:00 - US-002
+- Files changed: `docs/Buff系统重构Checklist.md`, `scripts/ralph/plans/slices/us-002-reconcile-phase-3-top-level-checklist-items.md`, `scripts/ralph/investigations/2026-06-18-US-002-phase3-checklist-reconciliation.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 Phase 3 checklist reconciliation` replaces broad unchecked Phase 3 headings with explicit completed / blocked / retained-No-Go / conditional exact-candidate status evidence.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, touch performance-sensitive paths, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Completed Phase 3 formula/read/helper surfaces, P2-A through P2-G guarded-maintenance buckets, old containers, explicit ports/adapters, listener/dot/runtime boundaries, registered-route conditions, retained compatibility paths, and blocker-only reopen rules remain unchanged.
+- Next step:
+  - Continue to `US-003` verifier coverage matrix. Future implementation PRDs must name exact current-root file / symbol / behavior evidence, verifier, rollback anchor, and registered-route / performance conditions when applicable.
+---
+
 ## 2026-06-17 22:58 +08:00 - US-008
 - Files changed: `scripts/ralph/plans/slices/us-008-run-serial-validation-and-reviewer-invariant-gate.md`, `scripts/ralph/plans/slices/us-009-handoff-docs-and-next-candidate-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-17-us-008-serial-validation-reviewer-gate.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
 - Replacement note:
@@ -6744,6 +6755,17 @@
   - Candidate blocks A through F remain preserved. Deletion implementation remains `No-Go` unless a future candidate-specific PRD names exact current-root file / symbol / behavior evidence, behavior-preserving proof, focused guardrail or regression, validation entrypoint, rollback anchor, and registered-route / performance conditions where applicable.
 - Next step:
   - Continue to `US-008` serial validation and reviewer invariant gate. Treat this packet as a deletion/removal boundary, not as cleanup authorization.
+---
+
+## 2026-06-18 02:02 +08:00 - US-002
+- Files changed: `docs/Buff系统重构Checklist.md`, `scripts/ralph/investigations/2026-06-18-US-002-phase3-checklist-reconciliation.md`, `scripts/ralph/checkpoints/2026-06-18-us-002-phase3-checklist-reconciliation.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `Phase 3 top-level checklist reconciliation` replaces broad unchecked headings with explicit completed, blocked, retained-No-Go, or conditional status evidence.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, migrate XLogic, alter formulas, delete old containers, change validation-runner behavior, add registered routes/APLs, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Existing formula/read helper implementations, P2 guarded-maintenance buckets, old containers, retained compatibility paths, event/runtime/listener layer separation, registered behavior gates, and blocker-only reopen rules remain unchanged.
+- Next step:
+  - Continue to verifier coverage matrix reconciliation. Future implementation PRDs must name exact current-root file / symbol / behavior evidence, verifier, rollback anchor, and registered-route / performance conditions where applicable.
 ---
 
 ## 2026-06-17 19:54 +08:00 - US-001

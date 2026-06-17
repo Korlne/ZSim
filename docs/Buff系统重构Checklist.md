@@ -45,14 +45,14 @@
 
 ## 阶段 3：XLogic 全面替换
 
-- [ ] 替换属性读取类 XLogic。
-- [ ] 替换事件触发类 XLogic。
-- [ ] 替换 count 写回类 XLogic。
-- [ ] 替换异常附带 debuff 类 XLogic。
-- [ ] 替换直接依赖 `sim_instance` 服务定位的 XLogic。
-- [ ] 将旧触发链收口到统一事件驱动分发链路。
-- [ ] 每个切片都有对应单元测试。
-- [ ] 每个 production semantic 切片都有主循环一致性验证；文档 / test-only / guardrail-only / retained-compatibility story 记录跳过原因，不创建 validation-only team。
+- [x] 替换属性读取类 XLogic：Status = completed / no-reopen。P2-A/P2-B/P2-C guarded buckets、AM/AP/impact reader parity、RegularMul helper-family、CalAnomaly helper-family 与 `formula-parity` / `calculator-reads` 串行证据已覆盖当前 Phase 3 已命名读口；`MultiplierData` / reader snapshot / retained compatibility 不因本顶层项删除。若未来重开，必须由 current-root source、focused test、guardrail、validation failure 或 reviewer evidence 命名 exact file / symbol / behavior。
+- [x] 替换事件触发类 XLogic：Status = completed guarded maintenance / retained-No-Go for broad trigger rewrite。P2-C trigger-state gates、P2-D scheduled publish ordering / adapter parity、copied-output / anomaly write-path matrix 与 `implicit-events` 证据已覆盖已命名触发边界；不得把该顶层项解释为 broad event rewrite。若未来重开，必须命名 exact producer / handler / payload behavior，并保留 event queue、listener broadcast 与 runtime write 分层。
+- [x] 替换 count 写回类 XLogic：Status = completed guarded maintenance / retained-No-Go for broad writeback cleanup。P2-A computed count state-sync、P2-F BuffAddStrategy caller / facade-write design 与后续 formula/anomaly matrices 已记录 count / state-sync 保留边界；`Buff.end(...)`、old containers 与 enemy mirror 不因本顶层项删除。若未来重开，必须命名 exact count/state-sync file / symbol / behavior、focused oracle 或 guardrail failure。
+- [x] 替换异常附带 debuff 类 XLogic：Status = blocked / retained-No-Go for broad debuff cleanup。Anomaly / debuff / dot bypass audit、copied-output handler/report parity、AnomalyBar duration runtime-view matrix 已完成；enemy debuff mirror / dot runtime registration / single-source cleanup 仍是 retained compatibility 或单独事实源 PRD，当前没有 exact implementation candidate。若未来重开，必须命名 exact debuff/dot behavior regression、source symbol、focused test、validation gate、rollback anchor 与 layer boundary。
+- [x] 替换直接依赖 `sim_instance` 服务定位的 XLogic：Status = completed guarded maintenance / retained-No-Go。P2-G direct simulator context helpers bucket 已完成，service-family guardrail 与 `.codex_worktrees/` 排除规则保留；不得生成 broad simulator-context rewrite。若未来重开，必须命名 current-root exact service-locator callsite、source/guardrail/focused test evidence 与 rollback anchor。
+- [x] 将旧触发链收口到统一事件驱动分发链路：Status = retained-No-Go as broad merge。架构 invariant 要求 event queue semantics、synchronous listener broadcasts、same-tick runtime writes 分层保留；P2-D/P2-E、copied-output 与 runtime/read/write evidence 证明应通过 explicit ports/adapters 和 file-specific repair 收口，而不是合并成单一总线。若未来重开，必须命名 exact producer / handler boundary regression，并追加 `implicit-events` 与 rollback anchor。
+- [x] 每个切片都有对应单元测试：Status = completed。Phase 3 已完成切片均记录 focused pytest / guardrail / JSON sanity / UTF-8 scan / docs diff / serial validation profile 证据；后续仅在新 exact candidate 改动 source/test boundary 时补切片级测试。
+- [x] 每个 production semantic 切片都有主循环一致性验证；文档 / test-only / guardrail-only / retained-compatibility story 记录跳过原因，不创建 validation-only team：Status = retained conditional / blocked without live semantic candidate。main-loop consistency 只在 production semantic 或 registered-team behavior 变化、且存在真实 registered route/APL、explicit stop tick、nonzero relevant event/formula counts、total damage / event / buff timeline output 与 rollback anchor 时运行；本 checklist reconciliation、docs-only、test-only、guardrail-only、retained-compatibility story 只记录跳过原因。
 - [x] Phase 3 formula rollback plan 已 codify：失败 helper / profile / formula diff 必须回退到 retained source anchors，并保留 `formula-parity`、`calculator-reads`、`implicit-events` 与 old Buff runtime compatibility gates；P2-A through P2-G 只按 concrete blocker 证据重开。
 - [x] Phase 3 replacement blocker closure 已完成最终 handoff：`Calculator.AnomalyMul.cal_res_pen()` 是唯一允许进入下一轮 bounded production replacement proposal 的公式域；本 PRD 没有替换生产公式或删除 retained runtime/container compatibility。
 - [x] Phase 3 bounded proposal handoff 已完成最终 Go / No-Go：later implementation PRD 为 Go，但只限 `Calculator.AnomalyMul.cal_res_pen()`；broad `Calculator.py` / `CalAnomaly.py` rewrite、copied-output constructors、old containers、legacy `buff_add()` / `KickOutBuff()`、runtime ports/facades 与 `MultiplierData` / `MulData` / `DynamicStatement` 删除仍为 No-Go。
