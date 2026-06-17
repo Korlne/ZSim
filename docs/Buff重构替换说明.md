@@ -33,6 +33,17 @@
   - Do not generate an automatic next Ralph PRD from the retained candidate pool alone. If future preflight names an exact implementation candidate, generate a bounded implementation PRD; if it names an exact deletion candidate with proof, verifier and rollback anchor, split to deletion-readiness implementation packet; otherwise stop for human phase-boundary review.
 ---
 
+## 2026-06-18 01:53 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-reconcile-current-route-authority.md`, `scripts/ralph/investigations/2026-06-18-US-001-route-reconciliation.md`, `scripts/ralph/checkpoints/2026-06-18-us-001-route-authority.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-001 route reconciliation evidence` replaces stale Phase-3 / Phase-4 default-route assumptions with current next-stage draft, migration-board, hotspots, invariants, targeted `rg`, CodeGraph, and `prd_context.py` verifier evidence.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, edit focused tests, rewrite validation runners, delete old containers, delete retained compatibility, run a generic Phase-3 selection loop, or repeat Phase-4 evidence refresh.
+- Compatibility retained:
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, no cached dispatch adapters, completed-surface no-reopen rules, old containers, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-002` Phase-3 top-level checklist reconciliation. Treat broad unchecked checklist headings as evidence-routing work, not production authorization.
+---
+
 ## 2026-06-17 17:00 +08:00 - US-006
 - Files changed: `scripts/ralph/investigations/2026-06-17-US-006-guarded-maintenance-surfaces.md`, `scripts/ralph/checkpoints/2026-06-17-us-006-guarded-maintenance-surfaces.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
 - Replacement note:
