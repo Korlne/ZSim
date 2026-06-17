@@ -3,8 +3,8 @@
 ## 当前状态
 
 - 当前总路线已重置；最新权威 PRD 入口以本文 `## 当前默认下一步` 为准，下面保留的 2026-06-07 到 2026-06-16 handoff bullets 是历史 ledger，不得覆盖当前默认入口。
-- 当前有效阶段是 Phase 4 retained-boundary preservation：Phase-4 deletion-readiness / phase-boundary intake 已完成最终 No-Go，没有 retained family 证明 unused / behavior-preserving deletion；下一轮不默认生成删除实现 PRD。PRD 应从 `## 当前默认下一步` 的 retained candidate pool 中横向合并同阶段、同验证 profile、同 rollback anchor 的 maintenance / evidence-refresh / blocker-discovery 工作；需要保持窄的是 PRD 内的 US，而不是把每个 blocker 拆成单独 PRD。只有 evidence 要求不同 verifier / rollback，或确实进入 deletion implementation，才 stop-and-split。
-- 2026-06-17 `US-009` final handoff 已在 `US-001` through `US-008` evidence complete 之后同步，并补齐 docs gate / JSON sanity / UTF-8 scan / scoped Ralph typecheck evidence：当前默认下一 PRD 仍是 Phase-4 retained-compatibility boundary preservation / evidence refresh / blocker-discovery campaign；same-phase candidate pool 必须继续保留 old containers / lifecycle compatibility、event/runtime/listener layers、formula snapshot and reader contracts、registered behavior / performance gates、completed guarded-maintenance surfaces、retained compatibility 和 blocker-only reopen rules。最终路由决定：stay in Phase 4 retained-boundary evidence refresh；当前不 split to deletion-readiness implementation packet，也不 stop for human review。
+- 当前有效阶段是 Phase 4 retained-boundary preservation：Phase-4 deletion-readiness / phase-boundary intake 已完成最终 No-Go，没有 retained family 证明 unused / behavior-preserving deletion；下一轮不默认生成删除实现 PRD，也不得在没有新证据时继续生成第二个同形态 evidence-refresh / blocker-discovery campaign。PRD 生成器必须先执行路由三选一：若已有 exact implementation candidate，则生成 bounded implementation PRD；若新证据命名 exact deletion candidate，则生成 deletion-readiness implementation packet；若两者都没有，则 stop for human phase-boundary review。候选池继续保留为取材证据，不再自动等同于下一轮调查 backlog。
+- 2026-06-17 `US-009` final handoff 已在 `US-001` through `US-008` evidence complete 之后同步，并补齐 docs gate / JSON sanity / UTF-8 scan / scoped Ralph typecheck evidence：same-phase candidate pool 必须继续保留 old containers / lifecycle compatibility、event/runtime/listener layers、formula snapshot and reader contracts、registered behavior / performance gates、completed guarded-maintenance surfaces、retained compatibility 和 blocker-only reopen rules。防反馈锁路由决定：当前不 split to deletion-readiness implementation packet，因为没有 exact deletion candidate；也不再把 Phase-4 retained-boundary evidence refresh 写回默认下一 PRD。若 PRD 生成预检不能从候选池或新证据命名 exact implementation candidate，则默认结果是 stop for human review，而不是继续调查型 Ralph cycle。
 - `US-009` 未发现新 Buff coupling 或既有 coupling classification 变化；[旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md) 保持不变。除非 future current-root source / focused regression / guardrail / validation / reviewer evidence 同时命名 exact candidate、verifier 和 rollback anchor，否则不得把本 handoff 推导为 phase transition。
 - 若下方历史 handoff bullet 仍写“下一默认 PRD 返回 Phase-3 same-phase candidate selection / bounded proposal”，一律视为当时的 no-reopen / pool-retention 记录，不得作为当前 PRD 生成入口。当前入口只能取 `## 合理 PRD 形状硬约束` 与 `## 当前默认下一步`。
 - Buff 系统现已明确要求采用事件驱动架构。
@@ -69,6 +69,7 @@
 - PRD 可以选择一个连贯耦合块，也可以选择同阶段内多个相邻耦合块；不应只因为找到第一个安全 callsite 就停止扩展。同一耦合块内的 source audit、oracle gap review、registered-sample eligibility、Go / No-Go、rollback anchors、focused tests、scoped mypy 和 retained validation gate 应优先在一个大 cycle 内做完。
 - 若上一轮 handoff 已记录 Conditional Go / Go for one later bounded implementation PRD，下一默认 PRD 应进入对应 implementation，并把剩余必要调查作为该 implementation PRD 的前置 US；不得再生成一轮只重复 candidate-selection / proposal-readiness 的大 cycle，除非当前根工作区源码、focused test、validation 或 reviewer evidence 与该 Go 结论直接矛盾。
 - 只有当一个故事会混合不同 rollback / verifier gate 的边界（scheduled queue semantics、listener broadcast、same-tick runtime write、copied-output constructors、formula semantics、validation-runner wiring、old-container deletion）时，才拆到另一个 PRD 或 stop-and-split。
+- 每次 final handoff 导致进入下一阶段、回到 Phase 3、停在人审，或改变 `## 当前默认下一步` 的 phase / route 时，必须同步更新本文开头 `## 当前状态` 的当前有效阶段、路由决定和 no-reopen / stop 条件；不得只更新中段 handoff ledger 或候选池，留下过期开头继续作为后续 PRD 入口。
 - 如果当前默认 PRD 只是删除收尾或 guardrail 收口，本文档仍要写出“该 PRD 完成后立即可进入的下一组阶段 1 候选块”。只有文档证据显示阶段 1 已无安全候选块时，才切到阶段 2 的 XLogic 全量分析。
 - 后续 PRD 不需要为了填充数量发明迁移目标；但应该主动从 checklist 未完成项、旧耦合审查分组和现有测试缺口中提取可验证的实现候选，而不是只沿用上一轮最后一句“下一步”。调查型 story 数量应服务于同一轮 implementation / Go-No-Go 决策，不能连续多个大 cycle 只交付调查与 handoff。
 
@@ -79,27 +80,28 @@
 - 同文件、同 owner、同 rollback anchor、同 validation profile、同 public-contract 风险的公式 helper seam 必须横向合并。若一个候选只会产生 1 个 oracle row 或 1 个 helper delegation，应并入 sibling formulas 的 batch；不能为它单独生成“选择 -> oracle -> contract -> sample -> validation -> proposal -> handoff”的完整大 cycle。
 - Registered behavior sample eligibility、public contract review、serial validation profile、reviewer invariant 和 handoff docs 是横切 gate。它们默认合并到对应 implementation / validation / handoff story；只有触达 public reader contract、validation-runner behavior、registered fixture creation、old-container deletion、event/runtime/listener layer merge 或 retained compatibility deletion 时，才拆成独立 US。
 - 如果一个候选当前只够 No-Go，不够 implementation，则输出 blocker / No-Go packet 并回到同族候选块继续推进；不要再生成一轮候选池重选 PRD。若整个同族候选块都 No-Go，handoff 必须明确“下一个可实现候选块”或“需要人工 phase-boundary review”，而不是把默认写回 generic same-phase selection。
-- Phase 4 retained-boundary preservation 默认不是窄 blocker PRD。合理形状是一个 retained-boundary maintenance / evidence-refresh campaign。
-- Phase 4 campaign 应横向覆盖同阶段 candidate pool 中共享 current-root source audit、focused guardrail / regression、validation entrypoint、registered-route / performance 条件和 rollback anchor 的项；US 负责分片执行和验收。
-- Phase 4 PRD 应把 checklist 阶段 4 项、retained coupling、final No-Go packet、validation entrypoints 和 focused tests 合并成多个可验证 stories。
-- 只有 new evidence 命名 exact deletion candidate 且 verifier / rollback 与当前 campaign 不兼容，或 story 会触达 public reader expansion、validation-runner rewrite、event / listener changes、old-container deletion、retained compatibility deletion，才另开 PRD 或 stop-and-split。
+- Phase 4 retained-boundary preservation 的 evidence-refresh campaign 只能在有新证据、新 guardrail failure、新 validation failure、reviewer-named blocker，或尚未完成同类 Phase-4 横向审查时作为默认形状。若上一轮已经完成同形态 Phase-4 evidence refresh / No-Go / handoff，下一默认不得继续生成同类调查 PRD。
+- Phase 4 后续 PRD 必须先通过 anti-feedback route gate：`bounded implementation`、`exact deletion-readiness implementation packet`、`human phase-boundary review` 三选一。只有第一项或第二项命名 exact file / symbol / behavior、verifier、rollback anchor 和必要的 registered-route / performance 条件时，才生成 Ralph PRD。
+- Phase 4 candidate pool 应横向保留同阶段 candidate files / symbols、guardrails、validation entrypoints、rollback anchors 和 non-goals，但 pool retention 不等于 active backlog；不得把保留候选池本身转换成连续调查型 US。
+- 只有 new evidence 命名 exact deletion candidate 且 verifier / rollback 与当前 route gate 不兼容，或 story 会触达 public reader expansion、validation-runner rewrite、event / listener changes、old-container deletion、retained compatibility deletion，才另开 PRD 或 stop-and-split。
 - 后续 `prd` skill 取材时以本节和 `## 当前默认下一步` 为权威入口；下面历史 handoff ledger 中写着“当前默认 PRD 返回 same-phase candidate selection / bounded proposal”的旧句，只作为当时的 no-reopen 证据，不得覆盖当前入口。
 
 ## 当前默认下一步
 
 ### 下一轮默认 Ralph PRD
 
-Phase-4 下一默认 Ralph PRD 形状：retained-compatibility boundary preservation / evidence refresh campaign（当前默认 / no-immediate-deletion）。
+Phase-4 下一默认路由：anti-feedback route gate（当前默认 / no automatic evidence-refresh loop）。
 
 - 决策基线：本 PRD 已完成 deletion-readiness / phase-boundary intake，最终决策为 No-Go；没有 current-root source、focused regression、guardrail、validation failure 或 reviewer-named evidence 证明任一 retained family 可以 unused / behavior-preserving deletion。
-- PRD 形状：下一 PRD 不默认生成删除实现，也不按单个 blocker 逐个开窄 PRD；它应把同阶段、同 verifier gate、同 rollback anchor 的 source audit、guardrail / regression refresh、validation entrypoint refresh、registered-route / performance 条件检查和 No-Go / blocker 记录放在同一个 PRD 内。
-- 拆分条件：只有新证据同时命名 exact file / symbol / behavior、focused guardrail 或 regression、validation entrypoint、registered-route / performance 条件（若触达 live semantic 或性能面）和 rollback anchor，且指向 deletion implementation 或不兼容 verifier / rollback 时，才 stop-and-split 成单独 deletion-readiness implementation PRD。
+- 下一步先做路由选择，而不是直接生成同形态 Ralph PRD。PRD generator 必须从保留候选池、checklist 未完成项、旧耦合审查分组、focused tests 和最新验证结果中寻找 exact implementation candidate；若找到，则生成 bounded implementation PRD，并把必要调查压缩为 preflight / validation / handoff gate。
+- 若新证据命名 exact deletion candidate，且同时给出 exact file / symbol / behavior、unused-or-behavior-preserving proof、focused guardrail 或 regression、validation entrypoint、rollback anchor 和 registered-route / performance 条件（若适用），则生成 deletion-readiness implementation packet。
+- 若既没有 exact implementation candidate，也没有 exact deletion candidate，则 stop for human phase-boundary review。不得把“保留候选池仍存在”或“docs / verifier evidence internally consistent”作为继续生成 evidence-refresh campaign 的理由。
 
 下一轮 PRD generator 应从 `docs/Buff系统重构Checklist.md` 的阶段 4 项、`docs/旧Buff系统耦合审查结果.md` 的 retained coupling、本文 retained-boundary ledger、`docs/Buff公式候选与测试目标清单.md` 的 validation entrypoints、当前 focused tests 和本轮 final No-Go packet 取材。
 
 - 这不是新的 Phase-3 same-phase selection loop，也不是某个已完成 formula branch 的 follow-up。
-- 它应产出一个可容纳多个窄 US 的 retained-boundary maintenance / evidence-refresh PRD。
-- 未来如果仍无 exact deletion candidate，应保留候选池并记录 No-Go，而不是制造 cleanup diff 或把兼容任务拆成多个薄 PRD。
+- 这也不是新的 Phase-4 retained-boundary evidence-refresh campaign；上一轮同形态 campaign 已完成 No-Go / handoff 后，后续自动 PRD 必须以 exact implementation candidate 或 exact deletion-readiness candidate 为入口。
+- 未来如果仍无 exact candidate，应保留候选池并记录 stop-for-review，而不是制造 cleanup diff、把兼容任务拆成多个薄 PRD，或继续生成调查型 Ralph cycle。
 
 ### Current Phase-4 retained-boundary evidence refresh follow-up final handoff
 
@@ -110,13 +112,13 @@ Phase-4 下一默认 Ralph PRD 形状：retained-compatibility boundary preserva
   - `US-004` records no retained family satisfies the Go bar for unused / behavior-preserving deletion; formula snapshot carriers and scheduled handler requeue paths remain Conditional No-Go.
   - `US-005` records Conditional No-Go for live consistency and runtime benchmark samples without an exact semantic candidate, real registered route, explicit stop tick, nonzero relevant counts, performance-sensitive touched surface and rollback anchor.
   - `US-006` preserves completed guarded-maintenance surfaces as no-reopen evidence; `US-007` records deletion implementation No-Go; `US-008` records serial verifier / reviewer invariant evidence.
-  - `US-009` final handoff keeps the checklist, replacement notes, evidence ledger, campaign dashboard, checkpoint and progress aligned to this same Phase-4 retained-boundary route; no old coupling review update is required because no new coupling or classification change was discovered.
+  - `US-009` final handoff keeps the checklist, replacement notes, evidence ledger, campaign dashboard, checkpoint and progress aligned to the anti-feedback route gate and preserved candidate pool; no old coupling review update is required because no new coupling or classification change was discovered.
   - `US-009` docs gate adds focused `git diff --check`, Ralph JSON sanity, UTF-8 / U+FFFD / mojibake scan, Ralph PRD encoding pytest and scoped Ralph tooling typecheck. Production Buff validation remains inherited from `US-008` serial verifier evidence because this handoff changes no production source, focused test source, validation-runner behavior, lifecycle/runtime write path, registered route, performance-sensitive path or retained compatibility behavior.
-- Current default next PRD:
-  - Phase-4 retained-compatibility boundary preservation / evidence refresh / blocker-discovery campaign remains the default. A future deletion implementation PRD is not the default; it is allowed only after a new current-root packet names exact file / symbol / behavior, unused-or-behavior-preserving proof, focused guardrail or regression, validation profile, rollback anchor, and registered-route / performance evidence when applicable.
-  - Final handoff routing decision: keep the next PRD in Phase 4 retained-boundary evidence refresh. Do not split to an exact deletion-readiness implementation packet now, because this PRD found no exact deletion candidate. Do not stop for human review now, because the docs, PRD state, verifier evidence and candidate pool are internally consistent.
-  - Route authority remains [Buff重构方案.md](./Buff重构方案.md) plus this next-stage draft: the next PRD must follow the architecture phase route and may not jump to deletion implementation, Phase-3 narrow follow-up, or retained compatibility deletion without exact evidence.
-  - The default PRD should be broad enough to carry multiple narrow US slices sharing verifier / rollback anchors. Do not collapse it to one cleanup task, one historical Phase-3 follow-up, or one already-completed guarded surface.
+- Current default next route:
+  - Anti-feedback route gate is now the default. A second automatic Phase-4 retained-compatibility boundary preservation / evidence refresh / blocker-discovery campaign is not the default after the completed No-Go / handoff cycle.
+  - Final handoff routing decision: do not split to an exact deletion-readiness implementation packet now, because this PRD found no exact deletion candidate. Do not write Phase-4 retained-boundary evidence refresh back as the next PRD. If PRD-generation preflight cannot name an exact implementation candidate with file / symbol / behavior, verifier and rollback anchor, stop for human phase-boundary review.
+  - Route authority remains [Buff重构方案.md](./Buff重构方案.md) plus this next-stage draft: the next generated PRD must follow the architecture phase route and may not jump to deletion implementation, Phase-3 narrow follow-up, or retained compatibility deletion without exact evidence.
+  - The candidate pool below is preserved for future generation and reviewer context. It is not active backlog by itself, and it must not be converted into another all-investigation Ralph PRD unless new evidence invalidates the completed No-Go / handoff evidence.
 - Same-phase retained candidate pool for future generation:
   - Candidate block A - old containers and lifecycle compatibility:
     - Candidate files / symbols: `zsim/simulator/dataclasses.py`, `zsim/simulator/simulator_class.py`, `zsim/sim_progress/Buff/BuffLoad.py`, `zsim/sim_progress/Buff/BuffAdd.py`, `zsim/sim_progress/Update/Update_Buff.py`, `zsim/sim_progress/ScheduledEvent/ScheduleBuffSettle.py`, `LegacyBuffRuntimeFacade`, `exist_buff_dict`, `DYNAMIC_BUFF_DICT`, `LOADING_BUFF_DICT`, `dynamic_buff`, `loading_buff`, legacy `buff_add()` and legacy `KickOutBuff()`.
