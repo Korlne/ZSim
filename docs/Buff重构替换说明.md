@@ -7665,3 +7665,14 @@
 - Next step:
   - Generate `BuffXLogic Remaining Debuff Mirror And Dot Runtime-State Boundary Review` or same-PRD Go / No-Go closure; keep copied-output / formula parity, remaining dot/debuff runtime-state, old containers / lifecycle, `JudgeTools`, planned-event producer families, registered behavior / performance gates, completed guarded-maintenance surfaces and blocker-only reopen rules as same-phase candidate blocks, not automatic backlog.
 ---
+## 2026-06-19 01:10 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-current-root-debuff-mirror-and-dot-boundary-intake.md`, `scripts/ralph/investigations/2026-06-19-US-001-current-root-debuff-dot-boundary-intake.md`, `scripts/ralph/checkpoints/2026-06-19-us-001-current-root-debuff-dot-boundary-intake.md`, Ralph evidence / dashboard / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 current-root intake packet` replaces chat-only confidence with exact current-root evidence for the remaining `MiyabiCoreSkill_IceFire.py` debuff mirror read and Vivian hit-path dot runtime-state boundary.
+  - This story does not replace a live `BuffXLogic` callsite, helper API, dot registration path, scheduled publish path, formula/read surface, old-container path, validation-runner behavior, registered route, performance gate, or retained compatibility path.
+- Compatibility retained:
+  - `MiyabiCoreSkill_IceFire.special_judge_logic(...)` still retains `enemy.dynamic.dynamic_debuff_list` as debuff mirror / read-model access; `special_exit_logic(...)` keeps the exact frost/frostbite helper exception and scheduled publish order.
+  - `VivianDotTrigger.special_hit_logic(...)`, `DotRuntimeStateAdapter`, `spawn_normal_dot(...)`, `LoadingMission.mission_start(...)`, dot registration, `publish_scheduled(...)`, event queue semantics, synchronous listener broadcast boundaries, same-tick runtime writes, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-002` Miyabi frostburn debuff mirror characterization before any helper or deletion decision; keep Vivian hit-path dot runtime evidence guarded unless a concrete current-root blocker appears.
+---
