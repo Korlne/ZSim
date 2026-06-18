@@ -101,6 +101,8 @@ APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME = {
     "read_enemy_stun_active": APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES,
 }
 
+DELEGATED_COPIED_OUTPUT_HELPER_FILES = APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
+
 APPROVED_EDGE_FROZEN_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritRateBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/PolarMetalFreezeBonus.py",
@@ -205,7 +207,11 @@ ANOMALY_MAP_FUTURE_POOL_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/MiyabiAdditionalAbility_IgnoreIceRes.py",
 }
 
-EXPECTED_DIRECT_READ_FILES = set(CLASSIFICATION_BY_FILE) - MIGRATED_HELPER_FILES
+EXPECTED_DIRECT_READ_FILES = (
+    set(CLASSIFICATION_BY_FILE)
+    - MIGRATED_HELPER_FILES
+    - DELEGATED_COPIED_OUTPUT_HELPER_FILES
+)
 
 CLASSIFICATION_BUCKETS = {
     "approved helper boundary",
@@ -596,6 +602,26 @@ def test_enemy_dynamic_read_guardrail_approves_copied_output_predicate_helpers_b
     )
 
 
+def test_enemy_dynamic_read_guardrail_limits_hugo_copied_output_stun_helper_to_exact_file() -> None:
+    references = _collect_helper_reference_paths()["read_enemy_stun_active"]
+    copied_output_imports = references["imports"] & COPIED_OUTPUT_ADJACENT_FILES
+    copied_output_calls = references["calls"] & COPIED_OUTPUT_ADJACENT_FILES
+
+    assert APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES == {
+        "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py"
+    }
+    assert copied_output_imports == APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
+    assert copied_output_calls == APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
+    assert copied_output_imports.isdisjoint(
+        APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
+    )
+    assert copied_output_calls.isdisjoint(APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES)
+    assert copied_output_imports.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert copied_output_calls.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert copied_output_imports.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
+    assert copied_output_calls.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
+
+
 def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scope() -> None:
     references = _collect_helper_reference_paths()
     anomaly_references_by_kind = _helper_references_for_names(
@@ -660,6 +686,9 @@ def test_enemy_dynamic_read_guardrail_keeps_copied_output_matrix_exact() -> None
         for finding in findings
         if finding.path in COPIED_OUTPUT_ADJACENT_FILES
     ]
+    copied_output_direct_read_files = (
+        COPIED_OUTPUT_ADJACENT_FILES - DELEGATED_COPIED_OUTPUT_HELPER_FILES
+    )
     matched_by_path = {
         path: [
             finding.matched_expression
@@ -670,12 +699,9 @@ def test_enemy_dynamic_read_guardrail_keeps_copied_output_matrix_exact() -> None
     }
     references = _collect_helper_reference_paths()
 
-    assert {finding.path for finding in copied_findings} == COPIED_OUTPUT_ADJACENT_FILES
+    assert {finding.path for finding in copied_findings} == copied_output_direct_read_files
     assert matched_by_path == {
-        "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py": [
-            "self.record.enemy.dynamic.stun",
-            "self.record.enemy.dynamic.stun",
-        ],
+        "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py": [],
         "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py": [
             "not self.record.enemy.dynamic.is_under_anomaly",
             "self.record.enemy.dynamic.get_active_anomaly()",

@@ -187,6 +187,17 @@ def _patch_hugo_dependencies(
         "find_tick",
         lambda *, sim_instance: sim_instance.tick,
     )
+    stun_helper_calls: list[object] = []
+
+    def fake_read_enemy_stun_active(enemy: Any) -> bool:
+        stun_helper_calls.append(enemy)
+        return bool(enemy.dynamic.stun)
+
+    monkeypatch.setattr(
+        hugo_module,
+        "read_enemy_stun_active",
+        fake_read_enemy_stun_active,
+    )
     _block_legacy_event_lookup(monkeypatch)
 
     buff_add_calls: list[tuple[str, dict[str, object]]] = []
@@ -234,6 +245,7 @@ def _patch_hugo_dependencies(
 
     harness.buff_add_calls = buff_add_calls
     harness.spawned_skill = spawned_skill
+    harness.stun_helper_calls = stun_helper_calls
 
 
 def _build_hugo_judge_skill(
@@ -322,6 +334,7 @@ def test_hugo_totalize_node_publishes_via_dispatch_port_before_any_raw_queue_acc
     assert published_node.loading_mission.mission_start_tick == 88
     assert published_node.loading_mission.mission_dict[88.0] == "start"
     assert harness.publish_signal_states == [2]
+    assert harness.stun_helper_calls == [harness.record.enemy]
     _assert_no_raw_runtime_side_effects(harness)
     assert harness.record.active_signal is None
 
@@ -356,6 +369,7 @@ def test_hugo_stun_event_publishes_via_dispatch_port_when_branch_conditions_matc
     assert published_stun_event.feed_back_ratio == 0.25
     assert published_stun_event.execute_tick == 88
     assert harness.publish_signal_states == [2, 2]
+    assert harness.stun_helper_calls == [harness.record.enemy]
     _assert_no_raw_runtime_side_effects(harness)
     assert harness.record.active_signal is None
 
@@ -382,6 +396,7 @@ def test_hugo_report_state_stays_before_publish_when_enabled(
     ]
     assert harness.dispatch_port.events == [harness.spawned_skill]
     assert harness.publish_signal_states == [2]
+    assert harness.stun_helper_calls == [harness.record.enemy]
     _assert_no_raw_runtime_side_effects(harness)
     assert harness.record.active_signal is None
 
@@ -412,8 +427,27 @@ def test_hugo_cinema_two_ultimate_keeps_stun_event_skipped_after_gateway_migrati
     assert len(harness.dispatch_port.events) == 1
     assert harness.dispatch_port.events[0] is harness.spawned_skill
     assert harness.publish_signal_states == [6]
+    assert harness.stun_helper_calls == [harness.record.enemy]
     _assert_no_raw_runtime_side_effects(harness)
     assert harness.record.active_signal is None
+
+
+def test_hugo_judge_non_cinema_six_uses_stun_helper_to_set_active_signal_without_publish(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    harness = _build_hugo_harness(active_signal=None, cinema=1, enemy_stun=True)
+    _patch_hugo_dependencies(monkeypatch, harness)
+
+    assert harness.logic.special_judge_logic(skill_node=_build_hugo_judge_skill()) is True
+
+    assert harness.call_order == []
+    assert harness.buff_add_calls == []
+    assert harness.dispatch_port.events == []
+    assert harness.publish_signal_states == []
+    assert harness.report_calls == []
+    assert harness.stun_helper_calls == [harness.record.enemy]
+    _assert_no_raw_runtime_side_effects(harness)
+    assert harness.record.active_signal == 2
 
 
 def test_hugo_judge_non_cinema_six_requires_stun_without_publish(
@@ -432,6 +466,7 @@ def test_hugo_judge_non_cinema_six_requires_stun_without_publish(
     assert harness.dispatch_port.events == []
     assert harness.publish_signal_states == []
     assert harness.report_calls == []
+    assert harness.stun_helper_calls == [harness.record.enemy]
     _assert_no_raw_runtime_side_effects(harness)
     assert harness.record.active_signal is None
 
@@ -451,6 +486,7 @@ def test_hugo_active_signal_zero_resets_without_scheduled_publish(
     )
     assert harness.dispatch_port.events == []
     assert harness.publish_signal_states == []
+    assert harness.stun_helper_calls == []
     _assert_no_raw_runtime_side_effects(harness)
     assert harness.record.active_signal is None
 
@@ -467,5 +503,6 @@ def test_hugo_judge_without_skill_node_does_not_force_buff_add(
     assert harness.buff_add_calls == []
     assert harness.dispatch_port.events == []
     assert harness.publish_signal_states == []
+    assert harness.stun_helper_calls == []
     _assert_no_raw_runtime_side_effects(harness)
     assert harness.record.active_signal is None

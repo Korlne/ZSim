@@ -7495,3 +7495,16 @@
 - Next step:
   - Continue to `US-004` and delegate only Hugo stun predicates if focused Hugo dispatch tests and the guardrail stay green.
 ---
+
+## 2026-06-18 22:32 +08:00 - US-004
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py`, `tests/simulator/test_hugo_totalize_dispatch.py`, `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-004-hugo-totalize-stun-predicate-delegation.md`, `scripts/ralph/investigations/2026-06-18-US-004-hugo-totalize-stun-predicate-delegation.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/evidence-ledger-shards/proven-patterns-to-reuse.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `read_enemy_stun_active(...)` now replaces the two direct Hugo copied-output-adjacent stun predicates in `HugoCorePassiveTotalizeTrigger.py`.
+  - Hugo still owns totalize event construction, dispatch adapter creation, target fan-out, Buff record mutation, `HUGO_REPORT` behavior, `LoadingMission`, `spawn_node(...)`, and `StunForcedTerminationEvent` construction.
+- Compatibility retained:
+  - `ScheduleDispatchPort` publish order remains `mission_start`, totalize node publish, then optional stun-event publish.
+  - Raw queue access, listener broadcast, runtime command creation, old pending Buff queue writes, old-container traversal, dot runtime registration, same-tick runtime writes, validation-runner behavior, registered routes, performance gates, formulas, and retained compatibility surfaces remain unchanged.
+  - Vivian and Yanagi copied-output anomaly predicates, dot/debuff runtime-state files, and anomaly-map future-pool files remain outside this Hugo-only helper delegation.
+- Next step:
+  - Continue to `US-005` and delegate only Vivian copied-output anomaly predicates if focused Vivian dispatch tests and the guardrail stay green.
+---

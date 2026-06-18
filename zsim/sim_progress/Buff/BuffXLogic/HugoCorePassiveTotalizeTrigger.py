@@ -3,6 +3,7 @@ from zsim.sim_progress.Enemy import Enemy
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
+from .enemy_state_read import read_enemy_stun_active
 
 
 class HugoCorePassiveTotalizeTriggerRecord:
@@ -125,7 +126,7 @@ class HugoCorePassiveTotalizeTrigger(Buff.BuffLogic):
             return True
         else:
             # 否则，检测敌人是否处于失衡状态
-            if self.record.enemy.dynamic.stun:
+            if read_enemy_stun_active(self.record.enemy):
                 self.record.active_signal = skill_node.skill.trigger_buff_level
                 return True
             else:
@@ -227,7 +228,7 @@ class HugoCorePassiveTotalizeTrigger(Buff.BuffLogic):
         """失衡状态强制结算事件"""
         from zsim.sim_progress.data_struct import StunForcedTerminationEvent
 
-        if self.record.enemy.dynamic.stun:
+        if read_enemy_stun_active(self.record.enemy):
             if self.record.char.cinema >= 2 and self.record.active_signal == 6:
                 if HUGO_REPORT:
                     self.buff_instance.sim_instance.schedule_data.change_process_state()
