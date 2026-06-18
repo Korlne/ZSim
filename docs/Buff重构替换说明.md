@@ -7030,3 +7030,15 @@
 - Next step:
   - Continue to `US-005` guardrails/regression coverage. Extend guardrails only for selected owner-family regression risks proven by current source and the focused state-sync/read-gate rows.
 ---
+
+## 2026-06-18 12:10 +08:00 - US-005
+- Files changed: `tests/simulator/test_migrated_p2b_reader_guardrail.py`, `scripts/ralph/plans/slices/us-005-guardrails-and-regression-coverage.md`, `scripts/ralph/checkpoints/2026-06-18-us-005-guardrails-regression-coverage.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger-shards/closed-evidence.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`
+- Replacement note:
+  - `US-005 guardrails/regression coverage` prepares to replace selected owner-family `BuffXLogic` read-gate / state-sync internals by extending focused guardrails that require `CalculatorBuffAttributeReader`, block direct `Calculator` / `MultiplierData` regressions, reject event/runtime layer shortcuts, and pin scans to current-root selected files.
+  - This story is test/Ralph evidence only; it does not replace live production `BuffXLogic`, rewrite Calculator / CalAnomaly formula semantics, expand public reader/snapshot APIs, change validation-runner behavior, delete old containers, or merge event queue / listener broadcast / same-tick runtime-write layers.
+- Compatibility retained:
+  - `Buff.BuffLogic`, `JudgeTools.find_exist_buff_dict(...)`, `check_preparation(...)`, old `buff_0` identity, lazy `history.record`, `simple_start(...)`, `dy.count`, `update_to_buff_0(...)`, selected trigger-state compatibility reads, old containers, `ScheduleDispatchPort`, `RuntimeCommandPort`, and `LegacyRuntimeCommandAdapter` remain unchanged.
+  - `.codex_worktrees`, generated logs, archives, Ralph context/run outputs, and retained formula/runtime files remain excluded from selected-family guardrail source scans.
+- Next step:
+  - Continue to `US-006` serial validation and reviewer gate. Reuse the selected-family guardrail evidence and keep Phase 5, deletion readiness, and unrelated owner families out of scope.
+---

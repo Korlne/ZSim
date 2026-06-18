@@ -21,6 +21,20 @@ MIGRATED_P2B_READER_FILES = (
     BUFF_XLOGIC_ROOT / "WoodpeckerElectroSet4_CA.py",
 )
 
+SELECTED_IMPACT_CRIT_STUN_READER_FILES = (
+    BUFF_XLOGIC_ROOT / "LighterAdditionalAbility_IceFireBonus.py",
+    BUFF_XLOGIC_ROOT / "QingYiAdditionalAbilityStunConvertToATK.py",
+    BUFF_XLOGIC_ROOT / "TriggerAdditionalAbilityStunBonus.py",
+    BUFF_XLOGIC_ROOT / "Soldier0AnbyCoreSkillCritDMGBonus.py",
+)
+
+SELECTED_READER_METHODS = {
+    "LighterAdditionalAbility_IceFireBonus.py": "read_impact",
+    "QingYiAdditionalAbilityStunConvertToATK.py": "read_impact",
+    "TriggerAdditionalAbilityStunBonus.py": "read_personal_crit_rate",
+    "Soldier0AnbyCoreSkillCritDMGBonus.py": "read_personal_crit_damage",
+}
+
 RETAINED_FORMULA_SNAPSHOT_FILES = {
     PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent" / "Calculator.py",
     PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent" / "CalAnomaly.py",
@@ -37,6 +51,29 @@ FORBIDDEN_CALCULATOR_READS = {
     ("RegularMul", "cal_crit_rate"),
     ("RegularMul", "cal_personal_crit_rate"),
     ("RegularMul", "cal_personal_crit_dmg"),
+}
+
+SELECTED_FORBIDDEN_BOUNDARY_TOKENS = {
+    "BuffRuntimeReadPort",
+    "LegacyRuntimeCommandAdapter",
+    "RuntimeCommandPort",
+    "ScheduleDispatchPort",
+    "create_schedule_dispatch_port",
+    "event_list",
+    "find_event_list",
+    "listener_manager.broadcast_event",
+    "publish_scheduled",
+    "schedule_data.event_list",
+}
+
+GUARDRAIL_SOURCE_SCAN_EXCLUDED_PARTS = {
+    ".codex_worktrees",
+    "archive",
+    "codex-runlogs",
+    "context",
+    "logs",
+    "results",
+    "run-logs",
 }
 
 
@@ -182,6 +219,53 @@ def test_migrated_p2b_guardrail_scope_is_exact_root_file_set() -> None:
     assert not RETAINED_FORMULA_SNAPSHOT_FILES & set(MIGRATED_P2B_READER_FILES)
     assert not RETAINED_NON_MIGRATED_PHASE2_CANDIDATE_FILES & set(
         MIGRATED_P2B_READER_FILES
+    )
+
+
+def test_selected_impact_crit_stun_files_keep_reader_boundary() -> None:
+    for path in SELECTED_IMPACT_CRIT_STUN_READER_FILES:
+        source = path.read_text(encoding="utf-8")
+
+        assert "CalculatorBuffAttributeReader" in source
+        assert "create_anomaly_attribute_read_context" in source
+        assert SELECTED_READER_METHODS[path.name] in source
+
+
+def test_selected_impact_crit_stun_files_keep_runtime_layers_out_of_scope() -> None:
+    for path in SELECTED_IMPACT_CRIT_STUN_READER_FILES:
+        source = path.read_text(encoding="utf-8")
+        forbidden = sorted(
+            token for token in SELECTED_FORBIDDEN_BOUNDARY_TOKENS if token in source
+        )
+
+        assert forbidden == [], (
+            f"{path.relative_to(PROJECT_ROOT).as_posix()} introduced event/runtime "
+            f"boundary shortcuts: {forbidden}"
+        )
+
+
+def test_selected_impact_crit_stun_scan_set_excludes_generated_sources() -> None:
+    scanned_files = {
+        path.relative_to(PROJECT_ROOT).as_posix()
+        for path in SELECTED_IMPACT_CRIT_STUN_READER_FILES
+    }
+
+    assert scanned_files == {
+        "zsim/sim_progress/Buff/BuffXLogic/LighterAdditionalAbility_IceFireBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/QingYiAdditionalAbilityStunConvertToATK.py",
+        "zsim/sim_progress/Buff/BuffXLogic/TriggerAdditionalAbilityStunBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCoreSkillCritDMGBonus.py",
+    }
+    assert all(path.is_file() for path in SELECTED_IMPACT_CRIT_STUN_READER_FILES)
+    assert all(
+        not (set(path.parts) & GUARDRAIL_SOURCE_SCAN_EXCLUDED_PARTS)
+        for path in SELECTED_IMPACT_CRIT_STUN_READER_FILES
+    )
+    assert not RETAINED_FORMULA_SNAPSHOT_FILES & set(
+        SELECTED_IMPACT_CRIT_STUN_READER_FILES
+    )
+    assert not RETAINED_NON_MIGRATED_PHASE2_CANDIDATE_FILES & set(
+        SELECTED_IMPACT_CRIT_STUN_READER_FILES
     )
 
 
