@@ -38,6 +38,7 @@ ENEMY_DYNAMIC_READ_NAMES = {
 
 CLASSIFICATION_BY_FILE = {
     "zsim/sim_progress/Buff/BuffXLogic/ElectroLipGlossAtkAndDmgBonus.py": "simple enemy read",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_read.py": "approved helper boundary",
     "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveEXStunBonus.py": "guarded-maintenance overlap",
     "zsim/sim_progress/Buff/BuffXLogic/JaneAdditionalAbilityPhyBuildupBonus.py": "simple enemy read",
     "zsim/sim_progress/Buff/BuffXLogic/LinaAdditionalSkillEleDMGBonus.py": "simple enemy read",
@@ -62,7 +63,17 @@ CLASSIFICATION_BY_FILE = {
     "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py": "dot/debuff runtime-state read",
 }
 
+APPROVED_HELPER_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/ElectroLipGlossAtkAndDmgBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/JaneAdditionalAbilityPhyBuildupBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/MarcatoDesireAtkBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/TimeweaverApBonus.py",
+}
+
+EXPECTED_DIRECT_READ_FILES = set(CLASSIFICATION_BY_FILE) - APPROVED_HELPER_FILES
+
 CLASSIFICATION_BUCKETS = {
+    "approved helper boundary",
     "simple enemy read",
     "edge-detection read",
     "copied-output-adjacent read",
@@ -70,6 +81,8 @@ CLASSIFICATION_BUCKETS = {
     "guarded-maintenance overlap",
     "unrelated retained compatibility",
 }
+
+HELPER_NAME = "read_enemy_anomaly_active"
 
 
 @dataclass(frozen=True)
@@ -198,6 +211,27 @@ def _collect_findings() -> list[EnemyDynamicReadFinding]:
     return findings
 
 
+def _collect_helper_reference_paths() -> dict[str, set[str]]:
+    references: dict[str, set[str]] = {"imports": set(), "calls": set()}
+    for path in _production_python_files():
+        rel_path = path.relative_to(PROJECT_ROOT).as_posix()
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and any(
+                alias.name == HELPER_NAME for alias in node.names
+            ):
+                references["imports"].add(rel_path)
+            elif isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Name) and node.func.id == HELPER_NAME:
+                    references["calls"].add(rel_path)
+                elif (
+                    isinstance(node.func, ast.Attribute)
+                    and node.func.attr == HELPER_NAME
+                ):
+                    references["calls"].add(rel_path)
+    return references
+
+
 def test_enemy_dynamic_read_guardrail_scope_excludes_generated_and_duplicate_trees() -> None:
     scanned_files = {path.relative_to(PROJECT_ROOT).as_posix() for path in _production_python_files()}
 
@@ -224,9 +258,28 @@ def test_enemy_dynamic_read_guardrail_classifies_all_current_root_matches() -> N
         "Enemy dynamic read guardrail found unclassified current-root matches:\n"
         + "\n".join(f"- {finding.message()}" for finding in unexpected)
     )
-    assert finding_paths == set(CLASSIFICATION_BY_FILE)
+    assert finding_paths == EXPECTED_DIRECT_READ_FILES
     assert {finding.classification_suggestion for finding in findings} >= (
         CLASSIFICATION_BUCKETS - {"unrelated retained compatibility"}
+    )
+
+
+def test_enemy_dynamic_read_guardrail_limits_helper_to_approved_subset() -> None:
+    references = _collect_helper_reference_paths()
+    simple_read_files = {
+        path
+        for path, classification in CLASSIFICATION_BY_FILE.items()
+        if classification == "simple enemy read"
+    }
+
+    assert references["imports"] == APPROVED_HELPER_FILES
+    assert references["calls"] == APPROVED_HELPER_FILES
+    assert APPROVED_HELPER_FILES < simple_read_files
+    assert references["imports"].isdisjoint(simple_read_files - APPROVED_HELPER_FILES)
+    assert references["calls"].isdisjoint(simple_read_files - APPROVED_HELPER_FILES)
+    assert all(
+        CLASSIFICATION_BY_FILE[path] == "simple enemy read"
+        for path in references["imports"] | references["calls"]
     )
 
 

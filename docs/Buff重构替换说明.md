@@ -7205,3 +7205,14 @@
 - Next step:
   - Continue to `US-005` guard excluded enemy-state families and keep the helper limited to the four approved simple boolean callsites.
 ---
+
+## 2026-06-18 15:06 +08:00 - US-005
+- Files changed: `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-005-guard-excluded-enemy-state-families.md`, `scripts/ralph/investigations/2026-06-18-US-005-helper-subset-guardrail.md`, `scripts/ralph/checkpoints/2026-06-18-us-005-helper-subset-guardrail.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/simulator/test_enemy_dynamic_read_guardrail.py` now guards the helper subset explicitly: `read_enemy_anomaly_active(...)` imports and calls must stay limited to `ElectroLipGlossAtkAndDmgBonus.py`, `JaneAdditionalAbilityPhyBuildupBonus.py`, `MarcatoDesireAtkBonus.py`, and `TimeweaverApBonus.py`.
+  - This story is guardrail/evidence only; it does not replace additional live `BuffXLogic` reads or broaden the helper.
+- Compatibility retained:
+  - Edge-detection, copied-output / event-adjacent, dot/debuff runtime-state, event/runtime/listener, old-container, formula, `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, scheduled publish ordering, same-tick runtime write, and public runtime read-port surfaces remain unchanged.
+- Next step:
+  - Continue to `US-006` serial validation and reviewer invariant gate without expanding the helper subset.
+---
