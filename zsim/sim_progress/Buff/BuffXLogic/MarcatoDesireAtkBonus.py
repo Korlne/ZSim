@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation, find_tick
+from .enemy_anomaly_read import read_enemy_anomaly_active
 
 
 class MarcatoDesireRecord:
@@ -52,6 +53,6 @@ class MarcatoDesireAtkBonus(Buff.BuffLogic):
         if not skill_node.is_hit_now(find_tick(sim_instance=self.buff_instance.sim_instance)):
             return False
         if skill_node.skill.trigger_buff_level in [2, 5]:
-            if self.record.enemy.dynamic.is_under_anomaly():
+            if read_enemy_anomaly_active(self.record.enemy):
                 return True
         return False

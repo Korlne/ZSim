@@ -7193,3 +7193,15 @@
 - Next step:
   - Continue to `US-004` and delegate only the skill-prerequisite simple gates after their existing prerequisite short-circuits.
 ---
+
+## 2026-06-18 15:06 +08:00 - US-004
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/MarcatoDesireAtkBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/TimeweaverApBonus.py`, `scripts/ralph/plans/slices/us-004-delegate-skill-prerequisite-simple-gates.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `read_enemy_anomaly_active(self.record.enemy)` now replaces the direct simple boolean anomaly-active reads in `MarcatoDesireAtkBonus.special_judge_logic(...)` and `TimeweaverApBonus.special_judge_logic(...)`.
+  - The delegation occurs only after the existing skill-prerequisite short-circuits. `MarcatoDesireAtkBonus` preserves `skill_node` existence, `SkillNode` type, owner, hit-now, then trigger-level ordering. `TimeweaverApBonus` preserves `skill_node` existence, `SkillNode` type, owner, trigger-level, then hit-now ordering.
+- Compatibility retained:
+  - Existing false-prerequisite branches still skip the helper and therefore do not read `enemy.dynamic.is_under_anomaly()`.
+  - Edge-detection, copied-output / event-adjacent, dot/debuff runtime-state, event/runtime/listener, old-container, formula, `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, scheduled publish ordering, same-tick runtime write, and public runtime read-port surfaces remain unchanged.
+- Next step:
+  - Continue to `US-005` guard excluded enemy-state families and keep the helper limited to the four approved simple boolean callsites.
+---

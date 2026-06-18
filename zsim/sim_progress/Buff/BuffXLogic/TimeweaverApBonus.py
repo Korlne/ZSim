@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation, find_tick
+from .enemy_anomaly_read import read_enemy_anomaly_active
 
 
 class TimeweaverApBonusRecord:
@@ -64,7 +65,7 @@ class TimeweaverApBonus(Buff.BuffLogic):
             return False
 
         # 判断敌人是否处于异常状态
-        if not self.record.enemy.dynamic.is_under_anomaly():
+        if not read_enemy_anomaly_active(self.record.enemy):
             return False
 
         return True
