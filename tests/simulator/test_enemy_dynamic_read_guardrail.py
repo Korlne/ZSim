@@ -40,6 +40,7 @@ CLASSIFICATION_BY_FILE = {
     "zsim/sim_progress/Buff/BuffXLogic/ElectroLipGlossAtkAndDmgBonus.py": "simple enemy read",
     "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_map_read.py": "approved helper boundary",
     "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_read.py": "approved helper boundary",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_debuff_mirror_read.py": "approved helper boundary",
     "zsim/sim_progress/Buff/BuffXLogic/enemy_edge_state_read.py": "approved helper boundary",
     "zsim/sim_progress/Buff/BuffXLogic/enemy_state_read.py": "approved helper boundary",
     "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py": "delegated anomaly-map read",
@@ -140,6 +141,10 @@ APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py",
 }
 
+APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py",
+}
+
 APPROVED_FROST_FROSTBITE_HELPER_FILES = (
     APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES | APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES
 )
@@ -171,6 +176,7 @@ MIGRATED_HELPER_FILES_BY_NAME = {
     "read_enemy_frozen_edge_state": APPROVED_EDGE_FROZEN_HELPER_FILES,
     "read_enemy_stun_edge_state": APPROVED_EDGE_STUN_HELPER_FILES,
     "read_enemy_frost_frostbite_edge_state": APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES,
+    "MiyabiFrostburnDebuffMirrorReader": APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES,
     "read_enemy_anomaly_state": APPROVED_ANOMALY_MAP_SINGLE_HELPER_FILES,
     "snapshot_enemy_anomaly_states": APPROVED_ANOMALY_MAP_SNAPSHOT_HELPER_FILES,
 }
@@ -188,6 +194,7 @@ APPROVED_HELPER_FILES_BY_NAME = {
     "read_enemy_frozen_edge_state": APPROVED_EDGE_FROZEN_HELPER_FILES,
     "read_enemy_stun_edge_state": APPROVED_EDGE_STUN_HELPER_FILES,
     "read_enemy_frost_frostbite_edge_state": APPROVED_FROST_FROSTBITE_HELPER_FILES,
+    "MiyabiFrostburnDebuffMirrorReader": APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES,
     **APPROVED_ANOMALY_MAP_HELPER_FILES_BY_NAME,
 }
 
@@ -208,6 +215,7 @@ APPROVED_HELPER_CLASSIFICATIONS_BY_NAME = {
         "edge-detection read",
         "dot/debuff runtime-state read",
     },
+    "MiyabiFrostburnDebuffMirrorReader": {"dot/debuff runtime-state read"},
     "read_enemy_anomaly_state": {"delegated anomaly-map read"},
     "snapshot_enemy_anomaly_states": {"delegated anomaly-map read"},
 }
@@ -223,6 +231,7 @@ HELPER_NAMES_BY_FAMILY = {
         }
     ),
     "anomaly-map helpers": frozenset(APPROVED_ANOMALY_MAP_HELPER_FILES_BY_NAME),
+    "debuff mirror helpers": frozenset({"MiyabiFrostburnDebuffMirrorReader"}),
 }
 
 MIGRATED_HELPER_FILES = set().union(*MIGRATED_HELPER_FILES_BY_NAME.values())
@@ -581,6 +590,14 @@ def test_enemy_dynamic_read_guardrail_tracks_helper_references_by_family() -> No
     assert APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES <= (DOT_DEBUFF_RUNTIME_STATE_FILES)
     assert family_references["anomaly-map helpers"]["imports"] == DELEGATED_ANOMALY_MAP_HELPER_FILES
     assert family_references["anomaly-map helpers"]["calls"] == DELEGATED_ANOMALY_MAP_HELPER_FILES
+    assert (
+        family_references["debuff mirror helpers"]["imports"]
+        == APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES
+    )
+    assert (
+        family_references["debuff mirror helpers"]["calls"]
+        == APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES
+    )
 
 
 def test_enemy_dynamic_read_guardrail_limits_frozen_edge_helper_to_exact_files() -> None:
@@ -771,6 +788,29 @@ def test_enemy_dynamic_read_guardrail_limits_vivian_dot_judge_helper_to_exact_fi
     )
 
 
+def test_enemy_dynamic_read_guardrail_limits_miyabi_debuff_mirror_reader_to_exact_file() -> (
+    None
+):
+    references = _collect_helper_reference_paths()["MiyabiFrostburnDebuffMirrorReader"]
+    helper_references = references["imports"] | references["calls"]
+
+    assert APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES == {
+        "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py"
+    }
+    assert references["imports"] == APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES
+    assert references["calls"] == APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES
+    assert helper_references <= DOT_DEBUFF_RUNTIME_STATE_FILES
+    assert helper_references.isdisjoint(
+        DOT_DEBUFF_RUNTIME_STATE_FILES - APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES
+    )
+    assert helper_references.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
+    assert helper_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
+    assert all(
+        CLASSIFICATION_BY_FILE[path] == "dot/debuff runtime-state read"
+        for path in helper_references
+    )
+
+
 def test_enemy_dynamic_read_guardrail_limits_yanagi_copied_output_anomaly_helper_to_exact_file() -> (
     None
 ):
@@ -812,6 +852,9 @@ def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scop
     anomaly_map_references_by_kind = _helper_references_for_names(
         references, HELPER_NAMES_BY_FAMILY["anomaly-map helpers"]
     )
+    debuff_mirror_references_by_kind = _helper_references_for_names(
+        references, HELPER_NAMES_BY_FAMILY["debuff mirror helpers"]
+    )
     shock_stun_references = (
         shock_stun_references_by_kind["imports"] | shock_stun_references_by_kind["calls"]
     )
@@ -821,6 +864,10 @@ def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scop
     )
     anomaly_map_references = (
         anomaly_map_references_by_kind["imports"] | anomaly_map_references_by_kind["calls"]
+    )
+    debuff_mirror_references = (
+        debuff_mirror_references_by_kind["imports"]
+        | debuff_mirror_references_by_kind["calls"]
     )
 
     assert all(
@@ -869,6 +916,13 @@ def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scop
     )
     assert edge_state_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
     assert anomaly_map_references == DELEGATED_ANOMALY_MAP_HELPER_FILES
+    assert debuff_mirror_references == APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES
+    assert debuff_mirror_references <= DOT_DEBUFF_RUNTIME_STATE_FILES
+    assert debuff_mirror_references.isdisjoint(
+        DOT_DEBUFF_RUNTIME_STATE_FILES - APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES
+    )
+    assert debuff_mirror_references.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
+    assert debuff_mirror_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
 
 
 def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> None:
@@ -878,6 +932,7 @@ def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> No
     direct_excluded_read_files = (
         EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES
         - APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+        - APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES
     )
     copied_output_approved_files: set[str] = set()
     for approved_files in APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME.values():
@@ -893,7 +948,8 @@ def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> No
     assert APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES <= DOT_DEBUFF_RUNTIME_STATE_FILES
     assert APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES.isdisjoint(finding_paths)
     assert APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES <= DOT_DEBUFF_RUNTIME_STATE_FILES
-    assert APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES <= finding_paths
+    assert APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES <= DOT_DEBUFF_RUNTIME_STATE_FILES
+    assert APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES.isdisjoint(finding_paths)
     assert all(
         CLASSIFICATION_BY_FILE[path] == "dot/debuff runtime-state read"
         for path in DOT_DEBUFF_RUNTIME_STATE_FILES
@@ -937,6 +993,20 @@ def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> No
             assert referenced_files.isdisjoint(
                 DOT_DEBUFF_RUNTIME_STATE_FILES - APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES
             )
+            continue
+        if helper_name == "MiyabiFrostburnDebuffMirrorReader":
+            assert (
+                APPROVED_HELPER_FILES_BY_NAME[helper_name]
+                & EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES
+            ) == APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES
+            assert (
+                referenced_files & EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES
+            ) == APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES
+            assert referenced_files.isdisjoint(
+                DOT_DEBUFF_RUNTIME_STATE_FILES - APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES
+            )
+            assert referenced_files.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
+            assert referenced_files.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
             continue
         if helper_name == "read_enemy_anomaly_state":
             assert (

@@ -7688,3 +7688,15 @@
 - Next step:
   - Continue to `US-003` Debuff Mirror Read Boundary Or Explicit No-Go; any helper proposal must preserve the characterized read/iteration/error order or record explicit retained No-Go evidence.
 ---
+## 2026-06-19 01:32 +08:00 - US-003
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/enemy_debuff_mirror_read.py`, `zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py`, `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-003-debuff-mirror-read-boundary-or-explicit-no-go.md`, `scripts/ralph/investigations/2026-06-19-US-003-debuff-mirror-read-boundary-go-no-go.md`, `scripts/ralph/checkpoints/2026-06-19-us-003-debuff-mirror-reader-boundary.md`, Ralph evidence / dashboard / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `MiyabiFrostburnDebuffMirrorReader` now replaces only `MiyabiCoreSkill_IceFire.special_judge_logic(...)`'s local frostburn debuff mirror loop.
+  - The reader captures the current `enemy.dynamic.dynamic_debuff_list` mirror at the old read point, then exposes only `has_miyabi_frostburn_debuff()` so branch ordering, non-`Buff` `TypeError`, and exact frostburn index behavior stay pinned.
+- Compatibility retained:
+  - The helper does not mutate or synchronize the debuff mirror, establish a new single source of truth, inspect lifecycle queues, service-locate old containers, publish scheduled events, broadcast listeners, call runtime command ports, expand `BuffRuntimeReadPort`, alter dot runtime registration, rewrite `BuffAddStrategy`, change formulas, or touch validation-runner behavior.
+  - Focused pytest passed with `41 passed, 27 deselected`; scoped mypy passed on `5 source files`.
+  - Event queue semantics, synchronous listener broadcasts, dot runtime registration, same-tick runtime writes, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-004` Vivian Dot Runtime-State Regression Gate; do not broaden this Miyabi-only debuff mirror helper approval.
+---

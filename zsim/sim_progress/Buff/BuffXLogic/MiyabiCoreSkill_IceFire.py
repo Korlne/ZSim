@@ -8,6 +8,7 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_debuff_mirror_read import MiyabiFrostburnDebuffMirrorReader
 from .enemy_edge_state_read import read_enemy_frost_frostbite_edge_state
 
 if TYPE_CHECKING:
@@ -63,7 +64,7 @@ class MiyabiCoreSkill_IceFire(Buff.BuffLogic):
         self.check_record_module()
         self.get_prepared(char_CID=1091, enemy=1, action_stack=1)
         enemy = self.record.enemy
-        debuff_list = enemy.dynamic.dynamic_debuff_list
+        debuff_reader = MiyabiFrostburnDebuffMirrorReader(enemy)
         skill_node: "SkillNode" = kwargs.get("skill_node")
         if skill_node is None:
             return False
@@ -71,14 +72,9 @@ class MiyabiCoreSkill_IceFire(Buff.BuffLogic):
             return False
         if skill_node.skill.element_type != 5:
             return False
-        else:
-            for debuff in debuff_list:
-                if not isinstance(debuff, Buff):
-                    raise TypeError(f"{debuff}不是Buff类！")
-                if debuff.ft.index == "Buff-角色-雅-核心被动-霜灼":
-                    return False
-            else:
-                return True
+        if debuff_reader.has_miyabi_frostburn_debuff():
+            return False
+        return True
 
     def special_exit_logic(self, **kwargs):
         """
