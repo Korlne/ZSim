@@ -7120,3 +7120,15 @@
 - Next step:
   - Continue to `US-006` guardrail and validation integration. Add guardrails only if existing focused tests and validation profiles do not already block unsafe broad-helper expansion.
 ---
+
+## 2026-06-18 13:49 +08:00 - US-006
+- Files changed: `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/run_buff_refactor_validation.py`, `scripts/ralph/plans/slices/us-006-guardrail-and-validation-integration.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/proven-patterns-to-reuse.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 enemy dynamic read guardrail and validation wiring` prepares to replace only the later-approved simple boolean anomaly-read subset by adding classified current-root source guardrail coverage and wiring all PRD-focused tests into the serial `implicit-events` profile.
+  - This story is validation/test/Ralph evidence only; it does not implement a helper, edit live `BuffXLogic`, expand `BuffRuntimeReadPort`, add a runtime write facade, rewrite copied-output/formula behavior, mutate dot runtime state, or delete old containers.
+- Compatibility retained:
+  - Existing simple reads, edge-detection records, copied-output-adjacent handoffs, dot/debuff runtime-state reads, guarded-maintenance overlaps, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, listener broadcasts, scheduled publish ordering, old containers, and formula snapshots remain unchanged.
+  - `.codex_worktrees`, generated logs, Ralph archives/run logs, duplicate historical worktrees, `logs/`, and `results/` remain excluded from current-root guardrail evidence.
+- Next step:
+  - Continue to `US-007` reviewer invariant and completion gate. Keep helper implementation and final handoff docs out of this slice.
+---
