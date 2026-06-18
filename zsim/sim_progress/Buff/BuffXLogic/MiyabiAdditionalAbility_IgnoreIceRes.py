@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_anomaly_map_read import snapshot_enemy_anomaly_states
 
 anomaly_name_list = ["frostbite", "assault", "shock", "burn", "corruption"]
 
@@ -59,7 +60,7 @@ class MiyabiAdditionalAbility_IgnoreIceRes(Buff.BuffLogic):
         action_now = self.record.action_stack.peek()
         enemy = self.record.enemy
 
-        current_anomalies = {name: getattr(enemy.dynamic, name) for name in anomaly_name_list}
+        current_anomalies = snapshot_enemy_anomaly_states(enemy, anomaly_name_list)
         # 获取当前状态
         current_count = sum(current_anomalies.values())
         last_count = sum(self.record.anomaly_state.values())

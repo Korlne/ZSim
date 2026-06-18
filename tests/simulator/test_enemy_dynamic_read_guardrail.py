@@ -44,11 +44,11 @@ CLASSIFICATION_BY_FILE = {
     "zsim/sim_progress/Buff/BuffXLogic/enemy_state_read.py": "approved helper boundary",
     "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py": "delegated anomaly-map read",
     "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveEXStunBonus.py": "guarded-maintenance overlap",
-    "zsim/sim_progress/Buff/BuffXLogic/HailstormShrineIceBonus.py": "same-phase future anomaly-map read",
+    "zsim/sim_progress/Buff/BuffXLogic/HailstormShrineIceBonus.py": "delegated anomaly-map read",
     "zsim/sim_progress/Buff/BuffXLogic/JaneAdditionalAbilityPhyBuildupBonus.py": "simple enemy read",
     "zsim/sim_progress/Buff/BuffXLogic/LinaAdditionalSkillEleDMGBonus.py": "simple enemy read",
     "zsim/sim_progress/Buff/BuffXLogic/MarcatoDesireAtkBonus.py": "simple enemy read",
-    "zsim/sim_progress/Buff/BuffXLogic/MiyabiAdditionalAbility_IgnoreIceRes.py": "same-phase future anomaly-map read",
+    "zsim/sim_progress/Buff/BuffXLogic/MiyabiAdditionalAbility_IgnoreIceRes.py": "delegated anomaly-map read",
     "zsim/sim_progress/Buff/BuffXLogic/Soldier11AdditionalSkillExtraFireDMGBonus.py": "simple enemy read",
     "zsim/sim_progress/Buff/BuffXLogic/TimeweaverApBonus.py": "simple enemy read",
     "zsim/sim_progress/Buff/BuffXLogic/YixuanAdditionalAbilityDmgBonus.py": "simple enemy read",
@@ -160,7 +160,7 @@ MIGRATED_HELPER_FILES_BY_NAME = {
     "read_enemy_stun_edge_state": APPROVED_EDGE_STUN_HELPER_FILES,
     "read_enemy_frost_frostbite_edge_state": APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES,
     "read_enemy_anomaly_state": APPROVED_ANOMALY_MAP_SINGLE_HELPER_FILES,
-    "snapshot_enemy_anomaly_states": set(),
+    "snapshot_enemy_anomaly_states": APPROVED_ANOMALY_MAP_SNAPSHOT_HELPER_FILES,
 }
 
 APPROVED_HELPER_FILES_BY_NAME = {
@@ -191,7 +191,7 @@ APPROVED_HELPER_CLASSIFICATIONS_BY_NAME = {
     "read_enemy_stun_edge_state": {"edge-detection read"},
     "read_enemy_frost_frostbite_edge_state": {"edge-detection read"},
     "read_enemy_anomaly_state": {"delegated anomaly-map read"},
-    "snapshot_enemy_anomaly_states": {"same-phase future anomaly-map read"},
+    "snapshot_enemy_anomaly_states": {"delegated anomaly-map read"},
 }
 
 HELPER_NAMES_BY_FAMILY = {
@@ -233,12 +233,9 @@ DOT_DEBUFF_RUNTIME_STATE_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py",
 }
 
-ANOMALY_MAP_FUTURE_POOL_FILES = {
-    "zsim/sim_progress/Buff/BuffXLogic/HailstormShrineIceBonus.py",
-    "zsim/sim_progress/Buff/BuffXLogic/MiyabiAdditionalAbility_IgnoreIceRes.py",
-}
+ANOMALY_MAP_FUTURE_POOL_FILES: set[str] = set()
 
-DELEGATED_ANOMALY_MAP_HELPER_FILES = APPROVED_ANOMALY_MAP_SINGLE_HELPER_FILES
+DELEGATED_ANOMALY_MAP_HELPER_FILES = APPROVED_ANOMALY_MAP_HELPER_FILES
 
 EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES = (
     DOT_DEBUFF_RUNTIME_STATE_FILES | ANOMALY_MAP_FUTURE_POOL_FILES
@@ -695,13 +692,17 @@ def test_enemy_dynamic_read_guardrail_approves_anomaly_map_helpers_by_exact_path
         for path in DELEGATED_ANOMALY_MAP_HELPER_FILES
     )
     assert references["read_enemy_anomaly_state"]["imports"] == (
-        DELEGATED_ANOMALY_MAP_HELPER_FILES
+        APPROVED_ANOMALY_MAP_SINGLE_HELPER_FILES
     )
     assert references["read_enemy_anomaly_state"]["calls"] == (
-        DELEGATED_ANOMALY_MAP_HELPER_FILES
+        APPROVED_ANOMALY_MAP_SINGLE_HELPER_FILES
     )
-    assert references["snapshot_enemy_anomaly_states"]["imports"] == set()
-    assert references["snapshot_enemy_anomaly_states"]["calls"] == set()
+    assert references["snapshot_enemy_anomaly_states"]["imports"] == (
+        APPROVED_ANOMALY_MAP_SNAPSHOT_HELPER_FILES
+    )
+    assert references["snapshot_enemy_anomaly_states"]["calls"] == (
+        APPROVED_ANOMALY_MAP_SNAPSHOT_HELPER_FILES
+    )
 
 
 def test_enemy_dynamic_read_guardrail_limits_hugo_copied_output_stun_helper_to_exact_file() -> None:
@@ -852,10 +853,7 @@ def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> No
         "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py",
         "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py",
     }
-    assert ANOMALY_MAP_FUTURE_POOL_FILES == {
-        "zsim/sim_progress/Buff/BuffXLogic/HailstormShrineIceBonus.py",
-        "zsim/sim_progress/Buff/BuffXLogic/MiyabiAdditionalAbility_IgnoreIceRes.py",
-    }
+    assert ANOMALY_MAP_FUTURE_POOL_FILES == set()
     assert EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES <= EXPECTED_DIRECT_READ_FILES
     assert EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES <= finding_paths
     assert all(
@@ -881,17 +879,20 @@ def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> No
         if helper_name == "read_enemy_anomaly_state":
             assert (
                 APPROVED_HELPER_FILES_BY_NAME[helper_name]
-                == DELEGATED_ANOMALY_MAP_HELPER_FILES
+                == APPROVED_ANOMALY_MAP_SINGLE_HELPER_FILES
             )
-            assert referenced_files == DELEGATED_ANOMALY_MAP_HELPER_FILES
+            assert referenced_files == APPROVED_ANOMALY_MAP_SINGLE_HELPER_FILES
+            assert referenced_files <= DELEGATED_ANOMALY_MAP_HELPER_FILES
             assert referenced_files.isdisjoint(EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES)
             continue
         if helper_name == "snapshot_enemy_anomaly_states":
             assert (
                 APPROVED_HELPER_FILES_BY_NAME[helper_name]
-                <= ANOMALY_MAP_FUTURE_POOL_FILES
+                == APPROVED_ANOMALY_MAP_SNAPSHOT_HELPER_FILES
             )
-            assert referenced_files == set()
+            assert referenced_files == APPROVED_ANOMALY_MAP_SNAPSHOT_HELPER_FILES
+            assert referenced_files <= DELEGATED_ANOMALY_MAP_HELPER_FILES
+            assert referenced_files.isdisjoint(EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES)
             continue
         assert APPROVED_HELPER_FILES_BY_NAME[helper_name].isdisjoint(
             EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES

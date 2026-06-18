@@ -7606,3 +7606,15 @@
 - Next step:
   - Continue to `US-004` and delegate only the Miyabi anomaly-map snapshot reads if focused state-machine tests and guardrails stay green.
 ---
+## 2026-06-19 00:13 +08:00 - US-004
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/HailstormShrineIceBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/MiyabiAdditionalAbility_IgnoreIceRes.py`, `tests/simulator/test_anomaly_map_xlogic_delegation.py`, `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-004-miyabi-anomaly-map-state-machine-delegation.md`, `scripts/ralph/evidence-ledger-shards/proven-patterns-to-reuse.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `snapshot_enemy_anomaly_states(...)` now replaces only the five-name anomaly-map snapshot reads in `HailstormShrineIceBonus.special_judge_logic(...)` and `MiyabiAdditionalAbility_IgnoreIceRes.special_judge_logic(...)`.
+  - Hailstorm and Miyabi Additional Ability still own `check_preparation(...)`, `JudgeTools.find_exist_buff_dict(...)`, old template identity, lazy record initialization, `action_stack.peek()`, record anomaly-state mutation, disorder/effect counters, and action-tag behavior.
+- Compatibility retained:
+  - Focused tests prove Hailstorm no-change, one-anomaly transition, current two-anomaly `ValueError` short-circuit/no-update, trigger-buff-level action gate, lazy record initialization, helper exactness, and record update order.
+  - Focused tests prove Miyabi no disorder, disorder transition, current two-anomaly `ValueError` no-update, `effect_count` increment/clamp, SNA action-tag consumption, helper exactness, and record update order.
+  - Dot/debuff runtime-state files, scheduled publish, synchronous listener broadcast, runtime command, public formula/read snapshot, old-container cleanup, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-005` Vivian Dot Trigger Pure Judge Delegation; keep dot runtime registration and scheduled publish boundaries outside the pure judge read.
+---
