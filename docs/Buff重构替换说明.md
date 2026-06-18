@@ -7557,3 +7557,16 @@
 - Next step:
   - Continue to `US-009` handoff docs and same-phase pool preservation; keep the copied-output helper outcome and excluded dot/debuff / anomaly-map pool evidence without broadening helper approvals.
 ---
+
+## 2026-06-18 23:22 +08:00 - US-009
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/checkpoints/2026-06-18-us-009-handoff-docs-same-phase-pool.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-009 handoff docs and same-phase pool preservation` replaces stale copied-output / dot-debuff intake routing with final handoff evidence: copied-output predicate helper delegation is implemented / no-reopen for Hugo, Vivian core passive, Vivian cinema 6, and Yanagi; dot/debuff runtime-state and anomaly-map reads remain retained future pool.
+  - This US-009 story is docs/control-plane only. It does not delegate a new production callsite, edit live `BuffXLogic`, change copied-output payloads, formula/calculator behavior, public reader/snapshot APIs, validation-runner behavior, registered routes, performance gates, old containers, runtime writes, or retained compatibility.
+- Compatibility retained:
+  - `get_active_anomaly()`, `DirgeOfDestinyAnomaly`, `spawn_output(...)`, copied-output construction, ratio / AP / formula math, report-state writes, scheduled publish order, listener broadcast ownership and runtime-write boundaries remain caller-owned.
+  - `MiyabiCoreSkill_IceFire.py` and `VivianDotTrigger.py` remain dot/debuff runtime-state reads; `AnomalyDebuffExitJudge.py`, `HailstormShrineIceBonus.py`, and `MiyabiAdditionalAbility_IgnoreIceRes.py` remain anomaly-map / `getattr(...enemy.dynamic, name)` future-pool reads.
+  - Event queue semantics, synchronous listener broadcasts, dot runtime registration, same-tick runtime writes, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules and retained compatibility remain unchanged.
+- Next step:
+  - Generate `BuffXLogic Dot/Debuff Runtime-State And Anomaly-Map Exact Intake`; keep copied-output / formula parity, old containers / lifecycle compatibility, `JudgeTools`, planned-event producer families, registered behavior / performance gates, completed guarded-maintenance surfaces and blocker-only reopen rules as same-phase candidate blocks, not automatic backlog.
+---
