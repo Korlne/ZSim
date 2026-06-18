@@ -7676,3 +7676,15 @@
 - Next step:
   - Continue to `US-002` Miyabi frostburn debuff mirror characterization before any helper or deletion decision; keep Vivian hit-path dot runtime evidence guarded unless a concrete current-root blocker appears.
 ---
+## 2026-06-19 01:21 +08:00 - US-002
+- Files changed: `tests/simulator/test_full_crit_event_adjacent_reader.py`, `scripts/ralph/plans/slices/us-002-miyabi-frostburn-debuff-mirror-characterization.md`, Ralph evidence / dashboard / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 Miyabi IceFire judge characterization` replaces unpinned branch-order confidence with focused tests for the retained debuff mirror read, exact frostburn index rejection, no-scan wrong-character / wrong-element branches, incompatible `skill_node` error behavior, and judge-path no-side-effect boundaries.
+  - This story does not replace a live `BuffXLogic` callsite, add a helper API, expand guardrail approvals, move dot runtime registration, alter scheduled publish behavior, change formula/read surfaces, delete old containers, or change validation-runner behavior.
+- Compatibility retained:
+  - `MiyabiCoreSkill_IceFire.special_judge_logic(...)` still reads `enemy.dynamic.dynamic_debuff_list` as retained debuff mirror / read-model access; tests now pin read timing separately from iteration timing.
+  - `special_exit_logic(...)` keeps the existing `ScheduleDispatchPort.publish_scheduled(...)` before `special_resources(...)` order; `special_hit_logic(...)` keeps `simple_start(...)`, `dy.count`, and `CalculatorBuffAttributeReader.read_full_crit_rate(...)` order through existing focused tests.
+  - Event queue semantics, synchronous listener broadcasts, dot runtime registration, same-tick runtime writes, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-003` Debuff Mirror Read Boundary Or Explicit No-Go; any helper proposal must preserve the characterized read/iteration/error order or record explicit retained No-Go evidence.
+---

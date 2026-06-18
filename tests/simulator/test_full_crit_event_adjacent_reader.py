@@ -4,7 +4,7 @@ import inspect
 import sys
 from dataclasses import dataclass
 from types import SimpleNamespace
-from typing import Any, Sequence, SupportsIndex, cast
+from typing import Any, Iterator, Sequence, SupportsIndex, cast
 
 import pytest
 import zsim.define as define_module
@@ -22,6 +22,7 @@ import zsim.sim_progress.data_struct.schedule_dispatch as schedule_dispatch_modu
 from zsim.sim_progress.Buff import Buff as BuffClass, JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.CannonRotor import CannonRotor
 from zsim.sim_progress.Buff.BuffXLogic.MiyabiCoreSkill_IceFire import (
+    MiyabiCoreSkillIF,
     MiyabiCoreSkill_IceFire,
 )
 from zsim.sim_progress.Buff.BuffXLogic.WoodpeckerElectroSet4_CA import (
@@ -58,6 +59,79 @@ class _FailFastEventList(list[object]):
 class _FailFastDispatchPort:
     def publish_scheduled(self, event: object) -> None:
         raise AssertionError("full crit reader tests should not publish scheduled events")
+
+
+class _FailFastMiyabiJudgeRuntimeCommandPort:
+    def __getattr__(self, name: str) -> object:
+        raise AssertionError("Miyabi IceFire judge should not issue runtime commands")
+
+
+class _FailFastMiyabiJudgeDotRuntimeState:
+    def __getattr__(self, name: str) -> object:
+        raise AssertionError("Miyabi IceFire judge should not mutate dot runtime state")
+
+    def __setattr__(self, name: str, value: object) -> None:
+        raise AssertionError("Miyabi IceFire judge should not mutate dot runtime state")
+
+
+class _DebuffMirrorProbe:
+    def __init__(
+        self,
+        call_order: list[object],
+        entries: Sequence[object],
+        *,
+        fail_on_iter: bool = False,
+    ) -> None:
+        self._call_order = call_order
+        self._entries = list(entries)
+        self._fail_on_iter = fail_on_iter
+        self.iterations = 0
+
+    def __iter__(self) -> Iterator[object]:
+        self._call_order.append("dynamic_debuff_list.iter")
+        self.iterations += 1
+        if self._fail_on_iter:
+            raise AssertionError("Miyabi IceFire judge should not iterate debuffs here")
+        return iter(self._entries)
+
+
+class _DynamicDebuffMirrorReadProbe:
+    def __init__(self, call_order: list[object], mirror: _DebuffMirrorProbe) -> None:
+        self._call_order = call_order
+        self._mirror = mirror
+
+    @property
+    def dynamic_debuff_list(self) -> _DebuffMirrorProbe:
+        self._call_order.append("dynamic_debuff_list.read")
+        return self._mirror
+
+
+class _SkillElementReadProbe:
+    def __init__(self, call_order: list[object], element_type: int) -> None:
+        self._call_order = call_order
+        self._element_type = element_type
+
+    @property
+    def element_type(self) -> int:
+        self._call_order.append("skill_node.skill.element_type")
+        return self._element_type
+
+
+class _SkillNodeReadProbe:
+    def __init__(self, call_order: list[object], *, char_name: str, element_type: int) -> None:
+        self._call_order = call_order
+        self._char_name = char_name
+        self._skill = _SkillElementReadProbe(call_order, element_type)
+
+    @property
+    def char_name(self) -> str:
+        self._call_order.append("skill_node.char_name")
+        return self._char_name
+
+    @property
+    def skill(self) -> _SkillElementReadProbe:
+        self._call_order.append("skill_node.skill")
+        return self._skill
 
 
 class _FakeRng:
@@ -303,6 +377,116 @@ def _install_rng_service_boundary_guards(
         "create_schedule_dispatch_port",
         fail_create_schedule_dispatch_port,
     )
+
+
+def _install_miyabi_icefire_judge_side_effect_guards(
+    monkeypatch: pytest.MonkeyPatch,
+    sim_instance: SimpleNamespace,
+) -> None:
+    def fail_change_process_state(*args: object, **kwargs: object) -> None:
+        raise AssertionError("Miyabi IceFire judge should not change process state")
+
+    def fail_broadcast_event(*args: object, **kwargs: object) -> None:
+        raise AssertionError("Miyabi IceFire judge should not broadcast listener events")
+
+    def fail_create_runtime_command_port(*args: object, **kwargs: object) -> object:
+        raise AssertionError("Miyabi IceFire judge should not create RuntimeCommandPort")
+
+    def fail_create_legacy_buff_runtime_facade(*args: object, **kwargs: object) -> object:
+        raise AssertionError("Miyabi IceFire judge should not create LegacyBuffRuntimeFacade")
+
+    def fail_create_buff_runtime_read_port(*args: object, **kwargs: object) -> object:
+        raise AssertionError("Miyabi IceFire judge should not create BuffRuntimeReadPort")
+
+    def fail_create_schedule_dispatch_port(*args: object, **kwargs: object) -> object:
+        raise AssertionError("Miyabi IceFire judge should not create ScheduleDispatchPort")
+
+    sim_instance.schedule_data.event_list = _FailFastEventList()
+    sim_instance.schedule_data.change_process_state = fail_change_process_state
+    sim_instance.listener_manager = SimpleNamespace(broadcast_event=fail_broadcast_event)
+    sim_instance.runtime_command_port = _FailFastMiyabiJudgeRuntimeCommandPort()
+    sim_instance.dot_runtime_state = _FailFastMiyabiJudgeDotRuntimeState()
+
+    monkeypatch.setattr(
+        runtime_command_module,
+        "create_runtime_command_port",
+        fail_create_runtime_command_port,
+    )
+    monkeypatch.setattr(
+        scheduled_event_module,
+        "create_runtime_command_port",
+        fail_create_runtime_command_port,
+    )
+    monkeypatch.setattr(
+        buff_runtime_module,
+        "create_legacy_buff_runtime_facade",
+        fail_create_legacy_buff_runtime_facade,
+    )
+    monkeypatch.setattr(
+        buff_runtime_module,
+        "create_buff_runtime_read_port",
+        fail_create_buff_runtime_read_port,
+    )
+    monkeypatch.setattr(
+        scheduled_event_module,
+        "create_buff_runtime_read_port",
+        fail_create_buff_runtime_read_port,
+    )
+    monkeypatch.setattr(
+        schedule_dispatch_module,
+        "create_schedule_dispatch_port",
+        fail_create_schedule_dispatch_port,
+    )
+    monkeypatch.setattr(
+        miyabi_module,
+        "create_schedule_dispatch_port",
+        fail_create_schedule_dispatch_port,
+    )
+
+
+def _make_miyabi_debuff(index: str) -> BuffClass:
+    debuff = cast(Any, object.__new__(BuffClass))
+    debuff.ft = SimpleNamespace(index=index)
+    return cast(BuffClass, debuff)
+
+
+def _make_miyabi_icefire_judge_logic(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    enemy_dynamic: object | None = None,
+    dynamic_debuff_list: object | None = None,
+    call_order: list[object] | None = None,
+) -> tuple[_FullCritFixture, _StateSyncBuffProbe, MiyabiCoreSkill_IceFire, list[dict[str, object]]]:
+    fixture = _make_full_crit_fixture(name="雅", cid=1091, crit_rate=0.3)
+    if enemy_dynamic is not None:
+        fixture.enemy.dynamic = enemy_dynamic
+    else:
+        fixture.enemy.dynamic.dynamic_debuff_list = (
+            [] if dynamic_debuff_list is None else dynamic_debuff_list
+        )
+    active_buff = _StateSyncBuffProbe(
+        index="miyabi-icefire",
+        tick=72,
+        calls=[],
+        initial_count=12.0,
+    )
+    _install_miyabi_icefire_judge_side_effect_guards(monkeypatch, active_buff.sim_instance)
+    logic = MiyabiCoreSkill_IceFire(active_buff)
+    logic.record = SimpleNamespace(char=fixture.char, enemy=fixture.enemy)
+    get_prepared_calls: list[dict[str, object]] = []
+
+    def fake_check_record_module() -> None:
+        if call_order is not None:
+            call_order.append("check_record_module")
+
+    def fake_get_prepared(**kwargs: object) -> None:
+        if call_order is not None:
+            call_order.append(("get_prepared", kwargs))
+        get_prepared_calls.append(kwargs)
+
+    monkeypatch.setattr(logic, "check_record_module", fake_check_record_module)
+    monkeypatch.setattr(logic, "get_prepared", fake_get_prepared)
+    return fixture, active_buff, logic, get_prepared_calls
 
 
 def _full_crit_reader_personal_and_legacy_values(
@@ -579,7 +763,7 @@ def test_miyabi_icefire_full_crit_read_keeps_old_count_adjustment_order(
 
 
 @pytest.mark.parametrize(
-    ("skill_node", "debuff_list", "expected"),
+    ("skill_node", "debuff_indexes", "expected"),
     [
         pytest.param(None, [], False, id="no-skill-node"),
         pytest.param(
@@ -596,39 +780,34 @@ def test_miyabi_icefire_full_crit_read_keeps_old_count_adjustment_order(
         ),
         pytest.param(
             {"element_type": 5},
-            ["frostburn"],
+            ["Buff-角色-雅-核心被动-霜灼"],
             False,
-            id="frostburn-debuff",
+            id="exact-frostburn-debuff",
+        ),
+        pytest.param(
+            {"element_type": 5},
+            ["Buff-角色-雅-核心被动-霜灼-近似"],
+            True,
+            id="near-miss-frostburn-index",
+        ),
+        pytest.param(
+            {"element_type": 5},
+            ["Buff-角色-雅-核心被动-霜寒", "Buff-角色-雅-核心被动-霜灼"],
+            False,
+            id="exact-frostburn-after-nonmatching-buff",
         ),
     ],
 )
 def test_miyabi_icefire_judge_gates_skill_element_and_debuff(
     monkeypatch: pytest.MonkeyPatch,
     skill_node: dict[str, int] | None,
-    debuff_list: list[str],
+    debuff_indexes: list[str],
     expected: bool,
 ) -> None:
-    fixture = _make_full_crit_fixture(name="雅", cid=1091, crit_rate=0.3)
-    frostburn_debuff = object.__new__(BuffClass)
-    frostburn_debuff.ft = SimpleNamespace(index="Buff-角色-雅-核心被动-霜灼")
-    dynamic_debuff_list = [
-        frostburn_debuff if debuff == "frostburn" else debuff for debuff in debuff_list
-    ]
-    fixture.enemy.dynamic.dynamic_debuff_list = dynamic_debuff_list
-    active_buff = _StateSyncBuffProbe(
-        index="miyabi-icefire",
-        tick=72,
-        calls=[],
-        initial_count=12.0,
-    )
-    logic = MiyabiCoreSkill_IceFire(active_buff)
-    logic.record = SimpleNamespace(char=fixture.char, enemy=fixture.enemy)
-    get_prepared_calls: list[dict[str, object]] = []
-    monkeypatch.setattr(logic, "check_record_module", lambda: None)
-    monkeypatch.setattr(
-        logic,
-        "get_prepared",
-        lambda **kwargs: get_prepared_calls.append(kwargs),
+    dynamic_debuff_list = [_make_miyabi_debuff(index) for index in debuff_indexes]
+    fixture, active_buff, logic, get_prepared_calls = _make_miyabi_icefire_judge_logic(
+        monkeypatch,
+        dynamic_debuff_list=dynamic_debuff_list,
     )
     node = (
         None
@@ -646,11 +825,113 @@ def test_miyabi_icefire_judge_gates_skill_element_and_debuff(
     assert active_buff.sim_instance.schedule_data.event_list == []
 
 
-def test_miyabi_icefire_judge_rejects_wrong_character_before_debuff_scan(
+def test_miyabi_icefire_judge_pins_current_read_and_iteration_order(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    fixture = _make_full_crit_fixture(name="雅", cid=1091, crit_rate=0.3)
-    fixture.enemy.dynamic.dynamic_debuff_list = ["not-a-buff"]
+    call_order: list[object] = []
+    mirror = _DebuffMirrorProbe(
+        call_order,
+        [_make_miyabi_debuff("Buff-角色-雅-核心被动-霜寒")],
+    )
+    dynamic = _DynamicDebuffMirrorReadProbe(call_order, mirror)
+    fixture, active_buff, logic, get_prepared_calls = _make_miyabi_icefire_judge_logic(
+        monkeypatch,
+        enemy_dynamic=dynamic,
+        call_order=call_order,
+    )
+    node = _SkillNodeReadProbe(
+        call_order,
+        char_name=fixture.char.NAME,
+        element_type=5,
+    )
+
+    result = logic.special_judge_logic(skill_node=node)
+
+    assert result is True
+    assert get_prepared_calls == [{"char_CID": 1091, "enemy": 1, "action_stack": 1}]
+    assert call_order == [
+        "check_record_module",
+        ("get_prepared", {"char_CID": 1091, "enemy": 1, "action_stack": 1}),
+        "dynamic_debuff_list.read",
+        "skill_node.char_name",
+        "skill_node.skill",
+        "skill_node.skill.element_type",
+        "dynamic_debuff_list.iter",
+    ]
+    assert mirror.iterations == 1
+    assert active_buff.sim_instance.schedule_data.event_list == []
+
+
+@pytest.mark.parametrize(
+    ("char_name", "element_type"),
+    [
+        pytest.param("不是雅", 5, id="wrong-character"),
+        pytest.param("雅", 3, id="wrong-element"),
+    ],
+)
+def test_miyabi_icefire_judge_wrong_character_or_element_does_not_scan_debuffs(
+    monkeypatch: pytest.MonkeyPatch,
+    char_name: str,
+    element_type: int,
+) -> None:
+    call_order: list[object] = []
+    mirror = _DebuffMirrorProbe(call_order, ["not-a-buff"], fail_on_iter=True)
+    dynamic = _DynamicDebuffMirrorReadProbe(call_order, mirror)
+    fixture, active_buff, logic, get_prepared_calls = _make_miyabi_icefire_judge_logic(
+        monkeypatch,
+        enemy_dynamic=dynamic,
+        call_order=call_order,
+    )
+    node = _SkillNodeReadProbe(
+        call_order,
+        char_name=char_name,
+        element_type=element_type,
+    )
+
+    result = logic.special_judge_logic(skill_node=node)
+
+    assert result is False
+    assert get_prepared_calls == [{"char_CID": 1091, "enemy": 1, "action_stack": 1}]
+    assert mirror.iterations == 0
+    assert "dynamic_debuff_list.iter" not in call_order
+    if char_name != fixture.char.NAME:
+        assert "skill_node.skill" not in call_order
+    assert active_buff.sim_instance.schedule_data.event_list == []
+
+
+@pytest.mark.parametrize(
+    ("skill_node", "missing_attribute"),
+    [
+        pytest.param(object(), "char_name", id="missing-char-name"),
+        pytest.param(SimpleNamespace(char_name="雅"), "skill", id="missing-skill"),
+    ],
+)
+def test_miyabi_icefire_judge_preserves_incompatible_skill_node_attribute_error(
+    monkeypatch: pytest.MonkeyPatch,
+    skill_node: object,
+    missing_attribute: str,
+) -> None:
+    call_order: list[object] = []
+    mirror = _DebuffMirrorProbe(call_order, ["not-a-buff"], fail_on_iter=True)
+    dynamic = _DynamicDebuffMirrorReadProbe(call_order, mirror)
+    _, active_buff, logic, get_prepared_calls = _make_miyabi_icefire_judge_logic(
+        monkeypatch,
+        enemy_dynamic=dynamic,
+        call_order=call_order,
+    )
+
+    with pytest.raises(AttributeError, match=missing_attribute):
+        logic.special_judge_logic(skill_node=skill_node)
+
+    assert get_prepared_calls == [{"char_CID": 1091, "enemy": 1, "action_stack": 1}]
+    assert mirror.iterations == 0
+    assert "dynamic_debuff_list.iter" not in call_order
+    assert active_buff.sim_instance.schedule_data.event_list == []
+
+
+def test_miyabi_icefire_check_record_module_preserves_old_buff_and_record_identity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     active_buff = _StateSyncBuffProbe(
         index="miyabi-icefire",
         tick=72,
@@ -658,13 +939,35 @@ def test_miyabi_icefire_judge_rejects_wrong_character_before_debuff_scan(
         initial_count=12.0,
     )
     logic = MiyabiCoreSkill_IceFire(active_buff)
-    logic.record = SimpleNamespace(char=fixture.char, enemy=fixture.enemy)
-    get_prepared_calls: list[dict[str, object]] = []
-    monkeypatch.setattr(logic, "check_record_module", lambda: None)
+    buff_0 = SimpleNamespace(history=SimpleNamespace(record=None))
+
     monkeypatch.setattr(
-        logic,
-        "get_prepared",
-        lambda **kwargs: get_prepared_calls.append(kwargs),
+        JudgeTools,
+        "find_exist_buff_dict",
+        lambda *, sim_instance: {"雅": {active_buff.ft.index: buff_0}},
+    )
+
+    logic.check_record_module()
+
+    assert logic.buff_0 is buff_0
+    assert logic.record is buff_0.history.record
+    assert isinstance(logic.record, MiyabiCoreSkillIF)
+    first_record = logic.record
+
+    logic.check_record_module()
+
+    assert logic.buff_0 is buff_0
+    assert logic.record is first_record
+    assert buff_0.history.record is first_record
+    assert active_buff.sim_instance.schedule_data.event_list == []
+
+
+def test_miyabi_icefire_judge_rejects_wrong_character_before_debuff_scan(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture, active_buff, logic, get_prepared_calls = _make_miyabi_icefire_judge_logic(
+        monkeypatch,
+        dynamic_debuff_list=["not-a-buff"],
     )
 
     result = logic.special_judge_logic(
@@ -684,22 +987,9 @@ def test_miyabi_icefire_judge_rejects_wrong_character_before_debuff_scan(
 def test_miyabi_icefire_judge_raises_for_non_buff_debuff(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    fixture = _make_full_crit_fixture(name="雅", cid=1091, crit_rate=0.3)
-    fixture.enemy.dynamic.dynamic_debuff_list = ["not-a-buff"]
-    active_buff = _StateSyncBuffProbe(
-        index="miyabi-icefire",
-        tick=72,
-        calls=[],
-        initial_count=12.0,
-    )
-    logic = MiyabiCoreSkill_IceFire(active_buff)
-    logic.record = SimpleNamespace(char=fixture.char, enemy=fixture.enemy)
-    get_prepared_calls: list[dict[str, object]] = []
-    monkeypatch.setattr(logic, "check_record_module", lambda: None)
-    monkeypatch.setattr(
-        logic,
-        "get_prepared",
-        lambda **kwargs: get_prepared_calls.append(kwargs),
+    fixture, active_buff, logic, get_prepared_calls = _make_miyabi_icefire_judge_logic(
+        monkeypatch,
+        dynamic_debuff_list=["not-a-buff"],
     )
 
     with pytest.raises(TypeError, match="不是Buff类"):
