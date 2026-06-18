@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_edge_state_read import read_enemy_frozen_edge_state
 
 
 class BranchBladeSongCritRateBonusRecord:
@@ -45,10 +46,7 @@ class BranchBladeSongCritRateBonus(Buff.BuffLogic):
         self.check_record_module()
         self.get_prepared(equipper="折枝剑歌", enemy=1)
         tick = JudgeTools.find_tick(sim_instance=self.buff_instance.sim_instance)
-        if self.record.enemy.dynamic.frozen is None:
-            this_tick_freez_statement = False
-        else:
-            this_tick_freez_statement = self.record.enemy.dynamic.frozen
+        this_tick_freez_statement = read_enemy_frozen_edge_state(self.record.enemy)
         if this_tick_freez_statement != self.record.last_tick_freez_statement[1]:
             self.record.last_tick_freez_statement = tick, this_tick_freez_statement
             return True

@@ -17,6 +17,7 @@ from zsim.sim_progress.Buff.BuffXLogic import WeepingGeminiApBonus as weeping_mo
 from zsim.sim_progress.Buff.BuffXLogic import (  # noqa: E402
     LighterUniqueSkillStunTimeLimitBonus as lighter_module,
 )
+from zsim.sim_progress.Buff.BuffXLogic import PolarMetalFreezeBonus as polar_module  # noqa: E402
 from zsim.sim_progress.Buff.BuffXLogic.BranchBladeSongCritRateBonus import (  # noqa: E402
     BranchBladeSongCritRateBonus,
     BranchBladeSongCritRateBonusRecord,
@@ -24,6 +25,10 @@ from zsim.sim_progress.Buff.BuffXLogic.BranchBladeSongCritRateBonus import (  # 
 from zsim.sim_progress.Buff.BuffXLogic.LighterUniqueSkillStunTimeLimitBonus import (  # noqa: E402
     LighterUniqueSkillStunTimeLimitBonus,
     LighterUniqueSkillStunTimeRecord,
+)
+from zsim.sim_progress.Buff.BuffXLogic.PolarMetalFreezeBonus import (  # noqa: E402
+    PolarMetalFreezeBonus,
+    PolarMetalRecord,
 )
 from zsim.sim_progress.Buff.BuffXLogic.WeepingGeminiApBonus import (  # noqa: E402
     WeepingGeminiApBonus,
@@ -157,7 +162,41 @@ def _make_branch_fixture(
         prepared_calls.append(kwargs)
         logic.record.enemy = enemy
 
-    logic.get_prepared = fake_get_prepared
+    monkeypatch.setattr(logic, "get_prepared", fake_get_prepared)
+    return _EdgeFixture(logic, active_buff, buff_0, enemy, prepared_calls)
+
+
+def _make_polar_fixture(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    frozen: bool | None,
+    tick: int = 421,
+) -> _EdgeFixture:
+    index = "Buff-驱动盘-极地重金属-冰属性伤害提高"
+    active_buff = _CurrentBuffProbe(index=index, tick=tick)
+    buff_0 = _BuffTemplate(index=index)
+    _install_owner_lookup(
+        monkeypatch,
+        module=polar_module,
+        owner="测试装备者",
+        index=index,
+        buff_0=buff_0,
+        equipper="测试装备者",
+    )
+    monkeypatch.setattr(
+        polar_module.JudgeTools,
+        "find_tick",
+        lambda sim_instance=None: tick,
+    )
+    enemy = SimpleNamespace(dynamic=SimpleNamespace(frozen=frozen))
+    logic = PolarMetalFreezeBonus(active_buff)
+    prepared_calls: list[dict[str, object]] = []
+
+    def fake_get_prepared(**kwargs: object) -> None:
+        prepared_calls.append(kwargs)
+        logic.record.enemy = enemy
+
+    monkeypatch.setattr(logic, "get_prepared", fake_get_prepared)
     return _EdgeFixture(logic, active_buff, buff_0, enemy, prepared_calls)
 
 
@@ -190,7 +229,7 @@ def _make_weeping_fixture(
         logic.record.enemy = enemy
         logic.record.sub_exist_buff_dict = sub_exist_buff_dict
 
-    logic.get_prepared = fake_get_prepared
+    monkeypatch.setattr(logic, "get_prepared", fake_get_prepared)
     return _EdgeFixture(logic, active_buff, buff_0, enemy, prepared_calls)
 
 
@@ -217,7 +256,7 @@ def _make_lighter_fixture(
         prepared_calls.append(kwargs)
         logic.record.enemy = enemy
 
-    logic.get_prepared = fake_get_prepared
+    monkeypatch.setattr(logic, "get_prepared", fake_get_prepared)
     return _EdgeFixture(logic, active_buff, buff_0, enemy, prepared_calls)
 
 
@@ -258,6 +297,41 @@ def test_branch_blade_song_freeze_state_change_updates_snapshot_before_positive_
 
     assert fixture.logic.buff_0 is fixture.buff_0
     assert fixture.logic.record.last_tick_freez_statement == (322, True)
+    assert fixture.active_buff.simple_start_calls == []
+    _assert_no_runtime_boundaries_touched(fixture.active_buff)
+
+
+def test_polar_metal_freeze_snapshot_lazy_record_and_unchanged_no_op(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_polar_fixture(monkeypatch, frozen=None, tick=421)
+
+    assert fixture.logic.special_judge_logic() is False
+
+    assert fixture.logic.buff_0 is fixture.buff_0
+    assert fixture.logic.record is fixture.buff_0.history.record
+    assert isinstance(fixture.logic.record, PolarMetalRecord)
+    assert fixture.logic.record.last_tick_freez_statement == (421, False)
+    assert fixture.prepared_calls == [{"enemy": 1}]
+    assert fixture.active_buff.simple_start_calls == []
+    _assert_no_runtime_boundaries_touched(fixture.active_buff)
+
+    existing_record = fixture.logic.record
+    fixture.enemy.dynamic.frozen = False
+    assert fixture.logic.special_judge_logic() is False
+    assert fixture.logic.record is existing_record
+    assert fixture.logic.record.last_tick_freez_statement == (421, False)
+
+
+def test_polar_metal_freeze_state_change_updates_snapshot_before_positive_return(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_polar_fixture(monkeypatch, frozen=True, tick=422)
+
+    assert fixture.logic.special_judge_logic() is True
+
+    assert fixture.logic.buff_0 is fixture.buff_0
+    assert fixture.logic.record.last_tick_freez_statement == (422, True)
     assert fixture.active_buff.simple_start_calls == []
     _assert_no_runtime_boundaries_touched(fixture.active_buff)
 

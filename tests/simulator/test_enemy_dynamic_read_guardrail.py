@@ -39,6 +39,7 @@ ENEMY_DYNAMIC_READ_NAMES = {
 CLASSIFICATION_BY_FILE = {
     "zsim/sim_progress/Buff/BuffXLogic/ElectroLipGlossAtkAndDmgBonus.py": "simple enemy read",
     "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_read.py": "approved helper boundary",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_edge_state_read.py": "approved helper boundary",
     "zsim/sim_progress/Buff/BuffXLogic/enemy_state_read.py": "approved helper boundary",
     "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveEXStunBonus.py": "guarded-maintenance overlap",
     "zsim/sim_progress/Buff/BuffXLogic/JaneAdditionalAbilityPhyBuildupBonus.py": "simple enemy read",
@@ -82,16 +83,30 @@ APPROVED_STUN_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
 }
 
+APPROVED_EDGE_FROZEN_HELPER_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritRateBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/PolarMetalFreezeBonus.py",
+}
+
 APPROVED_HELPER_FILES_BY_NAME = {
     "read_enemy_anomaly_active": APPROVED_ANOMALY_HELPER_FILES,
     "read_enemy_shock_active": APPROVED_SHOCK_HELPER_FILES,
     "read_enemy_stun_active": APPROVED_STUN_HELPER_FILES,
+    "read_enemy_frozen_edge_state": APPROVED_EDGE_FROZEN_HELPER_FILES,
+}
+
+APPROVED_HELPER_CLASSIFICATION_BY_NAME = {
+    "read_enemy_anomaly_active": "simple enemy read",
+    "read_enemy_shock_active": "simple enemy read",
+    "read_enemy_stun_active": "simple enemy read",
+    "read_enemy_frozen_edge_state": "edge-detection read",
 }
 
 MIGRATED_HELPER_FILES = (
     APPROVED_ANOMALY_HELPER_FILES
     | APPROVED_SHOCK_HELPER_FILES
     | APPROVED_STUN_HELPER_FILES
+    | APPROVED_EDGE_FROZEN_HELPER_FILES
 )
 
 EDGE_DETECTION_FILES = {
@@ -312,27 +327,48 @@ def test_enemy_dynamic_read_guardrail_classifies_all_current_root_matches() -> N
 
 def test_enemy_dynamic_read_guardrail_limits_helper_to_approved_subset() -> None:
     references = _collect_helper_reference_paths()
-    simple_read_files = {
-        path
-        for path, classification in CLASSIFICATION_BY_FILE.items()
-        if classification == "simple enemy read"
-    }
 
     assert CLASSIFICATION_BY_FILE[
         "zsim/sim_progress/Buff/BuffXLogic/enemy_state_read.py"
     ] == "approved helper boundary"
     for helper_name, approved_files in APPROVED_HELPER_FILES_BY_NAME.items():
         helper_references = references[helper_name]
+        approved_classification = APPROVED_HELPER_CLASSIFICATION_BY_NAME[helper_name]
+        classified_files = {
+            path
+            for path, classification in CLASSIFICATION_BY_FILE.items()
+            if classification == approved_classification
+        }
 
         assert helper_references["imports"] == approved_files
         assert helper_references["calls"] == approved_files
-        assert approved_files < simple_read_files
-        assert helper_references["imports"].isdisjoint(simple_read_files - approved_files)
-        assert helper_references["calls"].isdisjoint(simple_read_files - approved_files)
+        if approved_classification == "simple enemy read":
+            assert approved_files < classified_files
+        else:
+            assert approved_files <= classified_files
+        assert helper_references["imports"].isdisjoint(classified_files - approved_files)
+        assert helper_references["calls"].isdisjoint(classified_files - approved_files)
+        assert all(
+            CLASSIFICATION_BY_FILE[path] == approved_classification
+            for path in helper_references["imports"] | helper_references["calls"]
+        )
+
+
+def test_enemy_dynamic_read_guardrail_limits_frozen_edge_helper_to_exact_files() -> None:
+    references = _collect_helper_reference_paths()["read_enemy_frozen_edge_state"]
+    helper_references = references["imports"] | references["calls"]
+
+    assert references["imports"] == APPROVED_EDGE_FROZEN_HELPER_FILES
+    assert references["calls"] == APPROVED_EDGE_FROZEN_HELPER_FILES
+    assert helper_references <= EDGE_DETECTION_FILES
+    assert helper_references.isdisjoint(
+        EDGE_DETECTION_FILES - APPROVED_EDGE_FROZEN_HELPER_FILES
+    )
+    assert helper_references.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
+    assert helper_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
     assert all(
-        CLASSIFICATION_BY_FILE[path] == "simple enemy read"
-        for helper_references in references.values()
-        for path in helper_references["imports"] | helper_references["calls"]
+        CLASSIFICATION_BY_FILE[path] == "edge-detection read"
+        for path in helper_references
     )
 
 

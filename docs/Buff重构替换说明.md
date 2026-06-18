@@ -7382,3 +7382,15 @@
 - Next step:
   - Continue to `US-003` and characterize/delegate only frozen current-state reads after proving tick lookup, previous-state comparison, and record mutation stay in owning files.
 ---
+
+## 2026-06-18 19:47 +08:00 - US-003
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritRateBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/PolarMetalFreezeBonus.py`, `tests/simulator/test_freeze_stun_edge_detection_characterization.py`, `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-003-frozen-state-change-delegation.md`, `scripts/ralph/plans/slices/us-004-stun-falling-edge-delegation.md`, `scripts/ralph/investigations/2026-06-18-US-003-frozen-delegation-mypy-method-assign.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `read_enemy_frozen_edge_state(...)` now replaces only the current `enemy.dynamic.frozen` read / `None -> False` normalization in `BranchBladeSongCritRateBonus.special_judge_logic(...)` and `PolarMetalFreezeBonus.special_judge_logic(...)`.
+  - Previous-state comparison, tick lookup, `last_tick_freez_statement` mutation, equipper lookup, `get_prepared(...)`, and return branching remain in the owning files.
+- Compatibility retained:
+  - Stun and frost/frostbite edge files are not delegated in this story.
+  - `enemy_anomaly_read.py`, `enemy_state_read.py`, copied-output-adjacent files, dot/debuff runtime-state files, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-004` and characterize/delegate only stun falling-edge current reads if the focused tests prove caller-owned previous-state semantics remain local.
+---
