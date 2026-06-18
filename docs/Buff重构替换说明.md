@@ -7508,3 +7508,15 @@
 - Next step:
   - Continue to `US-005` and delegate only Vivian copied-output anomaly predicates if focused Vivian dispatch tests and the guardrail stay green.
 ---
+
+## 2026-06-18 22:42 +08:00 - US-005
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py`, `zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py`, `tests/simulator/test_vivian_core_passive_trigger_dispatch.py`, `tests/simulator/test_vivian_cinema6_trigger_dispatch.py`, `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-005-vivian-copied-output-anomaly-predicate-delegation.md`, `scripts/ralph/plans/slices/us-006-yanagi-polarity-disorder-predicate-delegation.md`, `scripts/ralph/investigations/2026-06-18-US-005-vivian-copied-output-anomaly-predicate-delegation.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `read_enemy_anomaly_active(...)` now replaces only the judge-time anomaly-active predicates in `VivianCorePassiveTrigger.py` and `VivianCinema6Trigger.py`.
+  - Vivian files still own `get_active_anomaly()`, copied anomaly identity, `DirgeOfDestinyAnomaly` construction, AP / ratio math, `anomaly_dmg_ratio`, dispatch payload, schedule priority, and report behavior.
+- Compatibility retained:
+  - Public formula methods, `MultiplierData` / `MulData` / `DynamicStatement`, `_CalculatorReadSnapshot`, copied-output payload fields, listener/runtime boundaries, raw queue boundaries, dot runtime registration, same-tick runtime writes, old containers, validation-runner behavior, registered routes, performance gates, formula/calculator behavior, completed helper no-reopen rules, and retained compatibility remain unchanged.
+  - Yanagi copied-output anomaly predicate, dot/debuff runtime-state files, and anomaly-map future-pool files remain outside this Vivian-only helper delegation.
+- Next step:
+  - Continue to `US-006` and delegate only Yanagi's anomaly-active predicate if focused Yanagi dispatch tests and the guardrail stay green.
+---

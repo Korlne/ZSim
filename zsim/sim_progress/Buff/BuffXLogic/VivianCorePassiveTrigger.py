@@ -8,6 +8,7 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_anomaly_read import read_enemy_anomaly_active
 
 
 class VivianCorePassiveTriggerRecord:
@@ -72,7 +73,7 @@ class VivianCorePassiveTrigger(Buff.BuffLogic):
             )
         if skill_node.skill_tag != "1331_CoAttack_A":
             return False
-        if not self.record.enemy.dynamic.is_under_anomaly():
+        if not read_enemy_anomaly_active(self.record.enemy):
             return False
         if self.record.last_update_node is None:
             self.record.last_update_node = skill_node

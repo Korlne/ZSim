@@ -64,6 +64,32 @@ class _DynamicReadProbe:
         return self.active_anomalies
 
 
+def _patch_anomaly_helper(monkeypatch: pytest.MonkeyPatch) -> list[object]:
+    helper_calls: list[object] = []
+
+    def fake_read_enemy_anomaly_active(enemy: Any) -> bool:
+        helper_calls.append(enemy)
+        return bool(enemy.dynamic.is_under_anomaly())
+
+    monkeypatch.setattr(
+        trigger_module,
+        "read_enemy_anomaly_active",
+        fake_read_enemy_anomaly_active,
+    )
+    return helper_calls
+
+
+def _block_anomaly_helper(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail_read_enemy_anomaly_active(enemy: object) -> bool:
+        raise AssertionError("VivianCorePassiveTrigger xeffect should own active anomaly reads")
+
+    monkeypatch.setattr(
+        trigger_module,
+        "read_enemy_anomaly_active",
+        fail_read_enemy_anomaly_active,
+    )
+
+
 def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("VivianCorePassiveTrigger should not read raw event_list")
@@ -172,6 +198,7 @@ def test_vivian_core_passive_publishes_dirge_anomaly_via_dispatch_port(
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
     monkeypatch.setattr(trigger_module, "VIVIAN_REPORT", True)
     monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
+    _block_anomaly_helper(monkeypatch)
     _patch_runtime_boundary_guards(monkeypatch)
     dispatch_factory_calls: list[object] = []
 
@@ -258,6 +285,7 @@ def test_vivian_core_passive_judge_wrong_skill_is_noop(
         "create_schedule_dispatch_port",
         lambda *, sim_instance: dispatch_port,
     )
+    helper_calls = _patch_anomaly_helper(monkeypatch)
     _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
 
@@ -269,6 +297,7 @@ def test_vivian_core_passive_judge_wrong_skill_is_noop(
     )
 
     assert dynamic.calls == []
+    assert helper_calls == []
     assert record.last_update_node is None
     assert dispatch_port.events == []
     assert schedule_data.event_list == []
@@ -299,11 +328,13 @@ def test_vivian_core_passive_judge_no_anomaly_does_not_publish_or_update_node(
         "create_schedule_dispatch_port",
         lambda *, sim_instance: dispatch_port,
     )
+    helper_calls = _patch_anomaly_helper(monkeypatch)
     _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
 
     assert logic.special_judge_logic(skill_node=_build_skill_node()) is False
 
+    assert helper_calls == [enemy]
     assert dynamic.calls == ["is_under_anomaly"]
     assert record.last_update_node is None
     assert dispatch_port.events == []
@@ -330,6 +361,7 @@ def test_vivian_core_passive_judge_active_anomaly_updates_node_once(
     record.enemy = enemy
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
+    helper_calls = _patch_anomaly_helper(monkeypatch)
     _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
 
@@ -338,6 +370,7 @@ def test_vivian_core_passive_judge_active_anomaly_updates_node_once(
     assert logic.special_judge_logic(skill_node=skill_node) is True
     assert logic.special_judge_logic(skill_node=skill_node) is False
 
+    assert helper_calls == [enemy, enemy]
     assert dynamic.calls == ["is_under_anomaly", "is_under_anomaly"]
     assert record.last_update_node is skill_node
     assert schedule_data.event_list == []

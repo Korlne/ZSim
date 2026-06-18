@@ -96,6 +96,11 @@ APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
 }
 
+DELEGATED_COPIED_OUTPUT_ANOMALY_HELPER_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py",
+}
+
 APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME = {
     "read_enemy_anomaly_active": APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES,
     "read_enemy_stun_active": APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES,
@@ -622,6 +627,32 @@ def test_enemy_dynamic_read_guardrail_limits_hugo_copied_output_stun_helper_to_e
     assert copied_output_calls.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
 
 
+def test_enemy_dynamic_read_guardrail_limits_vivian_copied_output_anomaly_helper_to_exact_files() -> None:
+    references = _collect_helper_reference_paths()["read_enemy_anomaly_active"]
+    copied_output_imports = references["imports"] & COPIED_OUTPUT_ADJACENT_FILES
+    copied_output_calls = references["calls"] & COPIED_OUTPUT_ADJACENT_FILES
+    future_anomaly_candidate = {
+        "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py"
+    }
+
+    assert DELEGATED_COPIED_OUTPUT_ANOMALY_HELPER_FILES == {
+        "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py",
+        "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py",
+    }
+    assert copied_output_imports == DELEGATED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
+    assert copied_output_calls == DELEGATED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
+    assert copied_output_imports <= APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
+    assert copied_output_calls <= APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
+    assert copied_output_imports.isdisjoint(future_anomaly_candidate)
+    assert copied_output_calls.isdisjoint(future_anomaly_candidate)
+    assert copied_output_imports.isdisjoint(APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES)
+    assert copied_output_calls.isdisjoint(APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES)
+    assert copied_output_imports.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert copied_output_calls.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert copied_output_imports.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
+    assert copied_output_calls.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
+
+
 def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scope() -> None:
     references = _collect_helper_reference_paths()
     anomaly_references_by_kind = _helper_references_for_names(
@@ -703,11 +734,9 @@ def test_enemy_dynamic_read_guardrail_keeps_copied_output_matrix_exact() -> None
     assert matched_by_path == {
         "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py": [],
         "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py": [
-            "not self.record.enemy.dynamic.is_under_anomaly",
             "self.record.enemy.dynamic.get_active_anomaly()",
         ],
         "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py": [
-            "self.record.enemy.dynamic.is_under_anomaly()",
             "self.record.enemy.dynamic.get_active_anomaly()",
         ],
         "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py": [

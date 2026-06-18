@@ -110,7 +110,6 @@ class _DynamicReadProbe:
         self.active_anomalies = active_anomalies
         self.calls: list[str] = []
 
-    @property
     def is_under_anomaly(self) -> bool:
         self.calls.append("is_under_anomaly")
         return bool(self.active_anomalies)
@@ -118,6 +117,32 @@ class _DynamicReadProbe:
     def get_active_anomaly(self) -> list[AnomalyBar]:
         self.calls.append("get_active_anomaly")
         return self.active_anomalies
+
+
+def _patch_anomaly_helper(monkeypatch: pytest.MonkeyPatch) -> list[object]:
+    helper_calls: list[object] = []
+
+    def fake_read_enemy_anomaly_active(enemy: Any) -> bool:
+        helper_calls.append(enemy)
+        return bool(enemy.dynamic.is_under_anomaly())
+
+    monkeypatch.setattr(
+        trigger_module,
+        "read_enemy_anomaly_active",
+        fake_read_enemy_anomaly_active,
+    )
+    return helper_calls
+
+
+def _block_anomaly_helper(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail_read_enemy_anomaly_active(enemy: object) -> bool:
+        raise AssertionError("VivianCinema6Trigger xeffect should own active anomaly reads")
+
+    monkeypatch.setattr(
+        trigger_module,
+        "read_enemy_anomaly_active",
+        fail_read_enemy_anomaly_active,
+    )
 
 
 def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -267,6 +292,7 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
     monkeypatch.setattr(trigger_module, "VIVIAN_REPORT", True)
     monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
     _patch_runtime_boundary_guards(monkeypatch)
+    helper_calls = _patch_anomaly_helper(monkeypatch)
     dispatch_factory_calls: list[object] = []
 
     def fake_create_schedule_dispatch_port(*, sim_instance: object) -> _RecordingDispatchPort:
@@ -299,6 +325,7 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
     skill_node = _build_skill_node()
 
     assert logic.special_judge_logic(skill_node=skill_node) is True
+    assert helper_calls == [record.enemy]
     assert harness.dynamic.calls == ["is_under_anomaly"]
     assert record.last_update_node is skill_node
     assert record.guard_feather == 3
@@ -312,6 +339,7 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
 
     assert len(dispatch_port.events) == 1
     published_event = dispatch_port.events[0]
+    assert helper_calls == [record.enemy]
     assert dispatch_factory_calls == [harness.sim_instance]
     assert harness.dynamic.calls == ["is_under_anomaly", "get_active_anomaly"]
     assert [entry[0] for entry in harness.action_log] == [
@@ -368,6 +396,7 @@ def test_vivian_cinema6_judge_wrong_skill_is_noop(
         "create_schedule_dispatch_port",
         lambda *, sim_instance: dispatch_port,
     )
+    helper_calls = _patch_anomaly_helper(monkeypatch)
     _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
 
@@ -379,6 +408,7 @@ def test_vivian_cinema6_judge_wrong_skill_is_noop(
     )
 
     assert harness.dynamic.calls == []
+    assert helper_calls == []
     assert harness.action_log == []
     assert record.last_update_node is None
     assert dispatch_port.events == []
@@ -394,24 +424,40 @@ def test_vivian_cinema6_no_anomaly_branch_updates_feathers_without_publish(
 
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
-    monkeypatch.setattr(trigger_module, "VIVIAN_REPORT", False)
+    monkeypatch.setattr(trigger_module, "VIVIAN_REPORT", True)
+    monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
     monkeypatch.setattr(
         trigger_module,
         "create_schedule_dispatch_port",
         lambda *, sim_instance: dispatch_port,
     )
+    helper_calls = _patch_anomaly_helper(monkeypatch)
     _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
 
     skill_node = _build_skill_node()
 
     assert logic.special_judge_logic(skill_node=skill_node) is True
+    assert helper_calls == [record.enemy]
     assert harness.dynamic.calls == ["is_under_anomaly"]
 
     logic.special_effect_logic()
 
     assert dispatch_port.events == []
     assert harness.schedule_data.event_list == []
+    assert helper_calls == [record.enemy]
     assert harness.dynamic.calls == ["is_under_anomaly", "get_active_anomaly"]
+    assert [entry[0] for entry in harness.action_log] == [
+        "change_process_state",
+        "change_process_state",
+        "guard_feather",
+        "c1_counter",
+        "c1_counter",
+        "flight_feather",
+        "change_process_state",
+        "update_myself",
+        "change_process_state",
+        "update_myself",
+    ]
     assert record.guard_feather == 0
     assert harness.feather_updates == [True, True]

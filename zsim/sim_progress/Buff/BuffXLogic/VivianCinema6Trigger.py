@@ -10,6 +10,7 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_anomaly_read import read_enemy_anomaly_active
 
 
 class VivianCinema6TriggerRecord:
@@ -77,7 +78,7 @@ class VivianCinema6Trigger(Buff.BuffLogic):
             )
         if skill_node.skill_tag != "1331_SNA_2":
             return False
-        if not self.record.enemy.dynamic.is_under_anomaly:
+        if not read_enemy_anomaly_active(self.record.enemy):
             if VIVIAN_REPORT:
                 self.buff_instance.sim_instance.schedule_data.change_process_state()
                 print(" APL警告：怪物没异常你打什么SNA_2！豆子全没了吧傻子！")
