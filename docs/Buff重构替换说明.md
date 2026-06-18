@@ -7726,3 +7726,16 @@
 - Next step:
   - Continue to `US-006` serial validation and reviewer invariant gate; keep runtime-state helper approvals and retained No-Go evidence exact unless a focused verifier names a concrete regression.
 ---
+## 2026-06-19 01:55 +08:00 - US-006
+- Files changed: `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 serial validation and reviewer invariant gate` replaces chat-only validation confidence with focused pytest, scoped mypy, serial `implicit-events`, and conditional `calculator-reads` evidence.
+  - This story does not replace another live `BuffXLogic` read, add a helper, change production source, modify formula output, alter lifecycle/runtime writes, or change validation-runner behavior.
+- Compatibility retained:
+  - `MiyabiFrostburnDebuffMirrorReader` remains approved only for `MiyabiCoreSkill_IceFire.py`; `VivianDotTrigger.py` remains judge-only for `read_enemy_anomaly_active(...)` and caller-owned for hit-path dot runtime registration.
+  - Event queue semantics, synchronous listener broadcasts, dot runtime registration, same-tick runtime writes, explicit ports/adapters, no cached dispatch adapters, old containers, registered routes, performance gates, completed-surface no-reopen, and serial validation discipline remain intact.
+  - Focused pytest passed with `82 passed`; scoped mypy passed on `8 source files`; serial `implicit-events` passed with focused `345 passed` and mypy success on `93 source files`; conditional `calculator-reads` passed with focused `279 passed` and mypy success on `22 source files`.
+  - `formula-parity`, default lifecycle validation, Phase 5 registered-route validation, main-loop consistency, and runtime benchmark were skipped because no formula output, copied-output ratio math, lifecycle/runtime-write path, registered-route semantic diff, or performance-sensitive path changed.
+- Next step:
+  - Continue to `US-007` handoff docs, same-phase pool preservation, and route decision.
+---
