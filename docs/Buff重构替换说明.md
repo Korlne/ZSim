@@ -7739,3 +7739,15 @@
 - Next step:
   - Continue to `US-007` handoff docs, same-phase pool preservation, and route decision.
 ---
+## 2026-06-19 02:05 +08:00 - US-007
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, Ralph evidence / checkpoint / PRD bookkeeping
+- Replacement note:
+  - `US-007 handoff docs, same-phase pool, and route decision` replaces the stale next-default `BuffXLogic Remaining Debuff Mirror And Dot Runtime-State Boundary Review` route with `Buff Phase-Boundary Route Review And Phase 5 Resume Gate`.
+  - This story does not replace another live `BuffXLogic` callsite, add a helper, change production source, modify validation-runner behavior, delete old containers, move lifecycle/runtime writes, or run Phase 5 gates.
+- Compatibility retained:
+  - `MiyabiFrostburnDebuffMirrorReader` remains the bounded implementation outcome and is approved only for `MiyabiCoreSkill_IceFire.py`.
+  - `VivianDotTrigger.py` remains judge-only for `read_enemy_anomaly_active(...)`; its hit-path dot runtime registration, scheduled publish, optional report behavior, listener/runtime layers, old containers, registered routes, performance gates, completed-surface no-reopen rules, and retained compatibility remain unchanged.
+  - No new Buff coupling or changed coupling classification was discovered; `docs/旧Buff系统耦合审查结果.md` remains unchanged.
+- Next step:
+  - Generate `Buff Phase-Boundary Route Review And Phase 5 Resume Gate`; the human route review must either accept retained compatibility for Phase 5 resume, promote one exact same-phase candidate with evidence, or keep Phase 5 paused with an explicit blocker.
+---
