@@ -19,6 +19,17 @@
   - 下一轮应继续收口的旧路径
 ```
 
+## 2026-06-18 14:44 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-source-preflight-and-stop-gate.md`, `scripts/ralph/checkpoints/2026-06-18-us-001-source-preflight-stop-gate.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/campaign-dashboard.md`
+- Replacement note:
+  - `US-001 source preflight` prepares the later bounded `read_enemy_anomaly_active(...)` implementation by reconfirming the exact current-root four-file simple boolean subset: `ElectroLipGlossAtkAndDmgBonus`, `JaneAdditionalAbilityPhyBuildupBonus`, `MarcatoDesireAtkBonus`, and `TimeweaverApBonus`.
+  - This story is source/Ralph evidence only; it does not implement the helper, edit live `BuffXLogic`, expand `BuffRuntimeReadPort`, add a runtime write facade, rewrite copied-output/formula behavior, mutate dot runtime state, publish scheduled events, broadcast listeners, or delete old containers.
+- Compatibility retained:
+  - Direct `record.enemy.dynamic.is_under_anomaly()` reads, existing prerequisite branch order, `check_preparation(...)`, `JudgeTools` lookups, edge-detection gates, copied-output / event-adjacent gates, dot/debuff runtime-state reads, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, old containers, listeners, formulas, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-002` helper implementation only if it remains a narrow BuffXLogic-local boolean read wrapper with no fallback lookup, mutation, caching, scheduling, listener broadcast, runtime write, formula calculation, old-container traversal, or public runtime-port expansion.
+---
+
 ## 2026-06-18 08:51 +08:00 - US-001
 - Files changed: `scripts/ralph/plans/slices/us-001-gap-closure-intake-and-route-authority.md`, `scripts/ralph/investigations/2026-06-18-US-001-gap-closure-intake.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/open-evidence-gaps.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
 - Replacement note:
