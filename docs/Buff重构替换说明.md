@@ -7445,3 +7445,16 @@
 - Next step:
   - Continue to `US-008` handoff docs and same-phase pool preservation.
 ---
+
+## 2026-06-18 21:16 +08:00 - US-008
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/checkpoints/2026-06-18-us-008-edge-state-handoff.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-008 handoff docs and same-phase pool preservation` replaces stale remaining-edge-state wording with final implemented / no-reopen handoff evidence for the bounded edge-state helper subset.
+  - `read_enemy_frozen_edge_state(...)`, `read_enemy_stun_edge_state(...)`, and `read_enemy_frost_frostbite_edge_state(...)` now cover only the characterized frozen, stun, and frost/frostbite edge files; this story itself only updates handoff docs and Ralph evidence, and does not delegate a new production callsite.
+- Compatibility retained:
+  - Previous-state fields, `JudgeTools.detect_edge(...)`, tick lookup, branch ordering, record/template identity, `simple_start(...)`, anomaly-bar identity, caller-owned inverse behavior and record mutation stay in owning files.
+  - Completed simple helpers remain limited to their approved subsets. Copied-output / formula parity candidates, dot/debuff runtime-state reads, anomaly-map future-pool files, old containers / lifecycle compatibility, `JudgeTools` responsibilities, planned-event producer families, registered behavior / performance gates, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, validation-runner behavior and retained compatibility remain unchanged.
+  - No old-coupling review update was needed; this docs/evidence story found no new Buff coupling and no changed coupling classification beyond the retained pools already documented.
+- Next step:
+  - Generate `BuffXLogic Remaining Enemy-State Copied-Output And Dot/Debuff Runtime-State Exact Intake`; keep the broad same-phase pool visible and do not reopen completed anomaly-active, shock/stun, or edge-state helper subsets without exact new evidence.
+---
