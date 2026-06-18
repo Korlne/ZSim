@@ -7432,3 +7432,16 @@
 - Next step:
   - Continue to `US-007` serial validation and reviewer invariant gate without widening helper scope.
 ---
+
+## 2026-06-18 21:09 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-serial-validation-and-reviewer-invariant-gate.md`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 serial validation gate` prepares to replace chat-only completion confidence with serial verifier evidence for the edge-state read-family PRD. This story does not replace a new live `BuffXLogic` callsite.
+  - Focused edge-state bundle passed with `40 passed`; scoped mypy over edge production files, `enemy_edge_state_read.py`, and focused tests passed on `11 source files`; serial `implicit-events` passed with base `2 passed`, isolated teams `3 passed`, focused `311 passed`, and mypy success on `93 source files`.
+- Compatibility retained:
+  - `calculator-reads` remains skipped because this PRD did not touch attribute-reader surfaces; `formula-parity` remains skipped because formula output behavior did not change.
+  - Phase 5 main-loop consistency and runtime benchmark remain skipped because there is no live semantic or performance-sensitive diff with a real registered route, explicit stop tick, nonzero relevant counts, or rollback anchor.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, old containers, validation-runner behavior, registered routes, performance gates, retained compatibility, and completed helper no-reopen rules remain unchanged.
+- Next step:
+  - Continue to `US-008` handoff docs and same-phase pool preservation.
+---
