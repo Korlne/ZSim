@@ -48,6 +48,14 @@
 - Reviewer check against `scripts/ralph/architecture/invariants.md`: event queue semantics, synchronous listener broadcasts, dot runtime registration, local event groups, scheduled handler requeue, runtime reads, same-tick runtime writes, explicit ports/adapters, no cached dispatch adapters, completed-surface no-reopen, and serial validation discipline must remain intact.
 - Current US-004 verdict: docs/control-plane gate only. No validation-runner behavior, registered route/APL, production Buff source, focused test source, lifecycle/runtime write, formula output, copied-output payload, retained compatibility behavior, or performance-sensitive path changed; Phase 5 remains paused for US-005 human route decision.
 
+## Route decision evidence and final handoff（2026-06-19 US-005 / US-006）
+
+- Current route-review outcome: `needs_human_route_decision`.
+- Completion-criteria status: US-002 classified retained families; US-003 preserved candidate blocks A-G as future review material and found `no exact same-phase implementation or deletion-readiness candidate currently proven`; US-004 defined the Phase 5 resume gate; US-005 found no human-approved selected route in repository evidence; US-006 preserves that result in handoff docs and Ralph evidence.
+- Current default next PRD: no automatic implementation, deletion-readiness, Phase 5 registered-route validation, main-loop consistency, or benchmark PRD is promoted while `needs_human_route_decision` remains the durable route state. If no human-approved route is recorded before the next cycle, the next PRD may only be a route-decision intake / control-plane package that captures one of the three allowed human choices and keeps the candidate pool visible.
+- Same-phase candidate pool remains available only as reviewer material until promotion evidence names exact current-root file / symbol / behavior, verifier command, rollback anchor, retained boundaries, non-goals, and stop condition. Pool retention does not reopen completed helper subsets, old `event_list` deletion surfaces, Phase-1 infrastructure boundaries, old-container cleanup, public reader/snapshot expansion, or formula output changes.
+- Old coupling review status: no new Buff coupling or changed coupling classification was discovered in US-006, so [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md) remains unchanged.
+
 ## 阶段 0：重规划与基线
 
 - [x] 回到 `main` 分支重新规划。

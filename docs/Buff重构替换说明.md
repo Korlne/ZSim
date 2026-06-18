@@ -7813,3 +7813,15 @@
 - Next step:
   - Continue to `US-006` handoff docs, validation, and next-PRD pool preservation while keeping Phase 5 paused unless a human-approved route is recorded first.
 ---
+## 2026-06-19 07:45 +08:00 - US-006
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, Ralph checkpoint / evidence / dashboard / progress / PRD bookkeeping, and controller refresh artifacts
+- Replacement note:
+  - `US-006 handoff docs, validation, and next-PRD pool preservation` replaces stale default-route ambiguity with final docs/control-plane evidence: `needs_human_route_decision`, Phase 5 paused, no same-phase implementation candidate promoted, no deletion-readiness candidate promoted, and candidate blocks A-G retained as future review material.
+  - No live production Buff path, helper, validation runner, registered route, team/APL fixture, old container, lifecycle path, event/runtime/listener layer, formula output, copied-output payload, performance gate, or retained compatibility behavior was replaced in this docs-only PRD handoff.
+- Compatibility retained:
+  - Same-phase pool entries remain review material only and still require exact current-root file / symbol / behavior, verifier, rollback anchor, retained boundaries, non-goals, and stop condition before promotion.
+  - Event queue semantics, synchronous listener broadcasts, dot runtime registration, local event groups, scheduled handler requeue, runtime reads, same-tick runtime writes, explicit ports/adapters, no cached dispatch adapters, old containers, validation-runner behavior, registered routes, performance gates, completed-surface no-reopen rules, and serial validation discipline remain unchanged.
+  - No new Buff coupling or changed coupling classification was discovered; `docs/旧Buff系统耦合审查结果.md` remains unchanged.
+- Next step:
+  - Do not generate implementation, deletion-readiness, Phase 5 registered-route validation, main-loop consistency, or benchmark work until a human-approved route is recorded. If no route is recorded, the next PRD can only capture the human route decision and preserve the pool.
+---
