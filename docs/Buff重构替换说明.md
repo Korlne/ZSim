@@ -7078,3 +7078,14 @@
 - Next step:
   - Generate the next PRD only after preflight names an exact owner/layer family with current-root files / symbols / behavior, verifier commands, rollback anchors, retained boundaries, and non-goals. Do not continue along the completed selected impact / crit / stun family unless future focused regression, validation failure, source evidence, guardrail, or reviewer evidence names a concrete blocker.
 ---
+
+## 2026-06-18 13:21 +08:00 - US-002
+- Files changed: `tests/simulator/test_simple_anomaly_gate_characterization.py`, `scripts/ralph/plans/slices/us-002-simple-anomaly-gate-characterization.md`, `scripts/ralph/checkpoints/2026-06-18-us-002-simple-anomaly-gates.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 simple anomaly gate characterization` prepares to replace only the simple boolean anomaly-read family by adding focused no-anomaly / active-anomaly tests for `ElectroLipGlossAtkAndDmgBonus`, `JaneAdditionalAbilityPhyBuildupBonus`, `MarcatoDesireAtkBonus`, and `TimeweaverApBonus`.
+  - This story is test/Ralph evidence only; it does not replace live production `BuffXLogic`, add a read helper, rewrite formulas, publish scheduled events, mutate dot runtime state, broadcast listeners, add same-tick runtime writes, or delete old containers.
+- Compatibility retained:
+  - `Buff.BuffLogic`, `JudgeTools.find_exist_buff_dict(...)`, `JudgeTools.find_equipper(...)`, `check_preparation(...)`, lazy `history.record`, old `buff_0` identity, direct `record.enemy.dynamic.is_under_anomaly()` reads, `simple_start(...)`, `simple_exit(...)`, count state, `ScheduleDispatchPort`, `RuntimeCommandPort`, and `LegacyRuntimeCommandAdapter` remain unchanged.
+- Next step:
+  - Continue to `US-003` freeze/stun edge-detection characterization. Do not design or implement a shared anomaly-state helper until edge-detection and copied-output-adjacent gates prove whether their contracts split from the simple read-only family.
+---
