@@ -7132,3 +7132,16 @@
 - Next step:
   - Continue to `US-007` reviewer invariant and completion gate. Keep helper implementation and final handoff docs out of this slice.
 ---
+
+## 2026-06-18 13:54 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-reviewer-invariant-and-completion-gate.md`, `scripts/ralph/checkpoints/2026-06-18-us-007-reviewer-invariant-and-completion-gate.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/proven-patterns-to-reuse.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 reviewer invariant and completion gate` replaces chat-only completion confidence with a durable reviewer checkpoint for the enemy anomaly-state helper design PRD.
+  - This story is reviewer/Ralph evidence only; it does not implement `read_enemy_anomaly_active(...)`, edit live `BuffXLogic`, expand `BuffRuntimeReadPort`, add a runtime write facade, rewrite copied-output/formula behavior, mutate dot runtime state, run Phase 5 registered-route samples, or delete old containers.
+- Compatibility retained:
+  - Event queue semantics, synchronous listener broadcasts, dot runtime registration, local event groups, runtime reads, same-tick runtime writes through `RuntimeCommandPort`, old containers, formula snapshots, retained compatibility paths, and classified enemy-dynamic read families remain unchanged.
+  - Phase 5 registered-route validation was skipped because no live semantic diff and real registered route were named. `calculator-reads` and `formula-parity` were skipped because this PRD did not touch attribute-reader or formula output semantics.
+  - Validation evidence: `git diff --check -- docs scripts/ralph tasks tests zsim` exited `0` with LF-to-CRLF warnings only; `implicit-events` exited `0` with base `2 passed`, isolated teams `3 passed`, focused `283 passed`, and mypy success on `93 source files`.
+- Next step:
+  - Continue to `US-008` handoff docs and same-phase candidate pool. Keep the next PRD broad enough to preserve candidate blocks, but do not promote helper implementation beyond the exact US-002 simple boolean subset approved by US-005.
+---
