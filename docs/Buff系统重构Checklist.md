@@ -17,7 +17,11 @@
 - [x] 建立下阶段计划草稿文档。
 - [x] 重置 Ralph loop 的 PRD 基线。
 
-## 阶段 1：基础设施解耦
+## 阶段 1：基础设施隔离边界
+
+> 状态说明：本阶段的 `[x]` 表示 runtime / event / schedule / calculator 等基础设施已建立隔离边界、adapter、port、guardrail 与验证入口，不表示旧容器或旧生命周期入口已删除。
+> `exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT`、legacy `buff_add()`、legacy `KickOutBuff()`、`ScheduleBuffSettle(...)` fallback、old template identity 与 retained compatibility 仍是当前事实源或兼容边界。
+> 面向“全面替换”的剩余差异必须在后续 exact candidate 中逐个证明 unused 或 behavior-preserving；不得把本阶段完成解读为 old-container deletion complete。
 
 - [x] 完成阶段 1 的调查型 PRD，产出生命周期、事件模型、Calculator seam、验证入口与交接包。
 - [x] 为 Buff runtime 建立抽象接口与适配层。
@@ -35,6 +39,9 @@
 
 ## 阶段 2：XLogic 全量分析与复用收敛
 
+> 状态说明：本阶段的 `[x]` 表示 census、分类、复用模式、风险矩阵和 follow-up pool 已完成，不表示任何 live `BuffXLogic` 已因此被替换。
+> Phase 2 是取证 / 分类 / 设计阶段；它为 Phase 3 提供候选和边界，不能被解释为 XLogic migration complete。
+
 - [x] 输出 XLogic 全量分类结果。
 - [x] 输出可复用方法清单。
 - [x] 输出可复用记录对象清单。
@@ -43,7 +50,11 @@
 - [x] 明确 XLogic 替换优先级。
 - [x] 明确高风险耦合桶和回归风险点。
 
-## 阶段 3：XLogic 全面替换
+## 阶段 3：XLogic 切片替换与保留边界收口
+
+> 状态说明：本阶段的 `[x]` 表示“已命名切片已有实现 / characterization / No-Go / retained-boundary 结论”，不表示 `BuffXLogic` 已全量迁移到新事件驱动架构，也不表示 `JudgeTools`、`check_preparation(...)`、旧模板 Buff 身份、old containers 或 retained compatibility 可以删除。
+> Phase 3 的实际收口结果是：已完成若干 bounded helper / reader / event-adapter / state-sync 切片；broad trigger rewrite、统一事件总线合并、old-container deletion、retained compatibility cleanup 仍保持 No-Go 或 blocker-only reopen。
+> 后续若要继续替换 `BuffXLogic`，必须由 current-root source、focused regression、guardrail、validation failure 或 reviewer evidence 命名 exact file / symbol / behavior、verifier 和 rollback anchor；不得仅凭本阶段顶层 `[x]` 推导为“全面替换完成”或“允许自动生成生产 diff”。
 
 - [x] 替换属性读取类 XLogic：Status = completed / no-reopen。P2-A/P2-B/P2-C guarded buckets、AM/AP/impact reader parity、RegularMul helper-family、CalAnomaly helper-family 与 `formula-parity` / `calculator-reads` 串行证据已覆盖当前 Phase 3 已命名读口；`MultiplierData` / reader snapshot / retained compatibility 不因本顶层项删除。若未来重开，必须由 current-root source、focused test、guardrail、validation failure 或 reviewer evidence 命名 exact file / symbol / behavior。
 - [x] 替换事件触发类 XLogic：Status = completed guarded maintenance / retained-No-Go for broad trigger rewrite。P2-C trigger-state gates、P2-D scheduled publish ordering / adapter parity、copied-output / anomaly write-path matrix 与 `implicit-events` 证据已覆盖已命名触发边界；不得把该顶层项解释为 broad event rewrite。若未来重开，必须命名 exact producer / handler / payload behavior，并保留 event queue、listener broadcast 与 runtime write 分层。
@@ -75,7 +86,11 @@
 - [x] Phase 3 RegularMul retained-only sheer blocker closure 已完成 US-008 handoff：`Calculator.RegularMul.cal_base_attr(..., base_attr=4)` 已委托 private `_calculate_sheer_base_attribute(...)`，`Calculator.RegularMul.cal_sheer_dmg_bonus(data)` 已委托 private `_calculate_sheer_damage_bonus(...)`；public `RegularMul` signatures、`CalculatorBuffAttributeReader`、`_CalculatorReadSnapshot`、registered teams/APLs、validation-runner behavior、event/runtime/listener paths、old containers、lifecycle paths 和 retained compatibility 均保持不变。Completed：focused retained sheer pytest `32 passed, 130 deselected`、scoped mypy `Success: no issues found in 2 source files`、serial `formula-parity` focused `162 passed` / mypy `9 source files` clean、serial `calculator-reads` focused `262 passed` / mypy `22 source files` clean。Blocked：public reader/snapshot expansion 仍为 No-Go，因为 `_CalculatorReadSnapshot` 不携带 runtime `char_instance.sheer_attack_conversion_rate`；registered sample 仍为 Conditional No-Go，因为无当前注册 Yixuan / sheer route，且不得创建 validation-only team、fake APL、fixture-only route 或 retained-vs-retained sample。Next-default：Phase-3 same-phase candidate-pool closure / exact bounded candidate selection；retained-only sheer 作为 helper-complete / blocked pool evidence 保留，不作为 active default。
 - [x] Phase 3 candidate-pool closure / exact-intake PRD 已完成 US-007 handoff：US-005 记录 Phase-3 closure / No-Go，未找到新的 exact bounded production candidate；US-006 记录 docs-only validation / reviewer gate；US-007 将 handoff docs 同步为 Phase-4 deletion-readiness / phase-boundary intake。Phase-3 same-phase pool 继续保留为 reopen evidence：retained-only sheer helper-complete / blocked、completed / no-reopen RegularMul / CalAnomaly / Stun / AM/AP/impact / copied-output / anomaly-bar readiness、P2 guarded maintenance、registered behavior sample eligibility、retained compatibility 与 blocker-only reopen rules。No-Go 仍包括 public reader/snapshot expansion、old-container deletion、validation-runner rewrite、registered-route fabrication、event/runtime/listener layer merge、retained compatibility deletion 和 broad `Calculator.py` / `CalAnomaly.py` rewrite。
 
-## 阶段 4：旧 Buff 残余删除
+## 阶段 4：旧 Buff 残余删除就绪审查与保留边界
+
+> 状态说明：本阶段的 `[x]` 表示 retained families 已完成删除就绪审查、No-Go / blocker / preservation 结论和 guardrail 映射，不表示旧 Buff 残余已经删除。
+> Phase 4 的当前结论是：没有 retained family 满足 unused / behavior-preserving deletion 的 Go bar；old containers、lifecycle entrypoints、explicit ports/adapters、listener / dot runtime、runtime read/write、formula snapshot carriers、scheduled handler requeue 与 retained compatibility 继续保留。
+> 后续若要删除旧残余，必须另行命名 exact file / symbol / behavior、focused guardrail 或 regression、validation entrypoint、registered-route / performance 条件和 rollback anchor。
 
 - [x] Phase-4 deletion-readiness / phase-boundary intake 已完成最终 No-Go：US-002 / US-003 / US-004 / US-005 / US-006 证明当前没有 retained family 满足 unused / behavior-preserving deletion；旧容器、lifecycle entrypoints、explicit ports/adapters、listener / dot runtime、runtime read/write、formula snapshot carriers、scheduled handler requeue 和 retained compatibility 继续保留。
 - [x] Completed：Phase-4 retained-boundary evidence refresh follow-up 已完成 `US-009` final handoff；`9/9` stories 均已有 verifier / reviewer / handoff evidence，`docs/Buff重构下阶段计划草稿.md`、replacement notes、Ralph evidence ledger、campaign dashboard、checkpoint、progress 和 PRD completion bit 均记录 anti-feedback route gate 与 broad same-phase candidate pool。`US-009` final handoff 继续以 `US-001` through `US-008` complete evidence 为前置条件，未发现新 Buff coupling 或既有 coupling classification 变化，因此不更新 [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md)。
@@ -84,8 +99,27 @@
 - [x] Next-default / final route：下一步先执行 anti-feedback route gate。若 preflight 从候选池或新证据命名 exact implementation candidate，则生成 bounded implementation PRD；若新证据命名 exact deletion candidate 且带 verifier / rollback anchor，则 split to deletion-readiness implementation packet；若两者都没有，则 stop for human phase-boundary review。当前 handoff 明确不把 Phase-4 retained-boundary evidence refresh 写回默认下一 PRD。
 - [x] Blocked：deletion implementation、旧 Buff 入口删除、旧适配器删除、旧 `MultiplierData` 直连路径删除、旧容器同步残余逻辑删除、retained compatibility 删除和无用兼容说明清理均 blocked，直到新 current-root evidence 同时命名 exact file / symbol / behavior、focused guardrail 或 regression、validation entrypoint、registered-route / performance 条件（如适用）和 rollback anchor；若证据不足或互相矛盾，必须 stop for human review，而不是制造 cleanup diff 或重复调查 PRD。
 
+## Phase 1-4 全面替换差异排查
+
+> 目的说明：如果重构目标是“全面替换旧 Buff 系统”，则 Phase 1-4 全部打勾只能说明已完成当前批次的边界建设、分类、切片实现和删除就绪审查；它还不能推出“只剩 Phase 5 最终测试”。以下差异必须作为 Phase 5 前后的 reopen / blocker 输入保留，除非后续 exact evidence 证明可以安全关闭。
+
+- [x] 旧容器事实源替换：US-002 / US-008 已完成 route classification。`exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`dynamic_buff` 保持 runtime source-of-truth / long-term compatibility；`LOADING_BUFF_DICT` pending activation 是未来 bounded implementation lane；`loading_buff` 只能做后续 unused / behavior-preserving audit。旧容器删除和身份 rebind 仍是 No-Go。
+- [x] 旧生命周期入口替换：US-003 / US-008 已完成 route classification。`BuffLoadLoop()` pending generation / activation、active removal、individual stack cleanup 可拆成单 branch bounded candidate；legacy `buff_add()`、`KickOutBuff()` fallback、`ScheduleBuffSettle(...)` behind `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` 与 template sync 仍是 retained compatibility / No-Go for deletion。
+- [x] `BuffXLogic` 全量新架构迁移：US-005 / US-008 已完成 route classification。下一默认 PRD 是 broad same-family `BuffXLogic` owner-family state-sync / read-gate bounded slice；全局 `Buff.BuffLogic` / old template identity / lazy record initialization 删除仍 No-Go，scheduled publish、runtime writes、formula semantics 和 old-container deletion 必须拆开。
+- [x] `JudgeTools` service-location 收敛：US-004 / US-008 已完成 route classification。已删除 `event_list` surfaces 保持关闭；`find_exist_buff_dict()`、`find_tick()`、`find_enemy()`、`find_dynamic_buff_list()`、`find_preload_data()`、`find_stack()`、`check_preparation(...)` 和 `trigger_buff_0_handler(...)` 只能按 owner/helper responsibility 做 bounded candidate，旧 template identity 与 lazy record initialization 仍 retained compatibility。
+- [x] 统一事件驱动触发链：US-007 / US-008 已完成 route classification。planned-event producers 和旧 Buff / XLogic trigger judgement 是 owner/layer-family bounded candidates；planned-event queue、handler requeue、listener broadcast、dot runtime registration、local event groups、runtime reads 和 same-tick writes 继续分层保留，full `event_router` ownership / retained-layer deletion 仍 No-Go。
+- [x] Buff effect / Character dynamic attribute 全量替换：US-006 / US-008 已完成 route classification。`MultiplierData`、`MulData`、`DynamicStatement`、Calculator / CalAnomaly snapshots 与 retained `CalculatorBuffAttributeReader` 保持 compatibility；未来 formula work 必须按 named formula domain 提供 focused oracle、`formula-parity` / `calculator-reads` 与 rollback anchor，public reader/snapshot expansion、Character effect-pool full replacement 和 `MultiplierData` deletion 仍 No-Go。
+- [x] 旧残余删除：US-008 已完成 deletion route decision。当前没有 source-backed retained-family deletion-readiness candidate；旧容器、adapter、formula snapshot、listener / dot / runtime layer、retained compatibility cleanup 和无用兼容说明清理均 blocked，直到新证据证明 exact unused / behavior-preserving deletion path。
+- [x] Phase 5 验证范围修正：US-008 / US-009 handoff 决定 Phase 5 继续暂停。当前 Phase 5 samples 只保留为 registered-route historical evidence，不能解释为全面替换完成；只有所有 Phase 1-4 gaps 关闭、降级为长期兼容策略，或形成 explicit blocker with human-approved route 后，才允许恢复 Phase 5 默认 PRD。
+
 ## 阶段 5：一致性与性能收口
 
+> 暂停说明：当前任务目标已切回 `Phase 1-4 全面替换差异排查`。Phase 5 已有样本和路线只作为历史验证证据保留；在 Phase 1-4 差异项关闭、降级为长期兼容策略，或形成明确 No-Go / blocker handoff 之前，不再作为下一默认 PRD。
+
+- [x] Phase 5 已由 human phase-boundary review 启动：`仪玄-耀嘉音-扳机试点队` 已作为真实 registered route 接入 `tests.teams`，复用现有生产 APL `./zsim/data/APLData/仪玄-耀嘉音-扳机.toml`；本项只建立验证 route，不删除旧容器、不改 Buff 运行语义、不实现 runtime mode switch。
+- [x] Phase 5 仪玄 route smoke / main-loop evidence：100 tick 样本 `matches=true`、总伤 `49402.53` 对齐，并命中贯穿元素计数；3600 tick 可读重跑 `matches=true`、总伤 `31722843.75` 对齐、事件总数 `136` 对齐、元素计数为 `0:1 / 3:52 / 4:21 / 6:62`、Buff timeline diff 为 `0`。一次 3600 tick PowerShell `Tee` 编码路径曾记录 non-deterministic mismatch，需要后续 Phase 5 重复性样本继续确认。
+- [x] Phase 5 分析系统兼容修复：新结果 `damage.csv` 中 `is_anomaly` 可能为空列或字符串列，`zsim/lib_webui/process_dmg_result.py` 与 `zsim/utils/process_dmg_result.py` 已归一为 Boolean，避免 WebUI / benchmark / consistency 报告链路在新数据上报错。
+- [x] Phase 5 仪玄 route performance sample：3600 tick benchmark 可读重跑显示 current total runtime `5073.9284ms`、legacy total runtime `5114.667ms`、ratio `0.992`；其中 simulator core current `4895.2271ms`、legacy `4839.2822ms`，说明报告总耗时略快但 simulator core 仍有约 `55.9449ms` 退化，需要后续 profiler 定位。
 - [ ] 新旧 Buff 系统 `main_loop` 结果一致。
 - [ ] 对应角色配队 APL 结果一致。
 - [ ] 关键 Buff 生效时序一致。

@@ -6983,3 +6983,15 @@
 - Next step:
   - Continue to `US-009` final handoff docs. Preserve the US-008 matrix route, same-phase candidate pool, and Phase 5 pause/resume condition.
 ---
+
+## 2026-06-18 11:35 +08:00 - US-009
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-009-handoff-docs-and-replacement-notes.md`, `scripts/ralph/checkpoints/2026-06-18-us-009-final-handoff-route.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/open-evidence-gaps.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-009 final handoff docs` replaces stale Phase 1-4 gap-closure intake wording with the US-008 decision-matrix result: next default PRD is a broad same-family `BuffXLogic` owner-family state-sync / read-gate bounded slice, and Phase 5 remains paused.
+  - This PRD only produced gap packets, route decisions, Ralph evidence, and handoff docs. It did not replace live production Buff code, delete retained compatibility, rebind old containers, implement `event_router`, rewrite formulas, expand public reader/snapshot APIs, add registered routes/APLs, or merge event queue / listener broadcast / dot runtime / local event groups / scheduled handler requeue / runtime reads / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers, legacy lifecycle entrypoints, `Buff.BuffLogic`, `JudgeTools` service-location helpers, old template identity, lazy record initialization, planned-event queue, handler requeue, listener broadcasts, dot runtime registration, runtime read/write ports, formula snapshots, `MultiplierData`, and retained compatibility paths remain unchanged.
+  - `docs/旧Buff系统耦合审查结果.md` was not updated because US-009 discovered no new Buff coupling and no changed coupling classification beyond the already recorded US-001 through US-008 packets.
+- Next step:
+  - Generate the bounded `BuffXLogic` owner-family state-sync / read-gate PRD only if preflight names exact owner family, files / symbols, focused state-sync / read-gate tests, verifier profiles, rollback anchors, and non-goals. Keep Phase 5 and deletion-readiness PRDs paused unless a later human-approved route closes, downgrades, or explicitly blocks every Phase 1-4 gap.
+---
