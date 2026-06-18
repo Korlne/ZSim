@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_state_read import read_enemy_stun_active
 
 
 class Slodier11AdditionalSkillRecord:
@@ -32,7 +33,7 @@ class Soldier11AdditionalSkillExtraFireDMGBonus(Buff.BuffLogic):
     def special_judge_logic(self, **kwargs):
         self.check_record_module()
         self.get_prepared(enemy=1)
-        if self.record.enemy.dynamic.stun:
+        if read_enemy_stun_active(self.record.enemy):
             return True
         else:
             return False

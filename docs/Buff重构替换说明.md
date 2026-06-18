@@ -7278,3 +7278,16 @@
 - Next step:
   - Continue to `US-003` and delegate only the pure Lina shock and Soldier11 stun gates after their existing record lookup and preparation calls.
 ---
+
+## 2026-06-18 18:05 +08:00 - US-003
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/LinaAdditionalSkillEleDMGBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/Soldier11AdditionalSkillExtraFireDMGBonus.py`, `tests/simulator/test_simple_enemy_state_gate_characterization.py`, `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-003-delegate-pure-shock-and-stun-gates.md`, `scripts/ralph/investigations/2026-06-18-US-003-pure-shock-stun-gate-delegation.md`, `scripts/ralph/checkpoints/2026-06-18-us-003-pure-shock-stun-gate-delegation.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `read_enemy_shock_active(self.record.enemy)` now replaces Lina's direct pure shock judge read, and Lina's exit keeps caller-owned inverse behavior through `not read_enemy_shock_active(self.record.enemy)`.
+  - `read_enemy_stun_active(self.record.enemy)` now replaces Soldier11's direct pure stun judge read.
+  - The delegations occur only after each existing `check_record_module()` and `get_prepared(enemy=1)` call.
+- Compatibility retained:
+  - Yixuan and Yuzuha direct stun reads remain unchanged for later stories.
+  - Edge-detection, copied-output / event-adjacent, dot/debuff runtime-state, event/runtime/listener, old-container, formula, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, listener broadcast, scheduled publish ordering, same-tick runtime write, public runtime read-port, validation-runner behavior, registered-route, performance, and retained compatibility surfaces remain unchanged.
+- Next step:
+  - Continue to `US-004` and delegate Yixuan stun gates without moving skill-node, preload-tick, report-state, or direct enemy-source ownership.
+---

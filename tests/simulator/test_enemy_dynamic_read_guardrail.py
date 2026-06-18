@@ -39,6 +39,7 @@ ENEMY_DYNAMIC_READ_NAMES = {
 CLASSIFICATION_BY_FILE = {
     "zsim/sim_progress/Buff/BuffXLogic/ElectroLipGlossAtkAndDmgBonus.py": "simple enemy read",
     "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_read.py": "approved helper boundary",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_state_read.py": "approved helper boundary",
     "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveEXStunBonus.py": "guarded-maintenance overlap",
     "zsim/sim_progress/Buff/BuffXLogic/JaneAdditionalAbilityPhyBuildupBonus.py": "simple enemy read",
     "zsim/sim_progress/Buff/BuffXLogic/LinaAdditionalSkillEleDMGBonus.py": "simple enemy read",
@@ -70,7 +71,16 @@ APPROVED_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/TimeweaverApBonus.py",
 }
 
-EXPECTED_DIRECT_READ_FILES = set(CLASSIFICATION_BY_FILE) - APPROVED_HELPER_FILES
+MIGRATED_SHOCK_STUN_HELPER_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/LinaAdditionalSkillEleDMGBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/Soldier11AdditionalSkillExtraFireDMGBonus.py",
+}
+
+EXPECTED_DIRECT_READ_FILES = (
+    set(CLASSIFICATION_BY_FILE)
+    - APPROVED_HELPER_FILES
+    - MIGRATED_SHOCK_STUN_HELPER_FILES
+)
 
 CLASSIFICATION_BUCKETS = {
     "approved helper boundary",

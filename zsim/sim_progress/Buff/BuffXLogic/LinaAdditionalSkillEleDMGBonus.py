@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_state_read import read_enemy_shock_active
 
 
 class LinaAdditionalSkillRecord:
@@ -33,7 +34,7 @@ class LinaAdditionalSkillEleDMGBonus(Buff.BuffLogic):
     def special_judge_logic(self, **kwargs):
         self.check_record_module()
         self.get_prepared(enemy=1)
-        if self.record.enemy.dynamic.shock:
+        if read_enemy_shock_active(self.record.enemy):
             return True
         else:
             return False
@@ -41,7 +42,7 @@ class LinaAdditionalSkillEleDMGBonus(Buff.BuffLogic):
     def special_exit_logic(self, **kwargs):
         self.check_record_module()
         self.get_prepared(enemy=1)
-        if not self.record.enemy.dynamic.shock:
+        if not read_enemy_shock_active(self.record.enemy):
             return True
         else:
             return False
