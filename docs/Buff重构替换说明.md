@@ -7006,3 +7006,15 @@
 - Next step:
   - Continue to `US-003` bounded read-gate / attribute-input implementation using the characterized rows and `calculator-reads` verifier; add `implicit-events` only if event-adjacent trigger timing changes.
 ---
+
+## 2026-06-18 11:46 +08:00 - US-003
+- Files changed: `scripts/ralph/plans/slices/us-003-read-gate-and-attribute-input-implementation.md`, `scripts/ralph/checkpoints/2026-06-18-us-003-read-gate-attribute-input.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 read-gate / attribute-input verification` replaces stale uncertainty about selected owner-family live source with current-root evidence that `QingYiAdditionalAbilityStunConvertToATK.py`, `TriggerAdditionalAbilityStunBonus.py`, `Soldier0AnbyCoreSkillCritDMGBonus.py`, and `LighterAdditionalAbility_IceFireBonus.py` already use `CalculatorBuffAttributeReader` through `create_anomaly_attribute_read_context(...)`.
+  - This story did not require a production source edit because the preflight-approved reader boundary was already present in current-root source before this iteration. Historical `.codex_worktrees/...` direct `Calculator` / `MultiplierData` copies remain rollback evidence only.
+- Compatibility retained:
+  - `Buff.BuffLogic`, `JudgeTools.find_exist_buff_dict(...)`, `check_preparation(...)`, old `buff_0` identity, lazy `history.record`, `simple_start(...)`, `dy.count`, `update_to_buff_0(...)`, and selected `xjudge` / `xhit` / `xexit` timing remain unchanged.
+  - No public reader API, broad owner-family helper, formula rewrite, raw old-container passthrough, validation-only fixture, event/runtime/listener merge, or old-container deletion was introduced.
+- Next step:
+  - Continue to `US-004` bounded state-sync ordering only for preflight-approved `dy.count`, `record.real_count`, and `update_to_buff_0(...)` ordering. Keep formula semantics, public reader APIs, event/runtime/listener layers, and unrelated owner families out of that slice.
+---
