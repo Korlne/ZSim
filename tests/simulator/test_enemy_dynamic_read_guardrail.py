@@ -38,6 +38,7 @@ ENEMY_DYNAMIC_READ_NAMES = {
 
 CLASSIFICATION_BY_FILE = {
     "zsim/sim_progress/Buff/BuffXLogic/ElectroLipGlossAtkAndDmgBonus.py": "simple enemy read",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_map_read.py": "approved helper boundary",
     "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_read.py": "approved helper boundary",
     "zsim/sim_progress/Buff/BuffXLogic/enemy_edge_state_read.py": "approved helper boundary",
     "zsim/sim_progress/Buff/BuffXLogic/enemy_state_read.py": "approved helper boundary",
@@ -132,6 +133,25 @@ APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_FrostBurn.py",
 }
 
+APPROVED_ANOMALY_MAP_SINGLE_HELPER_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py",
+}
+
+APPROVED_ANOMALY_MAP_SNAPSHOT_HELPER_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/HailstormShrineIceBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/MiyabiAdditionalAbility_IgnoreIceRes.py",
+}
+
+APPROVED_ANOMALY_MAP_HELPER_FILES = (
+    APPROVED_ANOMALY_MAP_SINGLE_HELPER_FILES
+    | APPROVED_ANOMALY_MAP_SNAPSHOT_HELPER_FILES
+)
+
+APPROVED_ANOMALY_MAP_HELPER_FILES_BY_NAME = {
+    "read_enemy_anomaly_state": APPROVED_ANOMALY_MAP_SINGLE_HELPER_FILES,
+    "snapshot_enemy_anomaly_states": APPROVED_ANOMALY_MAP_SNAPSHOT_HELPER_FILES,
+}
+
 MIGRATED_HELPER_FILES_BY_NAME = {
     "read_enemy_anomaly_active": APPROVED_ANOMALY_HELPER_FILES,
     "read_enemy_shock_active": APPROVED_SHOCK_HELPER_FILES,
@@ -139,6 +159,8 @@ MIGRATED_HELPER_FILES_BY_NAME = {
     "read_enemy_frozen_edge_state": APPROVED_EDGE_FROZEN_HELPER_FILES,
     "read_enemy_stun_edge_state": APPROVED_EDGE_STUN_HELPER_FILES,
     "read_enemy_frost_frostbite_edge_state": APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES,
+    "read_enemy_anomaly_state": set(),
+    "snapshot_enemy_anomaly_states": set(),
 }
 
 APPROVED_HELPER_FILES_BY_NAME = {
@@ -152,6 +174,7 @@ APPROVED_HELPER_FILES_BY_NAME = {
     "read_enemy_frozen_edge_state": APPROVED_EDGE_FROZEN_HELPER_FILES,
     "read_enemy_stun_edge_state": APPROVED_EDGE_STUN_HELPER_FILES,
     "read_enemy_frost_frostbite_edge_state": APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES,
+    **APPROVED_ANOMALY_MAP_HELPER_FILES_BY_NAME,
 }
 
 APPROVED_HELPER_CLASSIFICATIONS_BY_NAME = {
@@ -167,6 +190,8 @@ APPROVED_HELPER_CLASSIFICATIONS_BY_NAME = {
     "read_enemy_frozen_edge_state": {"edge-detection read"},
     "read_enemy_stun_edge_state": {"edge-detection read"},
     "read_enemy_frost_frostbite_edge_state": {"edge-detection read"},
+    "read_enemy_anomaly_state": {"same-phase future anomaly-map read"},
+    "snapshot_enemy_anomaly_states": {"same-phase future anomaly-map read"},
 }
 
 HELPER_NAMES_BY_FAMILY = {
@@ -181,6 +206,7 @@ HELPER_NAMES_BY_FAMILY = {
             "read_enemy_frost_frostbite_edge_state",
         }
     ),
+    "anomaly-map helpers": frozenset(APPROVED_ANOMALY_MAP_HELPER_FILES_BY_NAME),
 }
 
 MIGRATED_HELPER_FILES = (
@@ -456,11 +482,28 @@ def test_enemy_dynamic_read_guardrail_classifies_getattr_anomaly_maps_as_future_
         for finding in findings
         if finding.matched_expression.startswith("getattr(")
     ]
+    helper_boundary_path = (
+        "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_map_read.py"
+    )
+    helper_getattr_findings = [
+        finding for finding in getattr_findings if finding.path == helper_boundary_path
+    ]
+    state_machine_getattr_findings = [
+        finding for finding in getattr_findings if finding.path != helper_boundary_path
+    ]
 
-    assert {finding.path for finding in getattr_findings} == ANOMALY_MAP_FUTURE_POOL_FILES
+    assert (
+        {finding.path for finding in state_machine_getattr_findings}
+        == ANOMALY_MAP_FUTURE_POOL_FILES
+    )
     assert all(
         finding.classification_suggestion == "same-phase future anomaly-map read"
-        for finding in getattr_findings
+        for finding in state_machine_getattr_findings
+    )
+    assert {finding.path for finding in helper_getattr_findings} == {helper_boundary_path}
+    assert all(
+        finding.classification_suggestion == "approved helper boundary"
+        for finding in helper_getattr_findings
     )
     assert ANOMALY_MAP_FUTURE_POOL_FILES.isdisjoint(EDGE_DETECTION_FILES)
     assert ANOMALY_MAP_FUTURE_POOL_FILES.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
@@ -535,6 +578,8 @@ def test_enemy_dynamic_read_guardrail_tracks_helper_references_by_family() -> No
     assert family_references["edge-state helpers"]["imports"] == edge_state_files
     assert family_references["edge-state helpers"]["calls"] == edge_state_files
     assert edge_state_files == EDGE_DETECTION_FILES
+    assert family_references["anomaly-map helpers"]["imports"] == set()
+    assert family_references["anomaly-map helpers"]["calls"] == set()
 
 
 def test_enemy_dynamic_read_guardrail_limits_frozen_edge_helper_to_exact_files() -> None:
@@ -619,6 +664,31 @@ def test_enemy_dynamic_read_guardrail_approves_copied_output_predicate_helpers_b
     )
 
 
+def test_enemy_dynamic_read_guardrail_approves_anomaly_map_helpers_by_exact_future_path() -> None:
+    references = _collect_helper_reference_paths()
+
+    assert APPROVED_ANOMALY_MAP_HELPER_FILES_BY_NAME == {
+        "read_enemy_anomaly_state": {
+            "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py",
+        },
+        "snapshot_enemy_anomaly_states": {
+            "zsim/sim_progress/Buff/BuffXLogic/HailstormShrineIceBonus.py",
+            "zsim/sim_progress/Buff/BuffXLogic/MiyabiAdditionalAbility_IgnoreIceRes.py",
+        },
+    }
+    assert APPROVED_ANOMALY_MAP_HELPER_FILES == ANOMALY_MAP_FUTURE_POOL_FILES
+    assert APPROVED_ANOMALY_MAP_HELPER_FILES.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert APPROVED_ANOMALY_MAP_HELPER_FILES.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
+    assert APPROVED_ANOMALY_MAP_HELPER_FILES.isdisjoint(EDGE_DETECTION_FILES)
+    assert all(
+        CLASSIFICATION_BY_FILE[path] == "same-phase future anomaly-map read"
+        for path in APPROVED_ANOMALY_MAP_HELPER_FILES
+    )
+    for helper_name in APPROVED_ANOMALY_MAP_HELPER_FILES_BY_NAME:
+        assert references[helper_name]["imports"] == set()
+        assert references[helper_name]["calls"] == set()
+
+
 def test_enemy_dynamic_read_guardrail_limits_hugo_copied_output_stun_helper_to_exact_file() -> None:
     references = _collect_helper_reference_paths()["read_enemy_stun_active"]
     copied_output_imports = references["imports"] & COPIED_OUTPUT_ADJACENT_FILES
@@ -701,6 +771,9 @@ def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scop
     edge_state_references_by_kind = _helper_references_for_names(
         references, HELPER_NAMES_BY_FAMILY["edge-state helpers"]
     )
+    anomaly_map_references_by_kind = _helper_references_for_names(
+        references, HELPER_NAMES_BY_FAMILY["anomaly-map helpers"]
+    )
     shock_stun_references = (
         shock_stun_references_by_kind["imports"] | shock_stun_references_by_kind["calls"]
     )
@@ -709,6 +782,10 @@ def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scop
     )
     edge_state_references = (
         edge_state_references_by_kind["imports"] | edge_state_references_by_kind["calls"]
+    )
+    anomaly_map_references = (
+        anomaly_map_references_by_kind["imports"]
+        | anomaly_map_references_by_kind["calls"]
     )
 
     assert all(
@@ -745,6 +822,7 @@ def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scop
     assert edge_state_references.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
     assert edge_state_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
     assert edge_state_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
+    assert anomaly_map_references == set()
 
 
 def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> None:
@@ -782,6 +860,13 @@ def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> No
     for helper_name, helper_references in references.items():
         referenced_files = helper_references["imports"] | helper_references["calls"]
 
+        if helper_name in APPROVED_ANOMALY_MAP_HELPER_FILES_BY_NAME:
+            assert (
+                APPROVED_HELPER_FILES_BY_NAME[helper_name]
+                <= ANOMALY_MAP_FUTURE_POOL_FILES
+            )
+            assert referenced_files == set()
+            continue
         assert APPROVED_HELPER_FILES_BY_NAME[helper_name].isdisjoint(
             EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES
         )

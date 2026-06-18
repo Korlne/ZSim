@@ -7583,3 +7583,15 @@
 - Next step:
   - Continue to `US-002` anomaly-map helper contract and guardrail approval; helper semantics must remain pure read-only over explicit anomaly names and keep state-machine ownership in the caller.
 ---
+
+## 2026-06-18 23:49 +08:00 - US-002
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_map_read.py`, `tests/simulator/test_enemy_anomaly_map_read_helper.py`, `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-002-anomaly-map-helper-contract-and-guardrail-approval.md`, `scripts/ralph/plans/slices/us-003-anomalydebuffexitjudge-falling-edge-delegation.md`, `scripts/ralph/investigations/2026-06-18-US-002-anomaly-map-helper-contract.md`, `scripts/ralph/checkpoints/2026-06-18-us-002-anomaly-map-helper-contract.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/evidence-ledger-shards/proven-patterns-to-reuse.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `enemy_anomaly_map_read.py` prepares to replace direct anomaly-map `getattr(...enemy.dynamic, name)` reads with `read_enemy_anomaly_state(...)` or `snapshot_enemy_anomaly_states(...)`.
+  - This story only builds the helper boundary, tests, and guardrail approval; it does not delegate a live `BuffXLogic` callsite yet.
+- Compatibility retained:
+  - `AnomalyDebuffExitJudge.py`, `HailstormShrineIceBonus.py`, and `MiyabiAdditionalAbility_IgnoreIceRes.py` remain caller-owned anomaly-map state machines until later focused delegation stories.
+  - `history.record`, `action_stack`, effect counters, disorder consumption, `JudgeTools.detect_edge(...)`, scheduled publish, listener broadcast, dot registration, runtime writes, formulas, old containers, validation-runner behavior, registered routes, performance gates, completed helper subsets, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-003` and delegate only `AnomalyDebuffExitJudge.special_exit_logic(...)`'s current anomaly-state read after focused characterization proves falling-edge and `last_{anomaly_name}` update semantics.
+---
