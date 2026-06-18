@@ -7751,3 +7751,18 @@
 - Next step:
   - Generate `Buff Phase-Boundary Route Review And Phase 5 Resume Gate`; the human route review must either accept retained compatibility for Phase 5 resume, promote one exact same-phase candidate with evidence, or keep Phase 5 paused with an explicit blocker.
 ---
+## 2026-06-19 06:39 +08:00 - US-001
+- Files changed: `scripts/ralph/investigations/2026-06-19-US-001-route-intake-no-reopen-reconciliation.md`, `scripts/ralph/checkpoints/2026-06-19-us-001-route-intake-checkpoint.md`, Ralph evidence / dashboard / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 route intake packet` replaces stale historical route handoffs as the active routing evidence for this PRD.
+  - No live production Buff path, helper, validation runner, registered route, old container, lifecycle path, event/runtime/listener layer, formula output, copied-output payload, or retained compatibility path was replaced in this docs/control-plane story.
+- Compatibility retained:
+  - Completed / no-reopen surfaces remain closed unless future current-root source, focused regression, guardrail, validation failure, or reviewer evidence names exact file / symbol / behavior.
+  - `MiyabiFrostburnDebuffMirrorReader`, enemy-state helpers, anomaly-map helpers, copied-output predicate helpers, RegularMul helper families, CalAnomaly helper families, P2-A through P2-G guarded buckets, deleted old `event_list` discovery surfaces, and Phase-1 infrastructure boundaries remain retained or completed evidence rather than automatic backlog.
+  - Event queue semantics, synchronous listener broadcasts, dot runtime registration, same-tick runtime writes, explicit ports/adapters, no cached dispatch adapters, old containers, validation-runner behavior, registered routes, performance gates, and serial validation discipline remain unchanged.
+- Validation evidence:
+  - Focused docs/control-plane checks passed: `git diff --check -- docs scripts/ralph tasks tests zsim`, Ralph JSON sanity, UTF-8 / mojibake scan, and scoped Ralph tooling mypy.
+  - Broad Buff validation, Phase 5 registered-route validation, main-loop consistency, and runtime benchmark were skipped because no live production Buff behavior or performance-sensitive surface changed.
+- Next step:
+  - Continue to `US-002` retained compatibility completion-criteria classification. Do not promote a same-phase implementation, deletion-readiness packet, or Phase 5 validation route until the human route decision / exact-candidate evidence gate is satisfied.
+---
