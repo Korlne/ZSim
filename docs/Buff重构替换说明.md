@@ -6871,3 +6871,43 @@
 - Next step:
   - Continue to `US-005` Ralph control-plane and encoding verification; do not generate a generic Phase-3 same-phase selection loop or repeated Phase-4 evidence refresh unless new current-root evidence names an exact candidate.
 ---
+
+## 2026-06-18 07:56 +08:00 - Phase 5 Yixuan Main-Loop Validation
+- Files changed: `tests/teams/sheer_teams.py`, `tests/teams/__init__.py`, `zsim/lib_webui/process_dmg_result.py`, `zsim/utils/process_dmg_result.py`, `tests/simulator/test_main_loop_consistency.py`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `tests/teams/sheer_teams.py` registers the existing production `仪玄-耀嘉音-扳机` APL as `仪玄-耀嘉音-扳机试点队`, replacing the previous Phase-5 blocker where a real APL existed but no registered route could load it through the consistency / benchmark runners.
+  - `_normalize_damage_schema(...)` in WebUI and utils damage analysis replaces ad hoc downstream handling of blank/string `is_anomaly` columns with a Boolean schema boundary, allowing new main-loop results to be analyzed like old `results/原zsim数据`.
+- Compatibility retained:
+  - No Buff formula, event queue, listener broadcast, same-tick runtime write, old container, retained compatibility, registered APL content, validation-runner command surface, or runtime-mode switch behavior changed.
+  - `--legacy-runtime` / `--candidate-runtime` remain report labels; this Phase 5 sample validates current retained-vs-current output and performance, not a live runtime mode switch.
+- Phase 5 evidence:
+  - 100 tick `仪玄-耀嘉音-扳机试点队` smoke: `matches=true`, total damage `49402.53` vs `49402.53`, and nonzero element `4` route count.
+  - 1000 tick consistency: `matches=true`, total damage `6705120.69` vs `6705120.69`, event count `44` vs `44`, element counts `0:1 / 3:22 / 4:9 / 6:12`.
+  - 3600 tick readable consistency rerun: `matches=true`, total damage `31722843.75` vs `31722843.75`, event count `136` vs `136`, element counts `0:1 / 3:52 / 4:21 / 6:62`, Buff timeline diff `0`.
+  - 3600 tick benchmark readable rerun: current total runtime `5073.9284ms`, legacy total runtime `5114.667ms`, ratio `0.992`; simulator core current `4895.2271ms` vs legacy `4839.2822ms`, so simulator core still shows a small regression while report stages are faster.
+- Next step:
+  - Continue Phase 5 with repeated deterministic samples and profiler on simulator core. Do not reopen Phase 3/4 candidate generation unless a validation/profiler result names exact file / symbol / behavior evidence.
+---
+
+## 2026-06-18 09:02 +08:00 - US-002
+- Files changed: `scripts/ralph/plans/slices/us-002-old-container-source-of-truth-gap-packet.md`, `scripts/ralph/investigations/2026-06-18-US-002-old-container-source-of-truth-gap-packet.md`, `scripts/ralph/checkpoints/2026-06-18-us-002-old-container-source-of-truth.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger-shards/open-evidence-gaps.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-002 old-container source-of-truth gap packet` replaces broad cleanup assumptions with a current-root reference census, CodeGraph source navigation, Phase 1 / Phase 4 doc reconciliation, and explicit classification for `exist_buff_dict`, `DYNAMIC_BUFF_DICT`, `LOADING_BUFF_DICT`, `dynamic_buff`, and `loading_buff`.
+  - This story is investigation / Ralph completion bookkeeping only; it does not replace live production Buff code, delete or rebind old container identity, expand runtime/read/command ports, alter formulas, or activate Phase 5 validation.
+- Compatibility retained:
+  - `LoadData.exist_buff_dict`, `LoadData.LOADING_BUFF_DICT`, `GlobalStats.DYNAMIC_BUFF_DICT`, `ScheduleData.dynamic_buff`, `ScheduleData.loading_buff`, `LegacyBuffRuntimeFacade`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffLoadLoop()`, legacy `buff_add()`, legacy `KickOutBuff()`, and `ScheduleBuffSettle(...)` remain unchanged.
+  - Old containers are still runtime source of truth. The only bounded follow-up candidate is `ScheduleData.loading_buff` alias exposure review; it is not deletion readiness for the live `LoadData.LOADING_BUFF_DICT` pending queue.
+- Next step:
+  - Continue to `US-003` legacy lifecycle entrypoint gap packet. Do not infer old-container deletion readiness from this investigation.
+---
+
+## 2026-06-18 09:24 +08:00 - US-002
+- Files changed: `scripts/ralph/investigations/2026-06-18-US-002-old-container-source-of-truth-gap.md`, `scripts/ralph/plans/slices/us-002-old-container-source-of-truth-gap-packet.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/open-evidence-gaps.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-002 old-container source-of-truth packet` replaces stale deletion / cleanup assumptions with current-root `rg`, CodeGraph source evidence, and a container-family classification.
+  - This story is evidence / Ralph completion bookkeeping only; it does not replace live production Buff code, delete old containers, rebind container identity, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `exist_buff_dict`, `DYNAMIC_BUFF_DICT`, `LOADING_BUFF_DICT`, `dynamic_buff`, `loading_buff`, `BuffLoadLoop()`, legacy `buff_add()`, `ScheduleBuffSettle(...)`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `LegacyBuffRuntimeFacade`, `BuffRuntimeReadPort`, old container identity, pending-to-active order, enemy debuff mirror compatibility, lifecycle fallbacks, and retained compatibility paths remain unchanged.
+- Next step:
+  - Continue to `US-003` lifecycle entrypoint gap packet. Treat `LOADING_BUFF_DICT` pending activation as the only source-backed bounded implementation candidate from this packet; keep old-container deletion and identity rebind No-Go until a later story proves exact unused or behavior-preserving conditions.
+---
