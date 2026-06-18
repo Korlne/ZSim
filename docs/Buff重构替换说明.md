@@ -7330,3 +7330,16 @@
 - Next step:
   - Continue to `US-007` serial validation and reviewer invariant gate without expanding the helper subset.
 ---
+
+## 2026-06-18 18:40 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-serial-validation-and-reviewer-invariant-gate.md`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-18-us-007-simple-enemy-state-serial-validation.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 serial validation and reviewer invariant gate` replaces unverified confidence in the shock/stun helper subset with focused pytest evidence, serial `implicit-events` validation evidence, and reviewer invariant evidence.
+  - This story is evidence-only; it does not replace additional live `BuffXLogic` reads or broaden any helper.
+- Compatibility retained:
+  - Focused shock/stun bundle exited `0` with `51 passed`; serial `implicit-events` exited `0` with base simulator `2 passed`, isolated teams `3 passed`, focused slice `285 passed`, and mypy success on `93 source files`.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, old containers, formula outputs, public reader ports, validation-runner behavior, registered teams/APLs, performance gates, Phase 5 registered-route validation, and retained compatibility surfaces remain unchanged.
+  - `calculator-reads`, `formula-parity`, default lifecycle validation, main-loop consistency, and benchmark samples stayed skipped because no formula/calculator, lifecycle/runtime-write, validation-runner, registered-route, performance, or broader production semantic surface changed.
+- Next step:
+  - Continue to `US-008` handoff docs and same-phase pool preservation.
+---
