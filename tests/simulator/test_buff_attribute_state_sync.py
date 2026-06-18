@@ -10,6 +10,18 @@ import pytest
 
 import zsim.sim_progress.ScheduledEvent.Calculator as calculator_module
 from zsim.sim_progress.Buff.BuffXLogic import (
+    LighterAdditionalAbility_IceFireBonus as lighter_module,
+)
+from zsim.sim_progress.Buff.BuffXLogic import (
+    QingYiAdditionalAbilityStunConvertToATK as qingyi_module,
+)
+from zsim.sim_progress.Buff.BuffXLogic import (
+    Soldier0AnbyCoreSkillCritDMGBonus as soldier0_anby_module,
+)
+from zsim.sim_progress.Buff.BuffXLogic import (
+    TriggerAdditionalAbilityStunBonus as trigger_module,
+)
+from zsim.sim_progress.Buff.BuffXLogic import (
     YuzuhaAdditionalAbilityAnomalyDmgBonus as yuzuha_dmg_module,
 )
 from zsim.sim_progress.Buff.BuffXLogic.AliceAdditionalAbilityApBonus import (
@@ -1146,6 +1158,97 @@ def _trigger_skill_node(
     if labels is None:
         labels = {"aftershock_attack": object()}
     return SimpleNamespace(skill_tag=skill_tag, skill=SimpleNamespace(labels=labels))
+
+
+@pytest.mark.parametrize(
+    (
+        "module",
+        "logic_cls",
+        "record_cls",
+        "owner",
+        "index",
+    ),
+    [
+        (
+            lighter_module,
+            LighterExtraSkill_IceFireBonus,
+            lighter_module.LighterExtraSkillRecord,
+            "莱特",
+            "lighter-additional-ability-ice-fire",
+        ),
+        (
+            qingyi_module,
+            QingYiAdditionalAbilityStunConvertToATK,
+            qingyi_module.QingYiAdditionalSkillRecord,
+            "青衣",
+            "qingyi-additional-ability-stun-convert-atk",
+        ),
+        (
+            trigger_module,
+            TriggerAdditionalAbilityStunBonus,
+            trigger_module.TriggerAdditionalAbilityStunBonusRecord,
+            "扳机",
+            "trigger-additional-ability-stun-bonus",
+        ),
+        (
+            soldier0_anby_module,
+            Soldier0AnbyCoreSkillCritDMGBonus,
+            soldier0_anby_module.Soldier0AnbyCoreSkillCritDMGBonusRecord,
+            "零号·安比",
+            "soldier0-anby-core-skill-crit-dmg-bonus",
+        ),
+    ],
+)
+def test_selected_owner_family_check_record_module_preserves_old_template_identity_and_lazy_record(
+    monkeypatch: pytest.MonkeyPatch,
+    module: object,
+    logic_cls: type[object],
+    record_cls: type[object],
+    owner: str,
+    index: str,
+) -> None:
+    calls: list[tuple[Any, ...]] = []
+    active_buff = _StateSyncBuffProbe(
+        index=index,
+        tick=950,
+        calls=calls,
+        initial_count=7.0,
+    )
+    buff_0 = _make_buff_0(calls, initial_count=7.0, step=1.0)
+
+    lookup_calls: list[object] = []
+
+    def fake_find_exist_buff_dict(*, sim_instance: object) -> dict[str, dict[str, object]]:
+        lookup_calls.append(sim_instance)
+        return {owner: {index: buff_0}}
+
+    monkeypatch.setattr(
+        cast(Any, module).JudgeTools,
+        "find_exist_buff_dict",
+        fake_find_exist_buff_dict,
+    )
+
+    logic = cast(Any, object.__new__(logic_cls))
+    logic.buff_instance = active_buff
+    logic.buff_0 = None
+    logic.record = None
+
+    logic.check_record_module()
+
+    assert lookup_calls == [active_buff.sim_instance]
+    assert logic.buff_0 is buff_0
+    assert logic.record is buff_0.history.record
+    assert isinstance(logic.record, record_cls)
+    assert buff_0.dy.count == pytest.approx(7.0)
+
+    existing_record = logic.record
+    logic.check_record_module()
+
+    assert lookup_calls == [active_buff.sim_instance]
+    assert logic.buff_0 is buff_0
+    assert logic.record is existing_record
+    assert buff_0.history.record is existing_record
+    assert buff_0.dy.count == pytest.approx(7.0)
 
 
 def test_count_state_sync_preserves_simple_start_assignment_update_order(

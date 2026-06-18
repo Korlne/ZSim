@@ -6995,3 +6995,14 @@
 - Next step:
   - Generate the bounded `BuffXLogic` owner-family state-sync / read-gate PRD only if preflight names exact owner family, files / symbols, focused state-sync / read-gate tests, verifier profiles, rollback anchors, and non-goals. Keep Phase 5 and deletion-readiness PRDs paused unless a later human-approved route closes, downgrades, or explicitly blocks every Phase 1-4 gap.
 ---
+
+## 2026-06-18 11:43 +08:00 - US-002
+- Files changed: `tests/simulator/test_buff_attribute_state_sync.py`, `scripts/ralph/plans/slices/us-002-focused-characterization-matrix.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 focused characterization matrix` prepares to replace selected owner-family `BuffXLogic` read-gate / state-sync internals by adding focused compatibility coverage for old `buff_0` template identity, lazy `history.record` creation/reuse, and existing reader/count/order rows.
+  - This story is test/Ralph evidence only; it does not replace live production `BuffXLogic`, rewrite Calculator / CalAnomaly formula semantics, expand public reader/snapshot APIs, delete old containers, or merge event queue / listener broadcast / same-tick runtime-write layers.
+- Compatibility retained:
+  - `Buff.BuffLogic`, `JudgeTools.find_exist_buff_dict(...)`, `check_preparation(...)`, old `buff_0` identity, lazy `history.record`, `simple_start(...)`, `dy.count`, `update_to_buff_0(...)`, and selected owner-family source paths remain unchanged.
+- Next step:
+  - Continue to `US-003` bounded read-gate / attribute-input implementation using the characterized rows and `calculator-reads` verifier; add `implicit-events` only if event-adjacent trigger timing changes.
+---
