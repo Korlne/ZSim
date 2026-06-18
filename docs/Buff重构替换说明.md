@@ -6949,7 +6949,7 @@
 ---
 
 ## 2026-06-18 10:23 +08:00 - US-006
-- Files changed: `scripts/ralph/plans/slices/us-006-formula-snapshot-and-effect-system-replacement-gap-packet.md`, `scripts/ralph/investigations/2026-06-18-US-006-formula-effect-system-gap.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/open-evidence-gaps.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Files changed: `scripts/ralph/plans/slices/us-006-formula-snapshot-and-effect-system-replacement-gap-packet.md`, `scripts/ralph/investigations/2026-06-18-US-006-formula-snapshot-effect-system-gap.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/open-evidence-gaps.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
 - Replacement note:
   - `US-006 formula snapshot / effect-system replacement gap packet` replaces broad full-replacement assumptions with current-root `rg`, CodeGraph symbol / impact evidence, source reads, and classification for `MultiplierData`, `MulData`, `DynamicStatement`, `Calculator.RegularMul`, `Calculator.AnomalyMul`, `CalAnomaly`, private `_CalculatorReadSnapshot`, and retained `CalculatorBuffAttributeReader`.
   - This story is evidence / Ralph completion bookkeeping only; it does not replace live production Buff code, rewrite formulas, expand public reader/snapshot APIs, delete `MultiplierData`, change validation-runner behavior, add registered routes/APLs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
@@ -6958,4 +6958,16 @@
   - Current formula snapshots remain retained compatibility. Completed helper seams and reader parity are bounded compatibility evidence, not full Buff effect / `Character.dynamic_attribute` replacement or deletion readiness.
 - Next step:
   - Continue to `US-007` unified event-driven trigger chain gap packet. Future formula/effect-system candidates must name exact file / symbol / behavior, rollback anchors, and focused oracle rows; run focused formula pytest plus `formula-parity`, `calculator-reads`, or registered-route samples only when the touched surface requires them.
+---
+
+## 2026-06-18 10:36 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-unified-event-driven-trigger-chain-gap-packet.md`, `scripts/ralph/investigations/2026-06-18-US-007-unified-event-driven-trigger-chain-gap.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/open-evidence-gaps.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-007 unified event-driven trigger chain gap packet` replaces broad `event_router` completion assumptions with current-root `rg`, CodeGraph source / impact evidence, and layer-by-layer classification for planned-event queue, scheduled handler requeue, handler registry, listener broadcasts, dot runtime registration, local event groups, runtime reads, and same-tick runtime writes.
+  - This story is evidence / Ralph completion bookkeeping only; it does not replace live production Buff code, implement `event_router`, delete ports/adapters, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/write APIs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `ScheduleDispatchPort`, `create_schedule_dispatch_port()`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `BuffRuntimeReadPort`, `LegacyBuffRuntimeReadAdapter`, `ScheduledEvent.process_event(...)`, `event_handler_factory`, listener broadcasts, dot runtime state, local event groups, handler requeue, old containers, `Buff.BuffLogic`, `BuffXLogic`, and retained compatibility paths remain unchanged.
+  - The source-backed blocker is retained layered compatibility architecture, not one missing `event_router` callsite. Deletion remains No-Go without exact unused / behavior-preserving proof.
+- Next step:
+  - Continue to `US-008` decision matrix and next route. Use the seven completed packets to rank exact bounded implementation candidates, deletion-readiness candidates, long-term compatibility strategies, and No-Go / blocker outcomes; keep Phase 5 paused unless the matrix proves every Phase 1-4 gap is closed, downgraded, or explicitly blocked.
 ---
