@@ -7458,3 +7458,16 @@
 - Next step:
   - Generate `BuffXLogic Remaining Enemy-State Copied-Output And Dot/Debuff Runtime-State Exact Intake`; keep the broad same-phase pool visible and do not reopen completed anomaly-active, shock/stun, or edge-state helper subsets without exact new evidence.
 ---
+
+## 2026-06-18 22:05 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-current-root-exact-intake-and-subfamily-gate.md`, `scripts/ralph/investigations/2026-06-18-US-001-copied-output-dot-debuff-intake.md`, `scripts/ralph/checkpoints/2026-06-18-us-001-current-root-exact-intake.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-002-copied-output-branch-characterization-matrix.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 current-root exact intake packet` replaces chat-only candidate confidence with durable Ralph evidence for copied-output-adjacent and retained dot/debuff / anomaly-map enemy-state reads.
+  - This story does not replace any live `BuffXLogic` read, helper callsite, copied-output payload, formula, dispatch path, listener broadcast, dot runtime state, runtime write, old container, or validation-runner behavior.
+- Compatibility retained:
+  - Copied-output-adjacent direct reads remain in Hugo, Vivian core passive, Vivian cinema 6, and Yanagi until US-002 characterization and later helper-approval stories prove exact delegation safety.
+  - `MiyabiCoreSkill_IceFire.py`, `VivianDotTrigger.py`, `AnomalyDebuffExitJudge.py`, `HailstormShrineIceBonus.py`, and `MiyabiAdditionalAbility_IgnoreIceRes.py` remain retained same-phase pool and outside helper approvals.
+  - Event queue semantics, synchronous listener broadcasts, dot runtime registration, same-tick runtime writes, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, old containers, formula/read surfaces, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-002` copied-output branch characterization before approving or implementing any read-predicate helper delegation.
+---
