@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_anomaly_read import read_enemy_anomaly_active
 
 
 class ElectroLipGlossAtkAndDmgBonusRecord:
@@ -40,7 +41,7 @@ class ElectroLipGlossAtkAndDmgBonus(Buff.BuffLogic):
         """检测到目标处于异常状态就放行。"""
         self.check_record_module()
         self.get_prepared(equipper="触电唇彩", enemy=1)
-        if self.record.enemy.dynamic.is_under_anomaly():
+        if read_enemy_anomaly_active(self.record.enemy):
             return True
         else:
             return False

@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_anomaly_read import read_enemy_anomaly_active
 
 
 class JaneAdditionalAbilityPhyBuildupBonusRecord:
@@ -36,7 +37,7 @@ class JaneAdditionalAbilityPhyBuildupBonus(Buff.BuffLogic):
         """简组队被动的第二特效是：只要有敌人处于异常状态即可触发，所以只要有任意一种异常处于激活状态，就可以放行。"""
         self.check_record_module()
         self.get_prepared(char_CID=1261, enemy=1)
-        return self.record.enemy.dynamic.is_under_anomaly()
+        return read_enemy_anomaly_active(self.record.enemy)
 
     def special_exit_logic(self, **kwargs):
         """此Buff退出逻辑和触发逻辑相反"""

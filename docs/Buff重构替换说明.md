@@ -7181,3 +7181,15 @@
 - Next step:
   - Continue to `US-003` and delegate only the pure simple boolean gates after their existing record lookup and preparation calls.
 ---
+
+## 2026-06-18 14:54 +08:00 - US-003
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/ElectroLipGlossAtkAndDmgBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/JaneAdditionalAbilityPhyBuildupBonus.py`, `scripts/ralph/plans/slices/us-003-delegate-pure-simple-boolean-gates.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `read_enemy_anomaly_active(self.record.enemy)` now replaces the direct simple boolean anomaly-active reads in `ElectroLipGlossAtkAndDmgBonus.special_judge_logic(...)` and `JaneAdditionalAbilityPhyBuildupBonus.special_judge_logic(...)`.
+  - The delegation occurs only after the existing record lookup and `get_prepared(...)` calls; `special_exit_logic(...)` remains caller-owned through the existing judge methods.
+- Compatibility retained:
+  - `MarcatoDesireAtkBonus`, `TimeweaverApBonus`, edge-detection, copied-output / event-adjacent, dot/debuff runtime-state, event/runtime/listener, old-container, and formula surfaces remain outside this slice.
+  - `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcasts, scheduled publish ordering, same-tick runtime writes, and public runtime read ports remain unchanged.
+- Next step:
+  - Continue to `US-004` and delegate only the skill-prerequisite simple gates after their existing prerequisite short-circuits.
+---
