@@ -19,6 +19,18 @@
   - 下一轮应继续收口的旧路径
 ```
 
+## 2026-06-18 08:51 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-gap-closure-intake-and-route-authority.md`, `scripts/ralph/investigations/2026-06-18-US-001-gap-closure-intake.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/open-evidence-gaps.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-001 gap closure intake evidence` replaces stale Phase 5-resume assumptions with confirmed Phase 1-4 comprehensive replacement gap-closure route authority and an explicit list of unchecked gap items.
+  - This story is docs / Ralph evidence / completion bookkeeping only; it does not replace live production Buff code, delete old containers, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, touch performance-sensitive paths, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers, lifecycle compatibility, `BuffXLogic` / `JudgeTools` service-location paths, event/runtime/listener layers, formula snapshots, retained compatibility cleanup blockers, and historical Phase 5 samples remain unchanged.
+  - Phase 5 validation remains out of scope until Phase 1-4 gap items are closed, downgraded, or handed off as No-Go / blocker.
+- Next step:
+  - Continue to `US-002` old-container source-of-truth gap packet; do not run Phase 5 validation or infer deletion authority from retained pool evidence.
+---
+
 ## 2026-06-17 23:17 +08:00 - US-009
 - Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-009-handoff-docs-and-next-candidate-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-17-us-009-final-handoff-next-pool-preservation.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
 - Replacement note:
