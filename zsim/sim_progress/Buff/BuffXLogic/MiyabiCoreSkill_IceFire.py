@@ -8,6 +8,7 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_edge_state_read import read_enemy_frost_frostbite_edge_state
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Preload import SkillNode
@@ -86,7 +87,7 @@ class MiyabiCoreSkill_IceFire(Buff.BuffLogic):
         self.check_record_module()
         self.get_prepared(char_CID=1091, enemy=1)
         enemy = self.record.enemy
-        frostbite_now = enemy.dynamic.frost_frostbite
+        frostbite_now = read_enemy_frost_frostbite_edge_state(enemy)
         if frostbite_now is None:
             frostbite_now = False
 

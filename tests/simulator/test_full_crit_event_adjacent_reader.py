@@ -332,14 +332,18 @@ def _assert_aggregation_calls(
     *,
     times: int,
 ) -> None:
-    assert aggregation_calls == [
-        (
-            fixture.expected_enabled_buff,
-            None,
-            fixture.sim_instance,
-            fixture.char.NAME,
-        )
-    ] * times
+    assert (
+        aggregation_calls
+        == [
+            (
+                fixture.expected_enabled_buff,
+                None,
+                fixture.sim_instance,
+                fixture.char.NAME,
+            )
+        ]
+        * times
+    )
 
 
 def _make_skill_node(
@@ -391,9 +395,7 @@ def test_event_adjacent_full_crit_reader_matches_legacy_oracle_per_candidate(
         },
     )
 
-    reader_full, reader_personal, old_full = (
-        _full_crit_reader_personal_and_legacy_values(fixture)
-    )
+    reader_full, reader_personal, old_full = _full_crit_reader_personal_and_legacy_values(fixture)
 
     assert reader_full == pytest.approx(old_full)
     assert reader_full == pytest.approx(0.6)
@@ -424,9 +426,7 @@ def test_cannon_rotor_full_crit_gate_includes_received_bonus_without_publish(
             "被暴击几率增加": 0.2,
         },
     )
-    reader_full, reader_personal, old_full = (
-        _full_crit_reader_personal_and_legacy_values(fixture)
-    )
+    reader_full, reader_personal, old_full = _full_crit_reader_personal_and_legacy_values(fixture)
     assert reader_full == pytest.approx(old_full)
     assert reader_full == pytest.approx(0.5)
     assert reader_personal == pytest.approx(0.3)
@@ -519,9 +519,7 @@ def test_miyabi_icefire_full_crit_read_keeps_old_count_adjustment_order(
         },
         call_log=calls,
     )
-    reader_full, reader_personal, old_full = (
-        _full_crit_reader_personal_and_legacy_values(fixture)
-    )
+    reader_full, reader_personal, old_full = _full_crit_reader_personal_and_legacy_values(fixture)
     assert reader_full == pytest.approx(old_full)
     assert reader_full == pytest.approx(0.65)
     assert reader_personal == pytest.approx(0.45)
@@ -614,8 +612,7 @@ def test_miyabi_icefire_judge_gates_skill_element_and_debuff(
     frostburn_debuff = object.__new__(BuffClass)
     frostburn_debuff.ft = SimpleNamespace(index="Buff-角色-雅-核心被动-霜灼")
     dynamic_debuff_list = [
-        frostburn_debuff if debuff == "frostburn" else debuff
-        for debuff in debuff_list
+        frostburn_debuff if debuff == "frostburn" else debuff for debuff in debuff_list
     ]
     fixture.enemy.dynamic.dynamic_debuff_list = dynamic_debuff_list
     active_buff = _StateSyncBuffProbe(
@@ -649,6 +646,76 @@ def test_miyabi_icefire_judge_gates_skill_element_and_debuff(
     assert active_buff.sim_instance.schedule_data.event_list == []
 
 
+def test_miyabi_icefire_judge_rejects_wrong_character_before_debuff_scan(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_full_crit_fixture(name="雅", cid=1091, crit_rate=0.3)
+    fixture.enemy.dynamic.dynamic_debuff_list = ["not-a-buff"]
+    active_buff = _StateSyncBuffProbe(
+        index="miyabi-icefire",
+        tick=72,
+        calls=[],
+        initial_count=12.0,
+    )
+    logic = MiyabiCoreSkill_IceFire(active_buff)
+    logic.record = SimpleNamespace(char=fixture.char, enemy=fixture.enemy)
+    get_prepared_calls: list[dict[str, object]] = []
+    monkeypatch.setattr(logic, "check_record_module", lambda: None)
+    monkeypatch.setattr(
+        logic,
+        "get_prepared",
+        lambda **kwargs: get_prepared_calls.append(kwargs),
+    )
+
+    result = logic.special_judge_logic(
+        skill_node=_make_skill_node(
+            char_name="不是雅",
+            cid=1091,
+            trigger_buff_level=0,
+            element_type=5,
+        )
+    )
+
+    assert result is False
+    assert get_prepared_calls == [{"char_CID": 1091, "enemy": 1, "action_stack": 1}]
+    assert active_buff.sim_instance.schedule_data.event_list == []
+
+
+def test_miyabi_icefire_judge_raises_for_non_buff_debuff(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_full_crit_fixture(name="雅", cid=1091, crit_rate=0.3)
+    fixture.enemy.dynamic.dynamic_debuff_list = ["not-a-buff"]
+    active_buff = _StateSyncBuffProbe(
+        index="miyabi-icefire",
+        tick=72,
+        calls=[],
+        initial_count=12.0,
+    )
+    logic = MiyabiCoreSkill_IceFire(active_buff)
+    logic.record = SimpleNamespace(char=fixture.char, enemy=fixture.enemy)
+    get_prepared_calls: list[dict[str, object]] = []
+    monkeypatch.setattr(logic, "check_record_module", lambda: None)
+    monkeypatch.setattr(
+        logic,
+        "get_prepared",
+        lambda **kwargs: get_prepared_calls.append(kwargs),
+    )
+
+    with pytest.raises(TypeError, match="不是Buff类"):
+        logic.special_judge_logic(
+            skill_node=_make_skill_node(
+                char_name=fixture.char.NAME,
+                cid=fixture.char.CID,
+                trigger_buff_level=0,
+                element_type=5,
+            )
+        )
+
+    assert get_prepared_calls == [{"char_CID": 1091, "enemy": 1, "action_stack": 1}]
+    assert active_buff.sim_instance.schedule_data.event_list == []
+
+
 def test_miyabi_icefire_full_crit_count_caps_at_buff_maxcount(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -676,9 +743,7 @@ def test_miyabi_icefire_full_crit_count_caps_at_buff_maxcount(
         },
         call_log=calls,
     )
-    reader_full, reader_personal, old_full = (
-        _full_crit_reader_personal_and_legacy_values(fixture)
-    )
+    reader_full, reader_personal, old_full = _full_crit_reader_personal_and_legacy_values(fixture)
     assert reader_full == pytest.approx(old_full)
     assert reader_full == pytest.approx(1.1)
     assert reader_personal == pytest.approx(0.7)
@@ -757,9 +822,7 @@ def test_woodpecker_full_crit_gate_pins_rng_and_trigger_level(
             "被暴击几率增加": 0.2,
         },
     )
-    reader_full, reader_personal, old_full = (
-        _full_crit_reader_personal_and_legacy_values(fixture)
-    )
+    reader_full, reader_personal, old_full = _full_crit_reader_personal_and_legacy_values(fixture)
     assert reader_full == pytest.approx(old_full)
     assert reader_full == pytest.approx(0.5)
     assert reader_personal == pytest.approx(0.3)

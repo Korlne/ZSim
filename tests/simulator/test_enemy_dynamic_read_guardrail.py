@@ -117,8 +117,7 @@ APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME = {
 }
 
 DELEGATED_COPIED_OUTPUT_HELPER_FILES = (
-    APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
-    | YANAGI_COPIED_OUTPUT_ANOMALY_HELPER_FILES
+    APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES | YANAGI_COPIED_OUTPUT_ANOMALY_HELPER_FILES
 )
 
 APPROVED_EDGE_FROZEN_HELPER_FILES = {
@@ -137,6 +136,14 @@ APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_FrostBurn.py",
 }
 
+APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py",
+}
+
+APPROVED_FROST_FROSTBITE_HELPER_FILES = (
+    APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES | APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES
+)
+
 APPROVED_ANOMALY_MAP_SINGLE_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py",
 }
@@ -147,8 +154,7 @@ APPROVED_ANOMALY_MAP_SNAPSHOT_HELPER_FILES = {
 }
 
 APPROVED_ANOMALY_MAP_HELPER_FILES = (
-    APPROVED_ANOMALY_MAP_SINGLE_HELPER_FILES
-    | APPROVED_ANOMALY_MAP_SNAPSHOT_HELPER_FILES
+    APPROVED_ANOMALY_MAP_SINGLE_HELPER_FILES | APPROVED_ANOMALY_MAP_SNAPSHOT_HELPER_FILES
 )
 
 APPROVED_ANOMALY_MAP_HELPER_FILES_BY_NAME = {
@@ -158,8 +164,7 @@ APPROVED_ANOMALY_MAP_HELPER_FILES_BY_NAME = {
 
 MIGRATED_HELPER_FILES_BY_NAME = {
     "read_enemy_anomaly_active": (
-        APPROVED_ANOMALY_HELPER_FILES
-        | APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+        APPROVED_ANOMALY_HELPER_FILES | APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
     ),
     "read_enemy_shock_active": APPROVED_SHOCK_HELPER_FILES,
     "read_enemy_stun_active": APPROVED_STUN_HELPER_FILES,
@@ -182,7 +187,7 @@ APPROVED_HELPER_FILES_BY_NAME = {
     ),
     "read_enemy_frozen_edge_state": APPROVED_EDGE_FROZEN_HELPER_FILES,
     "read_enemy_stun_edge_state": APPROVED_EDGE_STUN_HELPER_FILES,
-    "read_enemy_frost_frostbite_edge_state": APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES,
+    "read_enemy_frost_frostbite_edge_state": APPROVED_FROST_FROSTBITE_HELPER_FILES,
     **APPROVED_ANOMALY_MAP_HELPER_FILES_BY_NAME,
 }
 
@@ -199,16 +204,17 @@ APPROVED_HELPER_CLASSIFICATIONS_BY_NAME = {
     },
     "read_enemy_frozen_edge_state": {"edge-detection read"},
     "read_enemy_stun_edge_state": {"edge-detection read"},
-    "read_enemy_frost_frostbite_edge_state": {"edge-detection read"},
+    "read_enemy_frost_frostbite_edge_state": {
+        "edge-detection read",
+        "dot/debuff runtime-state read",
+    },
     "read_enemy_anomaly_state": {"delegated anomaly-map read"},
     "snapshot_enemy_anomaly_states": {"delegated anomaly-map read"},
 }
 
 HELPER_NAMES_BY_FAMILY = {
     "simple anomaly": frozenset({"read_enemy_anomaly_active"}),
-    "simple shock/stun": frozenset(
-        {"read_enemy_shock_active", "read_enemy_stun_active"}
-    ),
+    "simple shock/stun": frozenset({"read_enemy_shock_active", "read_enemy_stun_active"}),
     "edge-state helpers": frozenset(
         {
             "read_enemy_frozen_edge_state",
@@ -252,9 +258,7 @@ EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES = (
 )
 
 EXPECTED_DIRECT_READ_FILES = (
-    set(CLASSIFICATION_BY_FILE)
-    - MIGRATED_HELPER_FILES
-    - DELEGATED_COPIED_OUTPUT_HELPER_FILES
+    set(CLASSIFICATION_BY_FILE) - MIGRATED_HELPER_FILES - DELEGATED_COPIED_OUTPUT_HELPER_FILES
 )
 
 CLASSIFICATION_BUCKETS = {
@@ -268,6 +272,7 @@ CLASSIFICATION_BUCKETS = {
     "guarded-maintenance overlap",
     "unrelated retained compatibility",
 }
+
 
 @dataclass(frozen=True)
 class EnemyDynamicReadFinding:
@@ -387,16 +392,10 @@ def _is_excluded_path(path: Path) -> bool:
 
 
 def _production_python_files() -> list[Path]:
-    return sorted(
-        path
-        for path in BUFF_XLOGIC_ROOT.rglob("*.py")
-        if not _is_excluded_path(path)
-    )
+    return sorted(path for path in BUFF_XLOGIC_ROOT.rglob("*.py") if not _is_excluded_path(path))
 
 
-def _collect_findings_from_source(
-    path: Path, source: str
-) -> list[EnemyDynamicReadFinding]:
+def _collect_findings_from_source(path: Path, source: str) -> list[EnemyDynamicReadFinding]:
     tree = ast.parse(source, filename=str(path))
     visitor = EnemyDynamicReadVisitor(path, source)
     visitor.visit(tree)
@@ -426,10 +425,7 @@ def _collect_helper_reference_paths() -> dict[str, dict[str, set[str]]]:
             elif isinstance(node, ast.Call):
                 if isinstance(node.func, ast.Name) and node.func.id in references:
                     references[node.func.id]["calls"].add(rel_path)
-                elif (
-                    isinstance(node.func, ast.Attribute)
-                    and node.func.attr in references
-                ):
+                elif isinstance(node.func, ast.Attribute) and node.func.attr in references:
                     references[node.func.attr]["calls"].add(rel_path)
     return references
 
@@ -446,7 +442,9 @@ def _helper_references_for_names(
 
 
 def test_enemy_dynamic_read_guardrail_scope_excludes_generated_and_duplicate_trees() -> None:
-    scanned_files = {path.relative_to(PROJECT_ROOT).as_posix() for path in _production_python_files()}
+    scanned_files = {
+        path.relative_to(PROJECT_ROOT).as_posix() for path in _production_python_files()
+    }
 
     assert scanned_files
     assert all(".codex_worktrees" not in path for path in scanned_files)
@@ -480,13 +478,9 @@ def test_enemy_dynamic_read_guardrail_classifies_all_current_root_matches() -> N
 def test_enemy_dynamic_read_guardrail_classifies_getattr_anomaly_maps_as_future_pool() -> None:
     findings = _collect_findings()
     getattr_findings = [
-        finding
-        for finding in findings
-        if finding.matched_expression.startswith("getattr(")
+        finding for finding in findings if finding.matched_expression.startswith("getattr(")
     ]
-    helper_boundary_path = (
-        "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_map_read.py"
-    )
+    helper_boundary_path = "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_map_read.py"
     helper_getattr_findings = [
         finding for finding in getattr_findings if finding.path == helper_boundary_path
     ]
@@ -494,10 +488,9 @@ def test_enemy_dynamic_read_guardrail_classifies_getattr_anomaly_maps_as_future_
         finding for finding in getattr_findings if finding.path != helper_boundary_path
     ]
 
-    assert (
-        {finding.path for finding in state_machine_getattr_findings}
-        == ANOMALY_MAP_FUTURE_POOL_FILES
-    )
+    assert {
+        finding.path for finding in state_machine_getattr_findings
+    } == ANOMALY_MAP_FUTURE_POOL_FILES
     assert {finding.path for finding in state_machine_getattr_findings}.isdisjoint(
         DELEGATED_ANOMALY_MAP_HELPER_FILES
     )
@@ -518,9 +511,10 @@ def test_enemy_dynamic_read_guardrail_classifies_getattr_anomaly_maps_as_future_
 def test_enemy_dynamic_read_guardrail_limits_helper_to_approved_subset() -> None:
     references = _collect_helper_reference_paths()
 
-    assert CLASSIFICATION_BY_FILE[
-        "zsim/sim_progress/Buff/BuffXLogic/enemy_state_read.py"
-    ] == "approved helper boundary"
+    assert (
+        CLASSIFICATION_BY_FILE["zsim/sim_progress/Buff/BuffXLogic/enemy_state_read.py"]
+        == "approved helper boundary"
+    )
     for helper_name, approved_files in APPROVED_HELPER_FILES_BY_NAME.items():
         helper_references = references[helper_name]
         approved_classifications = APPROVED_HELPER_CLASSIFICATIONS_BY_NAME[helper_name]
@@ -551,24 +545,23 @@ def test_enemy_dynamic_read_guardrail_tracks_helper_references_by_family() -> No
         for family_name, helper_names in HELPER_NAMES_BY_FAMILY.items()
     }
     migrated_shock_stun_files = APPROVED_SHOCK_HELPER_FILES | APPROVED_STUN_HELPER_FILES
-    approved_shock_stun_files = (
-        migrated_shock_stun_files | APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
-    )
+    approved_shock_stun_files = migrated_shock_stun_files | APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
     edge_state_files = (
         APPROVED_EDGE_FROZEN_HELPER_FILES
         | APPROVED_EDGE_STUN_HELPER_FILES
         | APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES
     )
+    approved_edge_state_references = (
+        edge_state_files | APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES
+    )
 
     assert (
-        APPROVED_ANOMALY_HELPER_FILES
-        | APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+        APPROVED_ANOMALY_HELPER_FILES | APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
         <= family_references["simple anomaly"]["imports"]
         <= APPROVED_HELPER_FILES_BY_NAME["read_enemy_anomaly_active"]
     )
     assert (
-        APPROVED_ANOMALY_HELPER_FILES
-        | APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+        APPROVED_ANOMALY_HELPER_FILES | APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
         <= family_references["simple anomaly"]["calls"]
         <= APPROVED_HELPER_FILES_BY_NAME["read_enemy_anomaly_active"]
     )
@@ -582,17 +575,12 @@ def test_enemy_dynamic_read_guardrail_tracks_helper_references_by_family() -> No
         <= family_references["simple shock/stun"]["calls"]
         <= approved_shock_stun_files
     )
-    assert family_references["edge-state helpers"]["imports"] == edge_state_files
-    assert family_references["edge-state helpers"]["calls"] == edge_state_files
+    assert family_references["edge-state helpers"]["imports"] == approved_edge_state_references
+    assert family_references["edge-state helpers"]["calls"] == approved_edge_state_references
     assert edge_state_files == EDGE_DETECTION_FILES
-    assert (
-        family_references["anomaly-map helpers"]["imports"]
-        == DELEGATED_ANOMALY_MAP_HELPER_FILES
-    )
-    assert (
-        family_references["anomaly-map helpers"]["calls"]
-        == DELEGATED_ANOMALY_MAP_HELPER_FILES
-    )
+    assert APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES <= (DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert family_references["anomaly-map helpers"]["imports"] == DELEGATED_ANOMALY_MAP_HELPER_FILES
+    assert family_references["anomaly-map helpers"]["calls"] == DELEGATED_ANOMALY_MAP_HELPER_FILES
 
 
 def test_enemy_dynamic_read_guardrail_limits_frozen_edge_helper_to_exact_files() -> None:
@@ -602,15 +590,10 @@ def test_enemy_dynamic_read_guardrail_limits_frozen_edge_helper_to_exact_files()
     assert references["imports"] == APPROVED_EDGE_FROZEN_HELPER_FILES
     assert references["calls"] == APPROVED_EDGE_FROZEN_HELPER_FILES
     assert helper_references <= EDGE_DETECTION_FILES
-    assert helper_references.isdisjoint(
-        EDGE_DETECTION_FILES - APPROVED_EDGE_FROZEN_HELPER_FILES
-    )
+    assert helper_references.isdisjoint(EDGE_DETECTION_FILES - APPROVED_EDGE_FROZEN_HELPER_FILES)
     assert helper_references.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
     assert helper_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
-    assert all(
-        CLASSIFICATION_BY_FILE[path] == "edge-detection read"
-        for path in helper_references
-    )
+    assert all(CLASSIFICATION_BY_FILE[path] == "edge-detection read" for path in helper_references)
 
 
 def test_enemy_dynamic_read_guardrail_limits_stun_edge_helper_to_exact_files() -> None:
@@ -620,39 +603,44 @@ def test_enemy_dynamic_read_guardrail_limits_stun_edge_helper_to_exact_files() -
     assert references["imports"] == APPROVED_EDGE_STUN_HELPER_FILES
     assert references["calls"] == APPROVED_EDGE_STUN_HELPER_FILES
     assert helper_references <= EDGE_DETECTION_FILES
-    assert helper_references.isdisjoint(
-        EDGE_DETECTION_FILES - APPROVED_EDGE_STUN_HELPER_FILES
-    )
+    assert helper_references.isdisjoint(EDGE_DETECTION_FILES - APPROVED_EDGE_STUN_HELPER_FILES)
     assert helper_references.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
     assert helper_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
-    assert all(
-        CLASSIFICATION_BY_FILE[path] == "edge-detection read"
-        for path in helper_references
-    )
+    assert all(CLASSIFICATION_BY_FILE[path] == "edge-detection read" for path in helper_references)
 
 
 def test_enemy_dynamic_read_guardrail_limits_frost_frostbite_edge_helper_to_exact_files() -> None:
     references = _collect_helper_reference_paths()["read_enemy_frost_frostbite_edge_state"]
     helper_references = references["imports"] | references["calls"]
 
-    assert references["imports"] == APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES
-    assert references["calls"] == APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES
-    assert helper_references <= EDGE_DETECTION_FILES
+    assert references["imports"] == APPROVED_FROST_FROSTBITE_HELPER_FILES
+    assert references["calls"] == APPROVED_FROST_FROSTBITE_HELPER_FILES
+    assert helper_references <= (
+        EDGE_DETECTION_FILES | APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES
+    )
+    assert (helper_references & EDGE_DETECTION_FILES) == APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES
+    assert (
+        helper_references & DOT_DEBUFF_RUNTIME_STATE_FILES
+    ) == APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES
     assert helper_references.isdisjoint(
         EDGE_DETECTION_FILES - APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES
     )
     assert helper_references.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
-    assert helper_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert helper_references.isdisjoint(
+        DOT_DEBUFF_RUNTIME_STATE_FILES - APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES
+    )
+    assert helper_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
     assert all(
-        CLASSIFICATION_BY_FILE[path] == "edge-detection read"
+        CLASSIFICATION_BY_FILE[path] in {"edge-detection read", "dot/debuff runtime-state read"}
         for path in helper_references
     )
 
 
-def test_enemy_dynamic_read_guardrail_approves_copied_output_predicate_helpers_by_exact_path() -> None:
+def test_enemy_dynamic_read_guardrail_approves_copied_output_predicate_helpers_by_exact_path() -> (
+    None
+):
     copied_output_approved_files = (
-        APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
-        | APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
+        APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES | APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
     )
 
     assert set(APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME) == {
@@ -727,9 +715,7 @@ def test_enemy_dynamic_read_guardrail_limits_hugo_copied_output_stun_helper_to_e
     }
     assert copied_output_imports == APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
     assert copied_output_calls == APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
-    assert copied_output_imports.isdisjoint(
-        APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
-    )
+    assert copied_output_imports.isdisjoint(APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES)
     assert copied_output_calls.isdisjoint(APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES)
     assert copied_output_imports.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
     assert copied_output_calls.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
@@ -770,12 +756,10 @@ def test_enemy_dynamic_read_guardrail_limits_vivian_dot_judge_helper_to_exact_fi
     assert dot_runtime_imports == APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
     assert dot_runtime_calls == APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
     assert dot_runtime_imports.isdisjoint(
-        DOT_DEBUFF_RUNTIME_STATE_FILES
-        - APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+        DOT_DEBUFF_RUNTIME_STATE_FILES - APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
     )
     assert dot_runtime_calls.isdisjoint(
-        DOT_DEBUFF_RUNTIME_STATE_FILES
-        - APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+        DOT_DEBUFF_RUNTIME_STATE_FILES - APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
     )
     assert dot_runtime_imports.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
     assert dot_runtime_calls.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
@@ -787,7 +771,9 @@ def test_enemy_dynamic_read_guardrail_limits_vivian_dot_judge_helper_to_exact_fi
     )
 
 
-def test_enemy_dynamic_read_guardrail_limits_yanagi_copied_output_anomaly_helper_to_exact_file() -> None:
+def test_enemy_dynamic_read_guardrail_limits_yanagi_copied_output_anomaly_helper_to_exact_file() -> (
+    None
+):
     references = _collect_helper_reference_paths()["read_enemy_anomaly_active"]
     copied_output_imports = references["imports"] & COPIED_OUTPUT_ADJACENT_FILES
     copied_output_calls = references["calls"] & COPIED_OUTPUT_ADJACENT_FILES
@@ -807,12 +793,8 @@ def test_enemy_dynamic_read_guardrail_limits_yanagi_copied_output_anomaly_helper
     assert YANAGI_COPIED_OUTPUT_ANOMALY_HELPER_FILES.isdisjoint(
         APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
     )
-    assert YANAGI_COPIED_OUTPUT_ANOMALY_HELPER_FILES.isdisjoint(
-        DOT_DEBUFF_RUNTIME_STATE_FILES
-    )
-    assert YANAGI_COPIED_OUTPUT_ANOMALY_HELPER_FILES.isdisjoint(
-        ANOMALY_MAP_FUTURE_POOL_FILES
-    )
+    assert YANAGI_COPIED_OUTPUT_ANOMALY_HELPER_FILES.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert YANAGI_COPIED_OUTPUT_ANOMALY_HELPER_FILES.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
     assert YANAGI_COPIED_OUTPUT_ANOMALY_HELPER_FILES.isdisjoint(EDGE_DETECTION_FILES)
 
 
@@ -833,20 +815,16 @@ def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scop
     shock_stun_references = (
         shock_stun_references_by_kind["imports"] | shock_stun_references_by_kind["calls"]
     )
-    anomaly_references = (
-        anomaly_references_by_kind["imports"] | anomaly_references_by_kind["calls"]
-    )
+    anomaly_references = anomaly_references_by_kind["imports"] | anomaly_references_by_kind["calls"]
     edge_state_references = (
         edge_state_references_by_kind["imports"] | edge_state_references_by_kind["calls"]
     )
     anomaly_map_references = (
-        anomaly_map_references_by_kind["imports"]
-        | anomaly_map_references_by_kind["calls"]
+        anomaly_map_references_by_kind["imports"] | anomaly_map_references_by_kind["calls"]
     )
 
     assert all(
-        CLASSIFICATION_BY_FILE[path] == "edge-detection read"
-        for path in EDGE_DETECTION_FILES
+        CLASSIFICATION_BY_FILE[path] == "edge-detection read" for path in EDGE_DETECTION_FILES
     )
     assert all(
         CLASSIFICATION_BY_FILE[path] == "copied-output-adjacent read"
@@ -867,8 +845,7 @@ def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scop
         anomaly_references & DOT_DEBUFF_RUNTIME_STATE_FILES
     ) == APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
     assert anomaly_references.isdisjoint(
-        DOT_DEBUFF_RUNTIME_STATE_FILES
-        - APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+        DOT_DEBUFF_RUNTIME_STATE_FILES - APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
     )
     assert anomaly_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
     assert shock_stun_references.isdisjoint(EDGE_DETECTION_FILES)
@@ -880,9 +857,16 @@ def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scop
     )
     assert shock_stun_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
     assert shock_stun_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
-    assert edge_state_references <= EDGE_DETECTION_FILES
+    assert edge_state_references <= (
+        EDGE_DETECTION_FILES | APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES
+    )
     assert edge_state_references.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
-    assert edge_state_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert (
+        edge_state_references & DOT_DEBUFF_RUNTIME_STATE_FILES
+    ) == APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES
+    assert edge_state_references.isdisjoint(
+        DOT_DEBUFF_RUNTIME_STATE_FILES - APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES
+    )
     assert edge_state_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
     assert anomaly_map_references == DELEGATED_ANOMALY_MAP_HELPER_FILES
 
@@ -908,6 +892,8 @@ def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> No
     assert direct_excluded_read_files <= finding_paths
     assert APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES <= DOT_DEBUFF_RUNTIME_STATE_FILES
     assert APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES.isdisjoint(finding_paths)
+    assert APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES <= DOT_DEBUFF_RUNTIME_STATE_FILES
+    assert APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES <= finding_paths
     assert all(
         CLASSIFICATION_BY_FILE[path] == "dot/debuff runtime-state read"
         for path in DOT_DEBUFF_RUNTIME_STATE_FILES
@@ -921,9 +907,7 @@ def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> No
         for path in DELEGATED_ANOMALY_MAP_HELPER_FILES
     )
     assert copied_output_approved_files == COPIED_OUTPUT_ADJACENT_FILES
-    assert copied_output_approved_files.isdisjoint(
-        EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES
-    )
+    assert copied_output_approved_files.isdisjoint(EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES)
 
     for helper_name, helper_references in references.items():
         referenced_files = helper_references["imports"] | helper_references["calls"]
@@ -938,8 +922,20 @@ def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> No
             ) == APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
             assert referenced_files.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
             assert referenced_files.isdisjoint(
-                DOT_DEBUFF_RUNTIME_STATE_FILES
-                - APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+                DOT_DEBUFF_RUNTIME_STATE_FILES - APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+            )
+            continue
+        if helper_name == "read_enemy_frost_frostbite_edge_state":
+            assert (
+                APPROVED_HELPER_FILES_BY_NAME[helper_name]
+                & EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES
+            ) == APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES
+            assert (
+                referenced_files & EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES
+            ) == APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES
+            assert referenced_files.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
+            assert referenced_files.isdisjoint(
+                DOT_DEBUFF_RUNTIME_STATE_FILES - APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES
             )
             continue
         if helper_name == "read_enemy_anomaly_state":
@@ -969,19 +965,13 @@ def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> No
 def test_enemy_dynamic_read_guardrail_keeps_copied_output_matrix_exact() -> None:
     findings = _collect_findings()
     copied_findings = [
-        finding
-        for finding in findings
-        if finding.path in COPIED_OUTPUT_ADJACENT_FILES
+        finding for finding in findings if finding.path in COPIED_OUTPUT_ADJACENT_FILES
     ]
     copied_output_direct_read_files = (
         COPIED_OUTPUT_ADJACENT_FILES - DELEGATED_COPIED_OUTPUT_HELPER_FILES
     )
     matched_by_path = {
-        path: [
-            finding.matched_expression
-            for finding in copied_findings
-            if finding.path == path
-        ]
+        path: [finding.matched_expression for finding in copied_findings if finding.path == path]
         for path in COPIED_OUTPUT_ADJACENT_FILES
     }
     references = _collect_helper_reference_paths()
@@ -1005,9 +995,7 @@ def test_enemy_dynamic_read_guardrail_keeps_copied_output_matrix_exact() -> None
         copied_output_references = (
             helper_reference["imports"] | helper_reference["calls"]
         ) & COPIED_OUTPUT_ADJACENT_FILES
-        approved_files = APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME.get(
-            helper_name, set()
-        )
+        approved_files = APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME.get(helper_name, set())
 
         assert copied_output_references <= approved_files
 
@@ -1028,7 +1016,10 @@ def test_enemy_dynamic_read_guardrail_failure_message_classifies_unknown_matches
         "classification suggestion: unrelated retained compatibility" in message
         for message in messages
     )
-    assert any("matched expression: record.enemy.dynamic.is_under_anomaly()" in message for message in messages)
+    assert any(
+        "matched expression: record.enemy.dynamic.is_under_anomaly()" in message
+        for message in messages
+    )
     assert any("matched expression: record.enemy.dynamic.stun" in message for message in messages)
 
 

@@ -7630,3 +7630,14 @@
 - Next step:
   - Continue to `US-006` Miyabi IceFire Runtime-State Read Closure; keep debuff mirror and scheduled-publish behavior retained unless focused tests prove an exact pure-read helper boundary.
 ---
+## 2026-06-19 00:33 +08:00 - US-006
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py`, `tests/simulator/test_miyabi_core_skill_icefire_dispatch.py`, `tests/simulator/test_full_crit_event_adjacent_reader.py`, `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-006-miyabi-icefire-runtime-state-read-closure.md`, `scripts/ralph/evidence-ledger-shards/proven-patterns-to-reuse.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `read_enemy_frost_frostbite_edge_state(...)` now replaces only `MiyabiCoreSkill_IceFire.special_exit_logic(...)`'s current `enemy.dynamic.frost_frostbite` read.
+  - `MiyabiCoreSkill_IceFire.py` remains classified as a dot/debuff runtime-state owner because `special_judge_logic(...)` still reads `enemy.dynamic.dynamic_debuff_list` as retained debuff mirror/read-model access.
+- Compatibility retained:
+  - Focused tests prove frostburn present, frostburn absent, non-Buff `TypeError`, wrong character, wrong element, missing `skill_node`, rising-edge exit, no-edge exit, dispatch publish before `special_resources(...)`, no raw queue access, no listener broadcast, and no runtime command.
+  - `check_preparation(...)`, old `buff_0` identity, `MiyabiCoreSkillIF.last_frostbite`, `SkillNode` construction, `ScheduleDispatchPort` publish, `special_resources(...)`, `simple_start(...)`, `dy.count` update order, `CalculatorBuffAttributeReader.read_full_crit_rate(...)`, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-007` serial validation and reviewer invariant gate; keep the IceFire helper approval exact and keep debuff mirror / single-source cleanup retained unless a later story proves a separate exact boundary.
+---
