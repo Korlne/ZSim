@@ -7618,3 +7618,15 @@
 - Next step:
   - Continue to `US-005` Vivian Dot Trigger Pure Judge Delegation; keep dot runtime registration and scheduled publish boundaries outside the pure judge read.
 ---
+## 2026-06-19 00:23 +08:00 - US-005
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py`, `tests/simulator/test_vivian_dot_trigger_dispatch.py`, `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-005-vivian-dot-trigger-pure-judge-delegation.md`, `scripts/ralph/plans/slices/us-006-miyabi-icefire-runtime-state-read-closure.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/proven-patterns-to-reuse.md`, `scripts/ralph/prd.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `read_enemy_anomaly_active(...)` now replaces only `VivianDotTrigger.special_judge_logic(...)`'s judge-time `self.record.enemy.dynamic.is_under_anomaly()` read.
+  - `VivianDotTrigger.py` remains classified as a dot/debuff runtime-state owner for the hit path; the guardrail allows this exact helper import/call only for the judge read and does not approve `MiyabiCoreSkill_IceFire.py` or other dot/debuff runtime-state files.
+- Compatibility retained:
+  - Focused tests prove wrong skill tag, missing `skill_node`, invalid `skill_node`, hit-now false, anomaly-active false, and anomaly-active true judge branches.
+  - The judge path still does not register dots, publish scheduled events, broadcast listener events, issue runtime commands, touch raw `event_list`, spawn dots, use `DotRuntimeStateAdapter`, or start dot `LoadingMission` work.
+  - `special_hit_logic(...)`, `DotRuntimeStateAdapter`, `spawn_normal_dot(...)`, `LoadingMission.mission_start(...)`, dot registration, `publish_scheduled(...)`, optional Vivian report behavior, event queue semantics, synchronous listener broadcast boundaries, same-tick runtime writes, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-006` Miyabi IceFire Runtime-State Read Closure; keep debuff mirror and scheduled-publish behavior retained unless focused tests prove an exact pure-read helper boundary.
+---

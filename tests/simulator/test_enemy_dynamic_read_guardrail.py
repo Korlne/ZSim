@@ -93,6 +93,10 @@ APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
 }
 
+APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py",
+}
+
 YANAGI_COPIED_OUTPUT_ANOMALY_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
 }
@@ -153,7 +157,10 @@ APPROVED_ANOMALY_MAP_HELPER_FILES_BY_NAME = {
 }
 
 MIGRATED_HELPER_FILES_BY_NAME = {
-    "read_enemy_anomaly_active": APPROVED_ANOMALY_HELPER_FILES,
+    "read_enemy_anomaly_active": (
+        APPROVED_ANOMALY_HELPER_FILES
+        | APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+    ),
     "read_enemy_shock_active": APPROVED_SHOCK_HELPER_FILES,
     "read_enemy_stun_active": APPROVED_STUN_HELPER_FILES,
     "read_enemy_frozen_edge_state": APPROVED_EDGE_FROZEN_HELPER_FILES,
@@ -165,7 +172,9 @@ MIGRATED_HELPER_FILES_BY_NAME = {
 
 APPROVED_HELPER_FILES_BY_NAME = {
     "read_enemy_anomaly_active": (
-        APPROVED_ANOMALY_HELPER_FILES | APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
+        APPROVED_ANOMALY_HELPER_FILES
+        | APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
+        | APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
     ),
     "read_enemy_shock_active": APPROVED_SHOCK_HELPER_FILES,
     "read_enemy_stun_active": (
@@ -181,6 +190,7 @@ APPROVED_HELPER_CLASSIFICATIONS_BY_NAME = {
     "read_enemy_anomaly_active": {
         "simple enemy read",
         "copied-output-adjacent read",
+        "dot/debuff runtime-state read",
     },
     "read_enemy_shock_active": {"simple enemy read"},
     "read_enemy_stun_active": {
@@ -552,11 +562,13 @@ def test_enemy_dynamic_read_guardrail_tracks_helper_references_by_family() -> No
 
     assert (
         APPROVED_ANOMALY_HELPER_FILES
+        | APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
         <= family_references["simple anomaly"]["imports"]
         <= APPROVED_HELPER_FILES_BY_NAME["read_enemy_anomaly_active"]
     )
     assert (
         APPROVED_ANOMALY_HELPER_FILES
+        | APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
         <= family_references["simple anomaly"]["calls"]
         <= APPROVED_HELPER_FILES_BY_NAME["read_enemy_anomaly_active"]
     )
@@ -747,6 +759,34 @@ def test_enemy_dynamic_read_guardrail_limits_copied_output_anomaly_helper_to_exa
     assert copied_output_calls.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
 
 
+def test_enemy_dynamic_read_guardrail_limits_vivian_dot_judge_helper_to_exact_file() -> None:
+    references = _collect_helper_reference_paths()["read_enemy_anomaly_active"]
+    dot_runtime_imports = references["imports"] & DOT_DEBUFF_RUNTIME_STATE_FILES
+    dot_runtime_calls = references["calls"] & DOT_DEBUFF_RUNTIME_STATE_FILES
+
+    assert APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES == {
+        "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py"
+    }
+    assert dot_runtime_imports == APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+    assert dot_runtime_calls == APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+    assert dot_runtime_imports.isdisjoint(
+        DOT_DEBUFF_RUNTIME_STATE_FILES
+        - APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+    )
+    assert dot_runtime_calls.isdisjoint(
+        DOT_DEBUFF_RUNTIME_STATE_FILES
+        - APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+    )
+    assert dot_runtime_imports.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
+    assert dot_runtime_calls.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
+    assert dot_runtime_imports.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
+    assert dot_runtime_calls.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
+    assert all(
+        CLASSIFICATION_BY_FILE[path] == "dot/debuff runtime-state read"
+        for path in APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+    )
+
+
 def test_enemy_dynamic_read_guardrail_limits_yanagi_copied_output_anomaly_helper_to_exact_file() -> None:
     references = _collect_helper_reference_paths()["read_enemy_anomaly_active"]
     copied_output_imports = references["imports"] & COPIED_OUTPUT_ADJACENT_FILES
@@ -823,7 +863,13 @@ def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scop
     assert anomaly_references.isdisjoint(
         COPIED_OUTPUT_ADJACENT_FILES - APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
     )
-    assert anomaly_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert (
+        anomaly_references & DOT_DEBUFF_RUNTIME_STATE_FILES
+    ) == APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+    assert anomaly_references.isdisjoint(
+        DOT_DEBUFF_RUNTIME_STATE_FILES
+        - APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+    )
     assert anomaly_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
     assert shock_stun_references.isdisjoint(EDGE_DETECTION_FILES)
     assert (
@@ -845,6 +891,10 @@ def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> No
     findings = _collect_findings()
     finding_paths = {finding.path for finding in findings}
     references = _collect_helper_reference_paths()
+    direct_excluded_read_files = (
+        EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES
+        - APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+    )
     copied_output_approved_files: set[str] = set()
     for approved_files in APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME.values():
         copied_output_approved_files.update(approved_files)
@@ -854,8 +904,10 @@ def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> No
         "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py",
     }
     assert ANOMALY_MAP_FUTURE_POOL_FILES == set()
-    assert EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES <= EXPECTED_DIRECT_READ_FILES
-    assert EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES <= finding_paths
+    assert direct_excluded_read_files <= EXPECTED_DIRECT_READ_FILES
+    assert direct_excluded_read_files <= finding_paths
+    assert APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES <= DOT_DEBUFF_RUNTIME_STATE_FILES
+    assert APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES.isdisjoint(finding_paths)
     assert all(
         CLASSIFICATION_BY_FILE[path] == "dot/debuff runtime-state read"
         for path in DOT_DEBUFF_RUNTIME_STATE_FILES
@@ -876,6 +928,20 @@ def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> No
     for helper_name, helper_references in references.items():
         referenced_files = helper_references["imports"] | helper_references["calls"]
 
+        if helper_name == "read_enemy_anomaly_active":
+            assert (
+                APPROVED_HELPER_FILES_BY_NAME[helper_name]
+                & EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES
+            ) == APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+            assert (
+                referenced_files & EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES
+            ) == APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+            assert referenced_files.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
+            assert referenced_files.isdisjoint(
+                DOT_DEBUFF_RUNTIME_STATE_FILES
+                - APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+            )
+            continue
         if helper_name == "read_enemy_anomaly_state":
             assert (
                 APPROVED_HELPER_FILES_BY_NAME[helper_name]

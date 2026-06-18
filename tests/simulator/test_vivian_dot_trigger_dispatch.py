@@ -29,6 +29,11 @@ class _FailFastEventList(list):
         raise AssertionError("Vivian dot tests should not append raw scheduled events")
 
 
+class _FailFastDotList(list):
+    def append(self, item):
+        raise AssertionError("Vivian judge path should not register dots")
+
+
 class _RecordingDispatchPort:
     def __init__(self, call_order: list[str]) -> None:
         self.events: list[object] = []
@@ -50,6 +55,9 @@ class _RecordingDotList(list):
 
 
 class _ForbiddenRuntimeCommandPort:
+    def __getattr__(self, name: str):
+        raise AssertionError("Vivian dot tests should not issue runtime commands")
+
     def update_anomaly(self, **kwargs):
         raise AssertionError("Vivian dot tests should not issue runtime commands")
 
@@ -77,6 +85,128 @@ class _PresenceDot:
         self.dy = SimpleNamespace(active=active)
 
 
+class _CountingAnomalyDynamic:
+    def __init__(self, *, anomaly_active: bool) -> None:
+        self._anomaly_active = anomaly_active
+        self.is_under_anomaly_calls = 0
+        self.dynamic_dot_list = _FailFastDotList()
+
+    def is_under_anomaly(self) -> bool:
+        self.is_under_anomaly_calls += 1
+        return self._anomaly_active
+
+
+class _JudgeLoadingMission:
+    def __init__(self, *, hit_now: bool) -> None:
+        self._hit_now = hit_now
+        self.hit_checks: list[int] = []
+
+    def is_hit_now(self, tick: int) -> bool:
+        self.hit_checks.append(tick)
+        return self._hit_now
+
+    def mission_start(self, *args: object, **kwargs: object) -> None:
+        raise AssertionError("Vivian judge path should not start dot loading missions")
+
+
+def _make_vivian_judge_skill_node(
+    *, skill_tag: str, hit_now: bool
+) -> tuple[SkillNode, _JudgeLoadingMission]:
+    skill = SimpleNamespace(
+        skill_tag=skill_tag,
+        char_name="薇薇安",
+        hit_times=1,
+        labels=None,
+        ticks=1,
+        tick_list=[1],
+        heavy_attack=False,
+        element_type=4,
+    )
+    skill_node = SkillNode(skill, 96)
+    loading_mission = _JudgeLoadingMission(hit_now=hit_now)
+    skill_node.loading_mission = loading_mission
+    return skill_node, loading_mission
+
+
+def _build_vivian_judge_harness(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    anomaly_active: bool,
+) -> SimpleNamespace:
+    dispatch_create_calls: list[object] = []
+    spawn_calls: list[object] = []
+    dot_adapter_calls: list[object] = []
+    schedule_data = SimpleNamespace(
+        event_list=_FailFastEventList(),
+        change_process_state=lambda: None,
+    )
+    sim_instance = SimpleNamespace(
+        tick=96,
+        schedule_data=schedule_data,
+        listener_manager=SimpleNamespace(broadcast_event=_fail_listener_broadcast),
+        runtime_command_port=_ForbiddenRuntimeCommandPort(),
+    )
+    buff_instance = SimpleNamespace(
+        sim_instance=sim_instance,
+        ft=SimpleNamespace(index="Buff-角色-薇薇安-核心被动-Dot触发器"),
+    )
+    logic = VivianDotTrigger(buff_instance)
+    dynamic = _CountingAnomalyDynamic(anomaly_active=anomaly_active)
+    enemy = SimpleNamespace(dynamic=dynamic)
+    record = VivianDotTriggerRecord()
+    record.enemy = enemy
+    record.char = SimpleNamespace(NAME="薇薇安")
+    prepared_calls: list[dict[str, object]] = []
+
+    def fail_create_dispatch_port(*, sim_instance: object) -> object:
+        dispatch_create_calls.append(sim_instance)
+        raise AssertionError("Vivian judge path should not publish scheduled events")
+
+    def fail_spawn_normal_dot(*args: object, **kwargs: object) -> object:
+        spawn_calls.append((args, kwargs))
+        raise AssertionError("Vivian judge path should not spawn dots")
+
+    def fail_dot_runtime_state_from_enemy(enemy: object) -> object:
+        dot_adapter_calls.append(enemy)
+        raise AssertionError("Vivian judge path should not use dot runtime state")
+
+    monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
+    monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: prepared_calls.append(kwargs))
+    monkeypatch.setattr(
+        vivian_module,
+        "create_schedule_dispatch_port",
+        fail_create_dispatch_port,
+    )
+    monkeypatch.setattr(
+        vivian_module.DotRuntimeStateAdapter,
+        "from_enemy",
+        staticmethod(fail_dot_runtime_state_from_enemy),
+    )
+    monkeypatch.setattr(
+        "zsim.sim_progress.Update.UpdateAnomaly.spawn_normal_dot",
+        fail_spawn_normal_dot,
+    )
+    _block_legacy_event_lookup(monkeypatch)
+
+    return SimpleNamespace(
+        dispatch_create_calls=dispatch_create_calls,
+        dot_adapter_calls=dot_adapter_calls,
+        dynamic=dynamic,
+        logic=logic,
+        prepared_calls=prepared_calls,
+        schedule_data=schedule_data,
+        spawn_calls=spawn_calls,
+    )
+
+
+def _assert_vivian_judge_path_stayed_pure(harness: SimpleNamespace) -> None:
+    assert harness.schedule_data.event_list == []
+    assert harness.dynamic.dynamic_dot_list == []
+    assert harness.dispatch_create_calls == []
+    assert harness.spawn_calls == []
+    assert harness.dot_adapter_calls == []
+
+
 def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("VivianDotTrigger should not read raw event_list")
@@ -84,6 +214,72 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         JudgeTools, "find_event_list", fail_find_event_list, raising=False
     )
+
+
+def test_vivian_dot_trigger_judge_rejects_missing_skill_node_without_side_effects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    harness = _build_vivian_judge_harness(monkeypatch, anomaly_active=True)
+
+    assert harness.logic.special_judge_logic() is False
+
+    assert harness.prepared_calls == [{"char_CID": 1331, "enemy": 1}]
+    assert harness.dynamic.is_under_anomaly_calls == 0
+    _assert_vivian_judge_path_stayed_pure(harness)
+
+
+def test_vivian_dot_trigger_judge_rejects_invalid_skill_node_without_side_effects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    harness = _build_vivian_judge_harness(monkeypatch, anomaly_active=True)
+
+    with pytest.raises(TypeError):
+        harness.logic.special_judge_logic(skill_node=object())
+
+    assert harness.prepared_calls == [{"char_CID": 1331, "enemy": 1}]
+    assert harness.dynamic.is_under_anomaly_calls == 0
+    _assert_vivian_judge_path_stayed_pure(harness)
+
+
+@pytest.mark.parametrize(
+    (
+        "skill_tag",
+        "hit_now",
+        "anomaly_active",
+        "expected",
+        "expected_hit_checks",
+        "expected_anomaly_reads",
+    ),
+    [
+        ("1331_EX_A", True, True, False, [], 0),
+        ("1331_SNA_2", False, True, False, [96], 0),
+        ("1331_SNA_2", True, False, False, [96], 1),
+        ("1331_CoAttack_A", True, True, True, [96], 1),
+    ],
+)
+def test_vivian_dot_trigger_judge_is_pure_for_tag_hit_and_anomaly_gates(
+    monkeypatch: pytest.MonkeyPatch,
+    skill_tag: str,
+    hit_now: bool,
+    anomaly_active: bool,
+    expected: bool,
+    expected_hit_checks: list[int],
+    expected_anomaly_reads: int,
+) -> None:
+    harness = _build_vivian_judge_harness(
+        monkeypatch, anomaly_active=anomaly_active
+    )
+    skill_node, loading_mission = _make_vivian_judge_skill_node(
+        skill_tag=skill_tag,
+        hit_now=hit_now,
+    )
+
+    assert harness.logic.special_judge_logic(skill_node=skill_node) is expected
+
+    assert harness.prepared_calls == [{"char_CID": 1331, "enemy": 1}]
+    assert loading_mission.hit_checks == expected_hit_checks
+    assert harness.dynamic.is_under_anomaly_calls == expected_anomaly_reads
+    _assert_vivian_judge_path_stayed_pure(harness)
 
 
 def test_vivian_dot_trigger_registers_dot_and_publishes_skill_node_via_dispatch_port(

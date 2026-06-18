@@ -3,6 +3,7 @@ from zsim.sim_progress.Dot.runtime_state import DotRuntimeStateAdapter
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
+from .enemy_anomaly_read import read_enemy_anomaly_active
 
 
 class VivianDotTriggerRecord:
@@ -59,7 +60,7 @@ class VivianDotTrigger(Buff.BuffLogic):
             return False
 
         # 如果敌人不处于异常状态，不放行
-        if not self.record.enemy.dynamic.is_under_anomaly():
+        if not read_enemy_anomaly_active(self.record.enemy):
             return False
 
         return True
