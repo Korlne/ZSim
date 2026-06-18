@@ -7,6 +7,7 @@
 - 更新时要同时标记“已完成项”“进行中项”“阻塞项”。
 - 任何新增耦合块、验证要求、删除计划，都要先落本文档，再进入下一轮 PRD。
 - 当前 PRD 生成入口以 `docs/Buff重构下阶段计划草稿.md` 的 `## 合理 PRD 形状硬约束` 和 `## 当前默认下一步` 为准。本文历史条目中保留的 “same-phase candidate selection / bounded proposal” 只代表当时的 pool-retention / no-reopen 记录，不得单独生成新的 full-cycle selection / proposal PRD。
+- 每完成 2-3 个 bounded implementation / Go-No-Go PRD，或任一同族候选块被整体实现、降级或阻塞后，下一轮必须按 `docs/Buff重构下阶段计划草稿.md` 的 convergence cadence 做 route review / completion-criteria review；不得只把 retained / No-Go / blocker 继续追加为历史记录而不分类后续命运。
 
 ## 阶段 0：重规划与基线
 
@@ -261,6 +262,8 @@
 - [x] 验证基线：US-017 已串行通过 focused P2-B pytest `107 passed`、`calculator-reads` profile（base `2 passed`、isolated teams `3 passed`、focused `129 passed`、mypy `22 source files` clean）与 `implicit-events` profile（base `2 passed`、isolated teams `3 passed`、focused `136 passed`、mypy `77 source files` clean）。
 - [x] 行为样本：`uv run python scripts/run_buff_main_loop_consistency.py --team "莱特火属性队" --stop-tick 600 --legacy-runtime "p2b-us017-baseline" --candidate-runtime "p2b-us017-reader" --json` 已通过；`matches=true`，总伤 `646446.67` vs `646446.67`，event count `19` vs `19`，buff timeline 差异为零。
 - [x] P2-B 没有重写 Calculator / CalAnomaly 公式，没有删除 old containers，没有重开 raw queue、`ScheduleDispatchPort`、`RuntimeCommandPort`、listener broadcast、dot runtime registration、same-tick runtime write 或 phase-1 deletion 边界。
+- [x] Current impact / crit / stun owner-family state-sync/read-gate PRD（2026-06-18 US-001 至 US-007）已完成：`LighterAdditionalAbility_IceFireBonus.py`、`QingYiAdditionalAbilityStunConvertToATK.py`、`TriggerAdditionalAbilityStunBonus.py`、`Soldier0AnbyCoreSkillCritDMGBonus.py` 当前根源码已确认保留 `CalculatorBuffAttributeReader` reader boundary、old `buff_0` identity、lazy `history.record`、`dy.count -> update_to_buff_0(...)` state-sync order 和 selected trigger timing；US-003 / US-004 无需生产源码改动，US-005 / US-006 以 focused guardrails 与 serial `calculator-reads` / `implicit-events` 验证收口。
+- [x] Current impact / crit / stun family status：completed / guarded maintenance。后续只有 current-root source、focused regression、guardrail、validation failure 或 reviewer evidence 命名 exact file / symbol / behavior、verifier 和 rollback anchor 时才重开；否则不得把这四个 selected owner-family 文件自动生成 narrow follow-up、Phase 5 validation、old-container deletion 或 retained compatibility cleanup。
 
 ## 本轮阶段 2 trigger-state read-only gates PRD 收口状态（2026-06-08）
 

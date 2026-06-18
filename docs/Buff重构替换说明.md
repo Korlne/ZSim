@@ -7054,3 +7054,15 @@
 - Next step:
   - Continue to `US-007` handoff docs and same-phase candidate pool. Preserve the broad candidate pool and keep Phase 5, deletion readiness, and unrelated owner families out of scope unless handoff evidence names an exact next route.
 ---
+
+## 2026-06-18 12:20 +08:00 - US-007
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-007-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/checkpoints/2026-06-18-us-007-handoff-docs-same-phase-pool.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/closed-evidence.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-007 final handoff docs and same-phase candidate pool` replaces the prior route-forwarding wording with completed selected impact / crit / stun owner-family evidence and a preserved same-phase candidate pool for future PRD generation.
+  - This story is docs/Ralph evidence only; it does not replace live production `BuffXLogic`, rewrite Calculator / CalAnomaly formula semantics, expand public reader/snapshot APIs, change validation-runner behavior, delete old containers, or merge event queue / listener broadcast / same-tick runtime-write layers.
+- Compatibility retained:
+  - `Buff.BuffLogic`, `JudgeTools.find_exist_buff_dict(...)`, `check_preparation(...)`, old `buff_0` identity, lazy `history.record`, `simple_start(...)`, `dy.count`, `update_to_buff_0(...)`, selected trigger-state compatibility reads, old containers, `ScheduleDispatchPort`, `RuntimeCommandPort`, and `LegacyRuntimeCommandAdapter` remain unchanged.
+  - Same-phase pool entries remain available for old containers / lifecycle compatibility, `JudgeTools` helper responsibility slices, planned-event producer / handler-requeue owner families, exact formula-domain oracle PRDs, registered behavior / performance gates, completed guarded-maintenance surfaces, retained compatibility, and blocker-only reopen rules.
+- Next step:
+  - Generate the next PRD only after preflight names an exact owner/layer family with current-root files / symbols / behavior, verifier commands, rollback anchors, retained boundaries, and non-goals. Do not continue along the completed selected impact / crit / stun family unless future focused regression, validation failure, source evidence, guardrail, or reviewer evidence names a concrete blocker.
+---
