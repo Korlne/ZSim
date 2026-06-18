@@ -3,7 +3,7 @@ from __future__ import annotations
 import ast
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -41,10 +41,13 @@ CLASSIFICATION_BY_FILE = {
     "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_read.py": "approved helper boundary",
     "zsim/sim_progress/Buff/BuffXLogic/enemy_edge_state_read.py": "approved helper boundary",
     "zsim/sim_progress/Buff/BuffXLogic/enemy_state_read.py": "approved helper boundary",
+    "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py": "same-phase future anomaly-map read",
     "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveEXStunBonus.py": "guarded-maintenance overlap",
+    "zsim/sim_progress/Buff/BuffXLogic/HailstormShrineIceBonus.py": "same-phase future anomaly-map read",
     "zsim/sim_progress/Buff/BuffXLogic/JaneAdditionalAbilityPhyBuildupBonus.py": "simple enemy read",
     "zsim/sim_progress/Buff/BuffXLogic/LinaAdditionalSkillEleDMGBonus.py": "simple enemy read",
     "zsim/sim_progress/Buff/BuffXLogic/MarcatoDesireAtkBonus.py": "simple enemy read",
+    "zsim/sim_progress/Buff/BuffXLogic/MiyabiAdditionalAbility_IgnoreIceRes.py": "same-phase future anomaly-map read",
     "zsim/sim_progress/Buff/BuffXLogic/Soldier11AdditionalSkillExtraFireDMGBonus.py": "simple enemy read",
     "zsim/sim_progress/Buff/BuffXLogic/TimeweaverApBonus.py": "simple enemy read",
     "zsim/sim_progress/Buff/BuffXLogic/YixuanAdditionalAbilityDmgBonus.py": "simple enemy read",
@@ -117,6 +120,20 @@ APPROVED_HELPER_CLASSIFICATION_BY_NAME = {
     "read_enemy_frost_frostbite_edge_state": "edge-detection read",
 }
 
+HELPER_NAMES_BY_FAMILY = {
+    "simple anomaly": frozenset({"read_enemy_anomaly_active"}),
+    "simple shock/stun": frozenset(
+        {"read_enemy_shock_active", "read_enemy_stun_active"}
+    ),
+    "edge-state helpers": frozenset(
+        {
+            "read_enemy_frozen_edge_state",
+            "read_enemy_stun_edge_state",
+            "read_enemy_frost_frostbite_edge_state",
+        }
+    ),
+}
+
 MIGRATED_HELPER_FILES = (
     APPROVED_ANOMALY_HELPER_FILES
     | APPROVED_SHOCK_HELPER_FILES
@@ -148,6 +165,12 @@ DOT_DEBUFF_RUNTIME_STATE_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py",
 }
 
+ANOMALY_MAP_FUTURE_POOL_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py",
+    "zsim/sim_progress/Buff/BuffXLogic/HailstormShrineIceBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/MiyabiAdditionalAbility_IgnoreIceRes.py",
+}
+
 EXPECTED_DIRECT_READ_FILES = set(CLASSIFICATION_BY_FILE) - MIGRATED_HELPER_FILES
 
 CLASSIFICATION_BUCKETS = {
@@ -156,6 +179,7 @@ CLASSIFICATION_BUCKETS = {
     "edge-detection read",
     "copied-output-adjacent read",
     "dot/debuff runtime-state read",
+    "same-phase future anomaly-map read",
     "guarded-maintenance overlap",
     "unrelated retained compatibility",
 }
@@ -192,6 +216,8 @@ class EnemyDynamicReadVisitor(ast.NodeVisitor):
     def visit_Call(self, node: ast.Call) -> None:
         if isinstance(node.func, ast.Attribute) and self._is_enemy_dynamic_read(node.func):
             self._add_finding(line=node.lineno, expression=self._source_for(node))
+        elif self._is_enemy_dynamic_getattr(node):
+            self._add_finding(line=node.lineno, expression=self._source_for(node))
         self.generic_visit(node)
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
@@ -223,6 +249,19 @@ class EnemyDynamicReadVisitor(ast.NodeVisitor):
         if len(chain) < 3:
             return False
         return chain[-3:-1] == ["enemy", "dynamic"]
+
+    def _is_enemy_dynamic_getattr(self, node: ast.Call) -> bool:
+        if not isinstance(node.func, ast.Name) or node.func.id != "getattr":
+            return False
+        if len(node.args) < 2:
+            return False
+        dynamic_arg = node.args[0]
+        if not isinstance(dynamic_arg, ast.Attribute):
+            return False
+        chain = self._attribute_chain(dynamic_arg)
+        if len(chain) < 2:
+            return False
+        return chain[-2:] == ["enemy", "dynamic"]
 
     def _attribute_context(self, node: ast.Attribute) -> str:
         direct_parent = self._parents[-2] if len(self._parents) >= 2 else None
@@ -310,6 +349,17 @@ def _collect_helper_reference_paths() -> dict[str, dict[str, set[str]]]:
     return references
 
 
+def _helper_references_for_names(
+    references: dict[str, dict[str, set[str]]],
+    helper_names: Iterable[str],
+) -> dict[str, set[str]]:
+    family_references: dict[str, set[str]] = {"imports": set(), "calls": set()}
+    for helper_name in helper_names:
+        family_references["imports"].update(references[helper_name]["imports"])
+        family_references["calls"].update(references[helper_name]["calls"])
+    return family_references
+
+
 def test_enemy_dynamic_read_guardrail_scope_excludes_generated_and_duplicate_trees() -> None:
     scanned_files = {path.relative_to(PROJECT_ROOT).as_posix() for path in _production_python_files()}
 
@@ -342,6 +392,24 @@ def test_enemy_dynamic_read_guardrail_classifies_all_current_root_matches() -> N
     }
 
 
+def test_enemy_dynamic_read_guardrail_classifies_getattr_anomaly_maps_as_future_pool() -> None:
+    findings = _collect_findings()
+    getattr_findings = [
+        finding
+        for finding in findings
+        if finding.matched_expression.startswith("getattr(")
+    ]
+
+    assert {finding.path for finding in getattr_findings} == ANOMALY_MAP_FUTURE_POOL_FILES
+    assert all(
+        finding.classification_suggestion == "same-phase future anomaly-map read"
+        for finding in getattr_findings
+    )
+    assert ANOMALY_MAP_FUTURE_POOL_FILES.isdisjoint(EDGE_DETECTION_FILES)
+    assert ANOMALY_MAP_FUTURE_POOL_FILES.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
+    assert ANOMALY_MAP_FUTURE_POOL_FILES.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+
+
 def test_enemy_dynamic_read_guardrail_limits_helper_to_approved_subset() -> None:
     references = _collect_helper_reference_paths()
 
@@ -369,6 +437,28 @@ def test_enemy_dynamic_read_guardrail_limits_helper_to_approved_subset() -> None
             CLASSIFICATION_BY_FILE[path] == approved_classification
             for path in helper_references["imports"] | helper_references["calls"]
         )
+
+
+def test_enemy_dynamic_read_guardrail_tracks_helper_references_by_family() -> None:
+    references = _collect_helper_reference_paths()
+    family_references = {
+        family_name: _helper_references_for_names(references, helper_names)
+        for family_name, helper_names in HELPER_NAMES_BY_FAMILY.items()
+    }
+    simple_shock_stun_files = APPROVED_SHOCK_HELPER_FILES | APPROVED_STUN_HELPER_FILES
+    edge_state_files = (
+        APPROVED_EDGE_FROZEN_HELPER_FILES
+        | APPROVED_EDGE_STUN_HELPER_FILES
+        | APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES
+    )
+
+    assert family_references["simple anomaly"]["imports"] == APPROVED_ANOMALY_HELPER_FILES
+    assert family_references["simple anomaly"]["calls"] == APPROVED_ANOMALY_HELPER_FILES
+    assert family_references["simple shock/stun"]["imports"] == simple_shock_stun_files
+    assert family_references["simple shock/stun"]["calls"] == simple_shock_stun_files
+    assert family_references["edge-state helpers"]["imports"] == edge_state_files
+    assert family_references["edge-state helpers"]["calls"] == edge_state_files
+    assert edge_state_files == EDGE_DETECTION_FILES
 
 
 def test_enemy_dynamic_read_guardrail_limits_frozen_edge_helper_to_exact_files() -> None:
@@ -425,13 +515,19 @@ def test_enemy_dynamic_read_guardrail_limits_frost_frostbite_edge_helper_to_exac
     )
 
 
-def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_shock_stun_helpers() -> None:
+def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scope() -> None:
     references = _collect_helper_reference_paths()
+    shock_stun_references_by_kind = _helper_references_for_names(
+        references, HELPER_NAMES_BY_FAMILY["simple shock/stun"]
+    )
+    edge_state_references_by_kind = _helper_references_for_names(
+        references, HELPER_NAMES_BY_FAMILY["edge-state helpers"]
+    )
     shock_stun_references = (
-        references["read_enemy_shock_active"]["imports"]
-        | references["read_enemy_shock_active"]["calls"]
-        | references["read_enemy_stun_active"]["imports"]
-        | references["read_enemy_stun_active"]["calls"]
+        shock_stun_references_by_kind["imports"] | shock_stun_references_by_kind["calls"]
+    )
+    edge_state_references = (
+        edge_state_references_by_kind["imports"] | edge_state_references_by_kind["calls"]
     )
 
     assert all(
@@ -449,6 +545,10 @@ def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_shock_stun_
     assert shock_stun_references.isdisjoint(EDGE_DETECTION_FILES)
     assert shock_stun_references.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
     assert shock_stun_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert edge_state_references <= EDGE_DETECTION_FILES
+    assert edge_state_references.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
+    assert edge_state_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert edge_state_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
 
 
 def test_enemy_dynamic_read_guardrail_failure_message_classifies_unknown_matches() -> None:
@@ -469,6 +569,22 @@ def test_enemy_dynamic_read_guardrail_failure_message_classifies_unknown_matches
     )
     assert any("matched expression: record.enemy.dynamic.is_under_anomaly()" in message for message in messages)
     assert any("matched expression: record.enemy.dynamic.stun" in message for message in messages)
+
+
+def test_enemy_dynamic_read_guardrail_detects_getattr_enemy_dynamic_reads() -> None:
+    source = (
+        "def judge(record, name):\n"
+        "    dynamic_read = getattr(record.enemy.dynamic, name)\n"
+        "    ignored = getattr(record.enemy_dynamic, name)\n"
+        "    return dynamic_read, ignored\n"
+    )
+    path = BUFF_XLOGIC_ROOT / "_synthetic_enemy_dynamic_fixture.py"
+
+    findings = _collect_findings_from_source(path, source)
+
+    assert len(findings) == 1
+    assert findings[0].matched_expression == "getattr(record.enemy.dynamic, name)"
+    assert findings[0].classification_suggestion == "unrelated retained compatibility"
 
 
 def test_enemy_dynamic_read_guardrail_uses_ast_not_text_matching() -> None:

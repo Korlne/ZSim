@@ -7418,3 +7418,17 @@
 - Next step:
   - Continue to `US-006` and keep edge-helper guardrails / excluded-family preservation exact without widening copied-output or dot/debuff runtime-state helper approvals.
 ---
+
+## 2026-06-18 21:00 +08:00 - US-006
+- Files changed: `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-006-edge-helper-guardrail-and-excluded-family-preservation.md`, `scripts/ralph/plans/slices/us-007-serial-validation-and-reviewer-invariant-gate.md`, `scripts/ralph/investigations/2026-06-18-US-006-helper-subset-guardrail.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/evidence-ledger-shards/proven-patterns-to-reuse.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 edge helper guardrail` replaces chat-only scope confidence with AST guardrails that track helper imports/calls by family: simple anomaly, simple shock/stun, and edge-state helpers.
+  - This story does not replace any live `BuffXLogic` callsite; it preserves helper approval boundaries after US-003 through US-005 edge delegations.
+- Compatibility retained:
+  - `read_enemy_anomaly_active(...)`, `read_enemy_shock_active(...)`, and `read_enemy_stun_active(...)` approved subsets remain unchanged.
+  - Edge-state helper approvals remain limited to the characterized frozen, stun, and frost/frostbite edge files.
+  - Copied-output-adjacent files, dot/debuff runtime-state files, and `getattr(...enemy.dynamic, name)` anomaly-map files remain outside edge-state helper approvals; anomaly-map files are classified as same-phase future pool.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, old containers, formula/calculator behavior, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-007` serial validation and reviewer invariant gate without widening helper scope.
+---
