@@ -6935,3 +6935,15 @@
 - Next step:
   - Continue to `US-005` BuffXLogic old template / BuffLogic migration gap packet. Future JudgeTools replacements must be one owner family at a time, preserve old template identity and lazy record initialization, and include focused compatibility tests plus rollback anchors.
 ---
+
+## 2026-06-18 10:14 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-buffxlogic-old-template-and-bufflogic-migration-gap-packet.md`, `scripts/ralph/investigations/2026-06-18-US-005-buffxlogic-old-template-bufflogic-gap.md`, `scripts/ralph/checkpoints/2026-06-18-us-005-buffxlogic-old-template-boundary.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/open-evidence-gaps.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-005 BuffXLogic old template / BuffLogic migration gap packet` replaces broad Phase-3 completion assumptions with current-root `rg`, CodeGraph caller/source evidence, and grouped classification for read-only gates, read-then-writeback state sync, event trigger callbacks, scheduled publish, runtime immediate writes, formula reads, and retained old template identity.
+  - This story is evidence / Ralph completion bookkeeping only; it does not replace live production `BuffXLogic`, delete `Buff.BuffLogic`, change helper contracts, alter formula semantics, rebind old template identity, or merge scheduled queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `Buff.BuffLogic`, `xjudge` / `xstart` / `xhit` / `xexit`, `check_record_module()`, `get_prepared(...)`, `history.record`, `JudgeTools.find_exist_buff_dict(...)`, `check_preparation(...)`, `simple_start(...)`, `dy.count`, `dy.built_in_buff_box`, `update_to_buff_0(...)`, old containers, formula snapshots, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, and `LegacyBuffRuntimeFacade` remain unchanged.
+  - Phase 3 remains `切片替换与保留边界收口`, not full migration.
+- Next step:
+  - Continue to `US-006` formula snapshot / effect-system replacement gap packet. Future `BuffXLogic` production candidates must stay owner-family scoped and split trigger-state reads, computed count state-sync, scheduled publish, runtime immediate writes, formula semantics, and old-container deletion into separate stories.
+---
