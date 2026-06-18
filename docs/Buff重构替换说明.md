@@ -6947,3 +6947,15 @@
 - Next step:
   - Continue to `US-006` formula snapshot / effect-system replacement gap packet. Future `BuffXLogic` production candidates must stay owner-family scoped and split trigger-state reads, computed count state-sync, scheduled publish, runtime immediate writes, formula semantics, and old-container deletion into separate stories.
 ---
+
+## 2026-06-18 10:23 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-formula-snapshot-and-effect-system-replacement-gap-packet.md`, `scripts/ralph/investigations/2026-06-18-US-006-formula-effect-system-gap.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/open-evidence-gaps.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-006 formula snapshot / effect-system replacement gap packet` replaces broad full-replacement assumptions with current-root `rg`, CodeGraph symbol / impact evidence, source reads, and classification for `MultiplierData`, `MulData`, `DynamicStatement`, `Calculator.RegularMul`, `Calculator.AnomalyMul`, `CalAnomaly`, private `_CalculatorReadSnapshot`, and retained `CalculatorBuffAttributeReader`.
+  - This story is evidence / Ralph completion bookkeeping only; it does not replace live production Buff code, rewrite formulas, expand public reader/snapshot APIs, delete `MultiplierData`, change validation-runner behavior, add registered routes/APLs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `MultiplierData`, `MulData`, `DynamicStatement`, `_CalculatorReadSnapshot`, `CalculatorBuffAttributeReader`, `Calculator.RegularMul`, `Calculator.AnomalyMul`, `Calculator.StunMul`, `CalAnomaly`, `AnomalyBar.current_ndarray`, old containers, validation profiles, registered-route policy, and retained compatibility paths remain unchanged.
+  - Current formula snapshots remain retained compatibility. Completed helper seams and reader parity are bounded compatibility evidence, not full Buff effect / `Character.dynamic_attribute` replacement or deletion readiness.
+- Next step:
+  - Continue to `US-007` unified event-driven trigger chain gap packet. Future formula/effect-system candidates must name exact file / symbol / behavior, rollback anchors, and focused oracle rows; run focused formula pytest plus `formula-parity`, `calculator-reads`, or registered-route samples only when the touched surface requires them.
+---
