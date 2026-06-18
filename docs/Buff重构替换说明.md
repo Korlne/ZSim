@@ -7145,3 +7145,16 @@
 - Next step:
   - Continue to `US-008` handoff docs and same-phase candidate pool. Keep the next PRD broad enough to preserve candidate blocks, but do not promote helper implementation beyond the exact US-002 simple boolean subset approved by US-005.
 ---
+
+## 2026-06-18 13:59 +08:00 - US-008
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/checkpoints/2026-06-18-us-008-handoff-docs-and-same-phase-candidate-pool.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/closed-evidence.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-008 final handoff docs and same-phase candidate pool` replaces the prior handoff gap with final evidence for the enemy anomaly-state helper design PRD.
+  - Later implementation is allowed only for a bounded `read_enemy_anomaly_active(...)` helper over the exact US-002 simple boolean subset: `ElectroLipGlossAtkAndDmgBonus`, `JaneAdditionalAbilityPhyBuildupBonus`, `MarcatoDesireAtkBonus`, and `TimeweaverApBonus`.
+  - This story is docs/Ralph evidence only; it does not implement the helper, edit live `BuffXLogic`, expand `BuffRuntimeReadPort`, add a runtime write facade, rewrite copied-output/formula behavior, mutate dot runtime state, run Phase 5 registered-route samples, or delete old containers.
+- Compatibility retained:
+  - Edge-detection gates, copied-output / event-adjacent gates, dot/debuff runtime-state reads, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, listener broadcasts, scheduled publish ordering, old containers, formulas, and retained compatibility remain unchanged.
+  - Same-phase pool remains broad: remaining enemy-state read subfamilies, copied-output / formula parity candidates, P2-A through P2-G guarded-maintenance blocker-only surfaces, registered behavior / performance gates, retained compatibility, and blocker-only reopen rules all require exact evidence before becoming active work.
+- Next step:
+  - Generate at most one bounded helper implementation PRD for the exact simple boolean subset, or stop / split if preflight shows previous-record, copied-output, runtime-state, formula, event/runtime/listener, old-container, or retained-compatibility behavior would be pulled into the helper.
+---
