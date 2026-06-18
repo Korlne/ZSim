@@ -7169,3 +7169,15 @@
 - Next step:
   - Generate at most one bounded helper implementation PRD for the exact simple boolean subset, or stop / split if preflight shows previous-record, copied-output, runtime-state, formula, event/runtime/listener, old-container, or retained-compatibility behavior would be pulled into the helper.
 ---
+
+## 2026-06-18 14:49 +08:00 - US-002
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_read.py`, `tests/simulator/test_enemy_anomaly_read_helper.py`, `scripts/ralph/plans/slices/us-002-add-narrow-enemy-anomaly-read-helper.md`, `scripts/ralph/investigations/2026-06-18-US-002-enemy-anomaly-read-helper.md`, `scripts/ralph/checkpoints/2026-06-18-us-002-enemy-anomaly-read-helper.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - New local `read_enemy_anomaly_active(enemy)` prepares to replace direct simple boolean anomaly-active reads by centralizing only `enemy.dynamic.is_under_anomaly()`.
+  - This story does not migrate live `BuffXLogic` callsites, expand `BuffRuntimeReadPort`, add fallback lookup, publish scheduled events, broadcast listeners, mutate runtime state, write same-tick runtime commands, calculate formulas, or traverse old containers.
+- Compatibility retained:
+  - Existing direct reads in `ElectroLipGlossAtkAndDmgBonus`, `JaneAdditionalAbilityPhyBuildupBonus`, `MarcatoDesireAtkBonus`, and `TimeweaverApBonus` remain unchanged until US-003 / US-004.
+  - Edge-detection, copied-output / event-adjacent, dot/debuff runtime-state, event/runtime/listener, old-container, and formula surfaces remain outside the helper.
+- Next step:
+  - Continue to `US-003` and delegate only the pure simple boolean gates after their existing record lookup and preparation calls.
+---
