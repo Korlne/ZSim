@@ -7216,3 +7216,16 @@
 - Next step:
   - Continue to `US-006` serial validation and reviewer invariant gate without expanding the helper subset.
 ---
+
+## 2026-06-18 15:14 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-serial-validation-and-reviewer-invariant-gate.md`, `scripts/ralph/checkpoints/2026-06-18-us-006-serial-validation-reviewer-invariant-gate.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/campaign-dashboard.md`
+- Replacement note:
+  - `US-006 serial validation and reviewer invariant gate` replaces unverified completion confidence with focused pytest evidence, serial `implicit-events` validation evidence, and a durable reviewer checkpoint for the bounded `read_enemy_anomaly_active(...)` helper implementation.
+  - This story is verifier/Ralph evidence only; it does not replace additional live `BuffXLogic` reads, broaden the helper, expand public reader ports, add runtime write facades, change validation-runner behavior, run Phase 5 registered-route samples, or delete old containers.
+- Compatibility retained:
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes through `RuntimeCommandPort`, `ScheduleDispatchPort` queue semantics, old containers, formula outputs, public reader ports, validation-runner behavior, and Phase 5 registered-route validation remain unchanged.
+  - `calculator-reads`, `formula-parity`, default lifecycle validation, main-loop consistency, and benchmark samples were skipped because this slice changed no calculator reader, formula output, lifecycle/runtime write, registered-route, performance, or validation-runner behavior surface.
+  - Validation evidence: focused PRD bundle exited `0` with `32 passed`; serial `implicit-events` exited `0` with base `2 passed`, isolated teams `3 passed`, focused `284 passed`, and mypy success on `93 source files`.
+- Next step:
+  - Continue to `US-007` handoff docs and same-phase pool preservation without expanding `read_enemy_anomaly_active(...)` beyond the four approved simple boolean callsites.
+---
