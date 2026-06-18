@@ -7653,3 +7653,15 @@
 - Next step:
   - Continue to `US-008` handoff docs and same-phase pool preservation; keep the exact helper approvals and retained dot/debuff mirror / Phase 5 conditions visible in handoff docs.
 ---
+
+## 2026-06-19 00:49 +08:00 - US-008
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-pool-preservation.md`, Ralph evidence / checkpoint / dashboard / PRD bookkeeping
+- Replacement note:
+  - `US-008 handoff docs and same-phase pool preservation` replaces stale routing that still pointed at `BuffXLogic Dot/Debuff Runtime-State And Anomaly-Map Exact Intake` as the next default.
+  - Final outcome is implemented with retained boundary / partial No-Go: anomaly-map reads are closed through `read_enemy_anomaly_state(...)` / `snapshot_enemy_anomaly_states(...)`; Vivian judge-only anomaly-active read and Miyabi frost/frostbite edge-state read are exact helper delegations; `MiyabiCoreSkill_IceFire.special_judge_logic(...)` still retains `enemy.dynamic.dynamic_debuff_list` as debuff mirror / read-model access.
+- Compatibility retained:
+  - Vivian hit-path dot runtime registration, `DotRuntimeStateAdapter`, `spawn_normal_dot(...)`, `LoadingMission.mission_start(...)`, `ScheduleDispatchPort`, listener broadcast boundaries, same-tick runtime writes, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules and retained compatibility remain unchanged.
+  - `formula-parity`, Phase 5 registered-route validation, main-loop consistency, runtime benchmark and default broad validation remain skipped for this docs-only slice because no public contract, deletion, performance, validation-runner, lifecycle, runtime-write, formula output or live semantic surface changed.
+- Next step:
+  - Generate `BuffXLogic Remaining Debuff Mirror And Dot Runtime-State Boundary Review` or same-PRD Go / No-Go closure; keep copied-output / formula parity, remaining dot/debuff runtime-state, old containers / lifecycle, `JudgeTools`, planned-event producer families, registered behavior / performance gates, completed guarded-maintenance surfaces and blocker-only reopen rules as same-phase candidate blocks, not automatic backlog.
+---
