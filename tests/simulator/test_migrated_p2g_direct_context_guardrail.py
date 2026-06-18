@@ -61,7 +61,7 @@ P2G_DIRECT_CONTEXT_TARGETS = (
         path=BUFF_XLOGIC_ROOT / "YuzuhaCinema2Trigger.py",
         node_path=("YuzuhaCinema2Trigger",),
         allowed_layers=frozenset({"tick_preload", "report_state"}),
-        required_terms=("is_last_hit", "change_process_state"),
+        required_terms=("read_enemy_stun_active", "is_last_hit", "change_process_state"),
     ),
     P2GDirectContextTarget(
         path=BUFF_XLOGIC_ROOT / "YuzuhaSugarBurstAnomalyBuildupBonus.py",

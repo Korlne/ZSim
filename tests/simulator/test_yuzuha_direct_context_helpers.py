@@ -6,6 +6,8 @@ import sys
 from types import SimpleNamespace
 from typing import Any
 
+import pytest
+
 import zsim.define as define_module
 
 sys.modules.setdefault("define", define_module)
@@ -134,6 +136,12 @@ class _Cinema2SkillNodeProbe:
     def is_last_hit(self, *, tick: int) -> bool:
         self.last_hit_ticks.append(tick)
         return self._last_hit
+
+
+class _ExplodingEnemyDynamicState:
+    @property
+    def stun(self) -> bool:
+        raise AssertionError("pending signal should short-circuit before stun reads")
 
 
 class _PreloadTickSkillNodeProbe:
@@ -379,6 +387,7 @@ def _build_cinema2_trigger_harness(
     tick: int = 1500,
     last_update_tick: int | None = None,
     report_state: bool = False,
+    enemy_stunned: bool = False,
 ) -> SimpleNamespace:
     schedule_data = (
         _ScheduleDataReportProbe()
@@ -393,13 +402,18 @@ def _build_cinema2_trigger_harness(
         schedule_data=schedule_data,
         listener_manager=_ForbiddenLayer("listener broadcast"),
         runtime_command_port=_ForbiddenLayer("RuntimeCommandPort"),
+        calculator=_ForbiddenLayer("formula"),
+        formula=_ForbiddenLayer("formula"),
+        dynamic_buff=_ForbiddenLayer("old-container"),
+        exist_buff_dict=_ForbiddenLayer("old-container"),
+        loading_buff=_ForbiddenLayer("old-container"),
     )
     buff_instance = _BuffInstanceProbe(sim_instance=sim_instance)
     buff_instance.ft = SimpleNamespace(index="Buff-角色-柚叶-2画触发", maxcount=999)
     trigger = YuzuhaCinema2Trigger(buff_instance)
 
     record = YuzuhaCinema2TriggerRecord()
-    record.enemy = SimpleNamespace(dynamic=SimpleNamespace(stun=False))
+    record.enemy = SimpleNamespace(dynamic=SimpleNamespace(stun=enemy_stunned))
     record.last_update_tick = last_update_tick
     trigger.buff_0 = SimpleNamespace(history=SimpleNamespace(record=record))
     prepared_calls: list[dict[str, object]] = []
@@ -417,6 +431,16 @@ def _build_cinema2_trigger_harness(
         schedule_data=schedule_data,
         prepared_calls=prepared_calls,
     )
+
+
+def _assert_cinema2_no_forbidden_side_effects(
+    harness: SimpleNamespace,
+    skill_node: _Cinema2SkillNodeProbe,
+) -> None:
+    assert harness.sim_instance.schedule_data.event_list == []
+    assert harness.buff_instance.simple_start_calls == []
+    assert harness.buff_instance.update_to_buff_0_calls == []
+    assert skill_node.force_qte_trigger is False
 
 
 def _build_sugar_burst_trigger_harness(
@@ -759,6 +783,21 @@ def test_yuzuha_cinema2_report_state_sets_qte_without_dispatch_or_runtime(
     assert harness.record.last_update_tick == 1500
 
 
+def test_yuzuha_cinema2_stunned_enemy_blocks_before_last_hit_without_side_effects(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(cinema2_trigger_module, "YUZUHA_REPORT", False)
+    harness = _build_cinema2_trigger_harness(enemy_stunned=True)
+    skill_node = _Cinema2SkillNodeProbe()
+
+    assert harness.trigger.special_judge_logic(skill_node=skill_node) is False
+
+    assert harness.prepared_calls == [{"char_CID": 1411, "enemy": 1}]
+    assert skill_node.last_hit_ticks == []
+    assert harness.record.skill_node_be_changed is None
+    _assert_cinema2_no_forbidden_side_effects(harness, skill_node)
+
+
 def test_yuzuha_cinema2_cooldown_blocks_tick_branch_without_report_state(
     monkeypatch: Any,
 ) -> None:
@@ -771,13 +810,33 @@ def test_yuzuha_cinema2_cooldown_blocks_tick_branch_without_report_state(
     assert harness.prepared_calls == [{"char_CID": 1411, "enemy": 1}]
     assert skill_node.last_hit_ticks == []
     assert harness.record.skill_node_be_changed is None
-    assert skill_node.force_qte_trigger is False
-    assert harness.sim_instance.schedule_data.event_list == []
+    _assert_cinema2_no_forbidden_side_effects(harness, skill_node)
+
+
+def test_yuzuha_cinema2_pending_signal_exception_precedes_stun_helper(
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr(cinema2_trigger_module, "YUZUHA_REPORT", False)
+    harness = _build_cinema2_trigger_harness()
+    pending_signal = object()
+    harness.record.skill_node_be_changed = pending_signal
+    harness.record.enemy = SimpleNamespace(dynamic=_ExplodingEnemyDynamicState())
+    skill_node = _Cinema2SkillNodeProbe()
+
+    with pytest.raises(ValueError, match="尚未处理"):
+        harness.trigger.special_judge_logic(skill_node=skill_node)
+
+    assert harness.prepared_calls == [{"char_CID": 1411, "enemy": 1}]
+    assert skill_node.last_hit_ticks == []
+    assert harness.record.skill_node_be_changed is pending_signal
+    _assert_cinema2_no_forbidden_side_effects(harness, skill_node)
 
 
 def test_yuzuha_cinema2_trigger_keeps_report_state_out_of_dispatch_and_runtime() -> None:
     source = inspect.getsource(cinema2_trigger_module.YuzuhaCinema2Trigger)
 
+    assert "if read_enemy_stun_active(self.record.enemy):" in source
+    assert "self.record.enemy.dynamic.stun" not in source
     assert "skill_node.is_last_hit(tick=tick)" in source
     assert "schedule_data.change_process_state()" in source
     for forbidden_term in (

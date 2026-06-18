@@ -7305,3 +7305,15 @@
 - Next step:
   - Continue to `US-005` and delegate only Yuzuha C2's non-stunned enemy gate without moving cooldown, last-hit, QTE mutation, pending-signal, tick/preload, or report-state behavior.
 ---
+
+## 2026-06-18 18:23 +08:00 - US-005
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py`, `tests/simulator/test_yuzuha_direct_context_helpers.py`, `tests/simulator/test_migrated_p2g_direct_context_guardrail.py`, `scripts/ralph/plans/slices/us-005-delegate-yuzuha-non-stun-gate-without-moving-qte-state.md`, `scripts/ralph/checkpoints/2026-06-18-us-005-yuzuha-stun-helper-delegation.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `read_enemy_stun_active(self.record.enemy)` now replaces `YuzuhaCinema2Trigger`'s direct `self.record.enemy.dynamic.stun` non-stunned enemy gate.
+  - The caller still owns pending-signal exception ordering, allowed skill tags, cooldown, last-hit, QTE mutation, `special_hit_logic(...)`, `force_qte_trigger`, `last_update_tick`, and report-state behavior.
+- Compatibility retained:
+  - P2-G remains scoped to Yuzuha tick/preload/report-state direct-context boundaries; this story does not reclassify the callsite as scheduled publish, runtime write, listener, formula, old-container, or generic simulator-context helper work.
+  - Edge-detection, copied-output / event-adjacent, dot/debuff runtime-state, event/runtime/listener, old-container, formula, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, public runtime read-port, validation-runner, registered-route, performance, and retained compatibility surfaces remain unchanged.
+- Next step:
+  - Continue to `US-006` and guard the exact shock/stun helper subset plus excluded enemy-state families.
+---

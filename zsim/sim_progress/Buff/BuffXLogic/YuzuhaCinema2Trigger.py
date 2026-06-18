@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from zsim.define import YUZUHA_REPORT
 
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_state_read import read_enemy_stun_active
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Preload import SkillNode
@@ -44,7 +45,7 @@ class YuzuhaCinema2Trigger(Buff.BuffLogic):
         self.get_prepared(char_CID=1411, enemy=1)
         if self.record.skill_node_be_changed is not None:
             raise ValueError("【浮波柚叶2画触发器】存在尚未处理的更新信号！！")
-        if self.record.enemy.dynamic.stun:
+        if read_enemy_stun_active(self.record.enemy):
             return False
         skill_node: "SkillNode" = kwargs.get("skill_node")
         if skill_node is None:
