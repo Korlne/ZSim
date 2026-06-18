@@ -7801,3 +7801,15 @@
 - Next step:
   - Continue to `US-005` Human Route Decision Checkpoint: accept retained compatibility and shape Phase 5, promote one exact same-phase candidate, or keep Phase 5 paused with an explicit blocker.
 ---
+## 2026-06-19 07:35 +08:00 - US-005
+- Files changed: `scripts/ralph/investigations/2026-06-19-US-005-human-route-decision-checkpoint.md`, `scripts/ralph/checkpoints/2026-06-19-us-005-human-route-decision.md`, Ralph evidence / dashboard / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 human route decision checkpoint` replaces an implicit route handoff with an explicit `needs_human_route_decision` stop condition.
+  - No live production Buff path, helper, validation runner, registered route, team/APL fixture, old container, lifecycle path, event/runtime/listener layer, formula output, copied-output payload, or retained compatibility behavior was replaced in this docs/control-plane story.
+- Compatibility retained:
+  - Phase 5 remains paused; no same-phase implementation candidate, deletion-readiness candidate, registered-route validation, main-loop consistency sample, or benchmark route is promoted.
+  - Retained compatibility is not accepted from checklist `[x]`, completed helper implementation, retained validation success, or absence of new coupling.
+  - Event queue semantics, synchronous listener broadcasts, dot runtime registration, same-tick runtime writes, explicit ports/adapters, no cached dispatch adapters, old containers, validation-runner behavior, registered routes, performance gates, completed-surface no-reopen rules, and serial validation discipline remain unchanged.
+- Next step:
+  - Continue to `US-006` handoff docs, validation, and next-PRD pool preservation while keeping Phase 5 paused unless a human-approved route is recorded first.
+---
