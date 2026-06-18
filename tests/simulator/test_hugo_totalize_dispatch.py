@@ -21,6 +21,7 @@ from zsim.sim_progress.Buff.BuffXLogic.HugoCorePassiveTotalizeTrigger import (
     HugoCorePassiveTotalizeTriggerRecord,
 )
 from zsim.sim_progress.Load import LoadingMission
+from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
 from zsim.sim_progress.data_struct import StunForcedTerminationEvent
 
@@ -82,7 +83,16 @@ def _build_hugo_harness(
         raise AssertionError("Hugo totalize should not broadcast listener events")
 
     dispatch_port = _RecordingDispatchPort(call_order)
-    schedule_data = SimpleNamespace(event_list=_FailFastEventList())
+    report_calls: list[str] = []
+
+    def change_process_state() -> None:
+        report_calls.append("change_process_state")
+        call_order.append("change_process_state")
+
+    schedule_data = SimpleNamespace(
+        event_list=_FailFastEventList(),
+        change_process_state=change_process_state,
+    )
     pending_queue = _FailFastPendingQueue()
     sim_instance = SimpleNamespace(
         tick=88,
@@ -117,6 +127,7 @@ def _build_hugo_harness(
         publish_signal_states=publish_signal_states,
         pending_queue=pending_queue,
         listener_calls=listener_calls,
+        report_calls=report_calls,
     )
 
 
@@ -156,6 +167,7 @@ def _patch_hugo_dependencies(
     harness: SimpleNamespace,
 ) -> None:
     _patch_runtime_boundary_guards(monkeypatch)
+    monkeypatch.setattr(hugo_module, "HUGO_REPORT", False)
 
     def fake_check_record_module() -> None:
         harness.logic.record = harness.record
@@ -222,6 +234,24 @@ def _patch_hugo_dependencies(
 
     harness.buff_add_calls = buff_add_calls
     harness.spawned_skill = spawned_skill
+
+
+def _build_hugo_judge_skill(
+    *,
+    skill_tag: str = "1291_E_EX_2",
+    trigger_buff_level: int = 2,
+    is_last_hit: bool = True,
+) -> SkillNode:
+    skill_node = SkillNode.__new__(SkillNode)
+    skill_node.skill_tag = skill_tag
+    skill_node.skill = SimpleNamespace(
+        trigger_buff_level=trigger_buff_level,
+        labels=None,
+    )
+    skill_node.loading_mission = SimpleNamespace(
+        is_last_hit=lambda tick: is_last_hit,
+    )
+    return skill_node
 
 
 def _assert_buff_add_calls(
@@ -330,6 +360,32 @@ def test_hugo_stun_event_publishes_via_dispatch_port_when_branch_conditions_matc
     assert harness.record.active_signal is None
 
 
+def test_hugo_report_state_stays_before_publish_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    harness = _build_hugo_harness(active_signal=2, cinema=6, enemy_stun=False)
+    _patch_hugo_dependencies(monkeypatch, harness)
+    monkeypatch.setattr(hugo_module, "HUGO_REPORT", True)
+    monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
+
+    harness.logic.special_hit_logic()
+
+    assert harness.report_calls == ["change_process_state"]
+    assert harness.call_order == [
+        "change_process_state",
+        harness.record.totalize_buff_index,
+        harness.record.cinema_1_buff_index,
+        harness.record.cinema_2_buff_index,
+        harness.record.cinema_6_buff_index,
+        "mission_start",
+        "publish",
+    ]
+    assert harness.dispatch_port.events == [harness.spawned_skill]
+    assert harness.publish_signal_states == [2]
+    _assert_no_raw_runtime_side_effects(harness)
+    assert harness.record.active_signal is None
+
+
 def test_hugo_cinema_two_ultimate_keeps_stun_event_skipped_after_gateway_migration(
     monkeypatch: pytest.MonkeyPatch,
 ):
@@ -356,6 +412,26 @@ def test_hugo_cinema_two_ultimate_keeps_stun_event_skipped_after_gateway_migrati
     assert len(harness.dispatch_port.events) == 1
     assert harness.dispatch_port.events[0] is harness.spawned_skill
     assert harness.publish_signal_states == [6]
+    _assert_no_raw_runtime_side_effects(harness)
+    assert harness.record.active_signal is None
+
+
+def test_hugo_judge_non_cinema_six_requires_stun_without_publish(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    harness = _build_hugo_harness(active_signal=None, cinema=1, enemy_stun=False)
+    _patch_hugo_dependencies(monkeypatch, harness)
+
+    assert (
+        harness.logic.special_judge_logic(skill_node=_build_hugo_judge_skill())
+        is False
+    )
+
+    assert harness.call_order == []
+    assert harness.buff_add_calls == []
+    assert harness.dispatch_port.events == []
+    assert harness.publish_signal_states == []
+    assert harness.report_calls == []
     _assert_no_raw_runtime_side_effects(harness)
     assert harness.record.active_signal is None
 

@@ -7471,3 +7471,15 @@
 - Next step:
   - Continue to `US-002` copied-output branch characterization before approving or implementing any read-predicate helper delegation.
 ---
+
+## 2026-06-18 22:14 +08:00 - US-002
+- Files changed: `tests/simulator/test_hugo_totalize_dispatch.py`, `tests/simulator/test_vivian_core_passive_trigger_dispatch.py`, `tests/simulator/test_vivian_cinema6_trigger_dispatch.py`, `tests/simulator/test_yanagi_polarity_disorder_dispatch.py`, `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-002-copied-output-branch-characterization-matrix.md`, `scripts/ralph/plans/slices/us-003-read-predicate-helper-approval-contract.md`, `scripts/ralph/investigations/2026-06-18-US-002-copied-output-characterization.md`, `scripts/ralph/evidence-ledger-shards/proven-patterns-to-reuse.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 copied-output branch characterization tests` replace chat-only branch confidence with focused tests for Hugo, Vivian core passive, Vivian cinema 6, and Yanagi polarity disorder copied-output branches.
+  - This story does not replace any live `BuffXLogic` read, helper callsite, copied-output constructor, ratio formula, `spawn_output(...)`, scheduled publish, listener broadcast, runtime port, dot/debuff runtime state, old container, or validation-runner behavior.
+- Compatibility retained:
+  - Hugo totalize, Vivian copied `DirgeOfDestinyAnomaly`, `anomaly_dmg_ratio`, Vivian C6 report ordering, Yanagi `spawn_output(...)` polarity output, dispatch publish order, report-state behavior, listener boundaries, and runtime boundaries remain caller-owned and characterized by focused tests.
+  - Formula parity wiring, calculator/read profiles, dot/debuff runtime-state files, anomaly-map future-pool files, completed helper approvals, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, old containers, registered routes, performance gates, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-003` helper approval contract; approve only exact read predicates proven by US-002 tests and keep copied-output construction, payload, publish, report, listener, and runtime responsibilities in the caller.
+---

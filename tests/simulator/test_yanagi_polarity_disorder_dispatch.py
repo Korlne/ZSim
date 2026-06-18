@@ -6,6 +6,9 @@ from typing import Any, Callable, cast
 
 import pytest
 import zsim.define as define_module
+import zsim.sim_progress.ScheduledEvent as scheduled_event_module
+import zsim.sim_progress.ScheduledEvent.buff_runtime as buff_runtime_module
+import zsim.sim_progress.ScheduledEvent.runtime_command as runtime_command_module
 
 sys.modules.setdefault("define", define_module)
 
@@ -77,9 +80,46 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-def _build_skill_node() -> SkillNode:
+def _patch_runtime_boundary_guards(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail_create_runtime_command_port(*args: object, **kwargs: object) -> None:
+        raise AssertionError(
+            "YanagiPolarityDisorderTrigger should not create RuntimeCommandPort"
+        )
+
+    def fail_create_buff_runtime_read_port(*args: object, **kwargs: object) -> None:
+        raise AssertionError(
+            "YanagiPolarityDisorderTrigger should not create BuffRuntimeReadPort"
+        )
+
+    monkeypatch.setattr(
+        runtime_command_module,
+        "create_runtime_command_port",
+        fail_create_runtime_command_port,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        scheduled_event_module,
+        "create_runtime_command_port",
+        fail_create_runtime_command_port,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        buff_runtime_module,
+        "create_buff_runtime_read_port",
+        fail_create_buff_runtime_read_port,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        scheduled_event_module,
+        "create_buff_runtime_read_port",
+        fail_create_buff_runtime_read_port,
+        raising=False,
+    )
+
+
+def _build_skill_node(*, skill_tag: str = "1221_Q") -> SkillNode:
     skill = SimpleNamespace(
-        skill_tag="1221_Q",
+        skill_tag=skill_tag,
         char_name="鏌?",
         hit_times=1,
         labels=None,
@@ -97,6 +137,17 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
 ):
     call_order: list[str] = []
     signal_states: list[tuple[str, bool]] = []
+    listener_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+
+    def fail_listener_broadcast(*args: object, **kwargs: object) -> None:
+        listener_calls.append((args, kwargs))
+        raise AssertionError(
+            "YanagiPolarityDisorderTrigger should leave listener broadcast to spawn_output"
+        )
+
+    def fail_change_process_state() -> None:
+        raise AssertionError("YanagiPolarityDisorderTrigger has no report-state write")
+
     dispatch_port = _RecordingDispatchPort(
         call_order,
         on_publish=lambda event: signal_states.append(
@@ -104,8 +155,15 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
         ),
     )
     active_anomaly_bar = _FakeAnomalyBar(marker="active-anomaly", settled=False)
-    schedule_data = SimpleNamespace(event_list=_FailFastEventList())
-    sim_instance = SimpleNamespace(tick=41, schedule_data=schedule_data)
+    schedule_data = SimpleNamespace(
+        event_list=_FailFastEventList(),
+        change_process_state=fail_change_process_state,
+    )
+    sim_instance = SimpleNamespace(
+        tick=41,
+        schedule_data=schedule_data,
+        listener_manager=SimpleNamespace(broadcast_event=fail_listener_broadcast),
+    )
     buff_instance = SimpleNamespace(
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="yanagi-trigger"),
@@ -127,6 +185,7 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
         lambda *, sim_instance: dispatch_port,
     )
     monkeypatch.setattr(yanagi_module, "find_tick", lambda *, sim_instance: sim_instance.tick)
+    _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
 
     skill_node = _build_skill_node()
@@ -168,6 +227,7 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
 
     assert dispatch_port.events == [published_output]
     assert schedule_data.event_list == []
+    assert listener_calls == []
     assert active_anomaly_bar.settled is False
     assert active_anomaly_bar.settled_calls == 0
     assert spawn_calls == [
@@ -184,6 +244,47 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
     assert record.e_counter == {"update_from": "", "count": 0}
     assert record.polarity_disorder_update_signal is False
     assert record.polarity_disorder_basic_dmg_ratio == 0.2
+
+
+def test_yanagi_polarity_disorder_judge_wrong_skill_is_noop(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    call_order: list[str] = []
+    dispatch_port = _RecordingDispatchPort(call_order)
+    schedule_data = SimpleNamespace(event_list=_FailFastEventList())
+    sim_instance = SimpleNamespace(tick=41, schedule_data=schedule_data)
+    buff_instance = SimpleNamespace(
+        sim_instance=sim_instance,
+        ft=SimpleNamespace(index="yanagi-trigger"),
+    )
+    logic = YanagiPolarityDisorderTrigger(buff_instance)
+    record = YanagiPolarityDisorderTriggerRecord()
+    record.char = SimpleNamespace(cinema=2)
+    dynamic = _DynamicReadProbe(is_active=True)
+    record.enemy = SimpleNamespace(dynamic=dynamic)
+    record.e_counter = {"update_from": "prev-hit", "count": 2}
+    monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
+    monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
+    monkeypatch.setattr(
+        yanagi_module,
+        "create_schedule_dispatch_port",
+        lambda *, sim_instance: dispatch_port,
+    )
+    monkeypatch.setattr(yanagi_module, "find_tick", lambda *, sim_instance: sim_instance.tick)
+    _patch_runtime_boundary_guards(monkeypatch)
+    _block_legacy_event_lookup(monkeypatch)
+
+    assert (
+        logic.special_judge_logic(skill_node=_build_skill_node(skill_tag="1221_NA_A"))
+        is False
+    )
+
+    assert dynamic.calls == []
+    assert call_order == []
+    assert dispatch_port.events == []
+    assert schedule_data.event_list == []
+    assert record.e_counter == {"update_from": "prev-hit", "count": 2}
+    assert record.polarity_disorder_update_signal is False
 
 
 def test_yanagi_polarity_disorder_judge_resets_counter_without_publish_when_no_anomaly(
@@ -211,6 +312,7 @@ def test_yanagi_polarity_disorder_judge_resets_counter_without_publish_when_no_a
         lambda *, sim_instance: dispatch_port,
     )
     monkeypatch.setattr(yanagi_module, "find_tick", lambda *, sim_instance: sim_instance.tick)
+    _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
 
     skill_node = _build_skill_node()

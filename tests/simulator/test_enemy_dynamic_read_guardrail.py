@@ -551,6 +551,52 @@ def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scop
     assert edge_state_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
 
 
+def test_enemy_dynamic_read_guardrail_keeps_copied_output_matrix_exact() -> None:
+    findings = _collect_findings()
+    copied_findings = [
+        finding
+        for finding in findings
+        if finding.path in COPIED_OUTPUT_ADJACENT_FILES
+    ]
+    matched_by_path = {
+        path: [
+            finding.matched_expression
+            for finding in copied_findings
+            if finding.path == path
+        ]
+        for path in COPIED_OUTPUT_ADJACENT_FILES
+    }
+    references = _collect_helper_reference_paths()
+    helper_references = set()
+    for helper_reference in references.values():
+        helper_references.update(helper_reference["imports"])
+        helper_references.update(helper_reference["calls"])
+
+    assert {finding.path for finding in copied_findings} == COPIED_OUTPUT_ADJACENT_FILES
+    assert matched_by_path == {
+        "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py": [
+            "self.record.enemy.dynamic.stun",
+            "self.record.enemy.dynamic.stun",
+        ],
+        "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py": [
+            "not self.record.enemy.dynamic.is_under_anomaly",
+            "self.record.enemy.dynamic.get_active_anomaly()",
+        ],
+        "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py": [
+            "self.record.enemy.dynamic.is_under_anomaly()",
+            "self.record.enemy.dynamic.get_active_anomaly()",
+        ],
+        "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py": [
+            "self.record.enemy.dynamic.is_under_anomaly()",
+        ],
+    }
+    assert all(
+        finding.classification_suggestion == "copied-output-adjacent read"
+        for finding in copied_findings
+    )
+    assert helper_references.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
+
+
 def test_enemy_dynamic_read_guardrail_failure_message_classifies_unknown_matches() -> None:
     source = (
         "def judge(record):\n"

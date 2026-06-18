@@ -6,6 +6,9 @@ from typing import Any
 
 import pytest
 import zsim.define as define_module
+import zsim.sim_progress.ScheduledEvent as scheduled_event_module
+import zsim.sim_progress.ScheduledEvent.buff_runtime as buff_runtime_module
+import zsim.sim_progress.ScheduledEvent.runtime_command as runtime_command_module
 
 sys.modules.setdefault("define", define_module)
 
@@ -126,6 +129,39 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
+def _patch_runtime_boundary_guards(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail_create_runtime_command_port(*args: object, **kwargs: object) -> None:
+        raise AssertionError("VivianCinema6Trigger should not create RuntimeCommandPort")
+
+    def fail_create_buff_runtime_read_port(*args: object, **kwargs: object) -> None:
+        raise AssertionError("VivianCinema6Trigger should not create BuffRuntimeReadPort")
+
+    monkeypatch.setattr(
+        runtime_command_module,
+        "create_runtime_command_port",
+        fail_create_runtime_command_port,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        scheduled_event_module,
+        "create_runtime_command_port",
+        fail_create_runtime_command_port,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        buff_runtime_module,
+        "create_buff_runtime_read_port",
+        fail_create_buff_runtime_read_port,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        scheduled_event_module,
+        "create_buff_runtime_read_port",
+        fail_create_buff_runtime_read_port,
+        raising=False,
+    )
+
+
 def _build_active_anomaly(*, sim_instance: object) -> AnomalyBar:
     anomaly_bar = AnomalyBar.__new__(AnomalyBar)
     anomaly_bar.sim_instance = sim_instance
@@ -137,9 +173,13 @@ def _build_active_anomaly(*, sim_instance: object) -> AnomalyBar:
     return anomaly_bar
 
 
-def _build_skill_node(*, uuid: str = "vivian-cinema6-node") -> SkillNode:
+def _build_skill_node(
+    *,
+    uuid: str = "vivian-cinema6-node",
+    skill_tag: str = "1331_SNA_2",
+) -> SkillNode:
     skill_node = SkillNode.__new__(SkillNode)
-    skill_node.skill_tag = "1331_SNA_2"
+    skill_node.skill_tag = skill_tag
     skill_node.UUID = uuid
     return skill_node
 
@@ -154,8 +194,12 @@ def _build_logic_harness(*, active_anomalies: list[AnomalyBar]) -> tuple[
     dispatch_port = _RecordingDispatchPort(action_log=action_log)
     schedule_data = SimpleNamespace(
         event_list=_FailFastEventList(),
-        change_process_state=lambda: None,
     )
+
+    def change_process_state() -> None:
+        action_log.append(("change_process_state", None))
+
+    schedule_data.change_process_state = change_process_state
     feather_manager = _FeatherManagerProbe(
         guard_feather=3,
         c1_counter=1,
@@ -173,6 +217,15 @@ def _build_logic_harness(*, active_anomalies: list[AnomalyBar]) -> tuple[
         char_data=SimpleNamespace(
             find_char_obj=lambda CID: char if CID == 1331 else None,
         ),
+    )
+    listener_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+
+    def fail_listener_broadcast(*args: object, **kwargs: object) -> None:
+        listener_calls.append((args, kwargs))
+        raise AssertionError("VivianCinema6Trigger should not broadcast listener events")
+
+    sim_instance.listener_manager = SimpleNamespace(
+        broadcast_event=fail_listener_broadcast
     )
     dynamic = _DynamicReadProbe(active_anomalies)
     enemy = SimpleNamespace(sim_instance=sim_instance, dynamic=dynamic)
@@ -196,6 +249,7 @@ def _build_logic_harness(*, active_anomalies: list[AnomalyBar]) -> tuple[
         dynamic_buff_list=dynamic_buff_list,
         action_log=action_log,
         dynamic=dynamic,
+        listener_calls=listener_calls,
     )
 
 
@@ -210,7 +264,9 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
 
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
-    monkeypatch.setattr(trigger_module, "VIVIAN_REPORT", False)
+    monkeypatch.setattr(trigger_module, "VIVIAN_REPORT", True)
+    monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
+    _patch_runtime_boundary_guards(monkeypatch)
     dispatch_factory_calls: list[object] = []
 
     def fake_create_schedule_dispatch_port(*, sim_instance: object) -> _RecordingDispatchPort:
@@ -259,16 +315,20 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
     assert dispatch_factory_calls == [harness.sim_instance]
     assert harness.dynamic.calls == ["is_under_anomaly", "get_active_anomaly"]
     assert [entry[0] for entry in harness.action_log] == [
+        "change_process_state",
         "guard_feather",
         "c1_counter",
         "c1_counter",
         "flight_feather",
+        "change_process_state",
         "create_schedule_dispatch_port",
         "publish_scheduled",
+        "change_process_state",
         "update_myself",
     ]
-    assert harness.action_log[4][1] is harness.sim_instance
-    assert harness.action_log[5][1] is published_event
+    assert harness.action_log[6][1] is harness.sim_instance
+    assert harness.action_log[7][1] is published_event
+    assert harness.listener_calls == []
     assert isinstance(published_event, DirgeOfDestinyAnomaly)
     assert published_event is not active_anomaly
     assert published_event.marker == "c6-active-anomaly"
@@ -292,6 +352,40 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
     assert cal_ap_inputs == [_FakeMultiplierData.instances[0]]
 
 
+def test_vivian_cinema6_judge_wrong_skill_is_noop(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    active_anomaly = _build_active_anomaly(sim_instance=SimpleNamespace())
+    logic, record, dispatch_port, harness = _build_logic_harness(
+        active_anomalies=[active_anomaly]
+    )
+
+    monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
+    monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
+    monkeypatch.setattr(trigger_module, "VIVIAN_REPORT", False)
+    monkeypatch.setattr(
+        trigger_module,
+        "create_schedule_dispatch_port",
+        lambda *, sim_instance: dispatch_port,
+    )
+    _patch_runtime_boundary_guards(monkeypatch)
+    _block_legacy_event_lookup(monkeypatch)
+
+    assert (
+        logic.special_judge_logic(
+            skill_node=_build_skill_node(skill_tag="1331_CoAttack_A")
+        )
+        is False
+    )
+
+    assert harness.dynamic.calls == []
+    assert harness.action_log == []
+    assert record.last_update_node is None
+    assert dispatch_port.events == []
+    assert harness.schedule_data.event_list == []
+    assert harness.listener_calls == []
+
+
 def test_vivian_cinema6_no_anomaly_branch_updates_feathers_without_publish(
     monkeypatch: pytest.MonkeyPatch,
 ):
@@ -306,6 +400,7 @@ def test_vivian_cinema6_no_anomaly_branch_updates_feathers_without_publish(
         "create_schedule_dispatch_port",
         lambda *, sim_instance: dispatch_port,
     )
+    _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
 
     skill_node = _build_skill_node()
