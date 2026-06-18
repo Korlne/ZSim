@@ -7343,3 +7343,17 @@
 - Next step:
   - Continue to `US-008` handoff docs and same-phase pool preservation.
 ---
+
+## 2026-06-18 18:48 +08:00 - US-008
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/plans/slices/buffxlogic-simple-enemy-state-read-helpers-implementation-next-intake.md`, `scripts/ralph/checkpoints/2026-06-18-us-008-simple-enemy-state-handoff.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/evidence-ledger-shards/closed-evidence.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`
+- Replacement note:
+  - `US-008 handoff docs and same-phase pool preservation` replaces stale remaining-simple-read wording with final implemented / no-reopen handoff evidence for the bounded shock/stun helper subset.
+  - `read_enemy_shock_active(self.record.enemy)` now replaces Lina's direct shock judge / inverse exit predicate.
+  - `read_enemy_stun_active(...)` now replaces the direct stun predicates in Soldier11, Yixuan Additional Ability, Yixuan C2, and Yuzuha C2 while keeping caller-owned skill gates, report-state, cooldown, QTE mutation, direct enemy-source ownership, and inverse behavior in the callers.
+- Compatibility retained:
+  - `read_enemy_anomaly_active(...)` remains limited to the completed four-file anomaly-active subset; `read_enemy_shock_active(...)` remains limited to Lina; `read_enemy_stun_active(...)` remains limited to Soldier11, Yixuan Additional Ability, Yixuan C2, and Yuzuha C2.
+  - Edge-detection, copied-output / event-adjacent, dot/debuff runtime-state, event/runtime/listener, old-container, formula, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, public runtime read-port, validation-runner, registered-route, performance, and retained compatibility surfaces remain unchanged.
+  - Same-phase pool remains broad: edge-detection families, copied-output / formula parity candidates, dot/debuff runtime-state reads, old containers / lifecycle compatibility, `JudgeTools` responsibility slices, planned-event producer families, registered behavior / performance gates, completed guarded-maintenance surfaces, retained compatibility, and blocker-only reopen rules all require exact evidence before becoming active work.
+- Next step:
+  - Generate a remaining enemy-state read-family route review / bounded characterization or implementation intake only if preflight names exact current-root files / symbols / behavior, focused verifier, rollback anchor, retained boundary and non-goal. Do not generate another anomaly-active or shock/stun helper follow-up without new blocker evidence.
+---
