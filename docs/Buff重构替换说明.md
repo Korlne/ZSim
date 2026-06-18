@@ -7357,3 +7357,15 @@
 - Next step:
   - Generate a remaining enemy-state read-family route review / bounded characterization or implementation intake only if preflight names exact current-root files / symbols / behavior, focused verifier, rollback anchor, retained boundary and non-goal. Do not generate another anomaly-active or shock/stun helper follow-up without new blocker evidence.
 ---
+
+## 2026-06-18 19:28 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-compact-edge-family-preflight-and-stop-gate.md`, `scripts/ralph/plans/slices/us-002-edge-state-helper-contract-and-unit-tests.md`, `scripts/ralph/investigations/2026-06-18-US-001-edge-family-preflight.md`, `scripts/ralph/checkpoints/2026-06-18-us-001-edge-family-preflight.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 compact edge-family preflight` prepares a later edge-state helper cycle by naming the current-root frozen, stun, frost/frostbite, and identity/current-state read behaviors. This story does not replace any live `BuffXLogic` read.
+- Compatibility retained:
+  - Production source remains unchanged. Previous-state fields, edge comparisons, tick lookup, `get_prepared(...)`, skill-tag gates, `simple_start(...)`, anomaly-bar identity logic, and record mutation stay caller-owned.
+  - `HailstormShrineIceBonus.py`, `MiyabiAdditionalAbility_IgnoreIceRes.py`, copied-output-adjacent files, and dot/debuff runtime-state files remain preserved same-phase pool until a later PRD proves exact verifier and rollback compatibility.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-002` and define only the narrow BuffXLogic-local edge-state helper contract and unit tests.
+---
