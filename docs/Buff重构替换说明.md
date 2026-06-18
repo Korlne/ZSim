@@ -7266,3 +7266,15 @@
 - Next step:
   - Continue to `US-002` and add only narrow BuffXLogic-local `read_enemy_shock_active(enemy)` / `read_enemy_stun_active(enemy)` helpers, without adding a generic simulator-context helper or expanding public runtime reader contracts.
 ---
+
+## 2026-06-18 17:56 +08:00 - US-002
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/enemy_state_read.py`, `tests/simulator/test_enemy_state_read_helper.py`, `scripts/ralph/plans/slices/us-002-add-narrow-shock-and-stun-read-helpers.md`, `scripts/ralph/investigations/2026-06-18-US-002-shock-stun-read-helper.md`, `scripts/ralph/checkpoints/2026-06-18-us-002-shock-stun-read-helpers.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - New local `read_enemy_shock_active(enemy)` and `read_enemy_stun_active(enemy)` prepare to replace direct simple boolean shock/stun reads by centralizing only `enemy.dynamic.shock` and `enemy.dynamic.stun`.
+  - This story does not migrate live `BuffXLogic` callsites, expand `BuffRuntimeReadPort`, add fallback lookup, publish scheduled events, broadcast listeners, mutate runtime state, write same-tick runtime commands, calculate formulas, or traverse old containers.
+- Compatibility retained:
+  - Existing direct reads in Lina, Soldier11, Yixuan, and Yuzuha remain unchanged until US-003 through US-005.
+  - Edge-detection, copied-output / event-adjacent, dot/debuff runtime-state, event/runtime/listener, old-container, formula, validation-runner, registered-route, performance, and public runtime read-port surfaces remain outside the helper.
+- Next step:
+  - Continue to `US-003` and delegate only the pure Lina shock and Soldier11 stun gates after their existing record lookup and preparation calls.
+---
