@@ -6923,3 +6923,15 @@
 - Next step:
   - Continue to `US-004` JudgeTools and preparation service-location gap packet. If lifecycle production work is later selected, split it to one pending-generation / activation branch and run `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`.
 ---
+
+## 2026-06-18 10:24 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-judgetools-and-preparation-service-location-gap-packet.md`, `scripts/ralph/investigations/2026-06-18-US-004-judgetools-preparation-service-location-gap.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/open-evidence-gaps.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-004 JudgeTools / preparation service-location gap packet` replaces broad service-location cleanup assumptions with current-root `rg`, CodeGraph navigation, and responsibility-based classification for template identity lookup, runtime state read, trigger-buff read, preload/action context, enemy context, and tick / RNG-adjacent state.
+  - This story is evidence / Ralph completion bookkeeping only; it does not replace live production Buff code, change helper contracts or guardrails, delete old template identity, alter formulas, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `JudgeTools.find_exist_buff_dict(...)`, `check_preparation(...)` lazy record initialization, `trigger_buff_0_handler(...)`, `read_trigger_buff_state(...)`, `find_tick(...)`, `find_enemy(...)`, `find_dynamic_buff_list(...)`, `find_preload_data(...)`, and `find_stack(...)` remain unchanged.
+  - Deleted `JudgeTools.find_event_list()`, `check_preparation(..., event_list=...)`, and `BuffRecordBaseClass.event_list` surfaces remain closed and must not be reintroduced.
+- Next step:
+  - Continue to `US-005` BuffXLogic old template / BuffLogic migration gap packet. Future JudgeTools replacements must be one owner family at a time, preserve old template identity and lazy record initialization, and include focused compatibility tests plus rollback anchors.
+---
