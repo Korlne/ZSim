@@ -16,6 +16,7 @@ from zsim.sim_progress.Buff.BuffXLogic.VivianCorePassiveTrigger import (
     VivianCorePassiveTrigger,
     VivianCorePassiveTriggerRecord,
 )
+from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.anomaly_bar import AnomalyBar
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import DirgeOfDestinyAnomaly
 
@@ -43,6 +44,20 @@ class _FakeMultiplierData:
         self.instances.append(self)
 
 
+class _DynamicReadProbe:
+    def __init__(self, active_anomalies: list[AnomalyBar]) -> None:
+        self.active_anomalies = active_anomalies
+        self.calls: list[str] = []
+
+    def is_under_anomaly(self) -> bool:
+        self.calls.append("is_under_anomaly")
+        return bool(self.active_anomalies)
+
+    def get_active_anomaly(self) -> list[AnomalyBar]:
+        self.calls.append("get_active_anomaly")
+        return self.active_anomalies
+
+
 def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("VivianCorePassiveTrigger should not read raw event_list")
@@ -63,6 +78,13 @@ def _build_active_anomaly(*, sim_instance: object) -> AnomalyBar:
     return anomaly_bar
 
 
+def _build_skill_node(*, uuid: str = "vivian-core-node") -> SkillNode:
+    skill_node = SkillNode.__new__(SkillNode)
+    skill_node.skill_tag = "1331_CoAttack_A"
+    skill_node.UUID = uuid
+    return skill_node
+
+
 def test_vivian_core_passive_publishes_dirge_anomaly_via_dispatch_port(
     monkeypatch: pytest.MonkeyPatch,
 ):
@@ -79,11 +101,7 @@ def test_vivian_core_passive_publishes_dirge_anomaly_via_dispatch_port(
         ),
     )
     active_anomaly = _build_active_anomaly(sim_instance=sim_instance)
-    dynamic = SimpleNamespace(
-        dynamic_debuff_list=[],
-        dynamic_dot_list=[],
-        get_active_anomaly=lambda: [active_anomaly],
-    )
+    dynamic = _DynamicReadProbe([active_anomaly])
     enemy = SimpleNamespace(sim_instance=sim_instance, dynamic=dynamic)
     dynamic_buff_list: dict[str, list[Any]] = {"enemy": []}
     buff_instance = SimpleNamespace(
@@ -131,6 +149,7 @@ def test_vivian_core_passive_publishes_dirge_anomaly_via_dispatch_port(
 
     assert len(dispatch_port.events) == 1
     assert dispatch_factory_calls == [sim_instance]
+    assert dynamic.calls == ["get_active_anomaly"]
     published_event = dispatch_port.events[0]
     assert isinstance(published_event, DirgeOfDestinyAnomaly)
     assert published_event is not active_anomaly
@@ -151,3 +170,70 @@ def test_vivian_core_passive_publishes_dirge_anomaly_via_dispatch_port(
     assert _FakeMultiplierData.instances[0].dynamic_buff_list is dynamic_buff_list
     assert _FakeMultiplierData.instances[0].char is char
     assert cal_ap_inputs == [_FakeMultiplierData.instances[0]]
+
+
+def test_vivian_core_passive_judge_no_anomaly_does_not_publish_or_update_node(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    dispatch_port = _RecordingDispatchPort()
+    schedule_data = SimpleNamespace(
+        event_list=_FailFastEventList(),
+        change_process_state=lambda: None,
+    )
+    sim_instance = SimpleNamespace(schedule_data=schedule_data)
+    dynamic = _DynamicReadProbe([])
+    enemy = SimpleNamespace(sim_instance=sim_instance, dynamic=dynamic)
+    buff_instance = SimpleNamespace(
+        sim_instance=sim_instance,
+        ft=SimpleNamespace(index="vivian-core-passive"),
+    )
+    logic = VivianCorePassiveTrigger(buff_instance)
+    record = VivianCorePassiveTriggerRecord()
+    record.enemy = enemy
+    monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
+    monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
+    monkeypatch.setattr(
+        trigger_module,
+        "create_schedule_dispatch_port",
+        lambda *, sim_instance: dispatch_port,
+    )
+    _block_legacy_event_lookup(monkeypatch)
+
+    assert logic.special_judge_logic(skill_node=_build_skill_node()) is False
+
+    assert dynamic.calls == ["is_under_anomaly"]
+    assert record.last_update_node is None
+    assert dispatch_port.events == []
+    assert schedule_data.event_list == []
+
+
+def test_vivian_core_passive_judge_active_anomaly_updates_node_once(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    schedule_data = SimpleNamespace(
+        event_list=_FailFastEventList(),
+        change_process_state=lambda: None,
+    )
+    sim_instance = SimpleNamespace(schedule_data=schedule_data)
+    active_anomaly = _build_active_anomaly(sim_instance=sim_instance)
+    dynamic = _DynamicReadProbe([active_anomaly])
+    enemy = SimpleNamespace(sim_instance=sim_instance, dynamic=dynamic)
+    buff_instance = SimpleNamespace(
+        sim_instance=sim_instance,
+        ft=SimpleNamespace(index="vivian-core-passive"),
+    )
+    logic = VivianCorePassiveTrigger(buff_instance)
+    record = VivianCorePassiveTriggerRecord()
+    record.enemy = enemy
+    monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
+    monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
+    _block_legacy_event_lookup(monkeypatch)
+
+    skill_node = _build_skill_node()
+
+    assert logic.special_judge_logic(skill_node=skill_node) is True
+    assert logic.special_judge_logic(skill_node=skill_node) is False
+
+    assert dynamic.calls == ["is_under_anomaly", "is_under_anomaly"]
+    assert record.last_update_node is skill_node
+    assert schedule_data.event_list == []

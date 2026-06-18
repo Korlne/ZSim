@@ -7100,3 +7100,12 @@
 - Next step:
   - Continue to `US-004` copied-output adjacent read-gate characterization. Keep edge-detection previous-record semantics separate from simple boolean anomaly reads unless later Go / No-Go evidence proves a safe split helper contract.
 ---
+## 2026-06-18 13:34 +08:00 - US-004
+- Files changed: `tests/simulator/test_vivian_core_passive_trigger_dispatch.py`, `tests/simulator/test_vivian_cinema6_trigger_dispatch.py`, `tests/simulator/test_yanagi_polarity_disorder_dispatch.py`, `scripts/ralph/plans/slices/us-004-copied-output-adjacent-read-gate-characterization.md`, `scripts/ralph/checkpoints/2026-06-18-us-004-copied-output-adjacent-read-gates.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/proven-patterns-to-reuse.md`
+- Replacement note:
+  - Focused copied-output-adjacent read-gate characterization tests prepare later helper Go / No-Go review; they do not replace live `VivianCorePassiveTrigger`, `VivianCinema6Trigger`, `YanagiPolarityDisorderTrigger`, `CopyAnomalyForOutput.py`, `UpdateAnomaly.py`, or formula responsibilities.
+- Compatibility retained:
+  - Existing `ScheduleDispatchPort.publish_scheduled(...)` ordering, Yanagi `spawn_output(...)` handoff, Vivian copied-output construction, listener broadcast separation, AP / ratio formulas, and dispatch payload fields remain unchanged.
+- Next step:
+  - Use US-005 to decide whether a bounded read-only helper is safe, or split copied-output-adjacent gates from simple anomaly read gates.
+---

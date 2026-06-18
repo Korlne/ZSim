@@ -102,6 +102,21 @@ class _FakeMultiplierData:
         self.instances.append(self)
 
 
+class _DynamicReadProbe:
+    def __init__(self, active_anomalies: list[AnomalyBar]) -> None:
+        self.active_anomalies = active_anomalies
+        self.calls: list[str] = []
+
+    @property
+    def is_under_anomaly(self) -> bool:
+        self.calls.append("is_under_anomaly")
+        return bool(self.active_anomalies)
+
+    def get_active_anomaly(self) -> list[AnomalyBar]:
+        self.calls.append("get_active_anomaly")
+        return self.active_anomalies
+
+
 def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("VivianCinema6Trigger should not read raw event_list")
@@ -159,10 +174,7 @@ def _build_logic_harness(*, active_anomalies: list[AnomalyBar]) -> tuple[
             find_char_obj=lambda CID: char if CID == 1331 else None,
         ),
     )
-    dynamic = SimpleNamespace(
-        get_active_anomaly=lambda: active_anomalies,
-        is_under_anomaly=bool(active_anomalies),
-    )
+    dynamic = _DynamicReadProbe(active_anomalies)
     enemy = SimpleNamespace(sim_instance=sim_instance, dynamic=dynamic)
     dynamic_buff_list: dict[str, list[Any]] = {"enemy": []}
     buff_instance = SimpleNamespace(
@@ -183,6 +195,7 @@ def _build_logic_harness(*, active_anomalies: list[AnomalyBar]) -> tuple[
         feather_updates=feather_manager.update_calls,
         dynamic_buff_list=dynamic_buff_list,
         action_log=action_log,
+        dynamic=dynamic,
     )
 
 
@@ -230,6 +243,7 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
     skill_node = _build_skill_node()
 
     assert logic.special_judge_logic(skill_node=skill_node) is True
+    assert harness.dynamic.calls == ["is_under_anomaly"]
     assert record.last_update_node is skill_node
     assert record.guard_feather == 3
     assert harness.feather_manager.guard_feather == 0
@@ -243,6 +257,7 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
     assert len(dispatch_port.events) == 1
     published_event = dispatch_port.events[0]
     assert dispatch_factory_calls == [harness.sim_instance]
+    assert harness.dynamic.calls == ["is_under_anomaly", "get_active_anomaly"]
     assert [entry[0] for entry in harness.action_log] == [
         "guard_feather",
         "c1_counter",
@@ -293,9 +308,15 @@ def test_vivian_cinema6_no_anomaly_branch_updates_feathers_without_publish(
     )
     _block_legacy_event_lookup(monkeypatch)
 
+    skill_node = _build_skill_node()
+
+    assert logic.special_judge_logic(skill_node=skill_node) is True
+    assert harness.dynamic.calls == ["is_under_anomaly"]
+
     logic.special_effect_logic()
 
     assert dispatch_port.events == []
     assert harness.schedule_data.event_list == []
+    assert harness.dynamic.calls == ["is_under_anomaly", "get_active_anomaly"]
     assert record.guard_feather == 0
     assert harness.feather_updates == [True, True]

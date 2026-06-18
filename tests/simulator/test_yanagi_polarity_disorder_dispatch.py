@@ -58,6 +58,16 @@ class _FakeAnomalyBar:
         return copied
 
 
+class _DynamicReadProbe:
+    def __init__(self, *, is_active: bool) -> None:
+        self.is_active = is_active
+        self.calls: list[str] = []
+
+    def is_under_anomaly(self) -> bool:
+        self.calls.append("is_under_anomaly")
+        return self.is_active
+
+
 def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("YanagiPolarityDisorderTrigger should not read raw event_list")
@@ -103,8 +113,9 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
     logic = YanagiPolarityDisorderTrigger(buff_instance)
     record = YanagiPolarityDisorderTriggerRecord()
     record.char = SimpleNamespace(cinema=2)
+    dynamic = _DynamicReadProbe(is_active=True)
     record.enemy = SimpleNamespace(
-        dynamic=SimpleNamespace(is_under_anomaly=lambda: True),
+        dynamic=dynamic,
         get_active_anomaly_bar=lambda: active_anomaly_bar,
     )
     record.e_counter = {"update_from": "prev-hit", "count": 2}
@@ -150,6 +161,7 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
     monkeypatch.setattr("zsim.sim_progress.Update.spawn_output", fake_spawn_output)
 
     assert logic.special_judge_logic(skill_node=cast(Any, loading_mission)) is True
+    assert dynamic.calls == ["is_under_anomaly"]
     assert record.polarity_disorder_update_signal is True
 
     logic.special_effect_logic(skill_node=skill_node)
@@ -188,7 +200,8 @@ def test_yanagi_polarity_disorder_judge_resets_counter_without_publish_when_no_a
     logic = YanagiPolarityDisorderTrigger(buff_instance)
     record = YanagiPolarityDisorderTriggerRecord()
     record.char = SimpleNamespace(cinema=2)
-    record.enemy = SimpleNamespace(dynamic=SimpleNamespace(is_under_anomaly=lambda: False))
+    dynamic = _DynamicReadProbe(is_active=False)
+    record.enemy = SimpleNamespace(dynamic=dynamic)
     record.e_counter = {"update_from": "prev-hit", "count": 2}
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
@@ -205,6 +218,7 @@ def test_yanagi_polarity_disorder_judge_resets_counter_without_publish_when_no_a
     loading_mission.mission_start(skill_node.preload_tick, report=False)
 
     assert logic.special_judge_logic(skill_node=cast(Any, loading_mission)) is False
+    assert dynamic.calls == ["is_under_anomaly"]
     assert call_order == []
     assert dispatch_port.events == []
     assert schedule_data.event_list == []
