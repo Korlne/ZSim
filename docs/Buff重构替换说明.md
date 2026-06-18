@@ -7777,3 +7777,15 @@
 - Next step:
   - Continue to `US-003` same-phase candidate promotion gate; do not implement or delete a candidate inside this route-review PRD.
 ---
+## 2026-06-19 06:57 +08:00 - US-003
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `scripts/ralph/investigations/2026-06-19-US-003-same-phase-candidate-promotion-gate.md`, Ralph evidence / checkpoint / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 same-phase candidate promotion gate` replaces candidate-pool ambiguity with a strict promotion rule for future PRD generation.
+  - No live production Buff path, helper, validation runner, registered route, old container, lifecycle path, event/runtime/listener layer, formula output, copied-output payload, public reader snapshot, or retained compatibility behavior was replaced in this docs/control-plane story.
+- Compatibility retained:
+  - Candidate blocks A-G remain future review material: copied-output / formula parity adjacent reads, dot/debuff runtime-state reads, old containers / lifecycle compatibility, `JudgeTools`, planned-event producer / handler-requeue families, registered behavior / performance gates, and completed guarded-maintenance reopen rules.
+  - Current verdict is `no exact same-phase implementation or deletion-readiness candidate currently proven`; no implementation PRD, deletion-readiness PRD, or Phase 5 resume route is promoted by this story.
+  - Future event/runtime/listener, planned-event, handler requeue, dot runtime, or same-tick runtime-write candidates require `implicit-events`; future attribute reader / snapshot candidates require `calculator-reads`; future formula output changes require `formula-parity`.
+- Next step:
+  - Continue to `US-004` Phase 5 Resume Gate Packet. Keep Phase 5 paused until a later human-approved route checkpoint.
+---

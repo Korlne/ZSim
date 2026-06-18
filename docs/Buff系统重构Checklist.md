@@ -24,6 +24,15 @@
 | Registered behavior / performance gates | needs oracle / registered sample | main-loop consistency / benchmark 只在 production semantic 或 performance-sensitive diff 具备 real registered route、explicit stop tick、nonzero event/formula counts、total damage、event-count、Buff timeline 和 rollback anchor 时运行。 | 不创建 validation-only team、fake APL、fixture-only route 或 retained-vs-retained sample；docs-only / guardrail-only / retained-compatibility story 记录跳过原因。 |
 | Phase 5 resume conditions | explicit blocker with human-approved route | Phase 5 继续暂停，直到后续 checkpoint 记录 human-approved route：接受 retained compatibility 并塑形 Phase 5、提升一个 exact same-phase candidate，或以 explicit blocker 继续暂停。 | 历史 Phase 5 sample 只是 registered-route evidence；不能单独恢复 Phase 5 默认 PRD。 |
 
+## Same-phase candidate promotion gate（2026-06-19 US-003）
+
+- Candidate blocks A-G in `docs/Buff重构下阶段计划草稿.md` remain review material: copied-output / formula parity adjacent reads, dot/debuff runtime-state reads, old containers / lifecycle compatibility, `JudgeTools` responsibilities, planned-event producer and handler-requeue families, registered behavior / performance gates, and completed guarded-maintenance reopen rules.
+- Current verdict：`no exact same-phase implementation or deletion-readiness candidate currently proven`。本 PRD 不提升 implementation PRD、不提升 deletion-readiness PRD、不恢复 Phase 5。
+- 任一 future promoted candidate 必须同时具备 exact current-root file / symbol / behavior、verifier command、rollback anchor、retained boundaries、non-goals 和 stop condition。
+- Future event/runtime/listener、planned-event、handler requeue、dot runtime 或 same-tick runtime-write candidate 必须要求 `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`。
+- Future attribute reader / snapshot candidate 必须要求 `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads`；formula output change 必须要求 `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile formula-parity`。
+- 本 gate 不删除 candidate pool；缺 exact proof 的块继续留作 future review material，而不是 active backlog。
+
 ## 阶段 0：重规划与基线
 
 - [x] 回到 `main` 分支重新规划。
