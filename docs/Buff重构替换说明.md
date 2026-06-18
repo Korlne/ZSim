@@ -31,6 +31,18 @@
   - Continue to `US-002` old-container source-of-truth gap packet; do not run Phase 5 validation or infer deletion authority from retained pool evidence.
 ---
 
+## 2026-06-18 13:14 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-source-preflight-and-family-boundary.md`, `scripts/ralph/investigations/2026-06-18-US-001-enemy-anomaly-state-preflight.md`, `scripts/ralph/checkpoints/2026-06-18-us-001-enemy-anomaly-state-preflight.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 source preflight` prepares to replace broad enemy-state helper assumptions with current-root `BuffXLogic` evidence and a split classification for simple read-only gates, edge-detection gates, copied-output / event-adjacent gates, dot/debuff runtime-state gates, and completed guarded-maintenance overlaps.
+  - This story is docs/Ralph evidence only; it does not replace live production `BuffXLogic`, implement a helper, rewrite Calculator / CalAnomaly formula semantics, expand public reader/snapshot APIs, change validation-runner behavior, delete old containers, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - P2-A through P2-G, selected impact / crit / stun, old containers, and deleted `event_list` discovery surfaces remain no-reopen because the preflight found no concrete regression in those closed surfaces.
+  - `Buff.BuffLogic`, `check_record_module()`, `get_prepared(...)`, old `buff_0` identity, lazy `history.record`, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, listener broadcasts, dot runtime registration, and retained formula/read contracts remain unchanged.
+- Next step:
+  - Continue to `US-002` simple anomaly gate characterization. Use the simple read-only gate set from the investigation packet and keep edge-detection, copied-output / event-adjacent, dot/debuff runtime-state, and guarded-maintenance overlaps out of scope unless a later story explicitly includes them.
+---
+
 ## 2026-06-17 23:17 +08:00 - US-009
 - Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-009-handoff-docs-and-next-candidate-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-17-us-009-final-handoff-next-pool-preservation.md`, `scripts/ralph/evidence-ledger.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
 - Replacement note:
