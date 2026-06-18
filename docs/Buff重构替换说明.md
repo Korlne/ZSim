@@ -7483,3 +7483,15 @@
 - Next step:
   - Continue to `US-003` helper approval contract; approve only exact read predicates proven by US-002 tests and keep copied-output construction, payload, publish, report, listener, and runtime responsibilities in the caller.
 ---
+
+## 2026-06-18 22:23 +08:00 - US-003
+- Files changed: `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-003-read-predicate-helper-approval-contract.md`, `scripts/ralph/investigations/2026-06-18-US-003-read-predicate-helper-approval-contract.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/evidence-ledger-shards/proven-patterns-to-reuse.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-004-hugo-totalize-stun-predicate-delegation.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 read-predicate helper approval contract` replaces chat-only helper-scope confidence with an AST guardrail contract for copied-output-adjacent read predicates.
+  - This story does not replace any live `BuffXLogic` callsite. It approves only later `read_enemy_stun_active(...)` use for `HugoCorePassiveTotalizeTrigger.py` and later `read_enemy_anomaly_active(...)` use for `VivianCorePassiveTrigger.py`, `VivianCinema6Trigger.py`, and `YanagiPolarityDisorderTrigger.py`.
+- Compatibility retained:
+  - `get_active_anomaly()`, copied-output construction, ratio calculations, record/template identity, report-state writes, scheduled publish, listener broadcast, dot runtime registration, same-tick runtime writes, public reader/runtime APIs, `_CalculatorReadSnapshot`, validation-runner behavior, old containers, registered routes, performance gates, and retained compatibility surfaces remain unchanged.
+  - Dot/debuff runtime-state files and anomaly-map future-pool files remain outside helper approvals.
+- Next step:
+  - Continue to `US-004` and delegate only Hugo stun predicates if focused Hugo dispatch tests and the guardrail stay green.
+---
