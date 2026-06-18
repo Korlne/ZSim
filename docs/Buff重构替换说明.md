@@ -7109,3 +7109,14 @@
 - Next step:
   - Use US-005 to decide whether a bounded read-only helper is safe, or split copied-output-adjacent gates from simple anomaly read gates.
 ---
+
+## 2026-06-18 13:40 +08:00 - US-005
+- Files changed: `scripts/ralph/investigations/2026-06-18-US-005-read-only-helper-go-no-go.md`, `scripts/ralph/checkpoints/2026-06-18-us-005-read-only-helper-go-no-go.md`, `scripts/ralph/plans/slices/us-005-read-only-helper-design-or-go-no-go-packet.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/evidence-ledger-shards/proven-patterns-to-reuse.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 read-only helper Go / No-Go packet` prepares a later bounded `read_enemy_anomaly_active(...)` helper only for the exact US-002 simple boolean subset: `ElectroLipGlossAtkAndDmgBonus`, `JaneAdditionalAbilityPhyBuildupBonus`, `MarcatoDesireAtkBonus`, and `TimeweaverApBonus`.
+  - This story is docs/Ralph evidence only; it does not implement a helper, edit live `BuffXLogic`, expand `BuffRuntimeReadPort`, introduce a runtime write facade, rewrite copied-output/formula behavior, mutate dot runtime state, or delete old containers.
+- Compatibility retained:
+  - Edge-detection gates, copied-output/event-adjacent gates, dot/debuff runtime-state reads, `BuffRuntimeReadPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, `ScheduleDispatchPort`, listener broadcasts, scheduled publish ordering, old containers, and formula snapshots remain unchanged.
+- Next step:
+  - Continue to `US-006` guardrail and validation integration. Add guardrails only if existing focused tests and validation profiles do not already block unsafe broad-helper expansion.
+---
