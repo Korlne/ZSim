@@ -7042,3 +7042,15 @@
 - Next step:
   - Continue to `US-006` serial validation and reviewer gate. Reuse the selected-family guardrail evidence and keep Phase 5, deletion readiness, and unrelated owner families out of scope.
 ---
+
+## 2026-06-18 12:16 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-serial-validation-and-reviewer-gate.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/closed-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 serial validation and reviewer gate` prepares to replace selected owner-family `BuffXLogic` read-gate / state-sync internals by proving all PRD-focused tests and required serial Buff validation profiles are attributable and green before handoff.
+  - This story is validation/Ralph evidence only; it does not replace live production `BuffXLogic`, rewrite Calculator / CalAnomaly formula semantics, expand public reader/snapshot APIs, change validation-runner behavior, delete old containers, or merge event queue / listener broadcast / same-tick runtime-write layers.
+- Compatibility retained:
+  - `Buff.BuffLogic`, `JudgeTools.find_exist_buff_dict(...)`, `check_preparation(...)`, old `buff_0` identity, lazy `history.record`, `simple_start(...)`, `dy.count`, `update_to_buff_0(...)`, selected trigger-state compatibility reads, old containers, `ScheduleDispatchPort`, `RuntimeCommandPort`, and `LegacyRuntimeCommandAdapter` remain unchanged.
+  - `formula-parity` was skipped because this PRD intentionally changed no formula output semantics; `calculator-reads` and `implicit-events` ran serially and passed with typecheck.
+- Next step:
+  - Continue to `US-007` handoff docs and same-phase candidate pool. Preserve the broad candidate pool and keep Phase 5, deletion readiness, and unrelated owner families out of scope unless handoff evidence names an exact next route.
+---
