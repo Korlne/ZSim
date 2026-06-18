@@ -6971,3 +6971,15 @@
 - Next step:
   - Continue to `US-008` decision matrix and next route. Use the seven completed packets to rank exact bounded implementation candidates, deletion-readiness candidates, long-term compatibility strategies, and No-Go / blocker outcomes; keep Phase 5 paused unless the matrix proves every Phase 1-4 gap is closed, downgraded, or explicitly blocked.
 ---
+
+## 2026-06-18 11:05 +08:00 - US-008
+- Files changed: `scripts/ralph/plans/slices/us-008-gap-closure-decision-matrix-and-next-route.md`, `scripts/ralph/investigations/2026-06-18-US-008-gap-closure-decision-matrix.md`, `scripts/ralph/checkpoints/2026-06-18-us-008-decision-matrix-phase-route.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/open-evidence-gaps.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-008 decision matrix` replaces scattered Phase 1-4 gap conclusions with a single route matrix covering old containers, lifecycle entrypoints, `BuffXLogic`, `JudgeTools`, unified event-driven trigger chain, formula/effect-system replacement, old residual deletion, and Phase 5 scope correction.
+  - This story is evidence / Ralph completion bookkeeping only; it does not replace live production Buff code, delete retained compatibility, rebind old containers, implement `event_router`, rewrite formulas, expand public reader/snapshot APIs, add registered routes/APLs, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - Old containers, legacy lifecycle entrypoints, `Buff.BuffLogic`, `JudgeTools` service-location helpers, old template identity, lazy record initialization, planned-event queue, scheduled handler requeue, listener broadcasts, dot runtime registration, runtime read/write ports, formula snapshots, and retained compatibility paths remain unchanged.
+  - Phase 5 remains paused. The ranked next default is a broad same-family `BuffXLogic` owner-family state-sync / read-gate bounded slice with shared verifier and rollback anchors, not deletion or Phase 5 validation.
+- Next step:
+  - Continue to `US-009` final handoff docs. Preserve the US-008 matrix route, same-phase candidate pool, and Phase 5 pause/resume condition.
+---
