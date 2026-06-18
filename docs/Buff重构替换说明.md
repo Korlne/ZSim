@@ -7641,3 +7641,15 @@
 - Next step:
   - Continue to `US-007` serial validation and reviewer invariant gate; keep the IceFire helper approval exact and keep debuff mirror / single-source cleanup retained unless a later story proves a separate exact boundary.
 ---
+## 2026-06-19 00:43 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-serial-validation-and-reviewer-invariant-gate.md`, `scripts/ralph/plans/slices/us-008-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/closed-evidence.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 serial validation and reviewer invariant gate` replaces unverified helper/delegation confidence with focused pytest, scoped mypy, serial `implicit-events`, serial `calculator-reads`, and reviewer invariant evidence for the dot/debuff runtime-state plus anomaly-map exact-intake PRD.
+  - This story does not replace a new live `BuffXLogic` callsite; it verifies the US-002 through US-006 helper and delegation outcomes.
+- Compatibility retained:
+  - `AnomalyDebuffExitJudge.py`, `HailstormShrineIceBonus.py`, `MiyabiAdditionalAbility_IgnoreIceRes.py`, `VivianDotTrigger.py`, and `MiyabiCoreSkill_IceFire.py` keep their caller-owned state-machine, dot runtime, scheduled publish, debuff mirror, and helper-approval boundaries exactly as completed in US-003 through US-006.
+  - Event queue semantics, synchronous listener broadcasts, dot runtime registration, same-tick runtime writes, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+  - `formula-parity`, Phase 5 registered-route validation, main-loop consistency, runtime benchmark, and default broad validation were skipped because this slice changed no formula output behavior, copied-output ratio math, formula parity tests, live semantic route, performance-sensitive path, public contract, lifecycle, validation-runner, or runtime-write surface. `calculator-reads` ran because the PRD touched `tests/simulator/test_full_crit_event_adjacent_reader.py`.
+- Next step:
+  - Continue to `US-008` handoff docs and same-phase pool preservation; keep the exact helper approvals and retained dot/debuff mirror / Phase 5 conditions visible in handoff docs.
+---
