@@ -7570,3 +7570,16 @@
 - Next step:
   - Generate `BuffXLogic Dot/Debuff Runtime-State And Anomaly-Map Exact Intake`; keep copied-output / formula parity, old containers / lifecycle compatibility, `JudgeTools`, planned-event producer families, registered behavior / performance gates, completed guarded-maintenance surfaces and blocker-only reopen rules as same-phase candidate blocks, not automatic backlog.
 ---
+
+## 2026-06-18 23:37 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-current-root-exact-intake-and-stop-gate.md`, `scripts/ralph/investigations/2026-06-18-US-001-dot-debuff-anomaly-map-intake.md`, `scripts/ralph/checkpoints/2026-06-18-us-001-dot-debuff-anomaly-map-intake.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 dot/debuff runtime-state and anomaly-map intake packet` replaces chat-only candidate confidence with current-root evidence for the five retained files.
+  - This story does not replace any live `BuffXLogic` read, helper callsite, dot runtime registration, scheduled publish, listener broadcast, runtime write, formula/read surface, old container, validation-runner behavior, registered route, performance gate, or retained compatibility path.
+- Compatibility retained:
+  - `MiyabiCoreSkill_IceFire.py` and `VivianDotTrigger.py` remain classified as dot/debuff runtime-state reads.
+  - `AnomalyDebuffExitJudge.py`, `HailstormShrineIceBonus.py`, and `MiyabiAdditionalAbility_IgnoreIceRes.py` remain classified as anomaly-map / `getattr(...enemy.dynamic, name)` future-pool reads.
+  - Event queue semantics, synchronous listener broadcasts, dot runtime registration, same-tick runtime writes, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-002` anomaly-map helper contract and guardrail approval; helper semantics must remain pure read-only over explicit anomaly names and keep state-machine ownership in the caller.
+---
