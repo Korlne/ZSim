@@ -7369,3 +7369,16 @@
 - Next step:
   - Continue to `US-002` and define only the narrow BuffXLogic-local edge-state helper contract and unit tests.
 ---
+
+## 2026-06-18 19:39 +08:00 - US-002
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/enemy_edge_state_read.py`, `tests/simulator/test_enemy_edge_state_read_helper.py`, `scripts/ralph/plans/slices/us-002-edge-state-helper-contract-and-unit-tests.md`, `scripts/ralph/plans/slices/us-003-frozen-state-change-delegation.md`, `scripts/ralph/investigations/2026-06-18-US-002-edge-state-helper-contract.md`, `scripts/ralph/checkpoints/2026-06-18-us-002-edge-state-helper-contract.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger-shards/proven-patterns-to-reuse.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `enemy_edge_state_read.py` prepares to replace only current enemy dynamic edge-state reads for frozen, stun, and frost/frostbite. This story does not replace any live `BuffXLogic` callsite yet.
+  - `read_enemy_frozen_edge_state(...)` preserves `None -> False`; `read_enemy_stun_edge_state(...)` and `read_enemy_frost_frostbite_edge_state(...)` preserve exact current-property forwarding, including `None`.
+- Compatibility retained:
+  - `enemy_anomaly_read.py` and `enemy_state_read.py` are not widened.
+  - Previous-state fields, edge comparisons, tick lookup, `get_prepared(...)`, skill-tag gates, `simple_start(...)`, anomaly-bar identity logic, and record mutation stay caller-owned.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-003` and characterize/delegate only frozen current-state reads after proving tick lookup, previous-state comparison, and record mutation stay in owning files.
+---
