@@ -7018,3 +7018,15 @@
 - Next step:
   - Continue to `US-004` bounded state-sync ordering only for preflight-approved `dy.count`, `record.real_count`, and `update_to_buff_0(...)` ordering. Keep formula semantics, public reader APIs, event/runtime/listener layers, and unrelated owner families out of that slice.
 ---
+
+## 2026-06-18 11:59 +08:00 - US-004
+- Files changed: `tests/simulator/test_buff_attribute_state_sync.py`, `scripts/ralph/plans/slices/us-004-state-sync-ordering-implementation.md`, `scripts/ralph/checkpoints/2026-06-18-us-004-state-sync-ordering.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/closed-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 state-sync ordering guardrail` prepares to replace selected owner-family `BuffXLogic` state-sync internals by making focused tests fail when final `dy.count` writeback skips `update_to_buff_0(...)`, moves it before the final count assignment, or applies it to the wrong old `buff_0` template.
+  - This story did not require a production source edit because current-root `QingYiAdditionalAbilityStunConvertToATK.py`, `TriggerAdditionalAbilityStunBonus.py`, `Soldier0AnbyCoreSkillCritDMGBonus.py`, and `LighterAdditionalAbility_IceFireBonus.py` already preserve the preflight-approved order.
+- Compatibility retained:
+  - `simple_start(...)`, previous count source, `record.real_count`, fake-count aggregation, cap/floor conversion, old-template sync, `Buff.BuffLogic`, `JudgeTools.find_exist_buff_dict(...)`, `check_preparation(...)`, old `buff_0` identity, and lazy `history.record` remain unchanged.
+  - Scheduled queue publish, synchronous listener broadcasts, dot runtime registration, lifecycle activation/removal, old-container deletion, and same-tick runtime writes remain separate layers.
+- Next step:
+  - Continue to `US-005` guardrails/regression coverage. Extend guardrails only for selected owner-family regression risks proven by current source and the focused state-sync/read-gate rows.
+---

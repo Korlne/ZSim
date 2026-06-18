@@ -130,6 +130,30 @@ class _StateSyncBuffProbe:
         cast(Any, buff_0).dy.count = self.dy.count
 
 
+def _assert_final_count_writeback_order(
+    calls: Sequence[tuple[Any, ...]],
+    *,
+    buff_0: object,
+    expected_count: float,
+) -> None:
+    final_count_indexes = [
+        index
+        for index, call in enumerate(calls)
+        if len(call) == 2
+        and call[0] == "dy.count"
+        and call[1] == pytest.approx(expected_count)
+    ]
+    update_indexes = [
+        index for index, call in enumerate(calls) if call[0] == "update_to_buff_0"
+    ]
+
+    assert final_count_indexes
+    assert update_indexes == [final_count_indexes[-1] + 1]
+    update_call = calls[update_indexes[0]]
+    assert update_call[1] is buff_0
+    assert update_call[2] == pytest.approx(expected_count)
+
+
 @dataclass(frozen=True)
 class _AliceStateSyncCase:
     logic: Any
@@ -1800,6 +1824,11 @@ def test_lighter_impact_state_sync_keeps_base_count_order(
         ("dy.count", case.expected_old_count),
         ("update_to_buff_0", case.buff_0, case.expected_old_count),
     ]
+    _assert_final_count_writeback_order(
+        case.calls,
+        buff_0=case.buff_0,
+        expected_count=case.expected_old_count,
+    )
     assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
     assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
 
@@ -1825,6 +1854,11 @@ def test_lighter_impact_state_sync_keeps_high_impact_cap_order(
         ("dy.count", case.expected_old_count),
         ("update_to_buff_0", case.buff_0, case.expected_old_count),
     ]
+    _assert_final_count_writeback_order(
+        case.calls,
+        buff_0=case.buff_0,
+        expected_count=case.expected_old_count,
+    )
     assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
     assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
 
@@ -1868,6 +1902,11 @@ def test_qingyi_impact_state_sync_keeps_old_count_adjustment_order(
         ("update_to_buff_0", case.buff_0, case.expected_old_count),
         ("buff_0.dy.count", case.expected_old_count),
     ]
+    _assert_final_count_writeback_order(
+        case.calls,
+        buff_0=case.buff_0,
+        expected_count=case.expected_old_count,
+    )
     assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
     assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
 
@@ -1894,6 +1933,11 @@ def test_qingyi_impact_state_sync_keeps_maxcount_cap_order(
         ("update_to_buff_0", case.buff_0, case.expected_old_count),
         ("buff_0.dy.count", case.expected_old_count),
     ]
+    _assert_final_count_writeback_order(
+        case.calls,
+        buff_0=case.buff_0,
+        expected_count=case.expected_old_count,
+    )
     assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
     assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
 
@@ -1956,6 +2000,11 @@ def test_trigger_personal_crit_rate_read_precedes_simple_start_order(
         ("dy.count", case.expected_old_count),
         ("update_to_buff_0", case.buff_0, case.expected_old_count),
     ]
+    _assert_final_count_writeback_order(
+        case.calls,
+        buff_0=case.buff_0,
+        expected_count=case.expected_old_count,
+    )
     assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
     assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
 
@@ -1977,6 +2026,11 @@ def test_trigger_personal_crit_rate_keeps_count_cap(
         ("dy.count", case.expected_old_count),
         ("update_to_buff_0", case.buff_0, case.expected_old_count),
     ]
+    _assert_final_count_writeback_order(
+        case.calls,
+        buff_0=case.buff_0,
+        expected_count=case.expected_old_count,
+    )
     assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
     assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
 
@@ -2043,6 +2097,11 @@ def test_soldier0_anby_personal_crit_damage_simple_start_precedes_read_order(
         ("dy.count", case.expected_old_count),
         ("update_to_buff_0", case.buff_0, case.expected_old_count),
     ]
+    _assert_final_count_writeback_order(
+        case.calls,
+        buff_0=case.buff_0,
+        expected_count=case.expected_old_count,
+    )
     assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
     assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
 
@@ -2070,6 +2129,11 @@ def test_soldier0_anby_personal_crit_damage_keeps_uncapped_high_count(
         ("dy.count", case.expected_old_count),
         ("update_to_buff_0", case.buff_0, case.expected_old_count),
     ]
+    _assert_final_count_writeback_order(
+        case.calls,
+        buff_0=case.buff_0,
+        expected_count=case.expected_old_count,
+    )
 
 
 def test_soldier0_anby_personal_crit_damage_uses_reader_not_multiplier_data_alias() -> None:
