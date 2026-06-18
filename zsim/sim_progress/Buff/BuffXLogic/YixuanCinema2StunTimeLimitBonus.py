@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from zsim.define import YIXUAN_REPORT
 
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_state_read import read_enemy_stun_active
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Preload import SkillNode
@@ -46,7 +47,7 @@ class YixuanCinema2StunTimeLimitBonus(Buff.BuffLogic):
             return False
         if skill_node.skill_tag != self.record.required_skill_tag:
             return False
-        if not self.record.enemy.dynamic.stun:
+        if not read_enemy_stun_active(self.record.enemy):
             return False
         if skill_node.preload_tick != self.buff_instance.sim_instance.tick:
             return False
@@ -60,7 +61,7 @@ class YixuanCinema2StunTimeLimitBonus(Buff.BuffLogic):
     def special_exit_logic(self, **kwargs):
         self.check_record_module()
         self.get_prepared(char_CID=1371, enemy=1)
-        if not self.record.enemy.dynamic.stun:
+        if not read_enemy_stun_active(self.record.enemy):
             if YIXUAN_REPORT:
                 print("2画：检测到敌人从失衡状态中恢复，仪玄2画的失衡时间延长效果结束！")
                 self.buff_instance.sim_instance.schedule_data.change_process_state()

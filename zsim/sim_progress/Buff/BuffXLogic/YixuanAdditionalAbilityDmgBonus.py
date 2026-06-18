@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from zsim.define import YIXUAN_REPORT
 
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_state_read import read_enemy_stun_active
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Preload import SkillNode
@@ -43,7 +44,7 @@ class YixuanAdditionalAbilityDmgBonus(Buff.BuffLogic):
         if skill_node is None:
             return False
         enemy = self.buff_instance.sim_instance.schedule_data.enemy
-        if not enemy.dynamic.stun:
+        if not read_enemy_stun_active(enemy):
             return False
         if "1371_E_EX_B_" not in skill_node.skill_tag:
             return False

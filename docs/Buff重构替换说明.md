@@ -7291,3 +7291,17 @@
 - Next step:
   - Continue to `US-004` and delegate Yixuan stun gates without moving skill-node, preload-tick, report-state, or direct enemy-source ownership.
 ---
+
+## 2026-06-18 18:12 +08:00 - US-004
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/YixuanAdditionalAbilityDmgBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/YixuanCinema2StunTimeLimitBonus.py`, `tests/simulator/test_enemy_context_direct_helpers.py`, `tests/simulator/test_migrated_p2g_direct_context_guardrail.py`, `scripts/ralph/plans/slices/us-004-delegate-yixuan-stun-gates-without-moving-skill-or-report-logic.md`, `scripts/ralph/plans/slices/us-005-delegate-yuzuha-non-stun-gate-without-moving-qte-state.md`, `scripts/ralph/investigations/2026-06-18-US-004-yixuan-stun-helper-delegation.md`, `scripts/ralph/checkpoints/2026-06-18-us-004-yixuan-stun-helper-delegation.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `read_enemy_stun_active(enemy)` now replaces `YixuanAdditionalAbilityDmgBonus`'s direct `schedule_data.enemy.dynamic.stun` predicate while preserving `schedule_data.enemy` as the caller-owned enemy source.
+  - `read_enemy_stun_active(self.record.enemy)` now replaces `YixuanCinema2StunTimeLimitBonus`'s direct judge and inverse exit stun predicates.
+  - The delegations occur only after the existing caller-owned skill-node / required-tag gates named by the old branch order.
+- Compatibility retained:
+  - Additional Ability keeps the `skill_node is None` short-circuit before the helper and keeps the `1371_E_EX_B_` tag, preload tick, and report-state behavior in the caller.
+  - Yixuan C2 keeps `skill_node` presence and required tag checks before the helper, and keeps inverse exit/report-state behavior in the caller.
+  - Yuzuha, edge-detection, copied-output / event-adjacent, dot/debuff runtime-state, event/runtime/listener, old-container, formula, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, public runtime read-port, validation-runner, registered-route, performance, and retained compatibility surfaces remain unchanged.
+- Next step:
+  - Continue to `US-005` and delegate only Yuzuha C2's non-stunned enemy gate without moving cooldown, last-hit, QTE mutation, pending-signal, tick/preload, or report-state behavior.
+---

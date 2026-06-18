@@ -73,7 +73,7 @@ P2G_DIRECT_CONTEXT_TARGETS = (
         path=BUFF_XLOGIC_ROOT / "YixuanAdditionalAbilityDmgBonus.py",
         node_path=("YixuanAdditionalAbilityDmgBonus",),
         allowed_layers=frozenset({"enemy_context", "report_state"}),
-        required_terms=("schedule_data.enemy", "enemy.dynamic.stun"),
+        required_terms=("schedule_data.enemy", "read_enemy_stun_active"),
     ),
     P2GDirectContextTarget(
         path=BUFF_XLOGIC_ROOT / "HeartstringNocturne.py",
