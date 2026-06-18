@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation, find_tick
+from .enemy_edge_state_read import read_enemy_stun_edge_state
 
 
 class WeepingGeminiApBonusRecord:
@@ -82,10 +83,11 @@ class WeepingGeminiApBonus(Buff.BuffLogic):
         self.check_record_module()
         self.get_prepared(equipper="双生泣星", enemy=1)
         enemy = self.record.enemy
+        current_stun = read_enemy_stun_edge_state(enemy)
         if self.record.last_update_stun:
-            if not enemy.dynamic.stun:
-                self.record.last_update_stun = enemy.dynamic.stun
+            if not current_stun:
+                self.record.last_update_stun = current_stun
                 # print(f'检测到敌人失衡状态的下降沿，Buff清空！')
                 return True
-        self.record.last_update_stun = enemy.dynamic.stun
+        self.record.last_update_stun = current_stun
         return False

@@ -88,11 +88,19 @@ APPROVED_EDGE_FROZEN_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/PolarMetalFreezeBonus.py",
 }
 
+APPROVED_EDGE_STUN_HELPER_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/LighterUniqueSkillStunTimeLimitBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/LyconAdditionalAbilityStunVulnerability.py",
+    "zsim/sim_progress/Buff/BuffXLogic/QingYiCoreSkillStunDMGBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/WeepingGeminiApBonus.py",
+}
+
 APPROVED_HELPER_FILES_BY_NAME = {
     "read_enemy_anomaly_active": APPROVED_ANOMALY_HELPER_FILES,
     "read_enemy_shock_active": APPROVED_SHOCK_HELPER_FILES,
     "read_enemy_stun_active": APPROVED_STUN_HELPER_FILES,
     "read_enemy_frozen_edge_state": APPROVED_EDGE_FROZEN_HELPER_FILES,
+    "read_enemy_stun_edge_state": APPROVED_EDGE_STUN_HELPER_FILES,
 }
 
 APPROVED_HELPER_CLASSIFICATION_BY_NAME = {
@@ -100,6 +108,7 @@ APPROVED_HELPER_CLASSIFICATION_BY_NAME = {
     "read_enemy_shock_active": "simple enemy read",
     "read_enemy_stun_active": "simple enemy read",
     "read_enemy_frozen_edge_state": "edge-detection read",
+    "read_enemy_stun_edge_state": "edge-detection read",
 }
 
 MIGRATED_HELPER_FILES = (
@@ -107,6 +116,7 @@ MIGRATED_HELPER_FILES = (
     | APPROVED_SHOCK_HELPER_FILES
     | APPROVED_STUN_HELPER_FILES
     | APPROVED_EDGE_FROZEN_HELPER_FILES
+    | APPROVED_EDGE_STUN_HELPER_FILES
 )
 
 EDGE_DETECTION_FILES = {
@@ -363,6 +373,24 @@ def test_enemy_dynamic_read_guardrail_limits_frozen_edge_helper_to_exact_files()
     assert helper_references <= EDGE_DETECTION_FILES
     assert helper_references.isdisjoint(
         EDGE_DETECTION_FILES - APPROVED_EDGE_FROZEN_HELPER_FILES
+    )
+    assert helper_references.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
+    assert helper_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert all(
+        CLASSIFICATION_BY_FILE[path] == "edge-detection read"
+        for path in helper_references
+    )
+
+
+def test_enemy_dynamic_read_guardrail_limits_stun_edge_helper_to_exact_files() -> None:
+    references = _collect_helper_reference_paths()["read_enemy_stun_edge_state"]
+    helper_references = references["imports"] | references["calls"]
+
+    assert references["imports"] == APPROVED_EDGE_STUN_HELPER_FILES
+    assert references["calls"] == APPROVED_EDGE_STUN_HELPER_FILES
+    assert helper_references <= EDGE_DETECTION_FILES
+    assert helper_references.isdisjoint(
+        EDGE_DETECTION_FILES - APPROVED_EDGE_STUN_HELPER_FILES
     )
     assert helper_references.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
     assert helper_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)

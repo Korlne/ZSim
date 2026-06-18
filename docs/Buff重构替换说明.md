@@ -7394,3 +7394,15 @@
 - Next step:
   - Continue to `US-004` and characterize/delegate only stun falling-edge current reads if the focused tests prove caller-owned previous-state semantics remain local.
 ---
+
+## 2026-06-18 20:25 +08:00 - US-004
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/LighterUniqueSkillStunTimeLimitBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/LyconAdditionalAbilityStunVulnerability.py`, `zsim/sim_progress/Buff/BuffXLogic/QingYiCoreSkillStunDMGBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/WeepingGeminiApBonus.py`, `tests/simulator/test_freeze_stun_edge_detection_characterization.py`, `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-004-stun-falling-edge-delegation.md`, `scripts/ralph/investigations/2026-06-18-US-004-stun-falling-edge-delegation.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `read_enemy_stun_edge_state(...)` now replaces only current stun reads in Lighter, Lycon, QingYi, and Weeping Gemini edge paths.
+  - Previous-state comparison, record mutation, record lookup, `get_prepared(...)`, Lycon skill-tag checks, QingYi action-stack / `sub_exist_buff_dict` / `simple_start(...)`, and Weeping anomaly-bar identity logic remain in the owning files.
+- Compatibility retained:
+  - `read_enemy_stun_active(...)` remains limited to the completed simple-helper subset and is not imported or called by these edge-detection files.
+  - Frost/frostbite edge files, copied-output-adjacent files, dot/debuff runtime-state files, event queue semantics, synchronous listener broadcasts, same-tick runtime writes, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-005` and characterize/delegate only Miyabi frost/frostbite falling-edge current reads if focused tests prove caller-owned previous-state semantics remain local.
+---

@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_edge_state_read import read_enemy_stun_edge_state
 
 
 class QintYiCoreSkillRecord:
@@ -87,12 +88,13 @@ class QingYiCoreSkillStunDMGBonus(Buff.BuffLogic):
         def mode_func(a, b):
             return a is True and b is False
 
+        current_stun = read_enemy_stun_edge_state(self.record.enemy)
         stun_statement_tuple = (
             self.record.last_update_stun,
-            self.record.enemy.dynamic.stun,
+            current_stun,
         )
         if JudgeTools.detect_edge(stun_statement_tuple, mode_func):
-            self.record.last_update_stun = self.record.enemy.dynamic.stun
+            self.record.last_update_stun = current_stun
             return True
-        self.record.last_update_stun = self.record.enemy.dynamic.stun
+        self.record.last_update_stun = current_stun
         return False

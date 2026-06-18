@@ -17,7 +17,13 @@ from zsim.sim_progress.Buff.BuffXLogic import WeepingGeminiApBonus as weeping_mo
 from zsim.sim_progress.Buff.BuffXLogic import (  # noqa: E402
     LighterUniqueSkillStunTimeLimitBonus as lighter_module,
 )
+from zsim.sim_progress.Buff.BuffXLogic import (  # noqa: E402
+    LyconAdditionalAbilityStunVulnerability as lycon_module,
+)
 from zsim.sim_progress.Buff.BuffXLogic import PolarMetalFreezeBonus as polar_module  # noqa: E402
+from zsim.sim_progress.Buff.BuffXLogic import (  # noqa: E402
+    QingYiCoreSkillStunDMGBonus as qingyi_module,
+)
 from zsim.sim_progress.Buff.BuffXLogic.BranchBladeSongCritRateBonus import (  # noqa: E402
     BranchBladeSongCritRateBonus,
     BranchBladeSongCritRateBonusRecord,
@@ -26,9 +32,17 @@ from zsim.sim_progress.Buff.BuffXLogic.LighterUniqueSkillStunTimeLimitBonus impo
     LighterUniqueSkillStunTimeLimitBonus,
     LighterUniqueSkillStunTimeRecord,
 )
+from zsim.sim_progress.Buff.BuffXLogic.LyconAdditionalAbilityStunVulnerability import (  # noqa: E402
+    LyconAdditionalAbility,
+    LyconAdditionalAbilityStunVulnerability,
+)
 from zsim.sim_progress.Buff.BuffXLogic.PolarMetalFreezeBonus import (  # noqa: E402
     PolarMetalFreezeBonus,
     PolarMetalRecord,
+)
+from zsim.sim_progress.Buff.BuffXLogic.QingYiCoreSkillStunDMGBonus import (  # noqa: E402
+    QingYiCoreSkillStunDMGBonus,
+    QintYiCoreSkillRecord,
 )
 from zsim.sim_progress.Buff.BuffXLogic.WeepingGeminiApBonus import (  # noqa: E402
     WeepingGeminiApBonus,
@@ -260,6 +274,80 @@ def _make_lighter_fixture(
     return _EdgeFixture(logic, active_buff, buff_0, enemy, prepared_calls)
 
 
+def _make_lycon_fixture(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    stun: bool,
+) -> _EdgeFixture:
+    index = "Buff-角色-莱卡恩-额外能力-失衡易伤"
+    active_buff = _CurrentBuffProbe(index=index, tick=655)
+    buff_0 = _BuffTemplate(index=index)
+    _install_owner_lookup(
+        monkeypatch,
+        module=lycon_module,
+        owner="莱卡恩",
+        index=index,
+        buff_0=buff_0,
+    )
+    enemy = SimpleNamespace(dynamic=SimpleNamespace(stun=stun))
+    logic = LyconAdditionalAbilityStunVulnerability(active_buff)
+    prepared_calls: list[dict[str, object]] = []
+
+    def fake_get_prepared(**kwargs: object) -> None:
+        prepared_calls.append(kwargs)
+        logic.record.enemy = enemy
+        logic.record.action_stack = object()
+
+    monkeypatch.setattr(logic, "get_prepared", fake_get_prepared)
+    return _EdgeFixture(logic, active_buff, buff_0, enemy, prepared_calls)
+
+
+def _make_qingyi_fixture(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    stun: bool,
+    tick: int = 777,
+    current_mission_tag: str = "1251_SNA_1",
+    previous_mission_tag: str = "1251_IDLE",
+) -> _EdgeFixture:
+    index = "Buff-角色-青衣-核心被动-失衡易伤"
+    active_buff = _CurrentBuffProbe(index=index, tick=tick)
+    buff_0 = _BuffTemplate(index=index)
+    _install_owner_lookup(
+        monkeypatch,
+        module=qingyi_module,
+        owner="青衣",
+        index=index,
+        buff_0=buff_0,
+    )
+    action_stack = SimpleNamespace(
+        peek=lambda: SimpleNamespace(mission_tag=current_mission_tag),
+        peek_bottom=lambda: SimpleNamespace(mission_tag=previous_mission_tag),
+    )
+    monkeypatch.setattr(
+        qingyi_module.JudgeTools,
+        "find_stack",
+        lambda sim_instance=None: action_stack,
+    )
+    monkeypatch.setattr(
+        qingyi_module.JudgeTools,
+        "find_tick",
+        lambda sim_instance=None: tick,
+    )
+    enemy = SimpleNamespace(dynamic=SimpleNamespace(stun=stun))
+    logic = QingYiCoreSkillStunDMGBonus(active_buff)
+    prepared_calls: list[dict[str, object]] = []
+    sub_exist_buff_dict = {index: buff_0}
+
+    def fake_get_prepared(**kwargs: object) -> None:
+        prepared_calls.append(kwargs)
+        logic.record.enemy = enemy
+        logic.record.sub_exist_buff_dict = sub_exist_buff_dict
+
+    monkeypatch.setattr(logic, "get_prepared", fake_get_prepared)
+    return _EdgeFixture(logic, active_buff, buff_0, enemy, prepared_calls)
+
+
 def _assert_no_runtime_boundaries_touched(active_buff: _CurrentBuffProbe) -> None:
     assert active_buff.sim_instance.schedule_data.event_list == []
     assert active_buff.simple_exit_calls == []
@@ -428,3 +516,168 @@ def test_lighter_check_record_module_reuses_old_template_and_existing_record(
     assert fixture.logic.record is existing_record
     assert fixture.buff_0.history.record is existing_record
     assert fixture.logic.record.last_stun_statement is True
+
+
+@pytest.mark.parametrize(
+    ("previous_stun", "current_stun", "expected_exit"),
+    [
+        pytest.param(False, False, False, id="unchanged-not-stunned"),
+        pytest.param(True, True, False, id="unchanged-stunned"),
+        pytest.param(True, False, True, id="falling-edge"),
+    ],
+)
+def test_lycon_stun_exit_edge_updates_last_statement_before_return(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    previous_stun: bool,
+    current_stun: bool,
+    expected_exit: bool,
+) -> None:
+    fixture = _make_lycon_fixture(monkeypatch, stun=current_stun)
+    fixture.logic.check_record_module()
+    assert fixture.logic.buff_0 is fixture.buff_0
+    assert fixture.logic.record is fixture.buff_0.history.record
+    assert isinstance(fixture.logic.record, LyconAdditionalAbility)
+    fixture.logic.record.last_stun_statement = previous_stun
+
+    assert fixture.logic.special_exit_logic() is expected_exit
+
+    assert fixture.logic.record.last_stun_statement is current_stun
+    assert fixture.prepared_calls == [{"enemy": 1}]
+    assert fixture.active_buff.simple_start_calls == []
+    _assert_no_runtime_boundaries_touched(fixture.active_buff)
+
+
+@pytest.mark.parametrize(
+    ("stun", "skill_node", "expected_judge"),
+    [
+        pytest.param(True, None, False, id="missing-skill-node-no-op"),
+        pytest.param(
+            True,
+            SimpleNamespace(skill_tag="1251_SNA_1"),
+            False,
+            id="wrong-tag-no-op",
+        ),
+        pytest.param(
+            False,
+            SimpleNamespace(skill_tag="1141_EX"),
+            False,
+            id="not-stunned-no-op",
+        ),
+        pytest.param(
+            True,
+            SimpleNamespace(skill_tag="1141_EX"),
+            True,
+            id="matching-tag-stunned",
+        ),
+    ],
+)
+def test_lycon_stun_judge_tag_and_stun_prerequisites_stay_owner_owned(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    stun: bool,
+    skill_node: object | None,
+    expected_judge: bool,
+) -> None:
+    fixture = _make_lycon_fixture(monkeypatch, stun=stun)
+
+    assert fixture.logic.special_judge_logic(skill_node=skill_node) is expected_judge
+
+    assert fixture.logic.buff_0 is fixture.buff_0
+    assert fixture.logic.record is fixture.buff_0.history.record
+    assert isinstance(fixture.logic.record, LyconAdditionalAbility)
+    assert fixture.prepared_calls == [{"enemy": 1, "action_stack": 1}]
+    assert fixture.active_buff.simple_start_calls == []
+    _assert_no_runtime_boundaries_touched(fixture.active_buff)
+
+
+@pytest.mark.parametrize(
+    ("previous_stun", "current_stun", "expected_exit"),
+    [
+        pytest.param(False, False, False, id="unchanged-not-stunned"),
+        pytest.param(True, True, False, id="unchanged-stunned"),
+        pytest.param(True, False, True, id="falling-edge"),
+    ],
+)
+def test_qingyi_stun_exit_edge_updates_last_statement_before_return(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    previous_stun: bool,
+    current_stun: bool,
+    expected_exit: bool,
+) -> None:
+    fixture = _make_qingyi_fixture(monkeypatch, stun=current_stun)
+    fixture.logic.check_record_module()
+    assert fixture.logic.buff_0 is fixture.buff_0
+    assert fixture.logic.record is fixture.buff_0.history.record
+    assert isinstance(fixture.logic.record, QintYiCoreSkillRecord)
+    fixture.logic.record.last_update_stun = previous_stun
+
+    assert fixture.logic.special_exit_logic() is expected_exit
+
+    assert fixture.logic.record.last_update_stun is current_stun
+    assert fixture.prepared_calls == [
+        {"char_CID": 1251, "sub_exist_buff_dict": 1, "enemy": 1}
+    ]
+    assert fixture.active_buff.simple_start_calls == []
+    _assert_no_runtime_boundaries_touched(fixture.active_buff)
+
+
+def test_qingyi_start_positive_tag_branch_keeps_stack_and_simple_start_owner_owned(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_qingyi_fixture(
+        monkeypatch,
+        stun=True,
+        tick=778,
+        current_mission_tag="1251_SNA_1",
+        previous_mission_tag="1251_IDLE",
+    )
+    fixture.logic.check_record_module()
+    assert isinstance(fixture.logic.record, QintYiCoreSkillRecord)
+    fixture.logic.record.pre_saved_counts = 2
+    fixture.buff_0.dy.count = 3.0
+
+    fixture.logic.special_start_logic()
+
+    assert fixture.logic.record.pre_saved_counts == 1
+    assert fixture.active_buff.dy.count == 3.0
+    assert fixture.active_buff.simple_start_calls == [
+        (778, {fixture.buff_0.ft.index: fixture.buff_0})
+    ]
+    assert fixture.active_buff.update_to_buff_0_calls == [fixture.buff_0]
+    assert fixture.prepared_calls == [
+        {"char_CID": 1251, "sub_exist_buff_dict": 1, "enemy": 1}
+    ]
+    assert fixture.active_buff.sim_instance.schedule_data.event_list == []
+    assert fixture.active_buff.simple_exit_calls == []
+
+
+@pytest.mark.parametrize(
+    ("previous_stun", "current_stun", "expected_exit"),
+    [
+        pytest.param(False, False, False, id="unchanged-not-stunned"),
+        pytest.param(True, True, False, id="unchanged-stunned"),
+        pytest.param(True, False, True, id="falling-edge"),
+    ],
+)
+def test_weeping_gemini_stun_exit_edge_updates_last_statement_before_return(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    previous_stun: bool,
+    current_stun: bool,
+    expected_exit: bool,
+) -> None:
+    fixture = _make_weeping_fixture(monkeypatch, stun=current_stun)
+    fixture.logic.check_record_module()
+    assert fixture.logic.buff_0 is fixture.buff_0
+    assert fixture.logic.record is fixture.buff_0.history.record
+    assert isinstance(fixture.logic.record, WeepingGeminiApBonusRecord)
+    fixture.logic.record.last_update_stun = previous_stun
+
+    assert fixture.logic.special_exit_logic() is expected_exit
+
+    assert fixture.logic.record.last_update_stun is current_stun
+    assert fixture.prepared_calls == [{"equipper": "双生泣星", "enemy": 1}]
+    assert fixture.active_buff.simple_start_calls == []
+    _assert_no_runtime_boundaries_touched(fixture.active_buff)

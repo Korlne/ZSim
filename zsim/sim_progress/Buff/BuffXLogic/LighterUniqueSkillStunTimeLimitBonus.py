@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_edge_state_read import read_enemy_stun_edge_state
 
 
 class LighterUniqueSkillStunTimeRecord:
@@ -38,9 +39,10 @@ class LighterUniqueSkillStunTimeLimitBonus(Buff.BuffLogic):
         self.check_record_module()
         self.get_prepared(enemy=1)
 
-        if self.record.last_stun_statement and not self.record.enemy.dynamic.stun:
-            self.record.last_stun_statement = self.record.enemy.dynamic.stun
+        current_stun = read_enemy_stun_edge_state(self.record.enemy)
+        if self.record.last_stun_statement and not current_stun:
+            self.record.last_stun_statement = current_stun
             return True
         else:
-            self.record.last_stun_statement = self.record.enemy.dynamic.stun
+            self.record.last_stun_statement = current_stun
             return False
