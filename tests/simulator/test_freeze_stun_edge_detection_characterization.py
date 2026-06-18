@@ -20,6 +20,9 @@ from zsim.sim_progress.Buff.BuffXLogic import (  # noqa: E402
 from zsim.sim_progress.Buff.BuffXLogic import (  # noqa: E402
     LyconAdditionalAbilityStunVulnerability as lycon_module,
 )
+from zsim.sim_progress.Buff.BuffXLogic import (  # noqa: E402
+    MiyabiCoreSkill_FrostBurn as frostburn_module,
+)
 from zsim.sim_progress.Buff.BuffXLogic import PolarMetalFreezeBonus as polar_module  # noqa: E402
 from zsim.sim_progress.Buff.BuffXLogic import (  # noqa: E402
     QingYiCoreSkillStunDMGBonus as qingyi_module,
@@ -35,6 +38,10 @@ from zsim.sim_progress.Buff.BuffXLogic.LighterUniqueSkillStunTimeLimitBonus impo
 from zsim.sim_progress.Buff.BuffXLogic.LyconAdditionalAbilityStunVulnerability import (  # noqa: E402
     LyconAdditionalAbility,
     LyconAdditionalAbilityStunVulnerability,
+)
+from zsim.sim_progress.Buff.BuffXLogic.MiyabiCoreSkill_FrostBurn import (  # noqa: E402
+    MiyabiCoreSkill_FrostBurn,
+    MiyabiCoreSkillFB,
 )
 from zsim.sim_progress.Buff.BuffXLogic.PolarMetalFreezeBonus import (  # noqa: E402
     PolarMetalFreezeBonus,
@@ -71,6 +78,44 @@ class _FailFastEventList(list[object]):
         raise AssertionError("edge-detection characterization must not publish events")
 
 
+class _FailFastRuntimeStateList(list[object]):
+    def __init__(self, name: str) -> None:
+        super().__init__()
+        self.name = name
+
+    def append(self, item: object) -> None:
+        raise AssertionError(f"edge-detection characterization must not mutate {self.name}")
+
+    def extend(self, values: object) -> None:
+        raise AssertionError(f"edge-detection characterization must not mutate {self.name}")
+
+    def clear(self) -> None:
+        raise AssertionError(f"edge-detection characterization must not mutate {self.name}")
+
+
+class _FailFastFormulaLayer:
+    def __getattr__(self, name: str) -> Callable[..., None]:
+        def _fail(*args: object, **kwargs: object) -> None:
+            raise AssertionError(
+                f"edge-detection characterization must not calculate formulas: {name}"
+            )
+
+        return _fail
+
+
+class _FrostFrostbiteDynamicProbe:
+    def __init__(self, frost_frostbite: bool | None) -> None:
+        self._frost_frostbite = frost_frostbite
+        self.reads: list[str] = []
+        self.dynamic_debuff_list = _FailFastRuntimeStateList("dynamic_debuff_list")
+        self.dynamic_dot_list = _FailFastRuntimeStateList("dynamic_dot_list")
+
+    @property
+    def frost_frostbite(self) -> bool | None:
+        self.reads.append("frost_frostbite")
+        return self._frost_frostbite
+
+
 class _BuffTemplate:
     def __init__(self, *, index: str) -> None:
         self.ft = SimpleNamespace(index=index)
@@ -95,6 +140,8 @@ class _CurrentBuffProbe:
                 runtime_command_port=runtime_command_port,
             ),
             runtime_command_port=runtime_command_port,
+            calculator=_FailFastFormulaLayer(),
+            formula=_FailFastFormulaLayer(),
         )
 
     def simple_start(
@@ -343,6 +390,34 @@ def _make_qingyi_fixture(
         prepared_calls.append(kwargs)
         logic.record.enemy = enemy
         logic.record.sub_exist_buff_dict = sub_exist_buff_dict
+
+    monkeypatch.setattr(logic, "get_prepared", fake_get_prepared)
+    return _EdgeFixture(logic, active_buff, buff_0, enemy, prepared_calls)
+
+
+def _make_miyabi_frostburn_fixture(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    frost_frostbite: bool | None,
+) -> _EdgeFixture:
+    index = "Buff-角色-雅-核心被动-霜灼"
+    active_buff = _CurrentBuffProbe(index=index, tick=1091)
+    buff_0 = _BuffTemplate(index=index)
+    _install_owner_lookup(
+        monkeypatch,
+        module=frostburn_module,
+        owner="雅",
+        index=index,
+        buff_0=buff_0,
+    )
+    dynamic = _FrostFrostbiteDynamicProbe(frost_frostbite=frost_frostbite)
+    enemy = SimpleNamespace(dynamic=dynamic)
+    logic = MiyabiCoreSkill_FrostBurn(active_buff)
+    prepared_calls: list[dict[str, object]] = []
+
+    def fake_get_prepared(**kwargs: object) -> None:
+        prepared_calls.append(kwargs)
+        logic.record.enemy = enemy
 
     monkeypatch.setattr(logic, "get_prepared", fake_get_prepared)
     return _EdgeFixture(logic, active_buff, buff_0, enemy, prepared_calls)
@@ -651,6 +726,65 @@ def test_qingyi_start_positive_tag_branch_keeps_stack_and_simple_start_owner_own
     ]
     assert fixture.active_buff.sim_instance.schedule_data.event_list == []
     assert fixture.active_buff.simple_exit_calls == []
+
+
+@pytest.mark.parametrize(
+    ("previous_frostbite", "current_frost_frostbite", "expected_exit"),
+    [
+        pytest.param(False, False, False, id="unchanged-not-frostbite"),
+        pytest.param(True, True, False, id="unchanged-frostbite"),
+        pytest.param(True, False, True, id="falling-edge"),
+        pytest.param(False, None, False, id="none-current-forwarded"),
+    ],
+)
+def test_miyabi_frostburn_special_exit_logic_characterization(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    previous_frostbite: bool,
+    current_frost_frostbite: bool | None,
+    expected_exit: bool,
+) -> None:
+    fixture = _make_miyabi_frostburn_fixture(
+        monkeypatch,
+        frost_frostbite=current_frost_frostbite,
+    )
+    fixture.logic.check_record_module()
+    record = fixture.logic.record
+    record.last_frostbite = previous_frostbite
+    detect_events: list[tuple[str, object, object]] = []
+
+    def fake_detect_edge(
+        pair: list[object],
+        mode_func: Callable[[object, object], bool],
+    ) -> bool:
+        detect_events.append(("detect", tuple(pair), record.last_frostbite))
+        result = mode_func(pair[0], pair[1])
+        detect_events.append(("result", result, record.last_frostbite))
+        return result
+
+    monkeypatch.setattr(frostburn_module.JudgeTools, "detect_edge", fake_detect_edge)
+
+    assert fixture.logic.special_exit_logic() is expected_exit
+
+    dynamic = fixture.enemy.dynamic
+    assert isinstance(dynamic, _FrostFrostbiteDynamicProbe)
+    assert fixture.logic.buff_0 is fixture.buff_0
+    assert fixture.logic.record is record
+    assert fixture.buff_0.history.record is record
+    assert isinstance(record, MiyabiCoreSkillFB)
+    assert dynamic.reads == ["frost_frostbite"]
+    assert detect_events == [
+        ("detect", (previous_frostbite, current_frost_frostbite), previous_frostbite),
+        ("result", expected_exit, previous_frostbite),
+    ]
+    assert record.last_frostbite is current_frost_frostbite
+    assert fixture.prepared_calls == [{"enemy": 1}]
+    assert dynamic.dynamic_debuff_list == []
+    assert dynamic.dynamic_dot_list == []
+    assert fixture.active_buff.simple_start_calls == []
+    assert not hasattr(frostburn_module, "Calculator")
+    assert not hasattr(frostburn_module, "CalculatorBuffAttributeReader")
+    _assert_no_runtime_boundaries_touched(fixture.active_buff)
 
 
 @pytest.mark.parametrize(

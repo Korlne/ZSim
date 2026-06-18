@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_edge_state_read import read_enemy_frost_frostbite_edge_state
 
 
 class MiyabiCoreSkillFB:
@@ -39,7 +40,7 @@ class MiyabiCoreSkill_FrostBurn(Buff.BuffLogic):
         """
         self.check_record_module()
         self.get_prepared(enemy=1)
-        frostbite_now = self.record.enemy.dynamic.frost_frostbite
+        frostbite_now = read_enemy_frost_frostbite_edge_state(self.record.enemy)
         frostbite_statement = [self.record.last_frostbite, frostbite_now]
 
         def mode_func(a, b):

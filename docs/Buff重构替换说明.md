@@ -7406,3 +7406,15 @@
 - Next step:
   - Continue to `US-005` and characterize/delegate only Miyabi frost/frostbite falling-edge current reads if focused tests prove caller-owned previous-state semantics remain local.
 ---
+
+## 2026-06-18 20:51 +08:00 - US-005
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_FrostBurn.py`, `tests/simulator/test_freeze_stun_edge_detection_characterization.py`, `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-005-frost-frostbite-falling-edge-delegation.md`, `scripts/ralph/investigations/2026-06-18-US-005-frost-frostbite-falling-edge-delegation.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/proven-patterns-to-reuse.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `read_enemy_frost_frostbite_edge_state(...)` now replaces only the current `enemy.dynamic.frost_frostbite` read in `MiyabiCoreSkill_FrostBurn.special_exit_logic(...)`.
+  - Previous-state comparison, `JudgeTools.detect_edge(...)`, `last_frostbite` mutation, record lookup, and `get_prepared(enemy=1)` remain in `MiyabiCoreSkill_FrostBurn.py`.
+- Compatibility retained:
+  - `MiyabiCoreSkill_IceFire.py` remains outside this production delegation as dot/debuff runtime-state pool.
+  - Scheduled publish, synchronous listener broadcast, same-tick runtime write, dot/debuff mutation, formula/calculator, old-container deletion, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility surfaces remain unchanged.
+- Next step:
+  - Continue to `US-006` and keep edge-helper guardrails / excluded-family preservation exact without widening copied-output or dot/debuff runtime-state helper approvals.
+---
