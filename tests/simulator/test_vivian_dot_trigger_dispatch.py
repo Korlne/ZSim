@@ -282,14 +282,27 @@ def test_vivian_dot_trigger_judge_is_pure_for_tag_hit_and_anomaly_gates(
     _assert_vivian_judge_path_stayed_pure(harness)
 
 
+@pytest.mark.parametrize(
+    ("report_enabled", "expected_report_calls"),
+    [
+        (False, ()),
+        (True, ("change_process_state", "print_report")),
+    ],
+)
 def test_vivian_dot_trigger_registers_dot_and_publishes_skill_node_via_dispatch_port(
     monkeypatch: pytest.MonkeyPatch,
-):
+    report_enabled: bool,
+    expected_report_calls: tuple[str, ...],
+) -> None:
     call_order: list[str] = []
     dispatch_port = _RecordingDispatchPort(call_order)
+
+    def change_process_state() -> None:
+        call_order.append("change_process_state")
+
     schedule_data = SimpleNamespace(
         event_list=_FailFastEventList(),
-        change_process_state=lambda: None,
+        change_process_state=change_process_state,
     )
     sim_instance = SimpleNamespace(
         tick=96,
@@ -337,7 +350,14 @@ def test_vivian_dot_trigger_registers_dot_and_publishes_skill_node_via_dispatch_
 
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
-    monkeypatch.setattr(vivian_module, "VIVIAN_REPORT", False)
+    def fake_print(message: object, *args: object, **kwargs: object) -> None:
+        call_order.append("print_report")
+        assert message == "核心被动：薇薇安对敌人施加Dot——薇薇安的预言"
+        assert args == ()
+        assert kwargs == {}
+
+    monkeypatch.setattr(vivian_module, "VIVIAN_REPORT", report_enabled)
+    monkeypatch.setattr(vivian_module, "print", fake_print, raising=False)
     monkeypatch.setattr(
         vivian_module,
         "create_schedule_dispatch_port",
@@ -360,7 +380,14 @@ def test_vivian_dot_trigger_registers_dot_and_publishes_skill_node_via_dispatch_
 
     logic.special_hit_logic()
 
-    assert call_order == ["dot_start", "mission_start", "register_dot", "publish"]
+    expected_call_order = [
+        "dot_start",
+        "mission_start",
+        "register_dot",
+        "publish",
+        *expected_report_calls,
+    ]
+    assert call_order == expected_call_order
     assert spawn_calls == ["ViviansProphecy"]
     assert dynamic_dot_list == [inactive_dot, fake_dot]
     assert fake_dot.started_at == 96
@@ -385,7 +412,7 @@ def test_vivian_dot_trigger_registers_dot_and_publishes_skill_node_via_dispatch_
     assert spawn_calls == ["ViviansProphecy"]
     assert dynamic_dot_list == [inactive_dot, fake_dot]
     assert len(dispatch_port.events) == 1
-    assert call_order == ["dot_start", "mission_start", "register_dot", "publish"]
+    assert call_order == expected_call_order
 
 
 def test_vivian_dot_trigger_record_uses_existing_buff_template(

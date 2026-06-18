@@ -7700,3 +7700,16 @@
 - Next step:
   - Continue to `US-004` Vivian Dot Runtime-State Regression Gate; do not broaden this Miyabi-only debuff mirror helper approval.
 ---
+## 2026-06-19 01:38 +08:00 - US-004
+- Files changed: `tests/simulator/test_vivian_dot_trigger_dispatch.py`, `scripts/ralph/plans/slices/us-004-vivian-dot-runtime-state-regression-gate.md`, Ralph evidence / dashboard / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 Vivian dot runtime-state regression gate` replaces stale confidence in optional report ordering with focused coverage for `VIVIAN_REPORT=False` and `VIVIAN_REPORT=True`.
+  - This story does not replace a live `BuffXLogic` callsite or production path; it records Vivian hit-path dot runtime-state as guarded boundary evidence.
+- Compatibility retained:
+  - `VivianDotTrigger.special_hit_logic(...)` still owns `spawn_normal_dot(...)`, `dot.start(...)`, `LoadingMission.mission_start(...)`, `DotRuntimeStateAdapter.register(...)`, and `ScheduleDispatchPort.publish_scheduled(...)`; optional report state now stays pinned after publish.
+  - Duplicate-dot behavior still prevents a second spawn, registration, scheduled publish, and report.
+  - `read_enemy_anomaly_active(...)` remains approved only for `VivianDotTrigger.special_judge_logic(...)`; hit-path dot registration is not reclassified as simple anomaly, copied-output, anomaly-map, or planned-event producer backlog.
+  - Event-list discovery, raw `event_list.append(...)`, listener broadcasts, runtime commands, old-container deletion, formula/read snapshot expansion, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-005` runtime-state guardrail and rollback packet; keep Vivian out of active implementation backlog unless focused tests, guardrails, validation, or current-root source evidence names a concrete regression.
+---
