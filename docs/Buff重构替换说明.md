@@ -7545,3 +7545,15 @@
 - Next step:
   - Continue to `US-008` serial validation and reviewer invariant gate; future dot/debuff or anomaly-map intake must name exact helper semantics, focused tests, rollback anchor, and verifier before production delegation.
 ---
+
+## 2026-06-18 23:12 +08:00 - US-008
+- Files changed: `scripts/ralph/plans/slices/us-008-serial-validation-and-reviewer-invariant-gate.md`, `scripts/ralph/plans/slices/us-009-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-008 serial validation and reviewer invariant gate` replaces unverified helper-delegation confidence with copied-output focused pytest, US-007 guardrail pytest, scoped mypy, and serial `implicit-events` verifier evidence.
+  - This story does not replace any live `BuffXLogic` read, helper implementation, copied-output payload, formula/calculator behavior, public reader/snapshot API, dot/debuff runtime-state behavior, anomaly-map helper semantics, validation-runner behavior, registered route, performance gate, old-container path, or retained compatibility path.
+- Compatibility retained:
+  - Event queue semantics, synchronous listener broadcasts, dot runtime registration, same-tick runtime writes, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain intact.
+  - `calculator-reads`, `formula-parity`, Phase 5 registered-route validation, main-loop consistency, runtime benchmark, and bare/default validation remain conditional and were not run because this slice changed no reader/snapshot, formula output, copied-output ratio math, validation-runner, lifecycle, runtime-write, live route, or performance-sensitive surface.
+- Next step:
+  - Continue to `US-009` handoff docs and same-phase pool preservation; keep the copied-output helper outcome and excluded dot/debuff / anomaly-map pool evidence without broadening helper approvals.
+---
