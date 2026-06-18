@@ -7229,3 +7229,15 @@
 - Next step:
   - Continue to `US-007` handoff docs and same-phase pool preservation without expanding `read_enemy_anomaly_active(...)` beyond the four approved simple boolean callsites.
 ---
+
+## 2026-06-18 15:20 +08:00 - US-007
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/plans/slices/us-007-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/checkpoints/2026-06-18-us-007-handoff-docs-and-same-phase-pool-preservation.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/evidence-ledger-shards/closed-evidence.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`
+- Replacement note:
+  - `US-007 handoff docs and same-phase pool preservation` replaces stale later-implementation wording with final implemented / no-reopen handoff evidence for the bounded `read_enemy_anomaly_active(...)` helper subset.
+  - `read_enemy_anomaly_active(self.record.enemy)` now replaces direct simple boolean anomaly-active reads in `ElectroLipGlossAtkAndDmgBonus.special_judge_logic(...)`, `JaneAdditionalAbilityPhyBuildupBonus.special_judge_logic(...)`, `MarcatoDesireAtkBonus.special_judge_logic(...)`, and `TimeweaverApBonus.special_judge_logic(...)`.
+- Compatibility retained:
+  - Edge-detection, copied-output / event-adjacent, dot/debuff runtime-state, event/runtime/listener, old-container, formula, `ScheduleDispatchPort`, `RuntimeCommandPort`, listener broadcast, scheduled publish ordering, same-tick runtime write, public runtime read-port, validation-runner behavior, registered-route, performance, and retained compatibility surfaces remain unchanged.
+  - Same-phase pool remains broad: uncharacterized simple enemy-state reads, edge-detection families, copied-output / formula parity candidates, dot/debuff runtime-state reads, old containers / lifecycle compatibility, `JudgeTools` responsibility slices, planned-event producer families, registered behavior / performance gates, completed guarded-maintenance surfaces, retained compatibility, and blocker-only reopen rules all require exact evidence before becoming active work.
+- Next step:
+  - Generate a remaining enemy-state read-family characterization / Go-No-Go route review PRD only if preflight names exact current-root files / symbols / behavior, focused verifier, rollback anchor, retained boundary and non-goal; otherwise stop for human route review.
+---
