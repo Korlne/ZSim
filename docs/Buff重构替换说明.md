@@ -7317,3 +7317,16 @@
 - Next step:
   - Continue to `US-006` and guard the exact shock/stun helper subset plus excluded enemy-state families.
 ---
+
+## 2026-06-18 18:29 +08:00 - US-006
+- Files changed: `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-006-guard-helper-subset-and-excluded-enemy-state-families.md`, `scripts/ralph/investigations/2026-06-18-US-006-helper-subset-guardrail.md`, `scripts/ralph/checkpoints/2026-06-18-us-006-helper-subset-guardrail.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 helper subset guardrail` replaces chat-only confidence with AST guardrails that track `read_enemy_anomaly_active(...)`, `read_enemy_shock_active(...)`, and `read_enemy_stun_active(...)` imports/calls separately.
+  - This story is guardrail/evidence only; it does not replace additional live `BuffXLogic` reads or broaden any helper.
+- Compatibility retained:
+  - `read_enemy_anomaly_active(...)` remains limited to the completed four-file anomaly subset.
+  - `read_enemy_shock_active(...)` is limited to Lina, and `read_enemy_stun_active(...)` is limited to Soldier11, Yixuan Additional Ability, Yixuan C2, and Yuzuha C2.
+  - Edge-detection, copied-output / event-adjacent, dot/debuff runtime-state, event/runtime/listener, old-container, formula, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, public runtime read-port, validation-runner, registered-route, performance, and retained compatibility surfaces remain unchanged.
+- Next step:
+  - Continue to `US-007` serial validation and reviewer invariant gate without expanding the helper subset.
+---

@@ -64,23 +64,59 @@ CLASSIFICATION_BY_FILE = {
     "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py": "dot/debuff runtime-state read",
 }
 
-APPROVED_HELPER_FILES = {
+APPROVED_ANOMALY_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/ElectroLipGlossAtkAndDmgBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/JaneAdditionalAbilityPhyBuildupBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/MarcatoDesireAtkBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/TimeweaverApBonus.py",
 }
 
-MIGRATED_SHOCK_STUN_HELPER_FILES = {
+APPROVED_SHOCK_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/LinaAdditionalSkillEleDMGBonus.py",
-    "zsim/sim_progress/Buff/BuffXLogic/Soldier11AdditionalSkillExtraFireDMGBonus.py",
 }
 
-EXPECTED_DIRECT_READ_FILES = (
-    set(CLASSIFICATION_BY_FILE)
-    - APPROVED_HELPER_FILES
-    - MIGRATED_SHOCK_STUN_HELPER_FILES
+APPROVED_STUN_HELPER_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/Soldier11AdditionalSkillExtraFireDMGBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/YixuanAdditionalAbilityDmgBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/YixuanCinema2StunTimeLimitBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+}
+
+APPROVED_HELPER_FILES_BY_NAME = {
+    "read_enemy_anomaly_active": APPROVED_ANOMALY_HELPER_FILES,
+    "read_enemy_shock_active": APPROVED_SHOCK_HELPER_FILES,
+    "read_enemy_stun_active": APPROVED_STUN_HELPER_FILES,
+}
+
+MIGRATED_HELPER_FILES = (
+    APPROVED_ANOMALY_HELPER_FILES
+    | APPROVED_SHOCK_HELPER_FILES
+    | APPROVED_STUN_HELPER_FILES
 )
+
+EDGE_DETECTION_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritRateBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/LighterUniqueSkillStunTimeLimitBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/LyconAdditionalAbilityStunVulnerability.py",
+    "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_FrostBurn.py",
+    "zsim/sim_progress/Buff/BuffXLogic/PolarMetalFreezeBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/QingYiCoreSkillStunDMGBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/WeepingGeminiApBonus.py",
+}
+
+COPIED_OUTPUT_ADJACENT_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+}
+
+DOT_DEBUFF_RUNTIME_STATE_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py",
+    "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py",
+}
+
+EXPECTED_DIRECT_READ_FILES = set(CLASSIFICATION_BY_FILE) - MIGRATED_HELPER_FILES
 
 CLASSIFICATION_BUCKETS = {
     "approved helper boundary",
@@ -91,9 +127,6 @@ CLASSIFICATION_BUCKETS = {
     "guarded-maintenance overlap",
     "unrelated retained compatibility",
 }
-
-HELPER_NAME = "read_enemy_anomaly_active"
-
 
 @dataclass(frozen=True)
 class EnemyDynamicReadFinding:
@@ -221,24 +254,27 @@ def _collect_findings() -> list[EnemyDynamicReadFinding]:
     return findings
 
 
-def _collect_helper_reference_paths() -> dict[str, set[str]]:
-    references: dict[str, set[str]] = {"imports": set(), "calls": set()}
+def _collect_helper_reference_paths() -> dict[str, dict[str, set[str]]]:
+    references: dict[str, dict[str, set[str]]] = {
+        helper_name: {"imports": set(), "calls": set()}
+        for helper_name in APPROVED_HELPER_FILES_BY_NAME
+    }
     for path in _production_python_files():
         rel_path = path.relative_to(PROJECT_ROOT).as_posix()
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom) and any(
-                alias.name == HELPER_NAME for alias in node.names
-            ):
-                references["imports"].add(rel_path)
+            if isinstance(node, ast.ImportFrom):
+                for alias in node.names:
+                    if alias.name in references:
+                        references[alias.name]["imports"].add(rel_path)
             elif isinstance(node, ast.Call):
-                if isinstance(node.func, ast.Name) and node.func.id == HELPER_NAME:
-                    references["calls"].add(rel_path)
+                if isinstance(node.func, ast.Name) and node.func.id in references:
+                    references[node.func.id]["calls"].add(rel_path)
                 elif (
                     isinstance(node.func, ast.Attribute)
-                    and node.func.attr == HELPER_NAME
+                    and node.func.attr in references
                 ):
-                    references["calls"].add(rel_path)
+                    references[node.func.attr]["calls"].add(rel_path)
     return references
 
 
@@ -269,9 +305,9 @@ def test_enemy_dynamic_read_guardrail_classifies_all_current_root_matches() -> N
         + "\n".join(f"- {finding.message()}" for finding in unexpected)
     )
     assert finding_paths == EXPECTED_DIRECT_READ_FILES
-    assert {finding.classification_suggestion for finding in findings} >= (
-        CLASSIFICATION_BUCKETS - {"unrelated retained compatibility"}
-    )
+    assert {finding.classification_suggestion for finding in findings} == {
+        CLASSIFICATION_BY_FILE[path] for path in EXPECTED_DIRECT_READ_FILES
+    }
 
 
 def test_enemy_dynamic_read_guardrail_limits_helper_to_approved_subset() -> None:
@@ -282,15 +318,48 @@ def test_enemy_dynamic_read_guardrail_limits_helper_to_approved_subset() -> None
         if classification == "simple enemy read"
     }
 
-    assert references["imports"] == APPROVED_HELPER_FILES
-    assert references["calls"] == APPROVED_HELPER_FILES
-    assert APPROVED_HELPER_FILES < simple_read_files
-    assert references["imports"].isdisjoint(simple_read_files - APPROVED_HELPER_FILES)
-    assert references["calls"].isdisjoint(simple_read_files - APPROVED_HELPER_FILES)
+    assert CLASSIFICATION_BY_FILE[
+        "zsim/sim_progress/Buff/BuffXLogic/enemy_state_read.py"
+    ] == "approved helper boundary"
+    for helper_name, approved_files in APPROVED_HELPER_FILES_BY_NAME.items():
+        helper_references = references[helper_name]
+
+        assert helper_references["imports"] == approved_files
+        assert helper_references["calls"] == approved_files
+        assert approved_files < simple_read_files
+        assert helper_references["imports"].isdisjoint(simple_read_files - approved_files)
+        assert helper_references["calls"].isdisjoint(simple_read_files - approved_files)
     assert all(
         CLASSIFICATION_BY_FILE[path] == "simple enemy read"
-        for path in references["imports"] | references["calls"]
+        for helper_references in references.values()
+        for path in helper_references["imports"] | helper_references["calls"]
     )
+
+
+def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_shock_stun_helpers() -> None:
+    references = _collect_helper_reference_paths()
+    shock_stun_references = (
+        references["read_enemy_shock_active"]["imports"]
+        | references["read_enemy_shock_active"]["calls"]
+        | references["read_enemy_stun_active"]["imports"]
+        | references["read_enemy_stun_active"]["calls"]
+    )
+
+    assert all(
+        CLASSIFICATION_BY_FILE[path] == "edge-detection read"
+        for path in EDGE_DETECTION_FILES
+    )
+    assert all(
+        CLASSIFICATION_BY_FILE[path] == "copied-output-adjacent read"
+        for path in COPIED_OUTPUT_ADJACENT_FILES
+    )
+    assert all(
+        CLASSIFICATION_BY_FILE[path] == "dot/debuff runtime-state read"
+        for path in DOT_DEBUFF_RUNTIME_STATE_FILES
+    )
+    assert shock_stun_references.isdisjoint(EDGE_DETECTION_FILES)
+    assert shock_stun_references.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
+    assert shock_stun_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
 
 
 def test_enemy_dynamic_read_guardrail_failure_message_classifies_unknown_matches() -> None:
