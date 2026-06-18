@@ -3,6 +3,7 @@ from copy import deepcopy
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
+from .enemy_anomaly_read import read_enemy_anomaly_active
 
 
 class YanagiPolarityDisorderTriggerRecord:
@@ -99,7 +100,7 @@ class YanagiPolarityDisorderTrigger(Buff.BuffLogic):
         else:
             tick = find_tick(sim_instance=self.buff_instance.sim_instance)
             if tick - 1 < skill_node.loading_mission.get_last_hit() <= tick:  # 此时就是最后一跳
-                if self.record.enemy.dynamic.is_under_anomaly():  # 并且存在激活的属性异常
+                if read_enemy_anomaly_active(self.record.enemy):  # 并且存在激活的属性异常
                     self.record.polarity_disorder_update_signal = True
                     return True
                 self.record.e_counter = {"update_from": "", "count": 0}

@@ -177,8 +177,19 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
         get_active_anomaly_bar=lambda: active_anomaly_bar,
     )
     record.e_counter = {"update_from": "prev-hit", "count": 2}
+    helper_calls: list[object] = []
+
+    def fake_read_enemy_anomaly_active(enemy: Any) -> bool:
+        helper_calls.append(enemy)
+        return bool(enemy.dynamic.is_under_anomaly())
+
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
+    monkeypatch.setattr(
+        yanagi_module,
+        "read_enemy_anomaly_active",
+        fake_read_enemy_anomaly_active,
+    )
     monkeypatch.setattr(
         yanagi_module,
         "create_schedule_dispatch_port",
@@ -220,11 +231,13 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
     monkeypatch.setattr("zsim.sim_progress.Update.spawn_output", fake_spawn_output)
 
     assert logic.special_judge_logic(skill_node=cast(Any, loading_mission)) is True
+    assert helper_calls == [record.enemy]
     assert dynamic.calls == ["is_under_anomaly"]
     assert record.polarity_disorder_update_signal is True
 
     logic.special_effect_logic(skill_node=skill_node)
 
+    assert logic.record is record
     assert dispatch_port.events == [published_output]
     assert schedule_data.event_list == []
     assert listener_calls == []
@@ -263,8 +276,17 @@ def test_yanagi_polarity_disorder_judge_wrong_skill_is_noop(
     dynamic = _DynamicReadProbe(is_active=True)
     record.enemy = SimpleNamespace(dynamic=dynamic)
     record.e_counter = {"update_from": "prev-hit", "count": 2}
+
+    def fail_read_enemy_anomaly_active(enemy: object) -> bool:
+        raise AssertionError("Yanagi no-op branch should not read anomaly-active helper")
+
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
+    monkeypatch.setattr(
+        yanagi_module,
+        "read_enemy_anomaly_active",
+        fail_read_enemy_anomaly_active,
+    )
     monkeypatch.setattr(
         yanagi_module,
         "create_schedule_dispatch_port",
@@ -280,6 +302,7 @@ def test_yanagi_polarity_disorder_judge_wrong_skill_is_noop(
     )
 
     assert dynamic.calls == []
+    assert logic.record is record
     assert call_order == []
     assert dispatch_port.events == []
     assert schedule_data.event_list == []
@@ -304,8 +327,19 @@ def test_yanagi_polarity_disorder_judge_resets_counter_without_publish_when_no_a
     dynamic = _DynamicReadProbe(is_active=False)
     record.enemy = SimpleNamespace(dynamic=dynamic)
     record.e_counter = {"update_from": "prev-hit", "count": 2}
+    helper_calls: list[object] = []
+
+    def fake_read_enemy_anomaly_active(enemy: Any) -> bool:
+        helper_calls.append(enemy)
+        return bool(enemy.dynamic.is_under_anomaly())
+
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
+    monkeypatch.setattr(
+        yanagi_module,
+        "read_enemy_anomaly_active",
+        fake_read_enemy_anomaly_active,
+    )
     monkeypatch.setattr(
         yanagi_module,
         "create_schedule_dispatch_port",
@@ -320,7 +354,9 @@ def test_yanagi_polarity_disorder_judge_resets_counter_without_publish_when_no_a
     loading_mission.mission_start(skill_node.preload_tick, report=False)
 
     assert logic.special_judge_logic(skill_node=cast(Any, loading_mission)) is False
+    assert helper_calls == [record.enemy]
     assert dynamic.calls == ["is_under_anomaly"]
+    assert logic.record is record
     assert call_order == []
     assert dispatch_port.events == []
     assert schedule_data.event_list == []

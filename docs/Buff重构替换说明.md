@@ -7520,3 +7520,15 @@
 - Next step:
   - Continue to `US-006` and delegate only Yanagi's anomaly-active predicate if focused Yanagi dispatch tests and the guardrail stay green.
 ---
+
+## 2026-06-18 22:54 +08:00 - US-006
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py`, `tests/simulator/test_yanagi_polarity_disorder_dispatch.py`, `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-006-yanagi-polarity-disorder-predicate-delegation.md`, `scripts/ralph/plans/slices/us-007-excluded-runtime-state-and-anomaly-map-pool-preservation.md`, `scripts/ralph/investigations/2026-06-18-US-006-yanagi-polarity-disorder-predicate-delegation.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `read_enemy_anomaly_active(...)` now replaces only Yanagi's judge-time anomaly-active predicate in `YanagiPolarityDisorderTrigger.py`.
+  - Yanagi still owns `spawn_output(...)`, active anomaly bar lookup / deepcopy identity, polarity disorder ratio logic, copied-output construction, scheduled publish, and update-signal reset behavior.
+- Compatibility retained:
+  - Focused tests prove anomaly-active true / false, wrong-skill no-op, helper call exactness, output payload fields, dispatch output identity, record identity, listener broadcast ownership, raw queue guard, and runtime-write absence.
+  - `spawn_output(...)`, copied-output payload parity, formula/calculator behavior, public reader APIs, dot/debuff runtime-state files, anomaly-map future-pool files, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-007` and preserve excluded dot/debuff runtime-state plus anomaly-map helper boundaries without broadening copied-output helper approvals.
+---
