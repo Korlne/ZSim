@@ -7532,3 +7532,16 @@
 - Next step:
   - Continue to `US-007` and preserve excluded dot/debuff runtime-state plus anomaly-map helper boundaries without broadening copied-output helper approvals.
 ---
+
+## 2026-06-18 23:01 +08:00 - US-007
+- Files changed: `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-007-excluded-runtime-state-and-anomaly-map-pool-preservation.md`, `scripts/ralph/investigations/2026-06-18-US-007-excluded-pool-preservation.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/plans/slices/us-008-serial-validation-and-reviewer-invariant-gate.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 excluded pool guardrail` replaces chat-only confidence with focused AST guardrail evidence that copied-output helper approvals cannot include, import, or call helpers from the excluded dot/debuff runtime-state and anomaly-map future-pool files.
+  - This story does not replace any live `BuffXLogic` read or approve generic helper semantics for dot/debuff runtime-state or `getattr(...enemy.dynamic, name)` anomaly-map reads.
+- Compatibility retained:
+  - `MiyabiCoreSkill_IceFire.py` and `VivianDotTrigger.py` remain classified as dot/debuff runtime-state reads.
+  - `AnomalyDebuffExitJudge.py`, `HailstormShrineIceBonus.py`, and `MiyabiAdditionalAbility_IgnoreIceRes.py` remain classified as anomaly-map future-pool reads.
+  - P2-D scheduled publish, P2-E dot runtime-state, and P2-F BuffAddStrategy facade-write guardrails remain scoped to their existing exact file-set tests; event queue semantics, synchronous listener broadcasts, same-tick runtime writes, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-008` serial validation and reviewer invariant gate; future dot/debuff or anomaly-map intake must name exact helper semantics, focused tests, rollback anchor, and verifier before production delegation.
+---

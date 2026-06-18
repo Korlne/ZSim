@@ -220,6 +220,10 @@ ANOMALY_MAP_FUTURE_POOL_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/MiyabiAdditionalAbility_IgnoreIceRes.py",
 }
 
+EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES = (
+    DOT_DEBUFF_RUNTIME_STATE_FILES | ANOMALY_MAP_FUTURE_POOL_FILES
+)
+
 EXPECTED_DIRECT_READ_FILES = (
     set(CLASSIFICATION_BY_FILE)
     - MIGRATED_HELPER_FILES
@@ -741,6 +745,47 @@ def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scop
     assert edge_state_references.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
     assert edge_state_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
     assert edge_state_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
+
+
+def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> None:
+    findings = _collect_findings()
+    finding_paths = {finding.path for finding in findings}
+    references = _collect_helper_reference_paths()
+    copied_output_approved_files: set[str] = set()
+    for approved_files in APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME.values():
+        copied_output_approved_files.update(approved_files)
+
+    assert DOT_DEBUFF_RUNTIME_STATE_FILES == {
+        "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py",
+        "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py",
+    }
+    assert ANOMALY_MAP_FUTURE_POOL_FILES == {
+        "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py",
+        "zsim/sim_progress/Buff/BuffXLogic/HailstormShrineIceBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/MiyabiAdditionalAbility_IgnoreIceRes.py",
+    }
+    assert EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES <= EXPECTED_DIRECT_READ_FILES
+    assert EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES <= finding_paths
+    assert all(
+        CLASSIFICATION_BY_FILE[path] == "dot/debuff runtime-state read"
+        for path in DOT_DEBUFF_RUNTIME_STATE_FILES
+    )
+    assert all(
+        CLASSIFICATION_BY_FILE[path] == "same-phase future anomaly-map read"
+        for path in ANOMALY_MAP_FUTURE_POOL_FILES
+    )
+    assert copied_output_approved_files == COPIED_OUTPUT_ADJACENT_FILES
+    assert copied_output_approved_files.isdisjoint(
+        EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES
+    )
+
+    for helper_name, helper_references in references.items():
+        referenced_files = helper_references["imports"] | helper_references["calls"]
+
+        assert APPROVED_HELPER_FILES_BY_NAME[helper_name].isdisjoint(
+            EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES
+        )
+        assert referenced_files.isdisjoint(EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES)
 
 
 def test_enemy_dynamic_read_guardrail_keeps_copied_output_matrix_exact() -> None:
