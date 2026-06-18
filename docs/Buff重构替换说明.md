@@ -7766,3 +7766,14 @@
 - Next step:
   - Continue to `US-002` retained compatibility completion-criteria classification. Do not promote a same-phase implementation, deletion-readiness packet, or Phase 5 validation route until the human route decision / exact-candidate evidence gate is satisfied.
 ---
+## 2026-06-19 06:48 +08:00 - US-002
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `scripts/ralph/investigations/2026-06-19-US-002-retained-compatibility-classification.md`, Ralph evidence / checkpoint / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 completion-criteria route table` replaces vague retained / No-Go notes with explicit route labels for old containers / lifecycle compatibility, `BuffXLogic`, `JudgeTools`, event/runtime/listener layers, formula / effect snapshots, old residual deletion readiness, registered behavior / performance gates, and Phase 5 resume conditions.
+  - No live production Buff path, helper, validation runner, registered route, old container, lifecycle path, event/runtime/listener layer, formula output, copied-output payload, public reader snapshot, or retained compatibility behavior was replaced in this docs/control-plane story.
+- Compatibility retained:
+  - Old containers, legacy `buff_add()`, legacy `KickOutBuff()`, `ScheduleBuffSettle(...)` behind `RuntimeCommandPort`, `MultiplierData`, copied-output constructors, public reader snapshots, dot runtime registration, listener broadcasts, handler requeue, runtime reads, same-tick runtime writes, registered gates, performance gates, and completed helper no-reopen rules remain retained unless a later story names exact evidence.
+  - Phase 5 remains paused until a later human-approved route decision accepts retained compatibility, promotes one exact same-phase candidate, or keeps Phase 5 paused with an explicit blocker.
+- Next step:
+  - Continue to `US-003` same-phase candidate promotion gate; do not implement or delete a candidate inside this route-review PRD.
+---

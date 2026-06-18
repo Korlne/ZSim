@@ -9,6 +9,21 @@
 - 当前 PRD 生成入口以 `docs/Buff重构下阶段计划草稿.md` 的 `## 合理 PRD 形状硬约束` 和 `## 当前默认下一步` 为准。本文历史条目中保留的 “same-phase candidate selection / bounded proposal” 只代表当时的 pool-retention / no-reopen 记录，不得单独生成新的 full-cycle selection / proposal PRD。
 - 每完成 2-3 个 bounded implementation / Go-No-Go PRD，或任一同族候选块被整体实现、降级或阻塞后，下一轮必须按 `docs/Buff重构下阶段计划草稿.md` 的 convergence cadence 做 route review / completion-criteria review；不得只把 retained / No-Go / blocker 继续追加为历史记录而不分类后续命运。
 
+## Route review completion-criteria classification（2026-06-19 US-002）
+
+> Route 标签必须使用以下枚举之一：`exact implementation candidate`、`exact deletion-readiness candidate`、`needs oracle / registered sample`、`long-term compatibility`、`explicit blocker with human-approved route`、`No-Go`。本表是 Phase 5 恢复前的 retained-surface 完成判据，不是生产实现授权，也不是删除授权。
+
+| Retained family | Next route | Completion criterion | Guardrail / non-goal |
+| --- | --- | --- | --- |
+| Old containers / lifecycle compatibility：`exist_buff_dict`、`DYNAMIC_BUFF_DICT`、`LOADING_BUFF_DICT`、`BuffLoadLoop()`、legacy `buff_add()`、`KickOutBuff()`、`ScheduleBuffSettle(...)` behind `RuntimeCommandPort` | long-term compatibility | 后续 Phase 5 只有在 human route decision 明确接受这些 retained compatibility，或另行命名 exact branch bounded work 时才能恢复。 | 不把旧容器、`KickOutBuff()` 或 `ScheduleBuffSettle(...)` 标为 deletion-ready；必须先证明 exact unused 或 behavior-preserving。 |
+| `BuffXLogic` owner-family replacement | exact implementation candidate | 只有 current-root source / focused test / guardrail / validation failure / reviewer evidence 命名 exact file、symbol、behavior、verifier、rollback anchor 和 non-goals 时，才可提升为 bounded implementation PRD。 | 不生成 broad `BuffXLogic` rewrite，不删除 old template identity / lazy record 初始化，不把 completed helper subset 当自动 backlog。 |
+| `JudgeTools` service-location / record-template responsibilities | exact implementation candidate | 每次只处理一个 helper responsibility，保留 old template identity / lazy record prerequisites，除非 focused proof 证明可替换。 | 不重开 raw queue discovery，不做 broad helper deletion，不把其他 reader/helper 落地外推为 `JudgeTools` 删除。 |
+| Event / runtime / listener layer separation：event queue、synchronous listener broadcast、dot runtime registration、local event groups、scheduled handler requeue、runtime reads、same-tick runtime writes | long-term compatibility | 后续任何 event-adjacent work 必须按 layer 选择 `ScheduleDispatchPort`、listener broadcast、dot runtime adapter、runtime read view 或 `RuntimeCommandPort`，并保留各自验证入口。 | 不合并为单一 event bus，不缓存 dispatch adapter 跨 `ScheduleData.reset_myself()` queue rebind，不新增第二套 same-tick write facade。 |
+| Formula / effect snapshots：`MultiplierData`、`MulData`、`DynamicStatement`、Calculator / CalAnomaly snapshots、copied-output constructors、public reader snapshots | needs oracle / registered sample | Formula / effect diff 先要 focused oracle、`formula-parity` / `calculator-reads`、rollback anchor；只有 live semantic diff 且真实 registered route 命中 nonzero relevant counts 时才追加 registered sample。 | `MultiplierData`、copied-output constructors 和 public reader snapshots 不因 helper/readiness 证据变成 deletion-ready。 |
+| Old residual deletion readiness | No-Go | 当前没有 retained family 同时满足 exact unused / behavior-preserving proof、focused guardrail、validation entrypoint 和 rollback anchor。 | 删除工作必须另拆 exact deletion-readiness packet；不得从 checklist `[x]`、retained validation green 或 absence of new coupling 推导删除。 |
+| Registered behavior / performance gates | needs oracle / registered sample | main-loop consistency / benchmark 只在 production semantic 或 performance-sensitive diff 具备 real registered route、explicit stop tick、nonzero event/formula counts、total damage、event-count、Buff timeline 和 rollback anchor 时运行。 | 不创建 validation-only team、fake APL、fixture-only route 或 retained-vs-retained sample；docs-only / guardrail-only / retained-compatibility story 记录跳过原因。 |
+| Phase 5 resume conditions | explicit blocker with human-approved route | Phase 5 继续暂停，直到后续 checkpoint 记录 human-approved route：接受 retained compatibility 并塑形 Phase 5、提升一个 exact same-phase candidate，或以 explicit blocker 继续暂停。 | 历史 Phase 5 sample 只是 registered-route evidence；不能单独恢复 Phase 5 默认 PRD。 |
+
 ## 阶段 0：重规划与基线
 
 - [x] 回到 `main` 分支重新规划。
