@@ -6911,3 +6911,15 @@
 - Next step:
   - Continue to `US-003` lifecycle entrypoint gap packet. Treat `LOADING_BUFF_DICT` pending activation as the only source-backed bounded implementation candidate from this packet; keep old-container deletion and identity rebind No-Go until a later story proves exact unused or behavior-preserving conditions.
 ---
+
+## 2026-06-18 09:30 +08:00 - US-003
+- Files changed: `scripts/ralph/plans/slices/us-003-legacy-lifecycle-entrypoint-gap-packet.md`, `scripts/ralph/investigations/2026-06-18-US-003-legacy-lifecycle-entrypoint-gap.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/open-evidence-gaps.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`
+- Replacement note:
+  - `US-003 legacy lifecycle entrypoint gap packet` replaces broad lifecycle cleanup assumptions with current-root `rg`, CodeGraph caller/callee evidence, and explicit classifications for `BuffLoadLoop()`, retained `buff_add()`, `KickOutBuff()`, `ScheduleBuffSettle(...)`, pending activation, active removal, and template sync.
+  - This story is evidence / Ralph completion bookkeeping only; it does not replace live production Buff code, delete lifecycle fallbacks, rebind old containers, add a second write facade, change validation-runner behavior, alter formulas, or merge planned-event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - `RuntimeCommandPort` / `LegacyRuntimeCommandAdapter` remain the only same-tick runtime write boundary. `ScheduleBuffSettle(...)` remains delegated legacy implementation behind that boundary.
+  - `BuffLoadLoop()` remains live pending-generation logic; facade pending activation preserves old `buff_add()` semantics; `KickOutBuff()` remains a no-facade fallback and is not deletion-ready.
+- Next step:
+  - Continue to `US-004` JudgeTools and preparation service-location gap packet. If lifecycle production work is later selected, split it to one pending-generation / activation branch and run `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`.
+---
