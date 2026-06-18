@@ -19,6 +19,19 @@
   - 下一轮应继续收口的旧路径
 ```
 
+## 2026-06-18 16:56 +08:00 - Docs Route Update
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `docs/Buff重构下阶段计划草稿.md` now prepares the next default PRD to replace remaining enemy-state `BuffXLogic` direct reads through a bounded implementation batch with compact preflight, instead of another broad characterization-only package.
+  - This docs update does not replace live production Buff code, edit focused tests, change validation-runner behavior, add registered routes/APLs, alter formulas, expand public reader/snapshot APIs, touch performance-sensitive paths, delete old containers, or merge event queue / listener broadcast / dot runtime / same-tick runtime-write layers.
+- Compatibility retained:
+  - The completed four-file `read_enemy_anomaly_active(...)` helper subset remains no-reopen.
+  - Old containers, lifecycle compatibility, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, formula snapshots, retained compatibility cleanup blockers, and Phase 5 pause conditions remain unchanged.
+- Next step:
+  - Generate the remaining enemy-state read-family bounded implementation PRD only when preflight names exact current-root files / symbols / behavior, focused verifier, rollback anchors, retained boundaries and non-goals.
+  - Delete old residual surfaces only with exact unused or behavior-preserving proof.
+---
+
 ## 2026-06-18 14:44 +08:00 - US-001
 - Files changed: `scripts/ralph/plans/slices/us-001-source-preflight-and-stop-gate.md`, `scripts/ralph/checkpoints/2026-06-18-us-001-source-preflight-stop-gate.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/campaign-dashboard.md`
 - Replacement note:
@@ -7240,4 +7253,16 @@
   - Same-phase pool remains broad: uncharacterized simple enemy-state reads, edge-detection families, copied-output / formula parity candidates, dot/debuff runtime-state reads, old containers / lifecycle compatibility, `JudgeTools` responsibility slices, planned-event producer families, registered behavior / performance gates, completed guarded-maintenance surfaces, retained compatibility, and blocker-only reopen rules all require exact evidence before becoming active work.
 - Next step:
   - Generate a remaining enemy-state read-family characterization / Go-No-Go route review PRD only if preflight names exact current-root files / symbols / behavior, focused verifier, rollback anchor, retained boundary and non-goal; otherwise stop for human route review.
+---
+
+## 2026-06-18 18:16 +08:00 - US-001
+- Files changed: `tests/simulator/test_enemy_context_direct_helpers.py`, `scripts/ralph/plans/slices/us-001-compact-preflight-and-stop-gate.md`, `scripts/ralph/investigations/2026-06-18-US-001-typecheck-method-assign.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 compact preflight` prepares to replace only the confirmed shock/stun simple enemy-state read family in later stories; no live `BuffXLogic` read is replaced in this slice.
+  - Confirmed future helper candidates remain limited to Lina shock reads, Soldier11 stun read, Yixuan Additional Ability stun read, Yixuan C2 stun judge/exit reads, and Yuzuha C2 non-stunned gate.
+- Compatibility retained:
+  - Production `BuffXLogic` files remain unchanged in US-001.
+  - Edge-detection, copied-output / event-adjacent, dot/debuff runtime-state, event/runtime/listener, old-container, formula, `ScheduleDispatchPort`, `RuntimeCommandPort`, `LegacyRuntimeCommandAdapter`, scheduled publish ordering, same-tick runtime write, public runtime read-port, validation-runner behavior, registered-route, performance, and retained compatibility surfaces remain unchanged.
+- Next step:
+  - Continue to `US-002` and add only narrow BuffXLogic-local `read_enemy_shock_active(enemy)` / `read_enemy_stun_active(enemy)` helpers, without adding a generic simulator-context helper or expanding public runtime reader contracts.
 ---

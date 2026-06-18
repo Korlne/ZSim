@@ -86,7 +86,8 @@ def _build_yixuan_trigger_harness(
     def record_prepared_call(**kwargs: object) -> None:
         prepared_calls.append(kwargs)
 
-    trigger.get_prepared = record_prepared_call
+    trigger_any: Any = trigger
+    trigger_any.get_prepared = record_prepared_call
 
     return SimpleNamespace(
         trigger=trigger,
