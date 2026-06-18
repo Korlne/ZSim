@@ -20,6 +20,14 @@ EXCLUDED_PARTS = {
     "results",
 }
 
+EXCLUDED_RELATIVE_PREFIXES = {
+    ("scripts", "ralph", "archive"),
+    ("scripts", "ralph", "context"),
+    ("scripts", "ralph", "logs"),
+    ("scripts", "ralph", "run-logs"),
+    ("scripts", "ralph", ".runs"),
+}
+
 ENEMY_DYNAMIC_READ_NAMES = {
     "is_under_anomaly",
     "get_active_anomaly",
@@ -397,7 +405,9 @@ def _is_excluded_path(path: Path) -> bool:
         rel_parts = path.relative_to(PROJECT_ROOT).parts
     except ValueError:
         return True
-    return any(part in EXCLUDED_PARTS for part in rel_parts)
+    return any(part in EXCLUDED_PARTS for part in rel_parts) or any(
+        rel_parts[: len(prefix)] == prefix for prefix in EXCLUDED_RELATIVE_PREFIXES
+    )
 
 
 def _production_python_files() -> list[Path]:
@@ -454,13 +464,30 @@ def test_enemy_dynamic_read_guardrail_scope_excludes_generated_and_duplicate_tre
     scanned_files = {
         path.relative_to(PROJECT_ROOT).as_posix() for path in _production_python_files()
     }
+    excluded_examples = [
+        PROJECT_ROOT / ".codex_worktrees" / "old" / "zsim" / "legacy.py",
+        PROJECT_ROOT / ".git" / "objects" / "legacy.py",
+        PROJECT_ROOT / "scripts" / "ralph" / "archive" / "old.py",
+        PROJECT_ROOT / "scripts" / "ralph" / "context" / "generated.py",
+        PROJECT_ROOT / "scripts" / "ralph" / "logs" / "run.py",
+        PROJECT_ROOT / "scripts" / "ralph" / "run-logs" / "run.py",
+        PROJECT_ROOT / "scripts" / "ralph" / ".runs" / "run.py",
+        PROJECT_ROOT / "logs" / "sim.py",
+        PROJECT_ROOT / "results" / "sim.py",
+    ]
 
     assert scanned_files
+    assert all(_is_excluded_path(path) for path in excluded_examples)
+    assert not _is_excluded_path(BUFF_XLOGIC_ROOT / "MiyabiCoreSkill_IceFire.py")
     assert all(".codex_worktrees" not in path for path in scanned_files)
+    assert all(".git" not in path for path in scanned_files)
     assert all("scripts/ralph/archive" not in path for path in scanned_files)
+    assert all("scripts/ralph/context" not in path for path in scanned_files)
     assert all("scripts/ralph/logs" not in path for path in scanned_files)
     assert all("scripts/ralph/run-logs" not in path for path in scanned_files)
+    assert all("scripts/ralph/.runs" not in path for path in scanned_files)
     assert all("logs/" not in path for path in scanned_files)
+    assert all("results/" not in path for path in scanned_files)
     assert set(CLASSIFICATION_BY_FILE).issubset(scanned_files)
 
 
@@ -1032,6 +1059,62 @@ def test_enemy_dynamic_read_guardrail_preserves_excluded_pool_guardrails() -> No
         assert referenced_files.isdisjoint(EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES)
 
 
+def test_enemy_dynamic_read_guardrail_keeps_runtime_state_rollback_packet_exact() -> None:
+    references = _collect_helper_reference_paths()
+    copied_output_approved_files: set[str] = set()
+    for approved_files in APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME.values():
+        copied_output_approved_files.update(approved_files)
+
+    assert DOT_DEBUFF_RUNTIME_STATE_FILES == {
+        "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py",
+        "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py",
+    }
+    assert APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES == {
+        "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py"
+    }
+    assert references["MiyabiFrostburnDebuffMirrorReader"] == {
+        "imports": APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES,
+        "calls": APPROVED_DOT_DEBUFF_MIRROR_HELPER_FILES,
+    }
+    assert references["read_enemy_anomaly_active"]["imports"] & (
+        DOT_DEBUFF_RUNTIME_STATE_FILES
+    ) == APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+    assert references["read_enemy_anomaly_active"]["calls"] & (
+        DOT_DEBUFF_RUNTIME_STATE_FILES
+    ) == APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
+    assert references["read_enemy_shock_active"]["imports"].isdisjoint(
+        DOT_DEBUFF_RUNTIME_STATE_FILES
+    )
+    assert references["read_enemy_shock_active"]["calls"].isdisjoint(
+        DOT_DEBUFF_RUNTIME_STATE_FILES
+    )
+    assert references["read_enemy_stun_active"]["imports"].isdisjoint(
+        DOT_DEBUFF_RUNTIME_STATE_FILES
+    )
+    assert references["read_enemy_stun_active"]["calls"].isdisjoint(
+        DOT_DEBUFF_RUNTIME_STATE_FILES
+    )
+    assert references["read_enemy_frost_frostbite_edge_state"]["imports"] & (
+        DOT_DEBUFF_RUNTIME_STATE_FILES
+    ) == APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES
+    assert references["read_enemy_frost_frostbite_edge_state"]["calls"] & (
+        DOT_DEBUFF_RUNTIME_STATE_FILES
+    ) == APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES
+    assert references["read_enemy_anomaly_state"]["imports"].isdisjoint(
+        DOT_DEBUFF_RUNTIME_STATE_FILES
+    )
+    assert references["read_enemy_anomaly_state"]["calls"].isdisjoint(
+        DOT_DEBUFF_RUNTIME_STATE_FILES
+    )
+    assert references["snapshot_enemy_anomaly_states"]["imports"].isdisjoint(
+        DOT_DEBUFF_RUNTIME_STATE_FILES
+    )
+    assert references["snapshot_enemy_anomaly_states"]["calls"].isdisjoint(
+        DOT_DEBUFF_RUNTIME_STATE_FILES
+    )
+    assert copied_output_approved_files.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+
+
 def test_enemy_dynamic_read_guardrail_keeps_copied_output_matrix_exact() -> None:
     findings = _collect_findings()
     copied_findings = [
@@ -1082,8 +1165,23 @@ def test_enemy_dynamic_read_guardrail_failure_message_classifies_unknown_matches
     messages = [finding.message() for finding in findings]
 
     assert len(findings) == 2
+    assert any(
+        "zsim/sim_progress/Buff/BuffXLogic/_synthetic_enemy_dynamic_fixture.py:2"
+        in message
+        for message in messages
+    )
+    assert any(
+        "zsim/sim_progress/Buff/BuffXLogic/_synthetic_enemy_dynamic_fixture.py:3"
+        in message
+        for message in messages
+    )
     assert all(
         "classification suggestion: unrelated retained compatibility" in message
+        for message in messages
+    )
+    assert all(
+        "next action: classify the read family before helper design or migration"
+        in message
         for message in messages
     )
     assert any(

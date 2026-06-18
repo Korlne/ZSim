@@ -7713,3 +7713,16 @@
 - Next step:
   - Continue to `US-005` runtime-state guardrail and rollback packet; keep Vivian out of active implementation backlog unless focused tests, guardrails, validation, or current-root source evidence names a concrete regression.
 ---
+## 2026-06-19 01:46 +08:00 - US-005
+- Files changed: `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-005-runtime-state-guardrail-and-rollback-packet.md`, Ralph evidence / dashboard / PRD bookkeeping, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 runtime-state guardrail and rollback packet` replaces unverified helper-scope confidence with executable guardrail assertions for current-root exclusions, exact runtime-state helper approvals, and failure-message triage fields.
+  - This story does not replace another live `BuffXLogic` read or add a new helper; it preserves the existing `MiyabiFrostburnDebuffMirrorReader` delegation as a Miyabi-only approval.
+- Compatibility retained:
+  - `MiyabiFrostburnDebuffMirrorReader` remains approved only for `MiyabiCoreSkill_IceFire.py`; `VivianDotTrigger.py` remains judge-only for `read_enemy_anomaly_active(...)` and caller-owned for hit-path dot runtime registration.
+  - Completed anomaly-active, shock/stun, edge-state, anomaly-map, copied-output, and dot runtime helper subsets remain exact and unwidened.
+  - `.codex_worktrees/`, `.git/`, archive, logs, generated context, run-log trees, `.runs/`, and results remain excluded from current-root guardrail scans.
+  - Focused guardrail pytest passed with `22 passed`; scoped mypy passed on `1 source file`.
+- Next step:
+  - Continue to `US-006` serial validation and reviewer invariant gate; keep runtime-state helper approvals and retained No-Go evidence exact unless a focused verifier names a concrete regression.
+---
