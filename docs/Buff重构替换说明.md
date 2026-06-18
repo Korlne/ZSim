@@ -7789,3 +7789,15 @@
 - Next step:
   - Continue to `US-004` Phase 5 Resume Gate Packet. Keep Phase 5 paused until a later human-approved route checkpoint.
 ---
+## 2026-06-19 07:10 +08:00 - US-004
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `scripts/ralph/investigations/2026-06-19-US-004-phase-5-resume-gate-packet.md`, Ralph evidence / checkpoint / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 Phase 5 resume gate packet` replaces vague Phase 5 resume language with concrete human-approved entry conditions for retained compatibility acceptance, real registered team / APL route, explicit stop tick, nonzero relevant counts, damage / event-count / Buff timeline comparisons, rollback anchor, and performance-sensitive benchmark eligibility.
+  - No live production Buff path, helper, validation runner, registered route, team/APL fixture, old container, lifecycle path, event/runtime/listener layer, formula output, copied-output payload, or retained compatibility behavior was replaced in this docs/control-plane story.
+- Compatibility retained:
+  - `--legacy-runtime` / `--candidate-runtime` remain report labels until live simulator code consumes `config.buff_runtime.mode`.
+  - Focused tests and touched Buff validation profiles remain required before any future main-loop consistency or benchmark sample.
+  - Docs-only, guardrail-only, test-only, and retained-compatibility stories continue to skip Phase 5 registered-route validation, main-loop consistency, and runtime benchmark unless they also introduce a live semantic or performance-sensitive production diff.
+- Next step:
+  - Continue to `US-005` Human Route Decision Checkpoint: accept retained compatibility and shape Phase 5, promote one exact same-phase candidate, or keep Phase 5 paused with an explicit blocker.
+---

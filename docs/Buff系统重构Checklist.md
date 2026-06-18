@@ -21,8 +21,8 @@
 | Event / runtime / listener layer separation：event queue、synchronous listener broadcast、dot runtime registration、local event groups、scheduled handler requeue、runtime reads、same-tick runtime writes | long-term compatibility | 后续任何 event-adjacent work 必须按 layer 选择 `ScheduleDispatchPort`、listener broadcast、dot runtime adapter、runtime read view 或 `RuntimeCommandPort`，并保留各自验证入口。 | 不合并为单一 event bus，不缓存 dispatch adapter 跨 `ScheduleData.reset_myself()` queue rebind，不新增第二套 same-tick write facade。 |
 | Formula / effect snapshots：`MultiplierData`、`MulData`、`DynamicStatement`、Calculator / CalAnomaly snapshots、copied-output constructors、public reader snapshots | needs oracle / registered sample | Formula / effect diff 先要 focused oracle、`formula-parity` / `calculator-reads`、rollback anchor；只有 live semantic diff 且真实 registered route 命中 nonzero relevant counts 时才追加 registered sample。 | `MultiplierData`、copied-output constructors 和 public reader snapshots 不因 helper/readiness 证据变成 deletion-ready。 |
 | Old residual deletion readiness | No-Go | 当前没有 retained family 同时满足 exact unused / behavior-preserving proof、focused guardrail、validation entrypoint 和 rollback anchor。 | 删除工作必须另拆 exact deletion-readiness packet；不得从 checklist `[x]`、retained validation green 或 absence of new coupling 推导删除。 |
-| Registered behavior / performance gates | needs oracle / registered sample | main-loop consistency / benchmark 只在 production semantic 或 performance-sensitive diff 具备 real registered route、explicit stop tick、nonzero event/formula counts、total damage、event-count、Buff timeline 和 rollback anchor 时运行。 | 不创建 validation-only team、fake APL、fixture-only route 或 retained-vs-retained sample；docs-only / guardrail-only / retained-compatibility story 记录跳过原因。 |
-| Phase 5 resume conditions | explicit blocker with human-approved route | Phase 5 继续暂停，直到后续 checkpoint 记录 human-approved route：接受 retained compatibility 并塑形 Phase 5、提升一个 exact same-phase candidate，或以 explicit blocker 继续暂停。 | 历史 Phase 5 sample 只是 registered-route evidence；不能单独恢复 Phase 5 默认 PRD。 |
+| Registered behavior / performance gates | needs oracle / registered sample | main-loop consistency / benchmark 只在 production semantic 或 performance-sensitive diff 具备 real registered route、explicit stop tick、nonzero relevant event/formula counts、total damage comparison、event-count comparison、Buff timeline comparison 和 rollback anchor 时运行；benchmark 还必须有 performance-sensitive touched surface。 | 不创建 validation-only team、fake APL、fixture-only route 或 retained-vs-retained sample；docs-only / guardrail-only / test-only / retained-compatibility story 记录跳过原因。 |
+| Phase 5 resume conditions | explicit blocker with human-approved route | Phase 5 继续暂停，直到后续 checkpoint 记录 human-approved route，并明确接受 retained long-term compatibility set、真实 registered team / APL route、explicit stop tick、nonzero relevant counts、total damage / event-count / Buff timeline comparisons、rollback anchor，以及需要 benchmark 时的 performance-sensitive touched surface。 | 历史 Phase 5 sample 只是 registered-route evidence；不能单独恢复 Phase 5 默认 PRD；`--legacy-runtime` / `--candidate-runtime` 仍只是 report labels，直到 live simulator code 消费 `config.buff_runtime.mode`。 |
 
 ## Same-phase candidate promotion gate（2026-06-19 US-003）
 
@@ -32,6 +32,21 @@
 - Future event/runtime/listener、planned-event、handler requeue、dot runtime 或 same-tick runtime-write candidate 必须要求 `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events`。
 - Future attribute reader / snapshot candidate 必须要求 `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile calculator-reads`；formula output change 必须要求 `uv run python scripts/run_buff_refactor_validation.py --typecheck-profile formula-parity`。
 - 本 gate 不删除 candidate pool；缺 exact proof 的块继续留作 future review material，而不是 active backlog。
+
+## Phase 5 resume gate packet（2026-06-19 US-004）
+
+- Minimum human-approved resume conditions:
+  - accepted retained long-term compatibility set, or one exact same-phase candidate that must finish before Phase 5;
+  - real registered team / APL route, with no validation-only team, fake APL, fixture-only route, retained-vs-retained sample, or report-label-only comparison;
+  - explicit stop tick and a reason that tick reaches the touched route;
+  - nonzero relevant event or formula counts for the changed behavior;
+  - total damage comparison, event-count comparison, Buff timeline comparison, `differences` evidence, and rollback anchor;
+  - performance-sensitive touched surface before `scripts/run_buff_runtime_benchmark.py` is required.
+- `--legacy-runtime` / `--candidate-runtime` remain consistency / benchmark report labels. They must not be described as live runtime switches until simulator code actually consumes `config.buff_runtime.mode`.
+- Verification order: focused tests first, then the touched Buff validation profile (`implicit-events`, `calculator-reads`, `formula-parity`, or lifecycle/default profile by touched surface), then main-loop consistency only when the live semantic diff and registered-route gate are both satisfied; benchmark only after the performance-sensitive gate is satisfied.
+- Skip rule: Phase 5 registered-route validation, `scripts/run_buff_main_loop_consistency.py`, and `scripts/run_buff_runtime_benchmark.py` are skipped for docs-only, guardrail-only, test-only, or retained-compatibility stories unless the same story introduces a live semantic or performance-sensitive production diff.
+- Reviewer check against `scripts/ralph/architecture/invariants.md`: event queue semantics, synchronous listener broadcasts, dot runtime registration, local event groups, scheduled handler requeue, runtime reads, same-tick runtime writes, explicit ports/adapters, no cached dispatch adapters, completed-surface no-reopen, and serial validation discipline must remain intact.
+- Current US-004 verdict: docs/control-plane gate only. No validation-runner behavior, registered route/APL, production Buff source, focused test source, lifecycle/runtime write, formula output, copied-output payload, retained compatibility behavior, or performance-sensitive path changed; Phase 5 remains paused for US-005 human route decision.
 
 ## 阶段 0：重规划与基线
 
