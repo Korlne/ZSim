@@ -7089,3 +7089,14 @@
 - Next step:
   - Continue to `US-003` freeze/stun edge-detection characterization. Do not design or implement a shared anomaly-state helper until edge-detection and copied-output-adjacent gates prove whether their contracts split from the simple read-only family.
 ---
+
+## 2026-06-18 13:29 +08:00 - US-003
+- Files changed: `tests/simulator/test_freeze_stun_edge_detection_characterization.py`, `scripts/ralph/plans/slices/us-003-freeze-and-stun-edge-detection-characterization.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/proven-patterns-to-reuse.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 freeze/stun edge-detection characterization` prepares to replace only the previous-state edge-detection read family by adding focused tests for `BranchBladeSongCritRateBonus`, `WeepingGeminiApBonus`, and `LighterUniqueSkillStunTimeLimitBonus`.
+  - This story is test/Ralph evidence only; it does not replace live production `BuffXLogic`, add a shared read helper, rewrite formulas, publish scheduled events, mutate dot runtime state, broadcast listeners, add same-tick runtime writes, or delete old containers.
+- Compatibility retained:
+  - `Buff.BuffLogic`, `JudgeTools.find_exist_buff_dict(...)`, `JudgeTools.find_equipper(...)`, `check_preparation(...)`, lazy `history.record`, old `buff_0` identity, freeze snapshot fields, `last_update_stun`, `last_stun_statement`, `simple_start(...)`, `ScheduleDispatchPort`, `RuntimeCommandPort`, and `LegacyRuntimeCommandAdapter` remain unchanged.
+- Next step:
+  - Continue to `US-004` copied-output adjacent read-gate characterization. Keep edge-detection previous-record semantics separate from simple boolean anomaly reads unless later Go / No-Go evidence proves a safe split helper contract.
+---
