@@ -7595,3 +7595,14 @@
 - Next step:
   - Continue to `US-003` and delegate only `AnomalyDebuffExitJudge.special_exit_logic(...)`'s current anomaly-state read after focused characterization proves falling-edge and `last_{anomaly_name}` update semantics.
 ---
+## 2026-06-19 00:01 +08:00 - US-003
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py`, `tests/simulator/test_anomaly_map_xlogic_delegation.py`, `tests/simulator/test_enemy_dynamic_read_guardrail.py`, `scripts/ralph/plans/slices/us-003-anomalydebuffexitjudge-falling-edge-delegation.md`, `scripts/ralph/plans/slices/us-004-miyabi-anomaly-map-state-machine-delegation.md`, `scripts/ralph/state/migration-board.json`, `scripts/ralph/state/hotspots.json`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `scripts/ralph/campaign-dashboard.md`, `scripts/ralph/evidence-ledger-shards/proven-patterns-to-reuse.md`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `read_enemy_anomaly_state(...)` now replaces only `AnomalyDebuffExitJudge.special_exit_logic(...)`'s current named anomaly-map state read.
+  - `AnomalyDebuffExitJudge.py` still owns `anomaly_statement_dict`, cached `self.enemy`, `JudgeTools.find_enemy(...)` fallback, `JudgeTools.detect_edge(...)`, `last_{anomaly_name}` storage, update order, return values, and unsupported-index exception behavior.
+- Compatibility retained:
+  - Focused tests prove supported anomaly entries, falling-edge true, no falling edge, cached enemy behavior, fallback lookup caching, helper-read exactness, update order, and unsupported-index `KeyError` order.
+  - `HailstormShrineIceBonus.py` and `MiyabiAdditionalAbility_IgnoreIceRes.py` remain anomaly-map snapshot future-pool files; dot/debuff runtime-state files, scheduled publish, listener broadcast, runtime commands, public reader/snapshot APIs, formulas, old containers, validation-runner behavior, registered routes, performance gates, completed helper no-reopen rules, and retained compatibility remain unchanged.
+- Next step:
+  - Continue to `US-004` and delegate only the Miyabi anomaly-map snapshot reads if focused state-machine tests and guardrails stay green.
+---
