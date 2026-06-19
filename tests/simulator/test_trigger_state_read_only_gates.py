@@ -53,6 +53,9 @@ from zsim.sim_progress.Buff.BuffXLogic.Soldier0AnbyCoreSkillCritDMGBonus import 
 from zsim.sim_progress.Buff.BuffXLogic.SpectralGazeImpactBonus import (
     SpectralGazeImpactBonus,
 )
+from zsim.sim_progress.Buff.BuffXLogic.WeepingCradleDMGBonusIncrease import (
+    WeepingCradleDMGBonusIncrease,
+)
 from zsim.sim_progress.Buff.BuffXLogic.YangiCinema1ApBonus import (
     YangiCinema1ApBonus,
 )
@@ -102,10 +105,14 @@ class _TriggerBuffDynamicState:
         active: bool,
         count: float,
         built_in_buff_box: Sequence[object] = (),
+        startticks: int = 0,
+        endticks: int = 0,
     ) -> None:
         self.active = active
         self.count = count
         self.built_in_buff_box = tuple(built_in_buff_box)
+        self.startticks = startticks
+        self.endticks = endticks
 
 
 class _BuffTemplate:
@@ -116,12 +123,16 @@ class _BuffTemplate:
         active: bool = False,
         count: float = 0.0,
         built_in_buff_box: Sequence[object] = (),
+        startticks: int = 0,
+        endticks: int = 0,
     ) -> None:
         self.ft = SimpleNamespace(index=index)
         self.dy = _TriggerBuffDynamicState(
             active=active,
             count=count,
             built_in_buff_box=built_in_buff_box,
+            startticks=startticks,
+            endticks=endticks,
         )
         self.history = SimpleNamespace(record=None)
 
@@ -156,6 +167,8 @@ class _CurrentBuffProbe:
 class _EffectCurrentBuffDynamicState:
     def __init__(self, events: list[tuple[str, tuple[object, ...]]]) -> None:
         self._count = 0.0
+        self._startticks = 0
+        self._endticks = 0
         self._events = events
 
     @property
@@ -166,6 +179,24 @@ class _EffectCurrentBuffDynamicState:
     def count(self, value: float) -> None:
         self._count = value
         self._events.append(("set_count", (value,)))
+
+    @property
+    def startticks(self) -> int:
+        return self._startticks
+
+    @startticks.setter
+    def startticks(self, value: int) -> None:
+        self._startticks = value
+        self._events.append(("set_startticks", (value,)))
+
+    @property
+    def endticks(self) -> int:
+        return self._endticks
+
+    @endticks.setter
+    def endticks(self, value: int) -> None:
+        self._endticks = value
+        self._events.append(("set_endticks", (value,)))
 
 
 class _AstralVoiceEffectBuffProbe(_CurrentBuffProbe):
@@ -195,6 +226,12 @@ class _JaneHitBuffProbe(_AstralVoiceEffectBuffProbe):
 
 class _Soldier0AnbyHitBuffProbe(_AstralVoiceEffectBuffProbe):
     pass
+
+
+class _WeepingCradleEffectBuffProbe(_AstralVoiceEffectBuffProbe):
+    def simple_start(self, *args: object, **kwargs: object) -> None:
+        payload = args if not kwargs else args + (kwargs,)
+        self.effect_events.append(("simple_start", payload))
 
 
 @dataclass(frozen=True)
@@ -336,6 +373,55 @@ def _make_astral_voice_effect_gate(
 
     return _GateFixture(
         logic=AstralVoice(current_buff),
+        current_buff=current_buff,
+        current_template=current_template,
+        trigger_template=trigger_template,
+        exist_buff_dict=exist_buff_dict,
+    )
+
+
+def _make_weeping_cradle_gate(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    active: bool,
+    current_active: bool = False,
+    trigger_startticks: int = 25,
+    trigger_endticks: int = 85,
+    tick: int = 100,
+    cd: int = 10,
+) -> _GateFixture:
+    current_index = "Buff-武器-精1啜泣摇篮-全队增伤自增长"
+    trigger_index = "Buff-武器-精1啜泣摇篮-全队增伤"
+    current_buff = _WeepingCradleEffectBuffProbe(
+        index=current_index,
+        operator="啜泣摇篮",
+    )
+    current_buff.ft.refinement = 1
+    current_buff.ft.cd = cd
+    current_buff.sim_instance.tick = tick
+    current_template = _BuffTemplate(index=current_index, active=current_active)
+    trigger_template = _BuffTemplate(
+        index=trigger_index,
+        active=active,
+        count=0,
+        startticks=trigger_startticks,
+        endticks=trigger_endticks,
+    )
+    exist_buff_dict = {
+        "啜泣摇篮": {
+            current_index: current_template,
+            trigger_index: trigger_template,
+        }
+    }
+    current_buff.sim_instance.load_data.exist_buff_dict = exist_buff_dict
+    _install_lookup_fakes(
+        monkeypatch,
+        exist_buff_dict=exist_buff_dict,
+        equipper_name="啜泣摇篮",
+    )
+
+    return _GateFixture(
+        logic=WeepingCradleDMGBonusIncrease(current_buff),
         current_buff=current_buff,
         current_template=current_template,
         trigger_template=trigger_template,
@@ -622,6 +708,8 @@ def test_trigger_state_helper_public_api_is_read_only(
         "publish",
         "runtime_command_port",
         "schedule_dispatch_port",
+        "startticks",
+        "endticks",
     ):
         assert not hasattr(trigger_state, mutating_name)
     with pytest.raises(AttributeError):
@@ -716,6 +804,11 @@ def test_trigger_state_helper_requires_prepared_trigger_record() -> None:
             "YunkuiTalesSheerAtkBonus.py",
             ("trigger_buff_0.dy.active", "trigger_buff_0.dy.count"),
             id="yunkui-tales",
+        ),
+        pytest.param(
+            "WeepingCradleDMGBonusIncrease.py",
+            ("record.trigger_buff_0.dy.active",),
+            id="weeping-cradle-active-only",
         ),
     ],
 )
@@ -1225,6 +1318,107 @@ def test_yunkui_tales_source_keeps_local_alias_without_direct_state_reads() -> N
     assert "read_trigger_buff_state(self.record)" in source
     assert "trigger_buff_0.dy.active" not in source
     assert "trigger_buff_0.dy.count" not in source
+
+
+@pytest.mark.parametrize(
+    ("active", "expected", "expected_last_update_tick"),
+    [
+        pytest.param(False, False, 0, id="inactive-trigger"),
+        pytest.param(True, True, 100, id="active-trigger-cooldown-ready"),
+    ],
+)
+def test_weeping_cradle_active_gate_uses_helper_and_preserves_cooldown(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    active: bool,
+    expected: bool,
+    expected_last_update_tick: int,
+) -> None:
+    fixture = _make_weeping_cradle_gate(monkeypatch, active=active)
+
+    assert fixture.logic.special_judge_logic() is expected
+    _assert_lazy_record_and_trigger_identity(fixture)
+    assert fixture.logic.record.last_update_tick == expected_last_update_tick
+    assert fixture.current_buff.sim_instance.schedule_data.event_list == []
+    current_buff = cast(_WeepingCradleEffectBuffProbe, fixture.current_buff)
+    assert current_buff.effect_events == []
+
+    if active:
+        assert fixture.logic.special_judge_logic() is False
+        assert fixture.logic.record.last_update_tick == expected_last_update_tick
+        assert current_buff.effect_events == []
+
+
+def test_weeping_cradle_effect_mirrors_trigger_time_window_after_start(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_weeping_cradle_gate(
+        monkeypatch,
+        active=True,
+        current_active=False,
+        trigger_startticks=25,
+        trigger_endticks=85,
+    )
+
+    assert fixture.logic.special_judge_logic() is True
+    fixture.logic.special_effect_logic()
+
+    _assert_lazy_record_and_trigger_identity(fixture)
+    assert fixture.logic.record.sub_exist_buff_dict is fixture.exist_buff_dict["啜泣摇篮"]
+    current_buff = cast(_WeepingCradleEffectBuffProbe, fixture.current_buff)
+    assert current_buff.dy.startticks == 25
+    assert current_buff.dy.endticks == 85
+    assert current_buff.effect_events == [
+        ("simple_start", (100, fixture.exist_buff_dict["啜泣摇篮"])),
+        ("set_startticks", (25,)),
+        ("set_endticks", (85,)),
+        ("update_to_buff_0", (fixture.current_template,)),
+    ]
+    assert fixture.current_buff.sim_instance.schedule_data.event_list == []
+
+
+def test_weeping_cradle_active_current_buff_self_stack_keeps_time_window(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_weeping_cradle_gate(
+        monkeypatch,
+        active=True,
+        current_active=True,
+        trigger_startticks=25,
+        trigger_endticks=85,
+    )
+
+    assert fixture.logic.special_judge_logic() is True
+    fixture.logic.special_effect_logic()
+
+    _assert_lazy_record_and_trigger_identity(fixture)
+    current_buff = cast(_WeepingCradleEffectBuffProbe, fixture.current_buff)
+    assert current_buff.dy.startticks == 0
+    assert current_buff.dy.endticks == 0
+    assert current_buff.effect_events == [
+        (
+            "simple_start",
+            (
+                100,
+                fixture.exist_buff_dict["啜泣摇篮"],
+                {"no_start": True, "no_end": True},
+            ),
+        ),
+    ]
+    assert fixture.current_buff.sim_instance.schedule_data.event_list == []
+
+
+def test_weeping_cradle_source_keeps_time_window_mirror_outside_snapshot() -> None:
+    source = (_BUFF_XLOGIC_ROOT / "WeepingCradleDMGBonusIncrease.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "read_trigger_buff_state(self.record)" in source
+    assert "self.record.trigger_buff_0.dy.active" not in source
+    assert "self.record.trigger_buff_0.dy.startticks" in source
+    assert "self.record.trigger_buff_0.dy.endticks" in source
+    assert "read_trigger_buff_state(self.record).startticks" not in source
+    assert "read_trigger_buff_state(self.record).endticks" not in source
 
 
 def test_astral_voice_judge_returns_false_without_skill_node(

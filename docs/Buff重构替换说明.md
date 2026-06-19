@@ -7872,3 +7872,14 @@
 - Next step:
   - Continue to `US-005` WeepingCradle Time-Mirror Go / No-Go Packet; do not broaden into public snapshot expansion, old-container cleanup, registered-route validation, or Phase 5 work unless the story evidence explicitly permits it.
 ---
+## 2026-06-19 09:42 +08:00 - US-005
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/WeepingCradleDMGBonusIncrease.py`, `tests/simulator/test_trigger_state_read_only_gates.py`, `tests/simulator/test_migrated_p2c_trigger_state_guardrail.py`, Ralph investigation / checkpoint / dashboard / evidence / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `WeepingCradleDMGBonusIncrease.special_judge_logic(...)` now replaces the direct `record.trigger_buff_0.dy.active` read with `read_trigger_buff_state(self.record).active` after the existing `check_record_module()` and `get_prepared(..., trigger_buff_0=...)` order.
+  - The migrated P2-C guardrail now treats `WeepingCradleDMGBonusIncrease.py` as migrated for direct `active` trigger-state reads while recording retained time-window mirror fields separately.
+- Compatibility retained:
+  - `special_effect_logic(...)` still mirrors `self.record.trigger_buff_0.dy.startticks` / `.dy.endticks` after `simple_start(...)` and before `update_to_buff_0(self.buff_0)`; no `TriggerBuffState.startticks` / `.endticks` field was added.
+  - Cooldown state (`record.last_update_tick`), old template Buff identity, lazy record initialization, old containers, `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, event/runtime/listener layer separation, validation-runner behavior, registered routes, Phase 5 gates, and performance gates remain unchanged.
+- Next step:
+  - Continue to `US-006` Trigger-State Guardrail Closeout; reconcile the migrated file set and retained time-window-field classification without broad `JudgeTools` deletion, public snapshot expansion, old-container cleanup, registered-route validation, or Phase 5 work.
+---

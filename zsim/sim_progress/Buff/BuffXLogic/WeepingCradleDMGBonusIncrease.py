@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from ..JudgeTools import read_trigger_buff_state
 
 
 class WeepingCradleDMGBRecord:
@@ -54,7 +55,8 @@ class WeepingCradleDMGBonusIncrease(Buff.BuffLogic):
             equipper="啜泣摇篮",
             trigger_buff_0=(self.buff_instance.ft.operator, trigger_index),
         )
-        if self.record.trigger_buff_0.dy.active:
+        trigger_state = read_trigger_buff_state(self.record)
+        if trigger_state.active:
             result = self.increase_cd_judge()
             if result:
                 return True

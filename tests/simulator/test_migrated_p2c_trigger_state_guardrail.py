@@ -25,9 +25,12 @@ MIGRATED_P2C_TRIGGER_STATE_FILES = (
     BUFF_XLOGIC_ROOT / "SeveredInnocencELEDMGBonus.py",
     BUFF_XLOGIC_ROOT / "YangiCinema1ApBonus.py",
     BUFF_XLOGIC_ROOT / "YunkuiTalesSheerAtkBonus.py",
+    BUFF_XLOGIC_ROOT / "WeepingCradleDMGBonusIncrease.py",
 )
 
-RETAINED_UNMIGRATED_TRIGGER_STATE_CANDIDATES = {
+RETAINED_UNMIGRATED_TRIGGER_STATE_CANDIDATES: set[Path] = set()
+
+RETAINED_TIME_WINDOW_MIRROR_TRIGGER_STATE_FILES = {
     BUFF_XLOGIC_ROOT / "WeepingCradleDMGBonusIncrease.py",
 }
 
@@ -194,9 +197,13 @@ def test_migrated_p2c_guardrail_scope_is_exact_root_file_set() -> None:
         "zsim/sim_progress/Buff/BuffXLogic/SeveredInnocencELEDMGBonus.py",
         "zsim/sim_progress/Buff/BuffXLogic/YangiCinema1ApBonus.py",
         "zsim/sim_progress/Buff/BuffXLogic/YunkuiTalesSheerAtkBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/WeepingCradleDMGBonusIncrease.py",
     }
     assert all(".codex_worktrees" not in path.parts for path in MIGRATED_P2C_TRIGGER_STATE_FILES)
     assert all(path.is_file() for path in MIGRATED_P2C_TRIGGER_STATE_FILES)
+    assert RETAINED_TIME_WINDOW_MIRROR_TRIGGER_STATE_FILES <= set(
+        MIGRATED_P2C_TRIGGER_STATE_FILES
+    )
     assert not RETAINED_UNMIGRATED_TRIGGER_STATE_CANDIDATES & set(
         MIGRATED_P2C_TRIGGER_STATE_FILES
     )
@@ -259,6 +266,17 @@ def test_migrated_p2c_guardrail_allows_local_trigger_alias_without_state_read() 
     path = BUFF_XLOGIC_ROOT / "_migrated_p2c_alias_fixture.py"
 
     assert _collect_direct_trigger_state_findings_from_source(path, source) == []
+
+
+def test_weeping_cradle_guardrail_retains_time_window_mirror_only() -> None:
+    path = BUFF_XLOGIC_ROOT / "WeepingCradleDMGBonusIncrease.py"
+    source = path.read_text(encoding="utf-8")
+
+    assert path in RETAINED_TIME_WINDOW_MIRROR_TRIGGER_STATE_FILES
+    assert _collect_direct_trigger_state_findings_from_source(path, source) == []
+    assert "self.record.trigger_buff_0.dy.active" not in source
+    assert "self.record.trigger_buff_0.dy.startticks" in source
+    assert "self.record.trigger_buff_0.dy.endticks" in source
 
 
 def test_migrated_p2c_guardrail_uses_ast_not_text_matching() -> None:
