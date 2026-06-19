@@ -7942,3 +7942,14 @@
 - Next step:
   - Generate `Buff JudgeTools Helper Responsibility Route Review And Exact Next Intake`; do not reopen trigger-state, collapse Candidate blocks A-G into automatic backlog, promote deletion-readiness, resume Phase 5, run main-loop consistency, run runtime benchmark, or broaden into `JudgeTools` deletion / old-container cleanup without exact current-root evidence.
 ---
+## 2026-06-19 12:48 +08:00 - US-003
+- Files changed: `scripts/ralph/plans/slices/us-003-jane-active-only-state-sync-closure.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 Jane Active-Only State-Sync Closure` closes the Jane owner-family verifier responsibility after the US-002 `read_trigger_buff_state_active(record)` boundary replaced the old full-snapshot read requirement for active-only gates.
+  - This iteration replaces blocker status with focused verifier evidence only; no live production Buff path or focused test was changed in this slice.
+- Compatibility retained:
+  - `JaneCinema1APTransToDmgBonus.py`, `JaneCoreSkillStrikeCritRateBonus.py`, and `JanePassionStateAPTransToATK.py` keep existing `check_record_module()` / `get_prepared(..., trigger_buff_0=...)` preparation before active-only reads.
+  - Jane AP formulas, active/inactive branches, `simple_start(...)`, old count writeback, `update_to_buff_0(...)`, old template identity, Calculator public reader/snapshot APIs, copied-output payloads, old containers, registered routes, Phase 5 gates, and event/runtime/listener boundaries remain unchanged.
+- Next step:
+  - Continue to `US-004` Soldier0 Anby Active-Only State-Sync Closure; do not broaden into Calculator formula changes, public snapshot expansion, old-container cleanup, scheduled publish paths, registered-route validation, or Phase 5 work.
+---
