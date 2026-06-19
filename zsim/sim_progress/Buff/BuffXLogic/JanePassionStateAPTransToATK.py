@@ -6,7 +6,7 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
 )
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
-from ..JudgeTools import read_trigger_buff_state
+from ..JudgeTools import read_trigger_buff_state_active
 
 
 class JanePassionStateAPTransToATKRecord:
@@ -45,8 +45,7 @@ class JanePassionStateAPTransToATK(Buff.BuffLogic):
         """精通转攻击力部分的触发行为与触发器对齐；"""
         self.check_record_module()
         self.get_prepared(char_CID=1261, trigger_buff_0=("简", "Buff-角色-简-狂热状态触发器"))
-        trigger_state = read_trigger_buff_state(self.record)
-        return trigger_state.active
+        return read_trigger_buff_state_active(self.record)
 
     def special_hit_logic(self, **kwargs):
         """当触发器激活时，执行self.xhit，计算实时精通，激活自身状态并且更新层数。"""

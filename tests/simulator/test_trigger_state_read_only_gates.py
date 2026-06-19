@@ -12,7 +12,10 @@ import zsim.define as define_module
 sys.modules.setdefault("define", define_module)
 
 from zsim.sim_progress.Buff import JudgeTools
-from zsim.sim_progress.Buff.JudgeTools import read_trigger_buff_state
+from zsim.sim_progress.Buff.JudgeTools import (
+    read_trigger_buff_state,
+    read_trigger_buff_state_active,
+)
 from zsim.sim_progress.Buff.BuffXLogic.AstralVoice import AstralVoice
 from zsim.sim_progress.Buff.BuffXLogic.CordisGerminaSNAAndQIgnoreDefense import (
     CordisGerminaSNAAndQIgnoreDefense,
@@ -717,9 +720,21 @@ def test_trigger_state_helper_public_api_is_read_only(
     assert fixture.logic.record.trigger_buff_0 is fixture.trigger_template
 
 
+def test_trigger_state_active_helper_does_not_require_full_snapshot_fields() -> None:
+    record = SimpleNamespace(
+        trigger_buff_0=SimpleNamespace(dy=SimpleNamespace(active=True))
+    )
+
+    assert read_trigger_buff_state_active(record) is True
+    with pytest.raises(AttributeError):
+        read_trigger_buff_state(record)
+
+
 def test_trigger_state_helper_requires_prepared_trigger_record() -> None:
     with pytest.raises(ValueError, match="trigger_buff_0"):
         read_trigger_buff_state(SimpleNamespace(trigger_buff_0=None))
+    with pytest.raises(ValueError, match="trigger_buff_0"):
+        read_trigger_buff_state_active(SimpleNamespace(trigger_buff_0=None))
 
 
 @pytest.mark.parametrize(

@@ -4,7 +4,7 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
 )
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
-from ..JudgeTools import read_trigger_buff_state
+from ..JudgeTools import read_trigger_buff_state_active
 
 
 class JaneCoreSkillStrikeCritRateBonusRecord:
@@ -45,8 +45,7 @@ class JaneCoreSkillStrikeCritRateBonus(Buff.BuffLogic):
         self.get_prepared(
             char_CID=1261, trigger_buff_0=("enemy", "Buff-角色-简-核心被动-啮咬触发器")
         )
-        trigger_state = read_trigger_buff_state(self.record)
-        return trigger_state.active
+        return read_trigger_buff_state_active(self.record)
 
     def special_hit_logic(self, **kwargs):
         """当触发器激活时，执行self.xhit，计算实时精通，转化成暴击率层数。"""

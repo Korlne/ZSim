@@ -43,6 +43,18 @@
 - Next step:
   - Continue to `US-002` Minimal TriggerState Contract Fix; active-only users must not require `dynamic_state.count` or `dynamic_state.built_in_buff_box`, while full snapshot users keep the existing contract.
 ---
+## 2026-06-19 12:36 +08:00 - US-002
+- Files changed: `zsim/sim_progress/Buff/JudgeTools/TriggerState.py`, `zsim/sim_progress/Buff/JudgeTools/__init__.py`, `zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritRateBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/JanePassionStateAPTransToATK.py`, `zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCoreSkillCritDMGBonus.py`, `tests/simulator/test_trigger_state_read_only_gates.py`, Ralph evidence / checkpoint / PRD bookkeeping.
+- Replacement note:
+  - `read_trigger_buff_state_active(record)` replaces the unnecessary full `read_trigger_buff_state(record).active` path for the four named `calculator-reads` active-only gates.
+  - The new active-only helper reads only `dynamic_state.active`; it does not require `dynamic_state.count` or `dynamic_state.built_in_buff_box`.
+- Compatibility retained:
+  - `read_trigger_buff_state(record)` remains the full snapshot path for count / built-in-box users.
+  - `TriggerBuffState` still has only `active`, `count`, and `built_in_buff_box`; no `startticks` / `endticks` fields were added.
+  - `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, old template identity, lazy record initialization, old containers, event/runtime/listener layer separation, validation-runner behavior, registered routes, formulas, Phase 5 gates, performance gates, and `WeepingCradleDMGBonusIncrease.special_effect_logic(...)` remain unchanged.
+- Next step:
+  - Continue to `US-003` Jane Active-Only State-Sync Closure using the active-only helper contract, without widening into unrelated TriggerState expansion or Phase 5 work.
+---
 
 ## 2026-06-18 14:44 +08:00 - US-001
 - Files changed: `scripts/ralph/plans/slices/us-001-source-preflight-and-stop-gate.md`, `scripts/ralph/checkpoints/2026-06-18-us-001-source-preflight-stop-gate.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/campaign-dashboard.md`

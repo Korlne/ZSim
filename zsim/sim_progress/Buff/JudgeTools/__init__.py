@@ -15,7 +15,11 @@ from .FindMain import (
     find_stack,
     find_tick,  # noqa: F401
 )
-from .TriggerState import TriggerBuffState, read_trigger_buff_state  # noqa: F401
+from .TriggerState import (  # noqa: F401
+    TriggerBuffState,
+    read_trigger_buff_state,
+    read_trigger_buff_state_active,
+)
 
 if TYPE_CHECKING:
     from .. import Buff
