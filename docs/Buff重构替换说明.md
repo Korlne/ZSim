@@ -8142,3 +8142,15 @@
 - Next step:
   - Return to `Buff JudgeTools Helper Responsibility Route Review And Exact Next Intake`; select at most one exact current-root responsibility or record No-Go / retained boundaries while preserving Candidate blocks A-G.
 ---
+## 2026-06-19 15:54 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-route-authority-and-durable-state-preflight.md`, `scripts/ralph/investigations/2026-06-19-US-001-route-authority-durable-state-preflight.md`, `scripts/ralph/checkpoints/2026-06-19-us-001-route-authority-durable-state-preflight.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 Route Authority And Durable State Preflight` replaces stale route assumptions with current-root durable evidence that the default route has returned to `Buff JudgeTools Helper Responsibility Route Review And Exact Next Intake` after IceJade completion.
+  - This story is docs/control-plane evidence only; it does not replace another live Buff path, public `JudgeTools` helper, validation-runner behavior, formula output, event/runtime/listener behavior, old-container implementation, registered route, Phase 5 gate, or performance-sensitive path.
+- Compatibility retained:
+  - IceJade direct dynamic-list replacement remains implemented / no-reopen; `JudgeTools.find_equipper(...)` remains prerequisite / rollback anchor.
+  - `BLOCKER-001` remains green / non-blocking, and completed TriggerState active/count/built-in-box read gates remain no-reopen.
+  - Candidate blocks A-G remain reviewer context, rollback anchors, validation entrypoints and non-goals; old containers, deleted `event_list` surfaces, public reader/snapshot APIs, formula outputs, event/runtime/listener layers, Phase 5 validation, main-loop consistency, runtime benchmark and serial validation discipline remain unchanged.
+- Next step:
+  - Continue to `US-002 Current-Root JudgeTools Responsibility Census`; classify remaining current-root helper responsibilities using the route exclusions and do not select or implement a candidate in US-001.
+---
