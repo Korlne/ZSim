@@ -8,32 +8,60 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BUFF_XLOGIC_ROOT = PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffXLogic"
 
-MIGRATED_P2C_TRIGGER_STATE_FILES = (
+# 这五个文件是本 PRD 之前已经关闭的 P2-C trigger-state 基线，保留在同一 guardrail 中防止回退。
+PREVIOUSLY_MIGRATED_P2C_TRIGGER_STATE_FILES = (
     BUFF_XLOGIC_ROOT / "FlamemakerShakerApBonus.py",
     BUFF_XLOGIC_ROOT / "SpectralGazeImpactBonus.py",
     BUFF_XLOGIC_ROOT / "SharpenedStingerAnomalyBuildupBonus.py",
     BUFF_XLOGIC_ROOT / "CordisGerminaSNAAndQIgnoreDefense.py",
     BUFF_XLOGIC_ROOT / "AstralVoice.py",
+)
+
+US_002_JANE_TRIGGER_STATE_FILES = (
     BUFF_XLOGIC_ROOT / "JaneCinema1APTransToDmgBonus.py",
     BUFF_XLOGIC_ROOT / "JaneCoreSkillStrikeCritDmgBonus.py",
     BUFF_XLOGIC_ROOT / "JaneCoreSkillStrikeCritRateBonus.py",
     BUFF_XLOGIC_ROOT / "JanePassionStateAPTransToATK.py",
     BUFF_XLOGIC_ROOT / "JanePassionStatePhyBuildupBonus.py",
+)
+
+US_003_SOLDIER0_ANBY_TRIGGER_STATE_FILES = (
     BUFF_XLOGIC_ROOT / "Soldier0AnbyAdditionalSkillDMGBonus.py",
     BUFF_XLOGIC_ROOT / "Soldier0AnbyCinema4EleResReduce.py",
     BUFF_XLOGIC_ROOT / "Soldier0AnbyCoreSkillCritDMGBonus.py",
+)
+
+US_004_EQUIPMENT_CHARACTER_COUNT_GATE_FILES = (
     BUFF_XLOGIC_ROOT / "SeveredInnocencELEDMGBonus.py",
     BUFF_XLOGIC_ROOT / "YangiCinema1ApBonus.py",
     BUFF_XLOGIC_ROOT / "YunkuiTalesSheerAtkBonus.py",
+)
+
+US_005_WEEPING_CRADLE_ACTIVE_GATE_FILES = (
     BUFF_XLOGIC_ROOT / "WeepingCradleDMGBonusIncrease.py",
 )
 
-RETAINED_UNMIGRATED_TRIGGER_STATE_CANDIDATES: set[Path] = set()
+CURRENT_PRD_MIGRATED_TRIGGER_STATE_FILES = (
+    US_002_JANE_TRIGGER_STATE_FILES
+    + US_003_SOLDIER0_ANBY_TRIGGER_STATE_FILES
+    + US_004_EQUIPMENT_CHARACTER_COUNT_GATE_FILES
+    + US_005_WEEPING_CRADLE_ACTIVE_GATE_FILES
+)
 
+MIGRATED_P2C_TRIGGER_STATE_FILES = (
+    PREVIOUSLY_MIGRATED_P2C_TRIGGER_STATE_FILES
+    + CURRENT_PRD_MIGRATED_TRIGGER_STATE_FILES
+)
+
+# US-005 已证明 WeepingCradle 的 active read 可迁移；没有剩余整文件 trigger-state 候选进入本 PRD。
+RETAINED_UNMIGRATED_TRIGGER_STATE_CANDIDATES: tuple[Path, ...] = ()
+
+# WeepingCradle 的时间窗镜像仍由原文件直接拥有，不扩展 TriggerBuffState 公共契约。
 RETAINED_TIME_WINDOW_MIRROR_TRIGGER_STATE_FILES = {
     BUFF_XLOGIC_ROOT / "WeepingCradleDMGBonusIncrease.py",
 }
 
+# P2-A / P2-B 是已迁移的属性 reader / formula bucket，不属于本 P2-C trigger-state closeout。
 RETAINED_P2A_P2B_MIGRATED_FILES = {
     BUFF_XLOGIC_ROOT / "AliceAdditionalAbilityApBonus.py",
     BUFF_XLOGIC_ROOT / "YuzuhaAdditionalAbilityAnomalyBuildupBonus.py",
@@ -48,14 +76,31 @@ RETAINED_P2A_P2B_MIGRATED_FILES = {
     BUFF_XLOGIC_ROOT / "WoodpeckerElectroSet4_CA.py",
 }
 
+# Formula snapshot 文件保留在 Calculator/CalAnomaly 边界，本 guardrail 不扫描这些生产公式面。
 RETAINED_FORMULA_SNAPSHOT_FILES = {
     PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent" / "Calculator.py",
     PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent" / "CalAnomaly.py",
 }
 
+# BuffAddStrategy 是旧加 Buff 策略边界，不属于 trigger-state read-only helper 迁移。
 RETAINED_BUFF_ADD_STRATEGY_FILES = {
     PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffAddStrategy.py",
 }
+
+EXCLUDED_SCAN_PARTS = {
+    ".codex_worktrees",
+    ".git",
+    "__pycache__",
+    "archive",
+    "context",
+    ".runs",
+    "runlogs",
+    "run-logs",
+    "runs",
+    "logs",
+    "results",
+}
+EXCLUDED_SCAN_SUFFIXES = (".log", ".jsonl")
 
 FORBIDDEN_TRIGGER_STATE_FIELDS = {"active", "count", "built_in_buff_box"}
 
@@ -175,17 +220,16 @@ def test_migrated_p2c_files_do_not_use_direct_trigger_state_chains() -> None:
 
 
 def test_migrated_p2c_guardrail_scope_is_exact_root_file_set() -> None:
+    current_prd_files = {
+        path.relative_to(PROJECT_ROOT).as_posix()
+        for path in CURRENT_PRD_MIGRATED_TRIGGER_STATE_FILES
+    }
     scanned_files = {
         path.relative_to(PROJECT_ROOT).as_posix()
         for path in MIGRATED_P2C_TRIGGER_STATE_FILES
     }
 
-    assert scanned_files == {
-        "zsim/sim_progress/Buff/BuffXLogic/FlamemakerShakerApBonus.py",
-        "zsim/sim_progress/Buff/BuffXLogic/SpectralGazeImpactBonus.py",
-        "zsim/sim_progress/Buff/BuffXLogic/SharpenedStingerAnomalyBuildupBonus.py",
-        "zsim/sim_progress/Buff/BuffXLogic/CordisGerminaSNAAndQIgnoreDefense.py",
-        "zsim/sim_progress/Buff/BuffXLogic/AstralVoice.py",
+    assert current_prd_files == {
         "zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py",
         "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritDmgBonus.py",
         "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritRateBonus.py",
@@ -199,17 +243,36 @@ def test_migrated_p2c_guardrail_scope_is_exact_root_file_set() -> None:
         "zsim/sim_progress/Buff/BuffXLogic/YunkuiTalesSheerAtkBonus.py",
         "zsim/sim_progress/Buff/BuffXLogic/WeepingCradleDMGBonusIncrease.py",
     }
-    assert all(".codex_worktrees" not in path.parts for path in MIGRATED_P2C_TRIGGER_STATE_FILES)
+
+    assert scanned_files == {
+        "zsim/sim_progress/Buff/BuffXLogic/FlamemakerShakerApBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/SpectralGazeImpactBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/SharpenedStingerAnomalyBuildupBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/CordisGerminaSNAAndQIgnoreDefense.py",
+        "zsim/sim_progress/Buff/BuffXLogic/AstralVoice.py",
+        *current_prd_files,
+    }
     assert all(path.is_file() for path in MIGRATED_P2C_TRIGGER_STATE_FILES)
+
+
+def test_migrated_p2c_guardrail_excludes_retained_surfaces() -> None:
+    migrated_files = set(MIGRATED_P2C_TRIGGER_STATE_FILES)
+
+    assert not set(RETAINED_UNMIGRATED_TRIGGER_STATE_CANDIDATES) & migrated_files
     assert RETAINED_TIME_WINDOW_MIRROR_TRIGGER_STATE_FILES <= set(
         MIGRATED_P2C_TRIGGER_STATE_FILES
     )
-    assert not RETAINED_UNMIGRATED_TRIGGER_STATE_CANDIDATES & set(
-        MIGRATED_P2C_TRIGGER_STATE_FILES
+    assert not RETAINED_P2A_P2B_MIGRATED_FILES & migrated_files
+    assert not RETAINED_FORMULA_SNAPSHOT_FILES & migrated_files
+    assert not RETAINED_BUFF_ADD_STRATEGY_FILES & migrated_files
+    assert all(
+        not (EXCLUDED_SCAN_PARTS & set(path.relative_to(PROJECT_ROOT).parts))
+        for path in MIGRATED_P2C_TRIGGER_STATE_FILES
     )
-    assert not RETAINED_P2A_P2B_MIGRATED_FILES & set(MIGRATED_P2C_TRIGGER_STATE_FILES)
-    assert not RETAINED_FORMULA_SNAPSHOT_FILES & set(MIGRATED_P2C_TRIGGER_STATE_FILES)
-    assert not RETAINED_BUFF_ADD_STRATEGY_FILES & set(MIGRATED_P2C_TRIGGER_STATE_FILES)
+    assert all(
+        not path.name.endswith(EXCLUDED_SCAN_SUFFIXES)
+        for path in MIGRATED_P2C_TRIGGER_STATE_FILES
+    )
 
 
 def test_migrated_p2c_guardrail_reports_direct_trigger_state_chains() -> None:
@@ -237,10 +300,12 @@ def test_migrated_p2c_guardrail_reports_direct_trigger_state_chains() -> None:
 def test_migrated_p2c_guardrail_reports_local_trigger_alias_chains() -> None:
     source = (
         "class LegacyAliasGate:\n"
-        "    def judge(self):\n"
+        "    def judge(self, record):\n"
         "        trigger_buff_0 = self.record.trigger_buff_0\n"
+        "        trigger_from_record = record.trigger_buff_0\n"
         "        if trigger_buff_0.dy.active:\n"
-        "            return trigger_buff_0.dy.count == 3\n"
+        "            return trigger_from_record.dy.count == 3\n"
+        "        return len(trigger_from_record.dy.built_in_buff_box)\n"
         "        return False\n"
     )
     path = BUFF_XLOGIC_ROOT / "_migrated_p2c_alias_fixture.py"
@@ -248,11 +313,13 @@ def test_migrated_p2c_guardrail_reports_local_trigger_alias_chains() -> None:
     findings = _collect_direct_trigger_state_findings_from_source(path, source)
     messages = [finding.message() for finding in findings]
 
-    assert len(findings) == 2
+    assert len(findings) == 3
     assert any("direct_trigger_state_chain: trigger_buff_0.dy.active" in message for message in messages)
     assert any("classification suggestion: migrated P2-C trigger-state read for `active`" in message for message in messages)
-    assert any("direct_trigger_state_chain: trigger_buff_0.dy.count" in message for message in messages)
+    assert any("direct_trigger_state_chain: trigger_from_record.dy.count" in message for message in messages)
     assert any("classification suggestion: migrated P2-C trigger-state read for `count`" in message for message in messages)
+    assert any("direct_trigger_state_chain: trigger_from_record.dy.built_in_buff_box" in message for message in messages)
+    assert any("classification suggestion: migrated P2-C trigger-state read for `built_in_buff_box`" in message for message in messages)
 
 
 def test_migrated_p2c_guardrail_allows_local_trigger_alias_without_state_read() -> None:

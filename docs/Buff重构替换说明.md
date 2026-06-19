@@ -7883,3 +7883,15 @@
 - Next step:
   - Continue to `US-006` Trigger-State Guardrail Closeout; reconcile the migrated file set and retained time-window-field classification without broad `JudgeTools` deletion, public snapshot expansion, old-container cleanup, registered-route validation, or Phase 5 work.
 ---
+## 2026-06-19 09:50 +08:00 - US-006
+- Files changed: `tests/simulator/test_migrated_p2c_trigger_state_guardrail.py`, `scripts/ralph/plans/slices/us-006-trigger-state-guardrail-closeout.md`, `scripts/ralph/checkpoints/2026-06-19-us-006-trigger-state-guardrail-closeout.md`, Ralph dashboard / evidence / progress / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `test_migrated_p2c_trigger_state_guardrail.py` replaces a mixed migrated-file set with explicit groups for the earlier P2-C baseline and the exact US-002 through US-005 trigger-state additions.
+  - Alias guardrail coverage now catches local variables assigned from `record.trigger_buff_0` for `active`, `count`, and `built_in_buff_box`.
+  - This story replaces or closes a guardrail/test-harness responsibility only; no live production Buff path was replaced.
+- Compatibility retained:
+  - `WeepingCradleDMGBonusIncrease.py` retains direct `startticks` / `endticks` time-window mirror fields outside `TriggerBuffState`.
+  - P2-A / P2-B reader buckets, formula snapshot files, BuffAddStrategy, old containers, event/runtime/listener layers, validation-runner behavior, registered routes, Phase 5 gates, and performance gates remain unchanged.
+- Next step:
+  - Continue to `US-007` serial validation and reviewer invariant gate; do not broaden into public snapshot expansion, old-container cleanup, BuffAddStrategy migration, formula/read API work, registered-route validation, benchmark work, or Phase 5 resume.
+---
