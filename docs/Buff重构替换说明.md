@@ -19,6 +19,18 @@
   - 下一轮应继续收口的旧路径
 ```
 
+## 2026-06-19 17:19 +08:00 - US-007
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, Ralph checkpoint / campaign / evidence / progress / PRD bookkeeping.
+- Replacement note:
+  - `US-007 Handoff Docs And Same-Phase Pool Preservation` records the selected Precious Fossilized Core direct enemy HP-threshold `JudgeTools.find_enemy(...)` route and prepares a future bounded implementation PRD.
+  - This story does not replace a live Buff path. Current `PreciousFossilizedCoreStunBonusOver50Hp.special_judge_logic(...)`, `PreciousFossilizedCoreStunBonusOver75Hp.special_judge_logic(...)`, `FindMain.find_enemy(...)`, and `Enemy.get_total_hp_percentage(...)` behavior remains unchanged.
+- Compatibility retained:
+  - Candidate blocks A-G remain reviewer context, rollback anchors, validation entrypoints and non-goals; completed TriggerState reads and IceJade dynamic-list replacement remain no-reopen.
+  - Phase 5 remains paused; broad `find_enemy(...)` cleanup, `check_preparation(enemy=1)` rewrite, AnomalyDebuffExitJudge / anomaly-map work, broad `JudgeTools` deletion, old-container cleanup, public reader/snapshot expansion, formula output changes, validation-runner rewrite, event/runtime/listener merge, retained compatibility deletion, registered-route validation, main-loop consistency and runtime benchmark remain out of scope.
+- Next step:
+  - Generate `Buff Precious Fossilized Core Enemy HP-Threshold Helper Bounded Implementation`; first add `tests/simulator/test_precious_fossilized_core_enemy_hp_gate.py`, then replace only the two selected xjudge predicates and run scoped mypy plus serial `implicit-events`.
+---
+
 ## 2026-06-18 16:56 +08:00 - Docs Route Update
 - Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`
 - Replacement note:
