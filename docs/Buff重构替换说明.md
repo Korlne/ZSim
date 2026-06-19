@@ -8025,3 +8025,14 @@
 - Next step:
   - Continue to `US-004 Exact Helper Responsibility Selection Packet`; select at most one exact helper responsibility from the US-002 matrix or record No-Go / needs-human without reopening deleted/completed/retained boundaries.
 ---
+## 2026-06-19 14:01 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-exact-helper-responsibility-selection-packet.md`, `scripts/ralph/investigations/2026-06-19-US-004-exact-helper-responsibility-selection-packet.md`, `scripts/ralph/checkpoints/2026-06-19-us-004-exact-helper-responsibility-selection-packet.md`, Ralph evidence / progress / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 Exact Helper Responsibility Selection Packet` prepares to replace one exact future responsibility: `IceJadeTeaPotExtraDMGBonus.special_judge_logic(...)` direct `JudgeTools.find_dynamic_buff_list(...)` service-location count predicate for `玉壶青冰-普攻加冲击`.
+  - This story replaces docs/control-plane uncertainty with a selected packet only; no live production Buff path, focused test source, validation-runner behavior, public reader API, formula output, registered route, event/runtime/listener behavior, or performance-sensitive path was replaced in this slice.
+- Compatibility retained:
+  - `JudgeTools.find_equipper(...)` is retained as a prerequisite / rollback anchor, not selected as a second helper responsibility.
+  - `check_preparation(...)`, `trigger_buff_0_handler(...)`, old template Buff identity, lazy record initialization, deleted `event_list` closure, old containers, completed trigger-state / enemy-state helper subsets, P2-A through P2-G guarded-maintenance buckets, event/runtime/listener layer separation, explicit ports/adapters, no cached dispatch adapters, registered routes, Phase 5 gates, public reader/snapshot APIs, formula outputs, performance gates, completed-surface no-reopen rules, and serial validation discipline remain unchanged.
+- Next step:
+  - Continue to `US-005 Focused Verifier And Guardrail Plan`; bind the selected IceJade dynamic-list packet to focused pytest / scoped mypy and conditional `implicit-events` without broad dynamic-list migration, formula/snapshot expansion, old-container cleanup, or broad `JudgeTools` deletion.
+---
