@@ -7895,3 +7895,14 @@
 - Next step:
   - Continue to `US-007` serial validation and reviewer invariant gate; do not broaden into public snapshot expansion, old-container cleanup, BuffAddStrategy migration, formula/read API work, registered-route validation, benchmark work, or Phase 5 resume.
 ---
+## 2026-06-19 09:59 +08:00 - US-007
+- Files changed: `scripts/ralph/plans/slices/us-007-serial-validation-and-reviewer-invariant-gate.md`, `scripts/ralph/checkpoints/2026-06-19-us-007-serial-validation-reviewer-invariant-gate.md`, Ralph dashboard / evidence / progress / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-007 serial validation and reviewer invariant gate` closes the verifier responsibility for the trigger-state remaining read-gate PRD by proving the focused trigger-state suite and touched `implicit-events` Buff validation profile serially.
+  - This story replaces or closes validation/control-plane responsibility only; no live production Buff path, helper, public reader API, formula output, validation-runner behavior, registered route, or performance-sensitive path was replaced.
+- Compatibility retained:
+  - Event queue semantics, synchronous listener broadcasts, dot runtime registration, local event groups, scheduled handler requeue, runtime reads, same-tick runtime writes, explicit ports/adapters, no cached dispatch adapters, old containers, validation-runner behavior, registered routes, Phase 5 gates, performance gates, and completed-surface no-reopen rules remain unchanged.
+  - `calculator-reads`, `formula-parity`, Phase 5 registered-route validation, main-loop consistency, and runtime benchmark remain skipped by touched-surface evidence.
+- Next step:
+  - Continue to `US-008` handoff docs and next route preservation; do not broaden into public snapshot expansion, old-container cleanup, formula/read API work, registered-route validation, benchmark work, deletion-readiness, or Phase 5 resume.
+---
