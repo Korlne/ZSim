@@ -8108,3 +8108,14 @@
 - Next step:
   - Continue to `US-004` touched-surface guardrail / typecheck review; run the scoped mypy and no-reopen checks without broad dynamic-list migration, old-container cleanup, formula/snapshot expansion, or broad `JudgeTools` deletion.
 ---
+## 2026-06-19 15:27 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-guardrails-typecheck-and-touched-surface-review.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 Guardrails, Typecheck, And Touched-Surface Review` replaces informal confidence in the IceJade helper replacement with recorded scoped mypy, direct-call guard, no-reopen touched-surface review, and reviewer verdict evidence.
+  - This story does not replace another live Buff path; the live path replacement remains the `US-003` file-local `_read_ice_jade_dynamic_buff_list(...)` change.
+- Compatibility retained:
+  - `IceJadeTeaPotExtraDMGBonus.special_judge_logic(...)` still calls `JudgeTools.find_equipper(...)` first and reads the same dynamic Buff dict through the file-local helper.
+  - Deleted `event_list` discovery surfaces, completed trigger-state / enemy-state helper subsets, P2-A through P2-G guarded buckets, old containers, event/runtime/listener layers, public reader/snapshot APIs, formula outputs, validation-runner behavior, registered routes, Phase 5 gates, main-loop consistency, runtime benchmark, and serial validation discipline remain unchanged.
+- Next step:
+  - Continue to `US-005` serial implicit-events validation and invariant verdict; do not broaden into dynamic-list migration, old-container cleanup, formula/snapshot expansion, Phase 5 work, main-loop consistency, runtime benchmark, or broad `JudgeTools` deletion.
+---
