@@ -7964,3 +7964,15 @@
 - Next step:
   - Continue to `US-005` serial calculator-reads and conditional implicit-events validation; do not broaden into Calculator formula changes, public snapshot expansion, old-container cleanup, scheduled publish paths, registered-route validation, benchmark work, or Phase 5 work.
 ---
+## 2026-06-19 13:04 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-serial-calculator-reads-and-conditional-implicit-events-gate.md`, `scripts/ralph/checkpoints/2026-06-19-us-005-serial-calculator-reads-implicit-events.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, Ralph dashboard / evidence bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 Serial Calculator-Reads And Conditional Implicit-Events Gate` closes the verifier responsibility for the active-only TriggerState red light by proving the focused state-sync subset, full `calculator-reads`, and touched `implicit-events` validation profiles serially.
+  - This story replaces blocker status with verifier / reviewer evidence only; no live production Buff path, focused test source, validation-runner behavior, public reader API, formula output, registered route, or performance-sensitive path was replaced in this slice.
+- Compatibility retained:
+  - `read_trigger_buff_state(record)` remains the full snapshot path for count / built-in-box users, while `read_trigger_buff_state_active(record)` remains the active-only path for the four named active-only gates.
+  - Old template Buff identity, lazy record initialization, `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, old containers, event/runtime/listener layer separation, explicit ports/adapters, no cached dispatch adapters, registered routes, Phase 5 gates, performance gates, completed-surface no-reopen rules, and serial validation discipline remain unchanged.
+  - `formula-parity`, Phase 5 registered-route validation, main-loop consistency, runtime benchmark, and default lifecycle validation remain skipped by touched-surface evidence.
+- Next step:
+  - Continue to `US-006` handoff docs and same-phase pool preservation; do not broaden into production TriggerState, Calculator formulas, public snapshot expansion, old-container cleanup, scheduled publish paths, registered-route validation, benchmark work, Phase 5 work, or broad `JudgeTools` deletion.
+---
