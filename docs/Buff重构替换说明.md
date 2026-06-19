@@ -8130,3 +8130,15 @@
 - Next step:
   - Continue to `US-006` handoff docs and same-phase pool preservation; record the green IceJade implementation / verifier result without broad dynamic-list migration, old-container cleanup, formula/snapshot expansion, Phase 5 work, main-loop consistency, runtime benchmark, or broad `JudgeTools` deletion.
 ---
+## 2026-06-19 15:38 +08:00 - US-006
+- Files changed: `docs/Buff系统重构Checklist.md`, `docs/Buff重构下阶段计划草稿.md`, `docs/Buff重构替换说明.md`, Ralph checkpoint / campaign / evidence / progress / PRD bookkeeping
+- Replacement note:
+  - `US-006 Handoff Docs And Same-Phase Pool Preservation` records that the live IceJade direct dynamic-list service-location path was replaced in US-003: `IceJadeTeaPotExtraDMGBonus.special_judge_logic(...)` no longer calls `JudgeTools.find_dynamic_buff_list(...)` directly and now reads the same dynamic Buff dict through file-local `_read_ice_jade_dynamic_buff_list(...)`.
+  - This story replaces docs/control-plane route state only; it does not replace another live Buff path, public `JudgeTools` helper, validation-runner behavior, formula output, event/runtime/listener behavior, old-container implementation, registered route, Phase 5 gate, or performance-sensitive path.
+- Compatibility retained:
+  - `JudgeTools.find_equipper(...)` remains the prerequisite first lookup and rollback anchor before the dynamic-list read; dynamic-list indexing, list-order iteration, first matching `玉壶青冰-普攻加冲击`, no-match fall-through and missing-key behavior remain pinned by the focused IceJade oracle.
+  - Candidate blocks A-G remain reviewer context and rollback anchors; trigger-state completed surfaces and IceJade direct dynamic-list replacement are no-reopen unless current-root evidence names an exact blocker.
+  - Old containers, deleted `event_list` surfaces, broad `JudgeTools` deletion, public reader/snapshot APIs, formula outputs, validation-runner behavior, registered routes, Phase 5 validation, main-loop consistency, runtime benchmark, event/runtime/listener layers, performance gates and serial validation discipline remain unchanged.
+- Next step:
+  - Return to `Buff JudgeTools Helper Responsibility Route Review And Exact Next Intake`; select at most one exact current-root responsibility or record No-Go / retained boundaries while preserving Candidate blocks A-G.
+---
