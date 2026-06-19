@@ -8119,3 +8119,14 @@
 - Next step:
   - Continue to `US-005` serial implicit-events validation and invariant verdict; do not broaden into dynamic-list migration, old-container cleanup, formula/snapshot expansion, Phase 5 work, main-loop consistency, runtime benchmark, or broad `JudgeTools` deletion.
 ---
+## 2026-06-19 15:33 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-serial-implicit-events-validation-and-invariant-verdict.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 Serial Implicit-Events Validation And Invariant Verdict` replaces the pending validation responsibility for the `US-003` IceJade helper replacement with serial focused pytest, scoped mypy, and `implicit-events` verifier evidence.
+  - This story does not replace another live Buff path; the live path replacement remains the `US-003` file-local `_read_ice_jade_dynamic_buff_list(...)` change.
+- Compatibility retained:
+  - `IceJadeTeaPotExtraDMGBonus.special_judge_logic(...)` still calls `JudgeTools.find_equipper(...)` first and reads the same dynamic Buff dict through the file-local helper.
+  - Event queue semantics, synchronous listener broadcasts, local event groups, scheduled handler requeue, dot runtime registration, runtime reads, same-tick runtime writes, explicit ports/adapters, no cached dispatch adapters, deleted `event_list` discovery closure, old-container retention, public reader/snapshot APIs, formula outputs, validation-runner behavior, registered routes, Phase 5 gates, main-loop consistency, runtime benchmark, and serial validation discipline remain unchanged.
+- Next step:
+  - Continue to `US-006` handoff docs and same-phase pool preservation; record the green IceJade implementation / verifier result without broad dynamic-list migration, old-container cleanup, formula/snapshot expansion, Phase 5 work, main-loop consistency, runtime benchmark, or broad `JudgeTools` deletion.
+---
