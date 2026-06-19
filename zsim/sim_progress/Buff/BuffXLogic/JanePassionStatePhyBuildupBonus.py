@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from ..JudgeTools import read_trigger_buff_state
 
 
 class JanePassionStatePhyBuildupBonusRecord:
@@ -34,10 +35,8 @@ class JanePassionStatePhyBuildupBonus(Buff.BuffLogic):
         self.check_record_module()
         self.get_prepared(char_CID=1261, trigger_buff_0=("简", "Buff-角色-简-狂热状态触发器"))
 
-        if self.record.trigger_buff_0.dy.active:
-            return True
-        else:
-            return False
+        trigger_state = read_trigger_buff_state(self.record)
+        return trigger_state.active
 
     def special_exit_logic(self, **kwargs):
         """积蓄效率的退出逻辑与触发器相反"""

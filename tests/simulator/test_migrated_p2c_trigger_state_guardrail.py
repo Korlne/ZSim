@@ -14,14 +14,14 @@ MIGRATED_P2C_TRIGGER_STATE_FILES = (
     BUFF_XLOGIC_ROOT / "SharpenedStingerAnomalyBuildupBonus.py",
     BUFF_XLOGIC_ROOT / "CordisGerminaSNAAndQIgnoreDefense.py",
     BUFF_XLOGIC_ROOT / "AstralVoice.py",
-)
-
-RETAINED_UNMIGRATED_TRIGGER_STATE_CANDIDATES = {
     BUFF_XLOGIC_ROOT / "JaneCinema1APTransToDmgBonus.py",
     BUFF_XLOGIC_ROOT / "JaneCoreSkillStrikeCritDmgBonus.py",
     BUFF_XLOGIC_ROOT / "JaneCoreSkillStrikeCritRateBonus.py",
     BUFF_XLOGIC_ROOT / "JanePassionStateAPTransToATK.py",
     BUFF_XLOGIC_ROOT / "JanePassionStatePhyBuildupBonus.py",
+)
+
+RETAINED_UNMIGRATED_TRIGGER_STATE_CANDIDATES = {
     BUFF_XLOGIC_ROOT / "SeveredInnocencELEDMGBonus.py",
     BUFF_XLOGIC_ROOT / "Soldier0AnbyAdditionalSkillDMGBonus.py",
     BUFF_XLOGIC_ROOT / "Soldier0AnbyCinema4EleResReduce.py",
@@ -154,6 +154,11 @@ def test_migrated_p2c_guardrail_scope_is_exact_root_file_set() -> None:
         "zsim/sim_progress/Buff/BuffXLogic/SharpenedStingerAnomalyBuildupBonus.py",
         "zsim/sim_progress/Buff/BuffXLogic/CordisGerminaSNAAndQIgnoreDefense.py",
         "zsim/sim_progress/Buff/BuffXLogic/AstralVoice.py",
+        "zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritDmgBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritRateBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/JanePassionStateAPTransToATK.py",
+        "zsim/sim_progress/Buff/BuffXLogic/JanePassionStatePhyBuildupBonus.py",
     }
     assert all(".codex_worktrees" not in path.parts for path in MIGRATED_P2C_TRIGGER_STATE_FILES)
     assert all(path.is_file() for path in MIGRATED_P2C_TRIGGER_STATE_FILES)

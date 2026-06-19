@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from ..JudgeTools import read_trigger_buff_state
 
 
 class JaneCoreSkillStrikeCritDmgBonusRecord:
@@ -38,10 +39,8 @@ class JaneCoreSkillStrikeCritDmgBonus(Buff.BuffLogic):
         self.get_prepared(
             char_CID=1261, trigger_buff_0=("enemy", "Buff-角色-简-核心被动-啮咬触发器")
         )
-        if self.record.trigger_buff_0.dy.active:
-            return True
-        else:
-            return False
+        trigger_state = read_trigger_buff_state(self.record)
+        return trigger_state.active
 
     def special_exit_logic(self, **kwargs):
         """此Buff退出逻辑和触发逻辑相反"""

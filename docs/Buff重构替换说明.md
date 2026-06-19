@@ -7836,3 +7836,15 @@
 - Next step:
   - Continue to `US-002` Jane owner-family trigger-state gate implementation. Do not broaden into broad `JudgeTools` deletion, old-container deletion, retained compatibility cleanup, Phase 5 validation, public snapshot expansion, formula output changes, or copied-output constructor changes.
 ---
+## 2026-06-19 09:04 +08:00 - US-002
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritDmgBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritRateBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/JanePassionStateAPTransToATK.py`, `zsim/sim_progress/Buff/BuffXLogic/JanePassionStatePhyBuildupBonus.py`, `tests/simulator/test_trigger_state_read_only_gates.py`, `tests/simulator/test_migrated_p2c_trigger_state_guardrail.py`, Ralph checkpoint / dashboard / evidence / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - Jane owner-family `special_judge_logic(...)` active gates now replace direct `record.trigger_buff_0.dy.active` reads with `read_trigger_buff_state(self.record).active` after the existing `check_record_module()` and `get_prepared(..., trigger_buff_0=...)` order.
+  - The migrated P2-C guardrail now treats the five Jane files as migrated trigger-state read gates.
+- Compatibility retained:
+  - Jane AP hit paths remain formula-owned through the existing attribute-reader formulas and `special_hit_logic(...)` order.
+  - `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, old template Buff identity, lazy record initialization, old containers, event/runtime/listener layer separation, validation-runner behavior, registered routes, Phase 5 gates, and performance gates remain unchanged.
+  - Soldier0 Anby, equipment/character/driver count gates, and WeepingCradle time-window behavior remain for later stories.
+- Next step:
+  - Continue to `US-003` Soldier0 Anby trigger-state gate implementation; do not broaden into old-container cleanup, public snapshot expansion, formula output changes, registered-route validation, or Phase 5 work.
+---

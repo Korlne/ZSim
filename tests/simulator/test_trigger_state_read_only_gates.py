@@ -20,6 +20,21 @@ from zsim.sim_progress.Buff.BuffXLogic.CordisGerminaSNAAndQIgnoreDefense import 
 from zsim.sim_progress.Buff.BuffXLogic.FlamemakerShakerApBonus import (
     FlamemakerShakerApBonus,
 )
+from zsim.sim_progress.Buff.BuffXLogic.JaneCinema1APTransToDmgBonus import (
+    JaneCinema1APTransToDmgBonus,
+)
+from zsim.sim_progress.Buff.BuffXLogic.JaneCoreSkillStrikeCritDmgBonus import (
+    JaneCoreSkillStrikeCritDmgBonus,
+)
+from zsim.sim_progress.Buff.BuffXLogic.JaneCoreSkillStrikeCritRateBonus import (
+    JaneCoreSkillStrikeCritRateBonus,
+)
+from zsim.sim_progress.Buff.BuffXLogic.JanePassionStateAPTransToATK import (
+    JanePassionStateAPTransToATK,
+)
+from zsim.sim_progress.Buff.BuffXLogic.JanePassionStatePhyBuildupBonus import (
+    JanePassionStatePhyBuildupBonus,
+)
 from zsim.sim_progress.Buff.BuffXLogic.SharpenedStingerAnomalyBuildupBonus import (
     SharpenedStingerAnomalyBuildupBonus,
 )
@@ -31,6 +46,7 @@ from zsim.sim_progress.Buff.BuffXLogic.YangiCinema1ApBonus import (
 )
 from zsim.sim_progress.Load import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
+from zsim.sim_progress.ScheduledEvent.Calculator import CalculatorBuffAttributeReader
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _BUFF_XLOGIC_ROOT = _PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffXLogic"
@@ -150,6 +166,18 @@ class _AstralVoiceEffectBuffProbe(_CurrentBuffProbe):
         self.effect_events.append(("update_to_buff_0", args))
 
 
+class _JaneHitBuffProbe(_AstralVoiceEffectBuffProbe):
+    def __init__(
+        self,
+        *,
+        index: str,
+        operator: str = "operator",
+        maxcount: float = 999.0,
+    ) -> None:
+        super().__init__(index=index, operator=operator)
+        self.ft.maxcount = maxcount
+
+
 @dataclass(frozen=True)
 class _GateFixture:
     logic: Any
@@ -164,6 +192,7 @@ def _install_lookup_fakes(
     *,
     exist_buff_dict: dict[str, dict[str, _BuffTemplate]],
     equipper_name: str = "测试装备者",
+    char_name: str = "柳",
 ) -> None:
     monkeypatch.setattr(
         JudgeTools,
@@ -178,12 +207,22 @@ def _install_lookup_fakes(
     monkeypatch.setattr(
         JudgeTools,
         "find_char_from_CID",
-        lambda char_CID, sim_instance=None: SimpleNamespace(NAME="柳", CID=char_CID),
+        lambda char_CID, sim_instance=None: SimpleNamespace(NAME=char_name, CID=char_CID),
     )
     monkeypatch.setattr(
         JudgeTools,
         "find_char_from_name",
         lambda NAME, sim_instance=None: SimpleNamespace(NAME=NAME),
+    )
+    monkeypatch.setattr(
+        JudgeTools,
+        "find_enemy",
+        lambda sim_instance=None: SimpleNamespace(NAME="enemy"),
+    )
+    monkeypatch.setattr(
+        JudgeTools,
+        "find_dynamic_buff_list",
+        lambda sim_instance=None: [],
     )
 
 
@@ -343,6 +382,91 @@ def _make_yanagi_gate(
     )
 
 
+def _make_jane_fixture(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    logic_type: type[Any],
+    current_buff: _CurrentBuffProbe,
+    current_index: str,
+    trigger_index: str,
+    active: bool,
+    count: float,
+) -> _GateFixture:
+    current_template = _BuffTemplate(index=current_index)
+    trigger_template = _BuffTemplate(
+        index=trigger_index,
+        active=active,
+        count=count,
+    )
+    exist_buff_dict = {
+        "简": {
+            current_index: current_template,
+            trigger_index: trigger_template,
+        }
+    }
+    current_buff.sim_instance.load_data.exist_buff_dict = exist_buff_dict
+    _install_lookup_fakes(
+        monkeypatch,
+        exist_buff_dict=exist_buff_dict,
+        char_name="简",
+    )
+
+    return _GateFixture(
+        logic=logic_type(current_buff),
+        current_buff=current_buff,
+        current_template=current_template,
+        trigger_template=trigger_template,
+        exist_buff_dict=exist_buff_dict,
+    )
+
+
+def _make_jane_gate(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    logic_type: type[Any],
+    current_index: str,
+    trigger_index: str,
+    active: bool,
+    count: float = 3.0,
+) -> _GateFixture:
+    current_buff = _CurrentBuffProbe(index=current_index, operator="简")
+    return _make_jane_fixture(
+        monkeypatch,
+        logic_type=logic_type,
+        current_buff=current_buff,
+        current_index=current_index,
+        trigger_index=trigger_index,
+        active=active,
+        count=count,
+    )
+
+
+def _make_jane_hit_gate(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    logic_type: type[Any],
+    current_index: str,
+    trigger_index: str,
+    active: bool,
+    count: float,
+    maxcount: float = 999.0,
+) -> _GateFixture:
+    current_buff = _JaneHitBuffProbe(
+        index=current_index,
+        operator="简",
+        maxcount=maxcount,
+    )
+    return _make_jane_fixture(
+        monkeypatch,
+        logic_type=logic_type,
+        current_buff=current_buff,
+        current_index=current_index,
+        trigger_index=trigger_index,
+        active=active,
+        count=count,
+    )
+
+
 def _assert_lazy_record_and_trigger_identity(fixture: _GateFixture) -> None:
     logic = fixture.logic
 
@@ -437,6 +561,31 @@ def test_trigger_state_helper_requires_prepared_trigger_record() -> None:
             ("record.trigger_buff_0.dy.active", "record.trigger_buff_0.dy.count"),
             id="astral-voice",
         ),
+        pytest.param(
+            "JaneCinema1APTransToDmgBonus.py",
+            ("record.trigger_buff_0.dy.active",),
+            id="jane-cinema1-ap-dmg",
+        ),
+        pytest.param(
+            "JaneCoreSkillStrikeCritDmgBonus.py",
+            ("record.trigger_buff_0.dy.active",),
+            id="jane-core-crit-dmg",
+        ),
+        pytest.param(
+            "JaneCoreSkillStrikeCritRateBonus.py",
+            ("record.trigger_buff_0.dy.active",),
+            id="jane-core-crit-rate",
+        ),
+        pytest.param(
+            "JanePassionStateAPTransToATK.py",
+            ("record.trigger_buff_0.dy.active",),
+            id="jane-passion-ap-atk",
+        ),
+        pytest.param(
+            "JanePassionStatePhyBuildupBonus.py",
+            ("record.trigger_buff_0.dy.active",),
+            id="jane-passion-buildup",
+        ),
     ],
 )
 def test_migrated_trigger_state_gate_sources_use_trigger_state_helper(
@@ -449,6 +598,151 @@ def test_migrated_trigger_state_gate_sources_use_trigger_state_helper(
     assert "read_trigger_buff_state" in source
     for chain in forbidden_chains:
         assert chain not in source
+
+
+_JANE_ACTIVE_GATE_CASES: tuple[tuple[type[Any], str, str], ...] = (
+    (
+        JaneCinema1APTransToDmgBonus,
+        "Buff-角色-简-1画-狂热状态精通转增伤",
+        "Buff-角色-简-狂热状态触发器",
+    ),
+    (
+        JaneCoreSkillStrikeCritDmgBonus,
+        "Buff-角色-简-核心被动-强击暴击伤害",
+        "Buff-角色-简-核心被动-啮咬触发器",
+    ),
+    (
+        JaneCoreSkillStrikeCritRateBonus,
+        "Buff-角色-简-核心被动-强击暴击率",
+        "Buff-角色-简-核心被动-啮咬触发器",
+    ),
+    (
+        JanePassionStateAPTransToATK,
+        "Buff-角色-简-狂热状态精通转攻击力",
+        "Buff-角色-简-狂热状态触发器",
+    ),
+    (
+        JanePassionStatePhyBuildupBonus,
+        "Buff-角色-简-狂热状态物理积蓄效率",
+        "Buff-角色-简-狂热状态触发器",
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    ("logic_type", "current_index", "trigger_index"),
+    _JANE_ACTIVE_GATE_CASES,
+)
+@pytest.mark.parametrize(
+    ("active", "expected"),
+    [
+        pytest.param(False, False, id="inactive"),
+        pytest.param(True, True, id="active"),
+    ],
+)
+def test_jane_owner_family_trigger_active_gates_are_read_only(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    logic_type: type[Any],
+    current_index: str,
+    trigger_index: str,
+    active: bool,
+    expected: bool,
+) -> None:
+    fixture = _make_jane_gate(
+        monkeypatch,
+        logic_type=logic_type,
+        current_index=current_index,
+        trigger_index=trigger_index,
+        active=active,
+    )
+
+    assert fixture.logic.special_judge_logic() is expected
+    assert fixture.logic.special_exit_logic() is (not expected)
+    _assert_lazy_record_and_trigger_identity(fixture)
+    assert fixture.current_buff.dy.count == 0.0
+    assert fixture.current_buff.sim_instance.schedule_data.event_list == []
+
+
+@pytest.mark.parametrize(
+    ("logic_type", "current_index", "trigger_index", "ap", "maxcount", "expected"),
+    [
+        pytest.param(
+            JaneCinema1APTransToDmgBonus,
+            "Buff-角色-简-1画-狂热状态精通转增伤",
+            "Buff-角色-简-狂热状态触发器",
+            900.0,
+            70.0,
+            70.0,
+            id="cinema1-ap-to-dmg-cap",
+        ),
+        pytest.param(
+            JaneCoreSkillStrikeCritRateBonus,
+            "Buff-角色-简-核心被动-强击暴击率",
+            "Buff-角色-简-核心被动-啮咬触发器",
+            250.0,
+            999.0,
+            80.0,
+            id="core-crit-rate-ap-formula",
+        ),
+        pytest.param(
+            JanePassionStateAPTransToATK,
+            "Buff-角色-简-狂热状态精通转攻击力",
+            "Buff-角色-简-狂热状态触发器",
+            155.8,
+            999.0,
+            35.0,
+            id="passion-ap-to-atk-floor",
+        ),
+    ],
+)
+def test_jane_ap_hit_paths_remain_formula_owned(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    logic_type: type[Any],
+    current_index: str,
+    trigger_index: str,
+    ap: float,
+    maxcount: float,
+    expected: float,
+) -> None:
+    formula_contexts: list[object] = []
+
+    def _read_anomaly_proficiency(
+        self: CalculatorBuffAttributeReader,
+        context: object,
+    ) -> float:
+        formula_contexts.append(context)
+        return ap
+
+    monkeypatch.setattr(
+        CalculatorBuffAttributeReader,
+        "read_anomaly_proficiency",
+        _read_anomaly_proficiency,
+    )
+    fixture = _make_jane_hit_gate(
+        monkeypatch,
+        logic_type=logic_type,
+        current_index=current_index,
+        trigger_index=trigger_index,
+        active=False,
+        count=99.0,
+        maxcount=maxcount,
+    )
+    hit_buff = cast(_JaneHitBuffProbe, fixture.current_buff)
+
+    fixture.logic.special_hit_logic()
+
+    assert len(formula_contexts) == 1
+    assert hit_buff.dy.count == pytest.approx(expected)
+    assert [event[0] for event in hit_buff.effect_events] == [
+        "simple_start",
+        "set_count",
+        "update_to_buff_0",
+    ]
+    _assert_lazy_record_and_trigger_identity(fixture)
+    assert fixture.trigger_template.dy.active is False
+    assert fixture.current_buff.sim_instance.schedule_data.event_list == []
 
 
 @pytest.mark.parametrize(
