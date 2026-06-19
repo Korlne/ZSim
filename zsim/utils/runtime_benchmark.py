@@ -96,6 +96,28 @@ def _hotspot_comparisons(
     }
 
 
+def _rebuild_count_buckets(
+    buff_runtime_rebuild_counts: dict[str, dict[str, int]] | None,
+) -> dict[str, dict[str, int]]:
+    source = buff_runtime_rebuild_counts or {}
+    return {
+        "legacy": dict(source.get("legacy", {})),
+        "candidate": dict(source.get("candidate", {})),
+    }
+
+
+def _rebuild_count_comparisons(
+    legacy_counts: dict[str, int],
+    candidate_counts: dict[str, int],
+) -> dict[str, int]:
+    counter_names = sorted(set(legacy_counts) | set(candidate_counts))
+    return {
+        counter_name: int(candidate_counts.get(counter_name, 0))
+        - int(legacy_counts.get(counter_name, 0))
+        for counter_name in counter_names
+    }
+
+
 def build_runtime_benchmark_report(
     *,
     team: str,
@@ -103,6 +125,8 @@ def build_runtime_benchmark_report(
     stop_tick: int,
     legacy_snapshot: RuntimeBenchmarkSnapshot,
     candidate_snapshot: RuntimeBenchmarkSnapshot,
+    include_rebuild_counts: bool = False,
+    buff_runtime_rebuild_counts: dict[str, dict[str, int]] | None = None,
 ) -> dict[str, Any]:
     total_runtime_delta = round(
         candidate_snapshot.total_runtime_ms - legacy_snapshot.total_runtime_ms,
@@ -121,7 +145,7 @@ def build_runtime_benchmark_report(
             4,
         )
 
-    return {
+    report = {
         "team": team,
         "apl": apl,
         "stop_tick": stop_tick,
@@ -145,6 +169,14 @@ def build_runtime_benchmark_report(
             "candidate_vs_legacy_ratio": speedup_ratio,
         },
     }
+    if include_rebuild_counts:
+        rebuild_counts = _rebuild_count_buckets(buff_runtime_rebuild_counts)
+        report["buff_runtime_rebuild_counts"] = rebuild_counts
+        report["comparisons"]["buff_runtime_rebuild_counts"] = _rebuild_count_comparisons(
+            rebuild_counts["legacy"],
+            rebuild_counts["candidate"],
+        )
+    return report
 
 
 def run_runtime_benchmark(
@@ -155,6 +187,7 @@ def run_runtime_benchmark(
     legacy_runtime: str,
     candidate_runtime: str,
     cleanup: bool = True,
+    include_rebuild_counts: bool = False,
 ) -> dict[str, Any]:
     os.chdir(PROJECT_ROOT)
     base_cfg = _prepare_common_cfg(team, apl)
@@ -192,6 +225,7 @@ def run_runtime_benchmark(
         stop_tick=stop_tick,
         legacy_snapshot=snapshots[0],
         candidate_snapshot=snapshots[1],
+        include_rebuild_counts=include_rebuild_counts,
     )
 
 
@@ -229,6 +263,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Print the full JSON report to stdout.",
     )
+    parser.add_argument(
+        "--include-rebuild-counts",
+        action="store_true",
+        help="Include Buff runtime rebuild count buckets in the report.",
+    )
     return parser
 
 
@@ -246,6 +285,20 @@ def _format_human_report(report: dict[str, Any]) -> str:
         "hotspot_deltas: "
         + json.dumps(report["comparisons"]["hotspots"], ensure_ascii=False, sort_keys=True),
     ]
+    if "buff_runtime_rebuild_counts" in report:
+        lines.append(
+            "buff_runtime_rebuild_counts: "
+            + json.dumps(report["buff_runtime_rebuild_counts"], ensure_ascii=False, sort_keys=True)
+        )
+        if "buff_runtime_rebuild_counts" in report["comparisons"]:
+            lines.append(
+                "buff_runtime_rebuild_count_deltas: "
+                + json.dumps(
+                    report["comparisons"]["buff_runtime_rebuild_counts"],
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            )
     return "\n".join(lines)
 
 
@@ -259,6 +312,7 @@ def main(argv: list[str] | None = None) -> int:
         legacy_runtime=args.legacy_runtime,
         candidate_runtime=args.candidate_runtime,
         cleanup=not args.keep_artifacts,
+        include_rebuild_counts=args.include_rebuild_counts,
     )
     if args.json:
         print(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2))
