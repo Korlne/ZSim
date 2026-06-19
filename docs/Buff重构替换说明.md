@@ -8178,3 +8178,14 @@
 - Next step:
   - Continue to `US-004 Exact Helper Responsibility Selection Or No-Go Packet`; select at most one exact helper responsibility from the US-002 matrix or record No-Go / needs-human without reopening deleted, completed, or retained boundaries.
 ---
+## 2026-06-19 16:24 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-exact-helper-responsibility-selection-or-no-go-packet.md`, `scripts/ralph/investigations/2026-06-19-US-004-exact-helper-responsibility-selection-packet.md`, `scripts/ralph/checkpoints/2026-06-19-us-004-exact-helper-responsibility-selection-packet.md`, Ralph evidence / progress / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 Exact Helper Responsibility Selection Or No-Go Packet` replaces stale post-IceJade helper-route uncertainty with one selected future implementation packet: the Precious Fossilized Core direct enemy HP-threshold `JudgeTools.find_enemy(...)` pair.
+  - This story does not replace a live Buff path. It keeps current `PreciousFossilizedCoreStunBonusOver50Hp.special_judge_logic(...)`, `PreciousFossilizedCoreStunBonusOver75Hp.special_judge_logic(...)`, `FindMain.find_enemy(...)`, and `Enemy.get_total_hp_percentage(...)` behavior unchanged.
+- Compatibility retained:
+  - The selected behavior remains current-root: `find_enemy(sim_instance)` returns `sim_instance.schedule_data.enemy`, Over50 returns `True` at `hp_pct >= 0.5`, Over75 returns `True` at `hp_pct >= 0.75`, and `Enemy.get_total_hp_percentage()` computes `1 - self.dynamic.lost_hp / self.max_HP`.
+  - `check_preparation(...)`, `get_prepared(...)`, old template Buff identity, lazy record initialization, deleted `event_list` surfaces, IceJade / TriggerState no-reopen surfaces, completed enemy-state helper subsets, old containers, event/runtime/listener layers, public reader/snapshot APIs, formula outputs, validation-runner behavior, registered routes, Phase 5 gates, performance gates, and serial validation discipline remain unchanged.
+- Next step:
+  - Continue to `US-005 Focused Verifier And Guardrail Plan`; bind the selected Precious HP-threshold responsibility to exact focused pytest and validation gates before any production helper implementation.
+---
