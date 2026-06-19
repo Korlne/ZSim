@@ -67,6 +67,15 @@
 - Next default route: `Buff JudgeTools Helper Responsibility Route Review And Exact Next Intake`. It may inspect remaining Candidate-D helper responsibilities and Candidate blocks A-G as reviewer context, but it must name exact current-root file / symbol / behavior, verifier, rollback anchor, retained boundaries, non-goals and stop condition before any implementation PRD. It must not reopen trigger-state, resume Phase 5, promote deletion-readiness, or treat retained pool material as automatic backlog.
 - Old coupling review status: US-008 discovered no new Buff coupling or changed coupling classification, so [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md) remains unchanged.
 
+## JudgeTools helper responsibility route-review closeout（2026-06-19 US-007）
+
+- Selected / No-Go route label: `exact implementation candidate` selected; no `needs_human_route_decision` or No-Go marker is needed for this PRD.
+- JudgeTools responsibility status: Candidate block D remains an `exact implementation candidate` family, but only one current-root responsibility is promoted now: `IceJadeTeaPotExtraDMGBonus.special_judge_logic(...)` direct `JudgeTools.find_dynamic_buff_list(...)` service-location count predicate for `玉壶青冰-普攻加冲击`.
+- Current default next PRD: `Buff IceJade Dynamic Buff List Helper Responsibility Bounded Implementation`. It must first add `tests/simulator/test_ice_jade_teapot_dynamic_buff_list_gate.py`, then may replace only this predicate while preserving `find_equipper(...)` as prerequisite / rollback evidence and the current dynamic-list lookup semantics.
+- Future verifier status: focused IceJade pytest, scoped IceJade / JudgeTools mypy, and serial `implicit-events` are required for any production diff. `calculator-reads`, `formula-parity`, full validation, Phase 5 registered-route validation, main-loop consistency and runtime benchmark stay conditional on touched surfaces.
+- Pool preservation: Candidate blocks A-G in `docs/Buff重构下阶段计划草稿.md` remain reviewer context and rollback anchors, not automatic backlog. Trigger-state completed surfaces remain no-reopen; Phase 5 remains paused; broad `JudgeTools` deletion, old-container cleanup, deleted `event_list` discovery reopen, public reader/snapshot expansion, formula output change, validation-runner rewrite, deletion-readiness promotion, and event/runtime/listener merge remain non-goals.
+- Old coupling review status: this handoff discovered no new Buff coupling or changed coupling classification, so [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md) remains unchanged.
+
 ## TriggerState active-only contract blocker closeout（2026-06-19 US-006）
 
 - Completion-criteria status: `BLOCKER-001 TriggerState active-only contract / calculator-reads red light` is complete and explicitly non-blocking. Active-only TriggerState users now use `read_trigger_buff_state_active(record)` and do not require `dynamic_state.count` or `dynamic_state.built_in_buff_box`; `read_trigger_buff_state(record)` remains the full snapshot path for count / built-in-box users.

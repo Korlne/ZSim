@@ -8060,3 +8060,15 @@
 - Next step:
   - Continue to `US-007 Handoff Docs And Same-Phase Pool Preservation`; write the selected IceJade route and retained same-phase pool into handoff docs without broad dynamic-list migration, formula/snapshot expansion, old-container cleanup, registered-route validation, benchmark work, Phase 5 work, or broad `JudgeTools` deletion.
 ---
+## 2026-06-19 14:24 +08:00 - US-007
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, Ralph checkpoint / dashboard / evidence / progress / PRD bookkeeping
+- Replacement note:
+  - `US-007 Handoff Docs And Same-Phase Pool Preservation` replaces stale next-route authority with the selected exact route: future `Buff IceJade Dynamic Buff List Helper Responsibility Bounded Implementation`.
+  - This story prepares to replace only `IceJadeTeaPotExtraDMGBonus.special_judge_logic(...)` direct `JudgeTools.find_dynamic_buff_list(...)` service-location count predicate for `玉壶青冰-普攻加冲击`; no live production path is replaced in this docs-only slice.
+- Compatibility retained:
+  - `IceJadeTeaPotExtraDMGBonus.special_judge_logic(...)` still calls `JudgeTools.find_equipper(...)` and `JudgeTools.find_dynamic_buff_list(...)` until a later focused implementation PRD.
+  - Candidate blocks A-G remain reviewer context and rollback anchors; trigger-state completed surfaces remain no-reopen; Phase 5 remains paused.
+  - Old containers, deleted `event_list` surfaces, broad `JudgeTools` deletion, public reader/snapshot APIs, formula outputs, validation-runner behavior, registered routes, event/runtime/listener layers, performance gates, and serial validation discipline remain unchanged.
+- Next step:
+  - Generate `Buff IceJade Dynamic Buff List Helper Responsibility Bounded Implementation`; first add the IceJade focused pytest gap, then replace only the selected predicate with scoped mypy and serial `implicit-events`.
+---
