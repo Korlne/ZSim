@@ -8165,3 +8165,16 @@
 - Next step:
   - Continue to `US-003 No-Reopen And Boundary Gate`; do not promote IceJade, completed TriggerState reads, completed enemy-state helper subsets, or P2 guarded-maintenance buckets as automatic backlog.
 ---
+## 2026-06-19 16:13 +08:00 - US-003
+- Files changed: `scripts/ralph/plans/slices/us-003-no-reopen-and-boundary-gate.md`, `scripts/ralph/investigations/2026-06-19-US-003-no-reopen-boundary-gate.md`, `scripts/ralph/checkpoints/2026-06-19-us-003-no-reopen-boundary-gate.md`, Ralph evidence / state / progress / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 No-Reopen And Boundary Gate` replaces route uncertainty with current-root boundary evidence before any helper responsibility can be selected.
+  - This story is docs/control-plane evidence only; it does not replace another live Buff path, public `JudgeTools` helper, validation-runner behavior, formula output, event/runtime/listener behavior, old-container implementation, registered route, Phase 5 gate, or performance-sensitive path.
+- Compatibility retained:
+  - Deleted `event_list` discovery surfaces remain closed: no current-root production `find_event_list`, no production `check_preparation(..., event_list=...)` entry, no `BuffRecordBaseClass.event_list`, and no production `record.event_list` dependency outside retained `ScheduleData.event_list` queue semantics.
+  - `TriggerBuffState` remains limited to `active`, `count`, and `built_in_buff_box`; `WeepingCradleDMGBonusIncrease.special_effect_logic(...)` start/end tick mirroring remains retained / stop-and-split.
+  - IceJade direct dynamic-list replacement remains implemented / no-reopen through `_read_ice_jade_dynamic_buff_list(...)`; `JudgeTools.find_equipper(...)` remains prerequisite / rollback evidence only.
+  - Old containers, `check_preparation(...)`, `trigger_buff_0_handler(...)`, broad `JudgeTools`, public reader/snapshot APIs, formula outputs, validation-runner behavior, registered routes, Phase 5 gates, event/runtime/listener layers, performance gates, and serial validation discipline remain unchanged.
+- Next step:
+  - Continue to `US-004 Exact Helper Responsibility Selection Or No-Go Packet`; select at most one exact helper responsibility from the US-002 matrix or record No-Go / needs-human without reopening deleted, completed, or retained boundaries.
+---
