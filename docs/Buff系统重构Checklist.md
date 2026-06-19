@@ -67,6 +67,14 @@
 - Next default route: `Buff JudgeTools Helper Responsibility Route Review And Exact Next Intake`. It may inspect remaining Candidate-D helper responsibilities and Candidate blocks A-G as reviewer context, but it must name exact current-root file / symbol / behavior, verifier, rollback anchor, retained boundaries, non-goals and stop condition before any implementation PRD. It must not reopen trigger-state, resume Phase 5, promote deletion-readiness, or treat retained pool material as automatic backlog.
 - Old coupling review status: US-008 discovered no new Buff coupling or changed coupling classification, so [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md) remains unchanged.
 
+## TriggerState active-only contract blocker closeout（2026-06-19 US-006）
+
+- Completion-criteria status: `BLOCKER-001 TriggerState active-only contract / calculator-reads red light` is complete and explicitly non-blocking. Active-only TriggerState users now use `read_trigger_buff_state_active(record)` and do not require `dynamic_state.count` or `dynamic_state.built_in_buff_box`; `read_trigger_buff_state(record)` remains the full snapshot path for count / built-in-box users.
+- Verifier status: focused red-light subset passed with `17 passed, 26 deselected`; full `calculator-reads` passed with base `2 passed`, isolated teams `3 passed`, focused `279 passed`, and mypy success on `22 source files`; touched `implicit-events` passed serially with base `2 passed`, isolated teams `3 passed`, focused `399 passed`, and mypy success on `93 source files`.
+- Next default route: return to `Buff JudgeTools Helper Responsibility Route Review And Exact Next Intake`. Candidate blocks A-G remain reviewer material and rollback context, not automatic backlog.
+- Retained / non-goal status: Phase 5 remains paused; no public `TriggerBuffState.startticks` / `.endticks` expansion, old-container cleanup, broad `JudgeTools` deletion, deletion-readiness promotion, registered-route validation, main-loop consistency, runtime benchmark, formula output change, public reader/snapshot expansion, validation-runner rewrite, or event/runtime/listener layer merge is authorized by this blocker closure.
+- Old coupling review status: this handoff discovered no new Buff coupling or changed coupling classification, so [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md) remains unchanged.
+
 ## 阶段 0：重规划与基线
 
 - [x] 回到 `main` 分支重新规划。

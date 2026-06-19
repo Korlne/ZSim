@@ -7976,3 +7976,16 @@
 - Next step:
   - Continue to `US-006` handoff docs and same-phase pool preservation; do not broaden into production TriggerState, Calculator formulas, public snapshot expansion, old-container cleanup, scheduled publish paths, registered-route validation, benchmark work, Phase 5 work, or broad `JudgeTools` deletion.
 ---
+## 2026-06-19 13:14 +08:00 - US-006
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, Ralph checkpoint / dashboard / evidence / progress / PRD bookkeeping
+- Replacement note:
+  - `US-006 Handoff Docs And Same-Phase Pool Preservation` replaces the temporary `BLOCKER-001` route override with final green / non-blocking handoff evidence and restores the default next PRD to `Buff JudgeTools Helper Responsibility Route Review And Exact Next Intake`.
+  - This story replaces docs/control-plane blocker status only; no live production Buff path, focused test source, validation-runner behavior, public reader API, formula output, registered route, or performance-sensitive path was replaced in this slice.
+- Compatibility retained:
+  - `read_trigger_buff_state(record)` remains the full snapshot path for count / built-in-box users, while `read_trigger_buff_state_active(record)` remains the active-only path for the four named active-only gates.
+  - Candidate blocks A-G remain available as reviewer context and rollback anchors, not automatic backlog.
+  - Phase 5 pause, old template Buff identity, lazy record initialization, `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, old containers, event/runtime/listener layer separation, explicit ports/adapters, no cached dispatch adapters, registered routes, performance gates, completed-surface no-reopen rules, and serial validation discipline remain unchanged.
+  - No new Buff coupling or changed coupling classification was discovered; `docs/旧Buff系统耦合审查结果.md` remains unchanged.
+- Next step:
+  - Generate `Buff JudgeTools Helper Responsibility Route Review And Exact Next Intake`; do not reopen `BLOCKER-001`, collapse Candidate blocks A-G, promote deletion-readiness, resume Phase 5, run main-loop consistency, run runtime benchmark, or broaden into `JudgeTools` deletion / old-container cleanup without exact current-root evidence.
+---
