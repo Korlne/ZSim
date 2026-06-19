@@ -8200,3 +8200,14 @@
 - Next step:
   - Continue to `US-006 Reviewer Invariant Decision`; review the Precious verifier contract against `scripts/ralph/architecture/invariants.md` without broad `find_enemy(...)` cleanup, `check_preparation(enemy=1)` rewrite, AnomalyDebuffExitJudge/anomaly-map work, formula/snapshot expansion, old-container cleanup, registered-route validation, benchmark work, or broad `JudgeTools` deletion.
 ---
+## 2026-06-19 16:47 +08:00 - US-006
+- Files changed: `scripts/ralph/checkpoints/2026-06-19-us-006-reviewer-invariant-decision.md`, `scripts/ralph/evidence-ledger-shards/reusable-evidence.md`, `scripts/ralph/plans/slices/us-007-handoff-docs-and-same-phase-pool-preservation.md`, Ralph dashboard / state / progress / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 Reviewer Invariant Decision` replaces stale IceJade reviewer checkpoint evidence with the current Precious Fossilized Core direct enemy HP-threshold `JudgeTools.find_enemy(...)` route verdict.
+  - This story does not replace a live Buff path. It records that the selected future implementation remains only the two Precious xjudge predicates and still requires focused Precious pytest, scoped mypy, and serial `implicit-events` before production replacement.
+- Compatibility retained:
+  - Current `PreciousFossilizedCoreStunBonusOver50Hp.special_judge_logic(...)`, `PreciousFossilizedCoreStunBonusOver75Hp.special_judge_logic(...)`, `FindMain.find_enemy(...)`, and `Enemy.get_total_hp_percentage(...)` behavior remains unchanged.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, no cached dispatch adapters, completed-surface no-reopen, old containers, deleted `event_list` surfaces, public reader/snapshot APIs, formula outputs, validation-runner behavior, registered routes, Phase 5 gates, performance gates, and serial validation discipline remain unchanged.
+- Next step:
+  - Continue to `US-007 Handoff Docs And Same-Phase Pool Preservation`; preserve the Precious exact route and Candidate blocks A-G without broad `find_enemy(...)` cleanup, `check_preparation(enemy=1)` rewrite, AnomalyDebuffExitJudge/anomaly-map work, old-container cleanup, Phase 5 work, benchmark work, or broad `JudgeTools` deletion.
+---
