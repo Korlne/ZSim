@@ -8036,3 +8036,15 @@
 - Next step:
   - Continue to `US-005 Focused Verifier And Guardrail Plan`; bind the selected IceJade dynamic-list packet to focused pytest / scoped mypy and conditional `implicit-events` without broad dynamic-list migration, formula/snapshot expansion, old-container cleanup, or broad `JudgeTools` deletion.
 ---
+## 2026-06-19 14:12 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-focused-verifier-and-guardrail-plan.md`, `scripts/ralph/investigations/2026-06-19-US-005-focused-verifier-guardrail-plan.md`, `scripts/ralph/checkpoints/2026-06-19-us-005-focused-verifier-guardrail-plan.md`, Ralph evidence / progress / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 Focused Verifier And Guardrail Plan` prepares to replace the selected future responsibility by requiring `tests/simulator/test_ice_jade_teapot_dynamic_buff_list_gate.py` before any production implementation can claim completion.
+  - This story replaces verifier uncertainty with an exact focused-test / typecheck / validation-profile contract only; no live production Buff path, focused test source, validation-runner behavior, public reader API, formula output, registered route, event/runtime/listener behavior, or performance-sensitive path was replaced in this slice.
+- Compatibility retained:
+  - `IceJadeTeaPotExtraDMGBonus.special_judge_logic(...)` still calls `JudgeTools.find_equipper(...)` and `JudgeTools.find_dynamic_buff_list(...)`; `find_equipper(...)` remains prerequisite / rollback evidence, not a second selected helper responsibility.
+  - `check_preparation(...)`, `trigger_buff_0_handler(...)`, old template Buff identity, lazy record initialization, deleted `event_list` closure, old containers, completed helper subsets, event/runtime/listener layer separation, explicit ports/adapters, no cached dispatch adapters, registered routes, Phase 5 gates, public reader/snapshot APIs, formula outputs, performance gates, completed-surface no-reopen rules, and serial validation discipline remain unchanged.
+  - A future production diff must run focused IceJade pytest, scoped mypy, and serial `implicit-events`; `calculator-reads`, `formula-parity`, full validation, Phase 5 registered-route validation, main-loop consistency, and runtime benchmark remain conditional on touched surfaces.
+- Next step:
+  - Continue to `US-006 Reviewer Invariant Decision`; review this verifier contract against `scripts/ralph/architecture/invariants.md` without broad dynamic-list migration, formula/snapshot expansion, old-container cleanup, registered-route validation, benchmark work, or broad `JudgeTools` deletion.
+---
