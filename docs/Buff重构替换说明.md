@@ -7989,3 +7989,15 @@
 - Next step:
   - Generate `Buff JudgeTools Helper Responsibility Route Review And Exact Next Intake`; do not reopen `BLOCKER-001`, collapse Candidate blocks A-G, promote deletion-readiness, resume Phase 5, run main-loop consistency, run runtime benchmark, or broaden into `JudgeTools` deletion / old-container cleanup without exact current-root evidence.
 ---
+## 2026-06-19 13:31 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-route-and-evidence-preflight.md`, `scripts/ralph/investigations/2026-06-19-US-001-route-evidence-preflight.md`, `scripts/ralph/checkpoints/2026-06-19-us-001-route-evidence-preflight.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, Ralph state / dashboard bookkeeping
+- Replacement note:
+  - `US-001 Route And Evidence Preflight` replaces stale route assumptions with current durable evidence: previous PRD completion, `BLOCKER-001` green / non-blocking status, and current default route `Buff JudgeTools Helper Responsibility Route Review And Exact Next Intake`.
+  - This story replaces docs/control-plane route evidence only; no live production Buff path, focused test source, validation-runner behavior, public reader API, formula output, registered route, event/runtime/listener behavior, or performance-sensitive path was replaced.
+- Compatibility retained:
+  - Candidate blocks A-G remain reviewer context and rollback anchors, not automatic backlog.
+  - Phase 5 pause, old template Buff identity, lazy record initialization, `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, old containers, deleted `event_list` surfaces, event/runtime/listener layer separation, explicit ports/adapters, no cached dispatch adapters, registered routes, performance gates, completed-surface no-reopen rules, and serial validation discipline remain unchanged.
+  - Current-root evidence excludes `.codex_worktrees/`, archives, logs, generated context, run logs, `.runs/`, and results.
+- Next step:
+  - Continue to `US-002 Candidate-D Helper Responsibility Census`; do not promote an implementation candidate until one exact current-root helper responsibility names file / symbol / behavior, verifier, rollback anchor, retained boundaries, non-goals, and stop condition.
+---
