@@ -35,6 +35,9 @@ from zsim.sim_progress.Buff.BuffXLogic.JanePassionStateAPTransToATK import (
 from zsim.sim_progress.Buff.BuffXLogic.JanePassionStatePhyBuildupBonus import (
     JanePassionStatePhyBuildupBonus,
 )
+from zsim.sim_progress.Buff.BuffXLogic.SeveredInnocencELEDMGBonus import (
+    SeveredInnocencELEDMGBonus,
+)
 from zsim.sim_progress.Buff.BuffXLogic.SharpenedStingerAnomalyBuildupBonus import (
     SharpenedStingerAnomalyBuildupBonus,
 )
@@ -52,6 +55,9 @@ from zsim.sim_progress.Buff.BuffXLogic.SpectralGazeImpactBonus import (
 )
 from zsim.sim_progress.Buff.BuffXLogic.YangiCinema1ApBonus import (
     YangiCinema1ApBonus,
+)
+from zsim.sim_progress.Buff.BuffXLogic.YunkuiTalesSheerAtkBonus import (
+    YunkuiTalesSheerAtkBonus,
 )
 from zsim.sim_progress.Load import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
@@ -696,6 +702,21 @@ def test_trigger_state_helper_requires_prepared_trigger_record() -> None:
             ("record.trigger_buff_0.dy.active",),
             id="soldier0-core-crit-dmg",
         ),
+        pytest.param(
+            "SeveredInnocencELEDMGBonus.py",
+            ("record.trigger_buff_0.dy.active", "record.trigger_buff_0.dy.count"),
+            id="severed-innocence",
+        ),
+        pytest.param(
+            "YangiCinema1ApBonus.py",
+            ("record.trigger_buff_0.dy.active", "record.trigger_buff_0.dy.count"),
+            id="yanagi-cinema1-ap",
+        ),
+        pytest.param(
+            "YunkuiTalesSheerAtkBonus.py",
+            ("trigger_buff_0.dy.active", "trigger_buff_0.dy.count"),
+            id="yunkui-tales",
+        ),
     ],
 )
 def test_migrated_trigger_state_gate_sources_use_trigger_state_helper(
@@ -1108,6 +1129,104 @@ def test_cordis_germina_tuple_box_gate_reads_without_tuple_sync(
     assert len(fixture.trigger_template.dy.built_in_buff_box) == box_length
 
 
+@pytest.mark.parametrize(
+    ("active", "count", "expected"),
+    [
+        pytest.param(False, 2, False, id="inactive-below-required-count"),
+        pytest.param(False, 4, False, id="inactive-above-required-count"),
+        pytest.param(True, 2, False, id="below-required-count"),
+        pytest.param(True, 3, True, id="required-count"),
+        pytest.param(True, 4, False, id="above-required-count"),
+    ],
+)
+def test_severed_innocence_count_gate_thresholds_are_read_only(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    active: bool,
+    count: float,
+    expected: bool,
+) -> None:
+    fixture = _make_equipment_gate(
+        monkeypatch,
+        logic_type=SeveredInnocencELEDMGBonus,
+        current_index="Buff-音擎-牺牲洁纯-电属性伤害提高",
+        trigger_index="Buff-音擎-牺牲洁纯-触发暴伤",
+        equipper_name="牺牲洁纯",
+        active=active,
+        count=count,
+    )
+
+    assert fixture.logic.special_judge_logic() is expected
+    _assert_lazy_record_and_trigger_identity(fixture)
+    assert fixture.current_buff.dy.count == 0.0
+    assert fixture.current_buff.sim_instance.schedule_data.event_list == []
+
+
+def test_severed_innocence_count_three_inactive_trigger_still_raises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_equipment_gate(
+        monkeypatch,
+        logic_type=SeveredInnocencELEDMGBonus,
+        current_index="Buff-音擎-牺牲洁纯-电属性伤害提高",
+        trigger_index="Buff-音擎-牺牲洁纯-触发暴伤",
+        equipper_name="牺牲洁纯",
+        active=False,
+        count=3,
+    )
+
+    with pytest.raises(ValueError, match="有层数但是未激活"):
+        fixture.logic.special_judge_logic()
+
+    _assert_lazy_record_and_trigger_identity(fixture)
+    assert fixture.current_buff.dy.count == 0.0
+    assert fixture.current_buff.sim_instance.schedule_data.event_list == []
+
+
+@pytest.mark.parametrize(
+    ("active", "count", "expected"),
+    [
+        pytest.param(False, 3, False, id="inactive-required-count"),
+        pytest.param(True, 2, False, id="below-required-count"),
+        pytest.param(True, 3, True, id="required-count"),
+        pytest.param(True, 4, False, id="above-required-count"),
+    ],
+)
+def test_yunkui_tales_local_trigger_alias_gate_is_read_only(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    active: bool,
+    count: float,
+    expected: bool,
+) -> None:
+    fixture = _make_equipment_gate(
+        monkeypatch,
+        logic_type=YunkuiTalesSheerAtkBonus,
+        current_index="Buff-驱动盘-云岿如我-四件套-贯穿力提升",
+        trigger_index="Buff-驱动盘-云岿如我-四件套-暴击率提升",
+        equipper_name="云岿如我",
+        active=active,
+        count=count,
+    )
+
+    assert fixture.logic.special_judge_logic() is expected
+    _assert_lazy_record_and_trigger_identity(fixture)
+    assert fixture.logic.record.trigger_buff_0 is fixture.trigger_template
+    assert fixture.current_buff.dy.count == 0.0
+    assert fixture.current_buff.sim_instance.schedule_data.event_list == []
+
+
+def test_yunkui_tales_source_keeps_local_alias_without_direct_state_reads() -> None:
+    source = (_BUFF_XLOGIC_ROOT / "YunkuiTalesSheerAtkBonus.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert "trigger_buff_0: Buff = self.record.trigger_buff_0" in source
+    assert "read_trigger_buff_state(self.record)" in source
+    assert "trigger_buff_0.dy.active" not in source
+    assert "trigger_buff_0.dy.count" not in source
+
+
 def test_astral_voice_judge_returns_false_without_skill_node(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1233,6 +1352,7 @@ def test_yanagi_character_trigger_lookup_preserves_old_identity(
     assert fixture.logic.special_judge_logic() is expected
     _assert_lazy_record_and_trigger_identity(fixture)
     assert fixture.current_buff.dy.count == 0.0
+    assert fixture.current_buff.sim_instance.schedule_data.event_list == []
 
 
 def test_check_preparation_trigger_lookup_keeps_existing_record_trigger(

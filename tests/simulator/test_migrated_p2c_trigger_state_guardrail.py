@@ -22,13 +22,13 @@ MIGRATED_P2C_TRIGGER_STATE_FILES = (
     BUFF_XLOGIC_ROOT / "Soldier0AnbyAdditionalSkillDMGBonus.py",
     BUFF_XLOGIC_ROOT / "Soldier0AnbyCinema4EleResReduce.py",
     BUFF_XLOGIC_ROOT / "Soldier0AnbyCoreSkillCritDMGBonus.py",
+    BUFF_XLOGIC_ROOT / "SeveredInnocencELEDMGBonus.py",
+    BUFF_XLOGIC_ROOT / "YangiCinema1ApBonus.py",
+    BUFF_XLOGIC_ROOT / "YunkuiTalesSheerAtkBonus.py",
 )
 
 RETAINED_UNMIGRATED_TRIGGER_STATE_CANDIDATES = {
-    BUFF_XLOGIC_ROOT / "SeveredInnocencELEDMGBonus.py",
     BUFF_XLOGIC_ROOT / "WeepingCradleDMGBonusIncrease.py",
-    BUFF_XLOGIC_ROOT / "YangiCinema1ApBonus.py",
-    BUFF_XLOGIC_ROOT / "YunkuiTalesSheerAtkBonus.py",
 }
 
 RETAINED_P2A_P2B_MIGRATED_FILES = {
@@ -77,7 +77,17 @@ class MigratedP2CTriggerStateVisitor(ast.NodeVisitor):
     def __init__(self, path: Path, source: str) -> None:
         self.path = path
         self.source = source
+        self.trigger_buff_aliases: set[str] = set()
         self.findings: list[DirectTriggerStateFinding] = []
+
+    def visit_Assign(self, node: ast.Assign) -> None:
+        self._record_trigger_buff_aliases(node.targets, node.value)
+        self.generic_visit(node)
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+        if node.value is not None:
+            self._record_trigger_buff_aliases([node.target], node.value)
+        self.generic_visit(node)
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
         if node.attr in FORBIDDEN_TRIGGER_STATE_FIELDS and self._is_trigger_state_chain(node):
@@ -92,12 +102,31 @@ class MigratedP2CTriggerStateVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def _is_trigger_state_chain(self, node: ast.Attribute) -> bool:
-        return self._attribute_chain(node)[-4:] == [
+        chain = self._attribute_chain(node)
+        if chain[-4:] == [
             "record",
             "trigger_buff_0",
             "dy",
             node.attr,
-        ]
+        ]:
+            return True
+        return (
+            len(chain) == 3
+            and chain[0] in self.trigger_buff_aliases
+            and chain[1:] == ["dy", node.attr]
+        )
+
+    def _record_trigger_buff_aliases(
+        self, targets: list[ast.expr], value: ast.AST
+    ) -> None:
+        if not self._is_trigger_buff_object_chain(value):
+            return
+        for target in targets:
+            if isinstance(target, ast.Name):
+                self.trigger_buff_aliases.add(target.id)
+
+    def _is_trigger_buff_object_chain(self, node: ast.AST) -> bool:
+        return self._attribute_chain(node)[-2:] == ["record", "trigger_buff_0"]
 
     def _attribute_chain(self, node: ast.AST) -> list[str]:
         parts: list[str] = []
@@ -162,6 +191,9 @@ def test_migrated_p2c_guardrail_scope_is_exact_root_file_set() -> None:
         "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyAdditionalSkillDMGBonus.py",
         "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCinema4EleResReduce.py",
         "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCoreSkillCritDMGBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/SeveredInnocencELEDMGBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/YangiCinema1ApBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/YunkuiTalesSheerAtkBonus.py",
     }
     assert all(".codex_worktrees" not in path.parts for path in MIGRATED_P2C_TRIGGER_STATE_FILES)
     assert all(path.is_file() for path in MIGRATED_P2C_TRIGGER_STATE_FILES)
@@ -193,6 +225,40 @@ def test_migrated_p2c_guardrail_reports_direct_trigger_state_chains() -> None:
     assert any("classification suggestion: migrated P2-C trigger-state read for `count`" in message for message in messages)
     assert any("direct_trigger_state_chain: self.record.trigger_buff_0.dy.built_in_buff_box" in message for message in messages)
     assert any("next action: read through `read_trigger_buff_state(record)`" in message for message in messages)
+
+
+def test_migrated_p2c_guardrail_reports_local_trigger_alias_chains() -> None:
+    source = (
+        "class LegacyAliasGate:\n"
+        "    def judge(self):\n"
+        "        trigger_buff_0 = self.record.trigger_buff_0\n"
+        "        if trigger_buff_0.dy.active:\n"
+        "            return trigger_buff_0.dy.count == 3\n"
+        "        return False\n"
+    )
+    path = BUFF_XLOGIC_ROOT / "_migrated_p2c_alias_fixture.py"
+
+    findings = _collect_direct_trigger_state_findings_from_source(path, source)
+    messages = [finding.message() for finding in findings]
+
+    assert len(findings) == 2
+    assert any("direct_trigger_state_chain: trigger_buff_0.dy.active" in message for message in messages)
+    assert any("classification suggestion: migrated P2-C trigger-state read for `active`" in message for message in messages)
+    assert any("direct_trigger_state_chain: trigger_buff_0.dy.count" in message for message in messages)
+    assert any("classification suggestion: migrated P2-C trigger-state read for `count`" in message for message in messages)
+
+
+def test_migrated_p2c_guardrail_allows_local_trigger_alias_without_state_read() -> None:
+    source = (
+        "class CleanAliasGate:\n"
+        "    def judge(self):\n"
+        "        trigger_buff_0 = self.record.trigger_buff_0\n"
+        "        trigger_state = read_trigger_buff_state(self.record)\n"
+        "        return trigger_buff_0 is self.record.trigger_buff_0 and trigger_state.count == 3\n"
+    )
+    path = BUFF_XLOGIC_ROOT / "_migrated_p2c_alias_fixture.py"
+
+    assert _collect_direct_trigger_state_findings_from_source(path, source) == []
 
 
 def test_migrated_p2c_guardrail_uses_ast_not_text_matching() -> None:

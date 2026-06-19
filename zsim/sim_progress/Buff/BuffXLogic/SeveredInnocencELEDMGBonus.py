@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from ..JudgeTools import read_trigger_buff_state
 
 
 class SeveredInnocencELEDMGBonusRecord:
@@ -46,8 +47,9 @@ class SeveredInnocencELEDMGBonus(Buff.BuffLogic):
             equipper="牺牲洁纯",
             trigger_buff_0=("equipper", "牺牲洁纯-触发暴伤"),
         )
-        if self.record.trigger_buff_0.dy.count == 3:
-            if not self.record.trigger_buff_0.dy.active:
+        trigger_state = read_trigger_buff_state(self.record)
+        if trigger_state.count == 3:
+            if not trigger_state.active:
                 raise ValueError(f"{self.record.trigger_buff_0.ft.index}有层数但是未激活！")
             return True
         return False

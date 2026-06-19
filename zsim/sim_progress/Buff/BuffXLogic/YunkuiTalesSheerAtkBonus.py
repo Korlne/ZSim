@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from ..JudgeTools import read_trigger_buff_state
 
 
 class YunkuiTalesSheerAtkBonusRecord:
@@ -40,7 +41,8 @@ class YunkuiTalesSheerAtkBonus(Buff.BuffLogic):
             trigger_buff_0=(self.equipper, "Buff-驱动盘-云岿如我-四件套-暴击率提升"),
         )
         trigger_buff_0: Buff = self.record.trigger_buff_0
-        if trigger_buff_0.dy.active:
-            if trigger_buff_0.dy.count == 3:
+        trigger_state = read_trigger_buff_state(self.record)
+        if trigger_state.active:
+            if trigger_state.count == 3:
                 return True
         return False

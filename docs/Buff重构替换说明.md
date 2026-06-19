@@ -7860,3 +7860,15 @@
 - Next step:
   - Continue to `US-004` equipment / character / driver count gates; do not broaden into WeepingCradle time-window expansion, old-container cleanup, public snapshot expansion, formula output changes, registered-route validation, or Phase 5 work.
 ---
+## 2026-06-19 09:31 +08:00 - US-004
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/SeveredInnocencELEDMGBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/YangiCinema1ApBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/YunkuiTalesSheerAtkBonus.py`, `tests/simulator/test_trigger_state_read_only_gates.py`, `tests/simulator/test_migrated_p2c_trigger_state_guardrail.py`, Ralph checkpoint / dashboard / evidence / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - The US-004 count/active gates now replace direct `record.trigger_buff_0.dy.active` / `.dy.count` reads, including the Yunkui local alias state reads, with `read_trigger_buff_state(self.record)` after the existing `check_record_module()` and `get_prepared(..., trigger_buff_0=...)` order.
+  - The migrated P2-C guardrail now treats `SeveredInnocencELEDMGBonus.py`, `YangiCinema1ApBonus.py`, and `YunkuiTalesSheerAtkBonus.py` as migrated trigger-state read gates and catches practical local aliases assigned from `record.trigger_buff_0`.
+- Compatibility retained:
+  - `SeveredInnocencELEDMGBonus.py` still raises when count is `3` and the trigger Buff is inactive, and still uses the old trigger Buff identity for the retained error message.
+  - `YangiCinema1ApBonus.py` keeps active-plus-count `>= 1` behavior; `YunkuiTalesSheerAtkBonus.py` keeps local trigger Buff identity behavior.
+  - `TriggerBuffState` remains limited to `active`, `count`, and `built_in_buff_box`; `check_preparation(...)`, `trigger_buff_0_handler(...)`, old containers, event/runtime/listener layers, validation-runner behavior, registered routes, Phase 5 gates, and WeepingCradle time-window scope remain unchanged.
+- Next step:
+  - Continue to `US-005` WeepingCradle Time-Mirror Go / No-Go Packet; do not broaden into public snapshot expansion, old-container cleanup, registered-route validation, or Phase 5 work unless the story evidence explicitly permits it.
+---

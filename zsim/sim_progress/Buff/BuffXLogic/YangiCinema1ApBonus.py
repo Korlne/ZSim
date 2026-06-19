@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from ..JudgeTools import read_trigger_buff_state
 
 
 class YangiCinema1ApBonusRecord:
@@ -36,8 +37,9 @@ class YangiCinema1ApBonus(Buff.BuffLogic):
         """
         self.check_record_module()
         self.get_prepared(char_CID=1221, trigger_buff_0=("柳", "Buff-角色-柳-1画-洞悉"))
-        if self.record.trigger_buff_0.dy.active:
-            if self.record.trigger_buff_0.dy.count >= 1:
+        trigger_state = read_trigger_buff_state(self.record)
+        if trigger_state.active:
+            if trigger_state.count >= 1:
                 return True
         return False
 
