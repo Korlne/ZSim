@@ -29,25 +29,29 @@ class RuntimeBenchmarkSnapshot:
     session_id: str
     total_runtime_ms: float
     hotspots: dict[str, float]
+    rebuild_counts: dict[str, int] | None = None
 
 
 def _run_single_runtime_benchmark_process(
     common_cfg_data: dict[str, Any],
     stop_tick: int,
-) -> tuple[str, float]:
+    include_rebuild_counts: bool = False,
+) -> tuple[str, float, dict[str, int] | None]:
     os.chdir(PROJECT_ROOT)
     common_cfg = CommonCfg.model_validate(common_cfg_data)
     simulator = Simulator()
     started_at = time.perf_counter()
     confirmation = simulator.api_run_simulator(common_cfg, sim_cfg=None, stop_tick=stop_tick)
     simulator_runtime_ms = round((time.perf_counter() - started_at) * 1000, 4)
-    return confirmation.session_id, simulator_runtime_ms
+    rebuild_counts = {} if include_rebuild_counts else None
+    return confirmation.session_id, simulator_runtime_ms, rebuild_counts
 
 
 def _load_runtime_benchmark_snapshot(
     runtime_label: str,
     session_id: str,
     simulator_runtime_ms: float,
+    rebuild_counts: dict[str, int] | None = None,
 ) -> RuntimeBenchmarkSnapshot:
     damage_started_at = time.perf_counter()
     _prepare_damage_data_for_consistency(session_id)
@@ -68,6 +72,7 @@ def _load_runtime_benchmark_snapshot(
         session_id=session_id,
         total_runtime_ms=round(sum(hotspots.values()), 4),
         hotspots=hotspots,
+        rebuild_counts=rebuild_counts,
     )
 
 
@@ -170,7 +175,13 @@ def build_runtime_benchmark_report(
         },
     }
     if include_rebuild_counts:
-        rebuild_counts = _rebuild_count_buckets(buff_runtime_rebuild_counts)
+        count_source = buff_runtime_rebuild_counts
+        if count_source is None:
+            count_source = {
+                "legacy": legacy_snapshot.rebuild_counts or {},
+                "candidate": candidate_snapshot.rebuild_counts or {},
+            }
+        rebuild_counts = _rebuild_count_buckets(count_source)
         report["buff_runtime_rebuild_counts"] = rebuild_counts
         report["comparisons"]["buff_runtime_rebuild_counts"] = _rebuild_count_comparisons(
             rebuild_counts["legacy"],
@@ -204,8 +215,9 @@ def run_runtime_benchmark(
                 _run_single_runtime_benchmark_process,
                 runtime_cfg_data,
                 stop_tick,
+                include_rebuild_counts,
             )
-            finished_session_id, simulator_runtime_ms = future.result()
+            finished_session_id, simulator_runtime_ms, rebuild_counts = future.result()
 
         try:
             snapshots.append(
@@ -213,6 +225,7 @@ def run_runtime_benchmark(
                     runtime_label,
                     finished_session_id,
                     simulator_runtime_ms,
+                    rebuild_counts,
                 )
             )
         finally:

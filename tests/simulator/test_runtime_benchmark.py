@@ -39,6 +39,9 @@ def test_build_runtime_benchmark_report_keeps_required_json_fields():
         },
     )
 
+    assert legacy_snapshot.rebuild_counts is None
+    assert candidate_snapshot.rebuild_counts is None
+
     report = build_runtime_benchmark_report(
         team="team-a",
         apl="./zsim/data/APLData/example.toml",
@@ -171,8 +174,13 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
             },
         ),
     }
+    rebuild_counts_by_session = {
+        "101": {"buff_load_loop": 1},
+        "102": {"buff_load_loop": 3, "scheduled_event": 2},
+    }
     created_session_ids: list[str] = []
-    submitted_payloads: list[tuple[dict[str, Any], int]] = []
+    submitted_payloads: list[tuple[dict[str, Any], int, bool]] = []
+    snapshot_loads: list[tuple[str, str, float, dict[str, int] | None]] = []
     cleaned_sessions: list[str] = []
 
     monkeypatch.setattr(
@@ -202,11 +210,15 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
     monkeypatch.setattr(rb, "_build_session_id", fake_build_session_id)
 
     class FakeFuture:
-        def __init__(self, session_id: str):
+        def __init__(self, session_id: str, include_rebuild_counts: bool):
             self._session_id = session_id
+            self._include_rebuild_counts = include_rebuild_counts
 
-        def result(self) -> tuple[str, float]:
-            return self._session_id, 88.8
+        def result(self) -> tuple[str, float, dict[str, int] | None]:
+            rebuild_counts = None
+            if self._include_rebuild_counts:
+                rebuild_counts = dict(rebuild_counts_by_session[self._session_id])
+            return self._session_id, 88.8, rebuild_counts
 
     class FakeExecutor:
         def __init__(self, max_workers: int):
@@ -218,16 +230,29 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
         def __exit__(self, exc_type, exc, tb) -> Literal[False]:
             return False
 
-        def submit(self, func, common_cfg_data, stop_tick):
-            submitted_payloads.append((common_cfg_data, stop_tick))
-            return FakeFuture(common_cfg_data["session_id"])
+        def submit(self, func, common_cfg_data, stop_tick, include_rebuild_counts=False):
+            submitted_payloads.append((common_cfg_data, stop_tick, include_rebuild_counts))
+            return FakeFuture(common_cfg_data["session_id"], include_rebuild_counts)
 
     monkeypatch.setattr(rb, "ProcessPoolExecutor", FakeExecutor)
-    monkeypatch.setattr(
-        rb,
-        "_load_runtime_benchmark_snapshot",
-        lambda label, sid, simulator_runtime_ms: snapshots_by_session[sid],
-    )
+
+    def fake_load_runtime_benchmark_snapshot(
+        label: str,
+        sid: str,
+        simulator_runtime_ms: float,
+        rebuild_counts: dict[str, int] | None = None,
+    ) -> RuntimeBenchmarkSnapshot:
+        snapshot_loads.append((label, sid, simulator_runtime_ms, rebuild_counts))
+        base_snapshot = snapshots_by_session[sid]
+        return RuntimeBenchmarkSnapshot(
+            runtime_label=label,
+            session_id=sid,
+            total_runtime_ms=base_snapshot.total_runtime_ms,
+            hotspots=base_snapshot.hotspots,
+            rebuild_counts=rebuild_counts,
+        )
+
+    monkeypatch.setattr(rb, "_load_runtime_benchmark_snapshot", fake_load_runtime_benchmark_snapshot)
     monkeypatch.setattr(rb, "_cleanup_result_artifacts", cleaned_sessions.append)
 
     report = run_runtime_benchmark(
@@ -241,12 +266,24 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
     )
 
     assert created_session_ids == ["101", "102"]
-    assert [payload["session_id"] for payload, _ in submitted_payloads] == ["101", "102"]
-    assert all(stop_tick == 77 for _, stop_tick in submitted_payloads)
+    assert [payload["session_id"] for payload, _, _ in submitted_payloads] == ["101", "102"]
+    assert all(stop_tick == 77 for _, stop_tick, _ in submitted_payloads)
+    assert [include_counts for _, _, include_counts in submitted_payloads] == [True, True]
+    assert snapshot_loads == [
+        ("legacy-label", "101", 88.8, {"buff_load_loop": 1}),
+        ("candidate-label", "102", 88.8, {"buff_load_loop": 3, "scheduled_event": 2}),
+    ]
     assert report["legacy_runtime"] == "legacy-label"
     assert report["candidate_runtime"] == "candidate-label"
     assert report["apl"] == "./override.toml"
-    assert report["buff_runtime_rebuild_counts"] == {"legacy": {}, "candidate": {}}
+    assert report["buff_runtime_rebuild_counts"] == {
+        "legacy": {"buff_load_loop": 1},
+        "candidate": {"buff_load_loop": 3, "scheduled_event": 2},
+    }
+    assert report["comparisons"]["buff_runtime_rebuild_counts"] == {
+        "buff_load_loop": 2,
+        "scheduled_event": 2,
+    }
     assert cleaned_sessions == ["101", "102"]
 
 
