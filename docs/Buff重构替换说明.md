@@ -8154,3 +8154,14 @@
 - Next step:
   - Continue to `US-002 Current-Root JudgeTools Responsibility Census`; classify remaining current-root helper responsibilities using the route exclusions and do not select or implement a candidate in US-001.
 ---
+## 2026-06-19 16:02 +08:00 - US-002
+- Files changed: `scripts/ralph/plans/slices/us-002-current-root-judgetools-responsibility-census.md`, `scripts/ralph/investigations/2026-06-19-US-002-judgetools-helper-responsibility-census.md`, `scripts/ralph/checkpoints/2026-06-19-us-002-judgetools-helper-responsibility-census.md`, Ralph evidence / progress / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 Current-Root JudgeTools Responsibility Census` replaces stale helper-route assumptions with a current-root responsibility matrix after the IceJade dynamic-list implementation.
+  - This story is docs/control-plane evidence only; it does not replace another live Buff path, public `JudgeTools` helper, validation-runner behavior, formula output, event/runtime/listener behavior, old-container implementation, registered route, Phase 5 gate, or performance-sensitive path.
+- Compatibility retained:
+  - Current-root `BuffXLogic` has no direct `JudgeTools.find_dynamic_buff_list(...)` call; the completed IceJade file-local `_read_ice_jade_dynamic_buff_list(...)` path remains implemented / no-reopen, with `JudgeTools.find_equipper(...)` retained as prerequisite / rollback anchor.
+  - `check_preparation(...)`, `trigger_buff_0_handler(...)`, old template Buff identity, lazy record initialization, deleted `event_list` closure, completed trigger-state active/count/built-in-box reads, completed enemy-state helper subsets, P2-A through P2-G guarded buckets, old containers, event/runtime/listener layer separation, explicit ports/adapters, no cached dispatch adapters, public reader/snapshot APIs, formula outputs, registered routes, Phase 5 gates, performance gates, and serial validation discipline remain unchanged.
+- Next step:
+  - Continue to `US-003 No-Reopen And Boundary Gate`; do not promote IceJade, completed TriggerState reads, completed enemy-state helper subsets, or P2 guarded-maintenance buckets as automatic backlog.
+---
