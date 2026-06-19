@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from ..JudgeTools import read_trigger_buff_state
 
 
 class Soldier0AnbyCinema4EleResReduceRecord:
@@ -39,6 +40,7 @@ class Soldier0AnbyCinema4EleResReduce(Buff.BuffLogic):
             char_CID=1381,
             trigger_buff_0=("零号·安比", "Buff-角色-零号·安比-银星触发器"),
         )
-        if self.record.trigger_buff_0.dy.active:
+        trigger_state = read_trigger_buff_state(self.record)
+        if trigger_state.active:
             return True
         return False

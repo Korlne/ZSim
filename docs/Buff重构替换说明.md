@@ -7848,3 +7848,15 @@
 - Next step:
   - Continue to `US-003` Soldier0 Anby trigger-state gate implementation; do not broaden into old-container cleanup, public snapshot expansion, formula output changes, registered-route validation, or Phase 5 work.
 ---
+## 2026-06-19 09:19 +08:00 - US-003
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyAdditionalSkillDMGBonus.py`, `zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCinema4EleResReduce.py`, `zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCoreSkillCritDMGBonus.py`, `tests/simulator/test_trigger_state_read_only_gates.py`, `tests/simulator/test_migrated_p2c_trigger_state_guardrail.py`, Ralph checkpoint / dashboard / evidence / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - Soldier0 Anby owner-family `special_judge_logic(...)` active gates now replace direct `record.trigger_buff_0.dy.active` reads with `read_trigger_buff_state(self.record).active` after the existing `check_record_module()` and `get_prepared(..., trigger_buff_0=...)` order.
+  - The migrated P2-C guardrail now treats the three Soldier0 Anby files as migrated trigger-state read gates.
+- Compatibility retained:
+  - `char_CID=1381`, the silver-star trigger lookup, `preload_data.operating_now` gating, lazy old template Buff identity, and `Soldier0AnbyCoreSkillCritDMGBonus.special_hit_logic(...)` crit-damage formula ownership remain unchanged.
+  - `simple_start(...)`, `dy.count`, and `update_to_buff_0(...)` order remain caller-owned in the existing hit path.
+  - Equipment/character/driver count gates and WeepingCradle time-window behavior remain for later stories; no public `TriggerBuffState` expansion, old-container cleanup, event/runtime/listener merge, scheduled publish path, validation-runner change, registered-route validation, or Phase 5 work was introduced.
+- Next step:
+  - Continue to `US-004` equipment / character / driver count gates; do not broaden into WeepingCradle time-window expansion, old-container cleanup, public snapshot expansion, formula output changes, registered-route validation, or Phase 5 work.
+---

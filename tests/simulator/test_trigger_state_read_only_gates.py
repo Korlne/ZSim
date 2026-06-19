@@ -38,6 +38,15 @@ from zsim.sim_progress.Buff.BuffXLogic.JanePassionStatePhyBuildupBonus import (
 from zsim.sim_progress.Buff.BuffXLogic.SharpenedStingerAnomalyBuildupBonus import (
     SharpenedStingerAnomalyBuildupBonus,
 )
+from zsim.sim_progress.Buff.BuffXLogic.Soldier0AnbyAdditionalSkillDMGBonus import (
+    Soldier0AnbyAdditionalSkillDMGBonus,
+)
+from zsim.sim_progress.Buff.BuffXLogic.Soldier0AnbyCinema4EleResReduce import (
+    Soldier0AnbyCinema4EleResReduce,
+)
+from zsim.sim_progress.Buff.BuffXLogic.Soldier0AnbyCoreSkillCritDMGBonus import (
+    Soldier0AnbyCoreSkillCritDMGBonus,
+)
 from zsim.sim_progress.Buff.BuffXLogic.SpectralGazeImpactBonus import (
     SpectralGazeImpactBonus,
 )
@@ -176,6 +185,10 @@ class _JaneHitBuffProbe(_AstralVoiceEffectBuffProbe):
     ) -> None:
         super().__init__(index=index, operator=operator)
         self.ft.maxcount = maxcount
+
+
+class _Soldier0AnbyHitBuffProbe(_AstralVoiceEffectBuffProbe):
+    pass
 
 
 @dataclass(frozen=True)
@@ -467,6 +480,88 @@ def _make_jane_hit_gate(
     )
 
 
+def _make_soldier0_anby_fixture(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    logic_type: type[Any],
+    current_buff: _CurrentBuffProbe,
+    current_index: str,
+    active: bool,
+    count: float = 3.0,
+    operating_now: int = 1381,
+) -> _GateFixture:
+    trigger_index = "Buff-角色-零号·安比-银星触发器"
+    current_template = _BuffTemplate(index=current_index)
+    trigger_template = _BuffTemplate(
+        index=trigger_index,
+        active=active,
+        count=count,
+    )
+    exist_buff_dict = {
+        "零号·安比": {
+            current_index: current_template,
+            trigger_index: trigger_template,
+        }
+    }
+    current_buff.sim_instance.load_data.exist_buff_dict = exist_buff_dict
+    current_buff.sim_instance.preload.preload_data = SimpleNamespace(
+        operating_now=operating_now
+    )
+    _install_lookup_fakes(
+        monkeypatch,
+        exist_buff_dict=exist_buff_dict,
+        char_name="零号·安比",
+    )
+
+    return _GateFixture(
+        logic=logic_type(current_buff),
+        current_buff=current_buff,
+        current_template=current_template,
+        trigger_template=trigger_template,
+        exist_buff_dict=exist_buff_dict,
+    )
+
+
+def _make_soldier0_anby_gate(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    logic_type: type[Any],
+    current_index: str,
+    active: bool,
+    operating_now: int = 1381,
+) -> _GateFixture:
+    current_buff = _CurrentBuffProbe(index=current_index, operator="零号·安比")
+    return _make_soldier0_anby_fixture(
+        monkeypatch,
+        logic_type=logic_type,
+        current_buff=current_buff,
+        current_index=current_index,
+        active=active,
+        operating_now=operating_now,
+    )
+
+
+def _make_soldier0_anby_hit_gate(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    active: bool,
+    count: float = 3.0,
+) -> _GateFixture:
+    current_index = "Buff-角色-零号·安比-核心被动-暴击伤害"
+    current_buff = _Soldier0AnbyHitBuffProbe(
+        index=current_index,
+        operator="零号·安比",
+    )
+    return _make_soldier0_anby_fixture(
+        monkeypatch,
+        logic_type=Soldier0AnbyCoreSkillCritDMGBonus,
+        current_buff=current_buff,
+        current_index=current_index,
+        active=active,
+        count=count,
+    )
+
+
 def _assert_lazy_record_and_trigger_identity(fixture: _GateFixture) -> None:
     logic = fixture.logic
 
@@ -585,6 +680,21 @@ def test_trigger_state_helper_requires_prepared_trigger_record() -> None:
             "JanePassionStatePhyBuildupBonus.py",
             ("record.trigger_buff_0.dy.active",),
             id="jane-passion-buildup",
+        ),
+        pytest.param(
+            "Soldier0AnbyAdditionalSkillDMGBonus.py",
+            ("record.trigger_buff_0.dy.active",),
+            id="soldier0-additional-skill",
+        ),
+        pytest.param(
+            "Soldier0AnbyCinema4EleResReduce.py",
+            ("record.trigger_buff_0.dy.active",),
+            id="soldier0-cinema4-ele-res",
+        ),
+        pytest.param(
+            "Soldier0AnbyCoreSkillCritDMGBonus.py",
+            ("record.trigger_buff_0.dy.active",),
+            id="soldier0-core-crit-dmg",
         ),
     ],
 )
@@ -742,6 +852,128 @@ def test_jane_ap_hit_paths_remain_formula_owned(
     ]
     _assert_lazy_record_and_trigger_identity(fixture)
     assert fixture.trigger_template.dy.active is False
+    assert fixture.current_buff.sim_instance.schedule_data.event_list == []
+
+
+_SOLDIER0_ANBY_ACTIVE_GATE_CASES: tuple[tuple[type[Any], str], ...] = (
+    (
+        Soldier0AnbyCinema4EleResReduce,
+        "Buff-角色-零号·安比-4画-电抗降低",
+    ),
+    (
+        Soldier0AnbyCoreSkillCritDMGBonus,
+        "Buff-角色-零号·安比-核心被动-暴击伤害",
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    ("logic_type", "current_index"),
+    _SOLDIER0_ANBY_ACTIVE_GATE_CASES,
+)
+@pytest.mark.parametrize(
+    ("active", "expected"),
+    [
+        pytest.param(False, False, id="inactive"),
+        pytest.param(True, True, id="active"),
+    ],
+)
+def test_soldier0_anby_trigger_active_gates_are_read_only(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    logic_type: type[Any],
+    current_index: str,
+    active: bool,
+    expected: bool,
+) -> None:
+    fixture = _make_soldier0_anby_gate(
+        monkeypatch,
+        logic_type=logic_type,
+        current_index=current_index,
+        active=active,
+    )
+
+    assert fixture.logic.special_judge_logic() is expected
+    _assert_lazy_record_and_trigger_identity(fixture)
+    assert fixture.logic.record.char.CID == 1381
+    assert fixture.current_buff.dy.count == 0.0
+    assert fixture.current_buff.sim_instance.schedule_data.event_list == []
+
+
+@pytest.mark.parametrize(
+    ("active", "operating_now", "expected"),
+    [
+        pytest.param(False, 1381, False, id="inactive-correct-operator"),
+        pytest.param(True, 1381, True, id="active-correct-operator"),
+        pytest.param(True, 1261, False, id="active-wrong-operator"),
+    ],
+)
+def test_soldier0_anby_additional_skill_preserves_operating_character_gate(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    active: bool,
+    operating_now: int,
+    expected: bool,
+) -> None:
+    fixture = _make_soldier0_anby_gate(
+        monkeypatch,
+        logic_type=Soldier0AnbyAdditionalSkillDMGBonus,
+        current_index="Buff-角色-零号·安比-额外能力-全队增伤",
+        active=active,
+        operating_now=operating_now,
+    )
+
+    assert fixture.logic.special_judge_logic() is expected
+    _assert_lazy_record_and_trigger_identity(fixture)
+    assert (
+        fixture.logic.record.preload_data
+        is fixture.current_buff.sim_instance.preload.preload_data
+    )
+    assert fixture.logic.record.preload_data.operating_now == operating_now
+    assert fixture.current_buff.dy.count == 0.0
+    assert fixture.current_buff.sim_instance.schedule_data.event_list == []
+
+
+def test_soldier0_anby_core_crit_damage_hit_path_remains_formula_owned(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    formula_contexts: list[object] = []
+
+    def _read_personal_crit_damage(
+        self: CalculatorBuffAttributeReader,
+        context: object,
+    ) -> float:
+        formula_contexts.append(context)
+        return 2.5
+
+    monkeypatch.setattr(
+        CalculatorBuffAttributeReader,
+        "read_personal_crit_damage",
+        _read_personal_crit_damage,
+    )
+    fixture = _make_soldier0_anby_hit_gate(monkeypatch, active=True, count=5.0)
+    hit_buff = cast(_Soldier0AnbyHitBuffProbe, fixture.current_buff)
+
+    assert fixture.logic.special_judge_logic() is True
+    fixture.logic.special_hit_logic()
+
+    assert len(formula_contexts) == 1
+    assert hit_buff.dy.count == pytest.approx(75.0)
+    assert [event[0] for event in hit_buff.effect_events] == [
+        "simple_start",
+        "set_count",
+        "update_to_buff_0",
+    ]
+    assert hit_buff.effect_events[0] == (
+        "simple_start",
+        (100, fixture.exist_buff_dict["零号·安比"]),
+    )
+    assert hit_buff.effect_events[2] == (
+        "update_to_buff_0",
+        (fixture.current_template,),
+    )
+    _assert_lazy_record_and_trigger_identity(fixture)
+    assert cast(float, fixture.logic.record.trigger_buff_0.dy.count) == 5.0
     assert fixture.current_buff.sim_instance.schedule_data.event_list == []
 
 
