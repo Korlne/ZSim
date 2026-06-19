@@ -7953,3 +7953,14 @@
 - Next step:
   - Continue to `US-004` Soldier0 Anby Active-Only State-Sync Closure; do not broaden into Calculator formula changes, public snapshot expansion, old-container cleanup, scheduled publish paths, registered-route validation, or Phase 5 work.
 ---
+## 2026-06-19 12:56 +08:00 - US-004
+- Files changed: `scripts/ralph/plans/slices/us-004-soldier0-anby-active-only-state-sync-closure.md`, `scripts/ralph/checkpoints/2026-06-19-us-004-soldier0-anby-active-only-state-sync.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-004 Soldier0 Anby Active-Only State-Sync Closure` closes the Soldier0 Anby verifier responsibility after the US-002 `read_trigger_buff_state_active(record)` boundary replaced the old full-snapshot read requirement for active-only gates.
+  - This iteration replaces blocker status with focused verifier evidence only; no live production Buff path or focused test was changed in this slice.
+- Compatibility retained:
+  - `Soldier0AnbyCoreSkillCritDMGBonus.py` keeps existing `get_prepared(char_CID=1381, trigger_buff_0=...)` preparation before active-only reads.
+  - `char_CID=1381`, the silver-star trigger index, personal crit-damage reader computation, active/inactive behavior, `simple_start(...)`, old count writeback, `update_to_buff_0(...)`, old template identity, Calculator public reader/snapshot APIs, old containers, scheduled publish paths, registered routes, Phase 5 gates, and event/runtime/listener boundaries remain unchanged.
+- Next step:
+  - Continue to `US-005` serial calculator-reads and conditional implicit-events validation; do not broaden into Calculator formula changes, public snapshot expansion, old-container cleanup, scheduled publish paths, registered-route validation, benchmark work, or Phase 5 work.
+---
