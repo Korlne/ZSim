@@ -25,48 +25,15 @@ class _RuntimeProbe:
         return {}
 
 
-def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    order: list[str] = []
-    runtime = _RuntimeProbe(order)
-    captured_factory_kwargs: dict[str, Any] = {}
-
-    def fake_create_legacy_buff_runtime_facade(**kwargs: Any) -> _RuntimeProbe:
-        captured_factory_kwargs.update(kwargs)
-        order.append("create_facade")
-        return runtime
-
-    monkeypatch.setattr(
-        simulator_class,
-        "create_legacy_buff_runtime_facade",
-        fake_create_legacy_buff_runtime_facade,
-    )
-    monkeypatch.setattr(
-        simulator_class,
-        "DamageEventJudge",
-        lambda *args, **kwargs: order.append("damage_judge"),
-    )
-    monkeypatch.setattr(
-        simulator_class,
-        "BuffLoadLoop",
-        lambda *args, **kwargs: order.append("buff_load"),
-    )
-    monkeypatch.setattr(
-        simulator_class,
-        "stop_report_threads",
-        lambda: order.append("stop_report_threads"),
-    )
-
-    class FakeScheduledEvent:
-        def __init__(self, *args: Any, **kwargs: Any) -> None:
-            order.append("scheduled_init")
-
-        def event_start(self) -> None:
-            order.append("scheduled_start")
-
-    monkeypatch.setattr(simulator_class, "ScE", FakeScheduledEvent)
-
+def _make_minimal_sim(
+    order: list[str],
+) -> tuple[
+    Any,
+    dict[str, dict[str, Any]],
+    dict[str, list[Any]],
+    dict[str, list[Any]],
+    Any,
+]:
     sim = cast(Any, Simulator())
     sim.tick = 0
     exist_buff_dict: dict[str, dict[str, Any]] = {"alpha": {}}
@@ -94,6 +61,57 @@ def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
         preload_data=SimpleNamespace(preload_action=[]),
         do_preload=lambda *args, **kwargs: order.append(f"preload:{args[0]}"),
     )
+    return sim, exist_buff_dict, loading_buff_dict, dynamic_buff_dict, enemy
+
+
+def _patch_main_loop_leaf_calls(monkeypatch: pytest.MonkeyPatch, order: list[str]) -> None:
+    monkeypatch.setattr(
+        simulator_class,
+        "DamageEventJudge",
+        lambda *args, **kwargs: order.append("damage_judge"),
+    )
+    monkeypatch.setattr(
+        simulator_class,
+        "BuffLoadLoop",
+        lambda *args, **kwargs: order.append("buff_load"),
+    )
+    monkeypatch.setattr(
+        simulator_class,
+        "stop_report_threads",
+        lambda: order.append("stop_report_threads"),
+    )
+
+    class FakeScheduledEvent:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            order.append("scheduled_init")
+
+        def event_start(self) -> None:
+            order.append("scheduled_start")
+
+    monkeypatch.setattr(simulator_class, "ScE", FakeScheduledEvent)
+
+
+def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    order: list[str] = []
+    runtime = _RuntimeProbe(order)
+    captured_factory_kwargs: dict[str, Any] = {}
+
+    def fake_create_legacy_buff_runtime_facade(**kwargs: Any) -> _RuntimeProbe:
+        captured_factory_kwargs.update(kwargs)
+        order.append("create_facade")
+        return runtime
+
+    monkeypatch.setattr(
+        simulator_class,
+        "create_legacy_buff_runtime_facade",
+        fake_create_legacy_buff_runtime_facade,
+    )
+    _patch_main_loop_leaf_calls(monkeypatch, order)
+    sim, exist_buff_dict, loading_buff_dict, dynamic_buff_dict, enemy = _make_minimal_sim(
+        order
+    )
 
     sim.main_loop(stop_tick=1, use_api=True)
 
@@ -117,3 +135,35 @@ def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
         "preload:1",
         "stop_report_threads",
     ]
+
+
+def test_main_loop_creates_one_buff_runtime_facade_per_run_not_per_tick(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    order: list[str] = []
+    factory_calls: list[dict[str, Any]] = []
+    runtimes: list[_RuntimeProbe] = []
+
+    def fake_create_legacy_buff_runtime_facade(**kwargs: Any) -> _RuntimeProbe:
+        runtime = _RuntimeProbe(order)
+        factory_calls.append(kwargs)
+        runtimes.append(runtime)
+        order.append(f"create_facade:{len(factory_calls)}")
+        return runtime
+
+    monkeypatch.setattr(
+        simulator_class,
+        "create_legacy_buff_runtime_facade",
+        fake_create_legacy_buff_runtime_facade,
+    )
+    _patch_main_loop_leaf_calls(monkeypatch, order)
+    sim, _, _, _, enemy = _make_minimal_sim(order)
+
+    sim.main_loop(stop_tick=2, use_api=True)
+    sim.main_loop(stop_tick=4, use_api=True)
+
+    assert len(factory_calls) == 2
+    assert runtimes[0].calls == [(0, enemy), (1, enemy), (2, enemy)]
+    assert runtimes[0].activation_ticks == [0, 1]
+    assert runtimes[1].calls == [(2, enemy), (3, enemy), (4, enemy)]
+    assert runtimes[1].activation_ticks == [2, 3]
