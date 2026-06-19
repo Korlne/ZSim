@@ -5,6 +5,7 @@ from typing import Any, cast
 
 import pytest
 
+import zsim.sim_progress.ScheduledEvent as scheduled_event_module
 from zsim.sim_progress.Buff.BuffLoad import BuffLoadLoop
 from zsim.simulator import simulator_class
 from zsim.simulator.simulator_class import Simulator
@@ -207,6 +208,77 @@ def test_buff_load_loop_records_count_only_when_opted_in() -> None:
     )
 
     assert sim.get_buff_runtime_rebuild_counts() == {"buff_load_loop": 1}
+
+
+def test_scheduled_event_records_opt_in_construction_and_runtime_port_counts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    dynamic_buff: dict[str, list[Any]] = {"alpha": [], "enemy": []}
+    exist_buff_dict: dict[str, dict[str, Any]] = {"alpha": {}, "enemy": {}}
+    schedule_data = SimpleNamespace(
+        enemy=SimpleNamespace(),
+        event_list=[],
+        char_obj_list=[],
+    )
+    action_stack = SimpleNamespace()
+    sim = cast(Any, Simulator())
+    read_port = object()
+    command_port = object()
+    captured_runtime_command_kwargs: dict[str, Any] = {}
+
+    monkeypatch.setattr(
+        scheduled_event_module.ScheduledEvent,
+        "_ensure_handlers_registered",
+        lambda self: None,
+    )
+    monkeypatch.setattr(
+        scheduled_event_module,
+        "create_buff_runtime_read_port",
+        lambda **kwargs: read_port,
+    )
+
+    def fake_create_runtime_command_port(**kwargs: Any) -> object:
+        captured_runtime_command_kwargs.update(kwargs)
+        return command_port
+
+    monkeypatch.setattr(
+        scheduled_event_module,
+        "create_runtime_command_port",
+        fake_create_runtime_command_port,
+    )
+
+    scheduled_event_module.ScheduledEvent(
+        dynamic_buff,
+        schedule_data,
+        0,
+        exist_buff_dict,
+        action_stack,
+        sim_instance=sim,
+    )
+
+    assert sim.get_buff_runtime_rebuild_counts() is None
+
+    sim.enable_buff_runtime_rebuild_counting()
+    scheduled_event = scheduled_event_module.ScheduledEvent(
+        dynamic_buff,
+        schedule_data,
+        1,
+        exist_buff_dict,
+        action_stack,
+        sim_instance=sim,
+    )
+
+    assert sim.get_buff_runtime_rebuild_counts() == {
+        "scheduled_event": 1,
+        "scheduled_event_runtime_ports": 1,
+    }
+    assert scheduled_event.buff_runtime_view is read_port
+    assert scheduled_event.runtime_command_port is command_port
+    assert captured_runtime_command_kwargs["data"] is schedule_data
+    assert captured_runtime_command_kwargs["exist_buff_dict"] is exist_buff_dict
+    assert captured_runtime_command_kwargs["action_stack"] is action_stack
+    assert captured_runtime_command_kwargs["sim_instance"] is sim
+    assert captured_runtime_command_kwargs["buff_runtime_view"] is read_port
 
 
 def test_main_loop_records_opt_in_facade_and_buff_load_counts(

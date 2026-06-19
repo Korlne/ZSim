@@ -85,6 +85,7 @@ class ScheduledEvent:
         self.exist_buff_dict = exist_buff_dict
         self.enemy = self.data.enemy
         self.sim_instance: Simulator = sim_instance
+        self._record_buff_runtime_rebuild_count("scheduled_event")
         runtime_ports = self._create_runtime_ports()
         self.buff_runtime_view = runtime_ports.buff_runtime_view
         self.runtime_command_port = runtime_ports.runtime_command_port
@@ -106,8 +107,14 @@ class ScheduledEvent:
         else:
             logging.debug("事件处理器已经注册")
 
+    def _record_buff_runtime_rebuild_count(self, counter_name: str) -> None:
+        record_count = getattr(self.sim_instance, "_record_buff_runtime_rebuild_count", None)
+        if callable(record_count):
+            record_count(counter_name)
+
     def _create_runtime_ports(self) -> _ScheduledEventRuntimePorts:
         """集中创建 Schedule 事件处理所需的 runtime 读写端口。"""
+        self._record_buff_runtime_rebuild_count("scheduled_event_runtime_ports")
         buff_runtime_view = create_buff_runtime_read_port(
             dynamic_buff=self.data.dynamic_buff,
             exist_buff_dict=self.exist_buff_dict,

@@ -154,7 +154,16 @@ def build_runtime_benchmark_report(
             4,
         )
 
-    report = {
+    comparisons: dict[str, Any] = {
+        "total_runtime_ms": total_runtime_delta,
+        "hotspots": _hotspot_comparisons(
+            legacy_snapshot.hotspots,
+            candidate_snapshot.hotspots,
+        ),
+        "faster_runtime": faster_runtime,
+        "candidate_vs_legacy_ratio": speedup_ratio,
+    }
+    report: dict[str, Any] = {
         "team": team,
         "apl": apl,
         "stop_tick": stop_tick,
@@ -168,15 +177,7 @@ def build_runtime_benchmark_report(
             "legacy": _sorted_hotspots(legacy_snapshot.hotspots),
             "candidate": _sorted_hotspots(candidate_snapshot.hotspots),
         },
-        "comparisons": {
-            "total_runtime_ms": total_runtime_delta,
-            "hotspots": _hotspot_comparisons(
-                legacy_snapshot.hotspots,
-                candidate_snapshot.hotspots,
-            ),
-            "faster_runtime": faster_runtime,
-            "candidate_vs_legacy_ratio": speedup_ratio,
-        },
+        "comparisons": comparisons,
     }
     if include_rebuild_counts:
         count_source = buff_runtime_rebuild_counts
@@ -187,7 +188,7 @@ def build_runtime_benchmark_report(
             }
         rebuild_counts = _rebuild_count_buckets(count_source)
         report["buff_runtime_rebuild_counts"] = rebuild_counts
-        report["comparisons"]["buff_runtime_rebuild_counts"] = _rebuild_count_comparisons(
+        comparisons["buff_runtime_rebuild_counts"] = _rebuild_count_comparisons(
             rebuild_counts["legacy"],
             rebuild_counts["candidate"],
         )
