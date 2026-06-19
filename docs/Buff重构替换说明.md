@@ -7825,3 +7825,14 @@
 - Next step:
   - Do not generate implementation, deletion-readiness, Phase 5 registered-route validation, main-loop consistency, or benchmark work until a human-approved route is recorded. If no route is recorded, the next PRD can only capture the human route decision and preserve the pool.
 ---
+## 2026-06-19 08:55 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-human-route-intake-and-trigger-state-source-preflight.md`, `scripts/ralph/investigations/2026-06-19-US-001-trigger-state-source-preflight.md`, Ralph evidence / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 trigger-state source preflight packet` prepares the bounded `JudgeTools` trigger-state remaining read-gate route to replace direct `record.trigger_buff_0.dy.active` / `.dy.count` reads with `read_trigger_buff_state(record)` in later owner-family stories.
+  - This story does not replace a live production Buff path yet; it records the current-root file inventory, rollback anchors, verifier commands, stop conditions, and non-goals.
+- Compatibility retained:
+  - `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, old template Buff identity, lazy record initialization, old containers, retained compatibility, deleted `event_list` discovery surfaces, event/runtime/listener layer separation, validation-runner behavior, registered routes, Phase 5 gates, and performance gates remain unchanged.
+  - `WeepingCradleDMGBonusIncrease.py` remains a time-window / public-contract Go-No-Go candidate unless a later story proves active-only migration without expanding `TriggerBuffState`.
+- Next step:
+  - Continue to `US-002` Jane owner-family trigger-state gate implementation. Do not broaden into broad `JudgeTools` deletion, old-container deletion, retained compatibility cleanup, Phase 5 validation, public snapshot expansion, formula output changes, or copied-output constructor changes.
+---
