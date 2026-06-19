@@ -8001,3 +8001,15 @@
 - Next step:
   - Continue to `US-002 Candidate-D Helper Responsibility Census`; do not promote an implementation candidate until one exact current-root helper responsibility names file / symbol / behavior, verifier, rollback anchor, retained boundaries, non-goals, and stop condition.
 ---
+## 2026-06-19 13:40 +08:00 - US-002
+- Files changed: `scripts/ralph/plans/slices/us-002-candidate-d-helper-responsibility-census.md`, `scripts/ralph/investigations/2026-06-19-US-002-judgetools-helper-responsibility-census.md`, `scripts/ralph/checkpoints/2026-06-19-us-002-judgetools-helper-responsibility-census.md`, Ralph dashboard / evidence / progress / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 JudgeTools helper responsibility census` prepares the Candidate-D route-review boundary by replacing scattered helper responsibility assumptions with a current-root responsibility matrix.
+  - This story replaces docs/control-plane evidence only; no live production Buff path, focused test source, validation-runner behavior, public reader API, formula output, registered route, event/runtime/listener behavior, or performance-sensitive path was replaced.
+- Compatibility retained:
+  - `check_preparation(...)`, `trigger_buff_0_handler(...)`, old template Buff identity, lazy record initialization, `find_exist_buff_dict(...)`, enemy / dynamic / action / preload / tick / char / equipper helper reads, old containers, deleted `event_list` surfaces, event/runtime/listener layer separation, explicit ports/adapters, no cached dispatch adapters, registered routes, performance gates, completed-surface no-reopen rules, and serial validation discipline remain unchanged.
+  - Completed trigger-state active/count/built-in-box read helpers remain no-reopen; `WeepingCradleDMGBonusIncrease.special_effect_logic(...)` start/end tick mirror remains stop-and-split.
+  - Current-root route decisions exclude `.codex_worktrees/`, archives, logs, generated context, run logs, `.runs/`, and results.
+- Next step:
+  - Continue to `US-003 No-Reopen And Stop-Condition Gate`, then `US-004` may select at most one exact helper responsibility from the matrix or record No-Go / needs-human.
+---
