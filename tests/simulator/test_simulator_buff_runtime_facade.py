@@ -5,6 +5,7 @@ from typing import Any, cast
 
 import pytest
 
+from zsim.sim_progress.Buff.BuffLoad import BuffLoadLoop
 from zsim.simulator import simulator_class
 from zsim.simulator.simulator_class import Simulator
 
@@ -167,3 +168,90 @@ def test_main_loop_creates_one_buff_runtime_facade_per_run_not_per_tick(
     assert runtimes[0].activation_ticks == [0, 1]
     assert runtimes[1].calls == [(2, enemy), (3, enemy), (4, enemy)]
     assert runtimes[1].activation_ticks == [2, 3]
+
+
+def test_rebuild_counting_is_inert_until_opted_in() -> None:
+    sim = cast(Any, Simulator())
+
+    sim._record_buff_runtime_rebuild_count("legacy_buff_runtime_facade")
+
+    assert sim.get_buff_runtime_rebuild_counts() is None
+
+
+def test_buff_load_loop_records_count_only_when_opted_in() -> None:
+    sim = cast(Any, Simulator())
+    loading_buff_dict: dict[str, list[Any]] = {}
+
+    BuffLoadLoop(
+        time_now=0,
+        load_mission_dict={},
+        existbuff_dict={},
+        character_name_box=[],
+        LOADING_BUFF_DICT=loading_buff_dict,
+        all_name_order_box={},
+        sim_instance=sim,
+    )
+
+    assert sim.get_buff_runtime_rebuild_counts() is None
+    assert loading_buff_dict == {"enemy": []}
+
+    sim.enable_buff_runtime_rebuild_counting()
+    BuffLoadLoop(
+        time_now=1,
+        load_mission_dict={},
+        existbuff_dict={},
+        character_name_box=[],
+        LOADING_BUFF_DICT=loading_buff_dict,
+        all_name_order_box={},
+        sim_instance=sim,
+    )
+
+    assert sim.get_buff_runtime_rebuild_counts() == {"buff_load_loop": 1}
+
+
+def test_main_loop_records_opt_in_facade_and_buff_load_counts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    order: list[str] = []
+    runtime = _RuntimeProbe(order)
+
+    def fake_create_legacy_buff_runtime_facade(**kwargs: Any) -> _RuntimeProbe:
+        order.append("create_facade")
+        return runtime
+
+    monkeypatch.setattr(
+        simulator_class,
+        "create_legacy_buff_runtime_facade",
+        fake_create_legacy_buff_runtime_facade,
+    )
+    monkeypatch.setattr(
+        simulator_class,
+        "DamageEventJudge",
+        lambda *args, **kwargs: order.append("damage_judge"),
+    )
+    monkeypatch.setattr(
+        simulator_class,
+        "stop_report_threads",
+        lambda: order.append("stop_report_threads"),
+    )
+
+    class FakeScheduledEvent:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            order.append("scheduled_init")
+
+        def event_start(self) -> None:
+            order.append("scheduled_start")
+
+    monkeypatch.setattr(simulator_class, "ScE", FakeScheduledEvent)
+    sim, _, loading_buff_dict, _, enemy = _make_minimal_sim(order)
+    sim.enable_buff_runtime_rebuild_counting()
+
+    sim.main_loop(stop_tick=2, use_api=True)
+
+    assert sim.get_buff_runtime_rebuild_counts() == {
+        "legacy_buff_runtime_facade": 1,
+        "buff_load_loop": 2,
+    }
+    assert runtime.calls == [(0, enemy), (1, enemy), (2, enemy)]
+    assert runtime.activation_ticks == [0, 1]
+    assert loading_buff_dict == {"alpha": [], "enemy": []}

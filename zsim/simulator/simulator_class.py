@@ -84,6 +84,22 @@ class Simulator:
     rng_instance: RNG
     in_parallel_mode: bool
     sim_cfg: SimCfg | None
+    _buff_runtime_rebuild_counts: dict[str, int] | None
+
+    def enable_buff_runtime_rebuild_counting(self) -> None:
+        self._buff_runtime_rebuild_counts = {}
+
+    def get_buff_runtime_rebuild_counts(self) -> dict[str, int] | None:
+        counts = getattr(self, "_buff_runtime_rebuild_counts", None)
+        if counts is None:
+            return None
+        return dict(counts)
+
+    def _record_buff_runtime_rebuild_count(self, counter_name: str) -> None:
+        counts = getattr(self, "_buff_runtime_rebuild_counts", None)
+        if counts is None:
+            return
+        counts[counter_name] = counts.get(counter_name, 0) + 1
 
     def cli_init_simulator(self, sim_cfg: SimCfg | None):
         """CLI和WebUI的旧方法，重置模拟器实例为初始状态。"""
@@ -193,6 +209,7 @@ class Simulator:
         self.load_data.buff_0_manager.initialize_buff_listener()
 
     def _create_buff_runtime_facade(self) -> BuffRuntimeFacade:
+        self._record_buff_runtime_rebuild_count("legacy_buff_runtime_facade")
         return create_legacy_buff_runtime_facade(
             exist_buff_dict=self.load_data.exist_buff_dict,
             loading_buff_dict=self.load_data.LOADING_BUFF_DICT,

@@ -40,10 +40,14 @@ def _run_single_runtime_benchmark_process(
     os.chdir(PROJECT_ROOT)
     common_cfg = CommonCfg.model_validate(common_cfg_data)
     simulator = Simulator()
+    if include_rebuild_counts:
+        simulator.enable_buff_runtime_rebuild_counting()
     started_at = time.perf_counter()
     confirmation = simulator.api_run_simulator(common_cfg, sim_cfg=None, stop_tick=stop_tick)
     simulator_runtime_ms = round((time.perf_counter() - started_at) * 1000, 4)
-    rebuild_counts = {} if include_rebuild_counts else None
+    rebuild_counts = (
+        simulator.get_buff_runtime_rebuild_counts() if include_rebuild_counts else None
+    )
     return confirmation.session_id, simulator_runtime_ms, rebuild_counts
 
 

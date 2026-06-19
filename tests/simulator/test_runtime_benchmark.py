@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 from typing import Literal
 
@@ -285,6 +286,63 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
         "scheduled_event": 2,
     }
     assert cleaned_sessions == ["101", "102"]
+
+
+def test_single_runtime_benchmark_process_collects_opt_in_rebuild_counts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeCommonCfg:
+        @classmethod
+        def model_validate(cls, data: dict[str, Any]) -> Any:
+            return SimpleNamespace(session_id=data["session_id"])
+
+    class FakeSimulator:
+        instances: list["FakeSimulator"] = []
+
+        def __init__(self) -> None:
+            self.rebuild_counts: dict[str, int] | None = None
+            FakeSimulator.instances.append(self)
+
+        def enable_buff_runtime_rebuild_counting(self) -> None:
+            self.rebuild_counts = {}
+
+        def api_run_simulator(self, common_cfg: Any, sim_cfg: Any, stop_tick: int) -> Any:
+            if self.rebuild_counts is not None:
+                self.rebuild_counts["legacy_buff_runtime_facade"] = 1
+                self.rebuild_counts["buff_load_loop"] = stop_tick
+            return SimpleNamespace(session_id=common_cfg.session_id)
+
+        def get_buff_runtime_rebuild_counts(self) -> dict[str, int] | None:
+            if self.rebuild_counts is None:
+                return None
+            return dict(self.rebuild_counts)
+
+    perf_counter_values = iter([1.0, 1.125, 2.0, 2.25])
+    monkeypatch.setattr(rb.os, "chdir", lambda _: None)
+    monkeypatch.setattr(rb.time, "perf_counter", lambda: next(perf_counter_values))
+    monkeypatch.setattr(rb, "CommonCfg", FakeCommonCfg)
+    monkeypatch.setattr(rb, "Simulator", FakeSimulator)
+
+    default_result = rb._run_single_runtime_benchmark_process(
+        {"session_id": "default-session"},
+        stop_tick=3,
+    )
+    opt_in_result = rb._run_single_runtime_benchmark_process(
+        {"session_id": "counted-session"},
+        stop_tick=4,
+        include_rebuild_counts=True,
+    )
+
+    assert default_result == ("default-session", 125.0, None)
+    assert opt_in_result == (
+        "counted-session",
+        250.0,
+        {
+            "legacy_buff_runtime_facade": 1,
+            "buff_load_loop": 4,
+        },
+    )
+    assert FakeSimulator.instances[0].rebuild_counts is None
 
 
 def test_format_human_report_only_prints_rebuild_counts_when_present():

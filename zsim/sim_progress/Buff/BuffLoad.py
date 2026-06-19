@@ -142,6 +142,10 @@ def BuffLoadLoop(
     # 初始化LOADING_BUFF_DICT
     from zsim.sim_progress.Load import LoadingMission
 
+    record_rebuild_count = getattr(sim_instance, "_record_buff_runtime_rebuild_count", None)
+    if record_rebuild_count is not None:
+        record_rebuild_count("buff_load_loop")
+
     all_name_box = character_name_box + ["enemy"]
     for character in all_name_box:
         LOADING_BUFF_DICT[character] = []
