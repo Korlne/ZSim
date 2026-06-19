@@ -16,6 +16,8 @@ from zsim.utils.main_loop_consistency import (
 )
 from zsim.utils.process_dmg_result import _normalize_damage_schema, sort_df_by_UUID
 
+from tests.teams import auto_register_teams
+
 
 def test_build_consistency_report_keeps_required_json_fields():
     legacy_snapshot = RuntimeSnapshot(
@@ -261,6 +263,16 @@ def test_damage_schema_normalizes_string_anomaly_column():
     assert normalized_df["is_anomaly"].dtype == pl.Boolean
     assert normalized_df["is_anomaly"].to_list() == [False, False]
     assert uuid_df["is_anomaly"].to_list() == [False, False]
+
+
+def test_yixuan_astra_trigger_team_is_registered_for_phase5_route():
+    registry = auto_register_teams()
+    team_config = registry.get_team("仪玄-耀嘉音-扳机试点队")
+
+    assert team_config is not None
+    common_cfg = team_config.create_config()
+    assert [char.name for char in common_cfg.char_config] == ["仪玄", "耀嘉音", "扳机"]
+    assert common_cfg.apl_path == "./zsim/data/APLData/仪玄-耀嘉音-扳机.toml"
 
 
 def test_script_entrypoint_runs_with_json_output(
