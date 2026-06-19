@@ -8048,3 +8048,15 @@
 - Next step:
   - Continue to `US-006 Reviewer Invariant Decision`; review this verifier contract against `scripts/ralph/architecture/invariants.md` without broad dynamic-list migration, formula/snapshot expansion, old-container cleanup, registered-route validation, benchmark work, or broad `JudgeTools` deletion.
 ---
+## 2026-06-19 14:17 +08:00 - US-006
+- Files changed: `scripts/ralph/plans/slices/us-006-reviewer-invariant-decision.md`, `scripts/ralph/checkpoints/2026-06-19-us-006-reviewer-invariant-decision.md`, Ralph evidence / progress / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-006 Reviewer Invariant Decision` replaces route-review uncertainty with an invariant verdict for the selected IceJade direct dynamic-list helper packet.
+  - This story replaces docs/control-plane reviewer evidence only; no live production Buff path, focused test source, validation-runner behavior, public reader API, formula output, registered route, event/runtime/listener behavior, old-container implementation, or performance-sensitive path was replaced in this slice.
+- Compatibility retained:
+  - `IceJadeTeaPotExtraDMGBonus.special_judge_logic(...)` remains the only selected future helper responsibility and still calls `JudgeTools.find_equipper(...)` plus `JudgeTools.find_dynamic_buff_list(...)`; `find_equipper(...)` remains prerequisite / rollback evidence, not a second selected responsibility.
+  - Event queue semantics, synchronous listener broadcasts, same-tick runtime writes, explicit ports/adapters, no cached dispatch adapters, completed-surface no-reopen, old containers, Phase 5 pause, registered routes, performance gates, formula/read snapshot surfaces, and serial validation discipline remain unchanged.
+  - No `needs_human_route_decision` marker is needed because this PRD selected an exact current-root candidate in `US-004`.
+- Next step:
+  - Continue to `US-007 Handoff Docs And Same-Phase Pool Preservation`; write the selected IceJade route and retained same-phase pool into handoff docs without broad dynamic-list migration, formula/snapshot expansion, old-container cleanup, registered-route validation, benchmark work, Phase 5 work, or broad `JudgeTools` deletion.
+---
