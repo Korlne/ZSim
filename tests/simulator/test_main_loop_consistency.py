@@ -14,6 +14,7 @@ from zsim.utils.main_loop_consistency import (
     build_parser,
     run_main_loop_consistency,
 )
+from zsim.utils.process_dmg_result import _normalize_damage_schema, sort_df_by_UUID
 
 
 def test_build_consistency_report_keeps_required_json_fields():
@@ -237,6 +238,29 @@ def test_load_runtime_snapshot_falls_back_for_blank_anomaly_column(
     assert snapshot.event_counts["total"] == 1
     assert snapshot.event_counts["anomaly_total"] == 0
     assert snapshot.event_counts["by_skill_tag"] == {"alpha": 1}
+
+
+def test_damage_schema_normalizes_string_anomaly_column():
+    raw_damage_df = pl.DataFrame(
+        {
+            "tick": [13, 14],
+            "skill_tag": ["alpha", "beta"],
+            "element_type": [0, 4],
+            "dmg_expect": [10.0, 20.0],
+            "dmg_crit": [11.0, 22.0],
+            "stun": [1.0, 2.0],
+            "buildup": [0.0, 0.0],
+            "is_anomaly": [None, "false"],
+            "UUID": ["uuid-1", "uuid-2"],
+        }
+    )
+
+    normalized_df = _normalize_damage_schema(raw_damage_df)
+    uuid_df = sort_df_by_UUID(normalized_df)
+
+    assert normalized_df["is_anomaly"].dtype == pl.Boolean
+    assert normalized_df["is_anomaly"].to_list() == [False, False]
+    assert uuid_df["is_anomaly"].to_list() == [False, False]
 
 
 def test_script_entrypoint_runs_with_json_output(

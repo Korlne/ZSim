@@ -32,6 +32,24 @@ def _load_dmg_data(rid: int | str) -> pl.DataFrame | None:
         return None
 
 
+def _normalize_damage_schema(dmg_result_df: pl.DataFrame) -> pl.DataFrame:
+    """补齐旧/新 damage.csv 之间的兼容列。"""
+    if "is_anomaly" not in dmg_result_df.columns or dmg_result_df["is_anomaly"].is_null().all():
+        return dmg_result_df.with_columns(pl.lit(False).alias("is_anomaly"))
+
+    if dmg_result_df["is_anomaly"].dtype == pl.Boolean:
+        return dmg_result_df.with_columns(pl.col("is_anomaly").fill_null(False))
+
+    return dmg_result_df.with_columns(
+        pl.col("is_anomaly")
+        .cast(pl.Utf8)
+        .str.to_lowercase()
+        .is_in(["true", "1"])
+        .fill_null(False)
+        .alias("is_anomaly")
+    )
+
+
 def prepare_line_chart_data(dmg_result_df: pl.DataFrame) -> dict[str, pl.DataFrame]:
     """准备用于绘制伤害与失衡曲线图的数据。
 
@@ -374,6 +392,7 @@ def prepare_dmg_data_and_cache(
     dmg_result_df = _load_dmg_data(rid)
     if dmg_result_df is None:
         return None
+    dmg_result_df = _normalize_damage_schema(dmg_result_df)
     uuid_df = sort_df_by_UUID(dmg_result_df)
     char_chart_data = prepare_char_chart_data(uuid_df)
     # st.write(char_chart_data)
