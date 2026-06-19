@@ -8096,3 +8096,15 @@
 - Next step:
   - Continue to `US-003` scoped IceJade read-only helper replacement; preserve the focused pytest oracle and replace only the direct dynamic-list helper read while retaining `find_equipper(...)`.
 ---
+## 2026-06-19 15:20 +08:00 - US-003
+- Files changed: `zsim/sim_progress/Buff/BuffXLogic/IceJadeTeaPotExtraDMGBonus.py`, `scripts/ralph/plans/slices/us-003-scoped-icejade-read-only-helper-replacement.md`, `scripts/ralph/investigations/2026-06-19-US-003-scoped-icejade-helper-replacement.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 Scoped IceJade Read-Only Helper Replacement` replaces the live `IceJadeTeaPotExtraDMGBonus.special_judge_logic(...)` direct `JudgeTools.find_dynamic_buff_list(...)` call with file-local `_read_ice_jade_dynamic_buff_list(...)`.
+  - The file-local helper reads the same `sim_instance.global_stats.DYNAMIC_BUFF_DICT` object and does not introduce a shared public `JudgeTools` helper contract.
+- Compatibility retained:
+  - `JudgeTools.find_equipper(...)` remains the prerequisite lookup and rollback anchor, before the dynamic-list read.
+  - Current IceJade semantics are retained: `dynamic_buff_list[equipper]`, list-order iteration, first matching `玉壶青冰-普攻加冲击`, `dy.count >= 15` / `< 15` results, no-match `None` fall-through, and current missing-key `KeyError` behavior.
+  - `FindMain.py`, `FindEquipper.py`, `JudgeTools.__init__`, old containers, Buff dynamic state mutation, event queues, listener paths, dot runtime state, same-tick runtime writes, public reader/snapshot APIs, formula outputs, registered routes, Phase 5 gates, and validation-runner behavior remain unchanged.
+- Next step:
+  - Continue to `US-004` touched-surface guardrail / typecheck review; run the scoped mypy and no-reopen checks without broad dynamic-list migration, old-container cleanup, formula/snapshot expansion, or broad `JudgeTools` deletion.
+---
