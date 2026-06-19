@@ -8084,3 +8084,15 @@
 - Next step:
   - Continue to `US-002` focused IceJade dynamic-list gate test; do not edit production code until the executable oracle pins the recorded behavior matrix.
 ---
+## 2026-06-19 15:15 +08:00 - US-002
+- Files changed: `tests/simulator/test_ice_jade_teapot_dynamic_buff_list_gate.py`, `scripts/ralph/plans/slices/us-002-focused-icejade-dynamic-list-gate-test.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-002 Focused IceJade Dynamic-List Gate Test` prepares to replace only `IceJadeTeaPotExtraDMGBonus.special_judge_logic(...)` direct `JudgeTools.find_dynamic_buff_list(...)` service-location count predicate for `玉壶青冰-普攻加冲击`.
+  - This story adds the executable oracle and post-replacement source guard only; no live production Buff path, public `JudgeTools` helper, validation-runner behavior, formula output, event/runtime/listener behavior, old-container implementation, registered route, or performance-sensitive path was replaced.
+- Compatibility retained:
+  - Current IceJade behavior is pinned: `find_equipper(...)` remains prerequisite lookup, first matching dynamic Buff decides `True` / `False`, no-match falls through with `None`, and missing dynamic-list keys raise the current `KeyError`.
+  - `IceJadeTeaPotExtraDMGBonus.special_judge_logic(...)` still calls `JudgeTools.find_dynamic_buff_list(...)` directly until `US-003` introduces the scoped helper/view replacement.
+  - Old containers, deleted `event_list` surfaces, broad `JudgeTools` deletion, public reader/snapshot APIs, formula outputs, validation-runner behavior, registered routes, event/runtime/listener layers, performance gates, Phase 5 pause, and serial validation discipline remain unchanged.
+- Next step:
+  - Continue to `US-003` scoped IceJade read-only helper replacement; preserve the focused pytest oracle and replace only the direct dynamic-list helper read while retaining `find_equipper(...)`.
+---
