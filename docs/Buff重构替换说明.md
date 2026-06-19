@@ -8013,3 +8013,15 @@
 - Next step:
   - Continue to `US-003 No-Reopen And Stop-Condition Gate`, then `US-004` may select at most one exact helper responsibility from the matrix or record No-Go / needs-human.
 ---
+## 2026-06-19 13:49 +08:00 - US-003
+- Files changed: `scripts/ralph/plans/slices/us-003-no-reopen-and-stop-condition-gate.md`, `scripts/ralph/investigations/2026-06-19-US-003-no-reopen-stop-condition-gate.md`, `scripts/ralph/checkpoints/2026-06-19-us-003-no-reopen-stop-condition-gate.md`, Ralph dashboard / evidence / progress / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-003 No-Reopen And Stop-Condition Gate` replaces route uncertainty with current-root no-reopen evidence before any helper responsibility is selected.
+  - This story replaces docs/control-plane evidence only; no live production Buff path, focused test source, validation-runner behavior, public reader API, formula output, registered route, event/runtime/listener behavior, or performance-sensitive path was replaced.
+- Compatibility retained:
+  - Deleted `event_list` discovery surfaces remain closed: no current-root production `find_event_list`, no `check_preparation(..., event_list=...)` / `event_list=True` production entry, no `BuffRecordBaseClass.event_list`, and no production `record.event_list` dependency outside retained `ScheduleData.event_list` queue semantics.
+  - `TriggerBuffState` remains limited to `active`, `count`, and `built_in_buff_box`; `WeepingCradleDMGBonusIncrease.special_effect_logic(...)` still mirrors `record.trigger_buff_0.dy.startticks` / `.dy.endticks` directly and remains stop-and-split.
+  - Old containers, `check_preparation(...)`, `trigger_buff_0_handler(...)`, broad `JudgeTools`, event/runtime/listener layers, public reader/snapshot APIs, formulas, validation-runner behavior, registered routes, Phase 5 gates, completed-surface no-reopen rules, and serial validation discipline remain unchanged.
+- Next step:
+  - Continue to `US-004 Exact Helper Responsibility Selection Packet`; select at most one exact helper responsibility from the US-002 matrix or record No-Go / needs-human without reopening deleted/completed/retained boundaries.
+---
