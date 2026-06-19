@@ -31,6 +31,18 @@
   - Generate the remaining enemy-state read-family bounded implementation PRD only when preflight names exact current-root files / symbols / behavior, focused verifier, rollback anchors, retained boundaries and non-goals.
   - Delete old residual surfaces only with exact unused or behavior-preserving proof.
 ---
+## 2026-06-19 12:25 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-red-light-reproduction-and-contract-decision.md`, `scripts/ralph/investigations/2026-06-19-US-001-calculator-red-light-contract.md`, Ralph progress / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 calculator red-light contract decision` classifies `BLOCKER-001` as an active-only read-isolation path for the four named `calculator-reads` failures.
+  - This story does not replace a live production Buff path yet; it records the focused red-light reproduction, query evidence, route decision, reviewer invariant verdict, and next smallest implementation slice.
+- Compatibility retained:
+  - `read_trigger_buff_state(record)` full snapshot behavior remains unchanged in this story; count / built-in-box users are not modified here.
+  - `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, old template identity, lazy record initialization, old containers, event/runtime/listener layer separation, validation-runner behavior, registered routes, Phase 5 gates, and performance gates remain unchanged.
+  - No public `TriggerBuffState` field expansion, setup-order rewrite, validation-runner rewrite, or old-container cleanup is required by the selected path; `needs_human_route_decision=false`.
+- Next step:
+  - Continue to `US-002` Minimal TriggerState Contract Fix; active-only users must not require `dynamic_state.count` or `dynamic_state.built_in_buff_box`, while full snapshot users keep the existing contract.
+---
 
 ## 2026-06-18 14:44 +08:00 - US-001
 - Files changed: `scripts/ralph/plans/slices/us-001-source-preflight-and-stop-gate.md`, `scripts/ralph/checkpoints/2026-06-18-us-001-source-preflight-stop-gate.md`, `docs/Buff重构替换说明.md`, `scripts/ralph/progress.txt`, `scripts/ralph/prd.json`, `scripts/ralph/campaign-dashboard.md`
