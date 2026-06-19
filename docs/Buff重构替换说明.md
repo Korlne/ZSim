@@ -7906,3 +7906,15 @@
 - Next step:
   - Continue to `US-008` handoff docs and next route preservation; do not broaden into public snapshot expansion, old-container cleanup, formula/read API work, registered-route validation, benchmark work, deletion-readiness, or Phase 5 resume.
 ---
+## 2026-06-19 10:06 +08:00 - US-008
+- Files changed: `docs/Buff重构下阶段计划草稿.md`, `docs/Buff系统重构Checklist.md`, `docs/Buff重构替换说明.md`, Ralph checkpoint / dashboard / evidence / progress / PRD bookkeeping
+- Replacement note:
+  - `US-008 handoff docs and next route preservation` closes the trigger-state remaining read-gate PRD by recording implemented / no-reopen migrated active/count/built-in-box reads, retained WeepingCradle time-window fields, and the next default route.
+  - Direct old-template reads replaced by this PRD: Jane owner-family, Soldier0 Anby owner-family, equipment / character count gates, `YunkuiTalesSheerAtkBonus.py` local aliases, and `WeepingCradleDMGBonusIncrease.special_judge_logic(...)` active gate now read through `read_trigger_buff_state(record)` after existing `check_preparation(..., trigger_buff_0=...)` setup.
+- Compatibility retained:
+  - `WeepingCradleDMGBonusIncrease.special_effect_logic(...)` still mirrors `record.trigger_buff_0.dy.startticks` / `.dy.endticks`; no `TriggerBuffState.startticks` / `.endticks` expansion was added.
+  - `check_preparation(..., trigger_buff_0=...)`, `trigger_buff_0_handler(...)`, old template identity, lazy record initialization, old containers, deleted `event_list` surfaces, event/runtime/listener layer separation, validation-runner behavior, registered routes, Phase 5 gates, performance gates, completed-surface no-reopen rules, and serial validation discipline remain unchanged.
+  - No new Buff coupling or changed coupling classification was discovered; `docs/旧Buff系统耦合审查结果.md` remains unchanged.
+- Next step:
+  - Generate `Buff JudgeTools Helper Responsibility Route Review And Exact Next Intake`; do not reopen trigger-state, collapse Candidate blocks A-G into automatic backlog, promote deletion-readiness, resume Phase 5, run main-loop consistency, run runtime benchmark, or broaden into `JudgeTools` deletion / old-container cleanup without exact current-root evidence.
+---

@@ -50,11 +50,22 @@
 
 ## Route decision evidence and final handoff（2026-06-19 US-005 / US-006）
 
-- Current route-review outcome: `needs_human_route_decision`.
+- Current route-review outcome before human confirmation: `needs_human_route_decision`.
 - Completion-criteria status: US-002 classified retained families; US-003 preserved candidate blocks A-G as future review material and found `no exact same-phase implementation or deletion-readiness candidate currently proven`; US-004 defined the Phase 5 resume gate; US-005 found no human-approved selected route in repository evidence; US-006 preserves that result in handoff docs and Ralph evidence.
-- Current default next PRD: no automatic implementation, deletion-readiness, Phase 5 registered-route validation, main-loop consistency, or benchmark PRD is promoted while `needs_human_route_decision` remains the durable route state. If no human-approved route is recorded before the next cycle, the next PRD may only be a route-decision intake / control-plane package that captures one of the three allowed human choices and keeps the candidate pool visible.
+- Human-approved route recorded on 2026-06-19 08:46 +08:00: selected option = promote one exact same-phase candidate, with repository evidence at `scripts/ralph/checkpoints/2026-06-19-human-approved-judge-tools-trigger-state-route.md`.
+- Former default next PRD, now completed by US-008: `Buff JudgeTools Trigger-State Remaining Read Gates`, limited to Candidate block D's trigger-state responsibility slice. Scope was safe remaining `record.trigger_buff_0.dy.active` / `.dy.count` / `.dy.built_in_buff_box` read gates through `read_trigger_buff_state(record)` after existing `check_preparation(..., trigger_buff_0=...)` initialization.
 - Same-phase candidate pool remains available only as reviewer material until promotion evidence names exact current-root file / symbol / behavior, verifier command, rollback anchor, retained boundaries, non-goals, and stop condition. Pool retention does not reopen completed helper subsets, old `event_list` deletion surfaces, Phase-1 infrastructure boundaries, old-container cleanup, public reader/snapshot expansion, or formula output changes.
+- Retained guard: this human route does not resume Phase 5, authorize deletion-readiness, delete `JudgeTools`, reopen deleted `event_list` discovery, expand public reader/snapshot APIs, alter formulas, change validation runners, or merge event/runtime/listener layers.
 - Old coupling review status: no new Buff coupling or changed coupling classification was discovered in US-006, so [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md) remains unchanged.
+
+## JudgeTools trigger-state responsibility slice closeout（2026-06-19 US-008）
+
+- Completion-criteria status: `Buff JudgeTools Trigger-State Remaining Read Gates` is complete. The Candidate block D trigger-state responsibility slice is implemented / no-reopen for migrated active/count/built-in-box read gates, retained for WeepingCradle time-window mirror fields, and not a broad `JudgeTools` deletion or old-container cleanup.
+- Implemented / no-reopen files: `JaneCinema1APTransToDmgBonus.py`, `JaneCoreSkillStrikeCritDmgBonus.py`, `JaneCoreSkillStrikeCritRateBonus.py`, `JanePassionStateAPTransToATK.py`, `JanePassionStatePhyBuildupBonus.py`, `Soldier0AnbyAdditionalSkillDMGBonus.py`, `Soldier0AnbyCinema4EleResReduce.py`, `Soldier0AnbyCoreSkillCritDMGBonus.py`, `SeveredInnocencELEDMGBonus.py`, `YangiCinema1ApBonus.py`, `YunkuiTalesSheerAtkBonus.py`, and `WeepingCradleDMGBonusIncrease.py` for direct active/count/built-in-box trigger-state reads only.
+- Retained / stop-and-split: `WeepingCradleDMGBonusIncrease.special_effect_logic(...)` still mirrors `record.trigger_buff_0.dy.startticks` / `.dy.endticks` directly; `TriggerBuffState` remains limited to `active`, `count`, and `built_in_buff_box`. Any start/end tick snapshot expansion requires a separate exact PRD.
+- Verifier status: focused trigger-state / migrated P2-C guardrail pytest and serial `implicit-events` passed in US-007; US-008 is docs/control-plane handoff only and keeps calculator-reads, formula-parity, Phase 5 registered-route validation, main-loop consistency, and runtime benchmark skipped by touched-surface evidence.
+- Next default route: `Buff JudgeTools Helper Responsibility Route Review And Exact Next Intake`. It may inspect remaining Candidate-D helper responsibilities and Candidate blocks A-G as reviewer context, but it must name exact current-root file / symbol / behavior, verifier, rollback anchor, retained boundaries, non-goals and stop condition before any implementation PRD. It must not reopen trigger-state, resume Phase 5, promote deletion-readiness, or treat retained pool material as automatic backlog.
+- Old coupling review status: US-008 discovered no new Buff coupling or changed coupling classification, so [旧Buff系统耦合审查结果.md](./旧Buff系统耦合审查结果.md) remains unchanged.
 
 ## 阶段 0：重规划与基线
 
