@@ -8072,3 +8072,15 @@
 - Next step:
   - Generate `Buff IceJade Dynamic Buff List Helper Responsibility Bounded Implementation`; first add the IceJade focused pytest gap, then replace only the selected predicate with scoped mypy and serial `implicit-events`.
 ---
+## 2026-06-19 15:06 +08:00 - US-001
+- Files changed: `scripts/ralph/plans/slices/us-001-icejade-route-and-oracle-preflight.md`, `scripts/ralph/investigations/2026-06-19-US-001-icejade-route-oracle-preflight.md`, `scripts/ralph/checkpoints/2026-06-19-us-001-icejade-route-oracle-preflight.md`, `scripts/ralph/prd.json`, `scripts/ralph/progress.txt`, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-001 IceJade Route And Oracle Preflight` prepares to replace only `IceJadeTeaPotExtraDMGBonus.special_judge_logic(...)` direct `JudgeTools.find_dynamic_buff_list(...)` service-location count predicate for `玉壶青冰-普攻加冲击`.
+  - This story records the current oracle and route evidence only; no live production Buff path, focused test source, validation-runner behavior, public reader API, formula output, registered route, event/runtime/listener behavior, old-container implementation, or performance-sensitive path was replaced.
+- Compatibility retained:
+  - Current IceJade behavior is retained: `find_equipper(...)` first, `find_dynamic_buff_list(...)` second, `dynamic_buff_list[equipper]`, list-order iteration, first matching Buff decides `True` / `False`, no-match falls through with `None`, and missing dynamic-list key raises `KeyError`.
+  - `JudgeTools.find_equipper(...)` remains prerequisite / rollback evidence only and is not selected as a second replacement responsibility.
+  - Old containers, deleted `event_list` surfaces, broad `JudgeTools` deletion, public reader/snapshot APIs, formula outputs, validation-runner behavior, registered routes, event/runtime/listener layers, performance gates, Phase 5 pause, and serial validation discipline remain unchanged.
+- Next step:
+  - Continue to `US-002` focused IceJade dynamic-list gate test; do not edit production code until the executable oracle pins the recorded behavior matrix.
+---
