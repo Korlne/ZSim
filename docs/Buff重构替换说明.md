@@ -8189,3 +8189,14 @@
 - Next step:
   - Continue to `US-005 Focused Verifier And Guardrail Plan`; bind the selected Precious HP-threshold responsibility to exact focused pytest and validation gates before any production helper implementation.
 ---
+## 2026-06-19 16:37 +08:00 - US-005
+- Files changed: `scripts/ralph/plans/slices/us-005-focused-verifier-and-guardrail-plan.md`, `scripts/ralph/investigations/2026-06-19-US-005-focused-verifier-guardrail-plan.md`, `scripts/ralph/checkpoints/2026-06-19-us-005-focused-verifier-guardrail-plan.md`, Ralph evidence / progress / PRD bookkeeping, `docs/Buff重构替换说明.md`
+- Replacement note:
+  - `US-005 Focused Verifier And Guardrail Plan` replaces stale IceJade verifier text with a Precious Fossilized Core direct enemy HP-threshold verifier contract.
+  - This story does not replace a live Buff path. It records the missing future focused pytest oracle `tests/simulator/test_precious_fossilized_core_enemy_hp_gate.py`, scoped Precious/JudgeTools mypy, and serial `implicit-events` requirement before any production helper implementation.
+- Compatibility retained:
+  - Current `PreciousFossilizedCoreStunBonusOver50Hp.special_judge_logic(...)`, `PreciousFossilizedCoreStunBonusOver75Hp.special_judge_logic(...)`, `FindMain.find_enemy(...)`, and `Enemy.get_total_hp_percentage(...)` behavior remains unchanged.
+  - `check_preparation(...)`, `get_prepared(...)`, old template Buff identity, lazy record initialization, deleted `event_list` surfaces, IceJade / TriggerState no-reopen surfaces, completed enemy-state helper subsets, old containers, event/runtime/listener layers, public reader/snapshot APIs, formula outputs, validation-runner behavior, registered routes, Phase 5 gates, performance gates, and serial validation discipline remain unchanged.
+- Next step:
+  - Continue to `US-006 Reviewer Invariant Decision`; review the Precious verifier contract against `scripts/ralph/architecture/invariants.md` without broad `find_enemy(...)` cleanup, `check_preparation(enemy=1)` rewrite, AnomalyDebuffExitJudge/anomaly-map work, formula/snapshot expansion, old-container cleanup, registered-route validation, benchmark work, or broad `JudgeTools` deletion.
+---
