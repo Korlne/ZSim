@@ -23,6 +23,7 @@ from zsim.sim_progress.data_struct.BattleEventListener.AliceDotTriggerListener i
 )
 from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
     create_schedule_dispatch_port,
 )
 from zsim.sim_progress.Dot.BaseDot import Dot
@@ -302,7 +303,13 @@ def test_alice_dot_runtime_registration_precedes_scheduled_publish(
         schedule_data=schedule_data,
         char_data=SimpleNamespace(find_char_obj=lambda CID: SimpleNamespace(CID=CID)),
     )
-    listener = AliceDotTriggerListener(listener_id="Alice_5", sim_instance=cast(Any, sim_instance))
+    listener = AliceDotTriggerListener(
+        listener_id="Alice_5",
+        sim_instance=cast(Any, sim_instance),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: cast(ScheduleDispatchPort, dispatch_port)
+        ),
+    )
     anomaly_payload = SimpleNamespace(tag="alice-dot-anomaly")
     replacement_dot = _FakeDot(
         index="AliceCoreSkillAssaultDot",
@@ -319,11 +326,6 @@ def test_alice_dot_runtime_registration_precedes_scheduled_publish(
         return replacement_dot
 
     monkeypatch.setattr(alice_dot_module, "ALICE_REPORT", False)
-    monkeypatch.setattr(
-        alice_dot_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
     monkeypatch.setattr(
         "zsim.sim_progress.Update.UpdateAnomaly.spawn_normal_dot",
         fake_spawn_normal_dot,

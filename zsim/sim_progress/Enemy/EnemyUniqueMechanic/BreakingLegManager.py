@@ -1,7 +1,10 @@
 from typing import TYPE_CHECKING
 
 from zsim.sim_progress.data_struct import SingleHit
-from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitter,
+    ScheduledEventEmitterProvider,
+)
 from zsim.sim_progress.Report import report_dmg_result
 
 from .BaseUniqueMechanic import BaseUniqueMechanic
@@ -9,7 +12,6 @@ from .BaseUniqueMechanic import BaseUniqueMechanic
 if TYPE_CHECKING:
     from zsim.sim_progress.Character.character import Character
     from zsim.sim_progress.Enemy import Enemy
-    from zsim.sim_progress.data_struct.schedule_dispatch import ScheduleDispatchPort
 
 """
 FOCUS_RATIO_MAP 的存在，是为了模拟角色在破腿的过程中，
@@ -143,16 +145,26 @@ class SingleLeg(BaseUniqueMechanic):
 
 
 class BreakingEvent:
-    def __init__(self, enemy_instance):
+    def __init__(
+        self,
+        enemy_instance,
+        scheduled_event_emitter_provider: ScheduledEventEmitterProvider | None = None,
+    ):
         self.enemy: "Enemy" = enemy_instance
         self.decibel_rewards = 1000  # 奖励喧响值
         self.stun_ratio = 0.15  # 失衡比例
         self.damage_ratio = 0.055  # 破腿的直伤倍率
         self.game_state = None
         self.found_char_dict: dict[int, "Character"] = {}
+        self._scheduled_event_emitter_provider = (
+            scheduled_event_emitter_provider
+            or ScheduledEventEmitterProvider.from_sim_instance_getter(
+                lambda: self.enemy.sim_instance
+            )
+        )
 
-    def _create_dispatch_port(self) -> "ScheduleDispatchPort":
-        return create_schedule_dispatch_port(sim_instance=self.enemy.sim_instance)
+    def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
+        return self._scheduled_event_emitter_provider.create_emitter()
 
     def active(self, single_hit: SingleHit, tick: int):
         """破腿进行时！"""
@@ -195,4 +207,4 @@ class BreakingEvent:
             decibel_target=(char_name,),
             decibel_value=self.decibel_rewards,
         )
-        self._create_dispatch_port().publish_scheduled(refresh_data)
+        self._scheduled_event_emitter().emit_scheduled(refresh_data)

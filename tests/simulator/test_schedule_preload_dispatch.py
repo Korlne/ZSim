@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from typing import cast
 
 import pytest
 
@@ -7,6 +8,23 @@ from zsim.sim_progress.data_struct.SchedulePreload import (
     SchedulePreload,
     schedule_preload_event_factory,
 )
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
+
+
+class _FailFastEventList(list):
+    def append(self, item):
+        raise AssertionError("schedule_preload_event_factory should use the injected emitter")
+
+
+class _RecordingDispatchPort:
+    def __init__(self) -> None:
+        self.events: list[object] = []
+
+    def publish_scheduled(self, event: object) -> None:
+        self.events.append(event)
 
 
 def test_schedule_preload_event_factory_preserves_queue_order_without_raw_event_list_access(
@@ -14,9 +32,10 @@ def test_schedule_preload_event_factory_preserves_queue_order_without_raw_event_
 ):
     sim_instance = SimpleNamespace(
         tick=10,
-        schedule_data=SimpleNamespace(event_list=[]),
+        schedule_data=SimpleNamespace(event_list=_FailFastEventList()),
     )
     preload_data = object()
+    dispatch_port = _RecordingDispatchPort()
 
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("schedule_preload_event_factory should publish via dispatch port")
@@ -32,9 +51,12 @@ def test_schedule_preload_event_factory_preserves_queue_order_without_raw_event_
         sim_instance=sim_instance,
         apl_priority_list=[2, 1],
         active_generation_list=[False, True],
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: cast(ScheduleDispatchPort, dispatch_port)
+        ),
     )
 
-    event_list = sim_instance.schedule_data.event_list
+    event_list = dispatch_port.events
 
     assert [event.skill_tag for event in event_list] == ["alpha", "beta"]
     assert [event.execute_tick for event in event_list] == [11, 13]
@@ -43,6 +65,7 @@ def test_schedule_preload_event_factory_preserves_queue_order_without_raw_event_
     assert all(isinstance(event, SchedulePreload) for event in event_list)
     assert all(event.preload_data is preload_data for event in event_list)
     assert all(event.sim_instance is sim_instance for event in event_list)
+    assert sim_instance.schedule_data.event_list == []
 
 
 @pytest.mark.parametrize(

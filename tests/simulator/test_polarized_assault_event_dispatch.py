@@ -2,13 +2,17 @@ from __future__ import annotations
 
 from copy import deepcopy
 from types import SimpleNamespace
+from typing import cast
 
 import pytest
 
-import zsim.sim_progress.data_struct.PolarizedAssaultEventClass as event_module
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 from zsim.sim_progress.Update import UpdateAnomaly as update_anomaly_module
 from zsim.sim_progress.data_struct.PolarizedAssaultEventClass import PolarizedAssaultEvent
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 
 
 class _FailFastEventList(list):
@@ -100,11 +104,10 @@ def test_polarized_assault_event_publishes_follow_ups_via_dispatch_port_in_order
         anomlay_bar=deepcopy(event_anomaly),
         char_instance=char,
         skill_node=skill_node,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: cast(ScheduleDispatchPort, dispatch_port)
+        ),
     )
-
-    def fake_create_dispatch_port(*, sim_instance):
-        assert sim_instance is event.sim_instance
-        return dispatch_port
 
     def fake_anomaly_effect_active(**kwargs):
         assert kwargs["new_anomaly"] is event.anomaly_bar
@@ -118,7 +121,6 @@ def test_polarized_assault_event_publishes_follow_ups_via_dispatch_port_in_order
         sim_instance.listener_manager.broadcast_event(event=disorder, signal=LBS.DISORDER_SPAWN)
         return disorder
 
-    monkeypatch.setattr(event_module, "create_schedule_dispatch_port", fake_create_dispatch_port)
     monkeypatch.setattr(update_anomaly_module, "anomaly_effect_active", fake_anomaly_effect_active)
     monkeypatch.setattr(update_anomaly_module, "spawn_output", fake_spawn_output)
 

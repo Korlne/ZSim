@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import cast
 
 import pytest
-import zsim.sim_progress.data_struct.BattleEventListener.AliceDotTriggerListener as listener_module
 
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 from zsim.sim_progress.Dot.BaseDot import Dot
 from zsim.sim_progress.data_struct.BattleEventListener.AliceDotTriggerListener import (
     AliceDotTriggerListener,
+)
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
 )
 
 
@@ -84,7 +88,12 @@ class _ForbiddenRuntimeCommandPort:
         raise AssertionError("Alice dot listener should not issue runtime commands")
 
 
-def _build_listener(*, event_list, call_order: list[str] | None = None):
+def _build_listener(
+    *,
+    event_list,
+    call_order: list[str] | None = None,
+    scheduled_event_emitter_provider: ScheduledEventEmitterProvider | None = None,
+):
     dynamic_dot_list = _RecordingDotList(call_order) if call_order is not None else []
 
     def fail_broadcast(**kwargs):
@@ -108,7 +117,15 @@ def _build_listener(*, event_list, call_order: list[str] | None = None):
         listener_manager=SimpleNamespace(broadcast_event=fail_broadcast),
         runtime_command_port=_ForbiddenRuntimeCommandPort(),
     )
-    return AliceDotTriggerListener(listener_id="Alice_5", sim_instance=sim_instance), sim_instance, enemy
+    return (
+        AliceDotTriggerListener(
+            listener_id="Alice_5",
+            sim_instance=sim_instance,
+            scheduled_event_emitter_provider=scheduled_event_emitter_provider,
+        ),
+        sim_instance,
+        enemy,
+    )
 
 
 def test_alice_dot_trigger_listener_publishes_dot_anomaly_via_dispatch_port(
@@ -119,6 +136,9 @@ def test_alice_dot_trigger_listener_publishes_dot_anomaly_via_dispatch_port(
     listener, sim_instance, enemy = _build_listener(
         event_list=_FailFastEventList(),
         call_order=call_order,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: cast(ScheduleDispatchPort, dispatch_port)
+        ),
     )
     previous_dot = _FakeDot(
         index="AliceCoreSkillAssaultDot",
@@ -135,17 +155,12 @@ def test_alice_dot_trigger_listener_publishes_dot_anomaly_via_dispatch_port(
     )
     received_bar: dict[str, _FakeAnomalyBar] = {}
 
-    def fake_create_dispatch_port(*, sim_instance):
-        assert sim_instance is listener.sim_instance
-        return dispatch_port
-
     def fake_spawn_normal_dot(*, dot_index, sim_instance, bar: _FakeAnomalyBar):
         assert dot_index == "AliceCoreSkillAssaultDot"
         assert sim_instance is listener.sim_instance
         received_bar["value"] = bar
         return replacement_dot
 
-    monkeypatch.setattr(listener_module, "create_schedule_dispatch_port", fake_create_dispatch_port)
     monkeypatch.setattr(
         "zsim.sim_progress.Update.UpdateAnomaly.spawn_normal_dot",
         fake_spawn_normal_dot,

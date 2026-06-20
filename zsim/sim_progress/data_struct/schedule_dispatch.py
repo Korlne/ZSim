@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Iterable, MutableSequence
 
 if TYPE_CHECKING:
@@ -19,6 +20,51 @@ class ScheduleDispatchPort(ABC):
         """按输入顺序发布多条计划事件。"""
         for event in events:
             self.publish_scheduled(event)
+
+
+class ScheduledEventEmitter:
+    """Producer-facing scheduled-event emitter backed by a dispatch port."""
+
+    def __init__(self, dispatch_port: ScheduleDispatchPort) -> None:
+        self._dispatch_port = dispatch_port
+
+    def emit_scheduled(self, event: Any) -> None:
+        self._dispatch_port.publish_scheduled(event)
+
+    def emit_scheduled_batch(self, events: Iterable[Any]) -> None:
+        for event in events:
+            self.emit_scheduled(event)
+
+
+class ScheduledEventEmitterProvider:
+    """Creates fresh scheduled-event emitters without exposing dispatch construction."""
+
+    def __init__(self, dispatch_port_factory: Callable[[], ScheduleDispatchPort]) -> None:
+        self._dispatch_port_factory = dispatch_port_factory
+
+    @classmethod
+    def from_sim_instance(
+        cls,
+        sim_instance: "Simulator",
+    ) -> "ScheduledEventEmitterProvider":
+        return cls(lambda: create_schedule_dispatch_port(sim_instance=sim_instance))
+
+    @classmethod
+    def from_sim_instance_getter(
+        cls,
+        sim_instance_getter: Callable[[], "Simulator | None"],
+    ) -> "ScheduledEventEmitterProvider":
+        return cls(lambda: create_schedule_dispatch_port(sim_instance=sim_instance_getter()))
+
+    @classmethod
+    def from_schedule_data(
+        cls,
+        schedule_data: "ScheduleData",
+    ) -> "ScheduledEventEmitterProvider":
+        return cls(lambda: create_schedule_dispatch_port(schedule_data=schedule_data))
+
+    def create_emitter(self) -> ScheduledEventEmitter:
+        return ScheduledEventEmitter(self._dispatch_port_factory())
 
 
 class _ScheduleQueueOwner(ABC):
@@ -87,5 +133,7 @@ def create_schedule_dispatch_port(
 __all__ = [
     "LegacyEventListScheduleDispatchAdapter",
     "ScheduleDispatchPort",
+    "ScheduledEventEmitter",
+    "ScheduledEventEmitterProvider",
     "create_schedule_dispatch_port",
 ]

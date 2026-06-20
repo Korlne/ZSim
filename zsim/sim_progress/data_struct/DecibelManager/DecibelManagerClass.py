@@ -1,6 +1,9 @@
 from typing import TYPE_CHECKING, Any
 
-from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitter,
+    ScheduledEventEmitterProvider,
+)
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Character.character import Character
@@ -13,9 +16,17 @@ if TYPE_CHECKING:
 
 
 class Decibelmanager:
-    def __init__(self, sim_instance: "Simulator"):
+    def __init__(
+        self,
+        sim_instance: "Simulator",
+        scheduled_event_emitter_provider: ScheduledEventEmitterProvider | None = None,
+    ):
         # 原类属性改为实例属性
         self.sim_instance = sim_instance
+        self._scheduled_event_emitter_provider = (
+            scheduled_event_emitter_provider
+            or ScheduledEventEmitterProvider.from_sim_instance(sim_instance)
+        )
         self.DECIBEL_EVENT_MAP: dict[str | int, list[int]] = {
             "interrupt_enemy": [10],
             4: [20],
@@ -44,8 +55,8 @@ class Decibelmanager:
         self.enemy: "Enemy | None" = None
         self.game_state: dict[str, Any] = {}
 
-    def _create_dispatch_port(self):
-        return create_schedule_dispatch_port(sim_instance=self.sim_instance)
+    def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
+        return self._scheduled_event_emitter_provider.create_emitter()
 
     def update(self, **kwargs):
         decibel_value, node, output_key = self.get_decibel_value(**kwargs)
@@ -67,7 +78,7 @@ class Decibelmanager:
         from zsim.sim_progress.data_struct import ScheduleRefreshData
 
         refresh_data = ScheduleRefreshData(decibel_target=(char_name,), decibel_value=decibel_value)
-        self._create_dispatch_port().publish_scheduled(refresh_data)
+        self._scheduled_event_emitter().emit_scheduled(refresh_data)
         # print(f"{char_name}因{self.REPORT_MAP[output_key]}获得了{decibel_value}点喧响值！")
 
     def get_decibel_value(

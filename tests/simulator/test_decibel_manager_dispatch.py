@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from typing import cast
 
 import zsim.define as define_module
 
@@ -8,9 +9,12 @@ import sys
 
 sys.modules.setdefault("define", define_module)
 
-import zsim.sim_progress.data_struct.DecibelManager.DecibelManagerClass as decibel_module
 from zsim.sim_progress.data_struct.DecibelManager.DecibelManagerClass import Decibelmanager
 from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 
 
 class _FailFastEventList(list):
@@ -32,7 +36,12 @@ def test_decibel_manager_publishes_major_and_minor_refreshes_via_dispatch_port(
     dispatch_port = _RecordingDispatchPort()
     schedule_data = SimpleNamespace(event_list=_FailFastEventList())
     sim_instance = SimpleNamespace(schedule_data=schedule_data, game_state={})
-    manager = Decibelmanager(sim_instance)
+    manager = Decibelmanager(
+        sim_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: cast(ScheduleDispatchPort, dispatch_port)
+        ),
+    )
     manager.char_obj_list = [
         SimpleNamespace(CID=1301, NAME="Major"),
         SimpleNamespace(CID=1201, NAME="MinorOne"),
@@ -42,12 +51,6 @@ def test_decibel_manager_publishes_major_and_minor_refreshes_via_dispatch_port(
         skill_tag="1301_TEST_1",
         active_generation=True,
         skill=SimpleNamespace(trigger_buff_level=5),
-    )
-
-    monkeypatch.setattr(
-        decibel_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
     )
 
     manager.update(skill_node=skill_node)
@@ -76,17 +79,16 @@ def test_decibel_manager_skips_zero_value_branches_without_publish(monkeypatch):
     dispatch_port = _RecordingDispatchPort()
     schedule_data = SimpleNamespace(event_list=_FailFastEventList())
     sim_instance = SimpleNamespace(schedule_data=schedule_data, game_state={})
-    manager = Decibelmanager(sim_instance)
+    manager = Decibelmanager(
+        sim_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: cast(ScheduleDispatchPort, dispatch_port)
+        ),
+    )
     manager.char_obj_list = [
         SimpleNamespace(CID=1301, NAME="Major"),
         SimpleNamespace(CID=1201, NAME="MinorOne"),
     ]
-
-    monkeypatch.setattr(
-        decibel_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
 
     inactive_generation_node = SimpleNamespace(
         skill_tag="1301_TEST_1",

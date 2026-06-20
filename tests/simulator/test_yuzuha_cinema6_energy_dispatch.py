@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import sys
 from types import SimpleNamespace
+from typing import cast
 
 import zsim.define as define_module
 
 sys.modules.setdefault("define", define_module)
 
-import zsim.sim_progress.Character.Yuzuha as yuzuha_module
 from zsim.sim_progress.Character.Yuzuha import Yuzuha
 from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 
 
 class _FailFastEventList(list):
@@ -66,11 +70,8 @@ def test_yuzuha_cinema6_team_energy_fanout_publishes_via_dispatch_port(monkeypat
     yuzuha.sim_instance = sim_instance
     yuzuha.sugar_points = 3
     yuzuha.max_sugar_points = 6
-
-    monkeypatch.setattr(
-        yuzuha_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
+    yuzuha._scheduled_event_emitter_provider = ScheduledEventEmitterProvider(
+        lambda: cast(ScheduleDispatchPort, dispatch_port)
     )
 
     skill_node = _build_skill_node()

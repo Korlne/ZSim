@@ -4,11 +4,15 @@ import importlib
 import inspect
 import sys
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
 import zsim.define as define_module
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 
 sys.modules.setdefault("define", define_module)
 
@@ -63,6 +67,20 @@ class _RecordingDispatchPort:
         self.events.append(event)
         if self.order_log is not None:
             self.order_log.append("publish")
+
+
+def _patch_schedule_preload_emitter_provider(
+    monkeypatch: pytest.MonkeyPatch,
+    dispatch_port: _RecordingDispatchPort,
+) -> None:
+    def fake_from_sim_instance(sim_instance: object) -> ScheduledEventEmitterProvider:
+        return ScheduledEventEmitterProvider(lambda: cast(ScheduleDispatchPort, dispatch_port))
+
+    monkeypatch.setattr(
+        schedule_preload_module.ScheduledEventEmitterProvider,
+        "from_sim_instance",
+        staticmethod(fake_from_sim_instance),
+    )
 
 
 class _ForbiddenLayer:
@@ -650,11 +668,7 @@ def test_yuzuha_cinema6_preload_publish_uses_current_tick_and_preload_data(
 ) -> None:
     monkeypatch.setattr(cinema6_trigger_module, "YUZUHA_REPORT", False)
     dispatch_port = _RecordingDispatchPort()
-    monkeypatch.setattr(
-        schedule_preload_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
+    _patch_schedule_preload_emitter_provider(monkeypatch, dispatch_port)
     harness = _build_cinema6_trigger_harness(
         tick=1440,
         sugar_points=2,
@@ -688,11 +702,7 @@ def test_yuzuha_cinema6_charge_gate_blocks_preload_publish_and_context_reads(
 ) -> None:
     monkeypatch.setattr(cinema6_trigger_module, "YUZUHA_REPORT", False)
     dispatch_port = _RecordingDispatchPort()
-    monkeypatch.setattr(
-        schedule_preload_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
+    _patch_schedule_preload_emitter_provider(monkeypatch, dispatch_port)
     harness = _build_cinema6_trigger_harness(
         tick=1440,
         sugar_points=2,
@@ -715,11 +725,7 @@ def test_yuzuha_cinema6_report_state_stays_separate_from_publish_and_runtime(
     order_log: list[str] = []
     monkeypatch.setattr(cinema6_trigger_module, "YUZUHA_REPORT", True)
     dispatch_port = _RecordingDispatchPort(order_log=order_log)
-    monkeypatch.setattr(
-        schedule_preload_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
+    _patch_schedule_preload_emitter_provider(monkeypatch, dispatch_port)
     harness = _build_cinema6_trigger_harness(
         tick=1500,
         sugar_points=2,

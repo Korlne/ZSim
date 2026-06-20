@@ -4,14 +4,16 @@ from zsim.define import YUZUHA_REPORT
 from zsim.models.event_enums import PostInitObjectType as PIOT
 from zsim.models.event_enums import SpecialStateUpdateSignal as SSUS
 from zsim.sim_progress.Preload import SkillNode
-from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitter,
+    ScheduledEventEmitterProvider,
+)
 
 from ...data_struct.SchedulePreload import schedule_preload_event_factory
 from ..character import Character
 from ..utils.filters import _skill_node_filter
 
 if TYPE_CHECKING:
-    from zsim.sim_progress.data_struct.schedule_dispatch import ScheduleDispatchPort
     from zsim.sim_progress.data_struct.enemy_special_state_manager.special_classes import SweetScare
     from zsim.simulator.simulator_class import Simulator
 
@@ -19,14 +21,25 @@ if TYPE_CHECKING:
 class Yuzuha(Character):
     def __init__(self, **kwargs):
         """柚叶的特殊资源"""
+        scheduled_event_emitter_provider = kwargs.pop("scheduled_event_emitter_provider", None)
         super().__init__(**kwargs)
         self.sweet_scare: SweetScare | None = None
         self.sugar_points: int = 3  # 甜度点
         self.max_sugar_points: int = 6
         self.hard_candy_shot_tag = "1411_CoAttack_A"
+        self._scheduled_event_emitter_provider = (
+            scheduled_event_emitter_provider
+            or ScheduledEventEmitterProvider.from_sim_instance_getter(lambda: self.sim_instance)
+        )
 
-    def _create_dispatch_port(self) -> "ScheduleDispatchPort":
-        return create_schedule_dispatch_port(sim_instance=self.sim_instance)
+    def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
+        provider = getattr(self, "_scheduled_event_emitter_provider", None)
+        if provider is None:
+            provider = ScheduledEventEmitterProvider.from_sim_instance_getter(
+                lambda: self.sim_instance
+            )
+            self._scheduled_event_emitter_provider = provider
+        return provider.create_emitter()
 
     def special_resources(self, *args, **kwargs) -> None:
         skill_nodes: list[SkillNode] = _skill_node_filter(*args, **kwargs)
@@ -52,7 +65,7 @@ class Yuzuha(Character):
             if node.skill.trigger_buff_level == 6:
                 from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
 
-                dispatch_port = self._create_dispatch_port()
+                emitter = self._scheduled_event_emitter()
                 report_namelist = []
                 for char_obj in sim_instance.char_data.char_obj_list:
                     if char_obj.NAME == self.NAME:
@@ -62,7 +75,7 @@ class Yuzuha(Character):
                         sp_target=(char_obj.NAME,),
                         sp_value=25,
                     )
-                    dispatch_port.publish_scheduled(schedule_refresh_event)
+                    emitter.emit_scheduled(schedule_refresh_event)
                 else:
                     if YUZUHA_REPORT:
                         sim_instance.schedule_data.change_process_state()

@@ -4,24 +4,32 @@ from zsim.define import ALICE_REPORT
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 
 from .BaseListenerClass import BaseListener
-from ..schedule_dispatch import create_schedule_dispatch_port
+from ..schedule_dispatch import ScheduledEventEmitter, ScheduledEventEmitterProvider
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Character.Alice import Alice
     from zsim.sim_progress.Character.character import Character
     from zsim.simulator.simulator_class import Simulator
-    from ..schedule_dispatch import ScheduleDispatchPort
 
 
 class AliceDotTriggerListener(BaseListener):
     """这个监听器的作用是监听畏缩的激活与刷新"""
 
-    def __init__(self, listener_id: str | None = None, sim_instance: "Simulator | None" = None):
+    def __init__(
+        self,
+        listener_id: str | None = None,
+        sim_instance: "Simulator | None" = None,
+        scheduled_event_emitter_provider: ScheduledEventEmitterProvider | None = None,
+    ):
         super().__init__(listener_id, sim_instance=sim_instance)
         self.char: "Character | None | Alice" = None
+        self._scheduled_event_emitter_provider = (
+            scheduled_event_emitter_provider
+            or ScheduledEventEmitterProvider.from_sim_instance_getter(lambda: self.sim_instance)
+        )
 
-    def _create_dispatch_port(self) -> "ScheduleDispatchPort":
-        return create_schedule_dispatch_port(sim_instance=self.sim_instance)
+    def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
+        return self._scheduled_event_emitter_provider.create_emitter()
 
     def listening_event(self, event, signal: LBS, **kwargs):
         """监听到紊乱信号时，激活"""
@@ -59,7 +67,6 @@ class AliceDotTriggerListener(BaseListener):
             bar=phy_anomaly_bar,
         )
         dot.start(timenow=self.sim_instance.tick)
-        dispatch_port = self._create_dispatch_port()
         from zsim.sim_progress.Dot.BaseDot import Dot
 
         for dots in enemy.dynamic.dynamic_dot_list:
@@ -70,7 +77,7 @@ class AliceDotTriggerListener(BaseListener):
                 break
 
         enemy.dynamic.dynamic_dot_list.append(dot)
-        dispatch_port.publish_scheduled(dot.anomaly_data)
+        self._scheduled_event_emitter().emit_scheduled(dot.anomaly_data)
         if ALICE_REPORT:
             self.sim_instance.schedule_data.change_process_state()
             print("【爱丽丝事件】检测到畏缩状态更新，核心被动Dot激活！")

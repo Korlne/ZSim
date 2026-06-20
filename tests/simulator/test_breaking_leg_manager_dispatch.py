@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+import inspect
 import sys
 from importlib import import_module
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pytest
 import zsim.define as define_module
@@ -12,6 +13,10 @@ sys.modules.setdefault("define", define_module)
 
 import zsim.sim_progress.Buff as buff_module
 from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 
 breaking_module = import_module("zsim.sim_progress.Enemy.EnemyUniqueMechanic.BreakingLegManager")
 BreakingEvent = breaking_module.BreakingEvent
@@ -67,8 +72,6 @@ class _FakeEnemy:
 def _patch_breaking_dependencies(
     monkeypatch: pytest.MonkeyPatch,
     *,
-    dispatch_port: _RecordingDispatchPort,
-    expected_sim_instance: object,
     call_order: list[str],
 ) -> list[tuple[int, object]]:
     find_calls: list[tuple[int, object]] = []
@@ -84,18 +87,7 @@ def _patch_breaking_dependencies(
         assert kwargs["dmg_expect"] == 5500
         assert kwargs["stun"] == 300
 
-    def fake_create_schedule_dispatch_port(
-        *, sim_instance: object
-    ) -> _RecordingDispatchPort:
-        assert sim_instance is expected_sim_instance
-        return dispatch_port
-
     monkeypatch.setattr(buff_module, "find_char_from_CID", fake_find_char_from_cid)
-    monkeypatch.setattr(
-        breaking_module,
-        "create_schedule_dispatch_port",
-        fake_create_schedule_dispatch_port,
-    )
     monkeypatch.setattr(breaking_module, "report_dmg_result", fake_report_dmg_result)
     return find_calls
 
@@ -111,12 +103,15 @@ def test_breaking_event_publishes_part_break_refresh_before_same_tick_side_effec
     single_hit = SimpleNamespace(skill_tag="1301_TEST_1")
     find_calls = _patch_breaking_dependencies(
         monkeypatch,
-        dispatch_port=dispatch_port,
-        expected_sim_instance=sim_instance,
         call_order=call_order,
     )
 
-    BreakingEvent(enemy).active(single_hit, tick=120)
+    BreakingEvent(
+        enemy,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: cast(ScheduleDispatchPort, dispatch_port)
+        ),
+    ).active(single_hit, tick=120)
 
     assert call_order == ["publish", "update_stun", "stun_judge", "hp_update", "report"]
     assert len(dispatch_port.events) == 1
@@ -140,11 +135,14 @@ def test_breaking_event_reuses_cached_char_for_repeated_part_break_rewards(
     schedule_data = SimpleNamespace(event_list=_FailFastEventList())
     sim_instance = SimpleNamespace(schedule_data=schedule_data)
     enemy = _FakeEnemy(sim_instance, call_order)
-    event = BreakingEvent(enemy)
+    event = BreakingEvent(
+        enemy,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: cast(ScheduleDispatchPort, dispatch_port)
+        ),
+    )
     find_calls = _patch_breaking_dependencies(
         monkeypatch,
-        dispatch_port=dispatch_port,
-        expected_sim_instance=sim_instance,
         call_order=call_order,
     )
 
@@ -155,3 +153,26 @@ def test_breaking_event_reuses_cached_char_for_repeated_part_break_rewards(
     assert all(isinstance(event, ScheduleRefreshData) for event in dispatch_port.events)
     assert find_calls == [(1301, sim_instance)]
     assert schedule_data.event_list == []
+
+
+def test_non_buffxlogic_producers_receive_emitters_not_dispatch_ports():
+    producer_module_names = [
+        "zsim.sim_progress.Character.Yuzuha",
+        "zsim.sim_progress.Enemy.EnemyUniqueMechanic.BreakingLegManager",
+        "zsim.sim_progress.data_struct.DecibelManager.DecibelManagerClass",
+        "zsim.sim_progress.data_struct.QuickAssistSystem",
+        "zsim.sim_progress.data_struct.PolarizedAssaultEventClass",
+        "zsim.sim_progress.data_struct.SchedulePreload",
+        "zsim.sim_progress.data_struct.BattleEventListener.AliceDotTriggerListener",
+    ]
+    forbidden_terms = (
+        "_create_dispatch_port",
+        "create_schedule_dispatch_port",
+        "ScheduleDispatchPort",
+    )
+
+    for module_name in producer_module_names:
+        source = inspect.getsource(import_module(module_name))
+        assert "ScheduledEventEmitterProvider" in source
+        for forbidden_term in forbidden_terms:
+            assert forbidden_term not in source
