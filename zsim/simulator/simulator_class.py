@@ -16,7 +16,7 @@ from zsim.sim_progress.Report import start_report_threads, stop_report_threads
 from zsim.sim_progress.ScheduledEvent import ScheduledEvent as ScE
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     BuffRuntimeFacade,
-    create_legacy_buff_runtime_facade,
+    BuffRuntimeState,
 )
 from zsim.simulator.dataclasses import (
     CharacterData,
@@ -76,6 +76,7 @@ class Simulator:
     load_data: LoadData
     schedule_data: ScheduleData
     global_stats: GlobalStats
+    buff_runtime_state: BuffRuntimeState
     skills: list[Skill]
     preload: PreloadClass
     game_state: dict[str, Any]
@@ -186,6 +187,12 @@ class Simulator:
         if self.schedule_data.enemy.sim_instance is None:
             self.schedule_data.enemy.sim_instance = self
         self.global_stats = GlobalStats(name_box=self.init_data.name_box, sim_instance=self)
+        self.buff_runtime_state = BuffRuntimeState(
+            template_registry=self.load_data.exist_buff_dict,
+            pending_queue=self.load_data.LOADING_BUFF_DICT,
+            active_store=self.global_stats.DYNAMIC_BUFF_DICT,
+            enemy_mirror=self.schedule_data.enemy.dynamic.dynamic_debuff_list,
+        )
         skills = [char.skill_object for char in self.char_data.char_obj_list]
         self.preload = PreloadClass(
             skills,
@@ -200,6 +207,7 @@ class Simulator:
             "load_data": self.load_data,
             "schedule_data": self.schedule_data,
             "global_stats": self.global_stats,
+            "buff_runtime_state": self.buff_runtime_state,
             "preload": self.preload,
         }
         self.decibel_manager = Decibelmanager(self)
@@ -210,12 +218,7 @@ class Simulator:
 
     def _create_buff_runtime_facade(self) -> BuffRuntimeFacade:
         self._record_buff_runtime_rebuild_count("legacy_buff_runtime_facade")
-        return create_legacy_buff_runtime_facade(
-            exist_buff_dict=self.load_data.exist_buff_dict,
-            loading_buff_dict=self.load_data.LOADING_BUFF_DICT,
-            dynamic_buff_dict=self.global_stats.DYNAMIC_BUFF_DICT,
-            enemy_debuff_mirror=self.schedule_data.enemy.dynamic.dynamic_debuff_list,
-        )
+        return self.buff_runtime_state.create_facade()
 
     def main_loop(
         self, stop_tick: int = 10800, *, sim_cfg: SimCfg | None = None, use_api: bool = False
@@ -289,6 +292,7 @@ class Simulator:
                 self.tick,
                 self.load_data.exist_buff_dict,
                 self.load_data.action_stack,
+                buff_runtime_state=self.buff_runtime_state,
                 sim_instance=self,
             )
             sce.event_start()

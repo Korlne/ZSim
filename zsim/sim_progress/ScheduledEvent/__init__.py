@@ -16,7 +16,7 @@ from zsim.sim_progress.data_struct import (
 from zsim.sim_progress.Load.loading_mission import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
 
-from .buff_runtime import create_buff_runtime_read_port
+from .buff_runtime import BuffRuntimeState
 from .event_handlers import EventContext, event_handler_factory, register_all_handlers
 from .runtime_command import create_runtime_command_port
 
@@ -63,6 +63,7 @@ class ScheduledEvent:
         action_stack: ActionStack,
         *,
         loading_buff: dict | None = None,
+        buff_runtime_state: BuffRuntimeState | None = None,
         sim_instance: Simulator,
     ):
         self.data: "ScheduleData" = data
@@ -84,6 +85,14 @@ class ScheduledEvent:
         self.data.loading_buff = loading_buff
         self.exist_buff_dict = exist_buff_dict
         self.enemy = self.data.enemy
+        self.buff_runtime_state = buff_runtime_state
+        if self.buff_runtime_state is None:
+            self.buff_runtime_state = BuffRuntimeState(
+                template_registry=exist_buff_dict,
+                pending_queue=loading_buff,
+                active_store=dynamic_buff,
+                enemy_mirror=[],
+            )
         self.sim_instance: Simulator = sim_instance
         self._record_buff_runtime_rebuild_count("scheduled_event")
         runtime_ports = self._create_runtime_ports()
@@ -115,17 +124,14 @@ class ScheduledEvent:
     def _create_runtime_ports(self) -> _ScheduledEventRuntimePorts:
         """集中创建 Schedule 事件处理所需的 runtime 读写端口。"""
         self._record_buff_runtime_rebuild_count("scheduled_event_runtime_ports")
-        buff_runtime_view = create_buff_runtime_read_port(
-            dynamic_buff=self.data.dynamic_buff,
-            exist_buff_dict=self.exist_buff_dict,
-        )
+        buff_runtime_view = self.buff_runtime_state.create_read_port()
         return _ScheduledEventRuntimePorts(
             buff_runtime_view=buff_runtime_view,
             runtime_command_port=create_runtime_command_port(
                 data=self.data,
-                exist_buff_dict=self.exist_buff_dict,
                 action_stack=self.action_stack,
                 sim_instance=self.sim_instance,
+                buff_runtime_state=self.buff_runtime_state,
                 buff_runtime_view=buff_runtime_view,
             ),
         )

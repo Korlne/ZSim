@@ -11,6 +11,41 @@ if TYPE_CHECKING:
     from zsim.sim_progress.Enemy import Enemy
 
 
+class BuffRuntimeState:
+    """Run-scoped Buff runtime owner for retained legacy container identities."""
+
+    def __init__(
+        self,
+        *,
+        template_registry: dict[str, dict[str, "Buff"]],
+        pending_queue: dict[str, list["Buff"]],
+        active_store: dict[str, list["Buff"]],
+        enemy_mirror: list["Buff"],
+    ) -> None:
+        self._template_registry = template_registry
+        self._pending_queue = pending_queue
+        self._active_store = active_store
+        self._enemy_mirror = enemy_mirror
+
+    def create_facade(self) -> "BuffRuntimeFacade":
+        return LegacyBuffRuntimeFacade(runtime_state=self)
+
+    def create_read_port(self) -> "BuffRuntimeReadPort":
+        return LegacyBuffRuntimeReadAdapter(runtime_state=self)
+
+    def template_registry_for_compat(self) -> dict[str, dict[str, "Buff"]]:
+        return self._template_registry
+
+    def pending_queue_for_compat(self) -> dict[str, list["Buff"]]:
+        return self._pending_queue
+
+    def active_store_for_compat(self) -> dict[str, list["Buff"]]:
+        return self._active_store
+
+    def enemy_mirror_for_compat(self) -> list["Buff"]:
+        return self._enemy_mirror
+
+
 class BuffRuntimeReadPort(ABC):
     """Buff runtime 只读接口。"""
 
@@ -42,40 +77,40 @@ class BuffRuntimeReadPort(ABC):
 class LegacyBuffRuntimeReadAdapter(BuffRuntimeReadPort):
     """基于旧容器的 Buff runtime 兼容只读适配器。"""
 
-    def __init__(
-        self,
-        dynamic_buff: dict[str, list["Buff"]],
-        exist_buff_dict: dict[str, dict[str, "Buff"]],
-    ) -> None:
-        self._dynamic_buff = dynamic_buff
-        self._exist_buff_dict = exist_buff_dict
+    def __init__(self, *, runtime_state: BuffRuntimeState) -> None:
+        self._runtime_state = runtime_state
 
     def get_active_buffs(self, beneficiary: str) -> Sequence["Buff"]:
-        return tuple(self._dynamic_buff.get(beneficiary, []))
+        return tuple(self._runtime_state.active_store_for_compat().get(beneficiary, []))
 
     def get_active_buff_view(self) -> Mapping[str, Sequence["Buff"]]:
         return MappingProxyType(
-            {beneficiary: tuple(buffs) for beneficiary, buffs in self._dynamic_buff.items()}
+            {
+                beneficiary: tuple(buffs)
+                for beneficiary, buffs in self._runtime_state.active_store_for_compat().items()
+            }
         )
 
     def get_exist_buff_snapshot(self, beneficiary: str) -> Mapping[str, "Buff"]:
-        return MappingProxyType(dict(self._exist_buff_dict.get(beneficiary, {})))
+        return MappingProxyType(
+            dict(self._runtime_state.template_registry_for_compat().get(beneficiary, {}))
+        )
 
     def get_exist_buff_snapshot_view(self) -> Mapping[str, Mapping[str, "Buff"]]:
         return MappingProxyType(
             {
                 beneficiary: MappingProxyType(dict(buff_dict))
-                for beneficiary, buff_dict in self._exist_buff_dict.items()
+                for beneficiary, buff_dict in self._runtime_state.template_registry_for_compat().items()
             }
         )
 
     def get_legacy_dynamic_buff_dict(self) -> dict[str, list["Buff"]]:
         # 兼容旧容器身份；仅供同 tick 写边界读取，不是新的主读口。
-        return self._dynamic_buff
+        return self._runtime_state.active_store_for_compat()
 
     def get_legacy_exist_buff_dict(self) -> dict[str, dict[str, "Buff"]]:
         # 兼容旧容器身份；仅供同 tick 写边界读取，不是新的主读口。
-        return self._exist_buff_dict
+        return self._runtime_state.template_registry_for_compat()
 
 
 class BuffRuntimeFacade(ABC):
@@ -155,24 +190,18 @@ class BuffRuntimeFacade(ABC):
 class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
     """基于旧容器身份的 Buff runtime 门面。"""
 
-    def __init__(
-        self,
-        *,
-        exist_buff_dict: dict[str, dict[str, "Buff"]],
-        loading_buff_dict: dict[str, list["Buff"]],
-        dynamic_buff_dict: dict[str, list["Buff"]],
-        enemy_debuff_mirror: list["Buff"],
-    ) -> None:
-        self._exist_buff_dict = exist_buff_dict
-        self._loading_buff_dict = loading_buff_dict
-        self._dynamic_buff_dict = dynamic_buff_dict
-        self._enemy_debuff_mirror = enemy_debuff_mirror
+    def __init__(self, *, runtime_state: BuffRuntimeState) -> None:
+        self._runtime_state = runtime_state
 
     def get_registered_buff(self, beneficiary: str, buff_index: str) -> "Buff | None":
-        return self._exist_buff_dict.get(beneficiary, {}).get(buff_index)
+        return self._runtime_state.template_registry_for_compat().get(beneficiary, {}).get(
+            buff_index
+        )
 
     def get_registered_buff_view(self, beneficiary: str) -> Mapping[str, "Buff"]:
-        return MappingProxyType(dict(self._exist_buff_dict.get(beneficiary, {})))
+        return MappingProxyType(
+            dict(self._runtime_state.template_registry_for_compat().get(beneficiary, {}))
+        )
 
     def enqueue_pending_buff(self, beneficiary: str, buff: "Buff") -> None:
         self._get_pending_queue(beneficiary).append(buff)
@@ -194,7 +223,9 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         self._get_active_buffs(beneficiary).remove(buff)
 
     def end_active_buff(self, beneficiary: str, buff: "Buff", *, tick: int) -> None:
-        sub_exist_buff_dict = self._exist_buff_dict[beneficiary]
+        sub_exist_buff_dict = self._runtime_state.template_registry_for_compat()[
+            beneficiary
+        ]
         buff.end(tick, sub_exist_buff_dict)
         self.remove_active_buff(beneficiary, buff)
         report_to_log(
@@ -202,7 +233,7 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
             level=4,
         )
         if buff.ft.is_debuff:
-            self._enemy_debuff_mirror.remove(buff)
+            self._runtime_state.enemy_mirror_for_compat().remove(buff)
 
     def settle_individual_buff_stack(self, buff: "Buff", *, tick: int) -> None:
         expired_stack_items = [
@@ -225,19 +256,19 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
     def sync_enemy_debuff_mirror(self, buff: "Buff") -> None:
         existing_buff = self._find_enemy_debuff_mirror(buff)
         if existing_buff is not None:
-            self._enemy_debuff_mirror.remove(existing_buff)
-        self._enemy_debuff_mirror.append(buff)
+            self._runtime_state.enemy_mirror_for_compat().remove(existing_buff)
+        self._runtime_state.enemy_mirror_for_compat().append(buff)
 
     def remove_enemy_debuff_mirror(self, buff: "Buff") -> None:
         existing_buff = self._find_enemy_debuff_mirror(buff)
         if existing_buff is not None:
-            self._enemy_debuff_mirror.remove(existing_buff)
+            self._runtime_state.enemy_mirror_for_compat().remove(existing_buff)
 
     def activate_pending_buffs(self, *, timenow: float) -> dict[str, list["Buff"]]:
-        for beneficiary in self._loading_buff_dict:
+        for beneficiary in self._runtime_state.pending_queue_for_compat():
             for buff in self.drain_pending_buffs(beneficiary):
                 self._activate_pending_buff(beneficiary, buff)
-        return self._dynamic_buff_dict
+        return self._runtime_state.active_store_for_compat()
 
     def get_pending_queue_for_compat(self, beneficiary: str) -> list["Buff"]:
         # 兼容旧容器身份；仅供迁移期局部桥接，不是新的主契约。
@@ -249,7 +280,7 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
 
     def get_enemy_debuff_mirror_for_compat(self) -> list["Buff"]:
         # 兼容旧容器身份；仅供迁移期局部桥接，不是新的主契约。
-        return self._enemy_debuff_mirror
+        return self._runtime_state.enemy_mirror_for_compat()
 
     def update_time_related_effects(
         self, *, tick: int, enemy: "Enemy"
@@ -257,25 +288,25 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         from zsim.sim_progress.Update import Update_Buff
 
         return Update_Buff.update_time_related_effect(
-            self._dynamic_buff_dict,
+            self._runtime_state.active_store_for_compat(),
             tick,
-            self._exist_buff_dict,
+            self._runtime_state.template_registry_for_compat(),
             enemy,
             runtime_facade=self,
         )
 
     def _get_pending_queue(self, beneficiary: str) -> list["Buff"]:
-        return self._loading_buff_dict[beneficiary]
+        return self._runtime_state.pending_queue_for_compat()[beneficiary]
 
     def _get_active_buffs(self, beneficiary: str) -> list["Buff"]:
-        return self._dynamic_buff_dict[beneficiary]
+        return self._runtime_state.active_store_for_compat()[beneficiary]
 
     def _find_enemy_debuff_mirror(self, buff: "Buff") -> "Buff | None":
         buff_index = self._get_buff_index(buff)
         return next(
             (
                 existing_buff
-                for existing_buff in self._enemy_debuff_mirror
+                for existing_buff in self._runtime_state.enemy_mirror_for_compat()
                 if self._get_buff_index(existing_buff) == buff_index
             ),
             None,
@@ -314,14 +345,21 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
 
 def create_buff_runtime_read_port(
     *,
-    dynamic_buff: dict[str, list["Buff"]],
-    exist_buff_dict: dict[str, dict[str, "Buff"]],
+    runtime_state: BuffRuntimeState | None = None,
+    dynamic_buff: dict[str, list["Buff"]] | None = None,
+    exist_buff_dict: dict[str, dict[str, "Buff"]] | None = None,
 ) -> BuffRuntimeReadPort:
     """创建 Buff runtime 只读入口，但不把 raw 容器当作主契约继续扩散。"""
-    return LegacyBuffRuntimeReadAdapter(
-        dynamic_buff=dynamic_buff,
-        exist_buff_dict=exist_buff_dict,
-    )
+    if runtime_state is None:
+        if dynamic_buff is None or exist_buff_dict is None:
+            raise ValueError("runtime_state or legacy read containers are required")
+        runtime_state = BuffRuntimeState(
+            template_registry=exist_buff_dict,
+            pending_queue={},
+            active_store=dynamic_buff,
+            enemy_mirror=[],
+        )
+    return runtime_state.create_read_port()
 
 
 def create_legacy_buff_runtime_facade(
@@ -332,17 +370,19 @@ def create_legacy_buff_runtime_facade(
     enemy_debuff_mirror: list["Buff"],
 ) -> BuffRuntimeFacade:
     """创建旧 Buff 容器运行时门面，不复制或替换旧容器身份。"""
-    return LegacyBuffRuntimeFacade(
-        exist_buff_dict=exist_buff_dict,
-        loading_buff_dict=loading_buff_dict,
-        dynamic_buff_dict=dynamic_buff_dict,
-        enemy_debuff_mirror=enemy_debuff_mirror,
+    runtime_state = BuffRuntimeState(
+        template_registry=exist_buff_dict,
+        pending_queue=loading_buff_dict,
+        active_store=dynamic_buff_dict,
+        enemy_mirror=enemy_debuff_mirror,
     )
+    return runtime_state.create_facade()
 
 
 __all__ = [
     "BuffRuntimeReadPort",
     "BuffRuntimeFacade",
+    "BuffRuntimeState",
     "LegacyBuffRuntimeReadAdapter",
     "LegacyBuffRuntimeFacade",
     "create_buff_runtime_read_port",

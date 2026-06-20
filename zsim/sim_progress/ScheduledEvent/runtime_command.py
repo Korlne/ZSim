@@ -10,6 +10,7 @@ from zsim.sim_progress.Update import update_anomaly as legacy_update_anomaly
 
 if TYPE_CHECKING:
     from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
     from zsim.sim_progress.Enemy import Enemy
     from zsim.sim_progress.Load import LoadingMission
     from zsim.sim_progress.Preload import SkillNode
@@ -52,13 +53,17 @@ class LegacyRuntimeCommandAdapter(RuntimeCommandPort):
         self,
         *,
         data: "ScheduleData",
-        exist_buff_dict: dict,
         action_stack: "ActionStack",
         sim_instance: "Simulator",
+        exist_buff_dict: dict | None = None,
+        buff_runtime_state: "BuffRuntimeState | None" = None,
         buff_runtime_view: "BuffRuntimeReadPort | None" = None,
     ) -> None:
+        if buff_runtime_state is None and exist_buff_dict is None:
+            raise ValueError("buff_runtime_state or legacy exist_buff_dict is required")
         self._data = data
         self._exist_buff_dict = exist_buff_dict
+        self._buff_runtime_state = buff_runtime_state
         self._action_stack = action_stack
         self._sim_instance = sim_instance
         self._buff_runtime_view = buff_runtime_view
@@ -79,7 +84,7 @@ class LegacyRuntimeCommandAdapter(RuntimeCommandPort):
             self._data.event_list,
             self._data.char_obj_list,
             skill_node=skill_node,
-            dynamic_buff_dict=self._data.dynamic_buff,
+            dynamic_buff_dict=self._active_store_for_compat(),
             buff_runtime_view=self._buff_runtime_view,
             sim_instance=self._sim_instance,
         )
@@ -100,29 +105,43 @@ class LegacyRuntimeCommandAdapter(RuntimeCommandPort):
 
         legacy_schedule_buff_settle(
             tick,
-            self._exist_buff_dict,
+            self._template_registry_for_compat(),
             enemy,
-            self._data.dynamic_buff,
+            self._active_store_for_compat(),
             self._action_stack,
             sim_instance=self._sim_instance,
             **legacy_kwargs,
         )
 
+    def _template_registry_for_compat(self) -> dict:
+        if self._buff_runtime_state is not None:
+            return self._buff_runtime_state.template_registry_for_compat()
+        if self._exist_buff_dict is None:
+            raise RuntimeError("legacy exist_buff_dict compatibility data is missing")
+        return self._exist_buff_dict
+
+    def _active_store_for_compat(self) -> dict:
+        if self._buff_runtime_state is not None:
+            return self._buff_runtime_state.active_store_for_compat()
+        return self._data.dynamic_buff
+
 
 def create_runtime_command_port(
     *,
     data: "ScheduleData",
-    exist_buff_dict: dict,
     action_stack: "ActionStack",
     sim_instance: "Simulator",
+    exist_buff_dict: dict | None = None,
+    buff_runtime_state: "BuffRuntimeState | None" = None,
     buff_runtime_view: "BuffRuntimeReadPort | None" = None,
 ) -> RuntimeCommandPort:
     """创建同 tick runtime 写侧命令入口。"""
     return LegacyRuntimeCommandAdapter(
         data=data,
-        exist_buff_dict=exist_buff_dict,
         action_stack=action_stack,
         sim_instance=sim_instance,
+        exist_buff_dict=exist_buff_dict,
+        buff_runtime_state=buff_runtime_state,
         buff_runtime_view=buff_runtime_view,
     )
 

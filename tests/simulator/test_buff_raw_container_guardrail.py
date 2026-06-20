@@ -675,6 +675,8 @@ def _allowance_for(finding: Finding) -> str | None:
     if path == "zsim/sim_progress/ScheduledEvent/buff_runtime.py":
         return "legacy facade adapter internals"
     if path == "zsim/simulator/simulator_class.py":
+        if context == "Simulator.__init_data_struct":
+            return "BuffRuntimeState owner construction"
         if context == "Simulator._create_buff_runtime_facade":
             return "legacy facade construction"
         if context == "Simulator.main_loop":
@@ -832,6 +834,7 @@ def _calculator_read_allowance_counts(findings: list[Finding]) -> Counter[str]:
 
 EXPECTED_RETAINED_REFERENCE_CEILINGS = {
     "core Load/Schedule/GlobalStats container ownership": 16,
+    "BuffRuntimeState owner construction": 4,
     "legacy facade adapter internals": 59,
     "legacy facade construction": 8,
     "retained BuffLoadLoop/ScheduledEvent main-loop boundary": 4,
@@ -847,15 +850,15 @@ EXPECTED_RETAINED_REFERENCE_CEILINGS = {
     "retained Update_Buff active-store traversal and no-facade fallback": 7,
     "legacy KickOutBuff active-removal compatibility path": 5,
     "retained ScheduledEvent raw-container boundary": 21,
-    "RuntimeCommandPort compatibility reads": 10,
+    "RuntimeCommandPort compatibility reads": 11,
 }
 
 EXPECTED_SCHEDULED_RUNTIME_REFERENCE_CEILINGS = {
-    "retained ScheduledEvent constructor setup": 13,
+    "retained ScheduledEvent constructor setup": 16,
     "runtime view / command adapter setup": 6,
     "retained SPUpdateData runtime read candidate": 2,
     "runtime view / facade adapter internals": 63,
-    "existing RuntimeCommandPort adapter reads": 10,
+    "existing RuntimeCommandPort adapter reads": 11,
     "documented EventContext compatibility getters": 8,
     "documented BaseEventHandler compatibility getters": 8,
     "runtime view passed to Calculator formula boundary": 3,
