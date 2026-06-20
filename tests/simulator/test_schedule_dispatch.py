@@ -74,6 +74,7 @@ def test_create_schedule_dispatch_port_uses_schedule_data_without_exposing_event
     dispatch_port = create_schedule_dispatch_port(schedule_data=schedule_data)
 
     assert isinstance(dispatch_port, ScheduleDispatchPort)
+    assert not isinstance(dispatch_port, LegacyEventListScheduleDispatchAdapter)
     assert not hasattr(dispatch_port, "event_list")
 
     dispatch_port.publish_scheduled("scheduled-event")
@@ -90,14 +91,13 @@ def test_create_schedule_dispatch_port_supports_sim_instance():
     assert sim_instance.schedule_data.event_list == ["alpha", "beta"]
 
 
-def test_create_schedule_dispatch_port_rebinds_to_current_schedule_data_event_list():
+def test_create_schedule_dispatch_port_follows_rebound_schedule_data_event_list():
     schedule_data = SimpleNamespace(event_list=[])
     old_event_list = schedule_data.event_list
-    stale_port = create_schedule_dispatch_port(schedule_data=schedule_data)
-    stale_port.publish_scheduled("old-event")
+    dispatch_port = create_schedule_dispatch_port(schedule_data=schedule_data)
+    dispatch_port.publish_scheduled("old-event")
 
     schedule_data.event_list = []
-    dispatch_port = create_schedule_dispatch_port(schedule_data=schedule_data)
     dispatch_port.publish_scheduled("new-event")
 
     assert old_event_list == ["old-event"]
@@ -132,6 +132,13 @@ def test_schedule_dispatch_port_public_api_does_not_expose_raw_queue_mutation():
     for raw_name in raw_queue_api:
         assert not hasattr(ScheduleDispatchPort, raw_name)
         assert not hasattr(adapter, raw_name)
+
+
+def test_legacy_event_list_adapter_is_documented_as_compatibility_only():
+    doc = LegacyEventListScheduleDispatchAdapter.__doc__ or ""
+
+    assert "Compatibility wrapper" in doc
+    assert "create_schedule_dispatch_port" in doc
 
 
 def test_damage_event_judge_publishes_loading_missions_in_current_order():
