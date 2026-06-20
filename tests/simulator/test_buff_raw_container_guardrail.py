@@ -733,24 +733,6 @@ def _scheduled_runtime_allowance_for(finding: Finding) -> str | None:
     if path == "zsim/sim_progress/ScheduledEvent/runtime_command.py":
         return "existing RuntimeCommandPort adapter reads"
 
-    if path == "zsim/sim_progress/ScheduledEvent/event_handlers/context.py":
-        if context in {
-            "EventContext.get_legacy_dynamic_buff_dict",
-            "EventContext.get_legacy_exist_buff_dict",
-            "EventContext.get_dynamic_buff",
-            "EventContext.get_exist_buff_dict",
-        }:
-            return "documented EventContext compatibility getters"
-
-    if path == "zsim/sim_progress/ScheduledEvent/event_handlers/base.py":
-        if context in {
-            "BaseEventHandler._get_context_legacy_dynamic_buff",
-            "BaseEventHandler._get_context_legacy_exist_buff_dict",
-            "BaseEventHandler._get_context_dynamic_buff",
-            "BaseEventHandler._get_context_exist_buff_dict",
-        }:
-            return "documented BaseEventHandler compatibility getters"
-
     if path == "zsim/sim_progress/ScheduledEvent/event_handlers/handlers/skill.py":
         if context == "SkillEventHandler._calculate_damage":
             return "runtime view passed to Calculator formula boundary"
@@ -844,8 +826,6 @@ EXPECTED_SCHEDULED_RUNTIME_REFERENCE_CEILINGS = {
     "retained SPUpdateData runtime read candidate": 2,
     "runtime view / facade adapter internals": 63,
     "existing RuntimeCommandPort adapter reads": 11,
-    "documented EventContext compatibility getters": 8,
-    "documented BaseEventHandler compatibility getters": 8,
     "runtime view passed to Calculator formula boundary": 3,
     "runtime view passed to anomaly formula boundary": 4,
 }
@@ -1092,6 +1072,31 @@ def test_scheduled_event_raw_runtime_access_stays_inside_allowlist() -> None:
     assert not disallowed, (
         "ScheduledEvent raw runtime guardrail found disallowed production uses:\n"
         + "\n".join(f"- {finding.message()}" for finding in disallowed)
+    )
+
+
+def test_scheduled_event_context_and_base_do_not_define_legacy_raw_getters() -> None:
+    forbidden_contexts = {
+        "EventContext.get_legacy_dynamic_buff_dict",
+        "EventContext.get_legacy_exist_buff_dict",
+        "EventContext.get_dynamic_buff",
+        "EventContext.get_exist_buff_dict",
+        "BaseEventHandler._get_context_legacy_dynamic_buff",
+        "BaseEventHandler._get_context_legacy_exist_buff_dict",
+        "BaseEventHandler._get_context_dynamic_buff",
+        "BaseEventHandler._get_context_exist_buff_dict",
+    }
+    findings = _collect_scheduled_runtime_findings()
+    retained = [
+        finding
+        for finding in findings
+        if finding.kind == "legacy_runtime_getter_definition"
+        and finding.context in forbidden_contexts
+    ]
+
+    assert not retained, (
+        "ScheduledEvent production context/base legacy raw getter definitions remain:\n"
+        + "\n".join(f"- {finding.message()}" for finding in retained)
     )
 
 

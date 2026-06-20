@@ -89,24 +89,6 @@ class EventContext:
         """获取所有受益者的 snapshot Buff 只读视图"""
         return self.get_runtime_exist_buff_snapshot_view()
 
-    def get_legacy_dynamic_buff_dict(self) -> dict[str, list["Buff"]]:
-        """兼容专用：获取旧 dynamic Buff 容器身份"""
-        # 仅供同 tick 写边界兼容旧容器身份；新 handler 应使用 runtime 只读视图。
-        return self.buff_runtime_view.get_legacy_dynamic_buff_dict()
-
-    def get_legacy_exist_buff_dict(self) -> dict[str, dict[str, "Buff"]]:
-        """兼容专用：获取旧 exist Buff 容器身份"""
-        # 仅供同 tick 写边界兼容旧容器身份；新 handler 应使用 runtime 只读视图。
-        return self.buff_runtime_view.get_legacy_exist_buff_dict()
-
-    def get_dynamic_buff(self) -> dict[str, list["Buff"]]:
-        """兼容旧别名：新 handler 应使用 runtime active Buff 只读视图"""
-        return self.get_legacy_dynamic_buff_dict()
-
-    def get_exist_buff_dict(self) -> dict[str, dict[str, "Buff"]]:
-        """兼容旧别名：新 handler 应使用 runtime exist snapshot 只读视图"""
-        return self.get_legacy_exist_buff_dict()
-
     def get_action_stack(self) -> ActionStack[SkillNode]:
         """获取动作栈"""
         return self.action_stack

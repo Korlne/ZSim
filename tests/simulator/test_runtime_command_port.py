@@ -172,12 +172,6 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
     assert captured["skill_node"] is skill_node
     assert captured["dynamic_buff_dict"] is dynamic_buff
     assert captured["buff_runtime_view"] is runtime_view
-    assert (
-        captured["buff_runtime_view"].get_legacy_dynamic_buff_dict() is dynamic_buff
-    )
-    assert (
-        captured["buff_runtime_view"].get_legacy_exist_buff_dict() is exist_buff_dict
-    )
     assert captured["sim_instance"] is sim_instance
     assert captured["settle_tick"] == 10
     assert captured["settle_exist_buff_dict"] is exist_buff_dict
@@ -409,8 +403,12 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
 
     assert isinstance(scheduled_event.buff_runtime_view, LegacyBuffRuntimeReadAdapter)
     assert isinstance(scheduled_event.runtime_command_port, LegacyRuntimeCommandAdapter)
-    assert scheduled_event.buff_runtime_view.get_legacy_dynamic_buff_dict() is dynamic_buff
-    assert scheduled_event.buff_runtime_view.get_legacy_exist_buff_dict() is exist_buff_dict
+    assert tuple(scheduled_event.buff_runtime_view.get_active_buffs("alpha")) == tuple(
+        dynamic_buff["alpha"]
+    )
+    assert dict(scheduled_event.buff_runtime_view.get_exist_buff_snapshot("alpha")) == (
+        exist_buff_dict["alpha"]
+    )
     assert schedule_data.dynamic_buff is dynamic_buff
     assert schedule_data.loading_buff is loading_buff
     assert {
@@ -436,10 +434,5 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
     assert captured["skill_node"] is skill_node
     assert captured["dynamic_buff_dict"] is dynamic_buff
     assert isinstance(captured["buff_runtime_view"], LegacyBuffRuntimeReadAdapter)
-    assert (
-        captured["buff_runtime_view"].get_legacy_dynamic_buff_dict() is dynamic_buff
-    )
-    assert (
-        captured["buff_runtime_view"].get_legacy_exist_buff_dict() is exist_buff_dict
-    )
+    assert captured["buff_runtime_view"] is scheduled_event.buff_runtime_view
     assert captured["sim_instance"] is sim_instance

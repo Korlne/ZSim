@@ -133,32 +133,6 @@ class BaseEventHandler(EventHandlerABC):
         """从上下文中获取所有受益者的 snapshot Buff 只读视图"""
         return self._get_context_runtime_exist_buff_snapshot_view(context)
 
-    def _get_context_legacy_dynamic_buff(
-        self, context: EventContext
-    ) -> dict[str, list["Buff"]]:
-        """兼容专用：从上下文中获取旧 dynamic Buff 容器身份"""
-        # 仅供同 tick 写边界兼容旧容器身份；新 handler 应使用 runtime 只读视图。
-        return context.get_legacy_dynamic_buff_dict()
-
-    def _get_context_legacy_exist_buff_dict(
-        self, context: EventContext
-    ) -> dict[str, dict[str, "Buff"]]:
-        """兼容专用：从上下文中获取旧 exist Buff 容器身份"""
-        # 仅供同 tick 写边界兼容旧容器身份；新 handler 应使用 runtime 只读视图。
-        return context.get_legacy_exist_buff_dict()
-
-    def _get_context_dynamic_buff(
-        self, context: EventContext
-    ) -> dict[str, list["Buff"]]:
-        """兼容旧别名：新 handler 应使用 runtime active Buff 只读视图"""
-        return self._get_context_legacy_dynamic_buff(context)
-
-    def _get_context_exist_buff_dict(
-        self, context: EventContext
-    ) -> dict[str, dict[str, "Buff"]]:
-        """兼容旧别名：新 handler 应使用 runtime exist snapshot 只读视图"""
-        return self._get_context_legacy_exist_buff_dict(context)
-
     def _get_context_action_stack(self, context: EventContext):
         """从上下文中获取动作栈"""
         return context.get_action_stack()

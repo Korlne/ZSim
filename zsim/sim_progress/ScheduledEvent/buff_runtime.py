@@ -69,14 +69,6 @@ class BuffRuntimeReadPort(ABC):
     def get_exist_buff_snapshot_view(self) -> Mapping[str, Mapping[str, "Buff"]]:
         """读取全部受益者的旧快照 Buff 只读视图。"""
 
-    @abstractmethod
-    def get_legacy_dynamic_buff_dict(self) -> dict[str, list["Buff"]]:
-        """过渡期兼容读口，返回旧 `dynamic_buff` 容器。仅供同 tick 写边界读取。"""
-
-    @abstractmethod
-    def get_legacy_exist_buff_dict(self) -> dict[str, dict[str, "Buff"]]:
-        """过渡期兼容读口，返回旧 `exist_buff_dict` 容器。仅供同 tick 写边界读取。"""
-
 
 class LegacyBuffRuntimeReadAdapter(BuffRuntimeReadPort):
     """基于旧容器的 Buff runtime 兼容只读适配器。"""
@@ -107,14 +99,6 @@ class LegacyBuffRuntimeReadAdapter(BuffRuntimeReadPort):
                 for beneficiary, buff_dict in self._runtime_state.template_registry_for_compat().items()
             }
         )
-
-    def get_legacy_dynamic_buff_dict(self) -> dict[str, list["Buff"]]:
-        # 兼容旧容器身份；仅供同 tick 写边界读取，不是新的主读口。
-        return self._runtime_state.active_store_for_compat()
-
-    def get_legacy_exist_buff_dict(self) -> dict[str, dict[str, "Buff"]]:
-        # 兼容旧容器身份；仅供同 tick 写边界读取，不是新的主读口。
-        return self._runtime_state.template_registry_for_compat()
 
 
 class BuffRuntimeFacade(ABC):

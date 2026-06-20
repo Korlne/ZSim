@@ -19,8 +19,6 @@ class _FakeRuntimeView(BuffRuntimeReadPort):
         self.active_view_calls = 0
         self.snapshot_calls = 0
         self.snapshot_view_calls = 0
-        self.dynamic_calls = 0
-        self.exist_calls = 0
 
     def get_active_buffs(self, beneficiary: str):
         self.active_buff_calls += 1
@@ -41,14 +39,6 @@ class _FakeRuntimeView(BuffRuntimeReadPort):
             for beneficiary, buff_dict in self.exist_buff_dict.items()
         }
 
-    def get_legacy_dynamic_buff_dict(self):
-        self.dynamic_calls += 1
-        return self.dynamic_buff
-
-    def get_legacy_exist_buff_dict(self):
-        self.exist_calls += 1
-        return self.exist_buff_dict
-
 
 class _AccessorProbeHandler(BaseEventHandler):
     def __init__(self):
@@ -59,18 +49,6 @@ class _AccessorProbeHandler(BaseEventHandler):
 
     def handle(self, event, context):
         raise NotImplementedError
-
-    def read_dynamic_buff(self, context):
-        return self._get_context_dynamic_buff(context)
-
-    def read_exist_buff_dict(self, context):
-        return self._get_context_exist_buff_dict(context)
-
-    def read_legacy_dynamic_buff(self, context):
-        return self._get_context_legacy_dynamic_buff(context)
-
-    def read_legacy_exist_buff_dict(self, context):
-        return self._get_context_legacy_exist_buff_dict(context)
 
     def read_runtime_active_buffs(self, context, beneficiary):
         return self._get_context_runtime_active_buffs(context, beneficiary)
@@ -129,22 +107,20 @@ def test_create_buff_runtime_read_port_exposes_read_only_views_for_active_and_sn
         runtime_view.get_exist_buff_snapshot_view()["alpha"]["extra"] = object()
 
 
-def test_event_context_compatibility_getters_delegate_to_runtime_view():
+def test_event_context_does_not_expose_legacy_raw_getters():
     dynamic_buff = {"alpha": [object()]}
     exist_buff_dict = {"alpha": {"buff": object()}}
     runtime_view = _FakeRuntimeView(dynamic_buff, exist_buff_dict)
     context = _build_context(runtime_view)
 
     assert context.get_buff_runtime_view() is runtime_view
-    assert context.get_legacy_dynamic_buff_dict() is dynamic_buff
-    assert context.get_legacy_exist_buff_dict() is exist_buff_dict
-    assert runtime_view.dynamic_calls == 1
-    assert runtime_view.exist_calls == 1
-
-    assert context.get_dynamic_buff() is dynamic_buff
-    assert context.get_exist_buff_dict() is exist_buff_dict
-    assert runtime_view.dynamic_calls == 2
-    assert runtime_view.exist_calls == 2
+    for getter_name in (
+        "get_legacy_dynamic_buff_dict",
+        "get_legacy_exist_buff_dict",
+        "get_dynamic_buff",
+        "get_exist_buff_dict",
+    ):
+        assert not hasattr(context, getter_name)
 
 
 def test_event_context_runtime_read_accessors_delegate_without_legacy_container_access():
@@ -162,26 +138,23 @@ def test_event_context_runtime_read_accessors_delegate_without_legacy_container_
     assert runtime_view.active_view_calls == 1
     assert runtime_view.snapshot_calls == 1
     assert runtime_view.snapshot_view_calls == 1
-    assert runtime_view.dynamic_calls == 0
-    assert runtime_view.exist_calls == 0
 
 
-def test_base_event_handler_compatibility_accessors_delegate_via_runtime_view():
+def test_base_event_handler_does_not_expose_legacy_raw_accessors():
     dynamic_buff = {"enemy": [object()]}
     exist_buff_dict = {"enemy": {"buff": object()}}
     runtime_view = _FakeRuntimeView(dynamic_buff, exist_buff_dict)
     context = _build_context(runtime_view)
     handler = _AccessorProbeHandler()
 
-    assert handler.read_legacy_dynamic_buff(context) is dynamic_buff
-    assert handler.read_legacy_exist_buff_dict(context) is exist_buff_dict
-    assert runtime_view.dynamic_calls == 1
-    assert runtime_view.exist_calls == 1
-
-    assert handler.read_dynamic_buff(context) is dynamic_buff
-    assert handler.read_exist_buff_dict(context) is exist_buff_dict
-    assert runtime_view.dynamic_calls == 2
-    assert runtime_view.exist_calls == 2
+    assert context.get_buff_runtime_view() is runtime_view
+    for getter_name in (
+        "_get_context_legacy_dynamic_buff",
+        "_get_context_legacy_exist_buff_dict",
+        "_get_context_dynamic_buff",
+        "_get_context_exist_buff_dict",
+    ):
+        assert not hasattr(handler, getter_name)
 
 
 def test_base_event_handler_runtime_read_accessors_delegate_without_legacy_access():
@@ -200,5 +173,3 @@ def test_base_event_handler_runtime_read_accessors_delegate_without_legacy_acces
     assert runtime_view.active_view_calls == 1
     assert runtime_view.snapshot_calls == 1
     assert runtime_view.snapshot_view_calls == 1
-    assert runtime_view.dynamic_calls == 0
-    assert runtime_view.exist_calls == 0
