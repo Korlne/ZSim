@@ -16,6 +16,7 @@ import zsim.sim_progress.data_struct.schedule_dispatch as schedule_dispatch_modu
 sys.modules.setdefault("define", define_module)
 
 from zsim.sim_progress.Buff import JudgeTools
+from zsim.sim_progress.Buff.JudgeTools import CharacterLookup
 from zsim.sim_progress.Buff.BuffXLogic.SeedBesiegeBonusTrigger import (
     SeedBesiegeBonusTrigger,
     SeedBesiegeBonusTriggerRecord,
@@ -57,6 +58,7 @@ class _FailFastLoadingBuffDict(dict[str, list[Any]]):
 
 
 class _SeedStub:
+    CID = 1461
     NAME = "席德"
 
     def __init__(
@@ -158,6 +160,25 @@ def _build_seed_harness(
     )
 
 
+def _build_seed_preparation_sim_instance(
+    *,
+    buff_index: str,
+    buff_0: object,
+    seed: object,
+) -> SimpleNamespace:
+    return SimpleNamespace(
+        init_data=SimpleNamespace(Judge_list_set=[]),
+        char_data=SimpleNamespace(char_obj_list=[seed]),
+        load_data=SimpleNamespace(
+            exist_buff_dict={"席德": {buff_index: buff_0}},
+            action_stack=object(),
+        ),
+        global_stats=SimpleNamespace(DYNAMIC_BUFF_DICT={}),
+        schedule_data=SimpleNamespace(enemy=object()),
+        preload=SimpleNamespace(preload_data=object()),
+    )
+
+
 def _patch_seed_dependencies(
     monkeypatch: pytest.MonkeyPatch,
     harness: SimpleNamespace,
@@ -214,6 +235,52 @@ def _assert_no_cross_layer_writes(harness: SimpleNamespace) -> None:
         harness.sim_instance.load_data.LOADING_BUFF_DICT,
         _FailFastLoadingBuffDict,
     )
+
+
+def test_character_lookup_preserves_cid_name_order_and_missing_errors() -> None:
+    seed = SimpleNamespace(CID=1461, NAME="席德")
+    anby = SimpleNamespace(CID=1381, NAME="零号安比")
+    duplicate_cid = SimpleNamespace(CID=1461, NAME="重复席德")
+    lookup = CharacterLookup([seed, anby, duplicate_cid])
+
+    assert lookup.by_cid(1461) is seed
+    assert lookup.by_name("零号安比") is anby
+    with pytest.raises(ValueError, match="CID为9999"):
+        lookup.by_cid(9999)
+    with pytest.raises(ValueError, match="未找到名为不存在的角色"):
+        lookup.by_name("不存在的角色")
+
+
+def test_seed_besiege_uses_preparation_context_for_character_lookup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seed = _SeedStub()
+    buff_0 = SimpleNamespace(history=SimpleNamespace(record=None))
+    sim_instance = _build_seed_preparation_sim_instance(
+        buff_index="seed-trigger",
+        buff_0=buff_0,
+        seed=seed,
+    )
+    buff_instance = SimpleNamespace(
+        sim_instance=sim_instance,
+        ft=SimpleNamespace(index="seed-trigger"),
+    )
+    logic = SeedBesiegeBonusTrigger(buff_instance)
+
+    def fail_legacy_lookup(*args: object, **kwargs: object) -> None:
+        raise AssertionError("migrated Seed trigger should use PreparationContext")
+
+    monkeypatch.setattr(JudgeTools, "find_exist_buff_dict", fail_legacy_lookup)
+    monkeypatch.setattr(JudgeTools, "find_char_from_CID", fail_legacy_lookup)
+    monkeypatch.setattr(JudgeTools, "find_char_from_name", fail_legacy_lookup)
+
+    logic.check_record_module()
+    logic.get_prepared(char_CID=1461)
+
+    assert logic.buff_0 is buff_0
+    assert isinstance(buff_0.history.record, SeedBesiegeBonusTriggerRecord)
+    assert logic.record is buff_0.history.record
+    assert logic.record.char is seed
 
 
 @pytest.mark.parametrize(

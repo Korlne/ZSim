@@ -17,6 +17,7 @@ sys.modules.setdefault("define", define_module)
 import zsim.sim_progress.Buff.BuffXLogic.RoaringRideBuffTrigger as roaring_module
 
 from zsim.sim_progress.Buff import JudgeTools
+from zsim.sim_progress.Buff.JudgeTools import EquipmentOwnerLookup
 from zsim.sim_progress.Buff.BuffXLogic.RoaringRideBuffTrigger import (
     RoaringRideBuffTrigger,
     RoaringRideBuffTriggerRecord,
@@ -141,6 +142,31 @@ def _build_roaring_ride_harness(rng_value: float) -> SimpleNamespace:
     )
 
 
+def _build_roaring_ride_preparation_sim_instance(
+    *,
+    owner_name: str,
+    item_name: str,
+    buff_index: str,
+    buff_0: object,
+    char: object,
+) -> SimpleNamespace:
+    return SimpleNamespace(
+        init_data=SimpleNamespace(
+            Judge_list_set=[
+                [owner_name, item_name, "混沌爵士", "摇摆爵士二件套"],
+            ]
+        ),
+        char_data=SimpleNamespace(char_obj_list=[char]),
+        load_data=SimpleNamespace(
+            exist_buff_dict={owner_name: {buff_index: buff_0}},
+            action_stack=object(),
+        ),
+        global_stats=SimpleNamespace(DYNAMIC_BUFF_DICT={}),
+        schedule_data=SimpleNamespace(enemy=object()),
+        preload=SimpleNamespace(preload_data=object()),
+    )
+
+
 def _patch_roaring_ride_dependencies(
     monkeypatch: pytest.MonkeyPatch,
     harness: SimpleNamespace,
@@ -179,6 +205,56 @@ def _patch_roaring_ride_dependencies(
 
     harness.prepared_calls = prepared_calls
     return buff_add_calls
+
+
+def test_equipment_owner_lookup_preserves_legacy_owner_rules() -> None:
+    lookup = EquipmentOwnerLookup(
+        [
+            ["派派", "轰鸣座驾", "混沌爵士", "摇摆爵士二件套"],
+            ["露西", "轰鸣座驾", "獠牙重金属", "摇摆爵士二件套"],
+        ]
+    )
+
+    assert lookup.owner_for("轰鸣座驾") == "派派"
+    assert lookup.owner_for("混沌爵士") == "派派"
+    assert lookup.owner_for("摇摆爵士二件套") == "派派"
+    assert lookup.owner_for("不存在的装备") is None
+
+
+def test_roaring_ride_uses_preparation_context_for_equipment_and_character_lookup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    char = SimpleNamespace(CID=1251, NAME="派派")
+    buff_0 = SimpleNamespace(history=SimpleNamespace(record=None))
+    sim_instance = _build_roaring_ride_preparation_sim_instance(
+        owner_name="派派",
+        item_name="轰鸣座驾",
+        buff_index="roaring-ride-trigger",
+        buff_0=buff_0,
+        char=char,
+    )
+    buff_instance = SimpleNamespace(
+        sim_instance=sim_instance,
+        ft=SimpleNamespace(index="roaring-ride-trigger", refinement=5),
+    )
+    logic = RoaringRideBuffTrigger(buff_instance)
+
+    def fail_legacy_lookup(*args: object, **kwargs: object) -> None:
+        raise AssertionError("migrated Roaring Ride should use PreparationContext")
+
+    monkeypatch.setattr(JudgeTools, "find_equipper", fail_legacy_lookup)
+    monkeypatch.setattr(JudgeTools, "find_exist_buff_dict", fail_legacy_lookup)
+    monkeypatch.setattr(JudgeTools, "find_char_from_name", fail_legacy_lookup)
+
+    logic.check_record_module()
+    logic.get_prepared(equipper="轰鸣座驾", sub_exist_buff_dict=1)
+
+    assert logic.equipper == "派派"
+    assert logic.buff_0 is buff_0
+    assert logic.record is buff_0.history.record
+    assert logic.record.equipper == "派派"
+    assert logic.record.char is char
+    assert logic.record.sub_exist_buff_dict is sim_instance.load_data.exist_buff_dict["派派"]
 
 
 @pytest.mark.parametrize(
