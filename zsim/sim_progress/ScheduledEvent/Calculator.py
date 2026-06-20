@@ -1120,6 +1120,45 @@ class CalculatorBuffAttributeReader(BuffAttributeReader):
         return static, dynamic
 
 
+@dataclass(frozen=True, slots=True)
+class CalculatorBuffAttributeReaderService:
+    """共享 Calculator Buff 属性 reader 生命周期的轻量服务。"""
+
+    _reader: BuffAttributeReader = field(
+        default_factory=CalculatorBuffAttributeReader,
+        repr=False,
+    )
+
+    def read_anomaly_mastery(self, context: BuffAttributeReadContext) -> np.float64:
+        return self._reader.read_anomaly_mastery(context)
+
+    def read_anomaly_proficiency(
+        self, context: BuffAttributeReadContext
+    ) -> np.float64:
+        return self._reader.read_anomaly_proficiency(context)
+
+    def read_impact(self, context: BuffAttributeReadContext) -> float:
+        return self._reader.read_impact(context)
+
+    def read_full_crit_rate(self, context: BuffAttributeReadContext) -> float:
+        return self._reader.read_full_crit_rate(context)
+
+    def read_personal_crit_rate(self, context: BuffAttributeReadContext) -> float:
+        return self._reader.read_personal_crit_rate(context)
+
+    def read_personal_crit_damage(self, context: BuffAttributeReadContext) -> float:
+        return self._reader.read_personal_crit_damage(context)
+
+
+_CALCULATOR_BUFF_ATTRIBUTE_READER_SERVICE = CalculatorBuffAttributeReaderService()
+
+
+def get_calculator_buff_attribute_reader_service() -> CalculatorBuffAttributeReaderService:
+    """返回可安全复用的 Calculator Buff 属性 reader 服务。"""
+
+    return _CALCULATOR_BUFF_ATTRIBUTE_READER_SERVICE
+
+
 class Calculator:
     def __init__(
         self,

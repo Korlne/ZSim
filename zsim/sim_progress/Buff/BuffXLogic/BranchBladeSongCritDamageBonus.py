@@ -1,6 +1,6 @@
 from zsim.sim_progress.ScheduledEvent.Calculator import (
     BuffAttributeReadContext,
-    CalculatorBuffAttributeReader,
+    get_calculator_buff_attribute_reader_service,
 )
 
 from .. import Buff, JudgeTools, check_preparation
@@ -53,7 +53,8 @@ class BranchBladeSongCritDamageBonus(Buff.BuffLogic):
             active_buff_view=self.record.dynamic_buff_list,
             character=self.record.char,
         )
-        am = CalculatorBuffAttributeReader().read_anomaly_mastery(context)
+        reader_service = get_calculator_buff_attribute_reader_service()
+        am = reader_service.read_anomaly_mastery(context)
         if am >= 115:
             return True
         return False

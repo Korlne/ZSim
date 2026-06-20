@@ -23,11 +23,13 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
     Calculator,
     CalculatorRuntimeReadContext,
     CalculatorBuffAttributeReader,
+    CalculatorBuffAttributeReaderService,
     MultiplierData,
     RetainedFormulaSnapshot,
     create_anomaly_attribute_read_context,
     create_calculator_runtime_read_context,
     create_calculator_runtime_read_context_from_event_context,
+    get_calculator_buff_attribute_reader_service,
 )
 from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
 from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
@@ -849,6 +851,67 @@ def test_calculator_runtime_read_context_can_be_built_from_event_context() -> No
     assert context.formula_char_name == char.NAME
     assert runtime_view.active_buff_beneficiaries == ["enemy"]
     assert runtime_view.active_view_calls == 1
+
+
+def test_calculator_reader_service_public_surface_matches_reader() -> None:
+    reader_methods = {
+        name
+        for name, value in vars(CalculatorBuffAttributeReader).items()
+        if name.startswith("read_") and callable(value)
+    }
+    service_methods = {
+        name
+        for name, value in vars(CalculatorBuffAttributeReaderService).items()
+        if name.startswith("read_") and callable(value)
+    }
+    service = get_calculator_buff_attribute_reader_service()
+
+    assert service_methods == reader_methods == {
+        "read_anomaly_mastery",
+        "read_anomaly_proficiency",
+        "read_impact",
+        "read_full_crit_rate",
+        "read_personal_crit_rate",
+        "read_personal_crit_damage",
+    }
+    assert service is get_calculator_buff_attribute_reader_service()
+    assert isinstance(service, CalculatorBuffAttributeReaderService)
+
+
+def test_calculator_reader_service_is_shared_and_context_scoped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    service = get_calculator_buff_attribute_reader_service()
+    first_fixture = _make_attribute_read_fixture(name="service-first", am=100.0)
+    second_fixture = _make_attribute_read_fixture(name="service-second", am=250.0)
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(field_anomaly_mastery=0.0),
+    )
+
+    assert service.read_anomaly_mastery(first_fixture.context) == pytest.approx(100.0)
+    assert service.read_anomaly_mastery(second_fixture.context) == pytest.approx(250.0)
+    assert service.read_anomaly_mastery(first_fixture.context) == pytest.approx(100.0)
+    assert aggregation_calls == [
+        (
+            first_fixture.expected_enabled_buff,
+            None,
+            first_fixture.enemy.sim_instance,
+            first_fixture.char.NAME,
+        ),
+        (
+            second_fixture.expected_enabled_buff,
+            None,
+            second_fixture.enemy.sim_instance,
+            second_fixture.char.NAME,
+        ),
+        (
+            first_fixture.expected_enabled_buff,
+            None,
+            first_fixture.enemy.sim_instance,
+            first_fixture.char.NAME,
+        ),
+    ]
 
 
 def _patch_buff_aggregation(

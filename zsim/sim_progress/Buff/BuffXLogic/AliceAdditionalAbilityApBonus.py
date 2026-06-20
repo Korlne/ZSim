@@ -1,6 +1,6 @@
 from zsim.sim_progress.ScheduledEvent.Calculator import (
-    CalculatorBuffAttributeReader,
     create_anomaly_attribute_read_context,
+    get_calculator_buff_attribute_reader_service,
 )
 
 from .. import Buff, JudgeTools, check_preparation
@@ -49,7 +49,8 @@ class AliceAdditionalAbilityApBonus(Buff.BuffLogic):
             active_buff_view=self.record.dynamic_buff_list,
             character=self.record.char,
         )
-        am = CalculatorBuffAttributeReader().read_anomaly_mastery(context)
+        reader_service = get_calculator_buff_attribute_reader_service()
+        am = reader_service.read_anomaly_mastery(context)
         if am < 140:
             return
         count = (am - 140) * self.record.trans_ratio
