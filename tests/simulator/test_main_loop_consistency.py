@@ -68,6 +68,7 @@ def test_build_consistency_report_keeps_required_json_fields():
 
     assert report["team"] == "team-a"
     assert report["apl"] == "./zsim/data/APLData/example.toml"
+    assert report["runtime_selection"]["mode"] == "label-only-current-runtime"
     assert report["total_damage"] == {"legacy": 123.4, "candidate": 130.0}
     assert report["event_counts"]["legacy"]["by_skill_tag"] == {"alpha": 1, "beta": 1}
     assert report["buff_timeline"]["candidate"]["alpha"][1]["Task"] == "buff-b"
@@ -202,6 +203,7 @@ def test_run_main_loop_consistency_uses_runtime_labels_and_cleanup(monkeypatch: 
     assert all(stop_tick == 77 for _, stop_tick in submitted_payloads)
     assert report["legacy_runtime"] == "legacy-label"
     assert report["candidate_runtime"] == "candidate-label"
+    assert report["runtime_selection"]["mode"] == "label-only-current-runtime"
     assert report["apl"] == "./override.toml"
     assert cleaned_sessions == ["101", "102"]
 

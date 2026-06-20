@@ -842,12 +842,12 @@ EXPECTED_CALCULATOR_READ_REFERENCE_CEILINGS = {
 
 def test_runtime_dependency_zero_scanner_reports_required_schema_and_families() -> None:
     report = RuntimeDependencyZeroScanner(PROJECT_ROOT).build_report(
-        expected_zero=False
+        expected_zero=True
     )
 
     assert report["schemaVersion"] == "zsim-runtime-dependency-zero.v1"
     assert report["profile"] == "runtime-dependency-zero"
-    assert report["strictExpectedZero"] is False
+    assert report["strictExpectedZero"] is True
     assert report["strictCommand"] == RUNTIME_DEPENDENCY_STRICT_COMMAND
     assert report["categorySchema"] == list(RUNTIME_DEPENDENCY_CATEGORIES)
     assert set(report["categories"]) == set(RUNTIME_DEPENDENCY_CATEGORIES)
@@ -859,8 +859,9 @@ def test_runtime_dependency_zero_scanner_reports_required_schema_and_families() 
         set(RUNTIME_DEPENDENCY_TRACKED_PRODUCTION_FAMILIES)
         <= set(report["families"])
     )
-    assert report["productionRuntimeTotal"] > 0
-    assert report["findingCount"] >= report["productionRuntimeTotal"]
+    assert report["productionRuntimeTotal"] == 0
+    assert report["productionRuntimeFamilies"] == []
+    assert report["findingCount"] > 0
 
 
 def test_runtime_dependency_zero_scanner_classifies_reference_categories() -> None:
@@ -879,6 +880,16 @@ def test_runtime_dependency_zero_scanner_classifies_reference_categories() -> No
         "scripts/run_buff_refactor_validation.py",
         "LegacyBuffRuntimeReadAdapter\n",
     )
+    runtime_owner_findings = scanner.scan_source(
+        "zsim/sim_progress/Buff/BuffLoad.py",
+        "def load(exist_buff_dict, LOADING_BUFF_DICT):\n"
+        "    return exist_buff_dict, LOADING_BUFF_DICT\n",
+    )
+    api_findings = scanner.scan_source(
+        "zsim/api_src/_fixture.py",
+        "def leak(sim_instance):\n"
+        "    return sim_instance.load_data.exist_buff_dict\n",
+    )
 
     assert "production runtime" in {
         finding.category for finding in production_findings
@@ -894,6 +905,12 @@ def test_runtime_dependency_zero_scanner_classifies_reference_categories() -> No
     }
     assert {finding.category for finding in docs_findings} == {"docs-only"}
     assert {finding.category for finding in migration_findings} == {"migration-only"}
+    assert {finding.category for finding in runtime_owner_findings} == {
+        "migration-only"
+    }
+    assert "production runtime" in {
+        finding.category for finding in api_findings
+    }
 
 
 def test_raw_old_container_passthroughs_stay_inside_retained_boundaries() -> None:

@@ -54,6 +54,7 @@ def test_build_runtime_benchmark_report_keeps_required_json_fields():
     assert report["team"] == "team-a"
     assert report["apl"] == "./zsim/data/APLData/example.toml"
     assert report["stop_tick"] == 120
+    assert report["runtime_selection"]["mode"] == "label-only-current-runtime"
     assert report["total_runtime_ms"] == {"legacy": 120.5, "candidate": 100.0}
     assert report["hotspots"]["legacy"][0]["name"] == "simulator_run_ms"
     assert report["hotspots"]["candidate"][0]["runtime_ms"] == 80.0
@@ -276,6 +277,7 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
     ]
     assert report["legacy_runtime"] == "legacy-label"
     assert report["candidate_runtime"] == "candidate-label"
+    assert report["runtime_selection"]["mode"] == "label-only-current-runtime"
     assert report["apl"] == "./override.toml"
     assert report["buff_runtime_rebuild_counts"] == {
         "legacy": {"buff_load_loop": 1},

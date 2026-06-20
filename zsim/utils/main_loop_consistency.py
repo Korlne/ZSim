@@ -25,6 +25,13 @@ from zsim.utils.process_dmg_result import prepare_dmg_data_and_cache, sort_df_by
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _BUFF_TIMELINE_SAMPLE_LIMIT = 20
 _SESSION_ID_COUNTER = count(1)
+RUNTIME_LABEL_CONTRACT = {
+    "mode": "label-only-current-runtime",
+    "description": (
+        "legacy_runtime and candidate_runtime are report labels only; "
+        "both executions use the Simulator default Buff runtime."
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -257,6 +264,7 @@ def build_consistency_report(
         "stop_tick": stop_tick,
         "legacy_runtime": legacy_snapshot.runtime_label,
         "candidate_runtime": candidate_snapshot.runtime_label,
+        "runtime_selection": dict(RUNTIME_LABEL_CONTRACT),
         "total_damage": {
             "legacy": legacy_snapshot.total_damage,
             "candidate": candidate_snapshot.total_damage,
@@ -342,12 +350,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--legacy-runtime",
         default="legacy",
-        help="Legacy runtime label to record in the report.",
+        help="First run label to record in the report; this does not select a runtime.",
     )
     parser.add_argument(
         "--candidate-runtime",
         default="candidate",
-        help="Candidate runtime label to record in the report.",
+        help="Second run label to record in the report; this does not select a runtime.",
     )
     parser.add_argument(
         "--keep-artifacts",
@@ -367,6 +375,8 @@ def _format_human_report(report: dict[str, Any]) -> str:
         f"team: {report['team']}",
         f"apl: {report['apl']}",
         f"stop_tick: {report['stop_tick']}",
+        "runtime_selection: "
+        + report.get("runtime_selection", {}).get("mode", "label-only-current-runtime"),
         (
             "total_damage: "
             f"{report['legacy_runtime']}={report['total_damage']['legacy']}, "
@@ -401,6 +411,7 @@ def main(argv: list[str] | None = None) -> int:
 
 __all__ = [
     "PROJECT_ROOT",
+    "RUNTIME_LABEL_CONTRACT",
     "RuntimeSnapshot",
     "build_consistency_report",
     "build_parser",

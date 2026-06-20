@@ -15,6 +15,7 @@ from zsim.models.session.session_run import CommonCfg
 from zsim.simulator import Simulator
 from zsim.utils.main_loop_consistency import (
     PROJECT_ROOT,
+    RUNTIME_LABEL_CONTRACT,
     _build_session_id,
     _cleanup_result_artifacts,
     _prepare_damage_data_for_consistency,
@@ -169,6 +170,7 @@ def build_runtime_benchmark_report(
         "stop_tick": stop_tick,
         "legacy_runtime": legacy_snapshot.runtime_label,
         "candidate_runtime": candidate_snapshot.runtime_label,
+        "runtime_selection": dict(RUNTIME_LABEL_CONTRACT),
         "total_runtime_ms": {
             "legacy": legacy_snapshot.total_runtime_ms,
             "candidate": candidate_snapshot.total_runtime_ms,
@@ -264,12 +266,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--legacy-runtime",
         default="legacy",
-        help="Legacy runtime label to record in the report.",
+        help="First run label to record in the report; this does not select a runtime.",
     )
     parser.add_argument(
         "--candidate-runtime",
         default="candidate",
-        help="Candidate runtime label to record in the report.",
+        help="Second run label to record in the report; this does not select a runtime.",
     )
     parser.add_argument(
         "--keep-artifacts",
@@ -294,6 +296,8 @@ def _format_human_report(report: dict[str, Any]) -> str:
         f"team: {report['team']}",
         f"apl: {report['apl']}",
         f"stop_tick: {report['stop_tick']}",
+        "runtime_selection: "
+        + report.get("runtime_selection", {}).get("mode", "label-only-current-runtime"),
         (
             "total_runtime_ms: "
             f"{report['legacy_runtime']}={report['total_runtime_ms']['legacy']}, "
