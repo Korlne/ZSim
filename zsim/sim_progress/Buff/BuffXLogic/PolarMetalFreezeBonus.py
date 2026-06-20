@@ -1,5 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
-from .enemy_edge_state_read import read_enemy_frozen_edge_state
+from .enemy_edge_state_read import EnemyEdgeStateReadPort
 
 
 class PolarMetalRecord:
@@ -46,7 +46,7 @@ class PolarMetalFreezeBonus(Buff.BuffLogic):
         self.get_prepared(enemy=1)
         enemy = self.record.enemy
         tick = JudgeTools.find_tick(sim_instance=self.buff_instance.sim_instance)
-        this_tick_freez_statement = read_enemy_frozen_edge_state(enemy)
+        this_tick_freez_statement = EnemyEdgeStateReadPort(enemy).frozen_edge_state()
         if this_tick_freez_statement != self.record.last_tick_freez_statement[1]:
             self.record.last_tick_freez_statement = tick, this_tick_freez_statement
             return True

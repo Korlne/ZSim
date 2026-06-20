@@ -135,6 +135,9 @@ DELEGATED_COPIED_OUTPUT_HELPER_FILES = (
 
 APPROVED_EDGE_FROZEN_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritRateBonus.py",
+}
+
+APPROVED_EDGE_STATE_PORT_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/PolarMetalFreezeBonus.py",
 }
 
@@ -186,6 +189,7 @@ MIGRATED_HELPER_FILES_BY_NAME = {
     "read_enemy_shock_active": APPROVED_SHOCK_HELPER_FILES,
     "read_enemy_stun_active": APPROVED_STUN_HELPER_FILES,
     "EnemyStateReadPort": APPROVED_ENEMY_STATE_PORT_FILES,
+    "EnemyEdgeStateReadPort": APPROVED_EDGE_STATE_PORT_FILES,
     "read_enemy_frozen_edge_state": APPROVED_EDGE_FROZEN_HELPER_FILES,
     "read_enemy_stun_edge_state": APPROVED_EDGE_STUN_HELPER_FILES,
     "read_enemy_frost_frostbite_edge_state": APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES,
@@ -205,6 +209,7 @@ APPROVED_HELPER_FILES_BY_NAME = {
         APPROVED_STUN_HELPER_FILES | APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
     ),
     "EnemyStateReadPort": APPROVED_ENEMY_STATE_PORT_FILES,
+    "EnemyEdgeStateReadPort": APPROVED_EDGE_STATE_PORT_FILES,
     "read_enemy_frozen_edge_state": APPROVED_EDGE_FROZEN_HELPER_FILES,
     "read_enemy_stun_edge_state": APPROVED_EDGE_STUN_HELPER_FILES,
     "read_enemy_frost_frostbite_edge_state": APPROVED_FROST_FROSTBITE_HELPER_FILES,
@@ -224,6 +229,7 @@ APPROVED_HELPER_CLASSIFICATIONS_BY_NAME = {
         "copied-output-adjacent read",
     },
     "EnemyStateReadPort": {"guarded-maintenance overlap"},
+    "EnemyEdgeStateReadPort": {"edge-detection read"},
     "read_enemy_frozen_edge_state": {"edge-detection read"},
     "read_enemy_stun_edge_state": {"edge-detection read"},
     "read_enemy_frost_frostbite_edge_state": {
@@ -245,6 +251,7 @@ HELPER_NAMES_BY_FAMILY = {
             "read_enemy_frozen_edge_state",
             "read_enemy_stun_edge_state",
             "read_enemy_frost_frostbite_edge_state",
+            "EnemyEdgeStateReadPort",
         }
     ),
     "anomaly-map helpers": frozenset(APPROVED_ANOMALY_MAP_HELPER_FILES_BY_NAME),
@@ -601,6 +608,7 @@ def test_enemy_dynamic_read_guardrail_tracks_helper_references_by_family() -> No
         APPROVED_EDGE_FROZEN_HELPER_FILES
         | APPROVED_EDGE_STUN_HELPER_FILES
         | APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES
+        | APPROVED_EDGE_STATE_PORT_FILES
     )
     approved_edge_state_references = (
         edge_state_files | APPROVED_DOT_RUNTIME_FROST_FROSTBITE_HELPER_FILES

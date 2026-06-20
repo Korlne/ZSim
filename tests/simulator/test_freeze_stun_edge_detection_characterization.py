@@ -55,6 +55,9 @@ from zsim.sim_progress.Buff.BuffXLogic.WeepingGeminiApBonus import (  # noqa: E4
     WeepingGeminiApBonus,
     WeepingGeminiApBonusRecord,
 )
+from zsim.sim_progress.Buff.BuffXLogic.enemy_edge_state_read import (  # noqa: E402
+    EnemyEdgeStateReadPort,
+)
 from zsim.sim_progress.anomaly_bar import AnomalyBar  # noqa: E402
 
 
@@ -116,6 +119,35 @@ class _FrostFrostbiteDynamicProbe:
         return self._frost_frostbite
 
 
+class _EdgeStateDynamicProbe:
+    def __init__(
+        self,
+        *,
+        frozen: bool | None,
+        stun: bool | None,
+        frost_frostbite: bool | None,
+    ) -> None:
+        self._frozen = frozen
+        self._stun = stun
+        self._frost_frostbite = frost_frostbite
+        self.reads: list[str] = []
+
+    @property
+    def frozen(self) -> bool | None:
+        self.reads.append("frozen")
+        return self._frozen
+
+    @property
+    def stun(self) -> bool | None:
+        self.reads.append("stun")
+        return self._stun
+
+    @property
+    def frost_frostbite(self) -> bool | None:
+        self.reads.append("frost_frostbite")
+        return self._frost_frostbite
+
+
 class _BuffTemplate:
     def __init__(self, *, index: str) -> None:
         self.ft = SimpleNamespace(index=index)
@@ -166,6 +198,32 @@ class _EdgeFixture:
     buff_0: _BuffTemplate
     enemy: Any
     prepared_calls: list[dict[str, object]]
+
+
+@pytest.mark.parametrize(
+    ("frozen", "expected_frozen"),
+    [(True, True), (False, False), (None, False)],
+)
+@pytest.mark.parametrize("stun", [True, False, None])
+@pytest.mark.parametrize("frost_frostbite", [True, False, None])
+def test_enemy_edge_state_read_port_preserves_edge_semantics(
+    *,
+    frozen: bool | None,
+    expected_frozen: bool,
+    stun: bool | None,
+    frost_frostbite: bool | None,
+) -> None:
+    dynamic = _EdgeStateDynamicProbe(
+        frozen=frozen,
+        stun=stun,
+        frost_frostbite=frost_frostbite,
+    )
+    port = EnemyEdgeStateReadPort(SimpleNamespace(dynamic=dynamic))
+
+    assert port.frozen_edge_state() is expected_frozen
+    assert port.stun_edge_state() is stun
+    assert port.frost_frostbite_edge_state() is frost_frostbite
+    assert dynamic.reads == ["frozen", "stun", "frost_frostbite"]
 
 
 def _install_owner_lookup(
