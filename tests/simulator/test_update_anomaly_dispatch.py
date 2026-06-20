@@ -907,6 +907,50 @@ def test_update_anomaly_ice_frost_mode_zero_publishes_only_when_currently_frozen
         ]
 
 
+def test_update_anomaly_runtime_layers_are_split_into_helpers():
+    signature = inspect.signature(update_anomaly)
+    assert "event_list" not in signature.parameters
+
+    update_source = inspect.getsource(update_anomaly_module.update_anomaly)
+    helper_names = {
+        "_record_decibel_update",
+        "_activate_anomaly_state",
+        "_broadcast_active_anomaly",
+        "_process_new_or_replaced_anomaly",
+        "_process_disorder_anomaly",
+    }
+    for helper_name in helper_names:
+        assert f"{helper_name}(" in update_source
+
+    inline_forbidden_terms = {
+        "decibel_manager.update",
+        "listener_manager.broadcast_event",
+        "publish_scheduled",
+        "spawn_anomaly_dot",
+        "event_list",
+    }
+    for term in inline_forbidden_terms:
+        assert term not in update_source
+
+    helper_sources = {
+        helper_name: inspect.getsource(getattr(update_anomaly_module, helper_name))
+        for helper_name in helper_names
+    }
+    assert "change_info_cause_active" in helper_sources["_activate_anomaly_state"]
+    assert "buff_runtime_view=buff_runtime_view" in helper_sources["_activate_anomaly_state"]
+    assert "listener_broadcaster(event=active_bar, signal=LBS.ANOMALY)" in helper_sources[
+        "_broadcast_active_anomaly"
+    ]
+    assert "_publish_scheduled_event" in inspect.getsource(
+        update_anomaly_module._publish_new_anomaly_if_required
+    )
+    assert "anomaly_effect_active" in helper_sources["_process_new_or_replaced_anomaly"]
+    assert "anomaly_effect_active" in helper_sources["_process_disorder_anomaly"]
+    assert "_record_decibel_update(sim_instance, skill_node, \"disorder\")" in helper_sources[
+        "_process_disorder_anomaly"
+    ]
+
+
 def test_anomaly_effect_active_replaces_same_index_dot_without_scheduled_publish(
     monkeypatch,
 ):

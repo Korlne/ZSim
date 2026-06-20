@@ -103,6 +103,169 @@ def _publish_scheduled_event(dispatch_port: "ScheduleDispatchPort", event) -> No
     dispatch_port.publish_scheduled(event)
 
 
+def _record_decibel_update(
+    sim_instance: "Simulator", skill_node: "SkillNode", key: str
+) -> None:
+    sim_instance.decibel_manager.update(skill_node=skill_node, key=key)
+
+
+def _activate_anomaly_state(
+    *,
+    bar: AnomalyBar,
+    element_type: int,
+    enemy,
+    time_now: int,
+    dynamic_buff_dict: dict[str, list["Buff"]],
+    skill_node: "SkillNode",
+    buff_runtime_view: "BuffRuntimeReadPort | None",
+) -> AnomalyBar:
+    bar.change_info_cause_active(
+        time_now,
+        dynamic_buff_dict=dynamic_buff_dict,
+        skill_node=skill_node,
+        buff_runtime_view=buff_runtime_view,
+    )
+    enemy.update_max_anomaly(element_type)
+
+    active_bar = deepcopy(bar)
+    enemy.dynamic.active_anomaly_bar_dict[element_type] = active_bar
+    return active_bar
+
+
+def _broadcast_active_anomaly(
+    listener_broadcaster: Callable[..., None],
+    active_bar: AnomalyBar,
+) -> None:
+    listener_broadcaster(event=active_bar, signal=LBS.ANOMALY)
+    if active_bar.element_type in [0]:
+        listener_broadcaster(event=active_bar, signal=LBS.ASSAULT_SPAWN)
+
+
+def _set_active_anomaly_flag(enemy, element_type: int, active: bool) -> None:
+    setattr(enemy.dynamic, enemy.trans_anomaly_effect_to_str[element_type], active)
+
+
+def _publish_new_anomaly_if_required(
+    dispatch_port: "ScheduleDispatchPort",
+    enemy,
+    element_type: int,
+    new_anomaly,
+) -> None:
+    if element_type in [2, 5]:
+        if enemy.dynamic.frozen:
+            _publish_scheduled_event(dispatch_port, new_anomaly)
+        enemy.dynamic.frozen = True
+    else:
+        _publish_scheduled_event(dispatch_port, new_anomaly)
+
+
+def _notify_special_resources(char_obj_list: list, anomaly) -> None:
+    for char_obj in char_obj_list:
+        char_obj.special_resources(anomaly)
+
+
+def _process_new_or_replaced_anomaly(
+    *,
+    active_bar: AnomalyBar,
+    element_type: int,
+    enemy,
+    time_now: int,
+    char_obj_list: list,
+    sim_instance: "Simulator",
+    skill_node: "SkillNode",
+    dispatch_port: "ScheduleDispatchPort",
+    listener_broadcaster: Callable[..., None],
+    dot_runtime_state: DotRuntimeStateAdapter,
+) -> None:
+    new_anomaly = spawn_output(
+        active_bar,
+        0,
+        skill_node=skill_node,
+        sim_instance=sim_instance,
+        listener_broadcaster=listener_broadcaster,
+    )
+    _notify_special_resources(char_obj_list, new_anomaly)
+    anomaly_effect_active(
+        active_bar,
+        time_now,
+        enemy,
+        new_anomaly,
+        element_type,
+        sim_instance=sim_instance,
+        dot_runtime_state=dot_runtime_state,
+    )
+    _publish_new_anomaly_if_required(dispatch_port, enemy, element_type, new_anomaly)
+    _set_active_anomaly_flag(enemy, element_type, True)
+    enemy.dynamic.active_anomaly_bar_dict[element_type] = active_bar
+
+
+def _process_disorder_anomaly(
+    *,
+    active_bar: AnomalyBar,
+    element_type: int,
+    last_anomaly_element_type: int,
+    enemy,
+    time_now: int,
+    char_obj_list: list,
+    sim_instance: "Simulator",
+    skill_node: "SkillNode",
+    dispatch_port: "ScheduleDispatchPort",
+    listener_broadcaster: Callable[..., None],
+    dot_runtime_state: DotRuntimeStateAdapter,
+) -> None:
+    last_anomaly_bar = enemy.dynamic.active_anomaly_bar_dict[last_anomaly_element_type]
+    _set_active_anomaly_flag(enemy, last_anomaly_element_type, False)
+    _set_active_anomaly_flag(enemy, element_type, True)
+    if element_type in [2, 5]:
+        enemy.dynamic.frozen = True
+
+    disorder = spawn_output(
+        last_anomaly_bar,
+        1,
+        skill_node=skill_node,
+        sim_instance=sim_instance,
+        listener_broadcaster=listener_broadcaster,
+    )
+    enemy.dynamic.active_anomaly_bar_dict[last_anomaly_element_type] = None
+    enemy.anomaly_bars_dict[last_anomaly_element_type].active = False
+    remove_dots_cause_disorder(
+        disorder,
+        enemy,
+        dispatch_port,
+        time_now,
+        dot_runtime_state=dot_runtime_state,
+    )
+
+    new_anomaly = spawn_output(
+        active_bar,
+        0,
+        skill_node=skill_node,
+        sim_instance=sim_instance,
+        listener_broadcaster=listener_broadcaster,
+    )
+    anomaly_effect_active(
+        active_bar,
+        time_now,
+        enemy,
+        new_anomaly,
+        element_type,
+        sim_instance=sim_instance,
+        dot_runtime_state=dot_runtime_state,
+    )
+    enemy.dynamic.active_anomaly_bar_dict[element_type] = active_bar
+
+    if element_type not in [2, 5]:
+        _publish_scheduled_event(dispatch_port, new_anomaly)
+    _notify_special_resources(char_obj_list, disorder)
+    _publish_scheduled_event(dispatch_port, disorder)
+    _record_decibel_update(sim_instance, skill_node, "disorder")
+    enemy.sim_instance.schedule_data.change_process_state()
+    if disorder.activated_by:
+        print(
+            f"由【{disorder.activated_by.char_name}】的【{disorder.activated_by.skill_tag}】技能触发了紊乱！【{ELEMENT_TYPE_MAPPING[last_anomaly_bar.element_type]}】属性的异常状态提前结束！"
+        )
+
+
 def anomaly_effect_active(
     bar: AnomalyBar,
     timenow: int,
@@ -185,22 +348,18 @@ def update_anomaly(
         bar.ready_judge(time_now)
         if bar.ready:
             # 内置CD检测也通过之后，属性异常正式触发。现将需要更新的信息更新一下。
-            sim_instance.decibel_manager.update(skill_node=skill_node, key="anomaly")
-            bar.change_info_cause_active(
-                time_now,
+            _record_decibel_update(sim_instance, skill_node, "anomaly")
+            active_bar = _activate_anomaly_state(
+                bar=bar,
+                element_type=element_type,
+                enemy=enemy,
+                time_now=time_now,
                 dynamic_buff_dict=dynamic_buff_dict,
                 skill_node=skill_node,
                 buff_runtime_view=buff_runtime_view,
             )
-            enemy.update_max_anomaly(element_type)
 
-            active_bar = deepcopy(bar)
-            enemy.dynamic.active_anomaly_bar_dict[element_type] = active_bar
-
-            # 异常事件监听器广播
-            listener_broadcaster(event=active_bar, signal=LBS.ANOMALY)
-            if active_bar.element_type in [0]:
-                listener_broadcaster(event=active_bar, signal=LBS.ASSAULT_SPAWN)
+            _broadcast_active_anomaly(listener_broadcaster, active_bar)
             """
             更新完毕，现在正式进入分支判断——触发同类异常 & 触发异类异常（紊乱）。
             无论是哪个分支，都需要涉及enemy下的两大容器：enemy_debuff_list以及enemy_dot_list的修改，
@@ -211,109 +370,37 @@ def update_anomaly(
                 这个分支意味着：新触发了某异常或是同类异常覆盖，此时应该执行的策略是“更新”，模式编码是0
                 该策略下，只需要抛出一个新的属性异常给dot，不需要改变enemy的信息，只需要更新enemy的dot和debuff 两个list即可。
                 """
-                mode_number = 0
-                new_anomaly = spawn_output(
-                    active_bar,
-                    mode_number,
+                _process_new_or_replaced_anomaly(
+                    active_bar=active_bar,
+                    element_type=element_type,
+                    enemy=enemy,
+                    time_now=time_now,
+                    char_obj_list=char_obj_list,
+                    sim_instance=sim_instance,
                     skill_node=skill_node,
-                    sim_instance=sim_instance,
+                    dispatch_port=dispatch_port,
                     listener_broadcaster=listener_broadcaster,
-                )
-                for _char in char_obj_list:
-                    _char.special_resources(new_anomaly)
-                anomaly_effect_active(
-                    active_bar,
-                    time_now,
-                    enemy,
-                    new_anomaly,
-                    element_type,
-                    sim_instance=sim_instance,
                     dot_runtime_state=dot_runtime_state,
                 )
-                if element_type in [2, 5]:
-                    """
-                    当前分支是冰异常和烈霜异常分支，触发异常后，不向eventlist里面添加事件。
-                    但是如果有老的异常，那么就要立刻去掉老的，换上新的。
-                    最后，frozen的状态参数被打开。
-                    """
-                    if enemy.dynamic.frozen:
-                        _publish_scheduled_event(dispatch_port, new_anomaly)
-                        # print("新的冰异常触发导致老碎冰直接结算")
-                    enemy.dynamic.frozen = True
-                    # print("触发了新的冰异常！")
-                else:
-                    """
-                    只要不是冰和烈霜异常，就直接向eventlist里面添加即可。
-                    """
-                    _publish_scheduled_event(dispatch_port, new_anomaly)
-                setattr(enemy.dynamic, enemy.trans_anomaly_effect_to_str[element_type], True)
-                enemy.dynamic.active_anomaly_bar_dict[element_type] = active_bar
             elif element_type not in active_anomaly_list and len(active_anomaly_list) > 0:
                 """
                 这个分支意味着：要结算紊乱。那么需要复制的就不应该是新的这个属性异常，而应该是老的属性异常的bar实例。
                 为了区分好用于计算的异常积蓄条，
                 """
-                mode_number = 1
-                last_anomaly_bar = enemy.dynamic.active_anomaly_bar_dict[last_anomaly_element_type]
-                setattr(
-                    enemy.dynamic,
-                    enemy.trans_anomaly_effect_to_str[last_anomaly_element_type],
-                    False,
-                )
-                setattr(enemy.dynamic, enemy.trans_anomaly_effect_to_str[element_type], True)
-                if element_type in [2, 5]:
-                    enemy.dynamic.frozen = True
-                    # print("触发了新的冰异常！")
-
-                # 旧的激活异常拿出来复制，变成disorder后，从enemy身上清空。
-                disorder = spawn_output(
-                    last_anomaly_bar,
-                    mode_number,
-                    skill_node=skill_node,
+                assert last_anomaly_element_type is not None
+                _process_disorder_anomaly(
+                    active_bar=active_bar,
+                    element_type=element_type,
+                    last_anomaly_element_type=last_anomaly_element_type,
+                    enemy=enemy,
+                    time_now=time_now,
+                    char_obj_list=char_obj_list,
                     sim_instance=sim_instance,
+                    skill_node=skill_node,
+                    dispatch_port=dispatch_port,
                     listener_broadcaster=listener_broadcaster,
-                )
-                enemy.dynamic.active_anomaly_bar_dict[last_anomaly_element_type] = None
-                enemy.anomaly_bars_dict[last_anomaly_element_type].active = False
-                remove_dots_cause_disorder(
-                    disorder,
-                    enemy,
-                    dispatch_port,
-                    time_now,
                     dot_runtime_state=dot_runtime_state,
                 )
-
-                # 新的激活异常根据原来的Bar进行复制，并且添加到enemy身上。
-                new_anomaly = spawn_output(
-                    active_bar,
-                    0,
-                    skill_node=skill_node,
-                    sim_instance=sim_instance,
-                    listener_broadcaster=listener_broadcaster,
-                )
-                anomaly_effect_active(
-                    active_bar,
-                    time_now,
-                    enemy,
-                    new_anomaly,
-                    element_type,
-                    sim_instance=sim_instance,
-                    dot_runtime_state=dot_runtime_state,
-                )
-                enemy.dynamic.active_anomaly_bar_dict[element_type] = active_bar
-
-                # 向eventlist中添加事件。主要包括非烈霜、冰属性的新异常，以及紊乱。
-                if element_type not in [2, 5]:
-                    _publish_scheduled_event(dispatch_port, new_anomaly)
-                for obj in char_obj_list:
-                    obj.special_resources(disorder)
-                _publish_scheduled_event(dispatch_port, disorder)
-                sim_instance.decibel_manager.update(skill_node=skill_node, key="disorder")
-                enemy.sim_instance.schedule_data.change_process_state()
-                if disorder.activated_by:
-                    print(
-                        f"由【{disorder.activated_by.char_name}】的【{disorder.activated_by.skill_tag}】技能触发了紊乱！【{ELEMENT_TYPE_MAPPING[last_anomaly_bar.element_type]}】属性的异常状态提前结束！"
-                    )
             # 在异常与紊乱两个分支的最后，清空bar的异常积蓄和快照。
             else:
                 raise ValueError("无法解析的异常/紊乱分支")
