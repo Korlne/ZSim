@@ -219,6 +219,30 @@ XLOGIC_ADAPTER_DIRECT_TRIGGER_REGISTRY_SCAN = "direct trigger_buff_0 registry sc
 XLOGIC_ADAPTER_LEGACY_GET_PREPARED = (
     "legacy get_prepared without PreparationContext"
 )
+XLOGIC_ADAPTER_RECORD_RUNTIME_CACHE = (
+    "record/template cached runtime service"
+)
+
+XLOGIC_ADAPTER_RECORD_RUNTIME_CACHE_FIELDS = frozenset(
+    {
+        "buff_runtime_read_port",
+        "buff_runtime_state",
+        "dispatch_port",
+        "dot_runtime_adapter",
+        "dot_runtime_state",
+        "dot_runtime_writer",
+        "event_emitter",
+        "preload_commands",
+        "runtime_command_port",
+        "runtime_read_port",
+        "schedule_dispatch_port",
+        "scheduled_event",
+        "scheduled_event_emitter",
+        "scheduled_event_emitter_provider",
+        "sim_instance",
+        "simulator",
+    }
+)
 
 XLOGIC_ADAPTER_CALCULATOR_SERVICE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
@@ -251,6 +275,11 @@ XLOGIC_ADAPTER_TEMPLATE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/_char_buff_mod.py",
     "zsim/sim_progress/Buff/BuffXLogic/_euipment_buff_mod.py",
 )
+XLOGIC_ADAPTER_RECORD_TEMPLATE_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/_buff_record_base_class.py",
+    "zsim/sim_progress/Buff/BuffXLogic/_char_buff_mod.py",
+    "zsim/sim_progress/Buff/BuffXLogic/_euipment_buff_mod.py",
+)
 
 XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS = {
     path: frozenset(
@@ -275,6 +304,10 @@ for path in XLOGIC_ADAPTER_TEMPLATE_FILES:
             XLOGIC_ADAPTER_LEGACY_GET_PREPARED,
         }
     )
+for path in XLOGIC_ADAPTER_RECORD_TEMPLATE_FILES:
+    XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[path] = XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS.get(
+        path, frozenset()
+    ) | frozenset({XLOGIC_ADAPTER_RECORD_RUNTIME_CACHE})
 
 SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY = (
     "legacy ScheduleBuffSettle command-adapter internals"
@@ -1062,6 +1095,56 @@ def _is_self_record_dynamic_buff_list(node: ast.expr) -> bool:
     )
 
 
+def _is_record_template_class(node: ast.ClassDef) -> bool:
+    return node.name == "BuffRecordBaseClass" or node.name.endswith("Record")
+
+
+def _self_attribute_name(node: ast.AST) -> str | None:
+    if (
+        isinstance(node, ast.Attribute)
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "self"
+    ):
+        return node.attr
+    return None
+
+
+def _record_assignment_targets(node: ast.AST) -> list[ast.AST]:
+    if isinstance(node, ast.Assign):
+        return list(node.targets)
+    if isinstance(node, ast.AnnAssign):
+        return [node.target]
+    if isinstance(node, ast.AugAssign):
+        return [node.target]
+    return []
+
+
+def _collect_record_runtime_cache_findings_from_tree(
+    path: Path, source: str, tree: ast.AST
+) -> list[XLogicAdapterGuardrailFinding]:
+    findings: list[XLogicAdapterGuardrailFinding] = []
+    relative_path = path.relative_to(PROJECT_ROOT).as_posix()
+    for class_node in (
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ClassDef) and _is_record_template_class(node)
+    ):
+        for child in ast.walk(class_node):
+            for target in _record_assignment_targets(child):
+                attribute_name = _self_attribute_name(target)
+                if attribute_name not in XLOGIC_ADAPTER_RECORD_RUNTIME_CACHE_FIELDS:
+                    continue
+                findings.append(
+                    XLogicAdapterGuardrailFinding(
+                        path=relative_path,
+                        line=getattr(target, "lineno", getattr(child, "lineno", 0)),
+                        kind=XLOGIC_ADAPTER_RECORD_RUNTIME_CACHE,
+                        matched_expression=_adapter_source_for(source, child),
+                    )
+                )
+    return findings
+
+
 def _adapter_source_for(source: str, node: ast.AST) -> str:
     segment = ast.get_source_segment(source, node)
     if segment is None:
@@ -1077,6 +1160,11 @@ def _collect_xlogic_adapter_guardrail_findings_from_source(
     findings: list[XLogicAdapterGuardrailFinding] = []
     tree = ast.parse(source, filename=str(path))
     relative_path = path.relative_to(PROJECT_ROOT).as_posix()
+
+    if XLOGIC_ADAPTER_RECORD_RUNTIME_CACHE in forbidden_kinds:
+        findings.extend(
+            _collect_record_runtime_cache_findings_from_tree(path, source, tree)
+        )
 
     for node in ast.walk(tree):
         if (
@@ -1588,6 +1676,55 @@ def test_xlogic_adapter_migrated_files_do_not_reintroduce_legacy_inputs() -> Non
         "Migrated BuffXLogic adapter guardrail found legacy inputs:\n"
         + "\n".join(f"- {finding.message()}" for finding in findings)
     )
+
+
+def test_xlogic_adapter_guardrail_preserves_record_field_contract() -> None:
+    record_module = importlib.import_module(
+        "zsim.sim_progress.Buff.BuffXLogic._buff_record_base_class"
+    )
+    classifications = record_module.BUFF_RECORD_FIELD_CLASSIFICATION
+
+    assert classifications["cd"] == "mutable_local_state"
+    assert classifications["last_active_tick"] == "mutable_local_state"
+    assert classifications["trigger_skill_tag"] == "stable_identity"
+    assert classifications["additional_damage_skill_tag"] == "stable_identity"
+    assert classifications["trigger_buff_0"] == "retained_old_template_link"
+    assert not XLOGIC_ADAPTER_RECORD_RUNTIME_CACHE_FIELDS.intersection(classifications)
+
+
+def test_xlogic_adapter_guardrail_flags_record_runtime_cache_fields() -> None:
+    source = (
+        "class NewTemplateRecord:\n"
+        "    def __init__(self):\n"
+        "        self.scheduled_event = None\n"
+        "        self.runtime_command_port = None\n"
+        "        self.sim_instance = None\n"
+        "        self.dot_runtime_writer = None\n"
+    )
+    path = (
+        PROJECT_ROOT
+        / "zsim"
+        / "sim_progress"
+        / "Buff"
+        / "BuffXLogic"
+        / "_template_fixture.py"
+    )
+
+    findings = _collect_xlogic_adapter_guardrail_findings_from_source(
+        path,
+        source,
+        frozenset({XLOGIC_ADAPTER_RECORD_RUNTIME_CACHE}),
+    )
+
+    assert len(findings) == 4
+    assert {finding.kind for finding in findings} == {
+        XLOGIC_ADAPTER_RECORD_RUNTIME_CACHE
+    }
+    messages = [finding.message() for finding in findings]
+    assert any("self.scheduled_event = None" in message for message in messages)
+    assert any("self.runtime_command_port = None" in message for message in messages)
+    assert any("self.sim_instance = None" in message for message in messages)
+    assert any("self.dot_runtime_writer = None" in message for message in messages)
 
 
 def test_xlogic_adapter_guardrail_flags_calculator_reader_regressions() -> None:
