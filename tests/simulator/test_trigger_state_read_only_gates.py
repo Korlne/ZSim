@@ -220,6 +220,25 @@ class _BuffTemplate:
         self.history = SimpleNamespace(record=None)
 
 
+class _FakeBuffRuntimeReadPort:
+    def __init__(self, active_buff_view: dict[str, Sequence[object]]) -> None:
+        self._active_buff_view = active_buff_view
+
+    def get_active_buff_view(self) -> dict[str, Sequence[object]]:
+        return self._active_buff_view
+
+    def get_active_buffs(self, owner_name: str) -> Sequence[object]:
+        return self._active_buff_view.get(owner_name, ())
+
+
+class _FakeBuffRuntimeState:
+    def __init__(self) -> None:
+        self.active_buff_view: dict[str, Sequence[object]] = {}
+
+    def create_read_port(self) -> _FakeBuffRuntimeReadPort:
+        return _FakeBuffRuntimeReadPort(self.active_buff_view)
+
+
 class _CurrentBuffProbe:
     def __init__(self, *, index: str, operator: str = "operator") -> None:
         self.ft = SimpleNamespace(index=index, operator=operator)
@@ -227,12 +246,17 @@ class _CurrentBuffProbe:
         runtime_command_port = _FailFastRuntimeCommandPort()
         self.sim_instance = SimpleNamespace(
             tick=100,
+            char_data=SimpleNamespace(char_obj_list=[]),
+            init_data=SimpleNamespace(Judge_list_set=[]),
             load_data=SimpleNamespace(
                 exist_buff_dict={},
                 action_stack=[],
                 runtime_command_port=runtime_command_port,
             ),
+            global_stats=SimpleNamespace(DYNAMIC_BUFF_DICT={}),
+            buff_runtime_state=_FakeBuffRuntimeState(),
             schedule_data=SimpleNamespace(
+                enemy=SimpleNamespace(NAME="enemy"),
                 event_list=_FailFastEventList(),
                 runtime_command_port=runtime_command_port,
             ),
@@ -365,6 +389,23 @@ def _install_lookup_fakes(
     )
 
 
+def _install_preparation_context_data(
+    current_buff: _CurrentBuffProbe,
+    *,
+    equipper_name: str,
+    item_name: str,
+    char_name: str = "柳",
+) -> None:
+    two_piece_slot = item_name if "二件套" in item_name else "__not_two_piece__"
+    current_buff.sim_instance.init_data.Judge_list_set = [
+        [equipper_name, item_name, None, two_piece_slot]
+    ]
+    current_buff.sim_instance.char_data.char_obj_list = [
+        SimpleNamespace(NAME=equipper_name, CID=0),
+        SimpleNamespace(NAME=char_name, CID=1211),
+    ]
+
+
 def _make_equipment_gate(
     monkeypatch: pytest.MonkeyPatch,
     *,
@@ -392,6 +433,11 @@ def _make_equipment_gate(
         }
     }
     current_buff.sim_instance.load_data.exist_buff_dict = exist_buff_dict
+    _install_preparation_context_data(
+        current_buff,
+        equipper_name=equipper_name,
+        item_name=equipper_name,
+    )
     _install_lookup_fakes(
         monkeypatch,
         exist_buff_dict=exist_buff_dict,
@@ -448,6 +494,11 @@ def _make_astral_voice_effect_gate(
         }
     }
     current_buff.sim_instance.load_data.exist_buff_dict = exist_buff_dict
+    _install_preparation_context_data(
+        current_buff,
+        equipper_name="静听嘉音",
+        item_name="静听嘉音",
+    )
     _install_lookup_fakes(
         monkeypatch,
         exist_buff_dict=exist_buff_dict,

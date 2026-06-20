@@ -243,9 +243,11 @@ XLOGIC_ADAPTER_CALCULATOR_SERVICE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyDmgBonus.py",
 )
 XLOGIC_ADAPTER_TRIGGER_REF_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/AstralVoice.py",
     "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritRateBonus.py",
 )
 XLOGIC_ADAPTER_TEMPLATE_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/AstralVoice.py",
     "zsim/sim_progress/Buff/BuffXLogic/_char_buff_mod.py",
     "zsim/sim_progress/Buff/BuffXLogic/_euipment_buff_mod.py",
 )

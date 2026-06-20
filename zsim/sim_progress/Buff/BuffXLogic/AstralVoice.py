@@ -1,5 +1,9 @@
-from .. import Buff, JudgeTools, check_preparation, find_tick
-from ..JudgeTools import read_trigger_buff_state
+from .. import Buff, check_preparation, find_tick
+from ..JudgeTools import (
+    TriggerBuffRef,
+    build_preparation_context_from_buff,
+    read_trigger_buff_state,
+)
 
 
 class AstralVoiceRecord:
@@ -29,21 +33,31 @@ class AstralVoice(Buff.BuffLogic):
         self.record = None
 
     def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+        preparation_context = build_preparation_context_from_buff(self.buff_instance)
+        return check_preparation(
+            buff_instance=self.buff_instance,
+            buff_0=self.buff_0,
+            preparation_context=preparation_context,
+            **kwargs,
+        )
 
     def check_record_module(self):
+        preparation_context = None
         if self.equipper is None:
-            self.equipper = JudgeTools.find_equipper(
-                "静听嘉音", sim_instance=self.buff_instance.sim_instance
-            )
+            preparation_context = build_preparation_context_from_buff(self.buff_instance)
+            self.equipper = preparation_context.find_equipper("静听嘉音")
         if self.buff_0 is None:
             """
             这里的初始化，找到的buff_0实际上是佩戴者的buff_0，
             即使是在受益者的buff.history.record中存储的，也是装备佩戴者的buff_0。
             """
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )[self.equipper][self.buff_instance.ft.index]
+            if preparation_context is None:
+                preparation_context = build_preparation_context_from_buff(
+                    self.buff_instance
+                )
+            self.buff_0 = preparation_context.find_sub_exist_buff_dict(self.equipper)[
+                self.buff_instance.ft.index
+            ]
         if self.buff_0.history.record is None:
             self.buff_0.history.record = AstralVoiceRecord()
         self.record = self.buff_0.history.record
@@ -57,13 +71,13 @@ class AstralVoice(Buff.BuffLogic):
         self.check_record_module()
         self.get_prepared(
             equipper="静听嘉音",
-            trigger_buff_0=(
+            trigger_buff_0=TriggerBuffRef.owner(
                 self.buff_instance.ft.operator,
                 "Buff-驱动盘-静听嘉音-嘉音",
             ),
             action_stack=1,
         )
-        tick_now = JudgeTools.find_tick(sim_instance=self.buff_instance.sim_instance)
+        tick_now = find_tick(sim_instance=self.buff_instance.sim_instance)
         trigger_state = read_trigger_buff_state(self.record)
 
         skill_node = kwargs.get("skill_node", None)
@@ -88,7 +102,7 @@ class AstralVoice(Buff.BuffLogic):
         self.check_record_module()
         self.get_prepared(
             equipper="静听嘉音",
-            trigger_buff_0=(
+            trigger_buff_0=TriggerBuffRef.owner(
                 self.buff_instance.ft.operator,
                 "Buff-驱动盘-静听嘉音-嘉音",
             ),
