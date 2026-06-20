@@ -1,12 +1,70 @@
 from __future__ import annotations
 
 import ast
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PRODUCTION_ROOT = PROJECT_ROOT / "zsim" / "sim_progress"
+
+RAW_EVENT_APPEND_KINDS = {
+    "compatibility_only_queue_append",
+    "handler_requeue_append",
+    "local_event_group_append",
+    "raw_data_event_list_append",
+    "raw_event_list_append",
+    "raw_schedule_data_event_list_append",
+}
+
+TEMPORARY_RAW_EVENT_APPEND_ALLOWLIST = {
+    (
+        "zsim/sim_progress/Load/LoadDamageEvent.py",
+        "raw_event_list_append",
+        "event_list.append(mission)",
+    ): "US-002",
+    (
+        "zsim/sim_progress/Load/LoadDamageEvent.py",
+        "raw_event_list_append",
+        "event_list.append(mission.anomaly_data)",
+    ): "US-002",
+    (
+        "zsim/sim_progress/Load/LoadDamageEvent.py",
+        "raw_event_list_append",
+        "event_list.append(mission.skill_node_data)",
+    ): "US-002",
+    (
+        "zsim/sim_progress/data_struct/schedule_dispatch.py",
+        "compatibility_only_queue_append",
+        "self._event_queue.append(event)",
+    ): "US-003",
+    (
+        "zsim/sim_progress/ScheduledEvent/event_handlers/handlers/preload.py",
+        "handler_requeue_append",
+        "data.event_list.append(event)",
+    ): "US-004",
+    (
+        "zsim/sim_progress/ScheduledEvent/event_handlers/handlers/quick_assist.py",
+        "handler_requeue_append",
+        "data.event_list.append(event)",
+    ): "US-004",
+    (
+        "zsim/sim_progress/ScheduledEvent/event_handlers/handlers/polarized_assault.py",
+        "handler_requeue_append",
+        "data.event_list.append(event)",
+    ): "US-004",
+    (
+        "zsim/sim_progress/ScheduledEvent/event_handlers/handlers/stun_forced_termination.py",
+        "handler_requeue_append",
+        "data.event_list.append(event)",
+    ): "US-004",
+    (
+        "zsim/sim_progress/Character/Yixuan/AdrenalineManagerClass.py",
+        "local_event_group_append",
+        "event_list.append(event(char_instance=char_instance))",
+    ): "US-009",
+}
 
 
 @dataclass(frozen=True)
@@ -63,6 +121,13 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             self._add_finding(
                 line=node.lineno,
                 kind="find_event_list_call",
+                expression=self._source_for(node),
+            )
+        raw_append_kind = self._raw_event_append_kind(node)
+        if raw_append_kind is not None:
+            self._add_finding(
+                line=node.lineno,
+                kind=raw_append_kind,
                 expression=self._source_for(node),
             )
         self.generic_visit(node)
@@ -143,6 +208,50 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             return "record_event_list_append"
         return "buff_record_event_list_access"
 
+    def _raw_event_append_kind(self, node: ast.Call) -> str | None:
+        if not isinstance(node.func, ast.Attribute) or node.func.attr != "append":
+            return None
+
+        target = node.func.value
+        if isinstance(target, ast.Name) and target.id == "event_list":
+            if self._is_yixuan_local_event_group_path():
+                return "local_event_group_append"
+            return "raw_event_list_append"
+
+        if not isinstance(target, ast.Attribute):
+            return None
+
+        if self._is_schedule_dispatch_compatibility_queue(target):
+            return "compatibility_only_queue_append"
+
+        if target.attr != "event_list":
+            return None
+
+        owner = self._dotted_name(target.value)
+        if owner == "data":
+            if self._is_scheduled_event_handler_path():
+                return "handler_requeue_append"
+            return "raw_data_event_list_append"
+        if owner and (owner == "schedule_data" or owner.endswith(".schedule_data")):
+            return "raw_schedule_data_event_list_append"
+        return None
+
+    def _is_scheduled_event_handler_path(self) -> bool:
+        return self._relative_path().startswith(
+            "zsim/sim_progress/ScheduledEvent/event_handlers/handlers/"
+        )
+
+    def _is_yixuan_local_event_group_path(self) -> bool:
+        return (
+            self._relative_path()
+            == "zsim/sim_progress/Character/Yixuan/AdrenalineManagerClass.py"
+        )
+
+    def _is_schedule_dispatch_compatibility_queue(self, target: ast.Attribute) -> bool:
+        if self._relative_path() != "zsim/sim_progress/data_struct/schedule_dispatch.py":
+            return False
+        return self._dotted_name(target) in {"_event_queue", "self._event_queue"}
+
     def _dotted_name(self, node: ast.AST) -> str | None:
         if isinstance(node, ast.Name):
             return node.id
@@ -159,6 +268,22 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             "find_event_list_import": "deleted legacy discovery import",
             "find_event_list_call": "deleted legacy discovery call",
             "buff_record_event_list_access": "deleted BuffRecordBaseClass.event_list cache access",
+            "compatibility_only_queue_append": (
+                "compatibility-only queue append inside schedule dispatch adapter"
+            ),
+            "handler_requeue_append": (
+                "handler requeue raw data.event_list.append write"
+            ),
+            "local_event_group_append": (
+                "local event group append; not ScheduleData.event_list"
+            ),
+            "raw_data_event_list_append": (
+                "planned queue raw data.event_list.append write"
+            ),
+            "raw_event_list_append": "planned queue raw event_list.append write",
+            "raw_schedule_data_event_list_append": (
+                "planned queue raw schedule_data.event_list.append write"
+            ),
             "record_event_list_append": "producer-level planned-event writer through record.event_list",
         }[kind]
 
@@ -168,6 +293,22 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             "find_event_list_import": "delete old discovery or retain as documented fallback",
             "find_event_list_call": "delete old discovery or retain as documented fallback",
             "buff_record_event_list_access": "delete old discovery or retain as documented fallback",
+            "compatibility_only_queue_append": (
+                "US-003 owns the schedule queue implementation boundary"
+            ),
+            "handler_requeue_append": (
+                "US-004 owns migration to an EventContext requeue API"
+            ),
+            "local_event_group_append": (
+                "US-009 owns renaming this local event group away from event_list"
+            ),
+            "raw_data_event_list_append": "publish planned payloads through ScheduleDispatchPort",
+            "raw_event_list_append": (
+                "US-002 owns migration to ScheduleDispatchPort-backed publishing"
+            ),
+            "raw_schedule_data_event_list_append": (
+                "publish planned payloads through ScheduleDispatchPort"
+            ),
             "record_event_list_append": "migrate to ScheduleDispatchPort or block deletion",
         }[kind]
 
@@ -198,6 +339,16 @@ def _assert_no_disallowed(findings: list[Finding]) -> None:
     )
 
 
+def _raw_append_key(finding: Finding) -> tuple[str, str, str]:
+    return (finding.path, finding.kind, finding.matched_expression)
+
+
+def _active_prd_story_ids() -> set[str]:
+    prd_path = PROJECT_ROOT / "scripts" / "ralph" / "prd.json"
+    prd = json.loads(prd_path.read_text(encoding="utf-8"))
+    return {story["id"] for story in prd["userStories"]}
+
+
 def test_find_event_list_legacy_discovery_surface_has_no_new_production_uses() -> None:
     findings = [
         finding
@@ -216,6 +367,79 @@ def test_buff_record_event_list_cache_has_no_new_production_uses() -> None:
     ]
 
     _assert_no_disallowed(findings)
+
+
+def test_raw_event_list_append_guardrail_has_only_follow_up_owned_findings() -> None:
+    findings = [
+        finding for finding in _collect_findings() if finding.kind in RAW_EVENT_APPEND_KINDS
+    ]
+    actual = {_raw_append_key(finding) for finding in findings}
+    expected = set(TEMPORARY_RAW_EVENT_APPEND_ALLOWLIST)
+
+    assert actual == expected, (
+        "Raw event-list append guardrail found unexpected production queue writes:\n"
+        + "\n".join(f"- {finding.message()}" for finding in findings)
+    )
+
+    prd_story_ids = _active_prd_story_ids()
+    missing_story_ids = sorted(
+        {
+            owner_story_id
+            for owner_story_id in TEMPORARY_RAW_EVENT_APPEND_ALLOWLIST.values()
+            if owner_story_id not in prd_story_ids
+        }
+    )
+    assert not missing_story_ids, (
+        "Temporary raw append allowlist entries must name follow-up stories "
+        f"in scripts/ralph/prd.json; missing: {missing_story_ids}"
+    )
+
+
+def test_raw_event_list_append_guardrail_reports_event_layer_classifications() -> None:
+    samples = [
+        (
+            PRODUCTION_ROOT / "Load" / "LoadDamageEvent.py",
+            "def publish(event_list, event):\n    event_list.append(event)\n",
+            "planned queue raw event_list.append write",
+        ),
+        (
+            PRODUCTION_ROOT
+            / "ScheduledEvent"
+            / "event_handlers"
+            / "handlers"
+            / "preload.py",
+            "def requeue(data, event):\n    data.event_list.append(event)\n",
+            "handler requeue raw data.event_list.append write",
+        ),
+        (
+            PRODUCTION_ROOT / "data_struct" / "schedule_dispatch.py",
+            "class Adapter:\n    def publish(self, event):\n        self._event_queue.append(event)\n",
+            "compatibility-only queue append inside schedule dispatch adapter",
+        ),
+        (
+            PRODUCTION_ROOT / "data_struct" / "_synthetic_raw_schedule_data.py",
+            "def publish(schedule_data, event):\n    schedule_data.event_list.append(event)\n",
+            "planned queue raw schedule_data.event_list.append write",
+        ),
+        (
+            PRODUCTION_ROOT / "Character" / "Yixuan" / "AdrenalineManagerClass.py",
+            "def factory(event_list, event):\n    event_list.append(event)\n",
+            "local event group append; not ScheduleData.event_list",
+        ),
+    ]
+
+    messages: list[str] = []
+    for path, source, _classification in samples:
+        tree = ast.parse(source)
+        visitor = LegacyEventListDiscoveryVisitor(path, source)
+        visitor.visit(tree)
+        messages.extend(finding.message() for finding in visitor.findings)
+
+    for _path, _source, classification in samples:
+        assert any(
+            f"classification suggestion: {classification}" in message
+            for message in messages
+        )
 
 
 def test_guardrail_failure_message_includes_post_deletion_triage_fields() -> None:
