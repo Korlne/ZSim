@@ -15,6 +15,16 @@ from .FindMain import (
     find_stack,
     find_tick,  # noqa: F401
 )
+from .PreparationContext import (  # noqa: F401
+    BuffTemplateRegistryReadPort,
+    CharacterLookup,
+    EquipmentOwnerLookup,
+    PreparationContext,
+    TriggerBuffLookup,
+    build_preparation_context_from_buff,
+    build_preparation_context_from_sim_instance,
+    create_calculator_runtime_read_context_from_sim_instance,
+)
 from .TriggerState import (  # noqa: F401
     TriggerBuffState,
     read_trigger_buff_state,
@@ -36,6 +46,12 @@ def check_preparation(
     """
     这是一个综合函数。根据传入的参数，来执行不同的内容。
     """
+    preparation_context = kwargs.pop("preparation_context", None)
+    if preparation_context is not None and not isinstance(
+        preparation_context, PreparationContext
+    ):
+        raise TypeError("preparation_context必须是PreparationContext实例")
+
     # 先决条件检查
     assert buff_0 is not None, "buff_0不能为空"
     if buff_0.history.record is None:
@@ -71,52 +87,98 @@ def check_preparation(
     # 函数主体部分
     if equipper:
         if record.equipper is None:
-            record.equipper = find_equipper(equipper, sim_instance=buff_instance.sim_instance)
+            if preparation_context is None:
+                record.equipper = find_equipper(equipper, sim_instance=buff_instance.sim_instance)
+            else:
+                record.equipper = preparation_context.find_equipper(equipper)
         if record.char is None:
             assert record.equipper is not None, "equipper不能为空"
-            record.char = find_char_from_name(
-                NAME=record.equipper, sim_instance=buff_instance.sim_instance
-            )
+            if preparation_context is None:
+                record.char = find_char_from_name(
+                    NAME=record.equipper, sim_instance=buff_instance.sim_instance
+                )
+            else:
+                record.char = preparation_context.find_char_from_name(record.equipper)
     if char_CID:
         if record.char is None:
-            record.char = find_char_from_CID(char_CID, sim_instance=buff_instance.sim_instance)
+            if preparation_context is None:
+                record.char = find_char_from_CID(
+                    char_CID, sim_instance=buff_instance.sim_instance
+                )
+            else:
+                record.char = preparation_context.find_char_from_cid(char_CID)
     if char_NAME:
         if record.char is None:
-            record.char = find_char_from_name(char_NAME, sim_instance=buff_instance.sim_instance)
+            if preparation_context is None:
+                record.char = find_char_from_name(
+                    char_NAME, sim_instance=buff_instance.sim_instance
+                )
+            else:
+                record.char = preparation_context.find_char_from_name(char_NAME)
 
     if sub_exist_buff_dict:
         if record.char is None:
             raise ValueError("在buff_0.history.record 中并未读取到对应的char")
         if record.sub_exist_buff_dict is None:
-            record.sub_exist_buff_dict = find_exist_buff_dict(
-                sim_instance=buff_instance.sim_instance
-            )[record.char.NAME]
+            if preparation_context is None:
+                record.sub_exist_buff_dict = find_exist_buff_dict(
+                    sim_instance=buff_instance.sim_instance
+                )[record.char.NAME]
+            else:
+                record.sub_exist_buff_dict = preparation_context.find_sub_exist_buff_dict(
+                    record.char.NAME
+                )
     if enemy:
         if record.enemy is None:
-            record.enemy = find_enemy(sim_instance=buff_instance.sim_instance)
+            if preparation_context is None:
+                record.enemy = find_enemy(sim_instance=buff_instance.sim_instance)
+            else:
+                record.enemy = preparation_context.enemy
     if dynamic_buff_list:
         if record.dynamic_buff_list is None:
-            record.dynamic_buff_list = find_dynamic_buff_list(
-                sim_instance=buff_instance.sim_instance
-            )
+            if preparation_context is None:
+                record.dynamic_buff_list = find_dynamic_buff_list(
+                    sim_instance=buff_instance.sim_instance
+                )
+            else:
+                record.dynamic_buff_list = preparation_context.active_buff_view
     if action_stack:
         if record.action_stack is None:
-            record.action_stack = find_stack(sim_instance=buff_instance.sim_instance)
+            if preparation_context is None:
+                record.action_stack = find_stack(sim_instance=buff_instance.sim_instance)
+            else:
+                record.action_stack = preparation_context.action_stack
     if trigger_buff_0:
-        trigger_buff_0_handler(record, trigger_buff_0, buff_instance=buff_instance)
+        trigger_buff_0_handler(
+            record,
+            trigger_buff_0,
+            buff_instance=buff_instance,
+            preparation_context=preparation_context,
+        )
     if preload_data:
         if record.preload_data is None:
-            record.preload_data = find_preload_data(sim_instance=buff_instance.sim_instance)
+            if preparation_context is None:
+                record.preload_data = find_preload_data(sim_instance=buff_instance.sim_instance)
+            else:
+                record.preload_data = preparation_context.preload_data
     if char_obj_list:
         if record.char_obj_list is None:
-            record.char_obj_list = find_char_list(sim_instance=buff_instance.sim_instance)
+            if preparation_context is None:
+                record.char_obj_list = find_char_list(sim_instance=buff_instance.sim_instance)
+            else:
+                record.char_obj_list = preparation_context.char_obj_list
     if na_skill_level:
         if record.char is None:
             raise ValueError("在buff_0.history.record 中并未读取到对应的char")
         record.na_skill_level = record.char.skill_object.skill_level_dict.get("normal")
 
 
-def trigger_buff_0_handler(record, trigger_buff_0, buff_instance: "Buff"):
+def trigger_buff_0_handler(
+    record,
+    trigger_buff_0,
+    buff_instance: "Buff",
+    preparation_context: PreparationContext | None = None,
+):
     """
     该函数用于寻找trigger_buff_0，在搜索不同的触发器Buff‘时，程序所面临的情况往往是复杂的。
     1、触发器的操作者（operator）和受益者（beneficiary）都是本人的，那么传入的数据直接可以使用；
@@ -132,33 +194,44 @@ def trigger_buff_0_handler(record, trigger_buff_0, buff_instance: "Buff"):
         buff_index = trigger_buff_0[1]
         if operator == "equipper":
             if record.equipper is None:
-                record.equipper = find_equipper(operator, sim_instance=buff_instance.sim_instance)
+                if preparation_context is None:
+                    record.equipper = find_equipper(
+                        operator, sim_instance=buff_instance.sim_instance
+                    )
+                else:
+                    record.equipper = preparation_context.find_equipper(operator)
                 # FIXME:这里要解决传入的operator 是“equipper”字符串的问题！！！！虽然该分支不会被执行，所以从未出错（obsidian笔记详解一下）
 
             operator = record.equipper
         elif operator == "enemy":
             operator = record.char.NAME
-        sub_exist_buff_dict = find_exist_buff_dict(sim_instance=buff_instance.sim_instance)[
-            operator
-        ]
-        founded_list = []
-        for _buff_founded in sub_exist_buff_dict.values():
-            if buff_index in _buff_founded.ft.index:
-                founded_list.append(_buff_founded)
-        if len(founded_list) != 1:
-            """说明提供的关键词筛选出了多个Buff，此时需要进一步筛选出正确结果"""
-            founded_buff_index_list = [founded_buff.ft.index for founded_buff in founded_list]
-            """验错环节"""
-            if len(set(founded_buff_index_list)) != len(founded_list):
-                raise ValueError(f"在{operator}的sub_exist_buff_dict中找到了2个以上的同名buff！")
-            trigger_index_length = len(buff_index)
-            for _buffs in founded_list:
-                if _buffs.ft.index[-trigger_index_length:] == buff_index:
-                    record.trigger_buff_0 = _buffs
-                    break
-            else:
-                raise ValueError(
-                    f"并未找到Buff名后缀为{buff_index}的触发器Buff，说明提供的用于寻找trigger_buff_0的关键词无法有效筛选出触发器，请调整关键词或者数据库Buff Index"
-                )
+
+        if preparation_context is not None:
+            record.trigger_buff_0 = preparation_context.find_trigger_buff(
+                operator, buff_index
+            )
         else:
-            record.trigger_buff_0 = founded_list[0]
+            sub_exist_buff_dict = find_exist_buff_dict(sim_instance=buff_instance.sim_instance)[
+                operator
+            ]
+            founded_list = []
+            for _buff_founded in sub_exist_buff_dict.values():
+                if buff_index in _buff_founded.ft.index:
+                    founded_list.append(_buff_founded)
+            if len(founded_list) != 1:
+                """说明提供的关键词筛选出了多个Buff，此时需要进一步筛选出正确结果"""
+                founded_buff_index_list = [founded_buff.ft.index for founded_buff in founded_list]
+                """验错环节"""
+                if len(set(founded_buff_index_list)) != len(founded_list):
+                    raise ValueError(f"在{operator}的sub_exist_buff_dict中找到了2个以上的同名buff！")
+                trigger_index_length = len(buff_index)
+                for _buffs in founded_list:
+                    if _buffs.ft.index[-trigger_index_length:] == buff_index:
+                        record.trigger_buff_0 = _buffs
+                        break
+                else:
+                    raise ValueError(
+                        f"并未找到Buff名后缀为{buff_index}的触发器Buff，说明提供的用于寻找trigger_buff_0的关键词无法有效筛选出触发器，请调整关键词或者数据库Buff Index"
+                    )
+            else:
+                record.trigger_buff_0 = founded_list[0]

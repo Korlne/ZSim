@@ -5,6 +5,7 @@ import csv
 import importlib
 import inspect
 import json
+import textwrap
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,6 +14,9 @@ from types import SimpleNamespace
 import pytest
 
 import zsim.sim_progress.Buff.JudgeTools as judge_tools
+from zsim.sim_progress.Buff.BuffXLogic.WoodpeckerElectroSet4_NA import (
+    WoodpeckerElectroSet4_NA,
+)
 from zsim.sim_progress.Buff.BuffXLogic._buff_record_base_class import BuffRecordBaseClass
 
 
@@ -208,6 +212,51 @@ def _collect_config_event_list_findings() -> list[ConfigEventListFinding]:
     return findings
 
 
+def _make_preparation_context_fixture() -> SimpleNamespace:
+    character = SimpleNamespace(NAME="安比", CID=1011)
+    enemy = SimpleNamespace(name="enemy")
+    action_stack = SimpleNamespace(name="action_stack")
+    active_buff_view: dict[str, list[object]] = {character.NAME: []}
+    preload_data = SimpleNamespace(name="preload_data")
+    sim_instance = SimpleNamespace(
+        char_data=SimpleNamespace(char_obj_list=[character]),
+        init_data=SimpleNamespace(
+            Judge_list_set=[
+                [character.NAME, "啄木鸟电音", "任意音擎", "激素朋克二件套"],
+            ]
+        ),
+        load_data=SimpleNamespace(
+            exist_buff_dict={character.NAME: {}},
+            action_stack=action_stack,
+        ),
+        schedule_data=SimpleNamespace(enemy=enemy),
+        global_stats=SimpleNamespace(DYNAMIC_BUFF_DICT=active_buff_view),
+        preload=SimpleNamespace(preload_data=preload_data),
+    )
+    return SimpleNamespace(
+        character=character,
+        enemy=enemy,
+        action_stack=action_stack,
+        active_buff_view=active_buff_view,
+        preload_data=preload_data,
+        sim_instance=sim_instance,
+        buff_instance=SimpleNamespace(sim_instance=sim_instance),
+    )
+
+
+def _patch_legacy_preparation_helpers_to_fail(monkeypatch: pytest.MonkeyPatch) -> None:
+    def unexpected_legacy_lookup(*args: object, **kwargs: object) -> object:
+        raise AssertionError("PreparationContext path should not call legacy find_* helpers")
+
+    for helper_name in (
+        "find_equipper",
+        "find_char_from_name",
+        "find_enemy",
+        "find_stack",
+    ):
+        monkeypatch.setattr(judge_tools, helper_name, unexpected_legacy_lookup)
+
+
 def test_find_event_list_legacy_discovery_surface_is_deleted() -> None:
     find_main = importlib.import_module("zsim.sim_progress.Buff.JudgeTools.FindMain")
 
@@ -255,6 +304,85 @@ def test_check_preparation_event_list_true_does_not_create_cached_queue() -> Non
         )
 
     assert not hasattr(record, "event_list")
+
+
+def test_check_preparation_context_hydrates_char_enemy_and_action_stack(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_preparation_context_fixture()
+    record = BuffRecordBaseClass()
+    buff_0 = SimpleNamespace(history=SimpleNamespace(record=record))
+    context = judge_tools.build_preparation_context_from_buff(fixture.buff_instance)
+    _patch_legacy_preparation_helpers_to_fail(monkeypatch)
+
+    judge_tools.check_preparation(
+        buff_0=buff_0,
+        buff_instance=fixture.buff_instance,
+        preparation_context=context,
+        equipper="啄木鸟电音",
+        enemy=1,
+        action_stack=1,
+    )
+
+    assert record.equipper == fixture.character.NAME
+    assert record.char is fixture.character
+    assert record.enemy is fixture.enemy
+    assert record.action_stack is fixture.action_stack
+
+
+def test_check_preparation_without_context_keeps_legacy_lookup_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    record = BuffRecordBaseClass()
+    buff_0 = SimpleNamespace(history=SimpleNamespace(record=record))
+    buff_instance = SimpleNamespace(sim_instance=object())
+    legacy_character = SimpleNamespace(NAME="旧路径安比", CID=1011)
+
+    def fake_find_char_from_name(NAME: str, sim_instance: object) -> object:
+        assert NAME == legacy_character.NAME
+        assert sim_instance is buff_instance.sim_instance
+        return legacy_character
+
+    monkeypatch.setattr(judge_tools, "find_char_from_name", fake_find_char_from_name)
+
+    judge_tools.check_preparation(
+        buff_0=buff_0,
+        buff_instance=buff_instance,
+        char_NAME=legacy_character.NAME,
+    )
+
+    assert record.char is legacy_character
+
+
+def test_woodpecker_na_get_prepared_uses_preparation_context_for_core_reads(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_preparation_context_fixture()
+    record = BuffRecordBaseClass()
+    buff_0 = SimpleNamespace(history=SimpleNamespace(record=record))
+    logic = WoodpeckerElectroSet4_NA.__new__(WoodpeckerElectroSet4_NA)
+    logic.buff_instance = fixture.buff_instance
+    logic.buff_0 = buff_0
+    _patch_legacy_preparation_helpers_to_fail(monkeypatch)
+
+    logic.get_prepared(equipper="啄木鸟电音", enemy=1, action_stack=1)
+
+    assert record.equipper == fixture.character.NAME
+    assert record.char is fixture.character
+    assert record.enemy is fixture.enemy
+    assert record.action_stack is fixture.action_stack
+
+
+def test_woodpecker_na_get_prepared_has_no_broad_findmain_calls() -> None:
+    source = textwrap.dedent(inspect.getsource(WoodpeckerElectroSet4_NA.get_prepared))
+
+    assert "build_preparation_context_from_buff" in source
+    assert "preparation_context=preparation_context" in source
+    assert "JudgeTools.find_" not in source
+    assert "FindMain" not in source
+    assert "find_enemy(" not in source
+    assert "find_stack(" not in source
+    assert "find_char" not in source
 
 
 def test_buff_xlogic_does_not_request_event_list_preparation_cache() -> None:

@@ -5,6 +5,7 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
 )
 
 from .. import Buff, JudgeTools, check_preparation
+from ..JudgeTools import build_preparation_context_from_buff
 
 
 class WoodpeckerElectroNARecord:
@@ -27,7 +28,13 @@ class WoodpeckerElectroSet4_NA(Buff.BuffLogic):
         self.equipper = None
 
     def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+        preparation_context = build_preparation_context_from_buff(self.buff_instance)
+        return check_preparation(
+            buff_instance=self.buff_instance,
+            buff_0=self.buff_0,
+            preparation_context=preparation_context,
+            **kwargs,
+        )
 
     def check_record_module(self):
         if self.equipper is None:
