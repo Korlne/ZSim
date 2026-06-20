@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 from ..buff_runtime import BuffRuntimeReadPort
 from ..runtime_command import RuntimeCommandPort
@@ -40,6 +40,10 @@ class EventContext:
     def get_data(self) -> ScheduleData:
         """获取调度数据对象"""
         return self.data
+
+    def requeue_event(self, event: Any) -> None:
+        """将未到执行时间的事件重新加入当前 Schedule 队列。"""
+        self.data.event_list.append(event)
 
     def get_tick(self) -> int:
         """获取当前时间刻"""

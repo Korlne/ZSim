@@ -30,8 +30,17 @@ from zsim.sim_progress.ScheduledEvent import buff_runtime as buff_runtime_module
 from zsim.sim_progress.ScheduledEvent import runtime_command as runtime_command_module
 from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
 from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
+from zsim.sim_progress.ScheduledEvent.event_handlers.handlers.polarized_assault import (
+    PolarizedAssaultEventHandler,
+)
 from zsim.sim_progress.ScheduledEvent.event_handlers.handlers.preload import (
     PreloadEventHandler,
+)
+from zsim.sim_progress.ScheduledEvent.event_handlers.handlers.quick_assist import (
+    QuickAssistEventHandler,
+)
+from zsim.sim_progress.ScheduledEvent.event_handlers.handlers.stun_forced_termination import (
+    StunForcedTerminationEventHandler,
 )
 from zsim.sim_progress.ScheduledEvent.runtime_command import create_runtime_command_port
 
@@ -104,11 +113,17 @@ class _RuntimeViewStub(BuffRuntimeReadPort):
         raise AssertionError("handler requeue should not read legacy exist buff")
 
 
-class _FuturePreloadEvent:
+class _FutureRetainedEvent:
     execute_tick = 11
 
     def execute_myself(self) -> None:
-        raise AssertionError("future preload event should be requeued without executing")
+        raise AssertionError("future retained event should be requeued without executing")
+
+    def execute_update(self, tick: int) -> None:
+        raise AssertionError("future retained event should be requeued without executing")
+
+    def execute(self) -> None:
+        raise AssertionError("future retained event should be requeued without executing")
 
 
 class _RecordingListener:
@@ -230,7 +245,18 @@ def test_listener_broadcast_is_synchronous_not_schedule_publish() -> None:
     assert schedule_data.event_list == []
 
 
-def test_handler_requeue_uses_current_schedule_queue_not_dispatch_port() -> None:
+@pytest.mark.parametrize(
+    "handler_cls",
+    [
+        PreloadEventHandler,
+        QuickAssistEventHandler,
+        PolarizedAssaultEventHandler,
+        StunForcedTerminationEventHandler,
+    ],
+)
+def test_handler_requeue_uses_current_schedule_queue_not_dispatch_port(
+    handler_cls: type[Any],
+) -> None:
     stale_event_list = _FailFastEventList()
     current_event_list: list[object] = []
     schedule_data = SimpleNamespace(event_list=stale_event_list)
@@ -243,11 +269,11 @@ def test_handler_requeue_uses_current_schedule_queue_not_dispatch_port() -> None
         action_stack=cast(Any, SimpleNamespace()),
         sim_instance=cast(Any, SimpleNamespace()),
     )
-    event = _FuturePreloadEvent()
+    event = _FutureRetainedEvent()
 
     schedule_data.event_list = current_event_list
 
-    PreloadEventHandler().handle(cast(Any, event), context)
+    handler_cls().handle(cast(Any, event), context)
 
     assert stale_event_list == []
     assert current_event_list == [event]

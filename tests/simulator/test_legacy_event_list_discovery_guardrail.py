@@ -25,26 +25,6 @@ TEMPORARY_RAW_EVENT_APPEND_ALLOWLIST = {
         "self._event_queue.append(event)",
     ): "US-003",
     (
-        "zsim/sim_progress/ScheduledEvent/event_handlers/handlers/preload.py",
-        "handler_requeue_append",
-        "data.event_list.append(event)",
-    ): "US-004",
-    (
-        "zsim/sim_progress/ScheduledEvent/event_handlers/handlers/quick_assist.py",
-        "handler_requeue_append",
-        "data.event_list.append(event)",
-    ): "US-004",
-    (
-        "zsim/sim_progress/ScheduledEvent/event_handlers/handlers/polarized_assault.py",
-        "handler_requeue_append",
-        "data.event_list.append(event)",
-    ): "US-004",
-    (
-        "zsim/sim_progress/ScheduledEvent/event_handlers/handlers/stun_forced_termination.py",
-        "handler_requeue_append",
-        "data.event_list.append(event)",
-    ): "US-004",
-    (
         "zsim/sim_progress/Character/Yixuan/AdrenalineManagerClass.py",
         "local_event_group_append",
         "event_list.append(event(char_instance=char_instance))",
