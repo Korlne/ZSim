@@ -20,21 +20,6 @@ RAW_EVENT_APPEND_KINDS = {
 
 TEMPORARY_RAW_EVENT_APPEND_ALLOWLIST = {
     (
-        "zsim/sim_progress/Load/LoadDamageEvent.py",
-        "raw_event_list_append",
-        "event_list.append(mission)",
-    ): "US-002",
-    (
-        "zsim/sim_progress/Load/LoadDamageEvent.py",
-        "raw_event_list_append",
-        "event_list.append(mission.anomaly_data)",
-    ): "US-002",
-    (
-        "zsim/sim_progress/Load/LoadDamageEvent.py",
-        "raw_event_list_append",
-        "event_list.append(mission.skill_node_data)",
-    ): "US-002",
-    (
         "zsim/sim_progress/data_struct/schedule_dispatch.py",
         "compatibility_only_queue_append",
         "self._event_queue.append(event)",
