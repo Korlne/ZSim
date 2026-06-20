@@ -1,6 +1,11 @@
 # 这是席德额外能力重击大招增伤无视电抗Buff的脚本
+from typing import Any
+
 from define import SEED_REPORT
-from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitter,
+    ScheduledEventEmitterProvider,
+)
 
 from .. import Buff, JudgeTools, check_preparation
 from ._buff_record_base_class import BuffRecordBaseClass as BRBC
@@ -14,20 +19,30 @@ class SeedAdditionalAbilityTriggerRecord(BRBC):
 
 
 class SeedAdditionalAbilityTrigger(Buff.BuffLogic):
-    def __init__(self, buff_instance):
+    def __init__(
+        self,
+        buff_instance,
+        scheduled_event_emitter_provider: ScheduledEventEmitterProvider | None = None,
+    ):
         """这是席德额外能力给正兵回能的触发器"""
         super().__init__(buff_instance)
         self.buff_instance: Buff = buff_instance
+        self._scheduled_event_emitter_provider = (
+            scheduled_event_emitter_provider
+            or ScheduledEventEmitterProvider.from_sim_instance_getter(
+                lambda: self.buff_instance.sim_instance
+            )
+        )
         self.xjudge = self.special_judge_logic
         self.xhit = self.special_hit_logic
-        self.buff_0: "Buff | None" = None
-        self.record: BRBC | None = None
+        self.buff_0: Any = None
+        self.record: Any = None
 
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
 
-    def _create_dispatch_port(self):
-        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
+    def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
+        return self._scheduled_event_emitter_provider.create_emitter()
 
     def check_record_module(self):
         if self.buff_0 is None:
@@ -86,7 +101,7 @@ class SeedAdditionalAbilityTrigger(Buff.BuffLogic):
             sp_target=(vanguard.NAME,),
             sp_value=energy_value,
         )
-        self._create_dispatch_port().publish_scheduled(refresh_data)
+        self._scheduled_event_emitter().emit_scheduled(refresh_data)
         self.record.last_active_tick = self.buff_instance.sim_instance.tick
         if SEED_REPORT:
             self.buff_instance.sim_instance.schedule_data.change_process_state()

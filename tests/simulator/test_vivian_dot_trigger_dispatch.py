@@ -22,6 +22,10 @@ from zsim.sim_progress.Buff.BuffXLogic.VivianDotTrigger import (
 )
 from zsim.sim_progress.Load import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 
 
 class _FailFastEventList(list):
@@ -34,7 +38,7 @@ class _FailFastDotList(list):
         raise AssertionError("Vivian judge path should not register dots")
 
 
-class _RecordingDispatchPort:
+class _RecordingDispatchPort(ScheduleDispatchPort):
     def __init__(self, call_order: list[str]) -> None:
         self.events: list[object] = []
         self._call_order = call_order
@@ -150,17 +154,24 @@ def _build_vivian_judge_harness(
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="Buff-角色-薇薇安-核心被动-Dot触发器"),
     )
-    logic = VivianDotTrigger(buff_instance)
+    dispatch_port = _RecordingDispatchPort([])
+
+    def create_dispatch_port() -> _RecordingDispatchPort:
+        dispatch_create_calls.append(sim_instance)
+        return dispatch_port
+
+    logic = VivianDotTrigger(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            create_dispatch_port
+        ),
+    )
     dynamic = _CountingAnomalyDynamic(anomaly_active=anomaly_active)
     enemy = SimpleNamespace(dynamic=dynamic)
     record = VivianDotTriggerRecord()
     record.enemy = enemy
     record.char = SimpleNamespace(NAME="薇薇安")
     prepared_calls: list[dict[str, object]] = []
-
-    def fail_create_dispatch_port(*, sim_instance: object) -> object:
-        dispatch_create_calls.append(sim_instance)
-        raise AssertionError("Vivian judge path should not publish scheduled events")
 
     def fail_spawn_normal_dot(*args: object, **kwargs: object) -> object:
         spawn_calls.append((args, kwargs))
@@ -172,11 +183,6 @@ def _build_vivian_judge_harness(
 
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: prepared_calls.append(kwargs))
-    monkeypatch.setattr(
-        vivian_module,
-        "create_schedule_dispatch_port",
-        fail_create_dispatch_port,
-    )
     monkeypatch.setattr(
         vivian_module.DotRuntimeStateAdapter,
         "from_enemy",
@@ -314,7 +320,12 @@ def test_vivian_dot_trigger_registers_dot_and_publishes_skill_node_via_dispatch_
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="Buff-角色-薇薇安-核心被动-Dot触发器"),
     )
-    logic = VivianDotTrigger(buff_instance)
+    logic = VivianDotTrigger(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
 
     inactive_dot = _PresenceDot(active=False)
     dynamic_dot_list = _RecordingDotList(call_order, [inactive_dot])
@@ -358,11 +369,6 @@ def test_vivian_dot_trigger_registers_dot_and_publishes_skill_node_via_dispatch_
 
     monkeypatch.setattr(vivian_module, "VIVIAN_REPORT", report_enabled)
     monkeypatch.setattr(vivian_module, "print", fake_print, raising=False)
-    monkeypatch.setattr(
-        vivian_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
     monkeypatch.setattr(
         "zsim.sim_progress.Update.UpdateAnomaly.spawn_normal_dot",
         fake_spawn_normal_dot,

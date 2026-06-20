@@ -19,6 +19,10 @@ from zsim.sim_progress.Buff.BuffXLogic.SeedAdditionalAbilityTrigger import (
     SeedAdditionalAbilityTrigger,
     SeedAdditionalAbilityTriggerRecord,
 )
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
 
 
@@ -27,7 +31,7 @@ class _FailFastEventList(list):
         raise AssertionError("xhit SP refresh producer should publish via dispatch port")
 
 
-class _RecordingDispatchPort:
+class _RecordingDispatchPort(ScheduleDispatchPort):
     def __init__(
         self,
         call_order: list[str],
@@ -66,7 +70,12 @@ def test_magnetic_storm_charlie_sp_recover_publishes_after_simple_start_via_disp
         sim_instance=sim_instance,
         ft=SimpleNamespace(refinement="5"),
     )
-    logic = MagneticStormCharlieSpRecover(buff_instance)
+    logic = MagneticStormCharlieSpRecover(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
     sub_exist_buff_dict = {"MSC": object()}
     record = SimpleNamespace(
         sub_exist_buff_dict=sub_exist_buff_dict,
@@ -75,11 +84,6 @@ def test_magnetic_storm_charlie_sp_recover_publishes_after_simple_start_via_disp
     )
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
-    monkeypatch.setattr(
-        magnetic_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
     _block_legacy_event_lookup(monkeypatch)
 
     def fake_simple_start(tick_now, target_sub_exist_buff_dict):
@@ -119,7 +123,6 @@ def test_seed_additional_ability_trigger_publishes_for_vanguard_via_dispatch_por
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="seed-trigger"),
     )
-    logic = SeedAdditionalAbilityTrigger(buff_instance)
     record = SeedAdditionalAbilityTriggerRecord()
     record.char = SimpleNamespace(
         NAME="席德",
@@ -134,13 +137,14 @@ def test_seed_additional_ability_trigger_publishes_for_vanguard_via_dispatch_por
         call_order,
         on_publish=assert_record_not_updated_at_publish,
     )
+    logic = SeedAdditionalAbilityTrigger(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
-    monkeypatch.setattr(
-        seed_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
     monkeypatch.setattr(seed_module, "SEED_REPORT", True)
     _block_legacy_event_lookup(monkeypatch)
 

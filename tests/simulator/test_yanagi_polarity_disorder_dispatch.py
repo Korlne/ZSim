@@ -21,6 +21,10 @@ from zsim.sim_progress.Buff.BuffXLogic.YanagiPolarityDisorderTrigger import (
 )
 from zsim.sim_progress.Load import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 
 
 class _FailFastEventList(list):
@@ -28,7 +32,7 @@ class _FailFastEventList(list):
         raise AssertionError("YanagiPolarityDisorderTrigger should publish via dispatch port")
 
 
-class _RecordingDispatchPort:
+class _RecordingDispatchPort(ScheduleDispatchPort):
     def __init__(
         self,
         call_order: list[str],
@@ -168,7 +172,12 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="yanagi-trigger"),
     )
-    logic = YanagiPolarityDisorderTrigger(buff_instance)
+    logic = YanagiPolarityDisorderTrigger(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
     record = YanagiPolarityDisorderTriggerRecord()
     record.char = SimpleNamespace(cinema=2)
     dynamic = _DynamicReadProbe(is_active=True)
@@ -189,11 +198,6 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
         yanagi_module,
         "read_enemy_anomaly_active",
         fake_read_enemy_anomaly_active,
-    )
-    monkeypatch.setattr(
-        yanagi_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
     )
     monkeypatch.setattr(yanagi_module, "find_tick", lambda *, sim_instance: sim_instance.tick)
     _patch_runtime_boundary_guards(monkeypatch)
@@ -270,7 +274,12 @@ def test_yanagi_polarity_disorder_judge_wrong_skill_is_noop(
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="yanagi-trigger"),
     )
-    logic = YanagiPolarityDisorderTrigger(buff_instance)
+    logic = YanagiPolarityDisorderTrigger(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
     record = YanagiPolarityDisorderTriggerRecord()
     record.char = SimpleNamespace(cinema=2)
     dynamic = _DynamicReadProbe(is_active=True)
@@ -286,11 +295,6 @@ def test_yanagi_polarity_disorder_judge_wrong_skill_is_noop(
         yanagi_module,
         "read_enemy_anomaly_active",
         fail_read_enemy_anomaly_active,
-    )
-    monkeypatch.setattr(
-        yanagi_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
     )
     monkeypatch.setattr(yanagi_module, "find_tick", lambda *, sim_instance: sim_instance.tick)
     _patch_runtime_boundary_guards(monkeypatch)
@@ -321,7 +325,12 @@ def test_yanagi_polarity_disorder_judge_resets_counter_without_publish_when_no_a
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="yanagi-trigger"),
     )
-    logic = YanagiPolarityDisorderTrigger(buff_instance)
+    logic = YanagiPolarityDisorderTrigger(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
     record = YanagiPolarityDisorderTriggerRecord()
     record.char = SimpleNamespace(cinema=2)
     dynamic = _DynamicReadProbe(is_active=False)
@@ -339,11 +348,6 @@ def test_yanagi_polarity_disorder_judge_resets_counter_without_publish_when_no_a
         yanagi_module,
         "read_enemy_anomaly_active",
         fake_read_enemy_anomaly_active,
-    )
-    monkeypatch.setattr(
-        yanagi_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
     )
     monkeypatch.setattr(yanagi_module, "find_tick", lambda *, sim_instance: sim_instance.tick)
     _patch_runtime_boundary_guards(monkeypatch)

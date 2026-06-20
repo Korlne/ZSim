@@ -1,15 +1,15 @@
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import Any
 
 from define import ALICE_REPORT
 
 from zsim.sim_progress.Preload import SkillNode
-from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitter,
+    ScheduledEventEmitterProvider,
+)
 
 from .. import Buff, JudgeTools, check_preparation
-
-if TYPE_CHECKING:
-    from zsim.sim_progress.data_struct.schedule_dispatch import ScheduleDispatchPort
 
 
 class AlicePolarizedAssaultTriggerRecord:
@@ -22,19 +22,29 @@ class AlicePolarizedAssaultTriggerRecord:
 class AlicePolarizedAssaultTrigger(Buff.BuffLogic):
     """爱丽丝的极性强击触发器"""
 
-    def __init__(self, buff_instance):
+    def __init__(
+        self,
+        buff_instance,
+        scheduled_event_emitter_provider: ScheduledEventEmitterProvider | None = None,
+    ):
         super().__init__(buff_instance)
         self.buff_instance: Buff = buff_instance
+        self._scheduled_event_emitter_provider = (
+            scheduled_event_emitter_provider
+            or ScheduledEventEmitterProvider.from_sim_instance_getter(
+                lambda: self.buff_instance.sim_instance
+            )
+        )
         self.xjudge = self.special_judge_logic
         self.xeffect = self.special_effect_logic
-        self.buff_0 = None
-        self.record: AlicePolarizedAssaultTriggerRecord | None = None
+        self.buff_0: Any = None
+        self.record: Any = None
 
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
 
-    def _create_dispatch_port(self) -> "ScheduleDispatchPort":
-        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
+    def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
+        return self._scheduled_event_emitter_provider.create_emitter()
 
     def check_record_module(self):
         if self.buff_0 is None:
@@ -73,7 +83,7 @@ class AlicePolarizedAssaultTrigger(Buff.BuffLogic):
         return True
 
     def special_effect_logic(self, **kwargs):
-        """极性强击触发器的执行函数，构造一个极性强击事件并且将其添加进event_list中，同时置空自己的触发信号"""
+        """极性强击触发器的执行函数，构造计划事件并置空自己的触发信号"""
         self.check_record_module()
         self.get_prepared(char_CID=1401)
         assert self.record is not None
@@ -82,7 +92,6 @@ class AlicePolarizedAssaultTrigger(Buff.BuffLogic):
         sim_instance = self.buff_instance.sim_instance
         tick = sim_instance.tick
         enemy = sim_instance.schedule_data.enemy
-        dispatch_port = self._create_dispatch_port()
         copyed_anomaly_bar = deepcopy(enemy.anomaly_bars_dict[0])
         copyed_anomaly_bar.activated_by = self.record.trigger_origin
         event = PolarizedAssaultEvent(
@@ -91,7 +100,7 @@ class AlicePolarizedAssaultTrigger(Buff.BuffLogic):
             char_instance=self.record.char,
             skill_node=self.record.trigger_origin,
         )
-        dispatch_port.publish_scheduled(event)
+        self._scheduled_event_emitter().emit_scheduled(event)
         if ALICE_REPORT:
             sim_instance.schedule_data.change_process_state()
             print(

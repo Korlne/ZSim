@@ -1,4 +1,9 @@
-from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+from typing import Any
+
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitter,
+    ScheduledEventEmitterProvider,
+)
 
 from .. import Buff, JudgeTools, check_preparation
 
@@ -36,20 +41,30 @@ class SliceofTimeExtraResources(Buff.BuffLogic):
     就可以实现角色的喧响值和能量值的修改。
     """
 
-    def __init__(self, buff_instance):
+    def __init__(
+        self,
+        buff_instance,
+        scheduled_event_emitter_provider: ScheduledEventEmitterProvider | None = None,
+    ):
         super().__init__(buff_instance)
         self.buff_instance: Buff = buff_instance
+        self._scheduled_event_emitter_provider = (
+            scheduled_event_emitter_provider
+            or ScheduledEventEmitterProvider.from_sim_instance_getter(
+                lambda: self.buff_instance.sim_instance
+            )
+        )
         self.xjudge = self.special_judge_logic
         self.xstart = self.special_start_logic
         self.equipper = None
-        self.buff_0 = None
-        self.record = None
+        self.buff_0: Any = None
+        self.record: Any = None
 
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
 
-    def _create_dispatch_port(self):
-        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
+    def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
+        return self._scheduled_event_emitter_provider.create_emitter()
 
     def check_record_module(self):
         if self.equipper is None:
@@ -108,7 +123,7 @@ class SliceofTimeExtraResources(Buff.BuffLogic):
             decibel_target=(actor_name,),
             decibel_value=decibel_value,
         )
-        self._create_dispatch_port().publish_scheduled(refresh_data)
+        self._scheduled_event_emitter().emit_scheduled(refresh_data)
 
     def check_update_cd(self, tbl: int, tick_now: int):
         """

@@ -18,6 +18,10 @@ from zsim.sim_progress.Buff.BuffXLogic.MiyabiCoreSkill_IceFire import (
     MiyabiCoreSkill_IceFire,
 )
 from zsim.sim_progress.Preload import SkillNode
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 
 
 class _FailFastEventList(list):
@@ -25,7 +29,7 @@ class _FailFastEventList(list):
         raise AssertionError("MiyabiCoreSkill_IceFire should publish via dispatch port")
 
 
-class _RecordingDispatchPort:
+class _RecordingDispatchPort(ScheduleDispatchPort):
     def __init__(self, call_order: list[str]) -> None:
         self.events: list[object] = []
         self._call_order = call_order
@@ -69,7 +73,12 @@ def test_miyabi_core_skill_icefire_publishes_follow_up_via_dispatch_port_once(
         runtime_command_port=_ForbiddenRuntimeCommandPort(),
     )
     buff_instance = SimpleNamespace(sim_instance=sim_instance)
-    logic = MiyabiCoreSkill_IceFire(buff_instance)
+    logic = MiyabiCoreSkill_IceFire(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
 
     core_passive_skill = SimpleNamespace(
         skill_tag="1091_Core_Passive",
@@ -96,11 +105,6 @@ def test_miyabi_core_skill_icefire_publishes_follow_up_via_dispatch_port_once(
     )
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
-    monkeypatch.setattr(
-        miyabi_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
     _block_legacy_event_lookup(monkeypatch)
 
     assert logic.special_exit_logic() is True
@@ -128,6 +132,9 @@ def test_miyabi_core_skill_icefire_exit_source_keeps_runtime_layers_separate():
     assert "read_enemy_frost_frostbite_edge_state" in source
     assert "find_event_list" not in source
     assert "event_list" not in source
+    assert "create_schedule_dispatch_port" not in source
+    assert "_create_dispatch_port" not in source
+    assert "emit_scheduled" in source
     assert "broadcast_event" not in source
     assert "RuntimeCommandPort" not in source
     assert "create_runtime_command_port" not in source

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import importlib
+import inspect
 import sys
 from types import SimpleNamespace
 from typing import Any, cast
@@ -15,6 +17,10 @@ from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.CannonRotor import CannonRotor
 from zsim.sim_progress.Load import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 
 
 class _FailFastEventList(list):
@@ -22,7 +28,7 @@ class _FailFastEventList(list):
         raise AssertionError("CannonRotor should publish via dispatch port")
 
 
-class _RecordingDispatchPort:
+class _RecordingDispatchPort(ScheduleDispatchPort):
     def __init__(self, call_order: list[str]) -> None:
         self.call_order = call_order
         self.events: list[object] = []
@@ -39,6 +45,37 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         JudgeTools, "find_event_list", fail_find_event_list, raising=False
     )
+
+
+@pytest.mark.parametrize(
+    "module_name",
+    [
+        "zsim.sim_progress.Buff.BuffXLogic.AlicePolarizedAssaultTrigger",
+        "zsim.sim_progress.Buff.BuffXLogic.CannonRotor",
+        "zsim.sim_progress.Buff.BuffXLogic.ElegantVanitySpRecover",
+        "zsim.sim_progress.Buff.BuffXLogic.HugoCorePassiveTotalizeTrigger",
+        "zsim.sim_progress.Buff.BuffXLogic.LunarNoviluna",
+        "zsim.sim_progress.Buff.BuffXLogic.MagneticStormCharlieSpRecover",
+        "zsim.sim_progress.Buff.BuffXLogic.MiyabiCoreSkill_IceFire",
+        "zsim.sim_progress.Buff.BuffXLogic.SeedAdditionalAbilityTrigger",
+        "zsim.sim_progress.Buff.BuffXLogic.SliceofTimeExtraResources",
+        "zsim.sim_progress.Buff.BuffXLogic.VivianCinema6Trigger",
+        "zsim.sim_progress.Buff.BuffXLogic.VivianCorePassiveTrigger",
+        "zsim.sim_progress.Buff.BuffXLogic.VivianDotTrigger",
+        "zsim.sim_progress.Buff.BuffXLogic.YanagiPolarityDisorderTrigger",
+        "zsim.sim_progress.Buff.BuffXLogic.YixuanCinema1Trigger",
+    ],
+)
+def test_buffxlogic_scheduled_producers_receive_emitters_without_dispatch_factory(
+    module_name: str,
+) -> None:
+    source = inspect.getsource(importlib.import_module(module_name))
+
+    assert "ScheduledEventEmitterProvider" in source
+    assert "emit_scheduled" in source
+    assert "create_schedule_dispatch_port" not in source
+    assert "_create_dispatch_port" not in source
+    assert ".publish_scheduled" not in source
 
 
 def test_cannon_rotor_publishes_follow_up_skill_node_via_dispatch_port(
@@ -59,7 +96,12 @@ def test_cannon_rotor_publishes_follow_up_skill_node_via_dispatch_port(
         sim_instance=sim_instance,
         simple_start=fake_simple_start,
     )
-    logic = CannonRotor(buff_instance)
+    logic = CannonRotor(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
     record = SimpleNamespace(
         char=SimpleNamespace(CID=1101),
         skill_tag="CannonRotorAdditionalDamage",
@@ -68,11 +110,6 @@ def test_cannon_rotor_publishes_follow_up_skill_node_via_dispatch_port(
     )
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
-    monkeypatch.setattr(
-        cannon_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
     monkeypatch.setattr(cannon_module, "find_tick", lambda *, sim_instance: sim_instance.tick)
     _block_legacy_event_lookup(monkeypatch)
 
@@ -133,7 +170,13 @@ def test_cannon_rotor_judge_blocks_other_character_without_publish(
         ft=SimpleNamespace(index="Buff-音擎-加农转子"),
         simple_start=fail_simple_start,
     )
-    logic = CannonRotor(buff_instance)
+    dispatch_port = _RecordingDispatchPort([])
+    logic = CannonRotor(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
     record = SimpleNamespace(
         char=SimpleNamespace(NAME="Cannon User"),
         enemy=object(),
@@ -143,14 +186,6 @@ def test_cannon_rotor_judge_blocks_other_character_without_publish(
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
 
-    def fail_create_dispatch_port(*, sim_instance):
-        raise AssertionError("CannonRotor failed judge should not publish")
-
-    monkeypatch.setattr(
-        cannon_module,
-        "create_schedule_dispatch_port",
-        fail_create_dispatch_port,
-    )
     _block_legacy_event_lookup(monkeypatch)
 
     other_skill = SimpleNamespace(
@@ -165,4 +200,5 @@ def test_cannon_rotor_judge_blocks_other_character_without_publish(
     skill_node = SkillNode(other_skill, 45)
 
     assert logic.special_judge_logic(skill_node=skill_node) is False
+    assert dispatch_port.events == []
     assert schedule_data.event_list == []

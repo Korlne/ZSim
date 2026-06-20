@@ -14,6 +14,10 @@ import zsim.sim_progress.Buff.BuffXLogic.LunarNoviluna as lunar_module
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.ElegantVanitySpRecover import ElegantVanitySpRecover
 from zsim.sim_progress.Buff.BuffXLogic.LunarNoviluna import LunarNoviluna
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
 
 
@@ -22,7 +26,7 @@ class _FailFastEventList(list):
         raise AssertionError("xstart SP refresh producer should publish via dispatch port")
 
 
-class _RecordingDispatchPort:
+class _RecordingDispatchPort(ScheduleDispatchPort):
     def __init__(self, call_order: list[str]) -> None:
         self.events: list[object] = []
         self._call_order = call_order
@@ -51,7 +55,12 @@ def test_elegant_vanity_sp_recover_publishes_after_simple_start_via_dispatch_por
         sim_instance=sim_instance,
         ft=SimpleNamespace(refinement="3"),
     )
-    logic = ElegantVanitySpRecover(buff_instance)
+    logic = ElegantVanitySpRecover(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
     sub_exist_buff_dict = {"EV": object()}
     record = SimpleNamespace(
         sub_exist_buff_dict=sub_exist_buff_dict,
@@ -60,11 +69,6 @@ def test_elegant_vanity_sp_recover_publishes_after_simple_start_via_dispatch_por
     )
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
-    monkeypatch.setattr(
-        elegant_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
     _block_legacy_event_lookup(monkeypatch)
 
     def fake_simple_start(tick_now, target_sub_exist_buff_dict):
@@ -97,7 +101,12 @@ def test_lunar_noviluna_preserves_publish_then_simple_start_order_via_dispatch_p
         sim_instance=sim_instance,
         ft=SimpleNamespace(refinement=4),
     )
-    logic = LunarNoviluna(buff_instance)
+    logic = LunarNoviluna(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
     sub_exist_buff_dict = {"LN": object()}
     record = SimpleNamespace(
         sub_exist_buff_dict=sub_exist_buff_dict,
@@ -106,11 +115,6 @@ def test_lunar_noviluna_preserves_publish_then_simple_start_order_via_dispatch_p
     )
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
-    monkeypatch.setattr(
-        lunar_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
     _block_legacy_event_lookup(monkeypatch)
 
     def fake_simple_start(tick_now, target_sub_exist_buff_dict):

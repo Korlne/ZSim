@@ -18,6 +18,10 @@ from zsim.sim_progress.Buff.BuffXLogic.YixuanCinema1Trigger import (
 )
 from zsim.sim_progress.Load import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 
 
 class _FailFastEventList(list):
@@ -25,7 +29,7 @@ class _FailFastEventList(list):
         raise AssertionError("YixuanCinema1Trigger should publish via dispatch port")
 
 
-class _RecordingDispatchPort:
+class _RecordingDispatchPort(ScheduleDispatchPort):
     def __init__(self, call_order: list[str]) -> None:
         self.events: list[object] = []
         self._call_order = call_order
@@ -66,7 +70,12 @@ def test_yixuan_cinema1_publishes_lightning_after_loading_mission_via_dispatch_p
         ft=SimpleNamespace(index="Buff-角色-仪玄-影画1"),
         simple_start=fake_simple_start,
     )
-    logic = YixuanCinema1Trigger(buff_instance)
+    logic = YixuanCinema1Trigger(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
 
     def fake_update_adrenaline(*, sp_value: int | float) -> None:
         call_order.append("update_adrenaline")
@@ -85,11 +94,6 @@ def test_yixuan_cinema1_publishes_lightning_after_loading_mission_via_dispatch_p
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
     monkeypatch.setattr(yixuan_module, "YIXUAN_REPORT", False)
-    monkeypatch.setattr(
-        yixuan_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
     _block_legacy_event_lookup(monkeypatch)
 
     lightning_skill = SimpleNamespace(
@@ -150,18 +154,16 @@ def test_yixuan_cinema1_judge_blocks_yixuan_skill_without_publish(
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="Buff-角色-仪玄-影画1"),
     )
-    logic = YixuanCinema1Trigger(buff_instance)
+    dispatch_port = _RecordingDispatchPort([])
+    logic = YixuanCinema1Trigger(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
     monkeypatch.setattr(logic, "check_record_module", lambda: None)
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
 
-    def fail_create_dispatch_port(*, sim_instance):
-        raise AssertionError("YixuanCinema1Trigger failed judge should not publish")
-
-    monkeypatch.setattr(
-        yixuan_module,
-        "create_schedule_dispatch_port",
-        fail_create_dispatch_port,
-    )
     _block_legacy_event_lookup(monkeypatch)
 
     yixuan_skill = SimpleNamespace(
@@ -176,4 +178,5 @@ def test_yixuan_cinema1_judge_blocks_yixuan_skill_without_publish(
     skill_node = SkillNode(yixuan_skill, 81)
 
     assert logic.special_judge_logic(skill_node=skill_node) is False
+    assert dispatch_port.events == []
     assert schedule_data.event_list == []

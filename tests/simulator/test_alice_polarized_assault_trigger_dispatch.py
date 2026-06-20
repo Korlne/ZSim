@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import sys
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 import zsim.define as define_module
 from zsim.sim_progress.data_struct import PolarizedAssaultEvent
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 
 sys.modules.setdefault("define", define_module)
-
-import zsim.sim_progress.Buff.BuffXLogic.AlicePolarizedAssaultTrigger as trigger_module
 
 from zsim.sim_progress.Buff.BuffXLogic.AlicePolarizedAssaultTrigger import (
     AlicePolarizedAssaultTrigger,
@@ -21,7 +24,7 @@ class _FailFastEventList(list):
         raise AssertionError("AlicePolarizedAssaultTrigger should publish via dispatch port")
 
 
-class _RecordingDispatchPort:
+class _RecordingDispatchPort(ScheduleDispatchPort):
     def __init__(self) -> None:
         self.events: list[object] = []
 
@@ -41,7 +44,7 @@ class _FakeAnomalyBar:
         self.settled = True
 
 
-def _build_trigger():
+def _build_trigger(dispatch_port: _RecordingDispatchPort):
     schedule_data = SimpleNamespace(
         enemy=None,
         event_list=_FailFastEventList(),
@@ -54,33 +57,31 @@ def _build_trigger():
     anomaly_bar = _FakeAnomalyBar(sim_instance=sim_instance)
     schedule_data.enemy = SimpleNamespace(anomaly_bars_dict={0: anomaly_bar})
     buff_instance = SimpleNamespace(sim_instance=sim_instance)
-    trigger = AlicePolarizedAssaultTrigger(buff_instance)
-    trigger.check_record_module = lambda: None
-    trigger.get_prepared = lambda **kwargs: None
+    trigger = AlicePolarizedAssaultTrigger(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
+    trigger_any = cast(Any, trigger)
+    trigger_any.check_record_module = lambda: None
+    trigger_any.get_prepared = lambda **kwargs: None
 
     trigger_origin = SimpleNamespace(
         skill_tag="1401_Q",
         skill=SimpleNamespace(skill_text="Polarized Assault"),
     )
     char = SimpleNamespace(NAME="\u7231\u4e3d\u4e1d", cinema=2)
-    trigger.record = SimpleNamespace(
+    trigger_any.record = SimpleNamespace(
         char=char,
         trigger_origin=trigger_origin,
     )
     return trigger, sim_instance, anomaly_bar, char, trigger_origin
 
 
-def test_alice_polarized_assault_trigger_publishes_via_dispatch_port(
-    monkeypatch: pytest.MonkeyPatch,
-):
+def test_alice_polarized_assault_trigger_publishes_via_dispatch_port():
     dispatch_port = _RecordingDispatchPort()
-    trigger, sim_instance, anomaly_bar, char, trigger_origin = _build_trigger()
-
-    def fake_create_dispatch_port(*, sim_instance):
-        assert sim_instance is trigger.buff_instance.sim_instance
-        return dispatch_port
-
-    monkeypatch.setattr(trigger_module, "create_schedule_dispatch_port", fake_create_dispatch_port)
+    trigger, sim_instance, anomaly_bar, char, trigger_origin = _build_trigger(dispatch_port)
 
     trigger.special_effect_logic()
 

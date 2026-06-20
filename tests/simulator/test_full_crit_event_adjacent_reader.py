@@ -376,6 +376,7 @@ def _install_rng_service_boundary_guards(
         cannon_module,
         "create_schedule_dispatch_port",
         fail_create_schedule_dispatch_port,
+        raising=False,
     )
 
 
@@ -441,6 +442,7 @@ def _install_miyabi_icefire_judge_side_effect_guards(
         miyabi_module,
         "create_schedule_dispatch_port",
         fail_create_schedule_dispatch_port,
+        raising=False,
     )
 
 
@@ -741,6 +743,7 @@ def test_miyabi_icefire_full_crit_read_keeps_old_count_adjustment_order(
         miyabi_module,
         "create_schedule_dispatch_port",
         lambda *, sim_instance: _FailFastDispatchPort(),
+        raising=False,
     )
 
     logic.special_hit_logic()

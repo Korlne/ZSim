@@ -1,7 +1,10 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from zsim.define import YIXUAN_REPORT
-from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitter,
+    ScheduledEventEmitterProvider,
+)
 
 from .. import Buff, JudgeTools, check_preparation
 
@@ -23,19 +26,29 @@ class YixuanCinema1TriggerRecord:
 class YixuanCinema1Trigger(Buff.BuffLogic):
     """仪玄1画的触发器"""
 
-    def __init__(self, buff_instance):
+    def __init__(
+        self,
+        buff_instance,
+        scheduled_event_emitter_provider: ScheduledEventEmitterProvider | None = None,
+    ):
         super().__init__(buff_instance)
         self.buff_instance: Buff = buff_instance
+        self._scheduled_event_emitter_provider = (
+            scheduled_event_emitter_provider
+            or ScheduledEventEmitterProvider.from_sim_instance_getter(
+                lambda: self.buff_instance.sim_instance
+            )
+        )
         self.xjudge = self.special_judge_logic
         self.xhit = self.special_hit_logic
-        self.buff_0 = None
-        self.record = None
+        self.buff_0: Any = None
+        self.record: Any = None
 
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
 
-    def _create_dispatch_port(self):
-        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
+    def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
+        return self._scheduled_event_emitter_provider.create_emitter()
 
     def check_record_module(self):
         if self.buff_0 is None:
@@ -61,7 +74,7 @@ class YixuanCinema1Trigger(Buff.BuffLogic):
         return False
 
     def special_hit_logic(self, **kwargs):
-        """向event_list抛出一个落雷以及恢复角色5点闪能值"""
+        """发布落雷计划事件并恢复角色5点闪能值"""
         self.check_record_module()
         self.get_prepared(char_CID=1221, preload_data=1, sub_exist_buff_dict=1)
         preload_data: "PreloadData" = self.record.preload_data
@@ -80,7 +93,7 @@ class YixuanCinema1Trigger(Buff.BuffLogic):
         loading_mission = LoadingMission(mission=lightning_strick_node)
         loading_mission.mission_start(tick)
         lightning_strick_node.loading_mission = loading_mission
-        self._create_dispatch_port().publish_scheduled(lightning_strick_node)
+        self._scheduled_event_emitter().emit_scheduled(lightning_strick_node)
 
         char.update_adrenaline(sp_value=self.record.adrenaline_value)
         self.buff_instance.simple_start(

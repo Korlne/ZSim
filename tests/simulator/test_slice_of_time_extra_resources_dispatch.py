@@ -14,6 +14,10 @@ from zsim.sim_progress.Buff.BuffXLogic.SliceofTimeExtraResources import (
     SliceofTimeExtraResources,
     SliceofTimeExtraResourcesRecord,
 )
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
 
 
@@ -24,7 +28,7 @@ class _FailFastEventList(list):
         )
 
 
-class _RecordingDispatchPort:
+class _RecordingDispatchPort(ScheduleDispatchPort):
     def __init__(self, call_order: list[str]) -> None:
         self.events: list[object] = []
         self._call_order = call_order
@@ -56,7 +60,12 @@ def test_slice_of_time_extra_resources_publishes_mixed_refresh_via_dispatch_port
         sim_instance=sim_instance,
         ft=SimpleNamespace(refinement=4),
     )
-    logic = SliceofTimeExtraResources(buff_instance)
+    logic = SliceofTimeExtraResources(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
     sub_exist_buff_dict = {"slice": object()}
     action_now = SimpleNamespace(
         mission_node=SimpleNamespace(skill=SimpleNamespace(trigger_buff_level=5)),
@@ -68,11 +77,6 @@ def test_slice_of_time_extra_resources_publishes_mixed_refresh_via_dispatch_port
     record.action_stack = SimpleNamespace(peek=lambda: action_now)
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
-    monkeypatch.setattr(
-        slice_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
     _block_legacy_event_lookup(monkeypatch)
 
     def fake_simple_start(tick_now, target_sub_exist_buff_dict):

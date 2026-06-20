@@ -22,6 +22,10 @@ from zsim.sim_progress.Buff.BuffXLogic.VivianCinema6Trigger import (
 from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.anomaly_bar import AnomalyBar
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import DirgeOfDestinyAnomaly
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 
 
 class _FailFastEventList(list):
@@ -29,7 +33,7 @@ class _FailFastEventList(list):
         raise AssertionError("VivianCinema6Trigger should publish via dispatch port")
 
 
-class _RecordingDispatchPort:
+class _RecordingDispatchPort(ScheduleDispatchPort):
     def __init__(
         self, action_log: list[tuple[str, object]] | None = None
     ) -> None:
@@ -259,7 +263,19 @@ def _build_logic_harness(*, active_anomalies: list[AnomalyBar]) -> tuple[
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="vivian-cinema6"),
     )
-    logic = VivianCinema6Trigger(buff_instance)
+    emitter_factory_calls: list[object] = []
+
+    def create_dispatch_port() -> _RecordingDispatchPort:
+        emitter_factory_calls.append(sim_instance)
+        action_log.append(("create_scheduled_event_emitter", sim_instance))
+        return dispatch_port
+
+    logic = VivianCinema6Trigger(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            create_dispatch_port
+        ),
+    )
     record = VivianCinema6TriggerRecord()
     record.char = char
     record.enemy = enemy
@@ -274,6 +290,7 @@ def _build_logic_harness(*, active_anomalies: list[AnomalyBar]) -> tuple[
         dynamic_buff_list=dynamic_buff_list,
         action_log=action_log,
         dynamic=dynamic,
+        emitter_factory_calls=emitter_factory_calls,
         listener_calls=listener_calls,
     )
 
@@ -293,18 +310,6 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
     monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
     _patch_runtime_boundary_guards(monkeypatch)
     helper_calls = _patch_anomaly_helper(monkeypatch)
-    dispatch_factory_calls: list[object] = []
-
-    def fake_create_schedule_dispatch_port(*, sim_instance: object) -> _RecordingDispatchPort:
-        dispatch_factory_calls.append(sim_instance)
-        harness.action_log.append(("create_schedule_dispatch_port", sim_instance))
-        return dispatch_port
-
-    monkeypatch.setattr(
-        trigger_module,
-        "create_schedule_dispatch_port",
-        fake_create_schedule_dispatch_port,
-    )
     _block_legacy_event_lookup(monkeypatch)
 
     def fake_anomaly_settled(self: AnomalyBar) -> None:
@@ -332,7 +337,7 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
     assert harness.feather_manager.guard_feather == 0
     assert harness.feather_manager.c1_counter == 0
     assert harness.feather_manager.flight_feather == 3
-    assert dispatch_factory_calls == []
+    assert harness.emitter_factory_calls == []
     assert dispatch_port.events == []
 
     logic.special_effect_logic()
@@ -340,7 +345,7 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
     assert len(dispatch_port.events) == 1
     published_event = dispatch_port.events[0]
     assert helper_calls == [record.enemy]
-    assert dispatch_factory_calls == [harness.sim_instance]
+    assert harness.emitter_factory_calls == [harness.sim_instance]
     assert harness.dynamic.calls == ["is_under_anomaly", "get_active_anomaly"]
     assert [entry[0] for entry in harness.action_log] == [
         "change_process_state",
@@ -349,7 +354,7 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
         "c1_counter",
         "flight_feather",
         "change_process_state",
-        "create_schedule_dispatch_port",
+        "create_scheduled_event_emitter",
         "publish_scheduled",
         "change_process_state",
         "update_myself",
@@ -391,11 +396,6 @@ def test_vivian_cinema6_judge_wrong_skill_is_noop(
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
     monkeypatch.setattr(trigger_module, "VIVIAN_REPORT", False)
-    monkeypatch.setattr(
-        trigger_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
     helper_calls = _patch_anomaly_helper(monkeypatch)
     _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
@@ -426,11 +426,6 @@ def test_vivian_cinema6_no_anomaly_branch_updates_feathers_without_publish(
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
     monkeypatch.setattr(trigger_module, "VIVIAN_REPORT", True)
     monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
-    monkeypatch.setattr(
-        trigger_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
     helper_calls = _patch_anomaly_helper(monkeypatch)
     _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)

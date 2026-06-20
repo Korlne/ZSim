@@ -1,3 +1,5 @@
+from typing import Any
+
 from zsim.define import VIVIAN_REPORT
 from zsim.sim_progress.ScheduledEvent.Calculator import (
     Calculator as Cal,
@@ -5,7 +7,10 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
 from zsim.sim_progress.ScheduledEvent.Calculator import (
     MultiplierData as Mul,
 )
-from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitter,
+    ScheduledEventEmitterProvider,
+)
 
 from .. import Buff, JudgeTools, check_preparation
 from .enemy_anomaly_read import read_enemy_anomaly_active
@@ -23,12 +28,22 @@ class VivianCorePassiveTriggerRecord:
 
 
 class VivianCorePassiveTrigger(Buff.BuffLogic):
-    def __init__(self, buff_instance):
+    def __init__(
+        self,
+        buff_instance,
+        scheduled_event_emitter_provider: ScheduledEventEmitterProvider | None = None,
+    ):
         """薇薇安的核心被动触发器"""
         super().__init__(buff_instance)
         self.buff_instance: Buff = buff_instance
-        self.buff_0 = None
-        self.record = None
+        self._scheduled_event_emitter_provider = (
+            scheduled_event_emitter_provider
+            or ScheduledEventEmitterProvider.from_sim_instance_getter(
+                lambda: self.buff_instance.sim_instance
+            )
+        )
+        self.buff_0: Any = None
+        self.record: Any = None
         self.xjudge = self.special_judge_logic
         self.xeffect = self.special_effect_logic
         self.ANOMALY_RATIO_MUL = {
@@ -43,8 +58,8 @@ class VivianCorePassiveTrigger(Buff.BuffLogic):
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
 
-    def _create_dispatch_port(self):
-        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
+    def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
+        return self._scheduled_event_emitter_provider.create_emitter()
 
     def check_record_module(self):
         if self.buff_0 is None:
@@ -129,7 +144,7 @@ class VivianCorePassiveTrigger(Buff.BuffLogic):
         #     dirge_of_destiny_anomaly.current_ndarray
         #     / dirge_of_destiny_anomaly.current_anomaly
         # )
-        self._create_dispatch_port().publish_scheduled(dirge_of_destiny_anomaly)
+        self._scheduled_event_emitter().emit_scheduled(dirge_of_destiny_anomaly)
         if VIVIAN_REPORT:
             self.buff_instance.sim_instance.schedule_data.change_process_state()
             print("核心被动：检测到【落羽生花】命中异常状态下的敌人，触发一次异放！！！")

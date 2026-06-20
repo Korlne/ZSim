@@ -24,6 +24,10 @@ from zsim.sim_progress.Load import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
 from zsim.sim_progress.data_struct import StunForcedTerminationEvent
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 
 
 class _FailFastEventList(list[Any]):
@@ -44,7 +48,7 @@ class _FailFastPendingQueue(list[Any]):
         raise AssertionError("Hugo totalize should not write raw pending Buff queues")
 
 
-class _RecordingDispatchPort:
+class _RecordingDispatchPort(ScheduleDispatchPort):
     def __init__(self, call_order: list[str]) -> None:
         self.call_order = call_order
         self.events: list[Any] = []
@@ -104,7 +108,12 @@ def _build_hugo_harness(
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="hugo-totalize"),
     )
-    logic = HugoCorePassiveTotalizeTrigger(buff_instance)
+    logic = HugoCorePassiveTotalizeTrigger(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
     record = HugoCorePassiveTotalizeTriggerRecord()
     record.active_signal = active_signal
     record.char = SimpleNamespace(cinema=cinema)
@@ -177,11 +186,6 @@ def _patch_hugo_dependencies(
 
     monkeypatch.setattr(harness.logic, "check_record_module", fake_check_record_module)
     monkeypatch.setattr(harness.logic, "get_prepared", fake_get_prepared)
-    monkeypatch.setattr(
-        hugo_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: harness.dispatch_port,
-    )
     monkeypatch.setattr(
         hugo_module,
         "find_tick",

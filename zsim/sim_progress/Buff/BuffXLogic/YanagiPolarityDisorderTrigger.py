@@ -1,6 +1,10 @@
 from copy import deepcopy
+from typing import Any
 
-from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitter,
+    ScheduledEventEmitterProvider,
+)
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
 from .enemy_anomaly_read import read_enemy_anomaly_active
@@ -29,19 +33,29 @@ class YanagiPolarityDisorderTrigger(Buff.BuffLogic):
     所以，如果在极性紊乱更新的Tick，同时触发了新的属性异常，
     """
 
-    def __init__(self, buff_instance):
+    def __init__(
+        self,
+        buff_instance,
+        scheduled_event_emitter_provider: ScheduledEventEmitterProvider | None = None,
+    ):
         super().__init__(buff_instance)
         self.buff_instance: Buff = buff_instance
+        self._scheduled_event_emitter_provider = (
+            scheduled_event_emitter_provider
+            or ScheduledEventEmitterProvider.from_sim_instance_getter(
+                lambda: self.buff_instance.sim_instance
+            )
+        )
         self.xjudge = self.special_judge_logic
         self.xeffect = self.special_effect_logic
-        self.buff_0 = None
-        self.record = None
+        self.buff_0: Any = None
+        self.record: Any = None
 
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
 
-    def _create_dispatch_port(self):
-        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
+    def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
+        return self._scheduled_event_emitter_provider.create_emitter()
 
     def check_record_module(self):
         if self.buff_0 is None:
@@ -140,8 +154,8 @@ class YanagiPolarityDisorderTrigger(Buff.BuffLogic):
             sim_instance=self.buff_instance.sim_instance,
         )
         # polarity_disorder_output = spawn_output(active_anomaly_bar, mode_number=1)
-        # 置入event_list
-        self._create_dispatch_port().publish_scheduled(polarity_disorder_output)
+        # 发布计划事件
+        self._scheduled_event_emitter().emit_scheduled(polarity_disorder_output)
 
         # 清空记录，回收更新信号
         self.record.e_counter = {"update_from": "", "count": 0}

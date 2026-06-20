@@ -1,6 +1,11 @@
+from typing import Any
+
 from zsim.define import HUGO_REPORT
 from zsim.sim_progress.Enemy import Enemy
-from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitter,
+    ScheduledEventEmitterProvider,
+)
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
 from .enemy_state_read import read_enemy_stun_active
@@ -38,20 +43,30 @@ class HugoCorePassiveTotalizeTriggerRecord:
 
 
 class HugoCorePassiveTotalizeTrigger(Buff.BuffLogic):
-    def __init__(self, buff_instance):
+    def __init__(
+        self,
+        buff_instance,
+        scheduled_event_emitter_provider: ScheduledEventEmitterProvider | None = None,
+    ):
         """雨果核心被动，决算触发器"""
         super().__init__(buff_instance)
         self.buff_instance: Buff = buff_instance
-        self.buff_0: Buff | None = None
-        self.record: HugoCorePassiveTotalizeTriggerRecord | None = None
+        self._scheduled_event_emitter_provider = (
+            scheduled_event_emitter_provider
+            or ScheduledEventEmitterProvider.from_sim_instance_getter(
+                lambda: self.buff_instance.sim_instance
+            )
+        )
+        self.buff_0: Any = None
+        self.record: Any = None
         self.xjudge = self.special_judge_logic
         self.xhit = self.special_hit_logic
 
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
 
-    def _create_dispatch_port(self):
-        return create_schedule_dispatch_port(sim_instance=self.buff_instance.sim_instance)
+    def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
+        return self._scheduled_event_emitter_provider.create_emitter()
 
     def check_record_module(self):
         if self.buff_0 is None:
@@ -222,8 +237,8 @@ class HugoCorePassiveTotalizeTrigger(Buff.BuffLogic):
         totalize_node.loading_mission.mission_start(
             find_tick(sim_instance=self.buff_instance.sim_instance)
         )
-        dispatch_port = self._create_dispatch_port()
-        dispatch_port.publish_scheduled(totalize_node)
+        scheduled_event_emitter = self._scheduled_event_emitter()
+        scheduled_event_emitter.emit_scheduled(totalize_node)
 
         """失衡状态强制结算事件"""
         from zsim.sim_progress.data_struct import StunForcedTerminationEvent
@@ -255,7 +270,7 @@ class HugoCorePassiveTotalizeTrigger(Buff.BuffLogic):
 
         """2画以上的大招触发决算时，不结算失衡状态。"""
         if stun_event is not None:
-            dispatch_port.publish_scheduled(stun_event)
+            scheduled_event_emitter.emit_scheduled(stun_event)
 
         """重置信号"""
         self.record.active_signal = None

@@ -22,6 +22,10 @@ from zsim.sim_progress.Buff.BuffXLogic.VivianCorePassiveTrigger import (
 from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.anomaly_bar import AnomalyBar
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import DirgeOfDestinyAnomaly
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
+)
 
 
 class _FailFastEventList(list):
@@ -29,7 +33,7 @@ class _FailFastEventList(list):
         raise AssertionError("VivianCorePassiveTrigger should publish via dispatch port")
 
 
-class _RecordingDispatchPort:
+class _RecordingDispatchPort(ScheduleDispatchPort):
     def __init__(self, action_log: list[str] | None = None) -> None:
         self.events: list[object] = []
         self.action_log = action_log
@@ -189,7 +193,18 @@ def test_vivian_core_passive_publishes_dirge_anomaly_via_dispatch_port(
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="vivian-core-passive"),
     )
-    logic = VivianCorePassiveTrigger(buff_instance)
+    dispatch_factory_calls: list[object] = []
+
+    def create_dispatch_port() -> _RecordingDispatchPort:
+        dispatch_factory_calls.append(sim_instance)
+        return dispatch_port
+
+    logic = VivianCorePassiveTrigger(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            create_dispatch_port
+        ),
+    )
     record = VivianCorePassiveTriggerRecord()
     record.char = char
     record.enemy = enemy
@@ -200,17 +215,6 @@ def test_vivian_core_passive_publishes_dirge_anomaly_via_dispatch_port(
     monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
     _block_anomaly_helper(monkeypatch)
     _patch_runtime_boundary_guards(monkeypatch)
-    dispatch_factory_calls: list[object] = []
-
-    def fake_create_schedule_dispatch_port(*, sim_instance: object) -> _RecordingDispatchPort:
-        dispatch_factory_calls.append(sim_instance)
-        return dispatch_port
-
-    monkeypatch.setattr(
-        trigger_module,
-        "create_schedule_dispatch_port",
-        fake_create_schedule_dispatch_port,
-    )
     _block_legacy_event_lookup(monkeypatch)
 
     def fake_anomaly_settled(self: AnomalyBar) -> None:
@@ -275,16 +279,16 @@ def test_vivian_core_passive_judge_wrong_skill_is_noop(
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="vivian-core-passive"),
     )
-    logic = VivianCorePassiveTrigger(buff_instance)
+    logic = VivianCorePassiveTrigger(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
     record = VivianCorePassiveTriggerRecord()
     record.enemy = enemy
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
-    monkeypatch.setattr(
-        trigger_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
     helper_calls = _patch_anomaly_helper(monkeypatch)
     _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
@@ -318,16 +322,16 @@ def test_vivian_core_passive_judge_no_anomaly_does_not_publish_or_update_node(
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="vivian-core-passive"),
     )
-    logic = VivianCorePassiveTrigger(buff_instance)
+    logic = VivianCorePassiveTrigger(
+        buff_instance,
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
+            lambda: dispatch_port
+        ),
+    )
     record = VivianCorePassiveTriggerRecord()
     record.enemy = enemy
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
-    monkeypatch.setattr(
-        trigger_module,
-        "create_schedule_dispatch_port",
-        lambda *, sim_instance: dispatch_port,
-    )
     helper_calls = _patch_anomaly_helper(monkeypatch)
     _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
