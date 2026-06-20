@@ -64,6 +64,16 @@ class BuffAttributeReadContext:
 CalculatorRuntimeReadContext = BuffAttributeReadContext
 
 
+@dataclass(frozen=True, slots=True)
+class CalculatorBuffBonusReadContext:
+    """Calculator Buff bonus aggregation input for panel/SP/decibel reads."""
+
+    active_buffs: Sequence[Any]
+    query_node: SkillNode | AnomalyBar | None = None
+    sim_instance: Any | None = None
+    char_name: str | None = None
+
+
 class RetainedFormulaSnapshot:
     """Fields consumed by retained Calculator formula helpers.
 
@@ -174,6 +184,77 @@ def create_calculator_runtime_read_context_from_sim_instance(
         beneficiary=beneficiary,
         sim_instance=sim_instance,
     )
+
+
+def create_calculator_buff_bonus_context(
+    *,
+    active_buffs: Sequence[Any],
+    query_node: SkillNode | AnomalyBar | None = None,
+    sim_instance: Any | None = None,
+    char_name: str | None = None,
+) -> CalculatorBuffBonusReadContext:
+    """Build a scoped Calculator bonus context without exposing raw Buff stores."""
+
+    return CalculatorBuffBonusReadContext(
+        active_buffs=tuple(active_buffs),
+        query_node=query_node,
+        sim_instance=sim_instance,
+        char_name=char_name,
+    )
+
+
+def create_calculator_buff_bonus_context_from_runtime_view(
+    *,
+    runtime_view: "BuffRuntimeReadPort",
+    beneficiary: str,
+    query_node: SkillNode | AnomalyBar | None = None,
+    sim_instance: Any | None = None,
+) -> CalculatorBuffBonusReadContext:
+    """Build a panel/SP/decibel bonus context from the Buff runtime read port."""
+
+    return create_calculator_buff_bonus_context(
+        active_buffs=runtime_view.get_active_buffs(beneficiary),
+        query_node=query_node,
+        sim_instance=sim_instance,
+        char_name=beneficiary,
+    )
+
+
+def create_calculator_buff_bonus_context_from_sim_instance(
+    *,
+    sim_instance: Any,
+    beneficiary: str,
+    query_node: SkillNode | AnomalyBar | None = None,
+) -> CalculatorBuffBonusReadContext:
+    """Build a panel/SP/decibel bonus context from Simulator-owned runtime state."""
+
+    runtime_state = getattr(sim_instance, "buff_runtime_state", None)
+    if runtime_state is None:
+        raise AttributeError("sim_instance must expose buff_runtime_state")
+    return create_calculator_buff_bonus_context_from_runtime_view(
+        runtime_view=runtime_state.create_read_port(),
+        beneficiary=beneficiary,
+        query_node=query_node,
+        sim_instance=sim_instance,
+    )
+
+
+def calculate_calculator_buff_total_bonus(
+    context: CalculatorBuffBonusReadContext,
+) -> dict[str, float]:
+    """Aggregate active Buff bonuses for a scoped Calculator read context."""
+
+    try:
+        return cal_buff_total_bonus(
+            enabled_buff=tuple(context.active_buffs),
+            judge_obj=context.query_node,
+            sim_instance=context.sim_instance,
+            char_name=context.char_name,
+        )
+    except TypeError as err:
+        raise TypeError(
+            f"参数错误！enabled_buff为{type(context.active_buffs)}，node为{type(context.query_node)}"
+        ) from err
 
 
 class BuffAttributeReader(Protocol):
@@ -1204,6 +1285,12 @@ class CalculatorBuffAttributeReaderService:
             context,
             addon_pen_ratio=addon_pen_ratio,
         )
+
+    def calculate_buff_total_bonus(
+        self,
+        context: CalculatorBuffBonusReadContext,
+    ) -> dict[str, float]:
+        return calculate_calculator_buff_total_bonus(context)
 
 
 _CALCULATOR_BUFF_ATTRIBUTE_READER_SERVICE = CalculatorBuffAttributeReaderService()

@@ -160,7 +160,11 @@ class ScheduledEvent:
         # 更新角色面板
         for char in self.data.char_obj_list:
             char: Character
-            sp_update_data = SPUpdateData(char_obj=char, dynamic_buff=self.data.dynamic_buff)
+            sp_update_data = SPUpdateData(
+                char_obj=char,
+                runtime_view=self.buff_runtime_view,
+                sim_instance=self.sim_instance,
+            )
             char.update_sp_and_decibel(sp_update_data)
             if hasattr(char, "refresh_myself"):
                 char.refresh_myself()

@@ -24,12 +24,14 @@ from zsim.sim_progress.Buff.BuffXLogic.TimeweaverDisorderDmgMul import (
 from zsim.sim_progress.ScheduledEvent.Calculator import (
     BuffAttributeReadContext,
     Calculator,
+    CalculatorBuffBonusReadContext,
     CalculatorRuntimeReadContext,
     CalculatorBuffAttributeReader,
     CalculatorBuffAttributeReaderService,
     MultiplierData,
     RetainedFormulaSnapshot,
     create_anomaly_attribute_read_context,
+    create_calculator_buff_bonus_context_from_sim_instance,
     create_calculator_runtime_read_context,
     create_calculator_runtime_read_context_from_event_context,
     create_calculator_runtime_read_context_from_sim_instance,
@@ -37,6 +39,8 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
 )
 from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort, BuffRuntimeState
 from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
+from zsim.sim_progress.Character.character import Character
+from zsim.sim_progress.data_struct.sp_update_data import SPUpdateData
 from zsim.sim_progress.Preload.SkillsQueue import SkillNode
 from zsim.sim_progress.anomaly_bar import AnomalyBar
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
@@ -906,6 +910,204 @@ def test_calculator_runtime_read_context_can_be_built_from_sim_instance(
             None,
             sim_instance,
             char.NAME,
+        )
+    ]
+
+
+def test_calculator_buff_bonus_context_from_sim_instance_reads_only_beneficiary_buffs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    char_buff = object()
+    enemy_debuff = object()
+    sim_instance = SimpleNamespace(marker="bonus-sim")
+    sim_instance.buff_runtime_state = BuffRuntimeState(
+        template_registry={},
+        pending_queue={},
+        active_store={"panel-reader": [char_buff], "enemy": [enemy_debuff]},
+        enemy_mirror=[],
+    )
+    aggregation_calls: list[_AggregationCall] = []
+
+    def fake_cal_buff_total_bonus(
+        *,
+        enabled_buff: tuple[object, ...],
+        judge_obj: object | None,
+        sim_instance: object,
+        char_name: str | None,
+    ) -> dict[str, float]:
+        aggregation_calls.append((enabled_buff, judge_obj, sim_instance, char_name))
+        return {"喧响获得效率": 0.25}
+
+    monkeypatch.setattr(
+        calculator_module,
+        "cal_buff_total_bonus",
+        fake_cal_buff_total_bonus,
+    )
+
+    context = create_calculator_buff_bonus_context_from_sim_instance(
+        sim_instance=sim_instance,
+        beneficiary="panel-reader",
+    )
+    bonus = get_calculator_buff_attribute_reader_service().calculate_buff_total_bonus(
+        context
+    )
+
+    assert isinstance(context, CalculatorBuffBonusReadContext)
+    assert bonus == {"喧响获得效率": 0.25}
+    assert aggregation_calls == [
+        (
+            (char_buff,),
+            None,
+            sim_instance,
+            "panel-reader",
+        )
+    ]
+
+
+def test_character_update_decibel_uses_runtime_bonus_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    char_buff = object()
+    sim_instance = SimpleNamespace()
+    sim_instance.buff_runtime_state = BuffRuntimeState(
+        template_registry={},
+        pending_queue={},
+        active_store={"decibel-reader": [char_buff]},
+        enemy_mirror=[],
+    )
+    character = SimpleNamespace(
+        NAME="decibel-reader",
+        sim_instance=sim_instance,
+        decibel=100.0,
+    )
+    aggregation_calls: list[_AggregationCall] = []
+
+    def fake_cal_buff_total_bonus(
+        *,
+        enabled_buff: tuple[object, ...],
+        judge_obj: object | None,
+        sim_instance: object,
+        char_name: str | None,
+    ) -> dict[str, float]:
+        aggregation_calls.append((enabled_buff, judge_obj, sim_instance, char_name))
+        return {"喧响获得效率": 0.5}
+
+    monkeypatch.setattr(
+        calculator_module,
+        "cal_buff_total_bonus",
+        fake_cal_buff_total_bonus,
+    )
+
+    Character.update_decibel(cast(Any, character), 40.0)
+
+    assert character.decibel == pytest.approx(160.0)
+    assert not hasattr(sim_instance, "global_stats")
+    assert aggregation_calls == [
+        (
+            (char_buff,),
+            None,
+            sim_instance,
+            "decibel-reader",
+        )
+    ]
+
+
+def test_character_update_decibel_handles_missing_runtime_buff_list(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sim_instance = SimpleNamespace()
+    sim_instance.buff_runtime_state = BuffRuntimeState(
+        template_registry={},
+        pending_queue={},
+        active_store={},
+        enemy_mirror=[],
+    )
+    character = SimpleNamespace(
+        NAME="missing-buff-reader",
+        sim_instance=sim_instance,
+        decibel=50.0,
+    )
+    aggregation_calls: list[_AggregationCall] = []
+
+    def fake_cal_buff_total_bonus(
+        *,
+        enabled_buff: tuple[object, ...],
+        judge_obj: object | None,
+        sim_instance: object,
+        char_name: str | None,
+    ) -> dict[str, float]:
+        aggregation_calls.append((enabled_buff, judge_obj, sim_instance, char_name))
+        return {}
+
+    monkeypatch.setattr(
+        calculator_module,
+        "cal_buff_total_bonus",
+        fake_cal_buff_total_bonus,
+    )
+
+    Character.update_decibel(cast(Any, character), 25.0)
+
+    assert character.decibel == pytest.approx(75.0)
+    assert aggregation_calls == [
+        (
+            (),
+            None,
+            sim_instance,
+            "missing-buff-reader",
+        )
+    ]
+
+
+def test_sp_update_data_uses_runtime_bonus_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    char_buff = object()
+    sim_instance = SimpleNamespace(marker="sp-sim")
+    runtime_state = BuffRuntimeState(
+        template_registry={},
+        pending_queue={},
+        active_store={"sp-reader": [char_buff]},
+        enemy_mirror=[],
+    )
+    character = SimpleNamespace(
+        NAME="sp-reader",
+        statement=SimpleNamespace(sp_regen=1.0),
+    )
+    aggregation_calls: list[_AggregationCall] = []
+
+    def fake_cal_buff_total_bonus(
+        *,
+        enabled_buff: tuple[object, ...],
+        judge_obj: object | None,
+        sim_instance: object,
+        char_name: str | None,
+    ) -> dict[str, float]:
+        aggregation_calls.append((enabled_buff, judge_obj, sim_instance, char_name))
+        return {
+            "能量自动恢复": 0.25,
+            "局内能量自动恢复": 0.5,
+            "局内能量获得效率": 1.0,
+        }
+
+    monkeypatch.setattr(
+        calculator_module,
+        "cal_buff_total_bonus",
+        fake_cal_buff_total_bonus,
+    )
+
+    sp_update_data = SPUpdateData(
+        char_obj=cast(Any, character),
+        runtime_view=runtime_state.create_read_port(),
+        sim_instance=sim_instance,
+    )
+
+    assert sp_update_data.get_sp_regen() == pytest.approx(3.5)
+    assert aggregation_calls == [
+        (
+            (char_buff,),
+            None,
+            sim_instance,
+            "sp-reader",
         )
     ]
 

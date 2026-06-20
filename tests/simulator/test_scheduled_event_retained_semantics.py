@@ -306,13 +306,22 @@ def test_scheduled_event_start_preserves_sp_update_then_process_order(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     dynamic_buff = {"alpha": [object()]}
+    runtime_view = _RuntimeViewStub()
+    sim_instance = SimpleNamespace(marker="sim")
     call_order: list[str] = []
     captured: dict[str, object] = {}
 
     class _SPUpdateDataProbe:
-        def __init__(self, *, char_obj: object, dynamic_buff: object) -> None:
+        def __init__(
+            self,
+            *,
+            char_obj: object,
+            runtime_view: object,
+            sim_instance: object,
+        ) -> None:
             captured["sp_char"] = char_obj
-            captured["sp_dynamic_buff"] = dynamic_buff
+            captured["sp_runtime_view"] = runtime_view
+            captured["sp_sim_instance"] = sim_instance
             call_order.append("sp_update_data")
 
     character = SimpleNamespace()
@@ -335,6 +344,8 @@ def test_scheduled_event_start_preserves_sp_update_then_process_order(
         char_obj_list=[character],
         dynamic_buff=dynamic_buff,
     )
+    scheduled_event.buff_runtime_view = runtime_view
+    scheduled_event.sim_instance = sim_instance
     scheduled_event.process_event = lambda: call_order.append("process_event")
 
     monkeypatch.setattr(scheduled_event_module, "SPUpdateData", _SPUpdateDataProbe)
@@ -342,7 +353,8 @@ def test_scheduled_event_start_preserves_sp_update_then_process_order(
     scheduled_event.event_start()
 
     assert captured["sp_char"] is character
-    assert captured["sp_dynamic_buff"] is dynamic_buff
+    assert captured["sp_runtime_view"] is runtime_view
+    assert captured["sp_sim_instance"] is sim_instance
     assert isinstance(captured["received_sp_update_data"], _SPUpdateDataProbe)
     assert call_order == [
         "sp_update_data",

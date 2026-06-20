@@ -831,12 +831,19 @@ class Character:
         """可外部强制更新喧响的方法"""
         # if self.decibel == 3000 and self.NAME == '仪玄':
         #     print(f"{self.NAME} 释放技能时喧响值已满3000点！")
-        from zsim.sim_progress.ScheduledEvent.Calculator import cal_buff_total_bonus
+        from zsim.sim_progress.ScheduledEvent.Calculator import (
+            create_calculator_buff_bonus_context_from_sim_instance,
+            get_calculator_buff_attribute_reader_service,
+        )
 
-        dynamic_buff = self.sim_instance.global_stats.DYNAMIC_BUFF_DICT
-        enabled_buff = tuple(dynamic_buff[self.NAME])
-        buff_bonus_dict = cal_buff_total_bonus(
-            enabled_buff=enabled_buff, judge_obj=None, sim_instance=self.sim_instance
+        bonus_context = create_calculator_buff_bonus_context_from_sim_instance(
+            sim_instance=self.sim_instance,
+            beneficiary=self.NAME,
+        )
+        buff_bonus_dict = (
+            get_calculator_buff_attribute_reader_service().calculate_buff_total_bonus(
+                bonus_context
+            )
         )
         decibel_get_ratio = buff_bonus_dict.get("喧响获得效率", 0)
         final_decibel_change_value = decibel_value * (1 + decibel_get_ratio)
