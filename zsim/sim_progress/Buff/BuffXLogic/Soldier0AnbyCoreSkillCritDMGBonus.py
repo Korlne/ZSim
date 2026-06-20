@@ -1,6 +1,6 @@
 from zsim.sim_progress.ScheduledEvent.Calculator import (
-    CalculatorBuffAttributeReader,
-    create_anomaly_attribute_read_context,
+    create_calculator_runtime_read_context_from_sim_instance,
+    get_calculator_buff_attribute_reader_service,
 )
 
 from .. import Buff, JudgeTools, check_preparation
@@ -58,15 +58,16 @@ class Soldier0AnbyCoreSkillCritDMGBonus(Buff.BuffLogic):
     def special_hit_logic(self, **kwargs):
         """在Buff触发时，读取安比的暴伤，计算当前的层数"""
         self.check_record_module()
-        self.get_prepared(char_CID=1381, dynamic_buff_list=1, enemy=1, sub_exist_buff_dict=1)
+        self.get_prepared(char_CID=1381, enemy=1, sub_exist_buff_dict=1)
         tick_now = JudgeTools.find_tick(sim_instance=self.buff_instance.sim_instance)
         self.buff_instance.simple_start(tick_now, self.record.sub_exist_buff_dict, no_count=1)
-        context = create_anomaly_attribute_read_context(
+        context = create_calculator_runtime_read_context_from_sim_instance(
+            sim_instance=self.buff_instance.sim_instance,
             enemy=self.record.enemy,
-            active_buff_view=self.record.dynamic_buff_list,
             character=self.record.char,
         )
-        crit_dmg = CalculatorBuffAttributeReader().read_personal_crit_damage(context)
+        reader_service = get_calculator_buff_attribute_reader_service()
+        crit_dmg = reader_service.read_personal_crit_damage(context)
         count = crit_dmg * 0.3 * 100
         self.buff_instance.dy.count = count
         self.buff_instance.update_to_buff_0(self.buff_0)

@@ -35,6 +35,18 @@ SELECTED_READER_METHODS = {
     "Soldier0AnbyCoreSkillCritDMGBonus.py": "read_personal_crit_damage",
 }
 
+MIGRATED_READER_METHODS = {
+    "LighterAdditionalAbility_IceFireBonus.py": "read_impact",
+    "QingYiAdditionalAbilityStunConvertToATK.py": "read_impact",
+    "TriggerAdditionalAbilityStunBonus.py": "read_personal_crit_rate",
+    "Soldier0AnbyCoreSkillCritDMGBonus.py": "read_personal_crit_damage",
+    "CannonRotor.py": "read_full_crit_rate",
+    "MiyabiCoreSkill_IceFire.py": "read_full_crit_rate",
+    "WoodpeckerElectroSet4_NA.py": "read_full_crit_rate",
+    "WoodpeckerElectroSet4_E_EX.py": "read_full_crit_rate",
+    "WoodpeckerElectroSet4_CA.py": "read_full_crit_rate",
+}
+
 RETAINED_FORMULA_SNAPSHOT_FILES = {
     PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent" / "Calculator.py",
     PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent" / "CalAnomaly.py",
@@ -226,9 +238,24 @@ def test_selected_impact_crit_stun_files_keep_reader_boundary() -> None:
     for path in SELECTED_IMPACT_CRIT_STUN_READER_FILES:
         source = path.read_text(encoding="utf-8")
 
-        assert "CalculatorBuffAttributeReader" in source
-        assert "create_anomaly_attribute_read_context" in source
+        assert "CalculatorBuffAttributeReader" not in source
+        assert "create_anomaly_attribute_read_context" not in source
+        assert "create_calculator_runtime_read_context_from_sim_instance" in source
+        assert "get_calculator_buff_attribute_reader_service" in source
+        assert "active_buff_view=self.record.dynamic_buff_list" not in source
         assert SELECTED_READER_METHODS[path.name] in source
+
+
+def test_migrated_p2b_files_use_runtime_reader_context() -> None:
+    for path in MIGRATED_P2B_READER_FILES:
+        source = path.read_text(encoding="utf-8")
+
+        assert "CalculatorBuffAttributeReader" not in source
+        assert "create_anomaly_attribute_read_context" not in source
+        assert "create_calculator_runtime_read_context_from_sim_instance" in source
+        assert "get_calculator_buff_attribute_reader_service" in source
+        assert "active_buff_view=self.record.dynamic_buff_list" not in source
+        assert MIGRATED_READER_METHODS[path.name] in source
 
 
 def test_selected_impact_crit_stun_files_keep_runtime_layers_out_of_scope() -> None:

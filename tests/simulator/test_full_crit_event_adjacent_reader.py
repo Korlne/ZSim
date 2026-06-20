@@ -279,6 +279,12 @@ def _make_full_crit_fixture(
         sim_instance=sim,
     )
     active_buff_view = {char.NAME: [char_buff]}
+    sim.buff_runtime_state = buff_runtime_module.BuffRuntimeState(
+        template_registry={},
+        pending_queue={},
+        active_store=active_buff_view,
+        enemy_mirror=enemy.dynamic.dynamic_debuff_list,
+    )
     return _FullCritFixture(
         sim_instance=sim,
         char=char,
@@ -662,7 +668,7 @@ def test_cannon_rotor_full_crit_gate_includes_received_bonus_without_publish(
     assert result is expected
     assert rng.calls == ["random_float"]
     assert get_prepared_calls == [
-        {"equipper": "加农转子", "enemy": 1, "dynamic_buff_list": 1, "sub_exist_buff_dict": 1}
+        {"equipper": "加农转子", "enemy": 1, "sub_exist_buff_dict": 1}
     ]
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
     assert fixture.sim_instance.schedule_data.event_list == []
@@ -674,7 +680,9 @@ def test_cannon_rotor_full_crit_gate_uses_reader_seam_source() -> None:
     assert "MultiplierData" not in source
     assert "RegularMul" not in source
     assert "cal_crit_rate" not in source
-    assert "create_anomaly_attribute_read_context" in source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in source
+    assert "get_calculator_buff_attribute_reader_service" in source
+    assert "active_buff_view=self.record.dynamic_buff_list" not in source
     assert "read_full_crit_rate" in source
 
 
@@ -749,7 +757,7 @@ def test_miyabi_icefire_full_crit_read_keeps_old_count_adjustment_order(
     logic.special_hit_logic()
 
     assert get_prepared_calls == [
-        {"char_CID": 1091, "enemy": 1, "dynamic_buff_list": 1, "sub_exist_buff_dict": 1}
+        {"char_CID": 1091, "enemy": 1, "sub_exist_buff_dict": 1}
     ]
     assert calls == [
         ("simple_start", 72, False, 12.0, buff_0),
@@ -1087,7 +1095,9 @@ def test_miyabi_icefire_full_crit_hit_uses_reader_seam_source() -> None:
     assert "MultiplierData" not in source
     assert "RegularMul" not in source
     assert "cal_crit_rate" not in source
-    assert "create_anomaly_attribute_read_context" in source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in source
+    assert "get_calculator_buff_attribute_reader_service" in source
+    assert "active_buff_view=self.record.dynamic_buff_list" not in source
     assert "read_full_crit_rate" in source
 
 
@@ -1161,7 +1171,7 @@ def test_woodpecker_full_crit_gate_pins_rng_and_trigger_level(
     assert result is expected
     assert rng.calls == ["random_float"]
     assert get_prepared_calls == [
-        {"equipper": "啄木鸟电音", "enemy": 1, "dynamic_buff_list": 1, "action_stack": 1}
+        {"equipper": "啄木鸟电音", "enemy": 1, "action_stack": 1}
     ]
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
     assert fixture.sim_instance.schedule_data.event_list == []
@@ -1274,7 +1284,7 @@ def test_woodpecker_full_crit_gate_skips_rng_and_state_sync_on_wrong_actor(
     assert rng.calls == []
     assert aggregation_calls == []
     assert get_prepared_calls == [
-        {"equipper": "啄木鸟电音", "enemy": 1, "dynamic_buff_list": 1, "action_stack": 1}
+        {"equipper": "啄木鸟电音", "enemy": 1, "action_stack": 1}
     ]
     assert fixture.sim_instance.schedule_data.event_list == []
 
@@ -1348,7 +1358,7 @@ def test_migrated_woodpecker_full_crit_gate_skips_rng_and_state_sync_without_ski
     assert rng.calls == []
     assert aggregation_calls == []
     assert get_prepared_calls == [
-        {"equipper": "啄木鸟电音", "enemy": 1, "dynamic_buff_list": 1, "action_stack": 1}
+        {"equipper": "啄木鸟电音", "enemy": 1, "action_stack": 1}
     ]
     assert fixture.sim_instance.schedule_data.event_list == []
 
@@ -1360,7 +1370,9 @@ def test_woodpecker_na_full_crit_gate_uses_reader_seam_source() -> None:
     assert "MultiplierData" not in module_source
     assert "RegularMul" not in module_source
     assert "cal_crit_rate" not in module_source
-    assert "create_anomaly_attribute_read_context" in method_source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in method_source
+    assert "get_calculator_buff_attribute_reader_service" in method_source
+    assert "active_buff_view=self.record.dynamic_buff_list" not in method_source
     assert "read_full_crit_rate" in method_source
 
 
@@ -1371,7 +1383,9 @@ def test_woodpecker_e_ex_full_crit_gate_uses_reader_seam_source() -> None:
     assert "MultiplierData" not in module_source
     assert "RegularMul" not in module_source
     assert "cal_crit_rate" not in module_source
-    assert "create_anomaly_attribute_read_context" in method_source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in method_source
+    assert "get_calculator_buff_attribute_reader_service" in method_source
+    assert "active_buff_view=self.record.dynamic_buff_list" not in method_source
     assert "read_full_crit_rate" in method_source
 
 
@@ -1382,7 +1396,9 @@ def test_woodpecker_ca_full_crit_gate_uses_reader_seam_source() -> None:
     assert "MultiplierData" not in module_source
     assert "RegularMul" not in module_source
     assert "cal_crit_rate" not in module_source
-    assert "create_anomaly_attribute_read_context" in method_source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in method_source
+    assert "get_calculator_buff_attribute_reader_service" in method_source
+    assert "active_buff_view=self.record.dynamic_buff_list" not in method_source
     assert "read_full_crit_rate" in method_source
 
 

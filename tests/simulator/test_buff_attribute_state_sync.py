@@ -944,6 +944,11 @@ def _make_lighter_impact_state_sync_case(
         enemy_debuffs=(enemy_debuff,),
     )
     dynamic_buff_list = {char.NAME: [char_buff]}
+    _attach_buff_runtime_state(
+        sim_instance=active_buff.sim_instance,
+        dynamic_buff_list=dynamic_buff_list,
+        enemy=enemy,
+    )
     aggregation_calls = _patch_buff_aggregation(
         monkeypatch,
         {
@@ -1019,6 +1024,11 @@ def _make_qingyi_impact_state_sync_case(
         enemy_debuffs=(enemy_debuff,),
     )
     dynamic_buff_list = {char.NAME: [char_buff]}
+    _attach_buff_runtime_state(
+        sim_instance=active_buff.sim_instance,
+        dynamic_buff_list=dynamic_buff_list,
+        enemy=enemy,
+    )
     aggregation_calls = _patch_buff_aggregation(
         monkeypatch,
         {
@@ -1093,6 +1103,11 @@ def _make_trigger_personal_crit_rate_state_sync_case(
         enemy_debuffs=(enemy_debuff,),
     )
     dynamic_buff_list = {char.NAME: [char_buff]}
+    _attach_buff_runtime_state(
+        sim_instance=active_buff.sim_instance,
+        dynamic_buff_list=dynamic_buff_list,
+        enemy=enemy,
+    )
     aggregation_calls = _patch_buff_aggregation(
         monkeypatch,
         {
@@ -1167,6 +1182,11 @@ def _make_soldier0_anby_personal_crit_damage_state_sync_case(
         enemy_debuffs=(enemy_debuff,),
     )
     dynamic_buff_list = {char.NAME: [char_buff]}
+    _attach_buff_runtime_state(
+        sim_instance=active_buff.sim_instance,
+        dynamic_buff_list=dynamic_buff_list,
+        enemy=enemy,
+    )
     aggregation_calls = _patch_buff_aggregation(
         monkeypatch,
         {
@@ -1848,7 +1868,7 @@ def test_lighter_impact_state_sync_keeps_base_count_order(
     assert case.expected_old_count == pytest.approx(5.0)
     assert case.logic.record.real_count == pytest.approx(case.expected_real_count)
     assert case.get_prepared_calls == [
-        {"char_CID": 1161, "enemy": 1, "dynamic_buff_list": 1, "sub_exist_buff_dict": 1}
+        {"char_CID": 1161, "enemy": 1, "sub_exist_buff_dict": 1}
     ]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "莱特"),
@@ -1907,7 +1927,9 @@ def test_lighter_impact_uses_reader_not_multiplier_data() -> None:
 
     assert "MultiplierData" not in source
     assert "Calculator.StunMul.cal_imp" not in source
-    assert "create_anomaly_attribute_read_context" in source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in source
+    assert "get_calculator_buff_attribute_reader_service" in source
+    assert "active_buff_view=self.record.dynamic_buff_list" not in source
     assert "read_impact" in source
 
 
@@ -1923,7 +1945,7 @@ def test_qingyi_impact_state_sync_keeps_old_count_adjustment_order(
 
     assert case.expected_old_count == pytest.approx(180.0)
     assert case.get_prepared_calls == [
-        {"char_CID": 1251, "enemy": 1, "dynamic_buff_list": 1, "sub_exist_buff_dict": 1}
+        {"char_CID": 1251, "enemy": 1, "sub_exist_buff_dict": 1}
     ]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "青衣"),
@@ -1986,7 +2008,9 @@ def test_qingyi_impact_uses_reader_not_multiplier_data() -> None:
 
     assert "MultiplierData" not in source
     assert "Calculator.StunMul.cal_imp" not in source
-    assert "create_anomaly_attribute_read_context" in source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in source
+    assert "get_calculator_buff_attribute_reader_service" in source
+    assert "active_buff_view=self.record.dynamic_buff_list" not in source
     assert "read_impact" in source
 
 
@@ -2025,7 +2049,7 @@ def test_trigger_personal_crit_rate_read_precedes_simple_start_order(
     assert case.expected_old_count == pytest.approx(30.0)
     assert case.get_prepared_calls == [
         {"char_CID": 1361},
-        {"char_CID": 1361, "sub_exist_buff_dict": 1, "enemy": 1, "dynamic_buff_list": 1},
+        {"char_CID": 1361, "sub_exist_buff_dict": 1, "enemy": 1},
     ]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "扳机"),
@@ -2079,7 +2103,9 @@ def test_trigger_personal_crit_rate_uses_reader_not_multiplier_data() -> None:
 
     assert "MultiplierData" not in source
     assert "Calculator.RegularMul.cal_personal_crit_rate" not in source
-    assert "create_anomaly_attribute_read_context" in source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in source
+    assert "get_calculator_buff_attribute_reader_service" in source
+    assert "active_buff_view=self.record.dynamic_buff_list" not in source
     assert "read_personal_crit_rate" in source
 
 
@@ -2122,7 +2148,7 @@ def test_soldier0_anby_personal_crit_damage_simple_start_precedes_read_order(
     assert case.expected_old_count == pytest.approx(30.0)
     assert case.get_prepared_calls == [
         {"char_CID": 1381, "trigger_buff_0": ("零号·安比", "Buff-角色-零号·安比-银星触发器")},
-        {"char_CID": 1381, "dynamic_buff_list": 1, "enemy": 1, "sub_exist_buff_dict": 1},
+        {"char_CID": 1381, "enemy": 1, "sub_exist_buff_dict": 1},
     ]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "零号·安比"),
@@ -2183,7 +2209,9 @@ def test_soldier0_anby_personal_crit_damage_uses_reader_not_multiplier_data_alia
     assert "Mul(" not in source
     assert "Calculator.RegularMul.cal_personal_crit_dmg" not in source
     assert "Cal.RegularMul.cal_personal_crit_dmg" not in source
-    assert "create_anomaly_attribute_read_context" in source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in source
+    assert "get_calculator_buff_attribute_reader_service" in source
+    assert "active_buff_view=self.record.dynamic_buff_list" not in source
     assert "read_personal_crit_damage" in source
 
 

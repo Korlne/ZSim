@@ -1,6 +1,6 @@
 from zsim.sim_progress.ScheduledEvent.Calculator import (
-    CalculatorBuffAttributeReader,
-    create_anomaly_attribute_read_context,
+    create_calculator_runtime_read_context_from_sim_instance,
+    get_calculator_buff_attribute_reader_service,
 )
 
 from .. import Buff, JudgeTools, check_preparation
@@ -54,7 +54,7 @@ class LighterExtraSkill_IceFireBonus(Buff.BuffLogic):
 
     def special_hit_logic(self, **kwargs):
         self.check_record_module()
-        self.get_prepared(char_CID=1161, enemy=1, dynamic_buff_list=1, sub_exist_buff_dict=1)
+        self.get_prepared(char_CID=1161, enemy=1, sub_exist_buff_dict=1)
         tick_now = JudgeTools.find_tick(sim_instance=self.buff_instance.sim_instance)
         buff_i = self.buff_instance
         buff_i.simple_start(tick_now, self.record.sub_exist_buff_dict)
@@ -73,12 +73,13 @@ class LighterExtraSkill_IceFireBonus(Buff.BuffLogic):
         self.record.real_count = real_count
 
         # 计算实时冲击力
-        context = create_anomaly_attribute_read_context(
+        context = create_calculator_runtime_read_context_from_sim_instance(
+            sim_instance=self.buff_instance.sim_instance,
             enemy=self.record.enemy,
-            active_buff_view=self.record.dynamic_buff_list,
             character=self.record.char,
         )
-        stun_value = CalculatorBuffAttributeReader().read_impact(context)
+        reader_service = get_calculator_buff_attribute_reader_service()
+        stun_value = reader_service.read_impact(context)
 
         # 计算虚层
         fake_count_delta = max((stun_value - 170) / 10, 0)

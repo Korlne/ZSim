@@ -1,6 +1,6 @@
 from zsim.sim_progress.ScheduledEvent.Calculator import (
-    CalculatorBuffAttributeReader,
-    create_anomaly_attribute_read_context,
+    create_calculator_runtime_read_context_from_sim_instance,
+    get_calculator_buff_attribute_reader_service,
 )
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
@@ -55,14 +55,15 @@ class TriggerAdditionalAbilityStunBonus(Buff.BuffLogic):
     def special_hit_logic(self, **kwargs):
         """判定通过后，执行Buff激活，计算实时暴击率，替换当前层数。"""
         self.check_record_module()
-        self.get_prepared(char_CID=1361, sub_exist_buff_dict=1, enemy=1, dynamic_buff_list=1)
+        self.get_prepared(char_CID=1361, sub_exist_buff_dict=1, enemy=1)
         tick = find_tick(sim_instance=self.buff_instance.sim_instance)
-        context = create_anomaly_attribute_read_context(
+        context = create_calculator_runtime_read_context_from_sim_instance(
+            sim_instance=self.buff_instance.sim_instance,
             enemy=self.record.enemy,
-            active_buff_view=self.record.dynamic_buff_list,
             character=self.record.char,
         )
-        crit_rate = CalculatorBuffAttributeReader().read_personal_crit_rate(context)
+        reader_service = get_calculator_buff_attribute_reader_service()
+        crit_rate = reader_service.read_personal_crit_rate(context)
 
         """「扳机」的暴击率高于40%时，每超过1%暴击率会使自身发动[追加攻击]造成的失衡值提升1.5%，最多提升75%。"""
         count = min(max(crit_rate - 0.4, 0) / 0.01 * 1.5, 75)

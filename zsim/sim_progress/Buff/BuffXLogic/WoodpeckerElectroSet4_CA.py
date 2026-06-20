@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from zsim.sim_progress.ScheduledEvent.Calculator import (
-    CalculatorBuffAttributeReader,
-    create_anomaly_attribute_read_context,
+    create_calculator_runtime_read_context_from_sim_instance,
+    get_calculator_buff_attribute_reader_service,
 )
 
 from .. import Buff, JudgeTools, check_preparation
@@ -50,7 +50,7 @@ class WoodpeckerElectroSet4_CA(Buff.BuffLogic):
 
     def special_judge_logic(self, **kwargs):
         self.check_record_module()
-        self.get_prepared(equipper="啄木鸟电音", enemy=1, dynamic_buff_list=1, action_stack=1)
+        self.get_prepared(equipper="啄木鸟电音", enemy=1, action_stack=1)
         skill_node = kwargs.get("skill_node", None)
         if skill_node is None:
             return False
@@ -65,13 +65,14 @@ class WoodpeckerElectroSet4_CA(Buff.BuffLogic):
             return False
         if str(self.record.char.CID) not in skill_node.skill_tag:
             return False
-        context = create_anomaly_attribute_read_context(
+        context = create_calculator_runtime_read_context_from_sim_instance(
+            sim_instance=self.buff_instance.sim_instance,
             enemy=self.record.enemy,
-            active_buff_view=self.record.dynamic_buff_list,
             character=self.record.char,
         )
         if skill_node.skill.trigger_buff_level == 4:
-            cric_rate = CalculatorBuffAttributeReader().read_full_crit_rate(context)
+            reader_service = get_calculator_buff_attribute_reader_service()
+            cric_rate = reader_service.read_full_crit_rate(context)
             rng: RNG = self.buff_instance.sim_instance.rng_instance
             normalized_value = rng.random_float()
             if normalized_value <= cric_rate:
