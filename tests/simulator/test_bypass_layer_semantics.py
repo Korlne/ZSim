@@ -7,6 +7,7 @@ from typing import Any, Mapping, Sequence, cast
 import pytest
 
 import zsim.sim_progress.Buff.BuffXLogic.SeedCinema6Trigger as seed_cinema6_module
+import zsim.sim_progress.Buff.BuffXLogic.YuzuhaCinema6SheelTrigger as yuzuha_cinema6_module
 import zsim.sim_progress.data_struct.BattleEventListener.AliceDotTriggerListener as alice_dot_module
 import zsim.sim_progress.data_struct.schedule_dispatch as schedule_dispatch_module
 from tests.simulator.test_buff_add_strategy_runtime_facade import (
@@ -402,6 +403,18 @@ def test_preparation_context_preload_commands_publish_only_scheduled_events() ->
 
 def test_seed_cinema6_preload_spawn_uses_context_command_surface_guardrail() -> None:
     source = inspect.getsource(seed_cinema6_module.SeedCinema6Trigger)
+
+    assert "preload_commands.schedule_preload_events(" in source
+    assert "schedule_preload_event_factory(" not in source
+    assert "create_schedule_dispatch_port" not in source
+    assert "publish_scheduled" not in source
+    assert "RuntimeCommandPort" not in source
+    assert "listener_manager" not in source
+    assert "broadcast_event" not in source
+
+
+def test_yuzuha_cinema6_preload_spawn_uses_context_command_surface_guardrail() -> None:
+    source = inspect.getsource(yuzuha_cinema6_module.YuzuhaCinema6SheelTrigger)
 
     assert "preload_commands.schedule_preload_events(" in source
     assert "schedule_preload_event_factory(" not in source

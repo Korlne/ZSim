@@ -52,8 +52,8 @@ P2G_DIRECT_CONTEXT_TARGETS = (
         node_path=("YuzuhaCinema6SheelTrigger",),
         allowed_layers=frozenset({"tick_preload", "scheduled_publish", "report_state"}),
         required_terms=(
-            "schedule_preload_event_factory",
-            "preload_data",
+            "build_preparation_context_from_buff",
+            "preload_commands.schedule_preload_events",
             "change_process_state",
         ),
     ),

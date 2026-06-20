@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 from zsim.define import YUZUHA_REPORT
 
 from .. import Buff, JudgeTools, check_preparation
+from ..JudgeTools import build_preparation_context_from_buff
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Character.Yuzuha import Yuzuha
@@ -74,17 +75,14 @@ class YuzuhaCinema6SheelTrigger(Buff.BuffLogic):
     def special_effect_logic(self, **kwargs):
         self.check_record_module()
         self.get_prepared(char_CID=1411)
-        from zsim.sim_progress.data_struct.SchedulePreload import schedule_preload_event_factory
 
         sim_instance = self.buff_instance.sim_instance
         preload_tick_list = [sim_instance.tick]
         skill_tag_list = ["1411_Cinema_6"]
-        preload_data = sim_instance.preload.preload_data
-        schedule_preload_event_factory(
+        preparation_context = build_preparation_context_from_buff(self.buff_instance)
+        preparation_context.preload_commands.schedule_preload_events(
             preload_tick_list=preload_tick_list,
             skill_tag_list=skill_tag_list,
-            preload_data=preload_data,
-            sim_instance=sim_instance,
         )
         self.record.sheel_counter += 1
         self.record.charging_tick = 0
