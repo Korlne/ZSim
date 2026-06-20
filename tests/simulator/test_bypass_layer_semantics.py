@@ -531,6 +531,8 @@ def test_buff_add_strategy_cross_layer_boundary_covers_target_shapes(
         dynamic_buff_dict={"enemy": enemy_store},
         enemy_debuff_mirror=enemy_mirror,
     )
+    runtime_enemy_store = enemy_sim.global_stats.DYNAMIC_BUFF_DICT["enemy"]
+    assert runtime_enemy_store is enemy_mirror
 
     buff_add_strategy(
         "enemy-boundary",
@@ -541,8 +543,9 @@ def test_buff_add_strategy_cross_layer_boundary_covers_target_shapes(
     enemy_calls = facade_calls[enemy_start:]
     _assert_pending_queues_untouched(enemy_sim, enemy_pending)
     assert enemy_sim.schedule_data.event_list == []
-    assert len(enemy_store) == 1
-    new_enemy_buff = enemy_store[0]
+    assert enemy_store == [old_enemy_buff]
+    assert len(runtime_enemy_store) == 1
+    new_enemy_buff = runtime_enemy_store[0]
     assert new_enemy_buff is not old_enemy_buff
     assert enemy_mirror == [new_enemy_buff]
     assert (

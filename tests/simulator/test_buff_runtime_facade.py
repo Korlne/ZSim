@@ -8,6 +8,7 @@ import pytest
 from zsim.sim_progress.Buff.buff_class import Buff
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     BuffRuntimeFacade,
+    BuffRuntimeState,
     LegacyBuffRuntimeFacade,
     create_legacy_buff_runtime_facade,
 )
@@ -135,6 +136,7 @@ def test_legacy_buff_runtime_facade_preserves_old_container_identity() -> None:
     assert facade.get_pending_queue_for_compat("alpha") is loading_buff_dict["alpha"]
     assert facade.get_active_buffs_for_compat("alpha") is dynamic_buff_dict["alpha"]
     assert facade.get_enemy_debuff_mirror_for_compat() is enemy_debuff_mirror
+    assert dynamic_buff_dict["enemy"] is enemy_debuff_mirror
 
     facade.enqueue_pending_buff("alpha", pending_buff)
     facade.append_active_buff("alpha", active_buff)
@@ -162,7 +164,7 @@ def test_legacy_buff_runtime_facade_keeps_pending_and_active_store_semantics_sep
         exist_buff_dict={"alpha": {}, "enemy": {}},
         loading_buff_dict=loading_buff_dict,
         dynamic_buff_dict=dynamic_buff_dict,
-        enemy_debuff_mirror=[],
+        enemy_debuff_mirror=enemy_active_list,
     )
 
     drained = facade.drain_pending_buffs("alpha")
@@ -199,9 +201,29 @@ def test_legacy_buff_runtime_facade_syncs_enemy_debuff_mirror_by_index() -> None
     facade.sync_enemy_debuff_mirror(replacement_debuff)
     assert enemy_debuff_mirror == [other_debuff, replacement_debuff]
     assert facade.get_enemy_debuff_mirror_for_compat() is enemy_debuff_mirror
+    assert facade.get_active_buffs_for_compat("enemy") is enemy_debuff_mirror
 
     facade.remove_enemy_debuff_mirror(replacement_debuff)
     assert enemy_debuff_mirror == [other_debuff]
+
+
+def test_buff_runtime_state_collapses_enemy_active_store_into_dynamic_debuff_list() -> None:
+    active_debuff = _BuffProbe("active-debuff", is_debuff=True)
+    stale_mirror_debuff = _BuffProbe("stale-debuff", is_debuff=True)
+    dynamic_buff_dict: dict[str, list[Any]] = {"enemy": [active_debuff]}
+    enemy_debuff_mirror: list[Any] = [stale_mirror_debuff]
+
+    runtime_state = BuffRuntimeState(
+        template_registry={"enemy": {}},
+        pending_queue={"enemy": []},
+        active_store=dynamic_buff_dict,
+        enemy_mirror=enemy_debuff_mirror,
+    )
+
+    assert dynamic_buff_dict["enemy"] is enemy_debuff_mirror
+    assert runtime_state.active_store_for_compat()["enemy"] is enemy_debuff_mirror
+    assert runtime_state.enemy_mirror_for_compat() is enemy_debuff_mirror
+    assert enemy_debuff_mirror == [active_debuff]
 
 
 def test_legacy_buff_runtime_facade_registry_view_is_read_only_snapshot() -> None:
@@ -408,9 +430,9 @@ def test_update_buff_removes_enemy_debuff_mirror_through_facade(
     _, log_reports = _capture_update_reports(monkeypatch)
     events: list[str] = []
     expired_debuff = _BuffProbe("debuff", endticks=2, is_debuff=True, events=events)
-    other_debuff = _BuffProbe("other", is_debuff=True)
-    active_buffs = _TrackingList([expired_debuff], events, "active")
-    enemy_debuff_mirror = _TrackingList([expired_debuff, other_debuff], events, "mirror")
+    other_debuff = _BuffProbe("other", endticks=10, is_debuff=True)
+    active_buffs = _TrackingList([expired_debuff, other_debuff], events, "active-source")
+    enemy_debuff_mirror = _TrackingList([], events, "mirror")
     exist_buff_dict: dict[str, dict[str, Any]] = {"enemy": {"debuff": _BuffProbe("debuff")}}
     dynamic_buff_dict: dict[str, list[Any]] = {"enemy": active_buffs}
     facade = _create_facade(
@@ -425,9 +447,10 @@ def test_update_buff_removes_enemy_debuff_mirror_through_facade(
         runtime_facade=facade,
     )
 
-    assert active_buffs == []
+    assert dynamic_buff_dict["enemy"] is enemy_debuff_mirror
+    assert active_buffs == [expired_debuff, other_debuff]
     assert enemy_debuff_mirror == [other_debuff]
-    assert events == ["end:debuff:3", "active.remove:debuff", "mirror.remove:debuff"]
+    assert events == ["end:debuff:3", "mirror.remove:debuff"]
     assert log_reports == [
         ("[Buff END]:3:enemy 的 debuff 结束，已从动态列表移除", 4),
     ]
@@ -515,8 +538,8 @@ def test_legacy_buff_runtime_facade_replaces_enemy_debuff_mirror_on_activation()
     other_enemy_buff = _BuffProbe("other")
     replacement_enemy_buff = _BuffProbe("enemy-buff")
     loading_buff_dict: dict[str, list[Any]] = {"enemy": [replacement_enemy_buff]}
-    dynamic_buff_dict: dict[str, list[Any]] = {"enemy": [old_enemy_buff]}
-    enemy_debuff_mirror: list[Any] = [old_enemy_buff, other_enemy_buff]
+    dynamic_buff_dict: dict[str, list[Any]] = {"enemy": [old_enemy_buff, other_enemy_buff]}
+    enemy_debuff_mirror: list[Any] = []
     facade = _create_facade(
         exist_buff_dict={"enemy": {}},
         loading_buff_dict=loading_buff_dict,
@@ -527,5 +550,6 @@ def test_legacy_buff_runtime_facade_replaces_enemy_debuff_mirror_on_activation()
     facade.activate_pending_buffs(timenow=10)
 
     assert loading_buff_dict["enemy"] == []
-    assert dynamic_buff_dict["enemy"] == [replacement_enemy_buff]
+    assert dynamic_buff_dict["enemy"] is enemy_debuff_mirror
+    assert dynamic_buff_dict["enemy"] == [other_enemy_buff, replacement_enemy_buff]
     assert enemy_debuff_mirror == [other_enemy_buff, replacement_enemy_buff]

@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import ast
+import importlib
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
+
+import pytest
 
 from scripts.run_buff_refactor_validation import (
     RUNTIME_DEPENDENCY_CATEGORIES,
@@ -946,6 +949,25 @@ def test_update_buff_active_sweep_is_runtime_owned_without_kickout_fallback() ->
 
     report = RuntimeDependencyZeroScanner(PROJECT_ROOT).build_report(expected_zero=False)
     assert report["families"]["Update_Buff no-facade fallback"]["production runtime"] == 0
+
+
+def test_retained_buff_add_module_is_migration_only_without_raw_activation() -> None:
+    buff_add_module = importlib.import_module("zsim.sim_progress.Buff.BuffAdd")
+
+    with pytest.raises(RuntimeError, match="migration-only"):
+        getattr(buff_add_module, "buff_add")()
+    with pytest.raises(RuntimeError, match="migration-only"):
+        getattr(buff_add_module, "add_debuff_to_enemy")()
+
+    findings = [
+        finding
+        for finding in _collect_findings()
+        if finding.path == "zsim/sim_progress/Buff/BuffAdd.py"
+    ]
+    assert findings == []
+
+    report = RuntimeDependencyZeroScanner(PROJECT_ROOT).build_report(expected_zero=False)
+    assert report["families"]["retained BuffAdd.py activation"]["production runtime"] == 0
 
 
 def test_raw_old_container_guardrail_failure_message_includes_triage_fields() -> None:

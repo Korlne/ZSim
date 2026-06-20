@@ -29,7 +29,26 @@ class BuffRuntimeState:
         self._template_registry = template_registry
         self._pending_queue = pending_queue
         self._active_store = active_store
-        self._enemy_mirror = enemy_mirror
+        self._enemy_mirror = self._collapse_enemy_debuff_store(
+            active_store,
+            enemy_mirror,
+        )
+
+    @staticmethod
+    def _collapse_enemy_debuff_store(
+        active_store: dict[str, list["Buff"]],
+        enemy_mirror: list["Buff"],
+    ) -> list["Buff"]:
+        enemy_active_store = active_store.get("enemy")
+        if enemy_active_store is None:
+            active_store["enemy"] = enemy_mirror
+            return enemy_mirror
+        if enemy_active_store is enemy_mirror:
+            return enemy_mirror
+        if enemy_active_store:
+            enemy_mirror[:] = enemy_active_store
+        active_store["enemy"] = enemy_mirror
+        return enemy_mirror
 
     def create_facade(self) -> "BuffRuntimeFacade":
         return LegacyBuffRuntimeFacade(runtime_state=self)
@@ -304,7 +323,7 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
             level=4,
         )
         if buff.ft.is_debuff:
-            self._runtime_state.enemy_mirror_for_compat().remove(buff)
+            self.remove_enemy_debuff_mirror(buff)
 
     def settle_individual_buff_stack(self, buff: "Buff", *, tick: int) -> None:
         expired_stack_items = [
@@ -379,10 +398,14 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         )
 
     def sync_enemy_debuff_mirror(self, buff: "Buff") -> None:
+        mirror = self._runtime_state.enemy_mirror_for_compat()
         existing_buff = self._find_enemy_debuff_mirror(buff)
+        if existing_buff is buff:
+            return
         if existing_buff is not None:
-            self._runtime_state.enemy_mirror_for_compat().remove(existing_buff)
-        self._runtime_state.enemy_mirror_for_compat().append(buff)
+            mirror.remove(existing_buff)
+        if not any(mirrored_buff is buff for mirrored_buff in mirror):
+            mirror.append(buff)
 
     def remove_enemy_debuff_mirror(self, buff: "Buff") -> None:
         existing_buff = self._find_enemy_debuff_mirror(buff)

@@ -138,6 +138,7 @@ def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
     assert sim.buff_runtime_state.template_registry_for_compat() is exist_buff_dict
     assert sim.buff_runtime_state.pending_queue_for_compat() is loading_buff_dict
     assert sim.buff_runtime_state.active_store_for_compat() is dynamic_buff_dict
+    assert dynamic_buff_dict["enemy"] is enemy.dynamic.dynamic_debuff_list
     assert sim.buff_runtime_state.enemy_mirror_for_compat() is enemy.dynamic.dynamic_debuff_list
     assert runtime.calls == [(0, enemy), (1, enemy)]
     assert runtime.load_ticks == [0]

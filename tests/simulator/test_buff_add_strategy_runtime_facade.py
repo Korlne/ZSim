@@ -416,6 +416,8 @@ def test_buff_add_strategy_syncs_enemy_debuff_mirror_through_runtime_facade(
         dynamic_buff_dict={"enemy": active_store},
         enemy_debuff_mirror=enemy_debuff_mirror,
     )
+    runtime_enemy_store = sim_instance.global_stats.DYNAMIC_BUFF_DICT["enemy"]
+    assert runtime_enemy_store is enemy_debuff_mirror
 
     buff_add_strategy(
         "forced-debuff",
@@ -423,13 +425,16 @@ def test_buff_add_strategy_syncs_enemy_debuff_mirror_through_runtime_facade(
         sim_instance=sim_instance,
     )
 
-    assert active_store[0] is unrelated_active_debuff
-    assert len(active_store) == 2
-    new_debuff = active_store[1]
+    assert active_store == [old_active_debuff, unrelated_active_debuff]
+    assert runtime_enemy_store[0] is unrelated_active_debuff
+    assert len(runtime_enemy_store) == 2
+    new_debuff = runtime_enemy_store[1]
     assert new_debuff.ft.index == "forced-debuff"
     assert new_debuff is not old_active_debuff
-    assert old_active_debuff not in active_store
-    assert enemy_debuff_mirror == [other_mirror_debuff, new_debuff]
+    assert old_active_debuff not in runtime_enemy_store
+    assert enemy_debuff_mirror == [unrelated_active_debuff, new_debuff]
+    assert old_mirror_debuff not in runtime_enemy_store
+    assert other_mirror_debuff not in runtime_enemy_store
     assert enemy_debuff_mirror[1] is new_debuff
     assert sim_instance.load_data.LOADING_BUFF_DICT["enemy"] == []
     assert facade_calls == [
