@@ -215,6 +215,7 @@ XLOGIC_ADAPTER_DIRECT_READER_CONSTRUCTION = (
     "direct CalculatorBuffAttributeReader() construction"
 )
 XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND = "broad JudgeTools.find_* call"
+XLOGIC_ADAPTER_DIRECT_TRIGGER_REGISTRY_SCAN = "direct trigger_buff_0 registry scan"
 
 XLOGIC_ADAPTER_CALCULATOR_SERVICE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
@@ -238,6 +239,9 @@ XLOGIC_ADAPTER_CALCULATOR_SERVICE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyBuildupBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyDmgBonus.py",
 )
+XLOGIC_ADAPTER_TRIGGER_REF_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritRateBonus.py",
+)
 
 XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS = {
     path: frozenset(
@@ -248,6 +252,10 @@ XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS = {
     )
     for path in XLOGIC_ADAPTER_CALCULATOR_SERVICE_FILES
 }
+for path in XLOGIC_ADAPTER_TRIGGER_REF_FILES:
+    XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[path] = XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS.get(
+        path, frozenset()
+    ) | frozenset({XLOGIC_ADAPTER_DIRECT_TRIGGER_REGISTRY_SCAN})
 
 SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY = (
     "legacy ScheduleBuffSettle command-adapter internals"
@@ -977,6 +985,27 @@ def _is_judge_tools_find_call(func: ast.expr) -> bool:
     )
 
 
+def _is_find_exist_buff_dict_call(node: ast.AST) -> bool:
+    if not isinstance(node, ast.Call):
+        return False
+    if isinstance(node.func, ast.Name):
+        return node.func.id == "find_exist_buff_dict"
+    return (
+        isinstance(node.func, ast.Attribute)
+        and node.func.attr == "find_exist_buff_dict"
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "JudgeTools"
+    )
+
+
+def _is_direct_trigger_registry_scan(node: ast.AST) -> bool:
+    if not isinstance(node, ast.Subscript):
+        return False
+    if not _is_find_exist_buff_dict_call(node.value):
+        return False
+    return not isinstance(node.slice, ast.Constant)
+
+
 def _is_self_record_dynamic_buff_list(node: ast.expr) -> bool:
     return (
         isinstance(node, ast.Attribute)
@@ -1005,6 +1034,20 @@ def _collect_xlogic_adapter_guardrail_findings_from_source(
     relative_path = path.relative_to(PROJECT_ROOT).as_posix()
 
     for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Subscript)
+            and XLOGIC_ADAPTER_DIRECT_TRIGGER_REGISTRY_SCAN in forbidden_kinds
+            and _is_direct_trigger_registry_scan(node)
+        ):
+            findings.append(
+                XLogicAdapterGuardrailFinding(
+                    path=relative_path,
+                    line=node.lineno,
+                    kind=XLOGIC_ADAPTER_DIRECT_TRIGGER_REGISTRY_SCAN,
+                    matched_expression=_adapter_source_for(source, node),
+                )
+            )
+
         if not isinstance(node, ast.Call):
             continue
 
@@ -1554,6 +1597,36 @@ def test_xlogic_adapter_guardrail_can_freeze_migrated_judgetools_find_calls() ->
     message = findings[0].message()
     assert "JudgeTools.find_exist_buff_dict" in message
     assert XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND in message
+
+
+def test_xlogic_adapter_guardrail_flags_trigger_registry_scans() -> None:
+    source = (
+        "def prepare(self, operator):\n"
+        "    trigger_buff_0 = JudgeTools.find_exist_buff_dict(\n"
+        "        sim_instance=self.buff_instance.sim_instance,\n"
+        "    )[operator]\n"
+        "    return trigger_buff_0\n"
+    )
+    path = (
+        PROJECT_ROOT
+        / "zsim"
+        / "sim_progress"
+        / "Buff"
+        / "BuffXLogic"
+        / "_adapter_fixture.py"
+    )
+
+    findings = _collect_xlogic_adapter_guardrail_findings_from_source(
+        path,
+        source,
+        frozenset({XLOGIC_ADAPTER_DIRECT_TRIGGER_REGISTRY_SCAN}),
+    )
+
+    assert len(findings) == 1
+    message = findings[0].message()
+    assert "find_exist_buff_dict" in message
+    assert "[operator]" in message
+    assert XLOGIC_ADAPTER_DIRECT_TRIGGER_REGISTRY_SCAN in message
 
 
 def test_calculator_read_guardrail_rejects_unlisted_retained_snapshot_file() -> None:

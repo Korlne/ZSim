@@ -4,9 +4,12 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
 from ..JudgeTools import (
+    TriggerBuffRef,
     create_calculator_runtime_read_context_from_sim_instance,
     read_trigger_buff_state_active,
 )
+
+_JANE_BITE_TRIGGER_REF = TriggerBuffRef.enemy("Buff-角色-简-核心被动-啮咬触发器")
 
 
 class JaneCoreSkillStrikeCritRateBonusRecord:
@@ -44,9 +47,7 @@ class JaneCoreSkillStrikeCritRateBonus(Buff.BuffLogic):
     def special_judge_logic(self, **kwargs):
         """强击暴击率的Debuff情况是和啮咬绑定的。"""
         self.check_record_module()
-        self.get_prepared(
-            char_CID=1261, trigger_buff_0=("enemy", "Buff-角色-简-核心被动-啮咬触发器")
-        )
+        self.get_prepared(char_CID=1261, trigger_buff_0=_JANE_BITE_TRIGGER_REF)
         return read_trigger_buff_state_active(self.record)
 
     def special_hit_logic(self, **kwargs):
@@ -54,7 +55,7 @@ class JaneCoreSkillStrikeCritRateBonus(Buff.BuffLogic):
         self.check_record_module()
         self.get_prepared(
             char_CID=1261,
-            trigger_buff_0=("enemy", "Buff-角色-简-核心被动-啮咬触发器"),
+            trigger_buff_0=_JANE_BITE_TRIGGER_REF,
             enemy=1,
             sub_exist_buff_dict=1,
         )

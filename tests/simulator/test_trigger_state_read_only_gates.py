@@ -13,6 +13,9 @@ sys.modules.setdefault("define", define_module)
 
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.JudgeTools import (
+    BuffTemplateRegistryReadPort,
+    TriggerBuffLookup,
+    TriggerBuffRef,
     read_trigger_buff_state,
     read_trigger_buff_state_active,
 )
@@ -737,6 +740,65 @@ def test_trigger_state_helper_requires_prepared_trigger_record() -> None:
         read_trigger_buff_state_active(SimpleNamespace(trigger_buff_0=None))
 
 
+def test_trigger_buff_ref_lookup_preserves_old_template_identity() -> None:
+    trigger_template = _BuffTemplate(
+        index="Buff-角色-简-核心被动-啮咬触发器",
+        active=True,
+        count=1,
+    )
+    lookup = TriggerBuffLookup(
+        BuffTemplateRegistryReadPort(
+            {"简": {"Buff-角色-简-核心被动-啮咬触发器": trigger_template}}
+        )
+    )
+
+    result = lookup.find_by_ref(
+        TriggerBuffRef.owner("简", "Buff-角色-简-核心被动-啮咬触发器")
+    )
+
+    assert result is trigger_template
+
+
+def test_trigger_buff_ref_lookup_preserves_suffix_collision_behavior() -> None:
+    trigger_template = _BuffTemplate(
+        index="Buff-驱动盘-灼心摇壶-增伤",
+        active=True,
+        count=5,
+    )
+    prefix_match = _BuffTemplate(
+        index="Buff-驱动盘-灼心摇壶-增伤-历史副本",
+        active=True,
+        count=99,
+    )
+    lookup = TriggerBuffLookup(
+        BuffTemplateRegistryReadPort(
+            {
+                "测试装备者": {
+                    "Buff-驱动盘-灼心摇壶-增伤": trigger_template,
+                    "Buff-驱动盘-灼心摇壶-增伤-历史副本": prefix_match,
+                }
+            }
+        )
+    )
+
+    result = lookup.find_by_ref(TriggerBuffRef.owner("测试装备者", "灼心摇壶-增伤"))
+
+    assert result is trigger_template
+
+
+def test_trigger_buff_ref_lookup_preserves_duplicate_name_error() -> None:
+    duplicate_a = _BuffTemplate(index="Buff-角色-简-重复触发器")
+    duplicate_b = _BuffTemplate(index="Buff-角色-简-重复触发器")
+    lookup = TriggerBuffLookup(
+        BuffTemplateRegistryReadPort(
+            {"简": {"a": duplicate_a, "b": duplicate_b}}
+        )
+    )
+
+    with pytest.raises(ValueError, match="同名buff"):
+        lookup.find_by_ref(TriggerBuffRef.owner("简", "重复触发器"))
+
+
 @pytest.mark.parametrize(
     ("file_name", "forbidden_chains"),
     [
@@ -837,6 +899,16 @@ def test_migrated_trigger_state_gate_sources_use_trigger_state_helper(
     assert "read_trigger_buff_state" in source
     for chain in forbidden_chains:
         assert chain not in source
+
+
+def test_jane_core_skill_crit_rate_uses_typed_trigger_ref_contract() -> None:
+    source = (_BUFF_XLOGIC_ROOT / "JaneCoreSkillStrikeCritRateBonus.py").read_text(
+        encoding="utf-8"
+    )
+    compact_source = "".join(source.split())
+
+    assert "TriggerBuffRef.enemy(" in source
+    assert 'trigger_buff_0=("enemy",' not in compact_source
 
 
 _JANE_ACTIVE_GATE_CASES: tuple[tuple[type[Any], str, str], ...] = (

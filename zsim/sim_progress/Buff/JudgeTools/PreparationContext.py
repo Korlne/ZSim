@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, ClassVar, Mapping, Sequence
 
 if TYPE_CHECKING:
     from .. import Buff
@@ -54,25 +54,102 @@ class BuffTemplateRegistryReadPort:
         return self.templates_by_owner[owner_name]
 
 
+@dataclass(frozen=True, eq=False)
+class TriggerBuffRef:
+    operator: str
+    buff_index: str
+    operator_kind: str = "owner"
+
+    OWNER: ClassVar[str] = "owner"
+    EQUIPPER: ClassVar[str] = "equipper"
+    ENEMY_SOURCE: ClassVar[str] = "enemy"
+
+    @classmethod
+    def owner(cls, operator: str, buff_index: str) -> "TriggerBuffRef":
+        return cls(operator=operator, buff_index=buff_index, operator_kind=cls.OWNER)
+
+    @classmethod
+    def equipper(cls, buff_index: str) -> "TriggerBuffRef":
+        return cls(
+            operator=cls.EQUIPPER,
+            buff_index=buff_index,
+            operator_kind=cls.EQUIPPER,
+        )
+
+    @classmethod
+    def enemy(cls, buff_index: str) -> "TriggerBuffRef":
+        return cls(
+            operator=cls.ENEMY_SOURCE,
+            buff_index=buff_index,
+            operator_kind=cls.ENEMY_SOURCE,
+        )
+
+    @classmethod
+    def from_legacy_tuple(cls, trigger_buff_0: tuple[Any, ...]) -> "TriggerBuffRef":
+        operator = trigger_buff_0[0]
+        buff_index = trigger_buff_0[1]
+        if operator == cls.EQUIPPER:
+            return cls.equipper(buff_index)
+        if operator == cls.ENEMY_SOURCE:
+            return cls.enemy(buff_index)
+        return cls.owner(operator, buff_index)
+
+    @classmethod
+    def coerce(cls, trigger_buff_0: Any) -> "TriggerBuffRef":
+        if isinstance(trigger_buff_0, cls):
+            return trigger_buff_0
+        if isinstance(trigger_buff_0, tuple):
+            return cls.from_legacy_tuple(trigger_buff_0)
+        raise TypeError("输入的参数必须是tuple或TriggerBuffRef！")
+
+    @property
+    def requires_character(self) -> bool:
+        return self.operator_kind == self.ENEMY_SOURCE
+
+    def with_resolved_owner(self, owner_name: str) -> "TriggerBuffRef":
+        return TriggerBuffRef.owner(owner_name, self.buff_index)
+
+    def as_legacy_tuple(self) -> tuple[str, str]:
+        return (self.operator, self.buff_index)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, TriggerBuffRef):
+            return (
+                self.operator == other.operator
+                and self.buff_index == other.buff_index
+                and self.operator_kind == other.operator_kind
+            )
+        if isinstance(other, tuple):
+            return self.as_legacy_tuple() == other
+        return False
+
+    def __hash__(self) -> int:
+        return hash((self.operator, self.buff_index, self.operator_kind))
+
+
 @dataclass(frozen=True)
 class TriggerBuffLookup:
     template_registry: BuffTemplateRegistryReadPort
 
     def find_by_operator_and_index(self, operator: str, buff_index: str) -> Any:
+        return self.find_by_ref(TriggerBuffRef.owner(operator, buff_index))
+
+    def find_by_ref(self, trigger_ref: TriggerBuffRef) -> Any:
         founded_list = []
+        operator = trigger_ref.operator
         for buff_found in self.template_registry.for_owner(operator).values():
-            if buff_index in buff_found.ft.index:
+            if trigger_ref.buff_index in buff_found.ft.index:
                 founded_list.append(buff_found)
         if len(founded_list) != 1:
             founded_buff_index_list = [founded_buff.ft.index for founded_buff in founded_list]
             if len(set(founded_buff_index_list)) != len(founded_list):
                 raise ValueError(f"在{operator}的sub_exist_buff_dict中找到了2个以上的同名buff！")
-            trigger_index_length = len(buff_index)
+            trigger_index_length = len(trigger_ref.buff_index)
             for buff_found in founded_list:
-                if buff_found.ft.index[-trigger_index_length:] == buff_index:
+                if buff_found.ft.index[-trigger_index_length:] == trigger_ref.buff_index:
                     return buff_found
             raise ValueError(
-                f"并未找到Buff名后缀为{buff_index}的触发器Buff，说明提供的用于寻找trigger_buff_0的关键词无法有效筛选出触发器，请调整关键词或者数据库Buff Index"
+                f"并未找到Buff名后缀为{trigger_ref.buff_index}的触发器Buff，说明提供的用于寻找trigger_buff_0的关键词无法有效筛选出触发器，请调整关键词或者数据库Buff Index"
             )
         return founded_list[0]
 
@@ -103,6 +180,9 @@ class PreparationContext:
 
     def find_trigger_buff(self, operator: str, buff_index: str) -> Any:
         return self.trigger_buff_lookup.find_by_operator_and_index(operator, buff_index)
+
+    def find_trigger_buff_ref(self, trigger_ref: TriggerBuffRef) -> Any:
+        return self.trigger_buff_lookup.find_by_ref(trigger_ref)
 
 
 def build_preparation_context_from_sim_instance(

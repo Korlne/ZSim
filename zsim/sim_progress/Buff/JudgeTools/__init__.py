@@ -20,6 +20,7 @@ from .PreparationContext import (  # noqa: F401
     CharacterLookup,
     EquipmentOwnerLookup,
     PreparationContext,
+    TriggerBuffRef,
     TriggerBuffLookup,
     build_preparation_context_from_buff,
     build_preparation_context_from_sim_instance,
@@ -73,13 +74,20 @@ def check_preparation(
     preload_data = kwargs.get("preload_data")
     char_obj_list = kwargs.get("char_obj_list")
     na_skill_level = kwargs.get("na_skill_level")
+    trigger_buff_ref = (
+        TriggerBuffRef.coerce(trigger_buff_0) if trigger_buff_0 else None
+    )
 
     # 参数正确性检查
     if sub_exist_buff_dict and char_NAME is None and char_CID is None and equipper is None:
         raise ValueError(
             "在查询sub_exist_buff_dict的同时，应保证传入char_CID/char_NAME/equipper中的一个参数"
         )
-    if trigger_buff_0 and trigger_buff_0[0] == "enemy" and not any([char_CID, char_NAME, equipper]):
+    if (
+        trigger_buff_ref is not None
+        and trigger_buff_ref.requires_character
+        and not any([char_CID, char_NAME, equipper])
+    ):
         raise ValueError(
             "在查询来自于enemy的trigger_buff_0的同时，应保证传入char_CID/char_NAME/equipper中的一个参数"
         )
@@ -148,10 +156,10 @@ def check_preparation(
                 record.action_stack = find_stack(sim_instance=buff_instance.sim_instance)
             else:
                 record.action_stack = preparation_context.action_stack
-    if trigger_buff_0:
+    if trigger_buff_ref:
         trigger_buff_0_handler(
             record,
-            trigger_buff_0,
+            trigger_buff_ref,
             buff_instance=buff_instance,
             preparation_context=preparation_context,
         )
@@ -187,12 +195,10 @@ def trigger_buff_0_handler(
         ——原因是，Buff只有在自身是主视角的时候，才会执行触发，由于模拟器内没有Enemy的主视角，所以，Enemy所有的buff都是需要别的角色来添加的，
         所以，应该直接找到活跃的Buff源——也就是Buff 的Operator的源头。
     """
-    if not isinstance(trigger_buff_0, tuple):
-        raise TypeError("输入的参数必须是tuple！")
+    trigger_buff_ref = TriggerBuffRef.coerce(trigger_buff_0)
     if record.trigger_buff_0 is None:
-        operator = trigger_buff_0[0]
-        buff_index = trigger_buff_0[1]
-        if operator == "equipper":
+        operator = trigger_buff_ref.operator
+        if trigger_buff_ref.operator_kind == TriggerBuffRef.EQUIPPER:
             if record.equipper is None:
                 if preparation_context is None:
                     record.equipper = find_equipper(
@@ -203,35 +209,18 @@ def trigger_buff_0_handler(
                 # FIXME:这里要解决传入的operator 是“equipper”字符串的问题！！！！虽然该分支不会被执行，所以从未出错（obsidian笔记详解一下）
 
             operator = record.equipper
-        elif operator == "enemy":
+        elif trigger_buff_ref.operator_kind == TriggerBuffRef.ENEMY_SOURCE:
             operator = record.char.NAME
 
+        resolved_trigger_ref = trigger_buff_ref.with_resolved_owner(operator)
         if preparation_context is not None:
-            record.trigger_buff_0 = preparation_context.find_trigger_buff(
-                operator, buff_index
+            record.trigger_buff_0 = preparation_context.find_trigger_buff_ref(
+                resolved_trigger_ref
             )
         else:
-            sub_exist_buff_dict = find_exist_buff_dict(sim_instance=buff_instance.sim_instance)[
-                operator
-            ]
-            founded_list = []
-            for _buff_founded in sub_exist_buff_dict.values():
-                if buff_index in _buff_founded.ft.index:
-                    founded_list.append(_buff_founded)
-            if len(founded_list) != 1:
-                """说明提供的关键词筛选出了多个Buff，此时需要进一步筛选出正确结果"""
-                founded_buff_index_list = [founded_buff.ft.index for founded_buff in founded_list]
-                """验错环节"""
-                if len(set(founded_buff_index_list)) != len(founded_list):
-                    raise ValueError(f"在{operator}的sub_exist_buff_dict中找到了2个以上的同名buff！")
-                trigger_index_length = len(buff_index)
-                for _buffs in founded_list:
-                    if _buffs.ft.index[-trigger_index_length:] == buff_index:
-                        record.trigger_buff_0 = _buffs
-                        break
-                else:
-                    raise ValueError(
-                        f"并未找到Buff名后缀为{buff_index}的触发器Buff，说明提供的用于寻找trigger_buff_0的关键词无法有效筛选出触发器，请调整关键词或者数据库Buff Index"
-                    )
-            else:
-                record.trigger_buff_0 = founded_list[0]
+            template_registry = BuffTemplateRegistryReadPort(
+                find_exist_buff_dict(sim_instance=buff_instance.sim_instance)
+            )
+            record.trigger_buff_0 = TriggerBuffLookup(
+                template_registry
+            ).find_by_ref(resolved_trigger_ref)
