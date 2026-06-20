@@ -154,6 +154,10 @@ class BuffRuntimeFacade(ABC):
         """结算层数独立 Buff 的过期 stack。"""
 
     @abstractmethod
+    def sweep_active_buffs(self, *, tick: int) -> dict[str, list["Buff"]]:
+        """遍历并结算本 tick 的激活 Buff 生命周期。"""
+
+    @abstractmethod
     def find_active_buff_by_index(self, beneficiary: str, buff_index: str) -> "Buff | None":
         """按 Buff index 查找激活 Buff。"""
 
@@ -256,6 +260,60 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
             buff.dy.built_in_buff_box.remove(expired_stack_item)
         buff.dy.count = len(buff.dy.built_in_buff_box)
 
+    def sweep_active_buffs(self, *, tick: int) -> dict[str, list["Buff"]]:
+        from zsim.sim_progress.Update import Update_Buff
+
+        for beneficiary, active_buffs in self._runtime_state.active_store_for_compat().items():
+            buffs_to_remove: list["Buff"] = []
+            for buff in active_buffs:
+                Update_Buff.CheckBuff(buff, beneficiary)
+                if not buff.ft.simple_exit_logic:
+                    try:
+                        should_exit = buff.logic.xexit(beneficiary=beneficiary)
+                    except TypeError:
+                        raise TypeError(f"{buff.ft.index}的xexit方法参数错误！")  # noqa: B904
+                    if should_exit:
+                        buffs_to_remove.append(buff)
+                    else:
+                        Update_Buff.report_buff_to_queue(
+                            beneficiary,
+                            tick,
+                            buff.ft.index,
+                            buff.dy.count,
+                            True,
+                            level=4,
+                        )
+                    continue
+
+                if buff.ft.alltime:
+                    Update_Buff.report_buff_to_queue(
+                        beneficiary, tick, buff.ft.index, buff.dy.count, True, level=4
+                    )
+                    continue
+
+                if buff.ft.individual_settled:
+                    if len(buff.dy.built_in_buff_box) <= 0:
+                        buffs_to_remove.append(buff)
+                        continue
+                    self.settle_individual_buff_stack(buff, tick=tick)
+                    Update_Buff.report_buff_to_queue(
+                        beneficiary, tick, buff.ft.index, buff.dy.count, True, level=4
+                    )
+                    continue
+
+                if tick > buff.dy.endticks:
+                    buffs_to_remove.append(buff)
+                    continue
+
+                Update_Buff.report_buff_to_queue(
+                    beneficiary, tick, buff.ft.index, buff.dy.count, True, level=4
+                )
+
+            for buff in buffs_to_remove:
+                self.end_active_buff(beneficiary, buff, tick=tick)
+
+        return self._runtime_state.active_store_for_compat()
+
     def find_active_buff_by_index(self, beneficiary: str, buff_index: str) -> "Buff | None":
         return next(
             (
@@ -322,10 +380,8 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         from zsim.sim_progress.Update import Update_Buff
 
         return Update_Buff.update_time_related_effect(
-            self._runtime_state.active_store_for_compat(),
-            tick,
-            self._runtime_state.template_registry_for_compat(),
-            enemy,
+            timetick=tick,
+            enemy=enemy,
             runtime_facade=self,
         )
 

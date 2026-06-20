@@ -233,26 +233,17 @@ def test_legacy_buff_runtime_facade_tick_sweep_uses_wrapped_legacy_containers(
     loading_buff_dict: dict[str, list[Any]] = {"alpha": []}
     dynamic_buff_dict: dict[str, list[Any]] = {"alpha": []}
     enemy = SimpleNamespace()
-    calls: list[
-        tuple[
-            dict[str, list[Any]],
-            int,
-            dict[str, dict[str, Any]],
-            Any,
-            BuffRuntimeFacade | None,
-        ]
-    ] = []
+    calls: list[tuple[int, Any, BuffRuntimeFacade]] = []
 
     def fake_update_time_related_effect(
-        dynamic_buff: dict[str, list[Any]],
-        tick: int,
-        exist_buff: dict[str, dict[str, Any]],
-        received_enemy: Any,
         *,
+        timetick: int,
+        enemy: Any,
         runtime_facade: BuffRuntimeFacade | None = None,
     ) -> dict[str, list[Any]]:
-        calls.append((dynamic_buff, tick, exist_buff, received_enemy, runtime_facade))
-        return dynamic_buff
+        assert runtime_facade is not None
+        calls.append((timetick, enemy, runtime_facade))
+        return dynamic_buff_dict
 
     monkeypatch.setattr(
         Update_Buff,
@@ -269,7 +260,7 @@ def test_legacy_buff_runtime_facade_tick_sweep_uses_wrapped_legacy_containers(
     result = facade.update_time_related_effects(tick=77, enemy=cast(Any, enemy))
 
     assert result is dynamic_buff_dict
-    assert calls == [(dynamic_buff_dict, 77, exist_buff_dict, enemy, facade)]
+    assert calls == [(77, enemy, facade)]
 
 
 def test_update_buff_expired_simple_buff_uses_facade_active_removal(
@@ -291,9 +282,6 @@ def test_update_buff_expired_simple_buff_uses_facade_active_removal(
     )
 
     Update_Buff.update_buff(
-        dynamic_buff_dict,
-        SimpleNamespace(),
-        exist_buff_dict,
         6,
         runtime_facade=facade,
     )
@@ -324,9 +312,6 @@ def test_update_buff_reports_non_expired_and_alltime_buffs(
     )
 
     Update_Buff.update_buff(
-        dynamic_buff_dict,
-        SimpleNamespace(),
-        exist_buff_dict,
         5,
         runtime_facade=facade,
     )
@@ -369,9 +354,6 @@ def test_update_buff_preserves_individual_settled_stack_cleanup(
     monkeypatch.setattr(facade, "settle_individual_buff_stack", recording_settle)
 
     Update_Buff.update_buff(
-        dynamic_buff_dict,
-        SimpleNamespace(),
-        exist_buff_dict,
         5,
         runtime_facade=facade,
     )
@@ -404,9 +386,6 @@ def test_update_buff_preserves_complex_xexit_true_and_false_branches(
     )
 
     Update_Buff.update_buff(
-        dynamic_buff_dict,
-        SimpleNamespace(),
-        exist_buff_dict,
         9,
         runtime_facade=facade,
     )
@@ -442,9 +421,6 @@ def test_update_buff_removes_enemy_debuff_mirror_through_facade(
     )
 
     Update_Buff.update_buff(
-        dynamic_buff_dict,
-        SimpleNamespace(),
-        exist_buff_dict,
         3,
         runtime_facade=facade,
     )

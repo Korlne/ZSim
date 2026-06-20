@@ -970,6 +970,19 @@ def test_main_loop_keeps_buffload_pending_queue_behind_runtime_api() -> None:
     )
 
 
+def test_update_buff_active_sweep_is_runtime_owned_without_kickout_fallback() -> None:
+    findings = [
+        finding
+        for finding in _collect_findings()
+        if finding.path == "zsim/sim_progress/Update/Update_Buff.py"
+    ]
+
+    assert all(finding.context not in {"update_buff", "KickOutBuff"} for finding in findings)
+
+    report = RuntimeDependencyZeroScanner(PROJECT_ROOT).build_report(expected_zero=False)
+    assert report["families"]["Update_Buff no-facade fallback"]["production runtime"] == 0
+
+
 def test_raw_old_container_guardrail_failure_message_includes_triage_fields() -> None:
     source = (
         "def spread(sim_instance):\n"
