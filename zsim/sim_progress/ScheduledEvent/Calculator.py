@@ -2,7 +2,7 @@ from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass, field
 import json
 from functools import lru_cache
-from typing import Any, Callable, Literal, Mapping, Protocol, Sequence, cast
+from typing import TYPE_CHECKING, Any, Callable, Literal, Mapping, Protocol, Sequence, cast
 
 import numpy as np
 
@@ -16,6 +16,10 @@ from zsim.sim_progress.Report import report_to_log
 
 from .constants import EventConstants
 
+if TYPE_CHECKING:
+    from .buff_runtime import BuffRuntimeReadPort
+    from .event_handlers.context import EventContext
+
 with open(
     file="./zsim/sim_progress/ScheduledEvent/buff_effect_trans.json",
     mode="r",
@@ -26,12 +30,38 @@ with open(
 
 @dataclass(frozen=True, slots=True)
 class BuffAttributeReadContext:
-    """Buff 属性读取的最小输入上下文。"""
+    """Calculator Buff 属性读取的运行时输入上下文。"""
 
     enemy: Enemy
     active_buff_view: Mapping[str, Sequence[Any]]
     character: Character | None = None
     query_node: SkillNode | AnomalyBar | None = None
+    enemy_debuffs: Sequence[Any] | None = None
+    sim_instance: Any | None = None
+    char_name: str | None = None
+
+    @property
+    def active_buffs_by_beneficiary(self) -> Mapping[str, Sequence[Any]]:
+        """按受益者暴露 active Buff 只读视图。"""
+
+        return self.active_buff_view
+
+    @property
+    def formula_char_name(self) -> str | None:
+        if self.char_name is not None:
+            return self.char_name
+        if self.character is None:
+            return None
+        return self.character.NAME
+
+    @property
+    def formula_sim_instance(self) -> Any:
+        if self.sim_instance is not None:
+            return self.sim_instance
+        return self.enemy.sim_instance
+
+
+CalculatorRuntimeReadContext = BuffAttributeReadContext
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,6 +81,9 @@ def create_anomaly_attribute_read_context(
     active_buff_view: Mapping[str, Sequence[Any]],
     character: Character | None = None,
     query_node: SkillNode | AnomalyBar | None = None,
+    enemy_debuffs: Sequence[Any] | None = None,
+    sim_instance: Any | None = None,
+    char_name: str | None = None,
 ) -> BuffAttributeReadContext:
     """为 AM/AP reader 构造最小读取上下文。"""
 
@@ -59,6 +92,50 @@ def create_anomaly_attribute_read_context(
         active_buff_view=active_buff_view,
         character=character,
         query_node=query_node,
+        enemy_debuffs=enemy_debuffs,
+        sim_instance=sim_instance,
+        char_name=char_name,
+    )
+
+
+def create_calculator_runtime_read_context(
+    *,
+    runtime_view: "BuffRuntimeReadPort",
+    enemy: Enemy,
+    character: Character | None = None,
+    query_node: SkillNode | AnomalyBar | None = None,
+    beneficiary: str | None = None,
+    sim_instance: Any | None = None,
+) -> CalculatorRuntimeReadContext:
+    """从 Buff runtime read port 构造 Calculator 读取上下文。"""
+
+    return CalculatorRuntimeReadContext(
+        enemy=enemy,
+        active_buff_view=runtime_view.get_active_buff_view(),
+        character=character,
+        query_node=query_node,
+        enemy_debuffs=tuple(runtime_view.get_active_buffs("enemy")),
+        sim_instance=sim_instance,
+        char_name=beneficiary,
+    )
+
+
+def create_calculator_runtime_read_context_from_event_context(
+    *,
+    event_context: "EventContext",
+    character: Character | None = None,
+    query_node: SkillNode | AnomalyBar | None = None,
+    beneficiary: str | None = None,
+) -> CalculatorRuntimeReadContext:
+    """从 EventContext 构造 Calculator 读取上下文，不暴露旧 Buff 容器。"""
+
+    return create_calculator_runtime_read_context(
+        runtime_view=event_context.get_buff_runtime_view(),
+        enemy=event_context.get_enemy(),
+        character=character,
+        query_node=query_node,
+        beneficiary=beneficiary,
+        sim_instance=event_context.get_sim_instance(),
     )
 
 
@@ -90,38 +167,55 @@ class BuffAttributeReader(Protocol):
         ...
 
 
+def _legacy_enemy_debuffs(
+    enemy_obj: Enemy,
+    dynamic_buff: Mapping[str, Sequence[Any]],
+) -> Sequence[Any]:
+    try:
+        return enemy_obj.dynamic.dynamic_debuff_list
+    except AttributeError:
+        report_to_log("[WARNING] self.enemy_obj 中找不到动态buff列表", level=4)
+        try:
+            return dynamic_buff["enemy"]
+        except KeyError:
+            report_to_log("[WARNING] dynamic_buff 中依然找不到动态buff列表", level=4)
+            return ()
+
+
 def _calculate_dynamic_statement(
     enemy_obj: Enemy,
     dynamic_buff: Mapping[str, Sequence[Any]],
     character_obj: Character | None,
     node: SkillNode | AnomalyBar | None,
+    *,
+    enemy_debuffs: Sequence[Any] | None = None,
+    sim_instance: Any | None = None,
+    char_name: str | None = None,
 ) -> dict:
-    char_name = character_obj.NAME if character_obj is not None else None
-    if char_name is None:
+    resolved_char_name = char_name
+    if resolved_char_name is None and character_obj is not None:
+        resolved_char_name = character_obj.NAME
+    if resolved_char_name is None:
         char_buff: Sequence[Any] = ()
     else:
         try:
-            char_buff = dynamic_buff[char_name]
+            char_buff = dynamic_buff[resolved_char_name]
         except KeyError:
             char_buff = ()
-            report_to_log(f"[WARNING] 动态Buff列表内没有角色 {char_name}", level=4)
+            report_to_log(f"[WARNING] 动态Buff列表内没有角色 {resolved_char_name}", level=4)
 
-    try:
-        enemy_buff: Sequence[Any] = enemy_obj.dynamic.dynamic_debuff_list
-    except AttributeError:
-        report_to_log("[WARNING] self.enemy_obj 中找不到动态buff列表", level=4)
-        try:
-            enemy_buff = dynamic_buff["enemy"]
-        except KeyError:
-            report_to_log("[WARNING] dynamic_buff 中依然找不到动态buff列表", level=4)
-            enemy_buff = ()
+    if enemy_debuffs is None:
+        enemy_buff = _legacy_enemy_debuffs(enemy_obj, dynamic_buff)
+    else:
+        enemy_buff = enemy_debuffs
+    formula_sim_instance = sim_instance if sim_instance is not None else enemy_obj.sim_instance
     enabled_buff = tuple(char_buff) + tuple(enemy_buff)
     try:
         dynamic_statement: dict = cal_buff_total_bonus(
             enabled_buff=enabled_buff,
             judge_obj=node,
-            sim_instance=enemy_obj.sim_instance,
-            char_name=char_name,
+            sim_instance=formula_sim_instance,
+            char_name=resolved_char_name,
         )
     except TypeError as err:
         raise TypeError(
@@ -1005,6 +1099,9 @@ class CalculatorBuffAttributeReader(BuffAttributeReader):
                 context.active_buff_view,
                 context.character,
                 context.query_node,
+                enemy_debuffs=context.enemy_debuffs,
+                sim_instance=context.formula_sim_instance,
+                char_name=context.formula_char_name,
             )
         )
         return static, dynamic

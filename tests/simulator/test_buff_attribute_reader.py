@@ -21,10 +21,15 @@ from zsim.sim_progress.Buff.BuffXLogic.TimeweaverDisorderDmgMul import (
 from zsim.sim_progress.ScheduledEvent.Calculator import (
     BuffAttributeReadContext,
     Calculator,
+    CalculatorRuntimeReadContext,
     CalculatorBuffAttributeReader,
     MultiplierData,
     create_anomaly_attribute_read_context,
+    create_calculator_runtime_read_context,
+    create_calculator_runtime_read_context_from_event_context,
 )
+from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
+from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
 from zsim.sim_progress.Preload.SkillsQueue import SkillNode
 from zsim.sim_progress.anomaly_bar import AnomalyBar
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
@@ -51,6 +56,40 @@ class _AttributeReadFixture:
     char: SimpleNamespace
     expected_enabled_buff: tuple[object, ...]
     expected_enemy_dot_buff: tuple[object, ...] = ()
+
+
+class _ForbiddenEnemyDynamic:
+    @property
+    def dynamic_debuff_list(self) -> tuple[object, ...]:
+        raise AssertionError("runtime read path must use explicit enemy_debuffs")
+
+
+class _EnemyFallbackForbiddenView(dict[str, tuple[object, ...]]):
+    def __getitem__(self, key: str) -> tuple[object, ...]:
+        if key == "enemy":
+            raise AssertionError("runtime read path must not fall back to active view enemy key")
+        return super().__getitem__(key)
+
+
+class _CalculatorRuntimeView(BuffRuntimeReadPort):
+    def __init__(self, active_buff_view: dict[str, tuple[object, ...]]) -> None:
+        self.active_buff_view = _EnemyFallbackForbiddenView(active_buff_view)
+        self.active_buff_beneficiaries: list[str] = []
+        self.active_view_calls = 0
+
+    def get_active_buffs(self, beneficiary: str) -> tuple[object, ...]:
+        self.active_buff_beneficiaries.append(beneficiary)
+        return self.active_buff_view.get(beneficiary, ())
+
+    def get_active_buff_view(self) -> _EnemyFallbackForbiddenView:
+        self.active_view_calls += 1
+        return self.active_buff_view
+
+    def get_exist_buff_snapshot(self, beneficiary: str) -> dict[str, object]:
+        return {}
+
+    def get_exist_buff_snapshot_view(self) -> dict[str, dict[str, object]]:
+        return {}
 
 
 @dataclass(frozen=True)
@@ -722,6 +761,93 @@ def test_create_anomaly_attribute_read_context_preserves_inputs() -> None:
     assert context.active_buff_view is active_buff_view
     assert context.character is char
     assert context.query_node is query_node
+
+
+def test_calculator_runtime_read_context_uses_explicit_enemy_debuffs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    char = _make_character(name="runtime-reader", am=100.0)
+    char_buff = object()
+    enemy_debuff = object()
+    query_node = SimpleNamespace(marker="runtime-query")
+    sim_instance = SimpleNamespace(marker="runtime-sim")
+    enemy = SimpleNamespace(
+        dynamic=_ForbiddenEnemyDynamic(),
+        sim_instance=sim_instance,
+    )
+    runtime_view = _CalculatorRuntimeView(
+        {
+            char.NAME: (char_buff,),
+            "enemy": (enemy_debuff,),
+        }
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(field_anomaly_mastery=0.2),
+    )
+
+    context = create_calculator_runtime_read_context(
+        runtime_view=runtime_view,
+        enemy=cast(Any, enemy),
+        character=cast(Any, char),
+        query_node=cast(Any, query_node),
+        sim_instance=sim_instance,
+    )
+    reader_value = CalculatorBuffAttributeReader().read_anomaly_mastery(context)
+
+    assert isinstance(context, CalculatorRuntimeReadContext)
+    assert context.active_buffs_by_beneficiary is runtime_view.active_buff_view
+    assert context.enemy_debuffs == (enemy_debuff,)
+    assert reader_value == pytest.approx(120.0)
+    assert aggregation_calls == [
+        (
+            (char_buff, enemy_debuff),
+            query_node,
+            sim_instance,
+            char.NAME,
+        )
+    ]
+    assert runtime_view.active_buff_beneficiaries == ["enemy"]
+    assert runtime_view.active_view_calls == 1
+
+
+def test_calculator_runtime_read_context_can_be_built_from_event_context() -> None:
+    char = _make_character(name="event-context-reader", ap=300.0)
+    enemy_debuff = object()
+    sim_instance = SimpleNamespace(marker="event-sim")
+    enemy = SimpleNamespace(
+        dynamic=_ForbiddenEnemyDynamic(),
+        sim_instance=SimpleNamespace(marker="legacy-sim"),
+    )
+    runtime_view = _CalculatorRuntimeView(
+        {
+            char.NAME: (),
+            "enemy": (enemy_debuff,),
+        }
+    )
+    event_context = EventContext(
+        data=SimpleNamespace(),
+        tick=10,
+        enemy=cast(Any, enemy),
+        buff_runtime_view=runtime_view,
+        runtime_command_port=SimpleNamespace(),
+        action_stack=SimpleNamespace(),
+        sim_instance=cast(Any, sim_instance),
+    )
+
+    context = create_calculator_runtime_read_context_from_event_context(
+        event_context=event_context,
+        character=cast(Any, char),
+        beneficiary=char.NAME,
+    )
+
+    assert context.enemy is enemy
+    assert context.active_buff_view is runtime_view.active_buff_view
+    assert context.enemy_debuffs == (enemy_debuff,)
+    assert context.formula_sim_instance is sim_instance
+    assert context.formula_char_name == char.NAME
+    assert runtime_view.active_buff_beneficiaries == ["enemy"]
+    assert runtime_view.active_view_calls == 1
 
 
 def _patch_buff_aggregation(
