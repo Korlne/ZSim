@@ -24,6 +24,7 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
     CalculatorRuntimeReadContext,
     CalculatorBuffAttributeReader,
     MultiplierData,
+    RetainedFormulaSnapshot,
     create_anomaly_attribute_read_context,
     create_calculator_runtime_read_context,
     create_calculator_runtime_read_context_from_event_context,
@@ -42,7 +43,7 @@ from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 _AggregationCall = tuple[tuple[object, ...], object | None, object, str | None]
-_FormulaDataOracle = Callable[[MultiplierData], Any]
+_FormulaDataOracle = Callable[[Any], Any]
 _ReaderContextOracle = Callable[
     [CalculatorBuffAttributeReader, BuffAttributeReadContext], Any
 ]
@@ -694,7 +695,7 @@ def _make_settled_anomaly_formula_fixture(
     )
 
 
-def _reader_snapshot_data(context: BuffAttributeReadContext) -> MultiplierData:
+def _reader_snapshot_data(context: BuffAttributeReadContext) -> Any:
     return CalculatorBuffAttributeReader._build_formula_snapshot(context)
 
 
@@ -1087,7 +1088,7 @@ _MIGRATED_READER_SEAM_SAMPLES = (
 )
 
 
-def _retained_formula_value(formula_key: str, data: MultiplierData) -> Any:
+def _retained_formula_value(formula_key: str, data: Any) -> Any:
     if formula_key == "cal_am":
         return Calculator.AnomalyMul.cal_am(data)
     if formula_key == "cal_ap":
@@ -5608,8 +5609,16 @@ def test_full_crit_damage_reader_api_and_snapshot_contract_stay_bounded(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     MultiplierData.mul_data_cache.clear()
-    snapshot_cls = getattr(calculator_module, "_CalculatorReadSnapshot")
+    contract_cls = getattr(calculator_module, "RetainedFormulaSnapshot")
+    snapshot_cls = getattr(calculator_module, "_CalculatorRetainedFormulaSnapshot")
     snapshot_fields = [field_info.name for field_info in fields(snapshot_cls)]
+    expected_snapshot_fields = [
+        "static",
+        "dynamic",
+        "judge_node",
+        "enemy_obj",
+        "char_level",
+    ]
     forbidden_snapshot_fields = {
         "char_instance",
         "runtime_view",
@@ -5618,13 +5627,24 @@ def test_full_crit_damage_reader_api_and_snapshot_contract_stay_bounded(
     }
 
     assert snapshot_cls.__name__.startswith("_")
-    assert snapshot_fields == [
-        "static",
-        "dynamic",
-        "judge_node",
-        "enemy_obj",
-        "char_level",
-    ]
+    assert RetainedFormulaSnapshot is contract_cls
+    assert issubclass(snapshot_cls, contract_cls)
+    assert issubclass(MultiplierData, contract_cls)
+    assert snapshot_fields == expected_snapshot_fields
+    assert set(contract_cls.__annotations__) == set(expected_snapshot_fields)
+    assert (
+        CalculatorBuffAttributeReader._build_formula_snapshot.__annotations__["return"]
+        is contract_cls
+    )
+    for helper in (
+        Calculator.RegularMul.cal_crit_rate,
+        Calculator.RegularMul.cal_personal_crit_rate,
+        Calculator.RegularMul.cal_personal_crit_dmg,
+        Calculator.StunMul.cal_imp,
+        Calculator.AnomalyMul.cal_am,
+        Calculator.AnomalyMul.cal_ap,
+    ):
+        assert getattr(helper, "__annotations__", {}).get("data") is contract_cls
     assert forbidden_snapshot_fields.isdisjoint(snapshot_fields)
     assert not hasattr(CalculatorBuffAttributeReader(), "read_full_crit_damage")
 
@@ -5665,7 +5685,7 @@ def test_full_crit_damage_reader_api_and_snapshot_contract_stay_bounded(
 
 
 def test_regular_mul_sheer_reader_snapshot_contract_stays_module_local() -> None:
-    snapshot_cls = getattr(calculator_module, "_CalculatorReadSnapshot")
+    snapshot_cls = getattr(calculator_module, "_CalculatorRetainedFormulaSnapshot")
     snapshot_fields = [field_info.name for field_info in fields(snapshot_cls)]
     public_reader_methods = {
         name

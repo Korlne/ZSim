@@ -2,7 +2,7 @@ from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass, field
 import json
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Callable, Literal, Mapping, Protocol, Sequence, cast
+from typing import TYPE_CHECKING, Any, Callable, Literal, Mapping, Protocol, Sequence
 
 import numpy as np
 
@@ -64,9 +64,23 @@ class BuffAttributeReadContext:
 CalculatorRuntimeReadContext = BuffAttributeReadContext
 
 
+class RetainedFormulaSnapshot:
+    """Fields consumed by retained Calculator formula helpers.
+
+    The legacy `MultiplierData` object and reader-owned snapshots both expose
+    this contract while migration keeps the retained formula implementations.
+    """
+
+    static: Any
+    dynamic: Any
+    judge_node: SkillNode | AnomalyBar | None
+    enemy_obj: Enemy
+    char_level: int | None
+
+
 @dataclass(frozen=True, slots=True)
-class _CalculatorReadSnapshot:
-    """承载保留 Calculator 公式所需的最小快照字段。"""
+class _CalculatorRetainedFormulaSnapshot(RetainedFormulaSnapshot):
+    """Reader-owned DTO for retained Calculator formula helpers."""
 
     static: Any
     dynamic: Any
@@ -620,7 +634,7 @@ def _build_stun_multiplier_array(
     )
 
 
-class MultiplierData:
+class MultiplierData(RetainedFormulaSnapshot):
     """
     乘数数据缓存管理类
 
@@ -1076,17 +1090,16 @@ class CalculatorBuffAttributeReader(BuffAttributeReader):
         return Calculator.RegularMul.cal_personal_crit_dmg(data)
 
     @staticmethod
-    def _build_formula_snapshot(context: BuffAttributeReadContext) -> MultiplierData:
+    def _build_formula_snapshot(
+        context: BuffAttributeReadContext,
+    ) -> RetainedFormulaSnapshot:
         static, dynamic = CalculatorBuffAttributeReader._build_statements(context)
-        return cast(
-            MultiplierData,
-            _CalculatorReadSnapshot(
-                static=static,
-                dynamic=dynamic,
-                judge_node=context.query_node,
-                enemy_obj=context.enemy,
-                char_level=getattr(context.character, "level", None),
-            ),
+        return _CalculatorRetainedFormulaSnapshot(
+            static=static,
+            dynamic=dynamic,
+            judge_node=context.query_node,
+            enemy_obj=context.enemy,
+            char_level=getattr(context.character, "level", None),
         )
 
     @staticmethod
@@ -1291,12 +1304,12 @@ class Calculator:
             return _calculate_damage_bonus(data.static, data.dynamic, data.judge_node)
 
         @staticmethod
-        def cal_crit_rate(data: MultiplierData) -> float:
+        def cal_crit_rate(data: RetainedFormulaSnapshot) -> float:
             """暴击率 = 面板暴击率 + buff暴击率 + 受暴击概率增加"""
             return _calculate_full_crit_rate(data.static, data.dynamic)
 
         @staticmethod
-        def cal_personal_crit_rate(data: MultiplierData) -> float:
+        def cal_personal_crit_rate(data: RetainedFormulaSnapshot) -> float:
             """个人实时暴击率 = 面板暴击率 + buff暴击率"""
             return _calculate_personal_crit_rate(data.static, data.dynamic)
 
@@ -1315,7 +1328,7 @@ class Calculator:
             return _calculate_crit_expectation(self.crit_rate, self.crit_dmg)
 
         @staticmethod
-        def cal_personal_crit_dmg(data: MultiplierData) -> float:
+        def cal_personal_crit_dmg(data: RetainedFormulaSnapshot) -> float:
             """面板暴击伤害 = 静态面板暴击伤害 + buff暴击伤害"""
             return _calculate_personal_crit_damage(data.static, data.dynamic)
 
@@ -1467,7 +1480,7 @@ class Calculator:
             )
 
         @staticmethod
-        def cal_am(data: MultiplierData) -> np.float64:
+        def cal_am(data: RetainedFormulaSnapshot) -> np.float64:
             return _calculate_anomaly_mastery(data.static, data.dynamic)
 
         @staticmethod
@@ -1612,7 +1625,7 @@ class Calculator:
 
         @staticmethod
         @lru_cache(maxsize=16)
-        def cal_ap(data: MultiplierData):
+        def cal_ap(data: RetainedFormulaSnapshot):
             return _calculate_anomaly_proficiency(data.static, data.dynamic)
 
         @staticmethod
@@ -1678,7 +1691,7 @@ class Calculator:
             )
 
         @staticmethod
-        def cal_imp(data: MultiplierData) -> float:
+        def cal_imp(data: RetainedFormulaSnapshot) -> float:
             return _calculate_impact(data.static, data.dynamic)
 
         @staticmethod
