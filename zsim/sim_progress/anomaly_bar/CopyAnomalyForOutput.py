@@ -22,7 +22,7 @@ class _CopiedAnomalyBase(AnomalyBar):
         sim_instance: "Simulator | None" = None,
     ) -> None:
         if not isinstance(anomaly_bar, AnomalyBar):
-            raise TypeError(f"{anomaly_bar} 涓嶆槸 AnomalyBar 绫诲瀷")
+            raise TypeError(f"{anomaly_bar} 不是 AnomalyBar 类型")
 
         copied_payload = self._copy_source_payload(anomaly_bar)
         self._install_copied_payload(copied_payload)

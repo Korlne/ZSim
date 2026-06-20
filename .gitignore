@@ -9,6 +9,8 @@ __pycache__
 
 # 日志和配置文件
 logs
+scripts/ralph/context/
+scripts/ralph/summary CN report/
 mypy.ini
 pytest.ini
 result*
@@ -22,6 +24,7 @@ result*
 .ipynb_checkpoints
 .run
 .env
+.codegraph/
 .mypy_cache
 .pytest_cache
 .hypothesis/
@@ -69,3 +72,13 @@ zsim/data/APLData/custom/*
 
 # GitHub App credentials
 gha-creds-*.json
+
+#中文汇报
+summary CN report
+
+#Ralph打包
+artifacts
+
+# MonitorR runtime telemetry
+MonitorR/data/
+scripts/ralph/run-logs/
