@@ -16,7 +16,7 @@ from zsim.sim_progress.data_struct import (
 from zsim.sim_progress.Load.loading_mission import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
 
-from .buff_runtime import BuffRuntimeState
+from .buff_runtime import BuffRuntimeState, create_buff_runtime_read_port
 from .event_handlers import EventContext, event_handler_factory, register_all_handlers
 from .runtime_command import create_runtime_command_port
 
@@ -124,6 +124,7 @@ class ScheduledEvent:
     def _create_runtime_ports(self) -> _ScheduledEventRuntimePorts:
         """集中创建 Schedule 事件处理所需的 runtime 读写端口。"""
         self._record_buff_runtime_rebuild_count("scheduled_event_runtime_ports")
+        assert self.buff_runtime_state is not None
         buff_runtime_view = self.buff_runtime_state.create_read_port()
         return _ScheduledEventRuntimePorts(
             buff_runtime_view=buff_runtime_view,

@@ -154,7 +154,14 @@ def _install_recording_runtime_facade(monkeypatch: Any) -> list[tuple[str, str, 
     monkeypatch.setattr(
         buff_runtime,
         "create_legacy_buff_runtime_facade",
-        lambda **kwargs: _RecordingLegacyBuffRuntimeFacade(**kwargs),
+        lambda **kwargs: _RecordingLegacyBuffRuntimeFacade(
+            runtime_state=buff_runtime.BuffRuntimeState(
+                template_registry=kwargs["exist_buff_dict"],
+                pending_queue=kwargs["loading_buff_dict"],
+                active_store=kwargs["dynamic_buff_dict"],
+                enemy_mirror=kwargs["enemy_debuff_mirror"],
+            )
+        ),
     )
     return calls
 

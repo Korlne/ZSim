@@ -147,7 +147,14 @@ def _install_buff_add_cross_layer_guards(
         facade_calls.append(
             ("create_legacy_buff_runtime_facade", "runtime", "LegacyBuffRuntimeFacade")
         )
-        return _RecordingLegacyBuffRuntimeFacade(**kwargs)
+        return _RecordingLegacyBuffRuntimeFacade(
+            runtime_state=buff_runtime_module.BuffRuntimeState(
+                template_registry=kwargs["exist_buff_dict"],
+                pending_queue=kwargs["loading_buff_dict"],
+                active_store=kwargs["dynamic_buff_dict"],
+                enemy_mirror=kwargs["enemy_debuff_mirror"],
+            )
+        )
 
     def fail_schedule_dispatch_port(*args: object, **kwargs: object) -> None:
         raise AssertionError("buff_add_strategy must not create ScheduleDispatchPort")
@@ -346,24 +353,24 @@ def test_runtime_command_same_tick_write_does_not_publish_or_broadcast(
         captured.append(("update_event_list", event_list))
         captured.append(("update_dynamic_buff", dynamic_buff_dict))
 
-    def fake_schedule_buff_settle(
-        tick: int,
-        exist_buff_dict_arg: dict[str, dict[str, object]],
-        enemy: object,
-        dynamic_buff_arg: dict[str, list[object]],
-        action_stack_arg: object,
+    def fake_settle_schedule_buffs(
+        self: Any,
         *,
+        tick: int,
+        enemy: object,
         sim_instance: object,
-        **kwargs: object,
+        skill_node: object | None = None,
+        anomaly_bar: object | None = None,
     ) -> None:
+        dynamic_buff_arg = self._runtime_state.active_store_for_compat()
         dynamic_buff_arg["enemy"].append("same-tick-settle")
         captured.append(("settle_dynamic_buff", dynamic_buff_arg))
 
     monkeypatch.setattr(runtime_command_module, "legacy_update_anomaly", fake_update_anomaly)
     monkeypatch.setattr(
-        runtime_command_module,
-        "legacy_schedule_buff_settle",
-        fake_schedule_buff_settle,
+        buff_runtime_module.LegacyBuffRuntimeFacade,
+        "settle_schedule_buffs",
+        fake_settle_schedule_buffs,
     )
     port = create_runtime_command_port(
         data=cast(Any, schedule_data),

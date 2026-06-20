@@ -5,6 +5,7 @@ from typing import Any, cast
 
 import pytest
 
+from zsim.sim_progress.ScheduledEvent import buff_runtime as buff_runtime_module
 from zsim.sim_progress.ScheduledEvent import runtime_command as runtime_command_module
 from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
 from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
@@ -304,24 +305,25 @@ def test_skill_handler_runtime_command_adapter_preserves_legacy_container_identi
         captured["update_dynamic_buff_dict"] = dynamic_buff_dict
         captured["update_sim_instance"] = sim_instance
 
-    def _fake_schedule_buff_settle(
-        tick,
-        exist_buff_dict_arg,
-        target_enemy,
-        dynamic_buff_arg,
-        action_stack_arg,
+    def _fake_settle_schedule_buffs(
+        self,
         *,
+        tick,
+        enemy,
         sim_instance,
-        **kwargs,
+        skill_node=None,
+        anomaly_bar=None,
     ) -> None:
         call_order.append("settle_buffs")
         captured["settle_tick"] = tick
-        captured["settle_exist_buff_dict"] = exist_buff_dict_arg
-        captured["settle_enemy"] = target_enemy
-        captured["settle_dynamic_buff"] = dynamic_buff_arg
-        captured["settle_action_stack"] = action_stack_arg
+        captured[
+            "settle_exist_buff_dict"
+        ] = self._runtime_state.template_registry_for_compat()
+        captured["settle_enemy"] = enemy
+        captured["settle_dynamic_buff"] = self._runtime_state.active_store_for_compat()
         captured["settle_sim_instance"] = sim_instance
-        captured["settle_skill_node"] = kwargs.get("skill_node")
+        captured["settle_skill_node"] = skill_node
+        captured["settle_anomaly_bar"] = anomaly_bar
 
     monkeypatch.setattr(skill_module, "Calculator", _FakeCalculator)
     monkeypatch.setattr(skill_module.Report, "report_dmg_result", lambda **kwargs: None)
@@ -331,9 +333,9 @@ def test_skill_handler_runtime_command_adapter_preserves_legacy_container_identi
         _fake_update_anomaly,
     )
     monkeypatch.setattr(
-        runtime_command_module,
-        "legacy_schedule_buff_settle",
-        _fake_schedule_buff_settle,
+        buff_runtime_module.LegacyBuffRuntimeFacade,
+        "settle_schedule_buffs",
+        _fake_settle_schedule_buffs,
     )
 
     handler = SkillEventHandler()
@@ -374,6 +376,6 @@ def test_skill_handler_runtime_command_adapter_preserves_legacy_container_identi
     assert captured["settle_exist_buff_dict"] is legacy_exist_buff_dict
     assert captured["settle_enemy"] is enemy
     assert captured["settle_dynamic_buff"] is legacy_dynamic_buff
-    assert captured["settle_action_stack"] is action_stack
     assert captured["settle_sim_instance"] is sim_instance
     assert captured["settle_skill_node"] is event
+    assert captured["settle_anomaly_bar"] is None

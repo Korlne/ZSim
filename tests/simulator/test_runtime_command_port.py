@@ -4,12 +4,69 @@ from typing import Any, cast
 import pytest
 
 import zsim.sim_progress.ScheduledEvent as scheduled_event_module
-from zsim.sim_progress.ScheduledEvent.buff_runtime import LegacyBuffRuntimeReadAdapter
+from zsim.sim_progress.Buff.buff_class import Buff
+from zsim.sim_progress.ScheduledEvent import buff_runtime as buff_runtime_module
+from zsim.sim_progress.ScheduledEvent.buff_runtime import (
+    BuffRuntimeState,
+    LegacyBuffRuntimeReadAdapter,
+)
+from zsim.sim_progress.ScheduledEvent import runtime_command as runtime_command_module
 from zsim.sim_progress.ScheduledEvent.runtime_command import (
     LegacyRuntimeCommandAdapter,
     create_runtime_command_port,
 )
-from zsim.sim_progress.ScheduledEvent import runtime_command as runtime_command_module
+
+
+def _runtime_state_for_test(
+    *,
+    exist_buff_dict: dict,
+    dynamic_buff: dict,
+    loading_buff: dict | None = None,
+    enemy_mirror: list | None = None,
+) -> BuffRuntimeState:
+    return BuffRuntimeState(
+        template_registry=exist_buff_dict,
+        pending_queue={} if loading_buff is None else loading_buff,
+        active_store=dynamic_buff,
+        enemy_mirror=[] if enemy_mirror is None else enemy_mirror,
+    )
+
+
+class _ScheduleLogicProbe:
+    def __init__(self, calls: list[tuple[str, dict[str, object]]]) -> None:
+        self._calls = calls
+
+    def xjudge(self, **kwargs) -> bool:
+        self._calls.append(("xjudge", kwargs))
+        return True
+
+    def xeffect(self, **kwargs) -> None:
+        self._calls.append(("xeffect", kwargs))
+
+
+def _make_schedule_buff(
+    index: str,
+    *,
+    logic: object | None = None,
+    add_buff_to: int = 1,
+    operator: str = "alpha",
+) -> Buff:
+    buff = Buff.__new__(Buff)
+    buff.ft = SimpleNamespace(
+        index=index,
+        schedule_judge=True,
+        passively_updating=False,
+        backend_acitve=True,
+        add_buff_to=add_buff_to,
+        operator=operator,
+        simple_effect_logic=False,
+    )
+    buff.dy = SimpleNamespace()
+    buff.logic = logic if logic is not None else SimpleNamespace(
+        xjudge=lambda **kwargs: True,
+        xeffect=lambda **kwargs: None,
+    )
+    return buff
 
 
 def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_writes(
@@ -22,7 +79,11 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
     exist_buff_dict = {"alpha": {"buff": object()}, "enemy": {}}
     action_stack = SimpleNamespace()
     sim_instance = cast(Any, SimpleNamespace())
-    runtime_view = LegacyBuffRuntimeReadAdapter(dynamic_buff, exist_buff_dict)
+    runtime_state = _runtime_state_for_test(
+        exist_buff_dict=exist_buff_dict,
+        dynamic_buff=dynamic_buff,
+    )
+    runtime_view = LegacyBuffRuntimeReadAdapter(runtime_state=runtime_state)
     schedule_data = SimpleNamespace(
         event_list=stale_event_list,
         char_obj_list=char_obj_list,
@@ -61,30 +122,30 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
         captured["buff_runtime_view"] = kwargs.get("buff_runtime_view")
         captured["sim_instance"] = sim_instance
 
-    def _fake_schedule_buff_settle(
-        tick,
-        exist_buff_dict_arg,
-        enemy,
-        dynamic_buff_arg,
-        action_stack_arg,
+    def _fake_settle_schedule_buffs(
+        self,
         *,
+        tick,
+        enemy,
         sim_instance,
-        **kwargs,
+        skill_node=None,
+        anomaly_bar=None,
     ) -> None:
         captured["settle_tick"] = tick
-        captured["settle_exist_buff_dict"] = exist_buff_dict_arg
+        captured[
+            "settle_exist_buff_dict"
+        ] = self._runtime_state.template_registry_for_compat()
         captured["settle_enemy"] = enemy
-        captured["settle_dynamic_buff"] = dynamic_buff_arg
-        captured["settle_action_stack"] = action_stack_arg
+        captured["settle_dynamic_buff"] = self._runtime_state.active_store_for_compat()
         captured["settle_sim_instance"] = sim_instance
-        captured["settle_skill_node"] = kwargs.get("skill_node")
-        captured["settle_kwargs"] = kwargs
+        captured["settle_skill_node"] = skill_node
+        captured["settle_anomaly_bar"] = anomaly_bar
 
     monkeypatch.setattr(runtime_command_module, "legacy_update_anomaly", _fake_update_anomaly)
     monkeypatch.setattr(
-        runtime_command_module,
-        "legacy_schedule_buff_settle",
-        _fake_schedule_buff_settle,
+        buff_runtime_module.LegacyBuffRuntimeFacade,
+        "settle_schedule_buffs",
+        _fake_settle_schedule_buffs,
     )
 
     schedule_data.event_list = current_event_list
@@ -122,10 +183,73 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
     assert captured["settle_exist_buff_dict"] is exist_buff_dict
     assert captured["settle_enemy"] is enemy
     assert captured["settle_dynamic_buff"] is dynamic_buff
-    assert captured["settle_action_stack"] is action_stack
     assert captured["settle_sim_instance"] is sim_instance
     assert captured["settle_skill_node"] is skill_node
-    assert "anomaly_bar" not in captured["settle_kwargs"]
+    assert captured["settle_anomaly_bar"] is None
+
+
+def test_runtime_command_settle_buffs_uses_runtime_owner_for_schedule_active_writes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+    schedule_buff = _make_schedule_buff(
+        "enemy-schedule-buff",
+        logic=_ScheduleLogicProbe(calls),
+    )
+    old_enemy_buff = _make_schedule_buff("enemy-schedule-buff")
+    enemy_mirror = [old_enemy_buff]
+    dynamic_buff = {
+        "alpha": [],
+        "beta": [],
+        "gamma": [],
+        "enemy": [old_enemy_buff],
+    }
+    exist_buff_dict = {
+        "alpha": {"enemy-schedule-buff": schedule_buff},
+        "beta": {},
+        "gamma": {},
+        "enemy": {},
+    }
+    schedule_data = SimpleNamespace(
+        event_list=[],
+        char_obj_list=[],
+        dynamic_buff=dynamic_buff,
+        loading_buff={},
+    )
+    enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_debuff_list=enemy_mirror))
+    sim_instance = SimpleNamespace()
+
+    monkeypatch.setattr(
+        "zsim.sim_progress.Buff.JudgeTools.find_preload_data",
+        lambda sim_instance: SimpleNamespace(
+            get_on_field_node=lambda tick: SimpleNamespace(char_name="alpha")
+        ),
+    )
+    monkeypatch.setattr(
+        "zsim.sim_progress.Buff.JudgeTools.find_all_name_order_box",
+        lambda sim_instance: {
+            "alpha": ["alpha", "beta", "gamma", "enemy"],
+            "beta": ["beta", "alpha", "gamma", "enemy"],
+            "gamma": ["gamma", "alpha", "beta", "enemy"],
+        },
+    )
+
+    port = create_runtime_command_port(
+        data=cast(Any, schedule_data),
+        exist_buff_dict=cast(Any, exist_buff_dict),
+        action_stack=cast(Any, SimpleNamespace()),
+        sim_instance=cast(Any, sim_instance),
+    )
+
+    port.settle_buffs(tick=18, enemy=cast(Any, enemy))
+
+    assert calls == [("xjudge", {}), ("xeffect", {})]
+    assert len(dynamic_buff["enemy"]) == 1
+    new_enemy_buff = dynamic_buff["enemy"][0]
+    assert new_enemy_buff is not old_enemy_buff
+    assert new_enemy_buff is not schedule_buff
+    assert new_enemy_buff.ft.index == "enemy-schedule-buff"
+    assert enemy_mirror == [new_enemy_buff]
 
 
 class _FakeSkillNode:

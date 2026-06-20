@@ -9,6 +9,9 @@ from zsim.sim_progress.Report import report_to_log
 if TYPE_CHECKING:
     from zsim.sim_progress.Buff import Buff
     from zsim.sim_progress.Enemy import Enemy
+    from zsim.sim_progress.Load import LoadingMission
+    from zsim.sim_progress.Preload import SkillNode
+    from zsim.sim_progress.anomaly_bar import AnomalyBar
     from zsim.simulator.simulator_class import Simulator
 
 
@@ -203,6 +206,18 @@ class BuffRuntimeFacade(ABC):
     ) -> dict[str, list["Buff"]]:
         """执行本 tick 的时间相关 Buff runtime 扫描。"""
 
+    @abstractmethod
+    def settle_schedule_buffs(
+        self,
+        *,
+        tick: int,
+        enemy: "Enemy",
+        sim_instance: "Simulator",
+        skill_node: "SkillNode | LoadingMission | None" = None,
+        anomaly_bar: "AnomalyBar | None" = None,
+    ) -> None:
+        """执行 Schedule 阶段 Buff 结算。"""
+
 
 class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
     """基于旧容器身份的 Buff runtime 门面。"""
@@ -385,6 +400,59 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
             runtime_facade=self,
         )
 
+    def settle_schedule_buffs(
+        self,
+        *,
+        tick: int,
+        enemy: "Enemy",
+        sim_instance: "Simulator",
+        skill_node: "SkillNode | LoadingMission | None" = None,
+        anomaly_bar: "AnomalyBar | None" = None,
+    ) -> None:
+        from zsim.sim_progress.Buff import JudgeTools
+
+        action_now, should_continue = self._resolve_schedule_action(
+            tick=tick,
+            sim_instance=sim_instance,
+            skill_node=skill_node,
+            anomaly_bar=anomaly_bar,
+        )
+        if not should_continue:
+            return
+        if action_now is None:
+            print("Warnning！！！ScheduleBuffSettle函数没有找到action_now！")
+            return
+
+        char_on_field = getattr(action_now, "char_name")
+        all_name_order_box = JudgeTools.find_all_name_order_box(sim_instance=sim_instance)
+        name_box_on_field = all_name_order_box[char_on_field]
+        template_registry = self._runtime_state.template_registry_for_compat()
+        event_kwargs = self._schedule_event_kwargs(
+            skill_node=skill_node,
+            anomaly_bar=anomaly_bar,
+        )
+
+        for char_name in name_box_on_field:
+            if char_name == "enemy":
+                continue
+
+            sub_template_registry = template_registry[char_name]
+            if char_name == char_on_field:
+                self._process_schedule_on_field_buffs(
+                    template_buffs=sub_template_registry,
+                    name_box_now=name_box_on_field,
+                    tick=tick,
+                    event_kwargs=event_kwargs,
+                )
+                continue
+
+            self._process_schedule_backend_buffs(
+                template_buffs=sub_template_registry,
+                all_name_order_box=all_name_order_box,
+                tick=tick,
+                event_kwargs=event_kwargs,
+            )
+
     def _get_pending_queue(self, beneficiary: str) -> list["Buff"]:
         return self._runtime_state.pending_queue_for_compat()[beneficiary]
 
@@ -427,6 +495,165 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
             or (buff.dy.startticks == 0 and buff.dy.endticks == 0)
             or buff.dy.count == 0
         )
+
+    def _process_schedule_on_field_buffs(
+        self,
+        *,
+        template_buffs: dict[str, "Buff"],
+        name_box_now: list[str],
+        tick: int,
+        event_kwargs: dict[str, object],
+    ) -> None:
+        for buff in template_buffs.values():
+            self._check_schedule_buff(buff)
+            if not buff.ft.schedule_judge:
+                continue
+            if buff.ft.passively_updating:
+                continue
+            if not buff.logic.xjudge(**event_kwargs):
+                continue
+
+            selected_beneficiaries = self._selected_schedule_beneficiaries(
+                buff,
+                name_box_now,
+            )
+            self._add_schedule_buff(
+                selected_beneficiaries=selected_beneficiaries,
+                source_buff=buff,
+                tick=tick,
+                source_template_registry=template_buffs,
+                event_kwargs=event_kwargs,
+            )
+
+    def _process_schedule_backend_buffs(
+        self,
+        *,
+        template_buffs: dict[str, "Buff"],
+        all_name_order_box: dict[str, list[str]],
+        tick: int,
+        event_kwargs: dict[str, object],
+    ) -> None:
+        for buff in template_buffs.values():
+            self._check_schedule_buff(buff)
+            if not buff.ft.schedule_judge:
+                continue
+            if not buff.ft.backend_acitve:
+                continue
+            if buff.ft.passively_updating:
+                continue
+            if not buff.logic.xjudge(**event_kwargs):
+                continue
+
+            main_char = buff.ft.operator
+            selected_beneficiaries = self._selected_schedule_beneficiaries(
+                buff,
+                all_name_order_box[main_char],
+            )
+            self._add_schedule_buff(
+                selected_beneficiaries=selected_beneficiaries,
+                source_buff=buff,
+                tick=tick,
+                source_template_registry=template_buffs,
+                event_kwargs=event_kwargs,
+            )
+
+    def _add_schedule_buff(
+        self,
+        *,
+        selected_beneficiaries: list[str],
+        source_buff: "Buff",
+        tick: int,
+        source_template_registry: dict[str, "Buff"],
+        event_kwargs: dict[str, object],
+    ) -> None:
+        from zsim.sim_progress.Buff.buff_class import Buff
+
+        if not source_buff.ft.schedule_judge:
+            raise ValueError(f"{source_buff.ft.index}不是schedule阶段buff！")
+
+        for beneficiary in selected_beneficiaries:
+            buff_new = Buff.create_new_from_existing(source_buff)
+            buff_new.ft.operator = source_buff.ft.operator
+            buff_new.ft.passively_updating = source_buff.ft.passively_updating
+            if source_buff.ft.simple_effect_logic:
+                buff_new.simple_start(tick, source_template_registry)
+            else:
+                buff_new.logic.xeffect(**event_kwargs)
+
+            existing_buff = self.find_active_buff_by_index(
+                beneficiary,
+                source_buff.ft.index,
+            )
+            if existing_buff is not None:
+                self.remove_active_buff(beneficiary, existing_buff)
+            self.append_active_buff(beneficiary, buff_new)
+            if beneficiary == "enemy":
+                self.sync_enemy_debuff_mirror(buff_new)
+
+    def _resolve_schedule_action(
+        self,
+        *,
+        tick: int,
+        sim_instance: "Simulator",
+        skill_node: "SkillNode | LoadingMission | None",
+        anomaly_bar: "AnomalyBar | None",
+    ) -> tuple[object | None, bool]:
+        from zsim.sim_progress.Buff import JudgeTools
+        from zsim.sim_progress.Load import LoadingMission
+        from zsim.sim_progress.Preload import SkillNode
+
+        action_result = None
+        if anomaly_bar is not None:
+            if anomaly_bar.activated_by is not None:
+                action_result = anomaly_bar.activated_by
+        elif skill_node is not None:
+            if isinstance(skill_node, SkillNode):
+                action_result = skill_node
+            elif isinstance(skill_node, LoadingMission):
+                action_result = skill_node.mission_node
+            else:
+                print(
+                    f"ScheduleBuffSettle函数接收到了无法识别的event类型{type(skill_node).__name__}"
+                )
+                return None, False
+
+        if action_result is not None:
+            return action_result, True
+
+        preload_data = JudgeTools.find_preload_data(sim_instance=sim_instance)
+        return preload_data.get_on_field_node(tick), True
+
+    @staticmethod
+    def _schedule_event_kwargs(
+        *,
+        skill_node: "SkillNode | LoadingMission | None",
+        anomaly_bar: "AnomalyBar | None",
+    ) -> dict[str, object]:
+        event_kwargs: dict[str, object] = {}
+        if skill_node is not None:
+            event_kwargs["skill_node"] = skill_node
+        if anomaly_bar is not None:
+            event_kwargs["anomaly_bar"] = anomaly_bar
+        return event_kwargs
+
+    @staticmethod
+    def _selected_schedule_beneficiaries(
+        buff: "Buff",
+        name_box_now: list[str],
+    ) -> list[str]:
+        adding_buff_code = str(int(buff.ft.add_buff_to)).zfill(4)
+        return [
+            name_box_now[i]
+            for i in range(len(name_box_now))
+            if adding_buff_code[i] == "1"
+        ]
+
+    @staticmethod
+    def _check_schedule_buff(buff: "Buff") -> None:
+        from zsim.sim_progress.Buff.buff_class import Buff
+
+        if not isinstance(buff, Buff):
+            raise TypeError(f"{buff}不是Buff类！")
 
     @staticmethod
     def _get_buff_index(buff: "Buff") -> str:

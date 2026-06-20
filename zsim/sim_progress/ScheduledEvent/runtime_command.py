@@ -3,12 +3,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from zsim.sim_progress.Buff.ScheduleBuffSettle import (
-    ScheduleBuffSettle as legacy_schedule_buff_settle,
-)
 from zsim.sim_progress.Update import update_anomaly as legacy_update_anomaly
 
 if TYPE_CHECKING:
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeFacade
     from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
     from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
     from zsim.sim_progress.Enemy import Enemy
@@ -97,21 +95,33 @@ class LegacyRuntimeCommandAdapter(RuntimeCommandPort):
         skill_node: "SkillNode | LoadingMission | None" = None,
         anomaly_bar: "AnomalyBar | None" = None,
     ) -> None:
-        legacy_kwargs: dict[str, object] = {}
-        if skill_node is not None:
-            legacy_kwargs["skill_node"] = skill_node
-        if anomaly_bar is not None:
-            legacy_kwargs["anomaly_bar"] = anomaly_bar
-
-        legacy_schedule_buff_settle(
-            tick,
-            self._template_registry_for_compat(),
-            enemy,
-            self._active_store_for_compat(),
-            self._action_stack,
+        self._buff_runtime_facade_for_settle(enemy).settle_schedule_buffs(
+            tick=tick,
+            enemy=enemy,
             sim_instance=self._sim_instance,
-            **legacy_kwargs,
+            skill_node=skill_node,
+            anomaly_bar=anomaly_bar,
         )
+
+    def _buff_runtime_facade_for_settle(self, enemy: "Enemy") -> "BuffRuntimeFacade":
+        if self._buff_runtime_state is None:
+            from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
+
+            self._buff_runtime_state = BuffRuntimeState(
+                template_registry=self._template_registry_for_compat(),
+                pending_queue=getattr(self._data, "loading_buff", {}),
+                active_store=self._active_store_for_compat(),
+                enemy_mirror=self._enemy_debuff_mirror_for_settle(enemy),
+            )
+        return self._buff_runtime_state.create_facade()
+
+    @staticmethod
+    def _enemy_debuff_mirror_for_settle(enemy: "Enemy") -> list:
+        enemy_dynamic = getattr(enemy, "dynamic", None)
+        enemy_mirror = getattr(enemy_dynamic, "dynamic_debuff_list", None)
+        if enemy_mirror is None:
+            return []
+        return enemy_mirror
 
     def _template_registry_for_compat(self) -> dict:
         if self._buff_runtime_state is not None:
