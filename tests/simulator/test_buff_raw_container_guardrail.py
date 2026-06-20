@@ -5,6 +5,13 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
+from scripts.run_buff_refactor_validation import (
+    RUNTIME_DEPENDENCY_CATEGORIES,
+    RUNTIME_DEPENDENCY_STRICT_COMMAND,
+    RUNTIME_DEPENDENCY_TRACKED_PRODUCTION_FAMILIES,
+    RuntimeDependencyZeroScanner,
+)
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -860,6 +867,62 @@ EXPECTED_CALCULATOR_READ_REFERENCE_CEILINGS = {
     "migrated attribute-reader active_buff_view input": 2,
     "retained XLogic compatibility snapshot read": 25,
 }
+
+
+def test_runtime_dependency_zero_scanner_reports_required_schema_and_families() -> None:
+    report = RuntimeDependencyZeroScanner(PROJECT_ROOT).build_report(
+        expected_zero=False
+    )
+
+    assert report["schemaVersion"] == "zsim-runtime-dependency-zero.v1"
+    assert report["profile"] == "runtime-dependency-zero"
+    assert report["strictExpectedZero"] is False
+    assert report["strictCommand"] == RUNTIME_DEPENDENCY_STRICT_COMMAND
+    assert report["categorySchema"] == list(RUNTIME_DEPENDENCY_CATEGORIES)
+    assert set(report["categories"]) == set(RUNTIME_DEPENDENCY_CATEGORIES)
+    assert (
+        set(RUNTIME_DEPENDENCY_TRACKED_PRODUCTION_FAMILIES)
+        <= set(report["trackedProductionFamilies"])
+    )
+    assert (
+        set(RUNTIME_DEPENDENCY_TRACKED_PRODUCTION_FAMILIES)
+        <= set(report["families"])
+    )
+    assert report["productionRuntimeTotal"] > 0
+    assert report["findingCount"] >= report["productionRuntimeTotal"]
+
+
+def test_runtime_dependency_zero_scanner_classifies_reference_categories() -> None:
+    scanner = RuntimeDependencyZeroScanner(PROJECT_ROOT)
+    fixture_source = (
+        "# DYNAMIC_BUFF_DICT comment only\n"
+        "class UsesPort(RuntimeCommandPort):\n"
+        "    def run(self, exist_buff_dict):\n"
+        "        return exist_buff_dict\n"
+    )
+
+    production_findings = scanner.scan_source("zsim/simulator/_fixture.py", fixture_source)
+    test_findings = scanner.scan_source("tests/simulator/_fixture.py", fixture_source)
+    docs_findings = scanner.scan_source("docs/_fixture.md", "LegacyBuffRuntimeFacade\n")
+    migration_findings = scanner.scan_source(
+        "scripts/run_buff_refactor_validation.py",
+        "LegacyBuffRuntimeReadAdapter\n",
+    )
+
+    assert "production runtime" in {
+        finding.category for finding in production_findings
+    }
+    assert "comment" in {finding.category for finding in production_findings}
+    assert "stable contract name" in {
+        finding.category for finding in production_findings
+    }
+    assert {finding.category for finding in test_findings} == {
+        "comment",
+        "stable contract name",
+        "test-only",
+    }
+    assert {finding.category for finding in docs_findings} == {"docs-only"}
+    assert {finding.category for finding in migration_findings} == {"migration-only"}
 
 
 def test_raw_old_container_passthroughs_stay_inside_retained_boundaries() -> None:
