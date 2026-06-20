@@ -9,6 +9,7 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
 from .enemy_anomaly_read import read_enemy_anomaly_active
+from .dot_runtime_state_read import DotRuntimeStateReadPort
 
 
 class VivianDotTriggerRecord:
@@ -84,13 +85,14 @@ class VivianDotTrigger(Buff.BuffLogic):
         """xjudge放行后，直接生成dot。但是如果dot已经存在，就不重复生成。"""
         self.check_record_module()
         self.get_prepared(char_CID=1361, enemy=1)
-        dot_runtime_state = DotRuntimeStateAdapter.from_enemy(self.record.enemy)
         # 如果敌人身上已经存在这个dot，直接不执行
-        if dot_runtime_state.find_active_by_index("ViviansProphecy") is not None:
+        dot_runtime_reader = DotRuntimeStateReadPort(self.record.enemy)
+        if dot_runtime_reader.find_active_by_index("ViviansProphecy") is not None:
             return
         from zsim.sim_progress.Load import LoadingMission
         from zsim.sim_progress.Update.UpdateAnomaly import spawn_normal_dot
 
+        dot_runtime_state = DotRuntimeStateAdapter.from_enemy(self.record.enemy)
         dot = spawn_normal_dot("ViviansProphecy", sim_instance=self.buff_instance.sim_instance)
         dot.start(find_tick(sim_instance=self.buff_instance.sim_instance))
         dot.skill_node_data.loading_mission = LoadingMission(dot.skill_node_data)

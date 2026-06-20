@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
+from zsim.sim_progress.Buff.BuffXLogic.dot_runtime_state_read import DotRuntimeStateReadPort
 from zsim.sim_progress.Dot.BaseDot import Dot
 from zsim.sim_progress.Dot.runtime_state import DotRuntimeStateAdapter
 
@@ -89,6 +90,40 @@ def test_dot_runtime_state_adapter_finds_registers_and_prevents_duplicates() -> 
     assert dynamic_state.dynamic_dot_list == [existing_dot, new_dot]
     assert snapshot == (existing_dot,)
     assert call_order == [("append", "new")]
+
+
+def test_dot_runtime_state_read_port_finds_without_mutating_runtime_state() -> None:
+    call_order: list[tuple[str, str]] = []
+    inactive_dot = _FakeDot(index="ViviansProphecy", label="inactive")
+    active_dot = _FakeDot(index="ViviansProphecy", label="active")
+    other_dot = _FakeDot(index="Shock", label="shock")
+    inactive_dot.dy.active = False
+    active_dot.dy.active = True
+    dynamic_state = SimpleNamespace(
+        dynamic_dot_list=_RecordingDotList(
+            call_order,
+            [inactive_dot, active_dot, other_dot],
+        )
+    )
+    enemy = SimpleNamespace(
+        dynamic=dynamic_state,
+        schedule_data=_ForbiddenLayer(),
+        listener_manager=_ForbiddenLayer(),
+        runtime_command_port=_ForbiddenLayer(),
+    )
+
+    read_port = DotRuntimeStateReadPort(enemy)
+
+    assert read_port.snapshot() == (inactive_dot, active_dot, other_dot)
+    assert read_port.find_by_index("ViviansProphecy") is inactive_dot
+    assert read_port.find_active_by_index("ViviansProphecy") is active_dot
+    assert read_port.find_by_index("Missing") is None
+    assert read_port.find_active_by_index("Missing") is None
+    assert not hasattr(read_port, "register")
+    assert not hasattr(read_port, "replace_by_index")
+    assert not hasattr(read_port, "remove_all")
+    assert dynamic_state.dynamic_dot_list == [inactive_dot, active_dot, other_dot]
+    assert call_order == []
 
 
 def test_dot_runtime_state_adapter_replace_same_index_ends_removes_then_appends() -> None:
