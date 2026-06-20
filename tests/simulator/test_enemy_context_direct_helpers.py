@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import inspect
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
+import zsim.sim_progress.Buff.BuffXLogic.HugoCorePassiveEXStunBonus as hugo_ex_module
 import zsim.sim_progress.Buff.BuffXLogic.YixuanCinema2StunTimeLimitBonus as yixuan_c2_module
 import zsim.sim_progress.Buff.BuffXLogic.YixuanAdditionalAbilityDmgBonus as yixuan_module
+from zsim.sim_progress.Buff.BuffXLogic.HugoCorePassiveEXStunBonus import (
+    HugoCorePassiveEXStunBonus,
+    HugoCorePassiveEXStunBonusRecord,
+)
 from zsim.sim_progress.Buff.BuffXLogic.YixuanCinema2StunTimeLimitBonus import (
     YixuanCinema2StunTimeLimitBonus,
     YixuanCinema2StunTimeLimitBonusRecord,
@@ -16,6 +21,7 @@ from zsim.sim_progress.Buff.BuffXLogic.YixuanAdditionalAbilityDmgBonus import (
     YixuanAdditionalAbilityDmgBonus,
     YixuanAdditionalAbilityDmgBonusRecord,
 )
+from zsim.sim_progress.Preload import SkillNode
 
 
 class _FailFastEventList(list[object]):
@@ -159,6 +165,78 @@ def _matching_yixuan_cinema2_skill_node(
         skill_tag=skill_tag,
         preload_tick=preload_tick,
         skill=SimpleNamespace(skill_text="\u5587\u54cd\u503c\u5927\u62db"),
+    )
+
+
+def _matching_hugo_ex_skill_node(
+    *,
+    trigger_buff_level: int = 2,
+    skill_tag: str = "1291_E_EX_A",
+) -> SkillNode:
+    skill = SimpleNamespace(
+        skill_tag=skill_tag,
+        char_name="雨果",
+        hit_times=1,
+        labels=None,
+        ticks=1,
+        tick_list=[],
+        trigger_buff_level=trigger_buff_level,
+    )
+    return SkillNode(skill=skill, preload_tick=720)
+
+
+def _build_hugo_ex_harness(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    stunned: bool,
+) -> SimpleNamespace:
+    enemy_dynamic = _EnemyDynamicProbe(stunned=stunned)
+    enemy = SimpleNamespace(dynamic=enemy_dynamic)
+    sim_instance = SimpleNamespace(
+        listener_manager=_ForbiddenLayer("listener broadcast"),
+        runtime_command_port=_ForbiddenLayer("RuntimeCommandPort"),
+        legacy_runtime_facade=_ForbiddenLayer("LegacyBuffRuntimeFacade"),
+        buff_runtime_read_port=_ForbiddenLayer("BuffRuntimeReadPort"),
+    )
+    buff_index = "Buff-角色-雨果-核心被动-强化特殊技失衡值"
+    buff_instance = SimpleNamespace(
+        ft=SimpleNamespace(index=buff_index),
+        sim_instance=sim_instance,
+    )
+    record = HugoCorePassiveEXStunBonusRecord()
+    buff_0 = SimpleNamespace(history=SimpleNamespace(record=record))
+    preparation_calls: list[dict[str, object]] = []
+
+    def fake_find_exist_buff_dict(*, sim_instance: object) -> dict[str, dict[str, object]]:
+        assert sim_instance is buff_instance.sim_instance
+        return {"雨果": {buff_index: buff_0}}
+
+    def fake_check_preparation(
+        *,
+        buff_instance: object,
+        buff_0: object,
+        **kwargs: object,
+    ) -> None:
+        preparation_calls.append(dict(kwargs))
+        prepared_record = cast(Any, cast(Any, buff_0).history.record)
+        if kwargs.get("enemy"):
+            prepared_record.enemy = enemy
+        if kwargs.get("char_CID"):
+            prepared_record.char = SimpleNamespace(CID=kwargs["char_CID"], NAME="雨果")
+
+    monkeypatch.setattr(
+        hugo_ex_module.JudgeTools,
+        "find_exist_buff_dict",
+        fake_find_exist_buff_dict,
+    )
+    monkeypatch.setattr(hugo_ex_module, "check_preparation", fake_check_preparation)
+
+    logic = HugoCorePassiveEXStunBonus(cast(Any, buff_instance))
+    return SimpleNamespace(
+        logic=logic,
+        record=record,
+        enemy_dynamic=enemy_dynamic,
+        preparation_calls=preparation_calls,
     )
 
 
@@ -365,6 +443,43 @@ def test_yixuan_cinema2_exit_preserves_inverse_stun_behavior(
     assert harness.schedule_data.event_list == []
 
 
+@pytest.mark.parametrize(
+    ("stunned", "expected"),
+    (
+        (False, True),
+        (True, False),
+    ),
+)
+def test_hugo_ex_stun_gate_uses_enemy_state_port(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    stunned: bool,
+    expected: bool,
+) -> None:
+    harness = _build_hugo_ex_harness(monkeypatch, stunned=stunned)
+
+    result = harness.logic.special_judge_logic(skill_node=_matching_hugo_ex_skill_node())
+
+    assert result is expected
+    assert harness.preparation_calls == [{"char_CID": 1291, "enemy": 1}]
+    assert harness.enemy_dynamic.stun_reads == 1
+    assert harness.logic.record is harness.record
+
+
+def test_hugo_ex_wrong_trigger_level_skips_enemy_state_port(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    harness = _build_hugo_ex_harness(monkeypatch, stunned=True)
+
+    result = harness.logic.special_judge_logic(
+        skill_node=_matching_hugo_ex_skill_node(trigger_buff_level=1)
+    )
+
+    assert result is False
+    assert harness.preparation_calls == [{"char_CID": 1291, "enemy": 1}]
+    assert harness.enemy_dynamic.stun_reads == 0
+
+
 def test_yixuan_enemy_context_source_stays_out_of_dispatch_runtime_and_formula_boundaries(
 ) -> None:
     judge_source = inspect.getsource(
@@ -375,6 +490,9 @@ def test_yixuan_enemy_context_source_stays_out_of_dispatch_runtime_and_formula_b
     )
     c2_exit_source = inspect.getsource(
         yixuan_c2_module.YixuanCinema2StunTimeLimitBonus.special_exit_logic
+    )
+    hugo_ex_source = inspect.getsource(
+        hugo_ex_module.HugoCorePassiveEXStunBonus.special_judge_logic
     )
 
     assert "schedule_data.enemy" in judge_source
@@ -390,6 +508,8 @@ def test_yixuan_enemy_context_source_stays_out_of_dispatch_runtime_and_formula_b
     )
     assert "read_enemy_stun_active(self.record.enemy)" in c2_judge_source
     assert "read_enemy_stun_active(self.record.enemy)" in c2_exit_source
+    assert "EnemyStateReadPort(self.record.enemy).stun_active()" in hugo_ex_source
+    assert "record.enemy.dynamic.stun" not in hugo_ex_source
     assert c2_judge_source.index("skill_node is None") < c2_judge_source.index(
         "read_enemy_stun_active(self.record.enemy)"
     )
@@ -417,3 +537,4 @@ def test_yixuan_enemy_context_source_stays_out_of_dispatch_runtime_and_formula_b
         assert forbidden_term not in judge_source
         assert forbidden_term not in c2_judge_source
         assert forbidden_term not in c2_exit_source
+        assert forbidden_term not in hugo_ex_source

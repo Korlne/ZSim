@@ -96,6 +96,10 @@ APPROVED_STUN_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
 }
 
+APPROVED_ENEMY_STATE_PORT_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveEXStunBonus.py",
+}
+
 APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py",
     "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py",
@@ -181,6 +185,7 @@ MIGRATED_HELPER_FILES_BY_NAME = {
     ),
     "read_enemy_shock_active": APPROVED_SHOCK_HELPER_FILES,
     "read_enemy_stun_active": APPROVED_STUN_HELPER_FILES,
+    "EnemyStateReadPort": APPROVED_ENEMY_STATE_PORT_FILES,
     "read_enemy_frozen_edge_state": APPROVED_EDGE_FROZEN_HELPER_FILES,
     "read_enemy_stun_edge_state": APPROVED_EDGE_STUN_HELPER_FILES,
     "read_enemy_frost_frostbite_edge_state": APPROVED_EDGE_FROST_FROSTBITE_HELPER_FILES,
@@ -199,6 +204,7 @@ APPROVED_HELPER_FILES_BY_NAME = {
     "read_enemy_stun_active": (
         APPROVED_STUN_HELPER_FILES | APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
     ),
+    "EnemyStateReadPort": APPROVED_ENEMY_STATE_PORT_FILES,
     "read_enemy_frozen_edge_state": APPROVED_EDGE_FROZEN_HELPER_FILES,
     "read_enemy_stun_edge_state": APPROVED_EDGE_STUN_HELPER_FILES,
     "read_enemy_frost_frostbite_edge_state": APPROVED_FROST_FROSTBITE_HELPER_FILES,
@@ -217,6 +223,7 @@ APPROVED_HELPER_CLASSIFICATIONS_BY_NAME = {
         "simple enemy read",
         "copied-output-adjacent read",
     },
+    "EnemyStateReadPort": {"guarded-maintenance overlap"},
     "read_enemy_frozen_edge_state": {"edge-detection read"},
     "read_enemy_stun_edge_state": {"edge-detection read"},
     "read_enemy_frost_frostbite_edge_state": {
@@ -230,7 +237,9 @@ APPROVED_HELPER_CLASSIFICATIONS_BY_NAME = {
 
 HELPER_NAMES_BY_FAMILY = {
     "simple anomaly": frozenset({"read_enemy_anomaly_active"}),
-    "simple shock/stun": frozenset({"read_enemy_shock_active", "read_enemy_stun_active"}),
+    "simple shock/stun": frozenset(
+        {"read_enemy_shock_active", "read_enemy_stun_active", "EnemyStateReadPort"}
+    ),
     "edge-state helpers": frozenset(
         {
             "read_enemy_frozen_edge_state",
@@ -435,6 +444,8 @@ def _collect_helper_reference_paths() -> dict[str, dict[str, set[str]]]:
     }
     for path in _production_python_files():
         rel_path = path.relative_to(PROJECT_ROOT).as_posix()
+        if CLASSIFICATION_BY_FILE.get(rel_path) == "approved helper boundary":
+            continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
@@ -580,7 +591,11 @@ def test_enemy_dynamic_read_guardrail_tracks_helper_references_by_family() -> No
         family_name: _helper_references_for_names(references, helper_names)
         for family_name, helper_names in HELPER_NAMES_BY_FAMILY.items()
     }
-    migrated_shock_stun_files = APPROVED_SHOCK_HELPER_FILES | APPROVED_STUN_HELPER_FILES
+    migrated_shock_stun_files = (
+        APPROVED_SHOCK_HELPER_FILES
+        | APPROVED_STUN_HELPER_FILES
+        | APPROVED_ENEMY_STATE_PORT_FILES
+    )
     approved_shock_stun_files = migrated_shock_stun_files | APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
     edge_state_files = (
         APPROVED_EDGE_FROZEN_HELPER_FILES

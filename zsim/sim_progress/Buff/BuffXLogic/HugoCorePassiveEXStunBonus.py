@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from .enemy_state_read import EnemyStateReadPort
 
 
 class HugoCorePassiveEXStunBonusRecord:
@@ -50,6 +51,6 @@ class HugoCorePassiveEXStunBonus(Buff.BuffLogic):
         if skill_node.skill.trigger_buff_level != 2:
             return False
 
-        if self.record.enemy.dynamic.stun:
+        if EnemyStateReadPort(self.record.enemy).stun_active():
             return False
         return True
