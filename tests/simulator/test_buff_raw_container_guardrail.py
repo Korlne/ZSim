@@ -186,6 +186,10 @@ CALCULATOR_READ_NEXT_ACTION = (
     "documented formula/compatibility snapshot, or block the story"
 )
 
+RETAINED_XLOGIC_COMPATIBILITY_SNAPSHOT_ALLOWANCE = (
+    "retained XLogic compatibility snapshot read"
+)
+
 SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY = (
     "legacy ScheduleBuffSettle command-adapter internals"
 )
@@ -774,7 +778,7 @@ def _calculator_read_allowance_for(finding: Finding) -> str | None:
             return "migrated attribute-reader active_buff_view input"
 
     if path.startswith("zsim/sim_progress/Buff/BuffXLogic/"):
-        return "retained XLogic compatibility snapshot read"
+        return RETAINED_XLOGIC_COMPATIBILITY_SNAPSHOT_ALLOWANCE
 
     return None
 
@@ -833,11 +837,54 @@ EXPECTED_SCHEDULED_RUNTIME_REFERENCE_CEILINGS = {
     "runtime view passed to anomaly formula boundary": 4,
 }
 
+EXPECTED_CALCULATOR_READ_RETAINED_SNAPSHOT_COUNTS = {
+    # US-001 freezes the US-013 retained snapshot backlog by file. Later
+    # migration stories may lower these counts with focused evidence.
+    "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py": 2,
+    "zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py": 1,
+    "zsim/sim_progress/Buff/BuffXLogic/LighterAdditionalAbility_IceFireBonus.py": 1,
+    "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py": 1,
+    "zsim/sim_progress/Buff/BuffXLogic/QingYiAdditionalAbilityStunConvertToATK.py": 1,
+    "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCoreSkillCritDMGBonus.py": 1,
+    "zsim/sim_progress/Buff/BuffXLogic/TriggerAdditionalAbilityStunBonus.py": 1,
+    "zsim/sim_progress/Buff/BuffXLogic/WoodpeckerElectroSet4_CA.py": 1,
+    "zsim/sim_progress/Buff/BuffXLogic/WoodpeckerElectroSet4_E_EX.py": 1,
+    "zsim/sim_progress/Buff/BuffXLogic/WoodpeckerElectroSet4_NA.py": 1,
+    "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyBuildupBonus.py": 1,
+    "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyDmgBonus.py": 1,
+}
+
 EXPECTED_CALCULATOR_READ_REFERENCE_CEILINGS = {
     "Calculator formula snapshot construction": 1,
     "migrated attribute-reader active_buff_view input": 2,
-    "retained XLogic compatibility snapshot read": 25,
+    RETAINED_XLOGIC_COMPATIBILITY_SNAPSHOT_ALLOWANCE: sum(
+        EXPECTED_CALCULATOR_READ_RETAINED_SNAPSHOT_COUNTS.values()
+    ),
 }
+
+
+def _calculator_read_retained_snapshot_counts(
+    findings: list[Finding],
+) -> Counter[str]:
+    counts: Counter[str] = Counter()
+    for finding in findings:
+        if (
+            _calculator_read_allowance_for(finding)
+            == RETAINED_XLOGIC_COMPATIBILITY_SNAPSHOT_ALLOWANCE
+        ):
+            counts[finding.path] += 1
+    return counts
+
+
+def _calculator_read_retained_snapshot_expansions(
+    findings: list[Finding],
+) -> dict[str, int]:
+    counts = _calculator_read_retained_snapshot_counts(findings)
+    return {
+        path: count
+        for path, count in counts.items()
+        if count > EXPECTED_CALCULATOR_READ_RETAINED_SNAPSHOT_COUNTS.get(path, 0)
+    }
 
 
 def test_runtime_dependency_zero_scanner_reports_required_schema_and_families() -> None:
@@ -1237,6 +1284,43 @@ def test_calculator_read_retained_counts_do_not_expand() -> None:
             for allowance, count in sorted(expanded.items())
         )
     )
+
+
+def test_calculator_read_retained_snapshot_backlog_files_do_not_expand() -> None:
+    findings = _collect_calculator_read_findings()
+    expanded = _calculator_read_retained_snapshot_expansions(findings)
+
+    assert not expanded, (
+        "Calculator-read guardrail found widened retained snapshot files:\n"
+        + "\n".join(
+            f"- {path}: {count} > "
+            f"{EXPECTED_CALCULATOR_READ_RETAINED_SNAPSHOT_COUNTS.get(path, 0)}"
+            for path, count in sorted(expanded.items())
+        )
+    )
+
+
+def test_calculator_read_guardrail_rejects_unlisted_retained_snapshot_file() -> None:
+    source = (
+        "def read(record):\n"
+        "    return record.dynamic_buff_list\n"
+    )
+    path = (
+        PROJECT_ROOT
+        / "zsim"
+        / "sim_progress"
+        / "Buff"
+        / "BuffXLogic"
+        / "_new_retained_calculator_snapshot.py"
+    )
+    findings = _collect_calculator_read_findings() + (
+        _collect_calculator_read_findings_from_source(path, source)
+    )
+
+    relative_path = path.relative_to(PROJECT_ROOT).as_posix()
+    expanded = _calculator_read_retained_snapshot_expansions(findings)
+
+    assert expanded == {relative_path: 1}
 
 
 def test_calculator_read_guardrail_failure_message_includes_triage_fields() -> None:
