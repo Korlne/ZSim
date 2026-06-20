@@ -1,5 +1,5 @@
 from zsim.sim_progress.ScheduledEvent.Calculator import (
-    create_anomaly_attribute_read_context,
+    create_calculator_runtime_read_context_from_sim_instance,
     get_calculator_buff_attribute_reader_service,
 )
 
@@ -38,15 +38,14 @@ class AliceAdditionalAbilityApBonus(Buff.BuffLogic):
     def special_judge_logic(self, **kwargs):
         """根据触发时的异常掌控，计算转化的Buff层数"""
         self.check_record_module()
-        self.get_prepared(char_CID=1401, sub_exist_buff_dict=1, enemy=1, dynamic_buff_list=1)
+        self.get_prepared(char_CID=1401, sub_exist_buff_dict=1, enemy=1)
         assert self.record is not None, "记录模块未初始化"
         assert self.record.enemy is not None, "敌人未初始化"
-        assert self.record.dynamic_buff_list is not None, "动态Buff列表未初始化"
         assert self.record.sub_exist_buff_dict is not None, "子存在Buff字典未初始化"
 
-        context = create_anomaly_attribute_read_context(
+        context = create_calculator_runtime_read_context_from_sim_instance(
+            sim_instance=self.buff_instance.sim_instance,
             enemy=self.record.enemy,
-            active_buff_view=self.record.dynamic_buff_list,
             character=self.record.char,
         )
         reader_service = get_calculator_buff_attribute_reader_service()

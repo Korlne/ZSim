@@ -1,5 +1,5 @@
 from zsim.sim_progress.ScheduledEvent.Calculator import (
-    BuffAttributeReadContext,
+    create_calculator_runtime_read_context_from_sim_instance,
     get_calculator_buff_attribute_reader_service,
 )
 
@@ -47,10 +47,10 @@ class BranchBladeSongCritDamageBonus(Buff.BuffLogic):
 
     def special_judge_logic(self, **kwargs):
         self.check_record_module()
-        self.get_prepared(equipper="折枝剑歌", enemy=1, dynamic_buff_list=1)
-        context = BuffAttributeReadContext(
+        self.get_prepared(equipper="折枝剑歌", enemy=1)
+        context = create_calculator_runtime_read_context_from_sim_instance(
+            sim_instance=self.buff_instance.sim_instance,
             enemy=self.record.enemy,
-            active_buff_view=self.record.dynamic_buff_list,
             character=self.record.char,
         )
         reader_service = get_calculator_buff_attribute_reader_service()

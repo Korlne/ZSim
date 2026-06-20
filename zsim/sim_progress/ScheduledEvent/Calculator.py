@@ -153,6 +153,29 @@ def create_calculator_runtime_read_context_from_event_context(
     )
 
 
+def create_calculator_runtime_read_context_from_sim_instance(
+    *,
+    sim_instance: Any,
+    enemy: Enemy,
+    character: Character | None = None,
+    query_node: SkillNode | AnomalyBar | None = None,
+    beneficiary: str | None = None,
+) -> CalculatorRuntimeReadContext:
+    """从 Simulator-owned Buff runtime state 构造 Calculator 读取上下文。"""
+
+    runtime_state = getattr(sim_instance, "buff_runtime_state", None)
+    if runtime_state is None:
+        raise AttributeError("sim_instance must expose buff_runtime_state")
+    return create_calculator_runtime_read_context(
+        runtime_view=runtime_state.create_read_port(),
+        enemy=enemy,
+        character=character,
+        query_node=query_node,
+        beneficiary=beneficiary,
+        sim_instance=sim_instance,
+    )
+
+
 class BuffAttributeReader(Protocol):
     """高频属性读取接口，避免新读口直接依赖 MultiplierData 快照。"""
 

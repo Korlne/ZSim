@@ -19,6 +19,12 @@ MIGRATED_AM_AP_READER_FILES = (
     / "sim_progress"
     / "Buff"
     / "BuffXLogic"
+    / "BranchBladeSongCritDamageBonus.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
     / "YuzuhaAdditionalAbilityAnomalyBuildupBonus.py",
     PROJECT_ROOT
     / "zsim"
@@ -44,6 +50,12 @@ MIGRATED_AM_AP_READER_FILES = (
     / "Buff"
     / "BuffXLogic"
     / "JanePassionStateAPTransToATK.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "TimeweaverDisorderDmgMul.py",
 )
 
 RETAINED_FORMULA_SNAPSHOT_FILES = {
@@ -101,6 +113,15 @@ class MigratedAnomalyReaderVisitor(ast.NodeVisitor):
                 kind="legacy_anomaly_calculator_call",
                 expression=self._source_for(node.func),
             )
+        for keyword in node.keywords:
+            if keyword.arg == "active_buff_view" and self._is_record_dynamic_buff_list(
+                keyword.value
+            ):
+                self._add_finding(
+                    line=getattr(keyword.value, "lineno", node.lineno),
+                    kind="legacy_active_buff_view_input",
+                    expression=self._source_for(keyword),
+                )
         self.generic_visit(node)
 
     def _is_multiplier_constructor(self, func: ast.AST) -> bool:
@@ -118,6 +139,9 @@ class MigratedAnomalyReaderVisitor(ast.NodeVisitor):
             and chain[-2] == "AnomalyMul"
             and chain[-3] in self._calculator_aliases
         )
+
+    def _is_record_dynamic_buff_list(self, node: ast.AST) -> bool:
+        return self._attribute_chain(node)[-2:] == ["record", "dynamic_buff_list"]
 
     def _attribute_chain(self, node: ast.AST) -> list[str]:
         parts: list[str] = []
@@ -183,11 +207,13 @@ def test_migrated_am_ap_guardrail_scope_is_exact_root_file_set() -> None:
 
     assert scanned_files == {
         "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritDamageBonus.py",
         "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyBuildupBonus.py",
         "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyDmgBonus.py",
         "zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py",
         "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritRateBonus.py",
         "zsim/sim_progress/Buff/BuffXLogic/JanePassionStateAPTransToATK.py",
+        "zsim/sim_progress/Buff/BuffXLogic/TimeweaverDisorderDmgMul.py",
     }
     assert all(".codex_worktrees" not in path.parts for path in MIGRATED_AM_AP_READER_FILES)
     assert all(path.is_file() for path in MIGRATED_AM_AP_READER_FILES)
@@ -198,8 +224,10 @@ def test_migrated_am_ap_guardrail_reports_legacy_patterns() -> None:
     source = (
         "from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData as Mul\n"
         "from zsim.sim_progress.ScheduledEvent.Calculator import Calculator as Cal\n"
-        "def legacy(record):\n"
+        "from zsim.sim_progress.ScheduledEvent.Calculator import create_anomaly_attribute_read_context\n"
+        "def legacy(self, record):\n"
         "    mul_data = Mul(record.enemy, record.dynamic_buff_list, record.char)\n"
+        "    context = create_anomaly_attribute_read_context(enemy=record.enemy, active_buff_view=self.record.dynamic_buff_list, character=record.char)\n"
         "    return Calculator.AnomalyMul.cal_am(mul_data) + Cal.AnomalyMul.cal_ap(mul_data)\n"
     )
     path = (
@@ -213,7 +241,7 @@ def test_migrated_am_ap_guardrail_reports_legacy_patterns() -> None:
     findings = _collect_legacy_anomaly_read_findings_from_source(path, source)
     messages = [finding.message() for finding in findings]
 
-    assert len(findings) == 4
+    assert len(findings) == 5
     assert any("legacy_multiplier_import: MultiplierData as Mul" in message for message in messages)
     assert any("legacy_multiplier_constructor: Mul(" in message for message in messages)
     assert any(
@@ -224,6 +252,20 @@ def test_migrated_am_ap_guardrail_reports_legacy_patterns() -> None:
         "legacy_anomaly_calculator_call: Cal.AnomalyMul.cal_ap" in message
         for message in messages
     )
+    assert any(
+        "legacy_active_buff_view_input: active_buff_view=self.record.dynamic_buff_list"
+        in message
+        for message in messages
+    )
+
+
+def test_migrated_am_ap_files_use_runtime_reader_service() -> None:
+    for path in MIGRATED_AM_AP_READER_FILES:
+        source = path.read_text(encoding="utf-8")
+
+        assert "create_calculator_runtime_read_context_from_sim_instance" in source
+        assert "get_calculator_buff_attribute_reader_service" in source
+        assert "active_buff_view=self.record.dynamic_buff_list" not in source
 
 
 def test_migrated_am_ap_guardrail_uses_ast_not_text_matching() -> None:

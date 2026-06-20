@@ -1,6 +1,6 @@
 from zsim.sim_progress.ScheduledEvent.Calculator import (
-    CalculatorBuffAttributeReader,
-    create_anomaly_attribute_read_context,
+    create_calculator_runtime_read_context_from_sim_instance,
+    get_calculator_buff_attribute_reader_service,
 )
 
 from ....define import YUZUHA_REPORT
@@ -39,16 +39,17 @@ class YuzuhaAdditionalAbilityAnomalyDmgBonus(Buff.BuffLogic):
     def special_hit_logic(self, **kwargs):
         """buff激活时，根据柚叶的异常掌控计算层数"""
         self.check_record_module()
-        self.get_prepared(char_CID=1411, sub_exist_buff_dict=1, enemy=1, dynamic_buff_list=1)
+        self.get_prepared(char_CID=1411, sub_exist_buff_dict=1, enemy=1)
         if self.record.cinema_1_ratio is None:
             self.record.cinema_1_ratio = 1 if self.record.char.cinema < 1 else 1.3
 
-        context = create_anomaly_attribute_read_context(
+        context = create_calculator_runtime_read_context_from_sim_instance(
+            sim_instance=self.buff_instance.sim_instance,
             enemy=self.record.enemy,
-            active_buff_view=self.record.dynamic_buff_list,
             character=self.record.char,
         )
-        am = CalculatorBuffAttributeReader().read_anomaly_mastery(context)
+        reader_service = get_calculator_buff_attribute_reader_service()
+        am = reader_service.read_anomaly_mastery(context)
         if am < 100:
             return
         count = min(am - 100, 100) * self.record.cinema_1_ratio

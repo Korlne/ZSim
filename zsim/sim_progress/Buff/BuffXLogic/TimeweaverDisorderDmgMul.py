@@ -1,6 +1,6 @@
 from zsim.sim_progress.ScheduledEvent.Calculator import (
-    BuffAttributeReadContext,
-    CalculatorBuffAttributeReader,
+    create_calculator_runtime_read_context_from_sim_instance,
+    get_calculator_buff_attribute_reader_service,
 )
 
 from .. import Buff, JudgeTools, check_preparation
@@ -46,14 +46,15 @@ class TimeweaverDisorderDmgMul(Buff.BuffLogic):
     def special_judge_logic(self, **kwargs):
         """时流贤者的精通AP检查相关Buff的核心逻辑。"""
         self.check_record_module()
-        self.get_prepared(equipper="时流贤者", preload_data=1, dynamic_buff_list=1, enemy=1)
+        self.get_prepared(equipper="时流贤者", preload_data=1, enemy=1)
 
-        context = BuffAttributeReadContext(
+        context = create_calculator_runtime_read_context_from_sim_instance(
+            sim_instance=self.buff_instance.sim_instance,
             enemy=self.record.enemy,
-            active_buff_view=self.record.dynamic_buff_list,
             character=self.record.char,
         )
-        ap = CalculatorBuffAttributeReader().read_anomaly_proficiency(context)
+        reader_service = get_calculator_buff_attribute_reader_service()
+        ap = reader_service.read_anomaly_proficiency(context)
         return ap >= 375
 
     def special_exit_logic(self, **kwargs):

@@ -55,6 +55,7 @@ from zsim.sim_progress.Buff.BuffXLogic.YuzuhaAdditionalAbilityAnomalyDmgBonus im
     YuzuhaAdditionalAbilityAnomalyDmgBonus,
 )
 from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
+from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
 
 _AggregationCall = tuple[tuple[object, ...], object | None, object, str | None]
 
@@ -279,6 +280,20 @@ def _make_enemy(
             dynamic_dot_list=[],
         ),
         sim_instance=sim_instance,
+    )
+
+
+def _attach_buff_runtime_state(
+    *,
+    sim_instance: object,
+    dynamic_buff_list: dict[str, list[object]],
+    enemy: SimpleNamespace,
+) -> None:
+    cast(Any, sim_instance).buff_runtime_state = BuffRuntimeState(
+        template_registry={},
+        pending_queue={},
+        active_store=dynamic_buff_list,
+        enemy_mirror=enemy.dynamic.dynamic_debuff_list,
     )
 
 
@@ -530,6 +545,11 @@ def _make_alice_state_sync_case(
         enemy_debuffs=(enemy_debuff,),
     )
     dynamic_buff_list = {char.NAME: [char_buff]}
+    _attach_buff_runtime_state(
+        sim_instance=active_buff.sim_instance,
+        dynamic_buff_list=dynamic_buff_list,
+        enemy=enemy,
+    )
     aggregation_calls = _patch_buff_aggregation(
         monkeypatch,
         {
@@ -603,6 +623,11 @@ def _make_yuzuha_state_sync_case(
         enemy_debuffs=(enemy_debuff,),
     )
     dynamic_buff_list = {char.NAME: [char_buff]}
+    _attach_buff_runtime_state(
+        sim_instance=active_buff.sim_instance,
+        dynamic_buff_list=dynamic_buff_list,
+        enemy=enemy,
+    )
     aggregation_calls = _patch_buff_aggregation(
         monkeypatch,
         {
@@ -675,6 +700,11 @@ def _make_jane_cinema1_state_sync_case(
         enemy_debuffs=(enemy_debuff,),
     )
     dynamic_buff_list = {char.NAME: [char_buff]}
+    _attach_buff_runtime_state(
+        sim_instance=active_buff.sim_instance,
+        dynamic_buff_list=dynamic_buff_list,
+        enemy=enemy,
+    )
     aggregation_calls = _patch_buff_aggregation(
         monkeypatch,
         {
@@ -743,6 +773,11 @@ def _make_jane_core_skill_crit_rate_state_sync_case(
         enemy_debuffs=(enemy_debuff,),
     )
     dynamic_buff_list = {char.NAME: [char_buff]}
+    _attach_buff_runtime_state(
+        sim_instance=active_buff.sim_instance,
+        dynamic_buff_list=dynamic_buff_list,
+        enemy=enemy,
+    )
     aggregation_calls = _patch_buff_aggregation(
         monkeypatch,
         {
@@ -810,6 +845,11 @@ def _make_jane_passion_state_sync_case(
         enemy_debuffs=(enemy_debuff,),
     )
     dynamic_buff_list = {char.NAME: [char_buff]}
+    _attach_buff_runtime_state(
+        sim_instance=active_buff.sim_instance,
+        dynamic_buff_list=dynamic_buff_list,
+        enemy=enemy,
+    )
     aggregation_calls = _patch_buff_aggregation(
         monkeypatch,
         {
@@ -1287,7 +1327,7 @@ def test_count_state_sync_preserves_simple_start_assignment_update_order(
 
     assert case.expected_old_count == pytest.approx(8.0)
     assert case.get_prepared_calls == [
-        {"char_CID": 1401, "sub_exist_buff_dict": 1, "enemy": 1, "dynamic_buff_list": 1}
+        {"char_CID": 1401, "sub_exist_buff_dict": 1, "enemy": 1}
     ]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Alice"),
@@ -1315,7 +1355,7 @@ def test_count_state_sync_skips_writeback_below_am_threshold(
     assert result is None
     assert case.expected_old_count is None
     assert case.get_prepared_calls == [
-        {"char_CID": 1401, "sub_exist_buff_dict": 1, "enemy": 1, "dynamic_buff_list": 1}
+        {"char_CID": 1401, "sub_exist_buff_dict": 1, "enemy": 1}
     ]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Alice"),
@@ -1363,7 +1403,7 @@ def test_yuzuha_buildup_skips_writeback_below_am_threshold(
     assert case.expected_old_count is None
     assert case.logic.record.cinema_1_ratio == pytest.approx(case.expected_cinema_1_ratio)
     assert case.get_prepared_calls == [
-        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1, "dynamic_buff_list": 1}
+        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}
     ]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
@@ -1388,7 +1428,7 @@ def test_yuzuha_buildup_reader_path_matches_old_count_for_cinema_zero_order(
     assert case.expected_old_count == pytest.approx(45.0)
     assert case.logic.record.cinema_1_ratio == pytest.approx(1.0)
     assert case.get_prepared_calls == [
-        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1, "dynamic_buff_list": 1}
+        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}
     ]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
@@ -1417,7 +1457,7 @@ def test_yuzuha_buildup_reader_path_matches_old_count_for_cinema_one_plus_cap(
     assert case.expected_old_count == pytest.approx(130.0)
     assert case.logic.record.cinema_1_ratio == pytest.approx(1.3)
     assert case.get_prepared_calls == [
-        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1, "dynamic_buff_list": 1}
+        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}
     ]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
@@ -1450,7 +1490,7 @@ def test_yuzuha_damage_skips_writeback_below_am_threshold(
     assert case.expected_old_count is None
     assert case.logic.record.cinema_1_ratio == pytest.approx(case.expected_cinema_1_ratio)
     assert case.get_prepared_calls == [
-        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1, "dynamic_buff_list": 1}
+        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}
     ]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
@@ -1478,7 +1518,7 @@ def test_yuzuha_damage_reader_path_matches_old_count_for_cinema_zero_order(
     assert case.expected_old_count == pytest.approx(45.0)
     assert case.logic.record.cinema_1_ratio == pytest.approx(1.0)
     assert case.get_prepared_calls == [
-        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1, "dynamic_buff_list": 1}
+        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}
     ]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
@@ -1510,7 +1550,7 @@ def test_yuzuha_damage_reader_path_keeps_cinema_one_plus_cap_and_report(
     assert case.expected_old_count == pytest.approx(130.0)
     assert case.logic.record.cinema_1_ratio == pytest.approx(1.3)
     assert case.get_prepared_calls == [
-        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1, "dynamic_buff_list": 1}
+        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}
     ]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
@@ -1565,7 +1605,6 @@ def test_jane_cinema1_active_trigger_count_parity_and_order(
         {
             "char_CID": 1261,
             "trigger_buff_0": ("简", "Buff-角色-简-狂热状态触发器"),
-            "dynamic_buff_list": 1,
             "enemy": 1,
             "sub_exist_buff_dict": 1,
         },
@@ -1647,7 +1686,6 @@ def test_jane_core_skill_crit_rate_active_trigger_count_parity_and_order(
         {
             "char_CID": 1261,
             "trigger_buff_0": ("enemy", "Buff-角色-简-核心被动-啮咬触发器"),
-            "dynamic_buff_list": 1,
             "enemy": 1,
             "sub_exist_buff_dict": 1,
         },
@@ -1728,7 +1766,6 @@ def test_jane_passion_state_ap_under_120_writes_zero_count(
         {
             "char_CID": 1261,
             "trigger_buff_0": ("简", "Buff-角色-简-狂热状态触发器"),
-            "dynamic_buff_list": 1,
             "enemy": 1,
             "sub_exist_buff_dict": 1,
         },
@@ -2157,7 +2194,9 @@ def test_alice_additional_ability_uses_reader_not_multiplier_data() -> None:
 
     assert "MultiplierData" not in source
     assert "Calculator.AnomalyMul.cal_am" not in source
-    assert "create_anomaly_attribute_read_context" in source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in source
+    assert "get_calculator_buff_attribute_reader_service" in source
+    assert "active_buff_view=self.record.dynamic_buff_list" not in source
     assert "read_anomaly_mastery" in source
 
 
@@ -2168,7 +2207,9 @@ def test_yuzuha_buildup_uses_reader_not_multiplier_data() -> None:
 
     assert "MultiplierData" not in source
     assert "Calculator.AnomalyMul.cal_am" not in source
-    assert "create_anomaly_attribute_read_context" in source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in source
+    assert "get_calculator_buff_attribute_reader_service" in source
+    assert "active_buff_view=self.record.dynamic_buff_list" not in source
     assert "read_anomaly_mastery" in source
 
 
@@ -2183,7 +2224,9 @@ def test_yuzuha_additional_ability_damage_uses_shared_reader_pattern() -> None:
     for source in (buildup_source, damage_source):
         assert "MultiplierData" not in source
         assert "Calculator.AnomalyMul.cal_am" not in source
-        assert "create_anomaly_attribute_read_context" in source
+        assert "create_calculator_runtime_read_context_from_sim_instance" in source
+        assert "get_calculator_buff_attribute_reader_service" in source
+        assert "active_buff_view=self.record.dynamic_buff_list" not in source
         assert "read_anomaly_mastery" in source
 
 
@@ -2195,7 +2238,9 @@ def test_jane_cinema1_uses_reader_not_multiplier_data_alias() -> None:
     assert "MultiplierData as Mul" not in source
     assert "Mul(" not in source
     assert "Calculator.AnomalyMul.cal_ap" not in source
-    assert "create_anomaly_attribute_read_context" in source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in source
+    assert "get_calculator_buff_attribute_reader_service" in source
+    assert "active_buff_view=self.record.dynamic_buff_list" not in source
     assert "read_anomaly_proficiency" in source
 
 
@@ -2208,7 +2253,9 @@ def test_jane_core_skill_crit_rate_uses_reader_not_multiplier_data_alias() -> No
     assert "Mul(" not in source
     assert "Cal.AnomalyMul.cal_ap" not in source
     assert "Calculator.AnomalyMul.cal_ap" not in source
-    assert "create_anomaly_attribute_read_context" in source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in source
+    assert "get_calculator_buff_attribute_reader_service" in source
+    assert "active_buff_view=self.record.dynamic_buff_list" not in source
     assert "read_anomaly_proficiency" in source
 
 
@@ -2221,5 +2268,7 @@ def test_jane_passion_state_uses_reader_not_multiplier_data_alias() -> None:
     assert "Mul(" not in source
     assert "Cal.AnomalyMul.cal_ap" not in source
     assert "Calculator.AnomalyMul.cal_ap" not in source
-    assert "create_anomaly_attribute_read_context" in source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in source
+    assert "get_calculator_buff_attribute_reader_service" in source
+    assert "active_buff_view=self.record.dynamic_buff_list" not in source
     assert "read_anomaly_proficiency" in source

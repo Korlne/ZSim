@@ -29,9 +29,10 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
     create_anomaly_attribute_read_context,
     create_calculator_runtime_read_context,
     create_calculator_runtime_read_context_from_event_context,
+    create_calculator_runtime_read_context_from_sim_instance,
     get_calculator_buff_attribute_reader_service,
 )
-from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
+from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort, BuffRuntimeState
 from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
 from zsim.sim_progress.Preload.SkillsQueue import SkillNode
 from zsim.sim_progress.anomaly_bar import AnomalyBar
@@ -615,6 +616,12 @@ def _make_attribute_read_fixture(
         stun_resistance_attrs=enemy_stun_resistance_attrs,
     )
     active_buff_view = {char.NAME: list(char_buffs)}
+    enemy.sim_instance.buff_runtime_state = BuffRuntimeState(
+        template_registry={},
+        pending_queue={},
+        active_store=active_buff_view,
+        enemy_mirror=enemy.dynamic.dynamic_debuff_list,
+    )
     query_node = (
         _make_skill_node(
             char_name=char.NAME,
@@ -851,6 +858,49 @@ def test_calculator_runtime_read_context_can_be_built_from_event_context() -> No
     assert context.formula_char_name == char.NAME
     assert runtime_view.active_buff_beneficiaries == ["enemy"]
     assert runtime_view.active_view_calls == 1
+
+
+def test_calculator_runtime_read_context_can_be_built_from_sim_instance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    char = _make_character(name="sim-instance-reader", am=100.0)
+    char_buff = object()
+    enemy_debuff = object()
+    sim_instance = SimpleNamespace(marker="runtime-sim")
+    enemy = SimpleNamespace(
+        dynamic=_ForbiddenEnemyDynamic(),
+        sim_instance=sim_instance,
+    )
+    sim_instance.buff_runtime_state = BuffRuntimeState(
+        template_registry={},
+        pending_queue={},
+        active_store={char.NAME: [char_buff], "enemy": [enemy_debuff]},
+        enemy_mirror=[],
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(field_anomaly_mastery=0.2),
+    )
+
+    context = create_calculator_runtime_read_context_from_sim_instance(
+        sim_instance=sim_instance,
+        enemy=cast(Any, enemy),
+        character=cast(Any, char),
+    )
+    reader_value = CalculatorBuffAttributeReader().read_anomaly_mastery(context)
+
+    assert isinstance(context, CalculatorRuntimeReadContext)
+    assert context.enemy_debuffs == (enemy_debuff,)
+    assert tuple(context.active_buff_view[char.NAME]) == (char_buff,)
+    assert reader_value == pytest.approx(120.0)
+    assert aggregation_calls == [
+        (
+            (char_buff, enemy_debuff),
+            None,
+            sim_instance,
+            char.NAME,
+        )
+    ]
 
 
 def test_calculator_reader_service_public_surface_matches_reader() -> None:
@@ -7493,6 +7543,7 @@ def test_branch_blade_song_gate_uses_attribute_reader_with_old_helper_parity(
         Any,
         BranchBladeSongCritDamageBonus.__new__(BranchBladeSongCritDamageBonus),
     )
+    logic.buff_instance = SimpleNamespace(sim_instance=fixture.enemy.sim_instance)
     logic.record = SimpleNamespace(
         enemy=fixture.enemy,
         dynamic_buff_list=fixture.active_buff_view,
@@ -7513,11 +7564,13 @@ def test_branch_blade_song_gate_uses_attribute_reader_with_old_helper_parity(
     source = inspect.getsource(BranchBladeSongCritDamageBonus.special_judge_logic)
     assert "MultiplierData" not in source
     assert "Mul(" not in source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in source
+    assert "active_buff_view=self.record.dynamic_buff_list" not in source
     assert "read_anomaly_mastery" in source
     assert reader_gate == old_gate
     assert reader_gate is expected_gate
     assert get_prepared_calls == [
-        {"equipper": "折枝剑歌", "enemy": 1, "dynamic_buff_list": 1}
+        {"equipper": "折枝剑歌", "enemy": 1}
     ]
     assert aggregation_calls == [
         (
@@ -7564,6 +7617,7 @@ def test_timeweaver_disorder_gate_uses_attribute_reader_with_old_helper_parity(
         Any,
         TimeweaverDisorderDmgMul.__new__(TimeweaverDisorderDmgMul),
     )
+    logic.buff_instance = SimpleNamespace(sim_instance=fixture.enemy.sim_instance)
     logic.record = SimpleNamespace(
         enemy=fixture.enemy,
         dynamic_buff_list=fixture.active_buff_view,
@@ -7584,11 +7638,13 @@ def test_timeweaver_disorder_gate_uses_attribute_reader_with_old_helper_parity(
     source = inspect.getsource(TimeweaverDisorderDmgMul.special_judge_logic)
     assert "MultiplierData" not in source
     assert "Mul(" not in source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in source
+    assert "active_buff_view=self.record.dynamic_buff_list" not in source
     assert "read_anomaly_proficiency" in source
     assert reader_gate == old_gate
     assert bool(reader_gate) is expected_gate
     assert get_prepared_calls == [
-        {"equipper": "时流贤者", "preload_data": 1, "dynamic_buff_list": 1, "enemy": 1}
+        {"equipper": "时流贤者", "preload_data": 1, "enemy": 1}
     ]
     assert aggregation_calls == [
         (

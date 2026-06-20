@@ -1,8 +1,8 @@
 from math import floor
 
 from zsim.sim_progress.ScheduledEvent.Calculator import (
-    CalculatorBuffAttributeReader,
-    create_anomaly_attribute_read_context,
+    create_calculator_runtime_read_context_from_sim_instance,
+    get_calculator_buff_attribute_reader_service,
 )
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
@@ -53,16 +53,16 @@ class JanePassionStateAPTransToATK(Buff.BuffLogic):
         self.get_prepared(
             char_CID=1261,
             trigger_buff_0=("简", "Buff-角色-简-狂热状态触发器"),
-            dynamic_buff_list=1,
             enemy=1,
             sub_exist_buff_dict=1,
         )
-        context = create_anomaly_attribute_read_context(
+        context = create_calculator_runtime_read_context_from_sim_instance(
+            sim_instance=self.buff_instance.sim_instance,
             enemy=self.record.enemy,
-            active_buff_view=self.record.dynamic_buff_list,
             character=self.record.char,
         )
-        ap = CalculatorBuffAttributeReader().read_anomaly_proficiency(context)
+        reader_service = get_calculator_buff_attribute_reader_service()
+        ap = reader_service.read_anomaly_proficiency(context)
         count = floor(
             max(ap - 120, 0)
         )  # 超过120点的部分，每1点叠1层，这里应该是向下取证，比如120.1，那就不叠层。
