@@ -66,7 +66,13 @@ CalculatorRuntimeReadContext = BuffAttributeReadContext
 
 @dataclass(frozen=True, slots=True)
 class CalculatorBuffBonusReadContext:
-    """Calculator Buff bonus aggregation input for panel/SP/decibel reads."""
+    """Calculator Buff bonus aggregation input for panel/SP/decibel reads.
+
+    This context is the runtime-facing adapter for the shared cached
+    `cal_buff_total_bonus` helper. It carries only the beneficiary's active
+    Buff snapshot plus formula identity fields, preserving the helper's cache
+    key and return shape without exposing raw Buff runtime stores.
+    """
 
     active_buffs: Sequence[Any]
     query_node: SkillNode | AnomalyBar | None = None
@@ -242,7 +248,12 @@ def create_calculator_buff_bonus_context_from_sim_instance(
 def calculate_calculator_buff_total_bonus(
     context: CalculatorBuffBonusReadContext,
 ) -> dict[str, float]:
-    """Aggregate active Buff bonuses for a scoped Calculator read context."""
+    """Aggregate active Buff bonuses through the shared report/runtime helper.
+
+    The tuple conversion is part of the cache contract: runtime callers may
+    receive list-backed Buff stores, but the shared helper expects a hashable
+    snapshot and keeps `judge_obj`, `sim_instance`, and `char_name` in its key.
+    """
 
     try:
         return cal_buff_total_bonus(

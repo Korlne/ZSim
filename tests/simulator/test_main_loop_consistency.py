@@ -14,6 +14,7 @@ from zsim.utils.main_loop_consistency import (
     build_parser,
     run_main_loop_consistency,
 )
+from zsim.utils.process_buff_result import _prepare_buff_timeline_data
 from zsim.utils.process_dmg_result import _normalize_damage_schema, sort_df_by_UUID
 
 from tests.teams import auto_register_teams
@@ -77,6 +78,27 @@ def test_build_consistency_report_keeps_required_json_fields():
     assert report["differences"]["event_counts"]["disorder_total"] == 1
     assert report["differences"]["buff_timeline"]["candidate_only_count"] == 1
     assert report["differences"]["matches"] is False
+
+
+def test_buff_timeline_processing_keeps_public_cache_record_keys():
+    timeline = _prepare_buff_timeline_data(
+        pl.DataFrame(
+            {
+                "time_tick": [1, 2, 3],
+                "buff-a": [0.0, 2.0, 2.0],
+                "buff-b": [None, 1.5, 0.0],
+            }
+        )
+    )
+
+    assert [tuple(entry) for entry in timeline] == [
+        ("Task", "Start", "Finish", "Value"),
+        ("Task", "Start", "Finish", "Value"),
+    ]
+    assert timeline == [
+        {"Task": "buff-a", "Start": 2, "Finish": 3, "Value": 2.0},
+        {"Task": "buff-b", "Start": 2, "Finish": 2, "Value": 1.5},
+    ]
 
 
 def test_build_parser_accepts_required_cli_flags():

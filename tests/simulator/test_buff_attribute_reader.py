@@ -12,6 +12,8 @@ import pytest
 
 import zsim.sim_progress.ScheduledEvent.CalAnomaly as cal_anomaly_module
 import zsim.sim_progress.ScheduledEvent.Calculator as calculator_module
+import zsim.sim_progress.data_struct.data_analyzer as data_analyzer_module
+from zsim.sim_progress.Buff import Buff
 from zsim.sim_progress.Buff.BuffXLogic.BranchBladeSongCritDamageBonus import (
     BranchBladeSongCritDamageBonus,
 )
@@ -1172,6 +1174,53 @@ def test_calculator_reader_service_is_shared_and_context_scoped(
             first_fixture.char.NAME,
         ),
     ]
+
+
+def _make_cache_contract_buff(effect_value: float) -> Buff:
+    buff = cast(Buff, Buff.__new__(Buff))
+    buff.dy = SimpleNamespace(active=True, count=1)
+    buff.ft = SimpleNamespace(
+        label={},
+        index="cache-contract-buff",
+        beneficiary="cache-reader",
+    )
+    buff.effect_dct = {"局内攻击力": effect_value}
+    buff.sim_instance = object()
+    return buff
+
+
+def test_shared_buff_total_bonus_cache_key_keeps_runtime_identity_fields() -> None:
+    data_analyzer_module.cal_buff_total_bonus.cache_clear()
+    sim_instance = object()
+    buff = _make_cache_contract_buff(1.0)
+
+    try:
+        first_result = data_analyzer_module.cal_buff_total_bonus(
+            (buff,),
+            sim_instance=sim_instance,
+            char_name="cache-reader",
+        )
+        buff.effect_dct["局内攻击力"] = 9.0
+        second_result = data_analyzer_module.cal_buff_total_bonus(
+            (buff,),
+            sim_instance=sim_instance,
+            char_name="cache-reader",
+        )
+        third_result = data_analyzer_module.cal_buff_total_bonus(
+            (buff,),
+            sim_instance=sim_instance,
+            char_name="other-reader",
+        )
+        cache_info = data_analyzer_module.cal_buff_total_bonus.cache_info()
+    finally:
+        data_analyzer_module.cal_buff_total_bonus.cache_clear()
+
+    assert first_result == {"局内攻击力": 1.0}
+    assert second_result is first_result
+    assert third_result == {"局内攻击力": 9.0}
+    assert third_result is not first_result
+    assert cache_info.hits == 1
+    assert cache_info.misses == 2
 
 
 def _patch_buff_aggregation(

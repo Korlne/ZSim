@@ -24,6 +24,17 @@ def cal_buff_total_bonus(
 ) -> dict[str, float]:
     """过滤并计算buff总加成。
 
+    Shared report/runtime contract:
+    - This is the pure aggregation helper used by report/data-analysis code and
+      Calculator runtime facades.
+    - Callers must pass a hashable snapshot, normally `tuple(active_buffs)`,
+      because the helper is cached with `lru_cache`.
+    - The cache key intentionally includes `enabled_buff`, `judge_obj`,
+      `sim_instance`, and `char_name` so label filtering does not leak between
+      runtime/report call sites.
+    - Return keys are the Buff effect names and values are aggregate numeric
+      bonuses; report timeline cache schemas are owned by process_buff_result.
+
     该方法首先读取buff效果的键值对，然后遍历提供列表的所有buff（一般为特定角色+怪物，具体参考调用方式）
     对于每个buff，检查其是否为Buff类型，然后根据buff的计数（count）来计算总加成。
 
