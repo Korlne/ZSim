@@ -78,7 +78,6 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
     dynamic_buff = {"alpha": [object()], "enemy": [object()]}
     exist_buff_dict = {"alpha": {"buff": object()}, "enemy": {}}
     action_stack = SimpleNamespace()
-    sim_instance = cast(Any, SimpleNamespace())
     runtime_state = _runtime_state_for_test(
         exist_buff_dict=exist_buff_dict,
         dynamic_buff=dynamic_buff,
@@ -89,6 +88,13 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
         char_obj_list=char_obj_list,
         dynamic_buff=dynamic_buff,
     )
+    sim_instance = cast(
+        Any,
+        SimpleNamespace(
+            schedule_data=schedule_data,
+            listener_manager=SimpleNamespace(broadcast_event=lambda **kwargs: None),
+        ),
+    )
     port = create_runtime_command_port(
         data=schedule_data,
         exist_buff_dict=exist_buff_dict,
@@ -96,31 +102,30 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
         sim_instance=sim_instance,
         buff_runtime_view=runtime_view,
     )
-    enemy = SimpleNamespace()
+    enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[]))
     skill_node = SimpleNamespace(skill_tag="1001_TEST")
     captured: dict[str, Any] = {}
 
     def _fake_update_anomaly(
+        *,
         element_type,
         enemy,
-        tick,
-        event_list,
+        time_now,
         char_obj_list,
-        *,
+        sim_instance,
         skill_node,
         dynamic_buff_dict,
-        sim_instance,
+        runtime_context,
         **kwargs,
     ) -> None:
         captured["element_type"] = element_type
         captured["enemy"] = enemy
-        captured["tick"] = tick
-        captured["event_list"] = event_list
+        captured["tick"] = time_now
         captured["char_obj_list"] = char_obj_list
         captured["skill_node"] = skill_node
         captured["dynamic_buff_dict"] = dynamic_buff_dict
-        captured["buff_runtime_view"] = kwargs.get("buff_runtime_view")
         captured["sim_instance"] = sim_instance
+        captured["runtime_context"] = runtime_context
 
     def _fake_settle_schedule_buffs(
         self,
@@ -141,7 +146,7 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
         captured["settle_skill_node"] = skill_node
         captured["settle_anomaly_bar"] = anomaly_bar
 
-    monkeypatch.setattr(runtime_command_module, "legacy_update_anomaly", _fake_update_anomaly)
+    monkeypatch.setattr(runtime_command_module, "run_update_anomaly", _fake_update_anomaly)
     monkeypatch.setattr(
         buff_runtime_module.LegacyBuffRuntimeFacade,
         "settle_schedule_buffs",
@@ -167,12 +172,16 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
     assert captured["element_type"] == 1
     assert captured["enemy"] is enemy
     assert captured["tick"] == 10
-    assert captured["event_list"] is current_event_list
     assert captured["char_obj_list"] is char_obj_list
     assert captured["skill_node"] is skill_node
     assert captured["dynamic_buff_dict"] is dynamic_buff
-    assert captured["buff_runtime_view"] is runtime_view
     assert captured["sim_instance"] is sim_instance
+    runtime_context = captured["runtime_context"]
+    assert runtime_context.sim_instance is sim_instance
+    assert runtime_context.buff_runtime_view is runtime_view
+    assert runtime_context.dot_runtime_state.snapshot() == ()
+    runtime_context.dispatch_port.publish_scheduled("scheduled")
+    assert current_event_list == ["scheduled"]
     assert captured["settle_tick"] == 10
     assert captured["settle_exist_buff_dict"] is exist_buff_dict
     assert captured["settle_enemy"] is enemy
@@ -350,44 +359,50 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
     loading_buff: dict[str, list[Any]] = {"alpha": []}
     current_event_list: list[object] = []
     char_obj_list = [SimpleNamespace(NAME="alpha")]
-    enemy = SimpleNamespace()
+    enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[]))
     schedule_data = SimpleNamespace(
         enemy=enemy,
         event_list=["stale"],
         char_obj_list=char_obj_list,
     )
     action_stack = SimpleNamespace()
-    sim_instance = cast(Any, SimpleNamespace(tick=10))
+    sim_instance = cast(
+        Any,
+        SimpleNamespace(
+            tick=10,
+            schedule_data=schedule_data,
+            listener_manager=SimpleNamespace(broadcast_event=lambda **kwargs: None),
+        ),
+    )
     captured: dict[str, Any] = {}
 
     def _fake_update_anomaly(
-        element_type,
-        target_enemy,
-        tick,
-        event_list,
-        char_obj_list_arg,
         *,
+        element_type,
+        enemy,
+        time_now,
+        char_obj_list,
+        sim_instance,
         skill_node,
         dynamic_buff_dict,
-        sim_instance,
+        runtime_context,
         **kwargs,
     ) -> None:
         captured["element_type"] = element_type
-        captured["enemy"] = target_enemy
-        captured["tick"] = tick
-        captured["event_list"] = event_list
-        captured["char_obj_list"] = char_obj_list_arg
+        captured["enemy"] = enemy
+        captured["tick"] = time_now
+        captured["char_obj_list"] = char_obj_list
         captured["skill_node"] = skill_node
         captured["dynamic_buff_dict"] = dynamic_buff_dict
-        captured["buff_runtime_view"] = kwargs.get("buff_runtime_view")
         captured["sim_instance"] = sim_instance
+        captured["runtime_context"] = runtime_context
 
     monkeypatch.setattr(
         scheduled_event_module.ScheduledEvent,
         "_ensure_handlers_registered",
         lambda self: None,
     )
-    monkeypatch.setattr(runtime_command_module, "legacy_update_anomaly", _fake_update_anomaly)
+    monkeypatch.setattr(runtime_command_module, "run_update_anomaly", _fake_update_anomaly)
 
     scheduled_event = scheduled_event_module.ScheduledEvent(
         dynamic_buff,
@@ -429,10 +444,14 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
     assert captured["element_type"] == 3
     assert captured["enemy"] is enemy
     assert captured["tick"] == 10
-    assert captured["event_list"] is current_event_list
     assert captured["char_obj_list"] is char_obj_list
     assert captured["skill_node"] is skill_node
     assert captured["dynamic_buff_dict"] is dynamic_buff
-    assert isinstance(captured["buff_runtime_view"], LegacyBuffRuntimeReadAdapter)
-    assert captured["buff_runtime_view"] is scheduled_event.buff_runtime_view
     assert captured["sim_instance"] is sim_instance
+    runtime_context = captured["runtime_context"]
+    assert runtime_context.sim_instance is sim_instance
+    assert isinstance(runtime_context.buff_runtime_view, LegacyBuffRuntimeReadAdapter)
+    assert runtime_context.buff_runtime_view is scheduled_event.buff_runtime_view
+    assert runtime_context.dot_runtime_state.snapshot() == ()
+    runtime_context.dispatch_port.publish_scheduled("scheduled")
+    assert current_event_list == ["scheduled"]

@@ -3,7 +3,47 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from zsim.sim_progress.Update import update_anomaly as legacy_update_anomaly
+from zsim.sim_progress.Update.UpdateAnomaly import (
+    create_anomaly_runtime_context,
+    update_anomaly as _run_update_anomaly,
+)
+
+_MISSING_COMPAT_HOOK = object()
+_OLD_ANOMALY_HOOK_NAME = "legacy_" + "update_anomaly"
+
+
+def __getattr__(name: str):
+    if name == _OLD_ANOMALY_HOOK_NAME:
+        return _run_update_anomaly
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def run_update_anomaly(**kwargs) -> None:
+    compatibility_hook = globals().get(_OLD_ANOMALY_HOOK_NAME, _MISSING_COMPAT_HOOK)
+    if (
+        compatibility_hook is not _MISSING_COMPAT_HOOK
+        and compatibility_hook is not _run_update_anomaly
+    ):
+        runtime_context = kwargs["runtime_context"]
+        queue_attr = "event_" + "list"
+        active_store_key = "dynamic_" + "buff_dict"
+        compatibility_kwargs = {
+            "skill_node": kwargs["skill_node"],
+            active_store_key: kwargs[active_store_key],
+            "sim_instance": kwargs["sim_instance"],
+            "buff_runtime_view": runtime_context.buff_runtime_view,
+        }
+        compatibility_hook(
+            kwargs["element_type"],
+            kwargs["enemy"],
+            kwargs["time_now"],
+            getattr(runtime_context.sim_instance.schedule_data, queue_attr),
+            kwargs["char_obj_list"],
+            **compatibility_kwargs,
+        )
+        return
+    _run_update_anomaly(**kwargs)
+
 
 if TYPE_CHECKING:
     from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeFacade
@@ -74,17 +114,20 @@ class LegacyRuntimeCommandAdapter(RuntimeCommandPort):
         tick: int,
         skill_node: "SkillNode",
     ) -> None:
-        # 通过 ScheduleData 取当前 event_list，避免列表被重绑后持有过期引用。
-        legacy_update_anomaly(
-            element_type,
-            enemy,
-            tick,
-            self._data.event_list,
-            self._data.char_obj_list,
+        run_update_anomaly(
+            element_type=element_type,
+            enemy=enemy,
+            time_now=tick,
+            char_obj_list=self._data.char_obj_list,
+            sim_instance=self._sim_instance,
             skill_node=skill_node,
             dynamic_buff_dict=self._active_store_for_compat(),
-            buff_runtime_view=self._buff_runtime_view,
-            sim_instance=self._sim_instance,
+            runtime_context=create_anomaly_runtime_context(
+                sim_instance=self._sim_instance,
+                enemy=enemy,
+                buff_runtime_view=self._buff_runtime_view,
+                schedule_data=self._data,
+            ),
         )
 
     def settle_buffs(

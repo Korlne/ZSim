@@ -354,23 +354,28 @@ def test_runtime_command_same_tick_write_does_not_publish_or_broadcast(
     def fail_broadcast(**kwargs: object) -> None:
         raise AssertionError("runtime command should not broadcast listener events")
 
-    sim_instance = SimpleNamespace(listener_manager=SimpleNamespace(broadcast_event=fail_broadcast))
+    sim_instance = SimpleNamespace(
+        schedule_data=schedule_data,
+        listener_manager=SimpleNamespace(broadcast_event=fail_broadcast),
+    )
     captured: list[tuple[str, object]] = []
 
     def fake_update_anomaly(
+        *,
         element_type: int,
         enemy: object,
-        tick: int,
-        event_list: list[object],
+        time_now: int,
         char_obj_list: list[object],
-        *,
+        sim_instance: object,
         skill_node: object,
         dynamic_buff_dict: dict[str, list[object]],
-        sim_instance: object,
+        runtime_context: object,
         **kwargs: object,
     ) -> None:
-        captured.append(("update_event_list", event_list))
+        captured.append(("update_time", time_now))
+        captured.append(("update_char_obj_list", char_obj_list))
         captured.append(("update_dynamic_buff", dynamic_buff_dict))
+        captured.append(("update_runtime_context", runtime_context))
 
     def fake_settle_schedule_buffs(
         self: Any,
@@ -385,7 +390,7 @@ def test_runtime_command_same_tick_write_does_not_publish_or_broadcast(
         dynamic_buff_arg["enemy"].append("same-tick-settle")
         captured.append(("settle_dynamic_buff", dynamic_buff_arg))
 
-    monkeypatch.setattr(runtime_command_module, "legacy_update_anomaly", fake_update_anomaly)
+    monkeypatch.setattr(runtime_command_module, "run_update_anomaly", fake_update_anomaly)
     monkeypatch.setattr(
         buff_runtime_module.LegacyBuffRuntimeFacade,
         "settle_schedule_buffs",
@@ -397,7 +402,7 @@ def test_runtime_command_same_tick_write_does_not_publish_or_broadcast(
         action_stack=cast(Any, SimpleNamespace()),
         sim_instance=cast(Any, sim_instance),
     )
-    enemy = SimpleNamespace()
+    enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[]))
     skill_node = SimpleNamespace(skill_tag="1001_TEST")
 
     schedule_data.event_list = current_event_list
@@ -410,11 +415,17 @@ def test_runtime_command_same_tick_write_does_not_publish_or_broadcast(
     )
     port.settle_buffs(tick=18, enemy=cast(Any, enemy), skill_node=cast(Any, skill_node))
 
+    runtime_context = cast(Any, captured[3][1])
     assert captured == [
-        ("update_event_list", current_event_list),
+        ("update_time", 18),
+        ("update_char_obj_list", schedule_data.char_obj_list),
         ("update_dynamic_buff", dynamic_buff),
+        ("update_runtime_context", runtime_context),
         ("settle_dynamic_buff", dynamic_buff),
     ]
+    assert runtime_context.sim_instance is sim_instance
+    assert runtime_context.buff_runtime_view is None
+    assert runtime_context.dot_runtime_state.snapshot() == ()
     assert dynamic_buff["enemy"] == ["same-tick-settle"]
     assert current_event_list == []
 

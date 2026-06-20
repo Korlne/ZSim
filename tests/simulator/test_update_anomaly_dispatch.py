@@ -510,7 +510,6 @@ def test_update_anomaly_publishes_new_anomaly_via_dispatch_port_without_raw_queu
         1,
         enemy,
         10,
-        legacy_event_list,
         chars,
         sim_instance,
         skill_node,
@@ -528,7 +527,6 @@ def test_update_anomaly_publishes_new_anomaly_via_dispatch_port_without_raw_queu
 
 
 def test_update_anomaly_uses_current_schedule_queue_after_event_list_rebind():
-    legacy_event_list = _FailFastEventList()
     first_queue = _RecordingEventList()
     sim_instance = _build_sim_instance(first_queue)
     skill_node = _build_skill_node(element_type=1)
@@ -540,7 +538,6 @@ def test_update_anomaly_uses_current_schedule_queue_after_event_list_rebind():
         1,
         first_enemy,
         10,
-        legacy_event_list,
         chars,
         sim_instance,
         skill_node,
@@ -555,7 +552,6 @@ def test_update_anomaly_uses_current_schedule_queue_after_event_list_rebind():
         1,
         second_enemy,
         20,
-        legacy_event_list,
         chars,
         sim_instance,
         skill_node,
@@ -651,7 +647,6 @@ def test_update_anomaly_preserves_disorder_branch_order_state_and_optional_new_p
         element_type,
         enemy,
         10,
-        legacy_event_list,
         chars,
         sim_instance,
         skill_node,
@@ -692,7 +687,6 @@ def test_update_anomaly_preserves_disorder_branch_order_state_and_optional_new_p
     assert helper_calls == [
         ("from_enemy", enemy),
         ("remove_all", (old_dot,)),
-        ("from_enemy", enemy),
         ("replace_by_index", new_dot, 10),
     ]
 
@@ -793,7 +787,6 @@ def test_update_anomaly_records_new_anomaly_field_matrix_with_runtime_dot(
         3,
         enemy,
         14,
-        legacy_event_list,
         chars,
         sim_instance,
         skill_node,
@@ -883,7 +876,6 @@ def test_update_anomaly_ice_frost_mode_zero_publishes_only_when_currently_frozen
         element_type,
         enemy,
         18,
-        legacy_event_list,
         chars,
         sim_instance,
         skill_node,
@@ -1097,6 +1089,7 @@ def test_anomaly_effect_active_does_not_introduce_runtime_write_ports():
     remove_source = inspect.getsource(update_anomaly_module.remove_dots_cause_disorder)
     buff_add_source = inspect.getsource(buff_add_strategy_module)
     legacy_facade_source = inspect.getsource(LegacyBuffRuntimeFacade)
+    runtime_update_source = inspect.getsource(LegacyRuntimeCommandAdapter.update_anomaly)
 
     anomaly_forbidden_terms = {
         "ScheduleDispatchPort",
@@ -1169,8 +1162,14 @@ def test_anomaly_effect_active_does_not_introduce_runtime_write_ports():
 
     assert RuntimeCommandPort is not LegacyRuntimeCommandAdapter
     assert "publish_scheduled" not in inspect.getsource(RuntimeCommandPort)
+    assert "broadcast_event" not in inspect.getsource(RuntimeCommandPort)
     assert "publish_scheduled" not in inspect.getsource(LegacyRuntimeCommandAdapter)
+    assert "broadcast_event" not in inspect.getsource(LegacyRuntimeCommandAdapter)
     assert "publish_scheduled" not in legacy_facade_source
+    assert "event_list" not in runtime_update_source
+    assert "legacy_update_anomaly" not in runtime_update_source
+    assert "runtime_context" in runtime_update_source
+    assert "create_anomaly_runtime_context" in runtime_update_source
 
     write_method_names = {
         "enqueue_pending_buff",

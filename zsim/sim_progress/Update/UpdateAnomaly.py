@@ -1,6 +1,7 @@
 import importlib
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Callable
 
 from zsim.define import ELEMENT_TYPE_MAPPING
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
     from zsim.sim_progress.Preload import SkillNode
     from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
     from zsim.sim_progress.data_struct.schedule_dispatch import ScheduleDispatchPort
+    from zsim.simulator.dataclasses import ScheduleData
     from zsim.simulator.simulator_class import Simulator
 
 anomlay_dot_dict = {
@@ -33,6 +35,36 @@ anomlay_dot_dict = {
 }
 
 
+@dataclass(frozen=True)
+class AnomalyRuntimeContext:
+    dispatch_port: "ScheduleDispatchPort"
+    listener_broadcaster: Callable[..., None]
+    dot_runtime_state: DotRuntimeStateAdapter
+    buff_runtime_view: "BuffRuntimeReadPort | None"
+    sim_instance: "Simulator"
+
+
+def create_anomaly_runtime_context(
+    *,
+    sim_instance: "Simulator",
+    enemy,
+    buff_runtime_view: "BuffRuntimeReadPort | None" = None,
+    schedule_data: "ScheduleData | None" = None,
+) -> AnomalyRuntimeContext:
+    if schedule_data is not None and not hasattr(sim_instance, "schedule_data"):
+        setattr(sim_instance, "schedule_data", schedule_data)
+    return AnomalyRuntimeContext(
+        dispatch_port=create_schedule_dispatch_port(
+            sim_instance=sim_instance,
+            schedule_data=schedule_data,
+        ),
+        listener_broadcaster=sim_instance.listener_manager.broadcast_event,
+        dot_runtime_state=DotRuntimeStateAdapter.from_enemy(enemy),
+        buff_runtime_view=buff_runtime_view,
+        sim_instance=sim_instance,
+    )
+
+
 def spawn_output(anomaly_bar, mode_number, sim_instance: "Simulator", **kwargs):
     """
     该函数用于抛出一个新的属性异常类
@@ -40,6 +72,7 @@ def spawn_output(anomaly_bar, mode_number, sim_instance: "Simulator", **kwargs):
     if not isinstance(anomaly_bar, AnomalyBar):
         raise TypeError(f"{anomaly_bar}不是AnomalyBar类！")
     skill_node = kwargs.get("skill_node", None)
+    listener_broadcaster = kwargs.get("listener_broadcaster", None)
 
     if mode_number == 0:
         # 先处理快照，使其除以总权值。
@@ -60,7 +93,9 @@ def spawn_output(anomaly_bar, mode_number, sim_instance: "Simulator", **kwargs):
         raise ValueError("在调用spawn_output函数时，未正确生成一个AnomalyBar实例！")
     # 广播事件
     if mode_number in [1, 2]:
-        sim_instance.listener_manager.broadcast_event(event=output, signal=LBS.DISORDER_SPAWN)
+        if listener_broadcaster is None:
+            listener_broadcaster = sim_instance.listener_manager.broadcast_event
+        listener_broadcaster(event=output, signal=LBS.DISORDER_SPAWN)
     return output
 
 
@@ -75,6 +110,7 @@ def anomaly_effect_active(
     new_anomaly,
     element_type,
     sim_instance: "Simulator",
+    dot_runtime_state: DotRuntimeStateAdapter | None = None,
 ):
     """
     该函数的作用是创建属性异常附带的debuff和dot，
@@ -98,20 +134,20 @@ def anomaly_effect_active(
             element_type, timenow, bar=new_anomaly, sim_instance=sim_instance
         )
         if new_dot:
-            dot_runtime_state = DotRuntimeStateAdapter.from_enemy(enemy)
+            if dot_runtime_state is None:
+                dot_runtime_state = DotRuntimeStateAdapter.from_enemy(enemy)
             dot_runtime_state.replace_by_index(new_dot, timenow)
-            # event_list.append(new_dot)
 
 
 def update_anomaly(
     element_type: int,
     enemy,
     time_now: int,
-    event_list: list,
     char_obj_list: list,
     sim_instance: "Simulator",
     skill_node: "SkillNode",
     dynamic_buff_dict: dict[str, list["Buff"]],
+    runtime_context: AnomalyRuntimeContext | None = None,
     buff_runtime_view: "BuffRuntimeReadPort | None" = None,
     **kwargs,
 ):
@@ -121,7 +157,17 @@ def update_anomaly(
     第一个参数是属性种类，第二个参数是Enemy类的实例，第三个参数是当前时间
     如果判断通过触发，则会立刻实例化一个对应的属性异常实例（自带复制父类的状态与属性），
     """
-    dispatch_port = create_schedule_dispatch_port(sim_instance=sim_instance)
+    if runtime_context is None:
+        runtime_context = create_anomaly_runtime_context(
+            sim_instance=sim_instance,
+            enemy=enemy,
+            buff_runtime_view=buff_runtime_view,
+        )
+    dispatch_port = runtime_context.dispatch_port
+    listener_broadcaster = runtime_context.listener_broadcaster
+    dot_runtime_state = runtime_context.dot_runtime_state
+    buff_runtime_view = runtime_context.buff_runtime_view
+    sim_instance = runtime_context.sim_instance
     bar: AnomalyBar = enemy.anomaly_bars_dict[skill_node.element_type]
     if not isinstance(bar, AnomalyBar):
         raise TypeError(f"{type(bar)}不是Anomaly类！")
@@ -152,11 +198,9 @@ def update_anomaly(
             enemy.dynamic.active_anomaly_bar_dict[element_type] = active_bar
 
             # 异常事件监听器广播
-            sim_instance.listener_manager.broadcast_event(event=active_bar, signal=LBS.ANOMALY)
+            listener_broadcaster(event=active_bar, signal=LBS.ANOMALY)
             if active_bar.element_type in [0]:
-                sim_instance.listener_manager.broadcast_event(
-                    event=active_bar, signal=LBS.ASSAULT_SPAWN
-                )
+                listener_broadcaster(event=active_bar, signal=LBS.ASSAULT_SPAWN)
             """
             更新完毕，现在正式进入分支判断——触发同类异常 & 触发异类异常（紊乱）。
             无论是哪个分支，都需要涉及enemy下的两大容器：enemy_debuff_list以及enemy_dot_list的修改，
@@ -169,7 +213,11 @@ def update_anomaly(
                 """
                 mode_number = 0
                 new_anomaly = spawn_output(
-                    active_bar, mode_number, skill_node=skill_node, sim_instance=sim_instance
+                    active_bar,
+                    mode_number,
+                    skill_node=skill_node,
+                    sim_instance=sim_instance,
+                    listener_broadcaster=listener_broadcaster,
                 )
                 for _char in char_obj_list:
                     _char.special_resources(new_anomaly)
@@ -180,6 +228,7 @@ def update_anomaly(
                     new_anomaly,
                     element_type,
                     sim_instance=sim_instance,
+                    dot_runtime_state=dot_runtime_state,
                 )
                 if element_type in [2, 5]:
                     """
@@ -213,8 +262,6 @@ def update_anomaly(
                 )
                 setattr(enemy.dynamic, enemy.trans_anomaly_effect_to_str[element_type], True)
                 if element_type in [2, 5]:
-                    # if enemy.dynamic.frozen:
-                    #     event_list.append(last_anomaly_bar)
                     enemy.dynamic.frozen = True
                     # print("触发了新的冰异常！")
 
@@ -224,14 +271,25 @@ def update_anomaly(
                     mode_number,
                     skill_node=skill_node,
                     sim_instance=sim_instance,
+                    listener_broadcaster=listener_broadcaster,
                 )
                 enemy.dynamic.active_anomaly_bar_dict[last_anomaly_element_type] = None
                 enemy.anomaly_bars_dict[last_anomaly_element_type].active = False
-                remove_dots_cause_disorder(disorder, enemy, dispatch_port, time_now)
+                remove_dots_cause_disorder(
+                    disorder,
+                    enemy,
+                    dispatch_port,
+                    time_now,
+                    dot_runtime_state=dot_runtime_state,
+                )
 
                 # 新的激活异常根据原来的Bar进行复制，并且添加到enemy身上。
                 new_anomaly = spawn_output(
-                    active_bar, 0, skill_node=skill_node, sim_instance=sim_instance
+                    active_bar,
+                    0,
+                    skill_node=skill_node,
+                    sim_instance=sim_instance,
+                    listener_broadcaster=listener_broadcaster,
                 )
                 anomaly_effect_active(
                     active_bar,
@@ -240,6 +298,7 @@ def update_anomaly(
                     new_anomaly,
                     element_type,
                     sim_instance=sim_instance,
+                    dot_runtime_state=dot_runtime_state,
                 )
                 enemy.dynamic.active_anomaly_bar_dict[element_type] = active_bar
 
@@ -261,11 +320,18 @@ def update_anomaly(
             bar.reset_current_info_cause_output()
 
 
-def remove_dots_cause_disorder(disorder, enemy, dispatch_port, time_now):
+def remove_dots_cause_disorder(
+    disorder,
+    enemy,
+    dispatch_port,
+    time_now,
+    dot_runtime_state: DotRuntimeStateAdapter | None = None,
+):
     """
     该函数只负责移除dot。
     """
-    dot_runtime_state = DotRuntimeStateAdapter.from_enemy(enemy)
+    if dot_runtime_state is None:
+        dot_runtime_state = DotRuntimeStateAdapter.from_enemy(enemy)
     remove_dots_list = []
     for dots in dot_runtime_state.snapshot():
         if not isinstance(dots, Dot):
