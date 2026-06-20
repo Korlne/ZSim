@@ -12,11 +12,12 @@ PRODUCTION_ROOT = PROJECT_ROOT / "zsim" / "sim_progress"
 RAW_EVENT_APPEND_KINDS = {
     "compatibility_only_queue_append",
     "handler_requeue_append",
-    "local_event_group_append",
     "raw_data_event_list_append",
     "raw_event_list_append",
     "raw_schedule_data_event_list_append",
 }
+
+LOCAL_EVENT_GROUP_NAMES = {"adrenaline_events", "local_event_group"}
 
 TEMPORARY_RAW_EVENT_APPEND_ALLOWLIST = {
     (
@@ -24,11 +25,6 @@ TEMPORARY_RAW_EVENT_APPEND_ALLOWLIST = {
         "compatibility_only_queue_append",
         "self._event_queue.append(event)",
     ): "US-003",
-    (
-        "zsim/sim_progress/Character/Yixuan/AdrenalineManagerClass.py",
-        "local_event_group_append",
-        "event_list.append(event(char_instance=char_instance))",
-    ): "US-009",
 }
 
 
@@ -56,6 +52,7 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
         self.findings: list[Finding] = []
         self._parents: list[ast.AST] = []
         self._class_stack: list[str] = []
+        self._local_event_group_stack: list[set[str]] = []
 
     def visit(self, node: ast.AST):
         self._parents.append(node)
@@ -68,6 +65,16 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
         self._class_stack.append(node.name)
         self.generic_visit(node)
         self._class_stack.pop()
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._local_event_group_stack.append(self._local_event_groups_in_scope(node))
+        self.generic_visit(node)
+        self._local_event_group_stack.pop()
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._local_event_group_stack.append(self._local_event_groups_in_scope(node))
+        self.generic_visit(node)
+        self._local_event_group_stack.pop()
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         for alias in node.names:
@@ -178,10 +185,12 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             return None
 
         target = node.func.value
-        if isinstance(target, ast.Name) and target.id == "event_list":
-            if self._is_yixuan_local_event_group_path():
+        if isinstance(target, ast.Name):
+            if self._is_local_event_group_name(target.id):
                 return "local_event_group_append"
-            return "raw_event_list_append"
+            if target.id == "event_list":
+                return "raw_event_list_append"
+            return None
 
         if not isinstance(target, ast.Attribute):
             return None
@@ -206,11 +215,43 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             "zsim/sim_progress/ScheduledEvent/event_handlers/handlers/"
         )
 
-    def _is_yixuan_local_event_group_path(self) -> bool:
-        return (
-            self._relative_path()
-            == "zsim/sim_progress/Character/Yixuan/AdrenalineManagerClass.py"
-        )
+    def _is_local_event_group_name(self, name: str) -> bool:
+        return bool(self._local_event_group_stack) and name in self._local_event_group_stack[-1]
+
+    def _local_event_groups_in_scope(
+        self, node: ast.FunctionDef | ast.AsyncFunctionDef
+    ) -> set[str]:
+        names: set[str] = set()
+        for statement in node.body:
+            names.update(self._local_event_group_assignments(statement))
+        return names
+
+    def _local_event_group_assignments(self, node: ast.AST) -> set[str]:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
+            return set()
+
+        names: set[str] = set()
+        if isinstance(node, ast.Assign) and self._is_new_list(node.value):
+            for target in node.targets:
+                names.update(self._local_event_group_target_names(target))
+        elif isinstance(node, ast.AnnAssign) and node.value and self._is_new_list(node.value):
+            names.update(self._local_event_group_target_names(node.target))
+
+        for child in ast.iter_child_nodes(node):
+            names.update(self._local_event_group_assignments(child))
+        return names
+
+    @staticmethod
+    def _is_new_list(node: ast.AST) -> bool:
+        if isinstance(node, ast.List):
+            return True
+        return isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "list"
+
+    @staticmethod
+    def _local_event_group_target_names(target: ast.AST) -> set[str]:
+        if isinstance(target, ast.Name) and target.id in LOCAL_EVENT_GROUP_NAMES:
+            return {target.id}
+        return set()
 
     def _is_schedule_dispatch_compatibility_queue(self, target: ast.Attribute) -> bool:
         if self._relative_path() != "zsim/sim_progress/data_struct/schedule_dispatch.py":
@@ -265,7 +306,7 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
                 "US-004 owns migration to an EventContext requeue API"
             ),
             "local_event_group_append": (
-                "US-009 owns renaming this local event group away from event_list"
+                "keep local event groups distinctly named and outside ScheduleData.event_list"
             ),
             "raw_data_event_list_append": "publish planned payloads through ScheduleDispatchPort",
             "raw_event_list_append": (
@@ -388,7 +429,11 @@ def test_raw_event_list_append_guardrail_reports_event_layer_classifications() -
         ),
         (
             PRODUCTION_ROOT / "Character" / "Yixuan" / "AdrenalineManagerClass.py",
-            "def factory(event_list, event):\n    event_list.append(event)\n",
+            (
+                "def factory(event):\n"
+                "    adrenaline_events = []\n"
+                "    adrenaline_events.append(event)\n"
+            ),
             "local event group append; not ScheduleData.event_list",
         ),
     ]
@@ -405,6 +450,31 @@ def test_raw_event_list_append_guardrail_reports_event_layer_classifications() -
             f"classification suggestion: {classification}" in message
             for message in messages
         )
+
+
+def test_local_event_group_classification_uses_name_and_scope_not_path() -> None:
+    yixuan_path = PRODUCTION_ROOT / "Character" / "Yixuan" / "AdrenalineManagerClass.py"
+    local_source = (
+        "def factory(event):\n"
+        "    adrenaline_events = []\n"
+        "    adrenaline_events.append(event)\n"
+    )
+    local_visitor = LegacyEventListDiscoveryVisitor(yixuan_path, local_source)
+    local_visitor.visit(ast.parse(local_source))
+
+    assert len(local_visitor.findings) == 1
+    assert local_visitor.findings[0].kind == "local_event_group_append"
+    assert (
+        local_visitor.findings[0].classification_suggestion
+        == "local event group append; not ScheduleData.event_list"
+    )
+
+    raw_source = "def publish(event_list, event):\n    event_list.append(event)\n"
+    raw_visitor = LegacyEventListDiscoveryVisitor(yixuan_path, raw_source)
+    raw_visitor.visit(ast.parse(raw_source))
+
+    assert len(raw_visitor.findings) == 1
+    assert raw_visitor.findings[0].kind == "raw_event_list_append"
 
 
 def test_guardrail_failure_message_includes_post_deletion_triage_fields() -> None:

@@ -9,14 +9,14 @@ ADRENALINE_EVENT_LIST = [AuricArray, AuricInkUndercurrent]
 
 
 def adrenaline_event_factory(char_instance: "Yixuan") -> list:
-    event_list = []
+    adrenaline_events = []
     for event in ADRENALINE_EVENT_LIST:
         if event == AuricInkUndercurrent:
             if not char_instance.additional_abililty_active:
                 continue
-        event_list.append(event(char_instance=char_instance))
+        adrenaline_events.append(event(char_instance=char_instance))
 
-    return event_list
+    return adrenaline_events
 
 
 class AdrenalineManager:
