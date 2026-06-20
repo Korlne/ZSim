@@ -15,6 +15,9 @@ import zsim.sim_progress.ScheduledEvent.Calculator as calculator_module
 from zsim.sim_progress.Buff.BuffXLogic.BranchBladeSongCritDamageBonus import (
     BranchBladeSongCritDamageBonus,
 )
+from zsim.sim_progress.Buff.BuffXLogic.LinaCoreSkillPenRatioBonus import (
+    LinaCoreSkillPenRatioBonus,
+)
 from zsim.sim_progress.Buff.BuffXLogic.TimeweaverDisorderDmgMul import (
     TimeweaverDisorderDmgMul,
 )
@@ -737,6 +740,10 @@ def _legacy_personal_crit_damage_oracle(fixture: _AttributeReadFixture) -> float
     )
 
 
+def _legacy_pen_ratio_oracle(fixture: _AttributeReadFixture) -> float:
+    return Calculator.RegularMul.cal_pen_ratio(_legacy_multiplier_data(fixture))
+
+
 def _assert_aggregation_calls(
     aggregation_calls: list[_AggregationCall],
     fixture: _AttributeReadFixture,
@@ -923,6 +930,7 @@ def test_calculator_reader_service_public_surface_matches_reader() -> None:
         "read_full_crit_rate",
         "read_personal_crit_rate",
         "read_personal_crit_damage",
+        "read_pen_ratio",
     }
     assert service is get_calculator_buff_attribute_reader_service()
     assert isinstance(service, CalculatorBuffAttributeReaderService)
@@ -4833,6 +4841,41 @@ def test_attribute_reader_matches_old_anomaly_proficiency_helper(
     ]
 
 
+def test_calculator_reader_service_pen_ratio_matches_retained_formula(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    MultiplierData.mul_data_cache.clear()
+    fixture = _make_attribute_read_fixture(
+        name="丽娜",
+        static_statement_attrs={"PEN_ratio": 0.10},
+    )
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(pen_ratio=0.15),
+    )
+    service = get_calculator_buff_attribute_reader_service()
+
+    reader_value = service.read_pen_ratio(fixture.context)
+    retained_value = _legacy_pen_ratio_oracle(fixture)
+
+    assert reader_value == pytest.approx(0.25)
+    assert reader_value == pytest.approx(retained_value)
+    assert aggregation_calls == [
+        (
+            fixture.expected_enabled_buff,
+            None,
+            fixture.enemy.sim_instance,
+            fixture.char.NAME,
+        ),
+        (
+            fixture.expected_enabled_buff,
+            None,
+            fixture.enemy.sim_instance,
+            fixture.char.NAME,
+        ),
+    ]
+
+
 @pytest.mark.parametrize(
     (
         "static_imp",
@@ -5821,6 +5864,7 @@ def test_regular_mul_sheer_reader_snapshot_contract_stays_module_local() -> None
         "read_full_crit_rate",
         "read_personal_crit_rate",
         "read_personal_crit_damage",
+        "read_pen_ratio",
     }
     assert {
         "read_base_attr",
@@ -7645,6 +7689,90 @@ def test_timeweaver_disorder_gate_uses_attribute_reader_with_old_helper_parity(
     assert bool(reader_gate) is expected_gate
     assert get_prepared_calls == [
         {"equipper": "时流贤者", "preload_data": 1, "enemy": 1}
+    ]
+    assert aggregation_calls == [
+        (
+            fixture.expected_enabled_buff,
+            None,
+            fixture.enemy.sim_instance,
+            fixture.char.NAME,
+        ),
+        (
+            fixture.expected_enabled_buff,
+            None,
+            fixture.enemy.sim_instance,
+            fixture.char.NAME,
+        ),
+    ]
+
+
+def test_lina_pen_ratio_bonus_uses_reader_service_with_old_helper_parity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    MultiplierData.mul_data_cache.clear()
+    fixture = _make_attribute_read_fixture(
+        name="丽娜",
+        static_statement_attrs={"PEN_ratio": 0.10},
+    )
+    fixture.enemy.sim_instance.tick = 123
+    aggregation_calls = _patch_buff_aggregation(
+        monkeypatch,
+        _dynamic_statement_by_attr(pen_ratio=0.15),
+    )
+
+    logic = cast(
+        Any,
+        LinaCoreSkillPenRatioBonus.__new__(LinaCoreSkillPenRatioBonus),
+    )
+    sub_exist_buff_dict: dict[str, object] = {"lina": object()}
+    buff_0 = SimpleNamespace(
+        ft=SimpleNamespace(step=2.0),
+        dy=SimpleNamespace(count=20.0),
+    )
+    simple_start_calls: list[tuple[int, object]] = []
+    update_calls: list[object] = []
+    buff_instance = SimpleNamespace(
+        sim_instance=fixture.enemy.sim_instance,
+        ft=SimpleNamespace(maxcount=99.0),
+        dy=SimpleNamespace(count=0.0),
+    )
+    buff_instance.simple_start = (
+        lambda tick, sub_exist: simple_start_calls.append((tick, sub_exist))
+    )
+    buff_instance.update_to_buff_0 = lambda buff_0_arg: update_calls.append(buff_0_arg)
+    logic.buff_instance = buff_instance
+    logic.buff_0 = buff_0
+    logic.record = SimpleNamespace(
+        enemy=fixture.enemy,
+        char=fixture.char,
+        sub_exist_buff_dict=sub_exist_buff_dict,
+    )
+    get_prepared_calls: list[dict[str, object]] = []
+    logic.check_record_module = lambda: None
+    logic.get_prepared = lambda **kwargs: get_prepared_calls.append(kwargs)
+
+    logic.special_start_logic()
+    retained_pen_ratio = _legacy_pen_ratio_oracle(fixture)
+
+    source = inspect.getsource(LinaCoreSkillPenRatioBonus.special_start_logic)
+    assert "MultiplierData" not in source
+    assert "Mul(" not in source
+    assert "Cal.RegularMul.cal_pen_ratio" not in source
+    assert "create_calculator_runtime_read_context_from_sim_instance" in source
+    assert "read_pen_ratio" in source
+    assert "dynamic_buff_list=1" not in source
+    assert retained_pen_ratio == pytest.approx(0.25)
+    assert buff_0.dy.count == pytest.approx(18.0)
+    assert buff_instance.dy.count == pytest.approx(17.0)
+    assert simple_start_calls == [(123, sub_exist_buff_dict)]
+    assert update_calls == [buff_0]
+    assert get_prepared_calls == [
+        {
+            "action_stack": 1,
+            "char_CID": 1211,
+            "enemy": 1,
+            "sub_exist_buff_dict": 1,
+        }
     ]
     assert aggregation_calls == [
         (

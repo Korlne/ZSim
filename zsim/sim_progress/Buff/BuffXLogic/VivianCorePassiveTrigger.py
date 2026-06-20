@@ -2,10 +2,8 @@ from typing import Any
 
 from zsim.define import VIVIAN_REPORT
 from zsim.sim_progress.ScheduledEvent.Calculator import (
-    Calculator as Cal,
-)
-from zsim.sim_progress.ScheduledEvent.Calculator import (
-    MultiplierData as Mul,
+    create_calculator_runtime_read_context_from_sim_instance,
+    get_calculator_buff_attribute_reader_service,
 )
 from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduledEventEmitter,
@@ -106,7 +104,6 @@ class VivianCorePassiveTrigger(Buff.BuffLogic):
         self.get_prepared(
             char_CID=1361,
             preload_data=1,
-            dynamic_buff_list=1,
             enemy=1,
             sub_exist_buff_dict=1,
         )
@@ -122,8 +119,13 @@ class VivianCorePassiveTrigger(Buff.BuffLogic):
         copyed_anomaly = AnomalyBar.create_new_from_existing(active_anomaly_bar)
         if not copyed_anomaly.settled:
             copyed_anomaly.anomaly_settled()
-        mul_data = Mul(self.record.enemy, self.record.dynamic_buff_list, self.record.char)
-        ap = Cal.AnomalyMul.cal_ap(mul_data)
+        context = create_calculator_runtime_read_context_from_sim_instance(
+            sim_instance=self.buff_instance.sim_instance,
+            enemy=self.record.enemy,
+            character=self.record.char,
+        )
+        reader_service = get_calculator_buff_attribute_reader_service()
+        ap = reader_service.read_anomaly_proficiency(context)
         from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
             DirgeOfDestinyAnomaly,
         )

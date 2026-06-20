@@ -1,8 +1,6 @@
 from zsim.sim_progress.ScheduledEvent.Calculator import (
-    Calculator as Cal,
-)
-from zsim.sim_progress.ScheduledEvent.Calculator import (
-    MultiplierData as Mul,
+    create_calculator_runtime_read_context_from_sim_instance,
+    get_calculator_buff_attribute_reader_service,
 )
 
 from .. import Buff, JudgeTools, check_preparation
@@ -58,16 +56,20 @@ class LinaCoreSkillPenRatioBonus(Buff.BuffLogic):
         self.get_prepared(
             action_stack=1,
             char_CID=1211,
-            dynamic_buff_list=1,
             enemy=1,
             sub_exist_buff_dict=1,
         )
         tick_now = JudgeTools.find_tick(sim_instance=self.buff_instance.sim_instance)
         self.buff_instance.simple_start(tick_now, self.record.sub_exist_buff_dict)
         self.buff_0.dy.count -= self.buff_0.ft.step
-        mul_data = Mul(self.record.enemy, self.record.dynamic_buff_list, self.record.char)
 
-        pen_ratio = Cal.RegularMul.cal_pen_ratio(mul_data)
+        context = create_calculator_runtime_read_context_from_sim_instance(
+            sim_instance=self.buff_instance.sim_instance,
+            enemy=self.record.enemy,
+            character=self.record.char,
+        )
+        reader_service = get_calculator_buff_attribute_reader_service()
+        pen_ratio = reader_service.read_pen_ratio(context)
 
         count = min(pen_ratio * 0.2 * 100 + 12, self.buff_instance.ft.maxcount)
         self.buff_instance.dy.count = count

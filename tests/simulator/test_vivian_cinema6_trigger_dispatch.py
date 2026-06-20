@@ -99,14 +99,14 @@ class _FeatherManagerProbe:
         self.action_log.append(("update_myself", c6_signal))
 
 
-class _FakeMultiplierData:
-    instances: list["_FakeMultiplierData"] = []
+class _RecordingReaderService:
+    def __init__(self, *, ap: float) -> None:
+        self.ap = ap
+        self.contexts: list[object] = []
 
-    def __init__(self, enemy: object, dynamic_buff_list: object, char: object) -> None:
-        self.enemy = enemy
-        self.dynamic_buff_list = dynamic_buff_list
-        self.char = char
-        self.instances.append(self)
+    def read_anomaly_proficiency(self, context: object) -> float:
+        self.contexts.append(context)
+        return self.ap
 
 
 class _DynamicReadProbe:
@@ -191,6 +191,32 @@ def _patch_runtime_boundary_guards(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
+def _patch_calculator_reader_service(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    ap: float,
+) -> tuple[object, list[dict[str, object]], _RecordingReaderService]:
+    context = object()
+    context_calls: list[dict[str, object]] = []
+    reader_service = _RecordingReaderService(ap=ap)
+
+    def fake_create_context(**kwargs: object) -> object:
+        context_calls.append(kwargs)
+        return context
+
+    monkeypatch.setattr(
+        trigger_module,
+        "create_calculator_runtime_read_context_from_sim_instance",
+        fake_create_context,
+    )
+    monkeypatch.setattr(
+        trigger_module,
+        "get_calculator_buff_attribute_reader_service",
+        lambda: reader_service,
+    )
+    return context, context_calls, reader_service
+
+
 def _build_active_anomaly(*, sim_instance: object) -> AnomalyBar:
     anomaly_bar = AnomalyBar.__new__(AnomalyBar)
     anomaly_bar.sim_instance = sim_instance
@@ -258,7 +284,6 @@ def _build_logic_harness(*, active_anomalies: list[AnomalyBar]) -> tuple[
     )
     dynamic = _DynamicReadProbe(active_anomalies)
     enemy = SimpleNamespace(sim_instance=sim_instance, dynamic=dynamic)
-    dynamic_buff_list: dict[str, list[Any]] = {"enemy": []}
     buff_instance = SimpleNamespace(
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="vivian-cinema6"),
@@ -279,7 +304,6 @@ def _build_logic_harness(*, active_anomalies: list[AnomalyBar]) -> tuple[
     record = VivianCinema6TriggerRecord()
     record.char = char
     record.enemy = enemy
-    record.dynamic_buff_list = dynamic_buff_list
     record.guard_feather = 3
     return logic, record, dispatch_port, SimpleNamespace(
         sim_instance=sim_instance,
@@ -287,7 +311,6 @@ def _build_logic_harness(*, active_anomalies: list[AnomalyBar]) -> tuple[
         char=char,
         feather_manager=feather_manager,
         feather_updates=feather_manager.update_calls,
-        dynamic_buff_list=dynamic_buff_list,
         action_log=action_log,
         dynamic=dynamic,
         emitter_factory_calls=emitter_factory_calls,
@@ -317,15 +340,10 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
         self.settled_calls = getattr(self, "settled_calls", 0) + 1
 
     monkeypatch.setattr(AnomalyBar, "anomaly_settled", fake_anomaly_settled)
-    _FakeMultiplierData.instances.clear()
-    monkeypatch.setattr(trigger_module, "Mul", _FakeMultiplierData)
-    cal_ap_inputs: list[object] = []
-
-    def fake_cal_ap(mul_data: object) -> float:
-        cal_ap_inputs.append(mul_data)
-        return 250.0
-
-    monkeypatch.setattr(trigger_module.Cal.AnomalyMul, "cal_ap", fake_cal_ap)
+    reader_context, context_calls, reader_service = _patch_calculator_reader_service(
+        monkeypatch,
+        ap=250.0,
+    )
 
     skill_node = _build_skill_node()
 
@@ -378,11 +396,14 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
     assert active_anomaly.settled is False
     assert active_anomaly.settled_calls == 0
     assert harness.schedule_data.event_list == []
-    assert len(_FakeMultiplierData.instances) == 1
-    assert _FakeMultiplierData.instances[0].enemy is record.enemy
-    assert _FakeMultiplierData.instances[0].dynamic_buff_list is harness.dynamic_buff_list
-    assert _FakeMultiplierData.instances[0].char is harness.char
-    assert cal_ap_inputs == [_FakeMultiplierData.instances[0]]
+    assert context_calls == [
+        {
+            "sim_instance": harness.sim_instance,
+            "enemy": record.enemy,
+            "character": harness.char,
+        }
+    ]
+    assert reader_service.contexts == [reader_context]
 
 
 def test_vivian_cinema6_judge_wrong_skill_is_noop(

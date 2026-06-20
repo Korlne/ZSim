@@ -203,6 +203,15 @@ class BuffAttributeReader(Protocol):
         """读取个人实时暴击伤害。"""
         ...
 
+    def read_pen_ratio(
+        self,
+        context: BuffAttributeReadContext,
+        *,
+        addon_pen_ratio: float = 0.0,
+    ) -> float:
+        """读取穿透率。"""
+        ...
+
 
 def _legacy_enemy_debuffs(
     enemy_obj: Enemy,
@@ -1112,6 +1121,19 @@ class CalculatorBuffAttributeReader(BuffAttributeReader):
         data = self._build_formula_snapshot(context)
         return Calculator.RegularMul.cal_personal_crit_dmg(data)
 
+    def read_pen_ratio(
+        self,
+        context: BuffAttributeReadContext,
+        *,
+        addon_pen_ratio: float = 0.0,
+    ) -> float:
+        static, dynamic = self._build_statements(context)
+        return _calculate_pen_ratio(
+            static,
+            dynamic,
+            addon_pen_ratio=addon_pen_ratio,
+        )
+
     @staticmethod
     def _build_formula_snapshot(
         context: BuffAttributeReadContext,
@@ -1171,6 +1193,17 @@ class CalculatorBuffAttributeReaderService:
 
     def read_personal_crit_damage(self, context: BuffAttributeReadContext) -> float:
         return self._reader.read_personal_crit_damage(context)
+
+    def read_pen_ratio(
+        self,
+        context: BuffAttributeReadContext,
+        *,
+        addon_pen_ratio: float = 0.0,
+    ) -> float:
+        return self._reader.read_pen_ratio(
+            context,
+            addon_pen_ratio=addon_pen_ratio,
+        )
 
 
 _CALCULATOR_BUFF_ATTRIBUTE_READER_SERVICE = CalculatorBuffAttributeReaderService()

@@ -53,6 +53,24 @@ CALCULATOR_READ_GUARDRAIL_FILES = (
     / "sim_progress"
     / "Buff"
     / "BuffXLogic"
+    / "VivianCorePassiveTrigger.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "VivianCinema6Trigger.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "LinaCoreSkillPenRatioBonus.py",
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
     / "BranchBladeSongCritDamageBonus.py",
     PROJECT_ROOT
     / "zsim"
