@@ -109,7 +109,9 @@ def _make_sim_instance(
     enemy_debuff_mirror: list[Buff],
     tick: int = 42,
 ) -> Any:
-    return SimpleNamespace(
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
+
+    sim_instance = SimpleNamespace(
         load_data=SimpleNamespace(
             all_name_order_box={"Alice": ["Alice"], "enemy": ["enemy"]},
             exist_buff_dict=exist_buff_dict,
@@ -125,6 +127,13 @@ def _make_sim_instance(
         listener_manager=SimpleNamespace(broadcast_event=_fail_listener_broadcast),
         tick=tick,
     )
+    sim_instance.buff_runtime_state = BuffRuntimeState(
+        template_registry=exist_buff_dict,
+        pending_queue=loading_buff_dict,
+        active_store=dynamic_buff_dict,
+        enemy_mirror=enemy_debuff_mirror,
+    )
+    return sim_instance
 
 
 def _install_recording_runtime_facade(monkeypatch: Any) -> list[tuple[str, str, object]]:
@@ -152,16 +161,9 @@ def _install_recording_runtime_facade(monkeypatch: Any) -> list[tuple[str, str, 
             super().sync_enemy_debuff_mirror(buff)
 
     monkeypatch.setattr(
-        buff_runtime,
-        "create_legacy_buff_runtime_facade",
-        lambda **kwargs: _RecordingLegacyBuffRuntimeFacade(
-            runtime_state=buff_runtime.BuffRuntimeState(
-                template_registry=kwargs["exist_buff_dict"],
-                pending_queue=kwargs["loading_buff_dict"],
-                active_store=kwargs["dynamic_buff_dict"],
-                enemy_mirror=kwargs["enemy_debuff_mirror"],
-            )
-        ),
+        buff_runtime.BuffRuntimeState,
+        "create_facade",
+        lambda self: _RecordingLegacyBuffRuntimeFacade(runtime_state=self),
     )
     return calls
 

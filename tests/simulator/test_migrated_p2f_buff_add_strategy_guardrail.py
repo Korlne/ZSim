@@ -514,20 +514,14 @@ def test_migrated_p2f_guardrail_scope_is_exact_root_file_set() -> None:
     )
 
 
-def test_migrated_p2f_guardrail_preserves_retained_raw_container_compatibility() -> None:
+def test_migrated_p2f_guardrail_records_buff_add_strategy_deletion_stage() -> None:
     findings = [
         finding
         for finding in raw_guardrail._collect_findings()
         if finding.path == "zsim/sim_progress/Buff/BuffAddStrategy.py"
     ]
-    allowances = {raw_guardrail._allowance_for(finding) for finding in findings}
 
-    assert {
-        "legacy BuffAddStrategy facade construction",
-        "legacy BuffAddStrategy beneficiary selection registry read",
-        "legacy BuffAddStrategy template clone registry compatibility",
-        "legacy BuffAddStrategy inactive diagnostic helper",
-    }.issubset(allowances)
+    assert findings == []
 
 
 def test_migrated_p2f_guardrail_reports_forbidden_boundaries_with_context() -> None:

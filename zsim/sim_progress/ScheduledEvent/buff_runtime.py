@@ -129,6 +129,21 @@ class BuffRuntimeFacade(ABC):
         """读取旧模板注册表的只读视图。"""
 
     @abstractmethod
+    def find_registered_buff_source(self, buff_index: str) -> tuple[str, "Buff"] | None:
+        """查找包含指定 Buff 模板的受益者和模板。"""
+
+    @abstractmethod
+    def create_forced_add_buff(
+        self,
+        beneficiary: str,
+        buff_index: str,
+        *,
+        tick: int,
+        specified_count: int | float | None = None,
+    ) -> "Buff":
+        """从 runtime-owned 模板工厂创建并启动强制添加 Buff。"""
+
+    @abstractmethod
     def enqueue_pending_buff(self, beneficiary: str, buff: "Buff") -> None:
         """写入本 tick 待激活 Buff 队列。"""
 
@@ -234,6 +249,46 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         return MappingProxyType(
             dict(self._runtime_state.template_registry_for_compat().get(beneficiary, {}))
         )
+
+    def find_registered_buff_source(self, buff_index: str) -> tuple[str, "Buff"] | None:
+        for beneficiary, registered_buffs in (
+            self._runtime_state.template_registry_for_compat().items()
+        ):
+            if buff_index in registered_buffs:
+                return beneficiary, registered_buffs[buff_index]
+        return None
+
+    def create_forced_add_buff(
+        self,
+        beneficiary: str,
+        buff_index: str,
+        *,
+        tick: int,
+        specified_count: int | float | None = None,
+    ) -> "Buff":
+        from copy import deepcopy
+
+        source_registry = self._runtime_state.template_registry_for_compat()[beneficiary]
+        source_buff = source_registry[buff_index]
+        buff_new = deepcopy(source_buff)
+        buff_new.ft.operator = source_buff.ft.operator
+        buff_new.ft.passively_updating = source_buff.ft.passively_updating
+        buff_new.ft.beneficiary = source_buff.ft.beneficiary
+
+        if source_buff.ft.simple_start_logic and buff_new.ft.simple_effect_logic:
+            if specified_count is not None:
+                buff_new.simple_start(
+                    tick,
+                    source_registry,
+                    specified_count=specified_count,
+                )
+            else:
+                buff_new.simple_start(tick, source_registry)
+        elif not source_buff.ft.simple_start_logic:
+            buff_new.logic.xstart(benifit=beneficiary)
+        elif not source_buff.ft.simple_effect_logic:
+            buff_new.logic.xeffect()
+        return buff_new
 
     def enqueue_pending_buff(self, beneficiary: str, buff: "Buff") -> None:
         self._get_pending_queue(beneficiary).append(buff)

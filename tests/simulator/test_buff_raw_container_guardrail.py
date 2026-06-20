@@ -697,17 +697,6 @@ def _allowance_for(finding: Finding) -> str | None:
         )
         if signature in SCHEDULE_BUFF_SETTLE_RETAINED_SIGNATURES:
             return SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY
-    if path == "zsim/sim_progress/Buff/BuffAddStrategy.py":
-        if context == "_create_buff_add_runtime_facade":
-            return "legacy BuffAddStrategy facade construction"
-        if context in {"buff_add_strategy", "confirm_selected_character"}:
-            if finding.classification_suggestion == "registry/template old-container passthrough":
-                return "legacy BuffAddStrategy beneficiary selection registry read"
-        if context == "let_buff_start":
-            if finding.classification_suggestion == "registry/template old-container passthrough":
-                return "legacy BuffAddStrategy template clone registry compatibility"
-        if context == "__check_buff_add_result":
-            return "legacy BuffAddStrategy inactive diagnostic helper"
     if path == "zsim/sim_progress/Update/Update_Buff.py":
         if context == "update_time_related_effect":
             return "retained Update_Buff time-effect compatibility wrapper"
@@ -842,10 +831,6 @@ EXPECTED_RETAINED_REFERENCE_CEILINGS = {
     "legacy buff_add pending-to-active compatibility path": 10,
     "legacy buff_add enemy debuff mirror sync": 3,
     SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY: 26,
-    "legacy BuffAddStrategy facade construction": 8,
-    "legacy BuffAddStrategy beneficiary selection registry read": 6,
-    "legacy BuffAddStrategy template clone registry compatibility": 6,
-    "legacy BuffAddStrategy inactive diagnostic helper": 7,
     "retained Update_Buff time-effect compatibility wrapper": 5,
     "retained Update_Buff active-store traversal and no-facade fallback": 7,
     "legacy KickOutBuff active-removal compatibility path": 5,
@@ -1076,23 +1061,8 @@ def test_raw_old_container_guardrail_classifies_buff_add_strategy_boundary() -> 
         for finding in _collect_findings()
         if finding.path == "zsim/sim_progress/Buff/BuffAddStrategy.py"
     ]
-    allowances = {_allowance_for(finding) for finding in findings}
 
-    assert "legacy BuffAddStrategy facade construction" in allowances
-    assert "legacy BuffAddStrategy beneficiary selection registry read" in allowances
-    assert "legacy BuffAddStrategy template clone registry compatibility" in allowances
-    assert all(
-        not (
-            finding.context == "let_buff_start"
-            and finding.classification_suggestion
-            in {
-                "active store old-container passthrough",
-                "enemy debuff mirror old-container passthrough",
-                "pending queue old-container passthrough",
-            }
-        )
-        for finding in findings
-    )
+    assert findings == []
 
 
 def test_raw_old_container_guardrail_blocks_new_buff_add_strategy_pending_write() -> None:

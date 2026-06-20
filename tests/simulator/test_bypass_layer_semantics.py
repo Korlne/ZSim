@@ -141,20 +141,13 @@ def _install_buff_add_cross_layer_guards(
             facade_calls.append(("sync_enemy_debuff_mirror", "enemy", buff))
             super().sync_enemy_debuff_mirror(buff)
 
-    def create_recording_legacy_facade(
-        **kwargs: Any,
+    def create_recording_state_facade(
+        self: buff_runtime_module.BuffRuntimeState,
     ) -> buff_runtime_module.BuffRuntimeFacade:
         facade_calls.append(
-            ("create_legacy_buff_runtime_facade", "runtime", "LegacyBuffRuntimeFacade")
+            ("create_buff_runtime_state_facade", "runtime", "BuffRuntimeState")
         )
-        return _RecordingLegacyBuffRuntimeFacade(
-            runtime_state=buff_runtime_module.BuffRuntimeState(
-                template_registry=kwargs["exist_buff_dict"],
-                pending_queue=kwargs["loading_buff_dict"],
-                active_store=kwargs["dynamic_buff_dict"],
-                enemy_mirror=kwargs["enemy_debuff_mirror"],
-            )
-        )
+        return _RecordingLegacyBuffRuntimeFacade(runtime_state=self)
 
     def fail_schedule_dispatch_port(*args: object, **kwargs: object) -> None:
         raise AssertionError("buff_add_strategy must not create ScheduleDispatchPort")
@@ -166,9 +159,9 @@ def _install_buff_add_cross_layer_guards(
         raise AssertionError("buff_add_strategy must not create BuffRuntimeReadPort")
 
     monkeypatch.setattr(
-        buff_runtime_module,
-        "create_legacy_buff_runtime_facade",
-        create_recording_legacy_facade,
+        buff_runtime_module.BuffRuntimeState,
+        "create_facade",
+        create_recording_state_facade,
     )
     monkeypatch.setattr(
         schedule_dispatch_module,
@@ -476,9 +469,9 @@ def test_buff_add_strategy_cross_layer_boundary_covers_target_shapes(
     assert any(
         call
         == (
-            "create_legacy_buff_runtime_facade",
+            "create_buff_runtime_state_facade",
             "runtime",
-            "LegacyBuffRuntimeFacade",
+            "BuffRuntimeState",
         )
         for call in facade_calls
     )

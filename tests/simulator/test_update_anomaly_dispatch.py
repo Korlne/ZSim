@@ -1154,14 +1154,18 @@ def test_anomaly_effect_active_does_not_introduce_runtime_write_ports():
         "BuffRuntimeReadPort",
         "listener_manager",
         "broadcast_event",
+        "create_legacy_buff_runtime_facade",
+        "global_stats",
+        "DYNAMIC_BUFF_DICT",
+        "LOADING_BUFF_DICT",
+        "dynamic_debuff_list",
+        "exist_buff_dict",
     }
     for term in buff_add_forbidden_terms:
         assert term not in buff_add_source
-    assert "create_legacy_buff_runtime_facade" in buff_add_source
-    assert "exist_buff_dict" in buff_add_source
-    assert "DYNAMIC_BUFF_DICT" in buff_add_source
-    assert "LOADING_BUFF_DICT" in buff_add_source
-    assert "dynamic_debuff_list" in buff_add_source
+    assert "buff_runtime_state.create_facade" in buff_add_source
+    assert "create_forced_add_buff" in buff_add_source
+    assert "find_registered_buff_source" in buff_add_source
 
     assert RuntimeCommandPort is not LegacyRuntimeCommandAdapter
     assert "publish_scheduled" not in inspect.getsource(RuntimeCommandPort)
