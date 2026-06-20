@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel
 
 from zsim.define import config
-from zsim.sim_progress.Buff import BuffLoadLoop
 from zsim.sim_progress.Character.skill_class import Skill
 from zsim.sim_progress.data_struct import ActionStack, Decibelmanager, ListenerManger
 from zsim.sim_progress.Enemy import Enemy
@@ -273,13 +272,11 @@ class Simulator:
                 self.schedule_data.event_list,
                 self.char_data.char_obj_list,
             )
-            BuffLoadLoop(
-                self.tick,
-                self.load_data.load_mission_dict,
-                self.load_data.exist_buff_dict,
-                self.init_data.name_box,
-                self.load_data.LOADING_BUFF_DICT,
-                self.load_data.all_name_order_box,
+            buff_runtime.load_pending_buffs(
+                time_now=self.tick,
+                load_mission_dict=self.load_data.load_mission_dict,
+                character_name_box=self.init_data.name_box,
+                all_name_order_box=self.load_data.all_name_order_box,
                 sim_instance=self,
             )
             buff_runtime.activate_pending_buffs(timenow=self.tick)

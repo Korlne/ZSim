@@ -9,6 +9,7 @@ from zsim.sim_progress.Report import report_to_log
 if TYPE_CHECKING:
     from zsim.sim_progress.Buff import Buff
     from zsim.sim_progress.Enemy import Enemy
+    from zsim.simulator.simulator_class import Simulator
 
 
 class BuffRuntimeState:
@@ -165,6 +166,18 @@ class BuffRuntimeFacade(ABC):
         """按 Buff index 从 enemy debuff 镜像移除 Buff。"""
 
     @abstractmethod
+    def load_pending_buffs(
+        self,
+        *,
+        time_now: int,
+        load_mission_dict: dict,
+        character_name_box: list[str],
+        all_name_order_box: dict,
+        sim_instance: "Simulator",
+    ) -> dict[str, list["Buff"]]:
+        """执行 Buff load 阶段并填充本 tick 待激活队列。"""
+
+    @abstractmethod
     def activate_pending_buffs(self, *, timenow: float) -> dict[str, list["Buff"]]:
         """把本 tick 待激活 Buff 提升到旧 active 容器。"""
 
@@ -263,6 +276,27 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         existing_buff = self._find_enemy_debuff_mirror(buff)
         if existing_buff is not None:
             self._runtime_state.enemy_mirror_for_compat().remove(existing_buff)
+
+    def load_pending_buffs(
+        self,
+        *,
+        time_now: int,
+        load_mission_dict: dict,
+        character_name_box: list[str],
+        all_name_order_box: dict,
+        sim_instance: "Simulator",
+    ) -> dict[str, list["Buff"]]:
+        from zsim.sim_progress.Buff.BuffLoad import BuffLoadLoop
+
+        return BuffLoadLoop(
+            time_now,
+            load_mission_dict,
+            self._runtime_state.template_registry_for_compat(),
+            character_name_box,
+            self._runtime_state.pending_queue_for_compat(),
+            all_name_order_box,
+            sim_instance=sim_instance,
+        )
 
     def activate_pending_buffs(self, *, timenow: float) -> dict[str, list["Buff"]]:
         for beneficiary in self._runtime_state.pending_queue_for_compat():

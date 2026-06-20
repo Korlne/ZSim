@@ -680,7 +680,7 @@ def _allowance_for(finding: Finding) -> str | None:
         if context == "Simulator._create_buff_runtime_facade":
             return "legacy facade construction"
         if context == "Simulator.main_loop":
-            return "retained BuffLoadLoop/ScheduledEvent main-loop boundary"
+            return "retained ScheduledEvent main-loop boundary"
     if path == "zsim/sim_progress/Buff/BuffLoad.py":
         return "retained BuffLoadLoop trigger judgement and pending queue population"
     if path == "zsim/sim_progress/Buff/BuffAdd.py":
@@ -837,7 +837,7 @@ EXPECTED_RETAINED_REFERENCE_CEILINGS = {
     "BuffRuntimeState owner construction": 4,
     "legacy facade adapter internals": 59,
     "legacy facade construction": 8,
-    "retained BuffLoadLoop/ScheduledEvent main-loop boundary": 4,
+    "retained ScheduledEvent main-loop boundary": 2,
     "retained BuffLoadLoop trigger judgement and pending queue population": 41,
     "legacy buff_add pending-to-active compatibility path": 10,
     "legacy buff_add enemy debuff mirror sync": 3,
@@ -953,6 +953,20 @@ def test_raw_old_container_retained_boundary_counts_do_not_expand() -> None:
             f"- {allowance}: {count} > {EXPECTED_RETAINED_REFERENCE_CEILINGS[allowance]}"
             for allowance, count in sorted(expanded.items())
         )
+    )
+
+
+def test_main_loop_keeps_buffload_pending_queue_behind_runtime_api() -> None:
+    findings = [
+        finding
+        for finding in _collect_findings()
+        if finding.path == "zsim/simulator/simulator_class.py"
+        and finding.context == "Simulator.main_loop"
+    ]
+
+    assert all(
+        finding.classification_suggestion != "pending queue old-container passthrough"
+        for finding in findings
     )
 
 

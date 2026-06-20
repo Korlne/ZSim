@@ -16,11 +16,33 @@ class _RuntimeProbe:
     def __init__(self, order: list[str]) -> None:
         self._order = order
         self.calls: list[tuple[int, Any]] = []
+        self.load_ticks: list[int] = []
         self.activation_ticks: list[float] = []
 
     def update_time_related_effects(self, *, tick: int, enemy: Any) -> None:
         self.calls.append((tick, enemy))
         self._order.append(f"tick_sweep:{tick}")
+
+    def load_pending_buffs(
+        self,
+        *,
+        time_now: int,
+        load_mission_dict: dict[str, Any],
+        character_name_box: list[str],
+        all_name_order_box: dict[str, Any],
+        sim_instance: Any,
+    ) -> dict[str, list[Any]]:
+        self.load_ticks.append(time_now)
+        self._order.append(f"load_pending:{time_now}")
+        record_rebuild_count = getattr(
+            sim_instance, "_record_buff_runtime_rebuild_count", None
+        )
+        if record_rebuild_count is not None:
+            record_rebuild_count("buff_load_loop")
+        pending_queue = sim_instance.buff_runtime_state.pending_queue_for_compat()
+        for character in [*character_name_box, "enemy"]:
+            pending_queue[character] = []
+        return pending_queue
 
     def activate_pending_buffs(self, *, timenow: float) -> dict[str, list[Any]]:
         self.activation_ticks.append(timenow)
@@ -81,11 +103,6 @@ def _patch_main_loop_leaf_calls(monkeypatch: pytest.MonkeyPatch, order: list[str
     )
     monkeypatch.setattr(
         simulator_class,
-        "BuffLoadLoop",
-        lambda *args, **kwargs: order.append("buff_load"),
-    )
-    monkeypatch.setattr(
-        simulator_class,
         "stop_report_threads",
         lambda: order.append("stop_report_threads"),
     )
@@ -123,13 +140,14 @@ def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
     assert sim.buff_runtime_state.active_store_for_compat() is dynamic_buff_dict
     assert sim.buff_runtime_state.enemy_mirror_for_compat() is enemy.dynamic.dynamic_debuff_list
     assert runtime.calls == [(0, enemy), (1, enemy)]
+    assert runtime.load_ticks == [0]
     assert runtime.activation_ticks == [0]
     assert order == [
         "create_facade",
         "tick_sweep:0",
         "preload:0",
         "damage_judge",
-        "buff_load",
+        "load_pending:0",
         "activate_pending:0",
         "scheduled_init",
         "scheduled_start",
@@ -163,8 +181,10 @@ def test_main_loop_creates_one_buff_runtime_facade_per_run_not_per_tick(
 
     assert len(factory_calls) == 2
     assert runtimes[0].calls == [(0, enemy), (1, enemy), (2, enemy)]
+    assert runtimes[0].load_ticks == [0, 1]
     assert runtimes[0].activation_ticks == [0, 1]
     assert runtimes[1].calls == [(2, enemy), (3, enemy), (4, enemy)]
+    assert runtimes[1].load_ticks == [2, 3]
     assert runtimes[1].activation_ticks == [2, 3]
 
 
@@ -204,6 +224,31 @@ def test_buff_load_loop_records_count_only_when_opted_in() -> None:
         sim_instance=sim,
     )
 
+    assert sim.get_buff_runtime_rebuild_counts() == {"buff_load_loop": 1}
+
+
+def test_buff_runtime_facade_load_pending_buffs_owns_load_containers() -> None:
+    sim = cast(Any, Simulator())
+    sim.enable_buff_runtime_rebuild_counting()
+    exist_buff_dict: dict[str, dict[str, Any]] = {"alpha": {}}
+    loading_buff_dict: dict[str, list[Any]] = {"alpha": [object()]}
+    runtime_state = BuffRuntimeState(
+        template_registry=exist_buff_dict,
+        pending_queue=loading_buff_dict,
+        active_store={"alpha": []},
+        enemy_mirror=[],
+    )
+
+    result = runtime_state.create_facade().load_pending_buffs(
+        time_now=0,
+        load_mission_dict={},
+        character_name_box=["alpha"],
+        all_name_order_box={},
+        sim_instance=sim,
+    )
+
+    assert result is loading_buff_dict
+    assert loading_buff_dict == {"alpha": [], "enemy": []}
     assert sim.get_buff_runtime_rebuild_counts() == {"buff_load_loop": 1}
 
 
@@ -324,5 +369,6 @@ def test_main_loop_records_opt_in_facade_and_buff_load_counts(
         "buff_load_loop": 2,
     }
     assert runtime.calls == [(0, enemy), (1, enemy), (2, enemy)]
+    assert runtime.load_ticks == [0, 1]
     assert runtime.activation_ticks == [0, 1]
     assert loading_buff_dict == {"alpha": [], "enemy": []}
