@@ -216,6 +216,9 @@ XLOGIC_ADAPTER_DIRECT_READER_CONSTRUCTION = (
 )
 XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND = "broad JudgeTools.find_* call"
 XLOGIC_ADAPTER_DIRECT_TRIGGER_REGISTRY_SCAN = "direct trigger_buff_0 registry scan"
+XLOGIC_ADAPTER_LEGACY_GET_PREPARED = (
+    "legacy get_prepared without PreparationContext"
+)
 
 XLOGIC_ADAPTER_CALCULATOR_SERVICE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
@@ -242,6 +245,10 @@ XLOGIC_ADAPTER_CALCULATOR_SERVICE_FILES = (
 XLOGIC_ADAPTER_TRIGGER_REF_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritRateBonus.py",
 )
+XLOGIC_ADAPTER_TEMPLATE_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/_char_buff_mod.py",
+    "zsim/sim_progress/Buff/BuffXLogic/_euipment_buff_mod.py",
+)
 
 XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS = {
     path: frozenset(
@@ -256,6 +263,16 @@ for path in XLOGIC_ADAPTER_TRIGGER_REF_FILES:
     XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[path] = XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS.get(
         path, frozenset()
     ) | frozenset({XLOGIC_ADAPTER_DIRECT_TRIGGER_REGISTRY_SCAN})
+for path in XLOGIC_ADAPTER_TEMPLATE_FILES:
+    XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[path] = XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS.get(
+        path, frozenset()
+    ) | frozenset(
+        {
+            XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND,
+            XLOGIC_ADAPTER_DIRECT_ACTIVE_VIEW,
+            XLOGIC_ADAPTER_LEGACY_GET_PREPARED,
+        }
+    )
 
 SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY = (
     "legacy ScheduleBuffSettle command-adapter internals"
@@ -985,6 +1002,32 @@ def _is_judge_tools_find_call(func: ast.expr) -> bool:
     )
 
 
+def _is_check_preparation_call(func: ast.expr) -> bool:
+    if isinstance(func, ast.Name):
+        return func.id == "check_preparation"
+    return isinstance(func, ast.Attribute) and func.attr == "check_preparation"
+
+
+def _check_preparation_call_has_context(node: ast.Call) -> bool:
+    return any(keyword.arg == "preparation_context" for keyword in node.keywords)
+
+
+def _legacy_get_prepared_check_preparation_calls(
+    node: ast.FunctionDef,
+) -> list[ast.Call]:
+    if node.name != "get_prepared":
+        return []
+    findings: list[ast.Call] = []
+    for child in ast.walk(node):
+        if (
+            isinstance(child, ast.Call)
+            and _is_check_preparation_call(child.func)
+            and not _check_preparation_call_has_context(child)
+        ):
+            findings.append(child)
+    return findings
+
+
 def _is_find_exist_buff_dict_call(node: ast.AST) -> bool:
     if not isinstance(node, ast.Call):
         return False
@@ -1034,6 +1077,20 @@ def _collect_xlogic_adapter_guardrail_findings_from_source(
     relative_path = path.relative_to(PROJECT_ROOT).as_posix()
 
     for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.FunctionDef)
+            and XLOGIC_ADAPTER_LEGACY_GET_PREPARED in forbidden_kinds
+        ):
+            for call in _legacy_get_prepared_check_preparation_calls(node):
+                findings.append(
+                    XLogicAdapterGuardrailFinding(
+                        path=relative_path,
+                        line=call.lineno,
+                        kind=XLOGIC_ADAPTER_LEGACY_GET_PREPARED,
+                        matched_expression=_adapter_source_for(source, call),
+                    )
+                )
+
         if (
             isinstance(node, ast.Subscript)
             and XLOGIC_ADAPTER_DIRECT_TRIGGER_REGISTRY_SCAN in forbidden_kinds
@@ -1597,6 +1654,36 @@ def test_xlogic_adapter_guardrail_can_freeze_migrated_judgetools_find_calls() ->
     message = findings[0].message()
     assert "JudgeTools.find_exist_buff_dict" in message
     assert XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND in message
+
+
+def test_xlogic_adapter_guardrail_flags_legacy_get_prepared_wrapper() -> None:
+    source = (
+        "def get_prepared(self, **kwargs):\n"
+        "    return check_preparation(\n"
+        "        buff_instance=self.buff_instance,\n"
+        "        buff_0=self.buff_0,\n"
+        "        **kwargs,\n"
+        "    )\n"
+    )
+    path = (
+        PROJECT_ROOT
+        / "zsim"
+        / "sim_progress"
+        / "Buff"
+        / "BuffXLogic"
+        / "_adapter_fixture.py"
+    )
+
+    findings = _collect_xlogic_adapter_guardrail_findings_from_source(
+        path,
+        source,
+        frozenset({XLOGIC_ADAPTER_LEGACY_GET_PREPARED}),
+    )
+
+    assert len(findings) == 1
+    message = findings[0].message()
+    assert "check_preparation" in message
+    assert XLOGIC_ADAPTER_LEGACY_GET_PREPARED in message
 
 
 def test_xlogic_adapter_guardrail_flags_trigger_registry_scans() -> None:
