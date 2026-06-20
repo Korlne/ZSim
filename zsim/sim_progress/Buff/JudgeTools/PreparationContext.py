@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Mapping, Sequence
 
 if TYPE_CHECKING:
     from .. import Buff
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
     from zsim.simulator.simulator_class import Simulator
 
 
@@ -160,11 +161,15 @@ class PreparationContext:
     equipment_owner_lookup: EquipmentOwnerLookup
     template_registry: BuffTemplateRegistryReadPort
     trigger_buff_lookup: TriggerBuffLookup
-    active_buff_view: Any
+    buff_runtime_read_port: "BuffRuntimeReadPort"
     enemy: Any
     action_stack: Any
     preload_data: Any
     char_obj_list: Sequence[Any]
+
+    @property
+    def active_buff_view(self) -> Mapping[str, Sequence[Any]]:
+        return self.buff_runtime_read_port.get_active_buff_view()
 
     def find_equipper(self, item_name: str) -> str | None:
         return self.equipment_owner_lookup.owner_for(item_name)
@@ -184,6 +189,25 @@ class PreparationContext:
     def find_trigger_buff_ref(self, trigger_ref: TriggerBuffRef) -> Any:
         return self.trigger_buff_lookup.find_by_ref(trigger_ref)
 
+    def find_active_buffs(self, owner_name: Any) -> Sequence[Any]:
+        return self.active_buff_view[owner_name]
+
+
+def _create_buff_runtime_read_port_from_sim_instance(
+    sim_instance: "Simulator",
+) -> "BuffRuntimeReadPort":
+    runtime_state = getattr(sim_instance, "buff_runtime_state", None)
+    if runtime_state is not None:
+        return runtime_state.create_read_port()
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import (
+        create_buff_runtime_read_port,
+    )
+
+    return create_buff_runtime_read_port(
+        dynamic_buff=sim_instance.global_stats.DYNAMIC_BUFF_DICT,
+        exist_buff_dict=sim_instance.load_data.exist_buff_dict,
+    )
+
 
 def build_preparation_context_from_sim_instance(
     sim_instance: "Simulator",
@@ -196,7 +220,9 @@ def build_preparation_context_from_sim_instance(
         equipment_owner_lookup=EquipmentOwnerLookup(sim_instance.init_data.Judge_list_set),
         template_registry=template_registry,
         trigger_buff_lookup=TriggerBuffLookup(template_registry),
-        active_buff_view=sim_instance.global_stats.DYNAMIC_BUFF_DICT,
+        buff_runtime_read_port=_create_buff_runtime_read_port_from_sim_instance(
+            sim_instance
+        ),
         enemy=sim_instance.schedule_data.enemy,
         action_stack=sim_instance.load_data.action_stack,
         preload_data=sim_instance.preload.preload_data,

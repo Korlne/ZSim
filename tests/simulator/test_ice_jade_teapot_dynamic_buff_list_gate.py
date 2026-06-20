@@ -4,14 +4,17 @@ import ast
 import sys
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any, Mapping, Sequence, cast
 
 import pytest
 import zsim.define as define_module
+from zsim.sim_progress.ScheduledEvent.buff_runtime import (
+    BuffRuntimeReadPort,
+    BuffRuntimeState,
+)
 
 sys.modules.setdefault("define", define_module)
 
-import zsim.sim_progress.Buff.BuffXLogic.IceJadeTeaPotExtraDMGBonus as icejade_module
 from zsim.sim_progress.Buff.BuffXLogic.IceJadeTeaPotExtraDMGBonus import (
     IceJadeTeaPotExtraDMGBonus,
 )
@@ -36,45 +39,39 @@ class _FailIfCountRead:
         raise AssertionError("later matching IceJade Buff must not be inspected")
 
 
-class _GuardedDynamicBuffDict(dict[str, list[object]]):
-    def __init__(
-        self,
-        entries: dict[str, list[object]],
-        *,
-        calls: list[tuple[str, str, object]],
-        expected_sim_instance: object,
-    ) -> None:
-        super().__init__(entries)
-        self._calls = calls
-        self._expected_sim_instance = expected_sim_instance
-
-    def __getitem__(self, key: str) -> list[object]:
-        assert self._calls == [
-            ("find_equipper", _ICEJADE_ITEM_NAME, self._expected_sim_instance)
-        ]
-        return super().__getitem__(key)
-
-
-class _GuardedGlobalStats:
-    def __init__(
-        self,
-        dynamic_buff_dict: _GuardedDynamicBuffDict,
-        *,
-        calls: list[tuple[str, str, object]],
-        expected_sim_instance: object,
-    ) -> None:
-        self._dynamic_buff_dict = dynamic_buff_dict
-        self._calls = calls
-        self._expected_sim_instance = expected_sim_instance
-        self.reads = 0
-
+class _FailingGlobalStats:
     @property
-    def DYNAMIC_BUFF_DICT(self) -> _GuardedDynamicBuffDict:
-        assert self._calls == [
-            ("find_equipper", _ICEJADE_ITEM_NAME, self._expected_sim_instance)
-        ]
-        self.reads += 1
-        return self._dynamic_buff_dict
+    def DYNAMIC_BUFF_DICT(self) -> object:
+        raise AssertionError("Ice Jade should read active Buffs through BuffRuntimeReadPort")
+
+
+class _RuntimeViewProbe(BuffRuntimeReadPort):
+    def __init__(self, active_buff_view: Mapping[str, Sequence[object]]) -> None:
+        self.active_buff_view = active_buff_view
+        self.active_view_calls = 0
+
+    def get_active_buffs(self, beneficiary: str) -> Sequence[object]:
+        return tuple(self.active_buff_view.get(beneficiary, ()))
+
+    def get_active_buff_view(self) -> Mapping[str, Sequence[object]]:
+        self.active_view_calls += 1
+        return self.active_buff_view
+
+    def get_exist_buff_snapshot(self, beneficiary: str) -> Mapping[str, object]:
+        return {}
+
+    def get_exist_buff_snapshot_view(self) -> Mapping[str, Mapping[str, object]]:
+        return {}
+
+
+class _RuntimeStateProbe:
+    def __init__(self, runtime_view: _RuntimeViewProbe) -> None:
+        self.runtime_view = runtime_view
+        self.create_read_port_calls = 0
+
+    def create_read_port(self) -> _RuntimeViewProbe:
+        self.create_read_port_calls += 1
+        return self.runtime_view
 
 
 def _dynamic_buff(index: str, count: float) -> object:
@@ -100,9 +97,20 @@ def _make_sim_instance(
         judge_list_set = [
             [_ICEJADE_EQUIPPER, _ICEJADE_ITEM_NAME, "test-slot", "test-2pc"]
         ]
+    enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_debuff_list=[]))
     return SimpleNamespace(
+        char_data=SimpleNamespace(char_obj_list=[]),
         init_data=SimpleNamespace(Judge_list_set=judge_list_set),
-        global_stats=SimpleNamespace(DYNAMIC_BUFF_DICT=dynamic_buff_dict),
+        load_data=SimpleNamespace(exist_buff_dict={}, action_stack=SimpleNamespace()),
+        schedule_data=SimpleNamespace(enemy=enemy),
+        global_stats=_FailingGlobalStats(),
+        preload=SimpleNamespace(preload_data=SimpleNamespace()),
+        buff_runtime_state=BuffRuntimeState(
+            template_registry={},
+            pending_queue={},
+            active_store=dynamic_buff_dict,
+            enemy_mirror=enemy.dynamic.dynamic_debuff_list,
+        ),
     )
 
 
@@ -190,41 +198,23 @@ def test_ice_jade_missing_dynamic_list_key_raises_equipper_key_error() -> None:
     assert exc_info.value.args == (_ICEJADE_EQUIPPER,)
 
 
-def test_ice_jade_keeps_find_equipper_as_prerequisite_lookup(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    calls: list[tuple[str, str, object]] = []
-    sim_instance = SimpleNamespace(
-        init_data=SimpleNamespace(Judge_list_set=[]),
-        global_stats=None,
+def test_ice_jade_reads_active_view_through_runtime_read_port() -> None:
+    runtime_view = _RuntimeViewProbe(
+        {_ICEJADE_EQUIPPER: [_dynamic_buff(_ICEJADE_TRIGGER_INDEX, 15)]}
     )
-    dynamic_buff_dict = _GuardedDynamicBuffDict(
-        {_ICEJADE_EQUIPPER: [_dynamic_buff(_ICEJADE_TRIGGER_INDEX, 15)]},
-        calls=calls,
-        expected_sim_instance=sim_instance,
-    )
-    global_stats = _GuardedGlobalStats(
-        dynamic_buff_dict,
-        calls=calls,
-        expected_sim_instance=sim_instance,
-    )
-    sim_instance.global_stats = global_stats
+    runtime_state = _RuntimeStateProbe(runtime_view)
+    sim_instance = _make_sim_instance(dynamic_buff_dict={})
+    sim_instance.buff_runtime_state = runtime_state
     buff_instance = SimpleNamespace(
         ft=SimpleNamespace(index="Buff-武器-玉壶青冰-额外增伤"),
         sim_instance=sim_instance,
     )
 
-    def _find_equipper(item_name: str, sim_instance: object = None) -> str:
-        calls.append(("find_equipper", item_name, sim_instance))
-        return _ICEJADE_EQUIPPER
-
-    monkeypatch.setattr(icejade_module.JudgeTools, "find_equipper", _find_equipper)
-
     logic = IceJadeTeaPotExtraDMGBonus(cast(Any, buff_instance))
 
     assert logic.special_judge_logic() is True
-    assert calls == [("find_equipper", _ICEJADE_ITEM_NAME, sim_instance)]
-    assert global_stats.reads == 1
+    assert runtime_state.create_read_port_calls == 1
+    assert runtime_view.active_view_calls == 1
 
 
 def _special_judge_logic_node(tree: ast.Module) -> ast.FunctionDef:
@@ -248,6 +238,14 @@ def _direct_dynamic_lookup_calls(special_judge_node: ast.FunctionDef) -> list[as
         for call in ast.walk(special_judge_node)
         if isinstance(call, ast.Call)
         and _call_name(call) == "JudgeTools.find_dynamic_buff_list"
+    ]
+
+
+def _direct_global_active_view_reads(tree: ast.Module) -> list[ast.Attribute]:
+    return [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Attribute) and node.attr == "DYNAMIC_BUFF_DICT"
     ]
 
 
@@ -287,3 +285,4 @@ def test_post_replacement_guard_rejects_direct_dynamic_lookup_in_judge_logic() -
         pytest.skip("US-002 pins pre-replacement behavior before helper/view exists")
 
     assert _direct_dynamic_lookup_calls(special_judge_node) == []
+    assert _direct_global_active_view_reads(tree) == []

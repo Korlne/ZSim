@@ -1,8 +1,5 @@
-from .. import Buff, JudgeTools
-
-
-def _read_ice_jade_dynamic_buff_list(sim_instance):
-    return sim_instance.global_stats.DYNAMIC_BUFF_DICT
+from .. import Buff
+from ..JudgeTools import build_preparation_context_from_buff
 
 
 class IceJadeTeaPotExtraDMGBonus(Buff.BuffLogic):
@@ -16,13 +13,9 @@ class IceJadeTeaPotExtraDMGBonus(Buff.BuffLogic):
         self.xjudge = self.special_judge_logic
 
     def special_judge_logic(self, **kwargs):
-        equipper = JudgeTools.find_equipper(
-            "玉壶青冰", sim_instance=self.buff_instance.sim_instance
-        )
-        dynamic_buff_list = _read_ice_jade_dynamic_buff_list(
-            self.buff_instance.sim_instance
-        )
-        for buffs in dynamic_buff_list[equipper]:
+        preparation_context = build_preparation_context_from_buff(self.buff_instance)
+        equipper = preparation_context.find_equipper("玉壶青冰")
+        for buffs in preparation_context.find_active_buffs(equipper):
             if "玉壶青冰-普攻加冲击" not in buffs.ft.index:
                 continue
             if buffs.dy.count >= 15:
