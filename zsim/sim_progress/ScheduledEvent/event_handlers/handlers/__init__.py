@@ -6,7 +6,8 @@
 from .abloom import AbloomEventHandler
 from .anomaly import AnomalyEventHandler
 from .disorder import DisorderEventHandler
-from .factory import event_handler_factory
+from ..base import EventHandlerABC
+from .factory import EventHandlerFactory, event_handler_factory
 from .polarity_disorder import PolarityDisorderEventHandler
 from .polarized_assault import PolarizedAssaultEventHandler
 from .preload import PreloadEventHandler
@@ -16,9 +17,8 @@ from .skill import SkillEventHandler
 from .stun_forced_termination import StunForcedTerminationEventHandler
 
 
-def register_all_handlers() -> None:
-    """注册所有事件处理器"""
-    handlers = [
+def _create_default_handlers() -> list[EventHandlerABC]:
+    return [
         SkillEventHandler(),
         AnomalyEventHandler(),
         DisorderEventHandler(),
@@ -31,8 +31,17 @@ def register_all_handlers() -> None:
         PolarizedAssaultEventHandler(),
     ]
 
-    for handler in handlers:
-        event_handler_factory.register_handler(handler)
+
+def register_all_handlers(factory: EventHandlerFactory | None = None) -> EventHandlerFactory:
+    """Register the canonical ScheduledEvent handler set on a target factory."""
+    target_factory = event_handler_factory if factory is None else factory
+    target_factory.replace_handlers(_create_default_handlers())
+    return target_factory
+
+
+def create_default_event_handler_factory() -> EventHandlerFactory:
+    """Create an isolated factory with the canonical ScheduledEvent handlers."""
+    return register_all_handlers(EventHandlerFactory())
 
 
 __all__ = [
@@ -46,6 +55,8 @@ __all__ = [
     "PreloadEventHandler",
     "StunForcedTerminationEventHandler",
     "PolarizedAssaultEventHandler",
+    "EventHandlerFactory",
+    "create_default_event_handler_factory",
     "event_handler_factory",
     "register_all_handlers",
 ]

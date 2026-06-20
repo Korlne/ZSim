@@ -8,6 +8,11 @@ import pytest
 import zsim.sim_progress.ScheduledEvent as scheduled_event_module
 from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
 from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
+from zsim.sim_progress.ScheduledEvent.event_handlers import (
+    create_default_event_handler_factory,
+    event_handler_factory,
+    register_all_handlers,
+)
 from zsim.sim_progress.ScheduledEvent.event_handlers.handlers import skill as skill_module
 from zsim.sim_progress.ScheduledEvent.event_handlers.handlers.polarized_assault import (
     PolarizedAssaultEventHandler,
@@ -26,6 +31,7 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduleDispatchPort,
     create_schedule_dispatch_port,
 )
+from zsim.sim_progress.data_struct.SchedulePreload import SchedulePreload
 
 
 class _RuntimeViewStub(BuffRuntimeReadPort):
@@ -61,6 +67,108 @@ class _RetainedEventProbe:
 
     def execute(self) -> None:
         self.executed.append(("execute", ()))
+
+
+def _make_scheduled_event_for_sim(sim_instance: Any, tick: int = 10) -> Any:
+    dynamic_buff: dict[str, list[object]] = {"alpha": []}
+    exist_buff_dict: dict[str, dict[str, object]] = {"alpha": {}}
+    loading_buff: dict[str, list[object]] = {"alpha": []}
+    enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[]))
+    schedule_data = SimpleNamespace(
+        enemy=enemy,
+        event_list=[],
+        char_obj_list=[],
+        change_process_state=lambda: None,
+    )
+    sim_instance.tick = tick
+    sim_instance.schedule_data = schedule_data
+    sim_instance.listener_manager = SimpleNamespace(broadcast_event=lambda **kwargs: None)
+
+    return scheduled_event_module.ScheduledEvent(
+        dynamic_buff,
+        schedule_data,
+        tick,
+        exist_buff_dict,
+        SimpleNamespace(),
+        loading_buff=loading_buff,
+        sim_instance=cast(Any, sim_instance),
+    )
+
+
+def test_default_event_handler_factory_cache_clear_reset_is_deterministic() -> None:
+    factory = create_default_event_handler_factory()
+    event = SchedulePreload(10, "registry_probe")
+
+    first_handler = factory.get_handler(event)
+    second_handler = factory.get_handler(event)
+
+    assert first_handler is not None
+    assert first_handler.event_type == "preload"
+    assert second_handler is first_handler
+    assert factory.get_cache_stats()["cache_misses"] == 1
+    assert factory.get_cache_stats()["cache_hits"] == 1
+
+    factory.clear_cache()
+
+    assert factory.get_cache_stats()["total_requests"] == 0
+    assert factory.get_handler(event) is first_handler
+    assert factory.get_cache_stats()["cache_misses"] == 1
+
+    factory.clear_handlers()
+
+    assert factory.list_handlers() == []
+    assert factory.get_cache_stats()["total_requests"] == 0
+
+    register_all_handlers(factory)
+
+    assert factory.list_handlers() == [
+        "skill",
+        "anomaly",
+        "disorder",
+        "polarity_disorder",
+        "abloom",
+        "refresh",
+        "quick_assist",
+        "preload",
+        "stun_forced_termination",
+        "polarized_assault",
+    ]
+
+
+def test_repeated_scheduled_event_construction_uses_isolated_handler_factories() -> None:
+    first = _make_scheduled_event_for_sim(SimpleNamespace(name="sim-a"))
+    second = _make_scheduled_event_for_sim(SimpleNamespace(name="sim-b"))
+    first_factory = cast(Any, first)._event_handler_factory
+    second_factory = cast(Any, second)._event_handler_factory
+
+    assert first_factory is not second_factory
+    assert first_factory.list_handlers() == second_factory.list_handlers()
+
+    first_handler = first_factory.get_handler(SchedulePreload(10, "first"))
+
+    assert first_handler is not None
+    assert first_factory.get_cache_stats()["total_requests"] == 1
+    assert second_factory.get_cache_stats()["total_requests"] == 0
+
+
+def test_scheduled_event_handler_registry_is_isolated_between_simulator_instances() -> None:
+    try:
+        event_handler_factory.clear_handlers()
+        assert event_handler_factory.list_handlers() == []
+
+        first_sim = SimpleNamespace(name="first-simulator")
+        second_sim = SimpleNamespace(name="second-simulator")
+        first = _make_scheduled_event_for_sim(first_sim)
+        second = _make_scheduled_event_for_sim(second_sim)
+
+        assert cast(Any, first).sim_instance is first_sim
+        assert cast(Any, second).sim_instance is second_sim
+        assert cast(Any, first)._event_handler_factory is not cast(Any, second)._event_handler_factory
+        assert cast(Any, first)._event_handler_factory.list_handlers()
+        assert cast(Any, second)._event_handler_factory.list_handlers()
+        assert event_handler_factory.list_handlers() == []
+    finally:
+        register_all_handlers()
 
 
 @pytest.mark.parametrize(

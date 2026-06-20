@@ -17,7 +17,7 @@ from zsim.sim_progress.Load.loading_mission import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
 
 from .buff_runtime import BuffRuntimeState, create_buff_runtime_read_port
-from .event_handlers import EventContext, event_handler_factory, register_all_handlers
+from .event_handlers import EventContext, create_default_event_handler_factory
 from .runtime_command import create_runtime_command_port
 
 if TYPE_CHECKING:
@@ -105,13 +105,14 @@ class ScheduledEvent:
             SchedulePreload: "execute_tick",
             PolarizedAssaultEvent: "execute_tick",
         }
+        self._event_handler_factory = create_default_event_handler_factory()
         # 确保事件处理器已注册
         self._ensure_handlers_registered()
 
     def _ensure_handlers_registered(self) -> None:
         """确保所有事件处理器已注册"""
-        if not event_handler_factory.list_handlers():
-            register_all_handlers()
+        if not self._event_handler_factory.list_handlers():
+            self._event_handler_factory = create_default_event_handler_factory()
             logging.info("事件处理器注册完成")
         else:
             logging.debug("事件处理器已经注册")
@@ -215,11 +216,11 @@ class ScheduledEvent:
         context = self._create_event_context()
 
         # 获取事件处理器
-        handler = event_handler_factory.get_handler(event)
+        handler = self._event_handler_factory.get_handler(event)
         if handler is None:
             error_msg = f"无法找到适合处理事件类型 {type(event)} 的处理器"
             logging.error(error_msg)
-            logging.debug(f"可用的事件处理器: {event_handler_factory.list_handlers()}")
+            logging.debug(f"可用的事件处理器: {self._event_handler_factory.list_handlers()}")
             raise RuntimeError(error_msg)
 
         # 处理事件
