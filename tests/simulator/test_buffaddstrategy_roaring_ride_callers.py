@@ -18,6 +18,10 @@ import zsim.sim_progress.Buff.BuffXLogic.RoaringRideBuffTrigger as roaring_modul
 
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.JudgeTools import EquipmentOwnerLookup
+from zsim.sim_progress.Buff.BuffXLogic.DawnsBloom4SetTriggerNADmgBonus import (
+    DawnsBloom4SetTriggerNADmgBonus,
+    DawnsBloom4SetTriggerNADmgBonusRecord,
+)
 from zsim.sim_progress.Buff.BuffXLogic.RoaringRideBuffTrigger import (
     RoaringRideBuffTrigger,
     RoaringRideBuffTriggerRecord,
@@ -167,6 +171,32 @@ def _build_roaring_ride_preparation_sim_instance(
     )
 
 
+def _build_dawns_bloom_preparation_sim_instance(
+    *,
+    owner_name: str,
+    item_name: str,
+    buff_index: str,
+    buff_0: object,
+    char: object,
+) -> SimpleNamespace:
+    return SimpleNamespace(
+        init_data=SimpleNamespace(
+            Judge_list_set=[
+                [owner_name, item_name, "啄木鸟电音", "激素朋克二件套"],
+                ["安比", item_name, "混沌爵士", "摇摆爵士二件套"],
+            ]
+        ),
+        char_data=SimpleNamespace(char_obj_list=[char]),
+        load_data=SimpleNamespace(
+            exist_buff_dict={owner_name: {buff_index: buff_0}},
+            action_stack=object(),
+        ),
+        global_stats=SimpleNamespace(DYNAMIC_BUFF_DICT={}),
+        schedule_data=SimpleNamespace(enemy=object()),
+        preload=SimpleNamespace(preload_data=object()),
+    )
+
+
 def _patch_roaring_ride_dependencies(
     monkeypatch: pytest.MonkeyPatch,
     harness: SimpleNamespace,
@@ -255,6 +285,42 @@ def test_roaring_ride_uses_preparation_context_for_equipment_and_character_looku
     assert logic.record.equipper == "派派"
     assert logic.record.char is char
     assert logic.record.sub_exist_buff_dict is sim_instance.load_data.exist_buff_dict["派派"]
+
+
+def test_dawns_bloom_uses_preparation_context_for_equipment_and_character_lookup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    char = SimpleNamespace(CID=1241, NAME="朱鸢", specialty="强攻")
+    buff_0 = SimpleNamespace(history=SimpleNamespace(record=None))
+    sim_instance = _build_dawns_bloom_preparation_sim_instance(
+        owner_name="朱鸢",
+        item_name="拂晓生花",
+        buff_index="dawns-bloom-trigger",
+        buff_0=buff_0,
+        char=char,
+    )
+    buff_instance = SimpleNamespace(
+        sim_instance=sim_instance,
+        ft=SimpleNamespace(index="dawns-bloom-trigger"),
+    )
+    logic = DawnsBloom4SetTriggerNADmgBonus(buff_instance)
+
+    def fail_legacy_lookup(*args: object, **kwargs: object) -> None:
+        raise AssertionError("migrated Dawns Bloom should use PreparationContext")
+
+    monkeypatch.setattr(JudgeTools, "find_equipper", fail_legacy_lookup)
+    monkeypatch.setattr(JudgeTools, "find_exist_buff_dict", fail_legacy_lookup)
+    monkeypatch.setattr(JudgeTools, "find_char_from_name", fail_legacy_lookup)
+
+    logic.check_record_module()
+    logic.get_prepared(equipper="拂晓生花")
+
+    assert logic.equipper == "朱鸢"
+    assert logic.buff_0 is buff_0
+    assert isinstance(buff_0.history.record, DawnsBloom4SetTriggerNADmgBonusRecord)
+    assert logic.record is buff_0.history.record
+    assert logic.record.equipper == "朱鸢"
+    assert logic.record.char is char
 
 
 @pytest.mark.parametrize(
