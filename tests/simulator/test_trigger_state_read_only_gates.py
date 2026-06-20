@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,6 +13,7 @@ import zsim.define as define_module
 sys.modules.setdefault("define", define_module)
 
 from zsim.sim_progress.Buff import JudgeTools
+import zsim.sim_progress.Buff.BuffXLogic.SeedCinema6Trigger as seed_cinema6_module
 from zsim.sim_progress.Buff.JudgeTools import (
     BuffTemplateRegistryReadPort,
     TriggerBuffLookup,
@@ -59,6 +61,9 @@ from zsim.sim_progress.Buff.BuffXLogic.Soldier0AnbyCoreSkillCritDMGBonus import 
 from zsim.sim_progress.Buff.BuffXLogic.SpectralGazeImpactBonus import (
     SpectralGazeImpactBonus,
 )
+from zsim.sim_progress.Buff.BuffXLogic.SeedCinema6Trigger import (
+    SeedCinema6TriggerRecord,
+)
 from zsim.sim_progress.Buff.BuffXLogic.WeepingCradleDMGBonusIncrease import (
     WeepingCradleDMGBonusIncrease,
 )
@@ -71,9 +76,81 @@ from zsim.sim_progress.Buff.BuffXLogic.YunkuiTalesSheerAtkBonus import (
 from zsim.sim_progress.Load import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.ScheduledEvent.Calculator import CalculatorBuffAttributeReader
+from zsim.sim_progress.Buff.BuffXLogic._buff_record_base_class import (
+    BUFF_RECORD_FIELD_CLASSIFICATION,
+)
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _BUFF_XLOGIC_ROOT = _PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffXLogic"
+
+
+def test_buff_record_base_field_classification_covers_current_fields() -> None:
+    assert BUFF_RECORD_FIELD_CLASSIFICATION == {
+        "char": "run_scoped_read_snapshot",
+        "sub_exist_buff_dict": "retained_old_template_link",
+        "dynamic_buff_list": "run_scoped_read_snapshot",
+        "enemy": "run_scoped_read_snapshot",
+        "equipper": "stable_identity",
+        "action_stack": "run_scoped_read_snapshot",
+        "preload_data": "run_scoped_read_snapshot",
+        "char_obj_list": "run_scoped_read_snapshot",
+        "na_skill_level": "stable_identity",
+        "trans_ratio": "mutable_local_state",
+        "cd": "mutable_local_state",
+        "last_active_tick": "mutable_local_state",
+        "buff_index": "stable_identity",
+        "trigger_buff_0": "retained_old_template_link",
+        "additional_damage_skill_tag": "stable_identity",
+        "trigger_skill_tag": "stable_identity",
+    }
+
+
+def test_seed_cinema6_run_snapshot_rebuilds_without_live_runtime_containers() -> None:
+    record = SeedCinema6TriggerRecord()
+
+    first_snapshot = record.build_run_snapshot(tick=100)
+    record.additional_damage_skill_tag = "1461_Cinema_6_refresh"
+    second_snapshot = record.build_run_snapshot(tick=280)
+
+    assert first_snapshot is not second_snapshot
+    assert first_snapshot.preload_tick_list() == [100, 100, 100]
+    assert first_snapshot.skill_tag_list() == [
+        "1461_Cinema_6",
+        "1461_Cinema_6",
+        "1461_Cinema_6",
+    ]
+    assert second_snapshot.preload_tick_list() == [280, 280, 280]
+    assert second_snapshot.skill_tag_list() == [
+        "1461_Cinema_6_refresh",
+        "1461_Cinema_6_refresh",
+        "1461_Cinema_6_refresh",
+    ]
+    assert set(vars(second_snapshot)) == {
+        "tick",
+        "trigger_skill_tag",
+        "additional_damage_skill_tag",
+    }
+    assert not {
+        "sim_instance",
+        "schedule_data",
+        "runtime_command_port",
+        "preload_commands",
+        "char",
+        "enemy",
+        "dynamic_buff_list",
+        "action_stack",
+        "preload_data",
+        "sub_exist_buff_dict",
+        "trigger_buff_0",
+    } & set(vars(second_snapshot))
+
+
+def test_seed_cinema6_logic_uses_run_snapshot_for_record_skill_tags() -> None:
+    source = inspect.getsource(seed_cinema6_module.SeedCinema6Trigger)
+
+    assert "build_run_snapshot" in source
+    assert "self.record.trigger_skill_tag" not in source
+    assert "self.record.additional_damage_skill_tag" not in source
 
 
 class _FailFastEventList(list[object]):

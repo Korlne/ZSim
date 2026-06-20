@@ -1,4 +1,6 @@
-from typing import TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Final, Literal
 
 if TYPE_CHECKING:
     from ...Character.Alice import Alice
@@ -9,6 +11,33 @@ if TYPE_CHECKING:
     from ...Enemy import Enemy
     from ...Preload.PreloadDataClass import PreloadData
     from ..buff_class import Buff
+
+
+BuffRecordFieldCategory = Literal[
+    "stable_identity",
+    "run_scoped_read_snapshot",
+    "mutable_local_state",
+    "retained_old_template_link",
+]
+
+BUFF_RECORD_FIELD_CLASSIFICATION: Final[dict[str, BuffRecordFieldCategory]] = {
+    "char": "run_scoped_read_snapshot",
+    "sub_exist_buff_dict": "retained_old_template_link",
+    "dynamic_buff_list": "run_scoped_read_snapshot",
+    "enemy": "run_scoped_read_snapshot",
+    "equipper": "stable_identity",
+    "action_stack": "run_scoped_read_snapshot",
+    "preload_data": "run_scoped_read_snapshot",
+    "char_obj_list": "run_scoped_read_snapshot",
+    "na_skill_level": "stable_identity",
+    "trans_ratio": "mutable_local_state",
+    "cd": "mutable_local_state",
+    "last_active_tick": "mutable_local_state",
+    "buff_index": "stable_identity",
+    "trigger_buff_0": "retained_old_template_link",
+    "additional_damage_skill_tag": "stable_identity",
+    "trigger_skill_tag": "stable_identity",
+}
 
 
 class BuffRecordBaseClass:

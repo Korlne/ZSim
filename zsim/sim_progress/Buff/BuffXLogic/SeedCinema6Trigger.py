@@ -1,8 +1,28 @@
+from dataclasses import dataclass
+from typing import cast
+
 from zsim.define import SEED_REPORT
 
 from .. import Buff, JudgeTools, check_preparation
 from ..JudgeTools import build_preparation_context_from_buff
 from ._buff_record_base_class import BuffRecordBaseClass as BRBC
+
+
+@dataclass(frozen=True)
+class SeedCinema6RunSnapshot:
+    tick: int
+    trigger_skill_tag: str
+    additional_damage_skill_tag: str
+
+    def preload_tick_list(self) -> list[int]:
+        return [self.tick, self.tick, self.tick]
+
+    def skill_tag_list(self) -> list[str]:
+        return [
+            self.additional_damage_skill_tag,
+            self.additional_damage_skill_tag,
+            self.additional_damage_skill_tag,
+        ]
 
 
 class SeedCinema6TriggerRecord(BRBC):
@@ -11,6 +31,15 @@ class SeedCinema6TriggerRecord(BRBC):
         self.cd = 180
         self.additional_damage_skill_tag = "1461_Cinema_6"
         self.trigger_skill_tag = "1461_SNA_1"
+
+    def build_run_snapshot(self, *, tick: int) -> SeedCinema6RunSnapshot:
+        assert self.trigger_skill_tag is not None
+        assert self.additional_damage_skill_tag is not None
+        return SeedCinema6RunSnapshot(
+            tick=tick,
+            trigger_skill_tag=self.trigger_skill_tag,
+            additional_damage_skill_tag=self.additional_damage_skill_tag,
+        )
 
 
 class SeedCinema6Trigger(Buff.BuffLogic):
@@ -36,7 +65,7 @@ class SeedCinema6Trigger(Buff.BuffLogic):
         )
         if self.buff_0.history.record is None:
             self.buff_0.history.record = SeedCinema6TriggerRecord()
-        self.record = self.buff_0.history.record
+        self.record = cast(SeedCinema6TriggerRecord, self.buff_0.history.record)
 
     def special_judge_logic(self, **kwargs):
         self.check_record_module()
@@ -50,12 +79,13 @@ class SeedCinema6Trigger(Buff.BuffLogic):
         from zsim.sim_progress.Preload import SkillNode
 
         assert isinstance(skill_node, SkillNode)
-        if skill_node.skill_tag != self.record.trigger_skill_tag:
-            return False
         tick = self.buff_instance.sim_instance.tick
-        if tick != skill_node.preload_tick:
+        run_snapshot = self.record.build_run_snapshot(tick=tick)
+        if skill_node.skill_tag != run_snapshot.trigger_skill_tag:
             return False
-        if not self.record.check_cd(tick_now=tick):
+        if run_snapshot.tick != skill_node.preload_tick:
+            return False
+        if not self.record.check_cd(tick_now=run_snapshot.tick):
             return False
         return True
 
@@ -65,14 +95,13 @@ class SeedCinema6Trigger(Buff.BuffLogic):
         assert self.record is not None
 
         tick = self.buff_instance.sim_instance.tick
-        preload_tick_list = [tick, tick, tick]
-        skill_tag_list = [self.record.additional_damage_skill_tag] * 3
+        run_snapshot = self.record.build_run_snapshot(tick=tick)
         preparation_context = build_preparation_context_from_buff(self.buff_instance)
         preparation_context.preload_commands.schedule_preload_events(
-            preload_tick_list=preload_tick_list,
-            skill_tag_list=skill_tag_list,
+            preload_tick_list=run_snapshot.preload_tick_list(),
+            skill_tag_list=run_snapshot.skill_tag_list(),
         )
-        self.record.last_active_tick = tick
+        self.record.last_active_tick = run_snapshot.tick
         if SEED_REPORT:
             self.buff_instance.sim_instance.schedule_data.change_process_state()
             print("【席德6画】检测到席德发动了 落华·重戮，添加三次协同攻击！")
