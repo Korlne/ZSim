@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, Mapping, Sequence
 if TYPE_CHECKING:
     from .. import Buff
     from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
+    from zsim.sim_progress.data_struct.schedule_dispatch import ScheduledEventEmitterProvider
     from zsim.simulator.simulator_class import Simulator
 
 
@@ -156,6 +157,49 @@ class TriggerBuffLookup:
 
 
 @dataclass(frozen=True)
+class PreloadCommandPort:
+    sim_instance: "Simulator"
+    preload_data: Any
+    scheduled_event_emitter_provider: "ScheduledEventEmitterProvider"
+
+    @classmethod
+    def from_sim_instance(cls, sim_instance: "Simulator") -> "PreloadCommandPort":
+        from zsim.sim_progress.data_struct.schedule_dispatch import (
+            ScheduledEventEmitterProvider,
+        )
+
+        return cls(
+            sim_instance=sim_instance,
+            preload_data=sim_instance.preload.preload_data,
+            scheduled_event_emitter_provider=ScheduledEventEmitterProvider.from_sim_instance_getter(
+                lambda: sim_instance
+            ),
+        )
+
+    def schedule_preload_events(
+        self,
+        *,
+        preload_tick_list: list[int],
+        skill_tag_list: list[str],
+        apl_priority_list: list[int] | None = None,
+        active_generation_list: list[bool] | None = None,
+    ) -> None:
+        from zsim.sim_progress.data_struct.SchedulePreload import (
+            schedule_preload_event_factory,
+        )
+
+        schedule_preload_event_factory(
+            preload_tick_list=preload_tick_list,
+            skill_tag_list=skill_tag_list,
+            preload_data=self.preload_data,
+            sim_instance=self.sim_instance,
+            apl_priority_list=apl_priority_list,
+            active_generation_list=active_generation_list,
+            scheduled_event_emitter_provider=self.scheduled_event_emitter_provider,
+        )
+
+
+@dataclass(frozen=True)
 class PreparationContext:
     character_lookup: CharacterLookup
     equipment_owner_lookup: EquipmentOwnerLookup
@@ -165,6 +209,7 @@ class PreparationContext:
     enemy: Any
     action_stack: Any
     preload_data: Any
+    preload_commands: PreloadCommandPort
     char_obj_list: Sequence[Any]
 
     @property
@@ -226,6 +271,7 @@ def build_preparation_context_from_sim_instance(
         enemy=sim_instance.schedule_data.enemy,
         action_stack=sim_instance.load_data.action_stack,
         preload_data=sim_instance.preload.preload_data,
+        preload_commands=PreloadCommandPort.from_sim_instance(sim_instance),
         char_obj_list=sim_instance.char_data.char_obj_list,
     )
 

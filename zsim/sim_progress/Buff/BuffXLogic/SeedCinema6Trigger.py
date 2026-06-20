@@ -1,6 +1,7 @@
 from zsim.define import SEED_REPORT
 
 from .. import Buff, JudgeTools, check_preparation
+from ..JudgeTools import build_preparation_context_from_buff
 from ._buff_record_base_class import BuffRecordBaseClass as BRBC
 
 
@@ -62,17 +63,14 @@ class SeedCinema6Trigger(Buff.BuffLogic):
         self.check_record_module()
         self.get_prepared(char_CID=1461)
         assert self.record is not None
-        from zsim.sim_progress.data_struct.SchedulePreload import schedule_preload_event_factory
 
         tick = self.buff_instance.sim_instance.tick
         preload_tick_list = [tick, tick, tick]
         skill_tag_list = [self.record.additional_damage_skill_tag] * 3
-        preload_data = self.buff_instance.sim_instance.preload.preload_data
-        schedule_preload_event_factory(
+        preparation_context = build_preparation_context_from_buff(self.buff_instance)
+        preparation_context.preload_commands.schedule_preload_events(
             preload_tick_list=preload_tick_list,
             skill_tag_list=skill_tag_list,
-            preload_data=preload_data,
-            sim_instance=self.buff_instance.sim_instance,
         )
         self.record.last_active_tick = tick
         if SEED_REPORT:

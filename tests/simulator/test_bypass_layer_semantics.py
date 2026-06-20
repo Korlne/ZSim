@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import inspect
 from types import SimpleNamespace
 from typing import Any, Mapping, Sequence, cast
 
 import pytest
 
+import zsim.sim_progress.Buff.BuffXLogic.SeedCinema6Trigger as seed_cinema6_module
 import zsim.sim_progress.data_struct.BattleEventListener.AliceDotTriggerListener as alice_dot_module
 import zsim.sim_progress.data_struct.schedule_dispatch as schedule_dispatch_module
 from tests.simulator.test_buff_add_strategy_runtime_facade import (
@@ -15,12 +17,14 @@ from tests.simulator.test_buff_add_strategy_runtime_facade import (
 )
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 from zsim.sim_progress.Buff import BuffAddStrategy as buff_add_strategy_module
+from zsim.sim_progress.Buff.JudgeTools import build_preparation_context_from_sim_instance
 from zsim.sim_progress.Buff.buff_class import Buff
 from zsim.sim_progress.Buff.BuffAddStrategy import buff_add_strategy
 from zsim.sim_progress.data_struct.BattleEventListener import ListenerManger
 from zsim.sim_progress.data_struct.BattleEventListener.AliceDotTriggerListener import (
     AliceDotTriggerListener,
 )
+from zsim.sim_progress.data_struct.SchedulePreload import SchedulePreload
 from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduleDispatchPort,
     ScheduledEventEmitterProvider,
@@ -338,6 +342,74 @@ def test_alice_dot_runtime_registration_precedes_scheduled_publish(
     assert dispatch_port.events == [anomaly_payload]
     assert schedule_data.event_list == []
     assert replacement_dot.started_at == 17
+
+
+def test_preparation_context_preload_commands_publish_only_scheduled_events() -> None:
+    event_list: list[object] = []
+    listener_calls: list[object] = []
+    runtime_calls: list[object] = []
+    preload_data = SimpleNamespace(marker="preload-data")
+    sim_instance = SimpleNamespace(
+        tick=23,
+        load_data=SimpleNamespace(
+            exist_buff_dict={},
+            action_stack=SimpleNamespace(),
+        ),
+        init_data=SimpleNamespace(Judge_list_set=[]),
+        char_data=SimpleNamespace(char_obj_list=[]),
+        global_stats=SimpleNamespace(DYNAMIC_BUFF_DICT={}),
+        schedule_data=SimpleNamespace(
+            event_list=event_list,
+            enemy=SimpleNamespace(),
+        ),
+        preload=SimpleNamespace(preload_data=preload_data),
+        listener_manager=SimpleNamespace(
+            broadcast_event=lambda **kwargs: listener_calls.append(kwargs)
+        ),
+        runtime_command_port=SimpleNamespace(
+            update_anomaly=lambda **kwargs: runtime_calls.append(kwargs)
+        ),
+    )
+    preparation_context = build_preparation_context_from_sim_instance(
+        cast(Any, sim_instance)
+    )
+
+    preparation_context.preload_commands.schedule_preload_events(
+        preload_tick_list=[23, 24],
+        skill_tag_list=["1461_Cinema_6", "1461_Cinema_6"],
+        apl_priority_list=[0, 1],
+        active_generation_list=[False, True],
+    )
+
+    assert [type(event) for event in event_list] == [SchedulePreload, SchedulePreload]
+    assert [cast(SchedulePreload, event).execute_tick for event in event_list] == [
+        23,
+        24,
+    ]
+    assert [cast(SchedulePreload, event).skill_tag for event in event_list] == [
+        "1461_Cinema_6",
+        "1461_Cinema_6",
+    ]
+    assert [cast(SchedulePreload, event).apl_priority for event in event_list] == [0, 1]
+    assert [cast(SchedulePreload, event).active_generation for event in event_list] == [
+        False,
+        True,
+    ]
+    assert all(cast(SchedulePreload, event).preload_data is preload_data for event in event_list)
+    assert listener_calls == []
+    assert runtime_calls == []
+
+
+def test_seed_cinema6_preload_spawn_uses_context_command_surface_guardrail() -> None:
+    source = inspect.getsource(seed_cinema6_module.SeedCinema6Trigger)
+
+    assert "preload_commands.schedule_preload_events(" in source
+    assert "schedule_preload_event_factory(" not in source
+    assert "create_schedule_dispatch_port" not in source
+    assert "publish_scheduled" not in source
+    assert "RuntimeCommandPort" not in source
+    assert "listener_manager" not in source
+    assert "broadcast_event" not in source
 
 
 def test_runtime_command_same_tick_write_does_not_publish_or_broadcast(

@@ -20,6 +20,7 @@ from .PreparationContext import (  # noqa: F401
     CharacterLookup,
     EquipmentOwnerLookup,
     PreparationContext,
+    PreloadCommandPort,
     TriggerBuffRef,
     TriggerBuffLookup,
     build_preparation_context_from_buff,
