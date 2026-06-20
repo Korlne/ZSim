@@ -208,6 +208,47 @@ RETAINED_XLOGIC_COMPATIBILITY_SNAPSHOT_ALLOWANCE = (
     "retained XLogic compatibility snapshot read"
 )
 
+XLOGIC_ADAPTER_DIRECT_ACTIVE_VIEW = (
+    "active_buff_view=self.record.dynamic_buff_list"
+)
+XLOGIC_ADAPTER_DIRECT_READER_CONSTRUCTION = (
+    "direct CalculatorBuffAttributeReader() construction"
+)
+XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND = "broad JudgeTools.find_* call"
+
+XLOGIC_ADAPTER_CALCULATOR_SERVICE_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritDamageBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py",
+    "zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritRateBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/JanePassionStateAPTransToATK.py",
+    "zsim/sim_progress/Buff/BuffXLogic/LighterAdditionalAbility_IceFireBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/LinaCoreSkillPenRatioBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py",
+    "zsim/sim_progress/Buff/BuffXLogic/QingYiAdditionalAbilityStunConvertToATK.py",
+    "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCoreSkillCritDMGBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/TimeweaverDisorderDmgMul.py",
+    "zsim/sim_progress/Buff/BuffXLogic/TriggerAdditionalAbilityStunBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/WoodpeckerElectroSet4_CA.py",
+    "zsim/sim_progress/Buff/BuffXLogic/WoodpeckerElectroSet4_E_EX.py",
+    "zsim/sim_progress/Buff/BuffXLogic/WoodpeckerElectroSet4_NA.py",
+    "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyBuildupBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyDmgBonus.py",
+)
+
+XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS = {
+    path: frozenset(
+        {
+            XLOGIC_ADAPTER_DIRECT_ACTIVE_VIEW,
+            XLOGIC_ADAPTER_DIRECT_READER_CONSTRUCTION,
+        }
+    )
+    for path in XLOGIC_ADAPTER_CALCULATOR_SERVICE_FILES
+}
+
 SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY = (
     "legacy ScheduleBuffSettle command-adapter internals"
 )
@@ -345,6 +386,20 @@ class Finding:
             f"{self.path}:{self.line}: matched expression: {self.matched_expression}; "
             f"classification suggestion: {self.classification_suggestion}; "
             f"next action: {self.next_action}"
+        )
+
+
+@dataclass(frozen=True)
+class XLogicAdapterGuardrailFinding:
+    path: str
+    line: int
+    kind: str
+    matched_expression: str
+
+    def message(self) -> str:
+        return (
+            f"{self.path}:{self.line}: matched expression: {self.matched_expression}; "
+            f"forbidden migrated-file pattern: {self.kind}"
         )
 
 
@@ -905,6 +960,112 @@ def _calculator_read_retained_snapshot_expansions(
     }
 
 
+def _is_calculator_reader_constructor(func: ast.expr) -> bool:
+    if isinstance(func, ast.Name):
+        return func.id == "CalculatorBuffAttributeReader"
+    if isinstance(func, ast.Attribute):
+        return func.attr == "CalculatorBuffAttributeReader"
+    return False
+
+
+def _is_judge_tools_find_call(func: ast.expr) -> bool:
+    return (
+        isinstance(func, ast.Attribute)
+        and func.attr.startswith("find_")
+        and isinstance(func.value, ast.Name)
+        and func.value.id == "JudgeTools"
+    )
+
+
+def _is_self_record_dynamic_buff_list(node: ast.expr) -> bool:
+    return (
+        isinstance(node, ast.Attribute)
+        and node.attr == "dynamic_buff_list"
+        and isinstance(node.value, ast.Attribute)
+        and node.value.attr == "record"
+        and isinstance(node.value.value, ast.Name)
+        and node.value.value.id == "self"
+    )
+
+
+def _adapter_source_for(source: str, node: ast.AST) -> str:
+    segment = ast.get_source_segment(source, node)
+    if segment is None:
+        return f"<{type(node).__name__}>"
+    return " ".join(segment.strip().split())
+
+
+def _collect_xlogic_adapter_guardrail_findings_from_source(
+    path: Path,
+    source: str,
+    forbidden_kinds: frozenset[str],
+) -> list[XLogicAdapterGuardrailFinding]:
+    findings: list[XLogicAdapterGuardrailFinding] = []
+    tree = ast.parse(source, filename=str(path))
+    relative_path = path.relative_to(PROJECT_ROOT).as_posix()
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+
+        if (
+            XLOGIC_ADAPTER_DIRECT_READER_CONSTRUCTION in forbidden_kinds
+            and _is_calculator_reader_constructor(node.func)
+        ):
+            findings.append(
+                XLogicAdapterGuardrailFinding(
+                    path=relative_path,
+                    line=node.lineno,
+                    kind=XLOGIC_ADAPTER_DIRECT_READER_CONSTRUCTION,
+                    matched_expression=_adapter_source_for(source, node),
+                )
+            )
+
+        if (
+            XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND in forbidden_kinds
+            and _is_judge_tools_find_call(node.func)
+        ):
+            findings.append(
+                XLogicAdapterGuardrailFinding(
+                    path=relative_path,
+                    line=node.lineno,
+                    kind=XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND,
+                    matched_expression=_adapter_source_for(source, node),
+                )
+            )
+
+        if XLOGIC_ADAPTER_DIRECT_ACTIVE_VIEW in forbidden_kinds:
+            for keyword in node.keywords:
+                if (
+                    keyword.arg == "active_buff_view"
+                    and _is_self_record_dynamic_buff_list(keyword.value)
+                ):
+                    findings.append(
+                        XLogicAdapterGuardrailFinding(
+                            path=relative_path,
+                            line=keyword.value.lineno,
+                            kind=XLOGIC_ADAPTER_DIRECT_ACTIVE_VIEW,
+                            matched_expression=_adapter_source_for(source, keyword),
+                        )
+                    )
+
+    return findings
+
+
+def _collect_xlogic_adapter_guardrail_findings() -> list[XLogicAdapterGuardrailFinding]:
+    findings: list[XLogicAdapterGuardrailFinding] = []
+    for relative_path, forbidden_kinds in XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS.items():
+        path = PROJECT_ROOT / relative_path
+        findings.extend(
+            _collect_xlogic_adapter_guardrail_findings_from_source(
+                path,
+                path.read_text(encoding="utf-8"),
+                forbidden_kinds,
+            )
+        )
+    return findings
+
+
 def test_runtime_dependency_zero_scanner_reports_required_schema_and_families() -> None:
     report = RuntimeDependencyZeroScanner(PROJECT_ROOT).build_report(
         expected_zero=True
@@ -1316,6 +1477,83 @@ def test_calculator_read_retained_snapshot_backlog_files_do_not_expand() -> None
             for path, count in sorted(expanded.items())
         )
     )
+
+
+def test_xlogic_adapter_migrated_files_do_not_reintroduce_legacy_inputs() -> None:
+    findings = _collect_xlogic_adapter_guardrail_findings()
+
+    assert not findings, (
+        "Migrated BuffXLogic adapter guardrail found legacy inputs:\n"
+        + "\n".join(f"- {finding.message()}" for finding in findings)
+    )
+
+
+def test_xlogic_adapter_guardrail_flags_calculator_reader_regressions() -> None:
+    source = (
+        "def read(self):\n"
+        "    reader = CalculatorBuffAttributeReader()\n"
+        "    return reader.read_anomaly_mastery(\n"
+        "        active_buff_view=self.record.dynamic_buff_list,\n"
+        "    )\n"
+    )
+    path = (
+        PROJECT_ROOT
+        / "zsim"
+        / "sim_progress"
+        / "Buff"
+        / "BuffXLogic"
+        / "_adapter_fixture.py"
+    )
+
+    findings = _collect_xlogic_adapter_guardrail_findings_from_source(
+        path,
+        source,
+        frozenset(
+            {
+                XLOGIC_ADAPTER_DIRECT_ACTIVE_VIEW,
+                XLOGIC_ADAPTER_DIRECT_READER_CONSTRUCTION,
+            }
+        ),
+    )
+
+    assert {finding.kind for finding in findings} == {
+        XLOGIC_ADAPTER_DIRECT_ACTIVE_VIEW,
+        XLOGIC_ADAPTER_DIRECT_READER_CONSTRUCTION,
+    }
+    messages = [finding.message() for finding in findings]
+    assert any("CalculatorBuffAttributeReader()" in message for message in messages)
+    assert any(
+        "active_buff_view=self.record.dynamic_buff_list" in message
+        for message in messages
+    )
+
+
+def test_xlogic_adapter_guardrail_can_freeze_migrated_judgetools_find_calls() -> None:
+    source = (
+        "def prepare(self):\n"
+        "    return JudgeTools.find_exist_buff_dict(\n"
+        "        sim_instance=self.buff_instance.sim_instance,\n"
+        "    )\n"
+    )
+    path = (
+        PROJECT_ROOT
+        / "zsim"
+        / "sim_progress"
+        / "Buff"
+        / "BuffXLogic"
+        / "_adapter_fixture.py"
+    )
+
+    findings = _collect_xlogic_adapter_guardrail_findings_from_source(
+        path,
+        source,
+        frozenset({XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND}),
+    )
+
+    assert len(findings) == 1
+    message = findings[0].message()
+    assert "JudgeTools.find_exist_buff_dict" in message
+    assert XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND in message
 
 
 def test_calculator_read_guardrail_rejects_unlisted_retained_snapshot_file() -> None:
