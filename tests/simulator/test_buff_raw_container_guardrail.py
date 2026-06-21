@@ -1113,7 +1113,9 @@ EXPECTED_RETAINED_REFERENCE_CEILINGS = {
     "legacy facade adapter internals": 59,
     "legacy facade construction": 8,
     "retained ScheduledEvent main-loop boundary": 2,
-    "retained BuffLoadLoop trigger judgement and pending queue population": 41,
+    # US-002 documents the three metrics-only BuffLoadLoop scan observations
+    # that moved this retained-boundary ceiling from 41 to 44.
+    "retained BuffLoadLoop trigger judgement and pending queue population": 44,
     "legacy buff_add pending-to-active compatibility path": 10,
     "legacy buff_add enemy debuff mirror sync": 3,
     SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY: 26,
