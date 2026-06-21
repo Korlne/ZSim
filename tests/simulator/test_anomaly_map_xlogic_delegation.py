@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from types import SimpleNamespace
 from typing import Any, Callable, Iterable, cast
 
@@ -11,6 +12,10 @@ import zsim.sim_progress.Buff.BuffXLogic.MiyabiAdditionalAbility_IgnoreIceRes as
 from zsim.sim_progress.Buff.BuffXLogic.enemy_anomaly_map_read import (
     read_enemy_anomaly_state,
     snapshot_enemy_anomaly_states,
+)
+from zsim.sim_progress.Buff.BuffXLogic.enemy_anomaly_read import (
+    read_enemy_active_anomaly_bar,
+    read_enemy_active_anomaly_list,
 )
 
 
@@ -109,6 +114,40 @@ class _SnapshotEnemyProbe:
         if name in object.__getattribute__(self, "_FORBIDDEN_SURFACES"):
             raise AssertionError(f"unexpected helper surface read: {name}")
         return object.__getattribute__(self, name)
+
+
+class _ActiveAnomalyPayloadProbe:
+    def __init__(self, marker: str) -> None:
+        self.marker = marker
+        self.mutations: list[str] = []
+
+    def mutate_copy(self, value: str) -> None:
+        self.mutations.append(value)
+
+    def __deepcopy__(self, memo: dict[int, object]) -> "_ActiveAnomalyPayloadProbe":
+        copied = type(self)(self.marker)
+        copied.mutations = list(self.mutations)
+        return copied
+
+
+class _ActiveAnomalyListDynamicProbe:
+    def __init__(self, active_anomalies: list[_ActiveAnomalyPayloadProbe]) -> None:
+        self.active_anomalies = active_anomalies
+        self.calls: list[str] = []
+
+    def get_active_anomaly(self) -> list[_ActiveAnomalyPayloadProbe]:
+        self.calls.append("get_active_anomaly")
+        return self.active_anomalies
+
+
+class _ActiveAnomalyBarEnemyProbe:
+    def __init__(self, active_bar: _ActiveAnomalyPayloadProbe) -> None:
+        self.active_bar = active_bar
+        self.calls: list[str] = []
+
+    def get_active_anomaly_bar(self) -> _ActiveAnomalyPayloadProbe:
+        self.calls.append("get_active_anomaly_bar")
+        return self.active_bar
 
 
 class _ActionStackProbe:
@@ -374,6 +413,58 @@ def _make_logic(
     buff_instance.logic = logic
     logic.enemy = enemy
     return logic
+
+
+def test_active_anomaly_list_helper_preserves_empty_and_missing_enemy_behavior() -> None:
+    dynamic = _ActiveAnomalyListDynamicProbe([])
+    enemy = SimpleNamespace(dynamic=dynamic)
+
+    active_anomalies = read_enemy_active_anomaly_list(enemy)
+
+    assert active_anomalies is dynamic.active_anomalies
+    assert active_anomalies == []
+    assert dynamic.calls == ["get_active_anomaly"]
+    with pytest.raises(AttributeError):
+        read_enemy_active_anomaly_list(cast(Any, None))
+
+
+def test_active_anomaly_list_helper_preserves_order_identity_and_copy_boundary() -> None:
+    first = _ActiveAnomalyPayloadProbe("first-active")
+    second = _ActiveAnomalyPayloadProbe("second-active")
+    dynamic = _ActiveAnomalyListDynamicProbe([first, second])
+    enemy = SimpleNamespace(dynamic=dynamic)
+
+    active_anomalies = read_enemy_active_anomaly_list(enemy)
+    copied_first = deepcopy(active_anomalies[0])
+    copied_first.mutate_copy("settled")
+
+    assert active_anomalies is dynamic.active_anomalies
+    assert active_anomalies[0] is first
+    assert active_anomalies[1] is second
+    assert copied_first is not first
+    assert copied_first.marker == "first-active"
+    assert copied_first.mutations == ["settled"]
+    assert first.mutations == []
+    assert second.mutations == []
+    assert dynamic.calls == ["get_active_anomaly"]
+
+
+def test_active_anomaly_bar_helper_preserves_identity_missing_and_copy_boundary() -> None:
+    active_bar = _ActiveAnomalyPayloadProbe("active-bar")
+    enemy = _ActiveAnomalyBarEnemyProbe(active_bar)
+
+    returned_bar = read_enemy_active_anomaly_bar(enemy)
+    copied_bar = deepcopy(returned_bar)
+    copied_bar.mutate_copy("settled")
+
+    assert returned_bar is active_bar
+    assert copied_bar is not active_bar
+    assert copied_bar.marker == "active-bar"
+    assert copied_bar.mutations == ["settled"]
+    assert active_bar.mutations == []
+    assert enemy.calls == ["get_active_anomaly_bar"]
+    with pytest.raises(AttributeError):
+        read_enemy_active_anomaly_bar(cast(Any, None))
 
 
 @pytest.mark.parametrize(("buff_index", "anomaly_name"), SUPPORTED_ANOMALY_INDEXES)

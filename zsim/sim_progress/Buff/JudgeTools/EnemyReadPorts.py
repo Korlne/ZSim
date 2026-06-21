@@ -45,6 +45,18 @@ class _EnemyWithDynamicAnomalyRead(Protocol):
     dynamic: _EnemyDynamicWithAnomalyRead
 
 
+class _EnemyDynamicWithActiveAnomalyListRead(Protocol):
+    def get_active_anomaly(self) -> list[Any]: ...
+
+
+class _EnemyWithDynamicActiveAnomalyListRead(Protocol):
+    dynamic: _EnemyDynamicWithActiveAnomalyListRead
+
+
+class _EnemyWithActiveAnomalyBarRead(Protocol):
+    def get_active_anomaly_bar(self) -> Any: ...
+
+
 class _EnemyDynamicWithFrozenEdgeRead(Protocol):
     @property
     def frozen(self) -> bool | None: ...
@@ -128,6 +140,16 @@ class EnemyStateReadPort:
 
 def read_enemy_anomaly_active(enemy: _EnemyWithDynamicAnomalyRead) -> bool:
     return enemy.dynamic.is_under_anomaly()
+
+
+def read_enemy_active_anomaly_list(
+    enemy: _EnemyWithDynamicActiveAnomalyListRead,
+) -> list[Any]:
+    return enemy.dynamic.get_active_anomaly()
+
+
+def read_enemy_active_anomaly_bar(enemy: _EnemyWithActiveAnomalyBarRead) -> Any:
+    return enemy.get_active_anomaly_bar()
 
 
 def read_enemy_frozen_edge_state(enemy: _EnemyWithDynamicFrozenEdgeRead) -> bool:
@@ -222,6 +244,8 @@ __all__ = [
     "EnemyEdgeStateReadPort",
     "EnemyStateReadPort",
     "MiyabiFrostburnDebuffMirrorReader",
+    "read_enemy_active_anomaly_bar",
+    "read_enemy_active_anomaly_list",
     "read_enemy_anomaly_active",
     "read_enemy_anomaly_state",
     "read_enemy_frost_frostbite_edge_state",
