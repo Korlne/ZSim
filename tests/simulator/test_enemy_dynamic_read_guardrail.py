@@ -16,6 +16,13 @@ COPIED_OUTPUT_ZERO_CENSUS_PATH = (
     / "checkpoints"
     / "2026-06-21-US-007-copied-output-guardrail-zero-census.json"
 )
+HUGO_GUARDRAIL_CHECKPOINT_PATH = (
+    PROJECT_ROOT
+    / "scripts"
+    / "ralph"
+    / "checkpoints"
+    / "2026-06-21-US-004-hugo-guardrail-checkpoint.json"
+)
 
 EXCLUDED_PARTS = {
     ".codex_worktrees",
@@ -162,6 +169,15 @@ APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
 }
 
+APPROVED_COPIED_OUTPUT_STUN_REST_TICK_HELPER_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+}
+
+APPROVED_COPIED_OUTPUT_STUN_FAMILY_HELPER_FILES = (
+    APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
+    | APPROVED_COPIED_OUTPUT_STUN_REST_TICK_HELPER_FILES
+)
+
 DELEGATED_COPIED_OUTPUT_ANOMALY_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py",
     "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py",
@@ -177,10 +193,13 @@ APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME = {
     ),
     "read_enemy_anomaly_active": APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES,
     "read_enemy_stun_active": APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES,
+    "read_enemy_stun_rest_tick": (
+        APPROVED_COPIED_OUTPUT_STUN_REST_TICK_HELPER_FILES
+    ),
 }
 
 DELEGATED_COPIED_OUTPUT_HELPER_FILES = (
-    APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
+    APPROVED_COPIED_OUTPUT_STUN_FAMILY_HELPER_FILES
     | APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_BAR_HELPER_FILES
     | YANAGI_COPIED_OUTPUT_ANOMALY_HELPER_FILES
     | APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
@@ -247,6 +266,7 @@ MIGRATED_HELPER_FILES_BY_NAME = {
     ),
     "read_enemy_shock_active": APPROVED_SHOCK_HELPER_FILES,
     "read_enemy_stun_active": APPROVED_STUN_HELPER_FILES,
+    "read_enemy_stun_rest_tick": APPROVED_COPIED_OUTPUT_STUN_REST_TICK_HELPER_FILES,
     "EnemyStateReadPort": APPROVED_ENEMY_STATE_PORT_FILES,
     "EnemyEdgeStateReadPort": APPROVED_EDGE_STATE_PORT_FILES,
     "DotRuntimeStateReadPort": APPROVED_DOT_RUNTIME_STATE_READ_PORT_FILES,
@@ -274,6 +294,9 @@ APPROVED_HELPER_FILES_BY_NAME = {
     "read_enemy_stun_active": (
         APPROVED_STUN_HELPER_FILES | APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
     ),
+    "read_enemy_stun_rest_tick": (
+        APPROVED_COPIED_OUTPUT_STUN_REST_TICK_HELPER_FILES
+    ),
     "EnemyStateReadPort": APPROVED_ENEMY_STATE_PORT_FILES,
     "EnemyEdgeStateReadPort": APPROVED_EDGE_STATE_PORT_FILES,
     "DotRuntimeStateReadPort": APPROVED_DOT_RUNTIME_STATE_READ_PORT_FILES,
@@ -297,6 +320,7 @@ APPROVED_HELPER_CLASSIFICATIONS_BY_NAME = {
         "simple enemy read",
         "copied-output-adjacent read",
     },
+    "read_enemy_stun_rest_tick": {"copied-output-adjacent read"},
     "EnemyStateReadPort": {"guarded-maintenance overlap"},
     "EnemyEdgeStateReadPort": {"edge-detection read"},
     "DotRuntimeStateReadPort": {"dot/debuff runtime-state read"},
@@ -316,7 +340,12 @@ HELPER_NAMES_BY_FAMILY = {
     "copied-output active anomaly bar": frozenset({"read_enemy_active_anomaly_bar"}),
     "simple anomaly": frozenset({"read_enemy_anomaly_active"}),
     "simple shock/stun": frozenset(
-        {"read_enemy_shock_active", "read_enemy_stun_active", "EnemyStateReadPort"}
+        {
+            "read_enemy_shock_active",
+            "read_enemy_stun_active",
+            "read_enemy_stun_rest_tick",
+            "EnemyStateReadPort",
+        }
     ),
     "edge-state helpers": frozenset(
         {
@@ -720,7 +749,9 @@ def test_enemy_dynamic_read_guardrail_tracks_helper_references_by_family() -> No
         | APPROVED_STUN_HELPER_FILES
         | APPROVED_ENEMY_STATE_PORT_FILES
     )
-    approved_shock_stun_files = migrated_shock_stun_files | APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
+    approved_shock_stun_files = (
+        migrated_shock_stun_files | APPROVED_COPIED_OUTPUT_STUN_FAMILY_HELPER_FILES
+    )
     edge_state_files = (
         APPROVED_EDGE_FROZEN_HELPER_FILES
         | APPROVED_EDGE_STUN_HELPER_FILES
@@ -835,7 +866,7 @@ def test_enemy_dynamic_read_guardrail_approves_copied_output_predicate_helpers_b
         APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
         | APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
         | APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_BAR_HELPER_FILES
-        | APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
+        | APPROVED_COPIED_OUTPUT_STUN_FAMILY_HELPER_FILES
     )
 
     assert set(APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME) == {
@@ -843,6 +874,7 @@ def test_enemy_dynamic_read_guardrail_approves_copied_output_predicate_helpers_b
         "read_enemy_active_anomaly_bar",
         "read_enemy_anomaly_active",
         "read_enemy_stun_active",
+        "read_enemy_stun_rest_tick",
     }
     assert (
         APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME["read_enemy_active_anomaly_list"]
@@ -859,6 +891,10 @@ def test_enemy_dynamic_read_guardrail_approves_copied_output_predicate_helpers_b
     assert (
         APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME["read_enemy_stun_active"]
         == APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
+    )
+    assert (
+        APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME["read_enemy_stun_rest_tick"]
+        == APPROVED_COPIED_OUTPUT_STUN_REST_TICK_HELPER_FILES
     )
     assert COPIED_OUTPUT_MIGRATED_FILES == {
         "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py",
@@ -941,6 +977,36 @@ def test_enemy_dynamic_read_guardrail_limits_hugo_copied_output_stun_helper_to_e
     assert copied_output_calls.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
 
 
+def test_enemy_dynamic_read_guardrail_limits_hugo_rest_tick_helper_to_exact_file() -> None:
+    references = _collect_helper_reference_paths()["read_enemy_stun_rest_tick"]
+    copied_output_imports = references["imports"] & COPIED_OUTPUT_ADJACENT_FILES
+    copied_output_calls = references["calls"] & COPIED_OUTPUT_ADJACENT_FILES
+
+    assert APPROVED_COPIED_OUTPUT_STUN_REST_TICK_HELPER_FILES == {
+        "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py"
+    }
+    assert copied_output_imports == APPROVED_COPIED_OUTPUT_STUN_REST_TICK_HELPER_FILES
+    assert copied_output_calls == APPROVED_COPIED_OUTPUT_STUN_REST_TICK_HELPER_FILES
+    assert copied_output_imports.isdisjoint(
+        APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
+    )
+    assert copied_output_calls.isdisjoint(
+        APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
+    )
+    assert copied_output_imports.isdisjoint(
+        APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_BAR_HELPER_FILES
+    )
+    assert copied_output_calls.isdisjoint(
+        APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_BAR_HELPER_FILES
+    )
+    assert copied_output_imports.isdisjoint(APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES)
+    assert copied_output_calls.isdisjoint(APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES)
+    assert copied_output_imports.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert copied_output_calls.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert copied_output_imports.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
+    assert copied_output_calls.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
+
+
 def test_enemy_dynamic_read_guardrail_limits_copied_output_anomaly_helper_to_exact_files() -> None:
     references = _collect_helper_reference_paths()["read_enemy_anomaly_active"]
     copied_output_imports = references["imports"] & COPIED_OUTPUT_ADJACENT_FILES
@@ -955,8 +1021,8 @@ def test_enemy_dynamic_read_guardrail_limits_copied_output_anomaly_helper_to_exa
     assert copied_output_calls == DELEGATED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
     assert copied_output_imports <= APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
     assert copied_output_calls <= APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
-    assert copied_output_imports.isdisjoint(APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES)
-    assert copied_output_calls.isdisjoint(APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES)
+    assert copied_output_imports.isdisjoint(APPROVED_COPIED_OUTPUT_STUN_FAMILY_HELPER_FILES)
+    assert copied_output_calls.isdisjoint(APPROVED_COPIED_OUTPUT_STUN_FAMILY_HELPER_FILES)
     assert copied_output_imports.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
     assert copied_output_calls.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
     assert copied_output_imports.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
@@ -978,7 +1044,7 @@ def test_enemy_dynamic_read_guardrail_limits_active_anomaly_list_helper_to_vivia
         COPIED_OUTPUT_ADJACENT_FILES
         - APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
     )
-    assert helper_references.isdisjoint(APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES)
+    assert helper_references.isdisjoint(APPROVED_COPIED_OUTPUT_STUN_FAMILY_HELPER_FILES)
     assert helper_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
     assert helper_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
 
@@ -997,7 +1063,7 @@ def test_enemy_dynamic_read_guardrail_limits_active_anomaly_bar_helper_to_yanagi
         COPIED_OUTPUT_ADJACENT_FILES
         - APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_BAR_HELPER_FILES
     )
-    assert helper_references.isdisjoint(APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES)
+    assert helper_references.isdisjoint(APPROVED_COPIED_OUTPUT_STUN_FAMILY_HELPER_FILES)
     assert helper_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
     assert helper_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
     assert helper_references.isdisjoint(EDGE_DETECTION_FILES)
@@ -1097,7 +1163,7 @@ def test_enemy_dynamic_read_guardrail_limits_yanagi_copied_output_anomaly_helper
         APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
     )
     assert YANAGI_COPIED_OUTPUT_ANOMALY_HELPER_FILES.isdisjoint(
-        APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
+        APPROVED_COPIED_OUTPUT_STUN_FAMILY_HELPER_FILES
     )
     assert YANAGI_COPIED_OUTPUT_ANOMALY_HELPER_FILES.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
     assert YANAGI_COPIED_OUTPUT_ANOMALY_HELPER_FILES.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
@@ -1206,9 +1272,9 @@ def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scop
     assert shock_stun_references.isdisjoint(EDGE_DETECTION_FILES)
     assert (
         shock_stun_references & COPIED_OUTPUT_ADJACENT_FILES
-    ) <= APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
+    ) <= APPROVED_COPIED_OUTPUT_STUN_FAMILY_HELPER_FILES
     assert shock_stun_references.isdisjoint(
-        COPIED_OUTPUT_ADJACENT_FILES - APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
+        COPIED_OUTPUT_ADJACENT_FILES - APPROVED_COPIED_OUTPUT_STUN_FAMILY_HELPER_FILES
     )
     assert shock_stun_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
     assert shock_stun_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
@@ -1525,6 +1591,68 @@ def test_enemy_dynamic_read_guardrail_records_copied_output_zero_census_checkpoi
         set().union(*disjoint_families.values())
     )
     assert "copied-output payload guardrail" in census["validation"][0]
+
+
+def test_enemy_dynamic_read_guardrail_records_hugo_guardrail_checkpoint() -> None:
+    references = _collect_helper_reference_paths()
+
+    with HUGO_GUARDRAIL_CHECKPOINT_PATH.open(encoding="utf-8") as handle:
+        checkpoint = json.load(handle)
+
+    helper_boundaries = {
+        boundary["name"]: set(boundary["files"])
+        for boundary in checkpoint["helperBoundaries"]
+    }
+    disjoint_families = {
+        family["name"]: set(family["files"])
+        for family in checkpoint["disjointFromFamilies"]
+    }
+    active_anomaly_exclusions = set(checkpoint["activeAnomalyExclusions"]["files"])
+
+    assert checkpoint["schemaVersion"] == "zsim-hugo-guardrail-checkpoint.v1"
+    assert checkpoint["storyId"] == "US-004"
+    assert checkpoint["status"] == "migrated-rest-tick-helper"
+    assert checkpoint["blockerReason"] is None
+    assert set(checkpoint["hugoFiles"]) == (
+        APPROVED_COPIED_OUTPUT_STUN_REST_TICK_HELPER_FILES
+    )
+    assert helper_boundaries["read_enemy_stun_rest_tick"] == (
+        APPROVED_COPIED_OUTPUT_STUN_REST_TICK_HELPER_FILES
+    )
+    assert helper_boundaries["read_enemy_stun_active"] == (
+        APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
+    )
+    assert helper_boundaries["read_enemy_active_anomaly_list"] == (
+        APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
+    )
+    assert helper_boundaries["read_enemy_active_anomaly_bar"] == (
+        APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_BAR_HELPER_FILES
+    )
+    assert (
+        references["read_enemy_stun_rest_tick"]["imports"] & COPIED_OUTPUT_ADJACENT_FILES
+    ) == helper_boundaries["read_enemy_stun_rest_tick"]
+    assert (
+        references["read_enemy_stun_rest_tick"]["calls"] & COPIED_OUTPUT_ADJACENT_FILES
+    ) == helper_boundaries["read_enemy_stun_rest_tick"]
+    assert active_anomaly_exclusions == APPROVED_COPIED_OUTPUT_STUN_FAMILY_HELPER_FILES
+    assert active_anomaly_exclusions.isdisjoint(
+        APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
+    )
+    assert active_anomaly_exclusions.isdisjoint(
+        APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_BAR_HELPER_FILES
+    )
+    assert disjoint_families["dot/debuff runtime-state"] == DOT_DEBUFF_RUNTIME_STATE_FILES
+    assert disjoint_families["anomaly-map"] == ANOMALY_MAP_FUTURE_POOL_FILES
+    assert disjoint_families["edge-detection"] == EDGE_DETECTION_FILES
+    assert disjoint_families["lifecycle/main-loop"] == DEFERRED_LIFECYCLE_MAIN_LOOP_FILES
+    assert APPROVED_COPIED_OUTPUT_STUN_FAMILY_HELPER_FILES.isdisjoint(
+        set().union(*disjoint_families.values())
+    )
+    assert "tests/simulator/test_hugo_totalize_dispatch.py" in checkpoint["parityTests"]
+    assert (
+        "uv run python scripts/run_buff_refactor_validation.py "
+        "--typecheck-profile runtime-dependency-zero --runtime-dependency-expected-zero"
+    ) in checkpoint["validation"]
 
 
 def test_enemy_dynamic_read_guardrail_failure_message_classifies_unknown_matches() -> None:
