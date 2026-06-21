@@ -7,7 +7,8 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduledEventEmitterProvider,
 )
 
-from .. import Buff, JudgeTools, check_preparation
+from .. import Buff, check_preparation
+from ..JudgeTools import build_preparation_context_from_buff
 from ._buff_record_base_class import BuffRecordBaseClass as BRBC
 
 
@@ -39,16 +40,23 @@ class SeedAdditionalAbilityTrigger(Buff.BuffLogic):
         self.record: Any = None
 
     def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+        preparation_context = build_preparation_context_from_buff(self.buff_instance)
+        return check_preparation(
+            buff_instance=self.buff_instance,
+            buff_0=self.buff_0,
+            preparation_context=preparation_context,
+            **kwargs,
+        )
 
     def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
         return self._scheduled_event_emitter_provider.create_emitter()
 
     def check_record_module(self):
         if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["席德"][self.buff_instance.ft.index]
+            preparation_context = build_preparation_context_from_buff(self.buff_instance)
+            self.buff_0 = preparation_context.find_sub_exist_buff_dict("席德")[
+                self.buff_instance.ft.index
+            ]
         assert self.buff_0 is not None, (
             "【Buff初始化警告】席德的复杂逻辑模块未正确初始化，请检查函数"
         )

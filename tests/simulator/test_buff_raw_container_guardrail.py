@@ -277,6 +277,12 @@ XLOGIC_ADAPTER_TRIGGER_REF_FILES = (
 XLOGIC_ADAPTER_TEMPLATE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/AstralVoice.py",
+    "zsim/sim_progress/Buff/BuffXLogic/RoaringRideBuffTrigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/SeedBesiegeBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/SeedBesiegeBonusTrigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/SeedCinema2BesiegeIgnoreDefenceTrigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/SeedCinema2BesiegeIgnoreDefense.py",
     "zsim/sim_progress/Buff/BuffXLogic/_char_buff_mod.py",
     "zsim/sim_progress/Buff/BuffXLogic/_euipment_buff_mod.py",
 )

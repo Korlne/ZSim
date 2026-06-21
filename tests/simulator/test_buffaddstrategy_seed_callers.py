@@ -17,9 +17,21 @@ sys.modules.setdefault("define", define_module)
 
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.JudgeTools import CharacterLookup
+from zsim.sim_progress.Buff.BuffXLogic.SeedAdditionalAbilityTrigger import (
+    SeedAdditionalAbilityTrigger,
+    SeedAdditionalAbilityTriggerRecord,
+)
+from zsim.sim_progress.Buff.BuffXLogic.SeedBesiegeBonus import (
+    SeedBesiegeBonus,
+    SeedBesiegeBonusRecord,
+)
 from zsim.sim_progress.Buff.BuffXLogic.SeedBesiegeBonusTrigger import (
     SeedBesiegeBonusTrigger,
     SeedBesiegeBonusTriggerRecord,
+)
+from zsim.sim_progress.Buff.BuffXLogic.SeedCinema2BesiegeIgnoreDefense import (
+    SeedCinema2BesiegeIgnoreDefense,
+    SeedCinema2BesiegeIgnoreDefenseRecord,
 )
 from zsim.sim_progress.Buff.BuffXLogic.SeedCinema2BesiegeIgnoreDefenceTrigger import (
     SeedCinema2BesiegeIgnoreDefenceTrigger,
@@ -251,7 +263,22 @@ def test_character_lookup_preserves_cid_name_order_and_missing_errors() -> None:
         lookup.by_name("不存在的角色")
 
 
-def test_seed_besiege_uses_preparation_context_for_character_lookup(
+@pytest.mark.parametrize(
+    ("logic_cls", "record_cls"),
+    [
+        (SeedAdditionalAbilityTrigger, SeedAdditionalAbilityTriggerRecord),
+        (SeedBesiegeBonus, SeedBesiegeBonusRecord),
+        (SeedBesiegeBonusTrigger, SeedBesiegeBonusTriggerRecord),
+        (
+            SeedCinema2BesiegeIgnoreDefenceTrigger,
+            SeedCinema2BesiegeIgnoreDefenceTriggerRecord,
+        ),
+        (SeedCinema2BesiegeIgnoreDefense, SeedCinema2BesiegeIgnoreDefenseRecord),
+    ],
+)
+def test_seed_batch_uses_preparation_context_for_character_lookup(
+    logic_cls: type[Any],
+    record_cls: type[Any],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     seed = _SeedStub()
@@ -265,7 +292,7 @@ def test_seed_besiege_uses_preparation_context_for_character_lookup(
         sim_instance=sim_instance,
         ft=SimpleNamespace(index="seed-trigger"),
     )
-    logic = SeedBesiegeBonusTrigger(buff_instance)
+    logic = logic_cls(buff_instance)
 
     def fail_legacy_lookup(*args: object, **kwargs: object) -> None:
         raise AssertionError("migrated Seed trigger should use PreparationContext")
@@ -278,7 +305,7 @@ def test_seed_besiege_uses_preparation_context_for_character_lookup(
     logic.get_prepared(char_CID=1461)
 
     assert logic.buff_0 is buff_0
-    assert isinstance(buff_0.history.record, SeedBesiegeBonusTriggerRecord)
+    assert isinstance(buff_0.history.record, record_cls)
     assert logic.record is buff_0.history.record
     assert logic.record.char is seed
 
