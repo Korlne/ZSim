@@ -79,6 +79,15 @@ CLASSIFICATION_BY_FILE = {
     "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py": "dot/debuff runtime-state read",
 }
 
+CONVERTED_HELPER_BOUNDARY_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_map_read.py",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_read.py",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_debuff_mirror_read.py",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_edge_state_read.py",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_state_read.py",
+    "zsim/sim_progress/Buff/BuffXLogic/dot_runtime_state_read.py",
+}
+
 APPROVED_ANOMALY_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/ElectroLipGlossAtkAndDmgBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/JaneAdditionalAbilityPhyBuildupBonus.py",
@@ -300,7 +309,10 @@ EXCLUDED_RUNTIME_STATE_AND_ANOMALY_MAP_FILES = (
 )
 
 EXPECTED_DIRECT_READ_FILES = (
-    set(CLASSIFICATION_BY_FILE) - MIGRATED_HELPER_FILES - DELEGATED_COPIED_OUTPUT_HELPER_FILES
+    set(CLASSIFICATION_BY_FILE)
+    - MIGRATED_HELPER_FILES
+    - DELEGATED_COPIED_OUTPUT_HELPER_FILES
+    - CONVERTED_HELPER_BOUNDARY_FILES
 )
 
 CLASSIFICATION_BUCKETS = {
@@ -561,22 +573,26 @@ def test_enemy_dynamic_read_guardrail_classifies_getattr_anomaly_maps_as_future_
         finding.classification_suggestion == "same-phase future anomaly-map read"
         for finding in state_machine_getattr_findings
     )
-    assert {finding.path for finding in helper_getattr_findings} == {helper_boundary_path}
-    assert all(
-        finding.classification_suggestion == "approved helper boundary"
-        for finding in helper_getattr_findings
-    )
+    assert helper_boundary_path in CONVERTED_HELPER_BOUNDARY_FILES
+    assert helper_getattr_findings == []
     assert ANOMALY_MAP_FUTURE_POOL_FILES.isdisjoint(EDGE_DETECTION_FILES)
     assert ANOMALY_MAP_FUTURE_POOL_FILES.isdisjoint(COPIED_OUTPUT_ADJACENT_FILES)
     assert ANOMALY_MAP_FUTURE_POOL_FILES.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
 
 
 def test_enemy_dynamic_read_guardrail_limits_helper_to_approved_subset() -> None:
+    finding_paths = {finding.path for finding in _collect_findings()}
     references = _collect_helper_reference_paths()
 
     assert (
         CLASSIFICATION_BY_FILE["zsim/sim_progress/Buff/BuffXLogic/enemy_state_read.py"]
         == "approved helper boundary"
+    )
+    assert CONVERTED_HELPER_BOUNDARY_FILES.isdisjoint(finding_paths)
+    assert CONVERTED_HELPER_BOUNDARY_FILES.isdisjoint(EXPECTED_DIRECT_READ_FILES)
+    assert all(
+        CLASSIFICATION_BY_FILE[path] == "approved helper boundary"
+        for path in CONVERTED_HELPER_BOUNDARY_FILES
     )
     for helper_name, approved_files in APPROVED_HELPER_FILES_BY_NAME.items():
         helper_references = references[helper_name]

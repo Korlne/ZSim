@@ -1,13 +1,3 @@
-from typing import Protocol
+from ..JudgeTools.EnemyReadPorts import read_enemy_anomaly_active
 
-
-class _EnemyDynamicWithAnomalyRead(Protocol):
-    def is_under_anomaly(self) -> bool: ...
-
-
-class _EnemyWithDynamicAnomalyRead(Protocol):
-    dynamic: _EnemyDynamicWithAnomalyRead
-
-
-def read_enemy_anomaly_active(enemy: _EnemyWithDynamicAnomalyRead) -> bool:
-    return enemy.dynamic.is_under_anomaly()
+__all__ = ["read_enemy_anomaly_active"]
