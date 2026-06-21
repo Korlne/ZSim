@@ -58,6 +58,17 @@ P2G_DIRECT_CONTEXT_TARGETS = (
         ),
     ),
     P2GDirectContextTarget(
+        path=BUFF_XLOGIC_ROOT / "AlicePolarizedAssaultTrigger.py",
+        node_path=("AlicePolarizedAssaultTrigger", "special_effect_logic"),
+        allowed_layers=frozenset({"scheduled_publish", "report_state"}),
+        required_terms=(
+            "PolarizedAssaultEvent",
+            "deepcopy",
+            "emit_scheduled",
+            "change_process_state",
+        ),
+    ),
+    P2GDirectContextTarget(
         path=BUFF_XLOGIC_ROOT / "YuzuhaCinema2Trigger.py",
         node_path=("YuzuhaCinema2Trigger",),
         allowed_layers=frozenset({"tick_preload", "report_state"}),
@@ -88,6 +99,12 @@ P2G_DIRECT_CONTEXT_TARGETS = (
         required_terms=("rng_instance", "random_float", "read_full_crit_rate"),
     ),
     P2GDirectContextTarget(
+        path=BUFF_XLOGIC_ROOT / "CannonRotor.py",
+        node_path=("CannonRotor", "special_hit_logic"),
+        allowed_layers=frozenset({"scheduled_publish"}),
+        required_terms=("spawn_node", "LoadingMission", "emit_scheduled", "simple_start"),
+    ),
+    P2GDirectContextTarget(
         path=BUFF_XLOGIC_ROOT / "WoodpeckerElectroSet4_NA.py",
         node_path=("WoodpeckerElectroSet4_NA", "special_judge_logic"),
         allowed_layers=frozenset({"rng_service", "attribute_read"}),
@@ -111,6 +128,19 @@ P2G_DIRECT_CONTEXT_TARGETS = (
         allowed_layers=frozenset({"report_state"}),
         required_terms=("simple_start", "update_to_buff_0", "change_process_state"),
     ),
+    P2GDirectContextTarget(
+        path=BUFF_XLOGIC_ROOT / "YixuanCinema1Trigger.py",
+        node_path=("YixuanCinema1Trigger", "special_hit_logic"),
+        allowed_layers=frozenset({"scheduled_publish", "report_state"}),
+        required_terms=(
+            "spawn_node",
+            "LoadingMission",
+            "emit_scheduled",
+            "update_adrenaline",
+            "simple_start",
+            "change_process_state",
+        ),
+    ),
 )
 
 
@@ -127,7 +157,9 @@ RUNTIME_BOUNDARY_NAMES = {
 SCHEDULED_PUBLISH_NAMES = {
     "ScheduleDispatchPort",
     "create_schedule_dispatch_port",
+    "emit_scheduled",
     "publish_scheduled",
+    "schedule_preload_events",
     "schedule_preload_event_factory",
 }
 
@@ -411,15 +443,18 @@ def test_migrated_p2g_guardrail_scope_is_exact_root_service_set() -> None:
         "zsim/sim_progress/Buff/BuffXLogic/YuzuhaHardCandyShotTrigger.py::YuzuhaHardCandyShotTrigger",
         "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema4QuickAssistTrigger.py::YuzuhaCinema4QuickAssistTrigger",
         "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema6SheelTrigger.py::YuzuhaCinema6SheelTrigger",
+        "zsim/sim_progress/Buff/BuffXLogic/AlicePolarizedAssaultTrigger.py::AlicePolarizedAssaultTrigger.special_effect_logic",
         "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py::YuzuhaCinema2Trigger",
         "zsim/sim_progress/Buff/BuffXLogic/YuzuhaSugarBurstAnomalyBuildupBonus.py::YuzuhaSugarBurstAnomalyBuildupBonus",
         "zsim/sim_progress/Buff/BuffXLogic/YixuanAdditionalAbilityDmgBonus.py::YixuanAdditionalAbilityDmgBonus",
         "zsim/sim_progress/Buff/BuffXLogic/HeartstringNocturne.py::HeartstringNocturne.special_judge_logic",
         "zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py::CannonRotor.special_judge_logic",
+        "zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py::CannonRotor.special_hit_logic",
         "zsim/sim_progress/Buff/BuffXLogic/WoodpeckerElectroSet4_NA.py::WoodpeckerElectroSet4_NA.special_judge_logic",
         "zsim/sim_progress/Buff/BuffXLogic/WoodpeckerElectroSet4_E_EX.py::WoodpeckerElectroSet4_E_EX.special_judge_logic",
         "zsim/sim_progress/Buff/BuffXLogic/WoodpeckerElectroSet4_CA.py::WoodpeckerElectroSet4_CA.special_judge_logic",
         "zsim/sim_progress/Buff/BuffXLogic/AstraYaoCorePassiveAtkBonus.py::AstraYaoCorePassiveAtkBonus.special_start_logic",
+        "zsim/sim_progress/Buff/BuffXLogic/YixuanCinema1Trigger.py::YixuanCinema1Trigger.special_hit_logic",
     }
 
     actual_keys = {target.key for target in P2G_DIRECT_CONTEXT_TARGETS}
@@ -450,6 +485,11 @@ class Fixture:
         create_runtime_command_port(data=data, exist_buff_dict=buffs)
         self.buff_instance.sim_instance.listener_manager.broadcast_event("event")
         create_schedule_dispatch_port(sim_instance=sim).publish_scheduled(node)
+        self._scheduled_event_emitter().emit_scheduled(node)
+        self.context.preload_commands.schedule_preload_events(
+            preload_tick_list=[1],
+            skill_tag_list=["fixture"],
+        )
 """
 
     findings = _collect_findings_from_source(
@@ -460,12 +500,27 @@ class Fixture:
     )
     messages = [finding.message() for finding in findings]
 
-    assert len(findings) == 5
+    assert len(findings) == 7
     assert any("raw scheduled queue mutation" in message for message in messages)
     assert any("legacy event-list discovery" in message for message in messages)
     assert any("runtime command/facade boundary" in message for message in messages)
     assert any("listener broadcast boundary" in message for message in messages)
-    assert any("scheduled publish boundary" in message for message in messages)
+    assert any(
+        "scheduled publish boundary" in message
+        and "create_schedule_dispatch_port(sim_instance=sim).publish_scheduled(node)"
+        in message
+        for message in messages
+    )
+    assert any(
+        "scheduled publish boundary" in message
+        and "self._scheduled_event_emitter().emit_scheduled(node)" in message
+        for message in messages
+    )
+    assert any(
+        "scheduled publish boundary" in message
+        and "self.context.preload_commands.schedule_preload_events" in message
+        for message in messages
+    )
 
 
 def test_migrated_p2g_guardrail_uses_ast_not_text_matching_and_allows_retained_layers() -> None:
