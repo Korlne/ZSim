@@ -8,6 +8,8 @@ import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
+from pathlib import Path
+from statistics import median
 from typing import Any
 
 from zsim.define import config
@@ -22,6 +24,10 @@ from zsim.utils.main_loop_consistency import (
     _prepare_common_cfg,
 )
 from zsim.utils.process_buff_result import prepare_buff_data_and_cache
+
+
+REPEAT_BENCHMARK_SUMMARY_SCHEMA = "zsim-buff-runtime-repeat-benchmark.v1"
+FUTURE_THRESHOLD_MIN_REPEAT_SAMPLES = 5
 
 
 @dataclass(frozen=True)
@@ -125,6 +131,146 @@ def _rebuild_count_comparisons(
         counter_name: int(candidate_counts.get(counter_name, 0))
         - int(legacy_counts.get(counter_name, 0))
         for counter_name in counter_names
+    }
+
+
+def _numeric_summary(values: list[float | int]) -> dict[str, float]:
+    if not values:
+        return {"median": 0.0, "min": 0.0, "max": 0.0, "range": 0.0}
+    minimum = float(min(values))
+    maximum = float(max(values))
+    return {
+        "median": round(float(median(values)), 4),
+        "min": round(minimum, 4),
+        "max": round(maximum, 4),
+        "range": round(maximum - minimum, 4),
+    }
+
+
+def _summary_with_samples(values: list[float]) -> dict[str, Any]:
+    return {
+        **_numeric_summary(values),
+        "samples": [round(float(value), 4) for value in values],
+    }
+
+
+def _simulator_runtime_ms(report: dict[str, Any], bucket: str) -> float:
+    for hotspot in report.get("hotspots", {}).get(bucket, []):
+        if hotspot.get("name") == "simulator_run_ms":
+            return float(hotspot["runtime_ms"])
+    raise KeyError(f"missing simulator_run_ms hotspot for {bucket}")
+
+
+def _report_rebuild_count_buckets(report: dict[str, Any]) -> dict[str, dict[str, int]]:
+    buckets = report.get("buff_runtime_rebuild_counts") or {}
+    return {
+        "legacy": dict(buckets.get("legacy", {})),
+        "candidate": dict(buckets.get("candidate", {})),
+    }
+
+
+def _aggregate_rebuild_count_bucket(
+    samples: list[dict[str, dict[str, int]]],
+    bucket: str,
+) -> dict[str, dict[str, Any]]:
+    counter_names = sorted(
+        {
+            counter_name
+            for sample in samples
+            for counter_name in sample.get(bucket, {})
+        }
+    )
+    return {
+        counter_name: {
+            **_numeric_summary(
+                [int(sample.get(bucket, {}).get(counter_name, 0)) for sample in samples]
+            ),
+            "samples": [
+                int(sample.get(bucket, {}).get(counter_name, 0)) for sample in samples
+            ],
+        }
+        for counter_name in counter_names
+    }
+
+
+def build_repeat_runtime_benchmark_summary(
+    *,
+    reports: list[dict[str, Any]],
+    include_rebuild_counts: bool = False,
+) -> dict[str, Any]:
+    if not reports:
+        raise ValueError("repeat benchmark summary requires at least one report")
+
+    first_report = reports[0]
+    legacy_simulator_runtime_ms = [
+        _simulator_runtime_ms(report, "legacy") for report in reports
+    ]
+    candidate_simulator_runtime_ms = [
+        _simulator_runtime_ms(report, "candidate") for report in reports
+    ]
+    rebuild_count_samples = (
+        [_report_rebuild_count_buckets(report) for report in reports]
+        if include_rebuild_counts
+        else []
+    )
+
+    samples = []
+    for index, report in enumerate(reports, start=1):
+        samples.append(
+            {
+                "sample_index": index,
+                "total_runtime_ms": dict(report["total_runtime_ms"]),
+                "simulator_runtime_ms": {
+                    "legacy": legacy_simulator_runtime_ms[index - 1],
+                    "candidate": candidate_simulator_runtime_ms[index - 1],
+                },
+                "rebuild_count_buckets": (
+                    rebuild_count_samples[index - 1] if include_rebuild_counts else None
+                ),
+            }
+        )
+
+    return {
+        "schema": REPEAT_BENCHMARK_SUMMARY_SCHEMA,
+        "team": first_report["team"],
+        "apl": first_report["apl"],
+        "stop_tick": int(first_report["stop_tick"]),
+        "sample_count": len(reports),
+        "runtime_labels": {
+            "legacy": first_report["legacy_runtime"],
+            "candidate": first_report["candidate_runtime"],
+        },
+        "runtime_selection": dict(RUNTIME_LABEL_CONTRACT),
+        "simulator_runtime_ms": {
+            "legacy": _summary_with_samples(legacy_simulator_runtime_ms),
+            "candidate": _summary_with_samples(candidate_simulator_runtime_ms),
+        },
+        "rebuild_count_buckets": {
+            "included": include_rebuild_counts,
+            "samples": rebuild_count_samples,
+            "aggregate": {
+                "legacy": _aggregate_rebuild_count_bucket(
+                    rebuild_count_samples, "legacy"
+                ),
+                "candidate": _aggregate_rebuild_count_bucket(
+                    rebuild_count_samples, "candidate"
+                ),
+            },
+        },
+        "future_threshold_use": {
+            "speedup_target_defined": False,
+            "minimum_repeat_samples": FUTURE_THRESHOLD_MIN_REPEAT_SAMPLES,
+            "noise_reporting": (
+                "Report sample_count plus median/min/max/range simulator runtime "
+                "for each runtime label before any later threshold is evaluated."
+            ),
+            "rule": (
+                "A later PRD may define numeric thresholds only after at least "
+                f"{FUTURE_THRESHOLD_MIN_REPEAT_SAMPLES} repeats and explicit noise "
+                "reporting; this baseline does not claim a speedup target."
+            ),
+        },
+        "samples": samples,
     }
 
 
@@ -249,6 +395,57 @@ def run_runtime_benchmark(
     )
 
 
+def run_repeated_runtime_benchmark(
+    *,
+    team: str,
+    apl: str | None,
+    stop_tick: int,
+    legacy_runtime: str,
+    candidate_runtime: str,
+    repeat_samples: int,
+    cleanup: bool = True,
+    include_rebuild_counts: bool = False,
+) -> dict[str, Any]:
+    if repeat_samples < 1:
+        raise ValueError("repeat_samples must be at least 1")
+    reports = [
+        run_runtime_benchmark(
+            team=team,
+            apl=apl,
+            stop_tick=stop_tick,
+            legacy_runtime=legacy_runtime,
+            candidate_runtime=candidate_runtime,
+            cleanup=cleanup,
+            include_rebuild_counts=include_rebuild_counts,
+        )
+        for _ in range(repeat_samples)
+    ]
+    return build_repeat_runtime_benchmark_summary(
+        reports=reports,
+        include_rebuild_counts=include_rebuild_counts,
+    )
+
+
+def write_repeat_runtime_benchmark_summary(
+    path: str | Path,
+    summary: dict[str, Any],
+) -> None:
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(
+        json.dumps(summary, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
+
+
+def _positive_int(value: str) -> int:
+    parsed = int(value)
+    if parsed < 1:
+        raise argparse.ArgumentTypeError("value must be at least 1")
+    return parsed
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run a Buff runtime benchmark comparison")
     parser.add_argument("--team", required=True, help="Registered team name to simulate")
@@ -282,6 +479,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--json",
         action="store_true",
         help="Print the full JSON report to stdout.",
+    )
+    parser.add_argument(
+        "--repeat-samples",
+        type=_positive_int,
+        default=1,
+        help="Run this many label-only benchmark samples before summarizing.",
+    )
+    parser.add_argument(
+        "--summary-json",
+        default=None,
+        help="Write a repeat benchmark JSON summary artifact to this path.",
     )
     parser.add_argument(
         "--include-rebuild-counts",
@@ -324,9 +532,63 @@ def _format_human_report(report: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _format_repeat_summary(summary: dict[str, Any]) -> str:
+    labels = summary["runtime_labels"]
+    runtimes = summary["simulator_runtime_ms"]
+    policy = summary["future_threshold_use"]
+    lines = [
+        f"team: {summary['team']}",
+        f"apl: {summary['apl']}",
+        f"stop_tick: {summary['stop_tick']}",
+        f"sample_count: {summary['sample_count']}",
+        "runtime_selection: "
+        + summary.get("runtime_selection", {}).get("mode", "label-only-current-runtime"),
+        (
+            "simulator_runtime_ms: "
+            f"{labels['legacy']} median={runtimes['legacy']['median']} "
+            f"min={runtimes['legacy']['min']} max={runtimes['legacy']['max']}; "
+            f"{labels['candidate']} median={runtimes['candidate']['median']} "
+            f"min={runtimes['candidate']['min']} max={runtimes['candidate']['max']}"
+        ),
+    ]
+    rebuild_counts = summary.get("rebuild_count_buckets", {})
+    if rebuild_counts.get("included"):
+        lines.append(
+            "rebuild_count_buckets: "
+            + json.dumps(rebuild_counts["aggregate"], ensure_ascii=False, sort_keys=True)
+        )
+    lines.append(
+        "future_threshold_use: "
+        f"speedup_target_defined={policy['speedup_target_defined']}; "
+        f"minimum_repeat_samples={policy['minimum_repeat_samples']}; "
+        + policy["noise_reporting"]
+    )
+    return "\n".join(lines)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    repeat_mode = args.repeat_samples > 1 or args.summary_json is not None
+    if repeat_mode:
+        summary = run_repeated_runtime_benchmark(
+            team=args.team,
+            apl=args.apl,
+            stop_tick=args.stop_tick,
+            legacy_runtime=args.legacy_runtime,
+            candidate_runtime=args.candidate_runtime,
+            repeat_samples=args.repeat_samples,
+            cleanup=not args.keep_artifacts,
+            include_rebuild_counts=args.include_rebuild_counts,
+        )
+        if args.summary_json:
+            write_repeat_runtime_benchmark_summary(args.summary_json, summary)
+        if args.json:
+            print(json.dumps(summary, ensure_ascii=False, sort_keys=True, indent=2))
+        else:
+            print(_format_repeat_summary(summary))
+        return 0
+
     report = run_runtime_benchmark(
         team=args.team,
         apl=args.apl,
@@ -347,9 +609,12 @@ __all__ = [
     "PROJECT_ROOT",
     "RuntimeBenchmarkSnapshot",
     "build_parser",
+    "build_repeat_runtime_benchmark_summary",
     "build_runtime_benchmark_report",
     "main",
+    "run_repeated_runtime_benchmark",
     "run_runtime_benchmark",
+    "write_repeat_runtime_benchmark_summary",
 ]
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -13,7 +14,9 @@ from zsim.utils import runtime_benchmark as rb
 from zsim.utils.runtime_benchmark import (
     RuntimeBenchmarkSnapshot,
     build_parser,
+    build_repeat_runtime_benchmark_summary,
     build_runtime_benchmark_report,
+    run_repeated_runtime_benchmark,
     run_runtime_benchmark,
 )
 
@@ -141,6 +144,10 @@ def test_build_parser_accepts_required_cli_flags():
             "candidate-b",
             "--json",
             "--include-rebuild-counts",
+            "--repeat-samples",
+            "3",
+            "--summary-json",
+            "scripts/ralph/benchmarks/repeat-summary.json",
         ]
     )
 
@@ -151,6 +158,185 @@ def test_build_parser_accepts_required_cli_flags():
     assert args.candidate_runtime == "candidate-b"
     assert args.json is True
     assert args.include_rebuild_counts is True
+    assert args.repeat_samples == 3
+    assert args.summary_json == "scripts/ralph/benchmarks/repeat-summary.json"
+
+
+def _repeat_sample_report(
+    *,
+    legacy_simulator_ms: float,
+    candidate_simulator_ms: float,
+    legacy_counts: dict[str, int] | None = None,
+    candidate_counts: dict[str, int] | None = None,
+) -> dict[str, Any]:
+    report: dict[str, Any] = {
+        "team": "fake-team",
+        "apl": "./fake.toml",
+        "stop_tick": 120,
+        "legacy_runtime": "legacy-label",
+        "candidate_runtime": "candidate-label",
+        "runtime_selection": {"mode": "label-only-current-runtime"},
+        "total_runtime_ms": {
+            "legacy": legacy_simulator_ms + 20.0,
+            "candidate": candidate_simulator_ms + 20.0,
+        },
+        "hotspots": {
+            "legacy": [
+                {"name": "simulator_run_ms", "runtime_ms": legacy_simulator_ms},
+                {"name": "damage_report_ms", "runtime_ms": 15.0},
+                {"name": "buff_report_ms", "runtime_ms": 5.0},
+            ],
+            "candidate": [
+                {"name": "simulator_run_ms", "runtime_ms": candidate_simulator_ms},
+                {"name": "damage_report_ms", "runtime_ms": 15.0},
+                {"name": "buff_report_ms", "runtime_ms": 5.0},
+            ],
+        },
+        "comparisons": {
+            "total_runtime_ms": candidate_simulator_ms - legacy_simulator_ms,
+            "hotspots": {
+                "simulator_run_ms": candidate_simulator_ms - legacy_simulator_ms,
+            },
+            "faster_runtime": "candidate-label",
+            "candidate_vs_legacy_ratio": 1.0,
+        },
+    }
+    if legacy_counts is not None or candidate_counts is not None:
+        report["buff_runtime_rebuild_counts"] = {
+            "legacy": legacy_counts or {},
+            "candidate": candidate_counts or {},
+        }
+        report["comparisons"]["buff_runtime_rebuild_counts"] = {}
+    return report
+
+
+def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts():
+    reports = [
+        _repeat_sample_report(
+            legacy_simulator_ms=100.0,
+            candidate_simulator_ms=94.0,
+            legacy_counts={"buff_load_loop": 1},
+            candidate_counts={"buff_load_loop": 2, "scheduled_event": 2},
+        ),
+        _repeat_sample_report(
+            legacy_simulator_ms=104.0,
+            candidate_simulator_ms=98.0,
+            legacy_counts={"buff_load_loop": 3},
+            candidate_counts={"buff_load_loop": 3},
+        ),
+        _repeat_sample_report(
+            legacy_simulator_ms=102.0,
+            candidate_simulator_ms=96.0,
+            legacy_counts={"buff_load_loop": 2},
+            candidate_counts={"buff_load_loop": 4, "scheduled_event": 4},
+        ),
+    ]
+
+    summary = build_repeat_runtime_benchmark_summary(
+        reports=reports,
+        include_rebuild_counts=True,
+    )
+
+    assert summary["schema"] == "zsim-buff-runtime-repeat-benchmark.v1"
+    assert summary["sample_count"] == 3
+    assert summary["team"] == "fake-team"
+    assert summary["apl"] == "./fake.toml"
+    assert summary["stop_tick"] == 120
+    assert summary["runtime_labels"] == {
+        "legacy": "legacy-label",
+        "candidate": "candidate-label",
+    }
+    assert summary["runtime_selection"]["mode"] == "label-only-current-runtime"
+    assert summary["simulator_runtime_ms"]["legacy"] == {
+        "median": 102.0,
+        "min": 100.0,
+        "max": 104.0,
+        "range": 4.0,
+        "samples": [100.0, 104.0, 102.0],
+    }
+    assert summary["simulator_runtime_ms"]["candidate"] == {
+        "median": 96.0,
+        "min": 94.0,
+        "max": 98.0,
+        "range": 4.0,
+        "samples": [94.0, 98.0, 96.0],
+    }
+    assert summary["rebuild_count_buckets"]["included"] is True
+    assert summary["rebuild_count_buckets"]["aggregate"]["legacy"]["buff_load_loop"] == {
+        "median": 2.0,
+        "min": 1.0,
+        "max": 3.0,
+        "range": 2.0,
+        "samples": [1, 3, 2],
+    }
+    assert summary["rebuild_count_buckets"]["aggregate"]["candidate"]["scheduled_event"] == {
+        "median": 2.0,
+        "min": 0.0,
+        "max": 4.0,
+        "range": 4.0,
+        "samples": [2, 0, 4],
+    }
+    assert summary["future_threshold_use"]["speedup_target_defined"] is False
+    assert summary["future_threshold_use"]["minimum_repeat_samples"] == 5
+    assert "does not claim a speedup target" in summary["future_threshold_use"]["rule"]
+
+
+def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    captured_calls: list[dict[str, Any]] = []
+
+    def fake_run_runtime_benchmark(**kwargs: Any) -> dict[str, Any]:
+        captured_calls.append(kwargs)
+        sample_index = len(captured_calls)
+        return _repeat_sample_report(
+            legacy_simulator_ms=100.0 + sample_index,
+            candidate_simulator_ms=90.0 + sample_index,
+            legacy_counts={"buff_load_loop": sample_index}
+            if kwargs["include_rebuild_counts"]
+            else None,
+            candidate_counts={"buff_load_loop": sample_index + 1}
+            if kwargs["include_rebuild_counts"]
+            else None,
+        )
+
+    monkeypatch.setattr(rb, "run_runtime_benchmark", fake_run_runtime_benchmark)
+
+    default_summary = run_repeated_runtime_benchmark(
+        team="fake-team",
+        apl="./fake.toml",
+        stop_tick=120,
+        legacy_runtime="legacy-label",
+        candidate_runtime="candidate-label",
+        repeat_samples=2,
+        include_rebuild_counts=False,
+    )
+
+    assert [call["include_rebuild_counts"] for call in captured_calls] == [False, False]
+    assert default_summary["runtime_selection"]["mode"] == "label-only-current-runtime"
+    assert default_summary["rebuild_count_buckets"] == {
+        "included": False,
+        "samples": [],
+        "aggregate": {"legacy": {}, "candidate": {}},
+    }
+
+    captured_calls.clear()
+    counted_summary = run_repeated_runtime_benchmark(
+        team="fake-team",
+        apl="./fake.toml",
+        stop_tick=120,
+        legacy_runtime="legacy-label",
+        candidate_runtime="candidate-label",
+        repeat_samples=2,
+        include_rebuild_counts=True,
+    )
+
+    assert [call["include_rebuild_counts"] for call in captured_calls] == [True, True]
+    assert counted_summary["rebuild_count_buckets"]["included"] is True
+    assert counted_summary["rebuild_count_buckets"]["samples"] == [
+        {"legacy": {"buff_load_loop": 1}, "candidate": {"buff_load_loop": 2}},
+        {"legacy": {"buff_load_loop": 2}, "candidate": {"buff_load_loop": 3}},
+    ]
 
 
 def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pytest.MonkeyPatch):
@@ -416,6 +602,60 @@ def test_load_runtime_benchmark_snapshot_falls_back_for_blank_anomaly_column(
     assert snapshot.hotspots["simulator_run_ms"] == 12.5
     assert snapshot.hotspots["damage_report_ms"] >= 0
     assert snapshot.hotspots["buff_report_ms"] >= 0
+
+
+def test_main_repeat_summary_writes_json_artifact(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+):
+    captured_kwargs: dict[str, Any] = {}
+
+    def fake_run_repeated_runtime_benchmark(**kwargs: Any) -> dict[str, Any]:
+        captured_kwargs.update(kwargs)
+        reports = [
+            _repeat_sample_report(
+                legacy_simulator_ms=100.0 + index,
+                candidate_simulator_ms=95.0 + index,
+                legacy_counts={"buff_load_loop": index + 1},
+                candidate_counts={"buff_load_loop": index + 2},
+            )
+            for index in range(kwargs["repeat_samples"])
+        ]
+        return build_repeat_runtime_benchmark_summary(
+            reports=reports,
+            include_rebuild_counts=kwargs["include_rebuild_counts"],
+        )
+
+    monkeypatch.setattr(
+        rb,
+        "run_repeated_runtime_benchmark",
+        fake_run_repeated_runtime_benchmark,
+    )
+    output_path = tmp_path / "repeat-summary.json"
+
+    exit_code = rb.main(
+        [
+            "--team",
+            "fake-team",
+            "--apl",
+            "./fake.toml",
+            "--repeat-samples",
+            "3",
+            "--summary-json",
+            str(output_path),
+            "--include-rebuild-counts",
+        ]
+    )
+
+    assert exit_code == 0
+    assert captured_kwargs["repeat_samples"] == 3
+    assert captured_kwargs["include_rebuild_counts"] is True
+    summary = json.loads(output_path.read_text(encoding="utf-8"))
+    assert summary["sample_count"] == 3
+    assert summary["runtime_selection"]["mode"] == "label-only-current-runtime"
+    assert summary["rebuild_count_buckets"]["included"] is True
+    assert "sample_count: 3" in capsys.readouterr().out
 
 
 def test_script_entrypoint_runs_with_json_output(
