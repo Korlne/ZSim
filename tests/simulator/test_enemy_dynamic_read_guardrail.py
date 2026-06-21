@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
@@ -8,6 +9,13 @@ from typing import Any, Iterable
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BUFF_XLOGIC_ROOT = PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffXLogic"
+COPIED_OUTPUT_ZERO_CENSUS_PATH = (
+    PROJECT_ROOT
+    / "scripts"
+    / "ralph"
+    / "checkpoints"
+    / "2026-06-21-US-007-copied-output-guardrail-zero-census.json"
+)
 
 EXCLUDED_PARTS = {
     ".codex_worktrees",
@@ -348,6 +356,21 @@ DOT_DEBUFF_RUNTIME_STATE_FILES = {
 }
 
 ANOMALY_MAP_FUTURE_POOL_FILES: set[str] = set()
+
+COPIED_OUTPUT_MIGRATED_FILES = (
+    APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
+    | APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_BAR_HELPER_FILES
+)
+
+COPIED_OUTPUT_RETAINED_NO_GO_FILES = APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
+
+DEFERRED_LIFECYCLE_MAIN_LOOP_FILES = {
+    "zsim/sim_progress/Buff/ScheduleBuffSettle.py",
+    "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+    "zsim/sim_progress/Update/UpdateAnomaly.py",
+    "zsim/sim_progress/Update/Update_Buff.py",
+    "zsim/simulator/simulator_class.py",
+}
 
 DELEGATED_ANOMALY_MAP_HELPER_FILES = APPROVED_ANOMALY_MAP_HELPER_FILES
 
@@ -810,6 +833,7 @@ def test_enemy_dynamic_read_guardrail_approves_copied_output_predicate_helpers_b
 ):
     copied_output_approved_files = (
         APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
+        | APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
         | APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_BAR_HELPER_FILES
         | APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
     )
@@ -836,10 +860,23 @@ def test_enemy_dynamic_read_guardrail_approves_copied_output_predicate_helpers_b
         APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME["read_enemy_stun_active"]
         == APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
     )
+    assert COPIED_OUTPUT_MIGRATED_FILES == {
+        "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py",
+        "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py",
+        "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+    }
+    assert COPIED_OUTPUT_RETAINED_NO_GO_FILES == {
+        "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py"
+    }
+    assert (
+        COPIED_OUTPUT_MIGRATED_FILES | COPIED_OUTPUT_RETAINED_NO_GO_FILES
+    ) == COPIED_OUTPUT_ADJACENT_FILES
+    assert COPIED_OUTPUT_MIGRATED_FILES.isdisjoint(COPIED_OUTPUT_RETAINED_NO_GO_FILES)
     assert copied_output_approved_files == COPIED_OUTPUT_ADJACENT_FILES
     assert copied_output_approved_files.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
     assert copied_output_approved_files.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
     assert copied_output_approved_files.isdisjoint(EDGE_DETECTION_FILES)
+    assert copied_output_approved_files.isdisjoint(DEFERRED_LIFECYCLE_MAIN_LOOP_FILES)
     assert all(
         CLASSIFICATION_BY_FILE[path] == "copied-output-adjacent read"
         for path in copied_output_approved_files
@@ -1417,6 +1454,77 @@ def test_enemy_dynamic_read_guardrail_keeps_copied_output_matrix_exact() -> None
         approved_files = APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME.get(helper_name, set())
 
         assert copied_output_references <= approved_files
+
+
+def test_enemy_dynamic_read_guardrail_records_copied_output_zero_census_checkpoint() -> None:
+    findings = _collect_findings()
+    forbidden_direct_reads = [
+        finding
+        for finding in findings
+        if finding.path in COPIED_OUTPUT_MIGRATED_FILES
+        and (
+            "get_active_anomaly" in finding.matched_expression
+            or "get_active_anomaly_bar" in finding.matched_expression
+        )
+    ]
+    references = _collect_helper_reference_paths()
+
+    with COPIED_OUTPUT_ZERO_CENSUS_PATH.open(encoding="utf-8") as handle:
+        census = json.load(handle)
+
+    migrated_files = {entry["path"] for entry in census["migratedFiles"]}
+    no_go_files = {entry["path"] for entry in census["noGoFiles"]}
+    helper_boundaries = {
+        boundary["name"]: set(boundary["files"])
+        for boundary in census["helperBoundaries"]
+    }
+    disjoint_families = {
+        family["name"]: set(family["files"]) for family in census["disjointFromFamilies"]
+    }
+
+    assert census["schemaVersion"] == "zsim-copied-output-zero-census.v1"
+    assert census["storyId"] == "US-007"
+    assert migrated_files == COPIED_OUTPUT_MIGRATED_FILES
+    assert no_go_files == COPIED_OUTPUT_RETAINED_NO_GO_FILES
+    assert migrated_files | no_go_files == COPIED_OUTPUT_ADJACENT_FILES
+    assert migrated_files.isdisjoint(no_go_files)
+    assert forbidden_direct_reads == []
+    assert helper_boundaries["read_enemy_active_anomaly_list"] == (
+        APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
+    )
+    assert helper_boundaries["read_enemy_active_anomaly_bar"] == (
+        APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_BAR_HELPER_FILES
+    )
+    assert helper_boundaries["read_enemy_anomaly_active"] == (
+        APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
+    )
+    assert helper_boundaries["read_enemy_stun_active"] == (
+        COPIED_OUTPUT_RETAINED_NO_GO_FILES
+    )
+    assert (
+        references["read_enemy_active_anomaly_list"]["imports"]
+        & COPIED_OUTPUT_ADJACENT_FILES
+    ) == helper_boundaries["read_enemy_active_anomaly_list"]
+    assert (
+        references["read_enemy_active_anomaly_list"]["calls"]
+        & COPIED_OUTPUT_ADJACENT_FILES
+    ) == helper_boundaries["read_enemy_active_anomaly_list"]
+    assert (
+        references["read_enemy_active_anomaly_bar"]["imports"]
+        & COPIED_OUTPUT_ADJACENT_FILES
+    ) == helper_boundaries["read_enemy_active_anomaly_bar"]
+    assert (
+        references["read_enemy_active_anomaly_bar"]["calls"]
+        & COPIED_OUTPUT_ADJACENT_FILES
+    ) == helper_boundaries["read_enemy_active_anomaly_bar"]
+    assert disjoint_families["dot/debuff runtime-state"] == DOT_DEBUFF_RUNTIME_STATE_FILES
+    assert disjoint_families["anomaly-map"] == ANOMALY_MAP_FUTURE_POOL_FILES
+    assert disjoint_families["edge-detection"] == EDGE_DETECTION_FILES
+    assert disjoint_families["lifecycle/main-loop"] == DEFERRED_LIFECYCLE_MAIN_LOOP_FILES
+    assert COPIED_OUTPUT_ADJACENT_FILES.isdisjoint(
+        set().union(*disjoint_families.values())
+    )
+    assert "copied-output payload guardrail" in census["validation"][0]
 
 
 def test_enemy_dynamic_read_guardrail_failure_message_classifies_unknown_matches() -> None:
