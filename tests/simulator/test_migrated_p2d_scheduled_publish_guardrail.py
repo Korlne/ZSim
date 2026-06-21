@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -9,6 +10,13 @@ from typing import Any
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SIM_PROGRESS_ROOT = PROJECT_ROOT / "zsim" / "sim_progress"
 BUFF_XLOGIC_ROOT = SIM_PROGRESS_ROOT / "Buff" / "BuffXLogic"
+RESOURCE_REFRESH_COMMAND_CHECKPOINT_PATH = (
+    PROJECT_ROOT
+    / "scripts"
+    / "ralph"
+    / "checkpoints"
+    / "2026-06-21-US-006-resource-refresh-command-family-checkpoint.json"
+)
 
 P2D_MIGRATED_SCHEDULED_PUBLISH_FILES = (
     BUFF_XLOGIC_ROOT / "AlicePolarizedAssaultTrigger.py",
@@ -32,6 +40,14 @@ P2D_MIGRATED_SCHEDULED_PUBLISH_FILES = (
     SIM_PROGRESS_ROOT / "data_struct" / "DecibelManager" / "DecibelManagerClass.py",
     SIM_PROGRESS_ROOT / "data_struct" / "PolarizedAssaultEventClass.py",
     SIM_PROGRESS_ROOT / "data_struct" / "QuickAssistSystem" / "__init__.py",
+)
+
+RESOURCE_REFRESH_COMMAND_FILES = (
+    BUFF_XLOGIC_ROOT / "ElegantVanitySpRecover.py",
+    BUFF_XLOGIC_ROOT / "LunarNoviluna.py",
+    BUFF_XLOGIC_ROOT / "MagneticStormCharlieSpRecover.py",
+    BUFF_XLOGIC_ROOT / "SeedAdditionalAbilityTrigger.py",
+    BUFF_XLOGIC_ROOT / "SliceofTimeExtraResources.py",
 )
 
 RETAINED_CORE_SCHEDULE_FILES = {
@@ -337,6 +353,50 @@ def _collect_migrated_file_findings() -> list[P2DScheduledPublishFinding]:
     return findings
 
 
+def _schedule_refresh_constructor_names(tree: ast.AST) -> set[str]:
+    constructor_names = {"ScheduleRefreshData"}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ImportFrom):
+            continue
+        for alias in node.names:
+            if alias.name == "ScheduleRefreshData":
+                constructor_names.add(alias.asname or alias.name)
+    return constructor_names
+
+
+def _collect_schedule_refresh_constructor_findings_from_source(
+    path: Path, source: str
+) -> list[str]:
+    tree = ast.parse(source, filename=str(path))
+    constructor_names = _schedule_refresh_constructor_names(tree)
+    relative_path = path.relative_to(PROJECT_ROOT).as_posix()
+    findings: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if isinstance(node.func, ast.Name) and node.func.id in constructor_names:
+            findings.append(f"{relative_path}:{node.lineno}: {node.func.id}(...)")
+        if (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr == "ScheduleRefreshData"
+        ):
+            findings.append(
+                f"{relative_path}:{node.lineno}: "
+                f"{ast.unparse(node.func) if hasattr(ast, 'unparse') else node.func.attr}(...)"
+            )
+    return findings
+
+
+def _collect_resource_refresh_constructor_findings() -> list[str]:
+    findings: list[str] = []
+    for path in RESOURCE_REFRESH_COMMAND_FILES:
+        source = path.read_text(encoding="utf-8")
+        findings.extend(
+            _collect_schedule_refresh_constructor_findings_from_source(path, source)
+        )
+    return findings
+
+
 def test_migrated_p2d_files_do_not_use_raw_queue_or_cached_dispatch_adapter() -> None:
     findings = _collect_migrated_file_findings()
 
@@ -384,6 +444,125 @@ def test_migrated_p2d_guardrail_scope_is_exact_root_file_set() -> None:
     assert not RETAINED_LOCAL_CHARACTER_EVENT_GROUP_FILES & set(
         P2D_MIGRATED_SCHEDULED_PUBLISH_FILES
     )
+
+
+def test_resource_refresh_command_guardrail_scope_is_exact_selected_file_set() -> None:
+    scanned_files = {
+        path.relative_to(PROJECT_ROOT).as_posix()
+        for path in RESOURCE_REFRESH_COMMAND_FILES
+    }
+
+    assert scanned_files == {
+        "zsim/sim_progress/Buff/BuffXLogic/ElegantVanitySpRecover.py",
+        "zsim/sim_progress/Buff/BuffXLogic/LunarNoviluna.py",
+        "zsim/sim_progress/Buff/BuffXLogic/MagneticStormCharlieSpRecover.py",
+        "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
+        "zsim/sim_progress/Buff/BuffXLogic/SliceofTimeExtraResources.py",
+    }
+    assert set(RESOURCE_REFRESH_COMMAND_FILES) <= set(
+        P2D_MIGRATED_SCHEDULED_PUBLISH_FILES
+    )
+    assert all(path.is_file() for path in RESOURCE_REFRESH_COMMAND_FILES)
+
+
+def test_resource_refresh_command_files_do_not_directly_construct_schedule_refresh_data() -> None:
+    findings = _collect_resource_refresh_constructor_findings()
+
+    assert not findings, (
+        "Migrated resource-refresh BuffXLogic files directly construct "
+        "ScheduleRefreshData:\n"
+        + "\n".join(f"- {finding}" for finding in findings)
+    )
+
+
+def test_resource_refresh_command_guardrail_reports_constructor_regressions() -> None:
+    source = (
+        "from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData\n"
+        "from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData as Refresh\n"
+        "import zsim.sim_progress.data_struct.sp_update_data as sp_update_data\n"
+        "def bad():\n"
+        "    ScheduleRefreshData(sp_target=('a',), sp_value=1)\n"
+        "    Refresh(decibel_target=('b',), decibel_value=2)\n"
+        "    sp_update_data.ScheduleRefreshData(sp_value=3)\n"
+    )
+    path = BUFF_XLOGIC_ROOT / "_resource_refresh_fixture.py"
+
+    findings = _collect_schedule_refresh_constructor_findings_from_source(path, source)
+
+    assert len(findings) == 3
+    assert any("ScheduleRefreshData(...)" in finding for finding in findings)
+    assert any("Refresh(...)" in finding for finding in findings)
+    assert any(
+        "sp_update_data.ScheduleRefreshData(...)" in finding
+        for finding in findings
+    )
+
+
+def test_resource_refresh_command_checkpoint_matches_guardrail_scope() -> None:
+    with RESOURCE_REFRESH_COMMAND_CHECKPOINT_PATH.open(encoding="utf-8") as handle:
+        checkpoint = json.load(handle)
+
+    selected_files = {entry["path"] for entry in checkpoint["selectedFiles"]}
+    helper_boundaries = {
+        boundary["name"] for boundary in checkpoint["helperBoundaries"]
+    }
+    blocked_patterns = set(checkpoint["blockedPatterns"])
+    preserved_guardrail_families = set(checkpoint["preservedGuardrailFamilies"])
+    exclusions = {family["name"] for family in checkpoint["exclusions"]}
+
+    assert checkpoint["schemaVersion"] == "zsim-resource-refresh-command-checkpoint.v1"
+    assert checkpoint["storyId"] == "US-006"
+    assert selected_files == {
+        path.relative_to(PROJECT_ROOT).as_posix()
+        for path in RESOURCE_REFRESH_COMMAND_FILES
+    }
+    assert {
+        "ResourceRefreshCommandPort.publish_refresh",
+        "ScheduledEventEmitterProvider",
+        "ScheduledEventEmitter.emit_scheduled",
+    } <= helper_boundaries
+    assert {
+        "direct ScheduleRefreshData(...) construction",
+        "raw record.event_list scheduled queue access",
+        "raw schedule_data.event_list scheduled queue access",
+        "legacy event_list request through Buff preparation",
+        "long-lived cached ScheduleDispatchPort adapter",
+    } <= blocked_patterns
+    assert {
+        "P2D raw event_list",
+        "P2D event-list preparation",
+        "P2D cached dispatch adapter",
+        "trigger tuple",
+        "active-view",
+        "Calculator reader",
+        "enemy helper",
+        "frozen-edge equipment/template",
+        "event/preload",
+        "record/template cache",
+    } <= preserved_guardrail_families
+    assert {
+        "DecibelManager non-XLogic",
+        "copied-output",
+        "trigger tuple",
+        "frozen-edge equipment/template",
+        "active-view calculator",
+        "dot/debuff runtime-state",
+        "anomaly-map",
+        "lifecycle",
+        "main-loop",
+        "broad preparation/template",
+    } <= exclusions
+    assert checkpoint["broadDeletionReadiness"] == {
+        "find_exist_buff_dict": False,
+        "find_equipper": False,
+        "get_prepared": False,
+        "oldBuffContainerDeletion": False,
+    }
+    assert checkpoint["validation"] == [
+        "uv run pytest tests/simulator/test_xstart_sp_refresh_dispatch.py tests/simulator/test_xhit_sp_refresh_dispatch.py tests/simulator/test_slice_of_time_extra_resources_dispatch.py tests/simulator/test_migrated_p2d_scheduled_publish_guardrail.py tests/simulator/test_buff_raw_container_guardrail.py -q",
+        "uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events",
+        "uv run python scripts/run_buff_refactor_validation.py --typecheck-profile runtime-dependency-zero --runtime-dependency-expected-zero",
+    ]
 
 
 def test_migrated_p2d_guardrail_reports_raw_queue_and_discovery_findings() -> None:
