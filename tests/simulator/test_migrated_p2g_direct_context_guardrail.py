@@ -143,6 +143,15 @@ P2G_DIRECT_CONTEXT_TARGETS = (
     ),
 )
 
+FULL_CONVERGENCE_US008_EVENT_PRELOAD_TARGET_KEYS = frozenset(
+    {
+        "zsim/sim_progress/Buff/BuffXLogic/AlicePolarizedAssaultTrigger.py::AlicePolarizedAssaultTrigger.special_effect_logic",
+        "zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py::CannonRotor.special_hit_logic",
+        "zsim/sim_progress/Buff/BuffXLogic/YixuanCinema1Trigger.py::YixuanCinema1Trigger.special_hit_logic",
+        "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema6SheelTrigger.py::YuzuhaCinema6SheelTrigger",
+    }
+)
+
 
 RUNTIME_BOUNDARY_NAMES = {
     "RuntimeCommandPort",
@@ -467,6 +476,26 @@ def test_migrated_p2g_guardrail_scope_is_exact_root_service_set() -> None:
         assert relative_parts[:3] != ("scripts", "ralph", "archive")
         assert target.path.suffix == ".py"
         assert target.path.is_file()
+
+
+def test_full_convergence_event_preload_batch_is_guardrail_covered() -> None:
+    targets_by_key = {target.key: target for target in P2G_DIRECT_CONTEXT_TARGETS}
+
+    assert FULL_CONVERGENCE_US008_EVENT_PRELOAD_TARGET_KEYS <= set(targets_by_key)
+    assert targets_by_key[
+        "zsim/sim_progress/Buff/BuffXLogic/AlicePolarizedAssaultTrigger.py::AlicePolarizedAssaultTrigger.special_effect_logic"
+    ].allowed_layers == frozenset({"scheduled_publish", "report_state"})
+    assert targets_by_key[
+        "zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py::CannonRotor.special_hit_logic"
+    ].allowed_layers == frozenset({"scheduled_publish"})
+    assert targets_by_key[
+        "zsim/sim_progress/Buff/BuffXLogic/YixuanCinema1Trigger.py::YixuanCinema1Trigger.special_hit_logic"
+    ].allowed_layers == frozenset({"scheduled_publish", "report_state"})
+    assert targets_by_key[
+        "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema6SheelTrigger.py::YuzuhaCinema6SheelTrigger"
+    ].allowed_layers == frozenset(
+        {"tick_preload", "scheduled_publish", "report_state"}
+    )
 
 
 def test_migrated_p2g_guardrail_preserves_service_family_markers() -> None:

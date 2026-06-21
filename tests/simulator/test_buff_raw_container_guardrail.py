@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import importlib
+import json
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,6 +18,13 @@ from scripts.run_buff_refactor_validation import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+FULL_CONVERGENCE_ZERO_CENSUS_PATH = (
+    PROJECT_ROOT
+    / "scripts"
+    / "ralph"
+    / "checkpoints"
+    / "2026-06-21-US-009-guardrail-zero-census.json"
+)
 
 SCANNED_PRODUCTION_FILES = (
     PROJECT_ROOT / "zsim" / "simulator" / "dataclasses.py",
@@ -294,6 +302,80 @@ XLOGIC_ADAPTER_RECORD_TEMPLATE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/_buff_record_base_class.py",
     "zsim/sim_progress/Buff/BuffXLogic/_char_buff_mod.py",
     "zsim/sim_progress/Buff/BuffXLogic/_euipment_buff_mod.py",
+)
+
+FULL_CONVERGENCE_US002_TEMPLATE_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
+)
+
+FULL_CONVERGENCE_US003_TRIGGER_REF_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritDmgBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritRateBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/JanePassionStateAPTransToATK.py",
+    "zsim/sim_progress/Buff/BuffXLogic/JanePassionStatePhyBuildupBonus.py",
+)
+
+FULL_CONVERGENCE_US004_TEMPLATE_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/RoaringRideBuffTrigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/SeedBesiegeBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/SeedBesiegeBonusTrigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/SeedCinema2BesiegeIgnoreDefenceTrigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/SeedCinema2BesiegeIgnoreDefense.py",
+)
+
+FULL_CONVERGENCE_US005_CALCULATOR_FILES = US005_ACTIVE_VIEW_CALCULATOR_FILES
+
+FULL_CONVERGENCE_US006_ENEMY_HELPER_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/dot_runtime_state_read.py",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_map_read.py",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_read.py",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_debuff_mirror_read.py",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_edge_state_read.py",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_state_read.py",
+)
+
+FULL_CONVERGENCE_US008_EVENT_PRELOAD_TARGETS = (
+    "zsim/sim_progress/Buff/BuffXLogic/AlicePolarizedAssaultTrigger.py::AlicePolarizedAssaultTrigger.special_effect_logic",
+    "zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py::CannonRotor.special_hit_logic",
+    "zsim/sim_progress/Buff/BuffXLogic/YixuanCinema1Trigger.py::YixuanCinema1Trigger.special_hit_logic",
+    "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema6SheelTrigger.py::YuzuhaCinema6SheelTrigger",
+)
+
+FULL_CONVERGENCE_MIGRATED_BATCH_FILES = {
+    "US-002": FULL_CONVERGENCE_US002_TEMPLATE_FILES,
+    "US-003": FULL_CONVERGENCE_US003_TRIGGER_REF_FILES,
+    "US-004": FULL_CONVERGENCE_US004_TEMPLATE_FILES,
+    "US-005": FULL_CONVERGENCE_US005_CALCULATOR_FILES,
+    "US-006": FULL_CONVERGENCE_US006_ENEMY_HELPER_FILES,
+    "US-008": FULL_CONVERGENCE_US008_EVENT_PRELOAD_TARGETS,
+}
+
+FULL_CONVERGENCE_COPIED_OUTPUT_PAYLOAD_RISK_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py",
+    "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+)
+
+FULL_CONVERGENCE_LIFECYCLE_SCOPE_FILES = (
+    "zsim/sim_progress/Buff/ScheduleBuffSettle.py",
+    "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+    "zsim/sim_progress/Update/UpdateAnomaly.py",
+    "zsim/sim_progress/Update/Update_Buff.py",
+    "zsim/simulator/simulator_class.py",
+)
+
+FULL_CONVERGENCE_RETAINED_COMPATIBILITY_FILES = (
+    "zsim/sim_progress/Buff/BuffAddStrategy.py",
+    "zsim/sim_progress/Buff/BuffXLogic/AstralVoice.py",
+    "zsim/sim_progress/Buff/BuffXLogic/_buff_record_base_class.py",
+    "zsim/sim_progress/Buff/BuffXLogic/_char_buff_mod.py",
+    "zsim/sim_progress/Buff/BuffXLogic/_euipment_buff_mod.py",
+    "zsim/sim_progress/Buff/JudgeTools/PreparationContext.py",
+    "zsim/sim_progress/Buff/JudgeTools/__init__.py",
+    "zsim/sim_progress/ScheduledEvent/Calculator.py",
 )
 
 XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS = {
@@ -1691,6 +1773,65 @@ def test_xlogic_adapter_migrated_files_do_not_reintroduce_legacy_inputs() -> Non
         "Migrated BuffXLogic adapter guardrail found legacy inputs:\n"
         + "\n".join(f"- {finding.message()}" for finding in findings)
     )
+
+
+def test_full_convergence_campaign_batches_have_xlogic_guardrail_coverage() -> None:
+    template_files = (
+        FULL_CONVERGENCE_US002_TEMPLATE_FILES + FULL_CONVERGENCE_US004_TEMPLATE_FILES
+    )
+    trigger_ref_files = FULL_CONVERGENCE_US003_TRIGGER_REF_FILES
+    calculator_files = FULL_CONVERGENCE_US005_CALCULATOR_FILES
+
+    assert set(template_files) <= set(XLOGIC_ADAPTER_TEMPLATE_FILES)
+    assert set(trigger_ref_files) <= set(XLOGIC_ADAPTER_TRIGGER_REF_FILES)
+    assert set(calculator_files) <= set(XLOGIC_ADAPTER_CALCULATOR_SERVICE_FILES)
+
+    for relative_path in template_files:
+        assert {
+            XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND,
+            XLOGIC_ADAPTER_DIRECT_ACTIVE_VIEW,
+            XLOGIC_ADAPTER_LEGACY_GET_PREPARED,
+        } <= XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[relative_path]
+
+    for relative_path in trigger_ref_files:
+        assert (
+            XLOGIC_ADAPTER_DIRECT_TRIGGER_REGISTRY_SCAN
+            in XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[relative_path]
+        )
+
+    for relative_path in calculator_files:
+        assert {
+            XLOGIC_ADAPTER_DIRECT_ACTIVE_VIEW,
+            XLOGIC_ADAPTER_DIRECT_READER_CONSTRUCTION,
+        } <= XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[relative_path]
+
+
+def test_full_convergence_zero_census_matches_guardrail_scope() -> None:
+    with FULL_CONVERGENCE_ZERO_CENSUS_PATH.open(encoding="utf-8") as handle:
+        census = json.load(handle)
+
+    assert census["schemaVersion"] == "zsim-full-convergence-zero-census.v1"
+    assert census["storyId"] == "US-009"
+
+    migrated_batches = {
+        batch["storyId"]: tuple(batch["files"]) for batch in census["migratedBatches"]
+    }
+    assert migrated_batches == FULL_CONVERGENCE_MIGRATED_BATCH_FILES
+
+    blockers = {
+        blocker["blocker"]: tuple(blocker["files"])
+        for blocker in census["remainingCandidatesByBlocker"]
+    }
+    assert blockers["copied-output payload risk"] == (
+        FULL_CONVERGENCE_COPIED_OUTPUT_PAYLOAD_RISK_FILES
+    )
+    assert blockers["PRD-003/PRD-005 lifecycle scope"] == (
+        FULL_CONVERGENCE_LIFECYCLE_SCOPE_FILES
+    )
+    assert blockers["intentionally retained compatibility path"] == (
+        FULL_CONVERGENCE_RETAINED_COMPATIBILITY_FILES
+    )
+    assert blockers["no oracle"]
 
 
 def test_us005_active_view_calculator_batch_has_exact_guardrail_coverage() -> None:

@@ -25,6 +25,9 @@ US_002_JANE_TRIGGER_STATE_FILES = (
     BUFF_XLOGIC_ROOT / "JanePassionStatePhyBuildupBonus.py",
 )
 
+# Current full-convergence US-003 reuses the Jane trigger-state cohort covered here.
+FULL_CONVERGENCE_US003_TRIGGER_STATE_FILES = US_002_JANE_TRIGGER_STATE_FILES
+
 US_003_SOLDIER0_ANBY_TRIGGER_STATE_FILES = (
     BUFF_XLOGIC_ROOT / "Soldier0AnbyAdditionalSkillDMGBonus.py",
     BUFF_XLOGIC_ROOT / "Soldier0AnbyCinema4EleResReduce.py",
@@ -253,6 +256,29 @@ def test_migrated_p2c_guardrail_scope_is_exact_root_file_set() -> None:
         *current_prd_files,
     }
     assert all(path.is_file() for path in MIGRATED_P2C_TRIGGER_STATE_FILES)
+
+
+def test_full_convergence_trigger_ref_batch_is_guardrail_covered() -> None:
+    full_convergence_files = {
+        path.relative_to(PROJECT_ROOT).as_posix()
+        for path in FULL_CONVERGENCE_US003_TRIGGER_STATE_FILES
+    }
+
+    assert full_convergence_files == {
+        "zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritDmgBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritRateBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/JanePassionStateAPTransToATK.py",
+        "zsim/sim_progress/Buff/BuffXLogic/JanePassionStatePhyBuildupBonus.py",
+    }
+    assert set(FULL_CONVERGENCE_US003_TRIGGER_STATE_FILES) <= set(
+        MIGRATED_P2C_TRIGGER_STATE_FILES
+    )
+    assert not set(FULL_CONVERGENCE_US003_TRIGGER_STATE_FILES) & (
+        RETAINED_P2A_P2B_MIGRATED_FILES
+        | RETAINED_FORMULA_SNAPSHOT_FILES
+        | RETAINED_BUFF_ADD_STRATEGY_FILES
+    )
 
 
 def test_migrated_p2c_guardrail_excludes_retained_surfaces() -> None:

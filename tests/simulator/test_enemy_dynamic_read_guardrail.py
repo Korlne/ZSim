@@ -88,6 +88,19 @@ CONVERTED_HELPER_BOUNDARY_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/dot_runtime_state_read.py",
 }
 
+FULL_CONVERGENCE_US006_ENEMY_HELPER_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/dot_runtime_state_read.py",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_map_read.py",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_read.py",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_debuff_mirror_read.py",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_edge_state_read.py",
+    "zsim/sim_progress/Buff/BuffXLogic/enemy_state_read.py",
+}
+
+FULL_CONVERGENCE_US006_ENEMY_READ_PORT_BOUNDARY_FILE = (
+    "zsim/sim_progress/Buff/JudgeTools/EnemyReadPorts.py"
+)
+
 APPROVED_ANOMALY_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/ElectroLipGlossAtkAndDmgBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/JaneAdditionalAbilityPhyBuildupBonus.py",
@@ -615,6 +628,24 @@ def test_enemy_dynamic_read_guardrail_limits_helper_to_approved_subset() -> None
             CLASSIFICATION_BY_FILE[path] in approved_classifications
             for path in helper_references["imports"] | helper_references["calls"]
         )
+
+
+def test_full_convergence_enemy_helper_batch_is_guardrail_covered() -> None:
+    finding_paths = {finding.path for finding in _collect_findings()}
+    boundary_path = PROJECT_ROOT / FULL_CONVERGENCE_US006_ENEMY_READ_PORT_BOUNDARY_FILE
+
+    assert FULL_CONVERGENCE_US006_ENEMY_HELPER_FILES == CONVERTED_HELPER_BOUNDARY_FILES
+    assert FULL_CONVERGENCE_US006_ENEMY_HELPER_FILES <= set(CLASSIFICATION_BY_FILE)
+    assert FULL_CONVERGENCE_US006_ENEMY_HELPER_FILES.isdisjoint(finding_paths)
+    assert FULL_CONVERGENCE_US006_ENEMY_HELPER_FILES.isdisjoint(
+        EXPECTED_DIRECT_READ_FILES
+    )
+    assert all(
+        CLASSIFICATION_BY_FILE[path] == "approved helper boundary"
+        for path in FULL_CONVERGENCE_US006_ENEMY_HELPER_FILES
+    )
+    assert boundary_path.is_file()
+    assert FULL_CONVERGENCE_US006_ENEMY_READ_PORT_BOUNDARY_FILE not in CLASSIFICATION_BY_FILE
 
 
 def test_enemy_dynamic_read_guardrail_tracks_helper_references_by_family() -> None:
