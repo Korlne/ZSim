@@ -32,6 +32,13 @@ TRIGGER_REF_TUPLE_CHECKPOINT_PATH = (
     / "checkpoints"
     / "2026-06-21-US-005-trigger-ref-tuple-family-checkpoint.json"
 )
+FROZEN_EDGE_EQUIPMENT_TEMPLATE_CHECKPOINT_PATH = (
+    PROJECT_ROOT
+    / "scripts"
+    / "ralph"
+    / "checkpoints"
+    / "2026-06-21-US-004-frozen-edge-equipment-template-checkpoint.json"
+)
 
 SCANNED_PRODUCTION_FILES = (
     PROJECT_ROOT / "zsim" / "simulator" / "dataclasses.py",
@@ -282,6 +289,11 @@ TRIGGER_REF_TUPLE_FAMILY_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/YunkuiTalesSheerAtkBonus.py",
 )
 
+FROZEN_EDGE_EQUIPMENT_TEMPLATE_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritRateBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/PolarMetalFreezeBonus.py",
+)
+
 XLOGIC_ADAPTER_CALCULATOR_SERVICE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py",
@@ -311,6 +323,7 @@ XLOGIC_ADAPTER_TRIGGER_REF_FILES = (
 XLOGIC_ADAPTER_TEMPLATE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/AstralVoice.py",
+    *FROZEN_EDGE_EQUIPMENT_TEMPLATE_FILES,
     "zsim/sim_progress/Buff/BuffXLogic/RoaringRideBuffTrigger.py",
     "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
     "zsim/sim_progress/Buff/BuffXLogic/SeedBesiegeBonus.py",
@@ -431,6 +444,11 @@ for path in TRIGGER_REF_TUPLE_FAMILY_FILES:
     XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[path] = XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS.get(
         path, frozenset()
     ) | frozenset({XLOGIC_ADAPTER_LEGACY_TRIGGER_TUPLE})
+
+XLOGIC_ADAPTER_RETAINED_JUDGE_TOOLS_FIND_CALLS_BY_FILE = {
+    path: frozenset({"JudgeTools.find_tick"})
+    for path in FROZEN_EDGE_EQUIPMENT_TEMPLATE_FILES
+}
 
 SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY = (
     "legacy ScheduleBuffSettle command-adapter internals"
@@ -1151,13 +1169,19 @@ def _is_calculator_reader_constructor(func: ast.expr) -> bool:
     return False
 
 
-def _is_judge_tools_find_call(func: ast.expr) -> bool:
-    return (
+def _judge_tools_find_call_name(func: ast.expr) -> str | None:
+    if (
         isinstance(func, ast.Attribute)
         and func.attr.startswith("find_")
         and isinstance(func.value, ast.Name)
         and func.value.id == "JudgeTools"
-    )
+    ):
+        return f"JudgeTools.{func.attr}"
+    return None
+
+
+def _is_judge_tools_find_call(func: ast.expr) -> bool:
+    return _judge_tools_find_call_name(func) is not None
 
 
 def _is_check_preparation_call(func: ast.expr) -> bool:
@@ -1338,9 +1362,16 @@ def _collect_xlogic_adapter_guardrail_findings_from_source(
                 )
             )
 
+        judge_tools_find_call = _judge_tools_find_call_name(node.func)
+        retained_judge_tools_find_calls = (
+            XLOGIC_ADAPTER_RETAINED_JUDGE_TOOLS_FIND_CALLS_BY_FILE.get(
+                relative_path, frozenset()
+            )
+        )
         if (
             XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND in forbidden_kinds
-            and _is_judge_tools_find_call(node.func)
+            and judge_tools_find_call is not None
+            and judge_tools_find_call not in retained_judge_tools_find_calls
         ):
             findings.append(
                 XLogicAdapterGuardrailFinding(
@@ -1941,6 +1972,112 @@ def test_trigger_ref_tuple_checkpoint_matches_guardrail_scope() -> None:
     assert set(TRIGGER_REF_TUPLE_FAMILY_FILES).isdisjoint(disjoint_files)
     assert checkpoint["validation"] == [
         "uv run pytest tests/simulator/test_trigger_state_read_only_gates.py tests/simulator/test_buff_raw_container_guardrail.py tests/simulator/test_enemy_dynamic_read_guardrail.py -q",
+        "uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events",
+        "uv run python scripts/run_buff_refactor_validation.py --typecheck-profile runtime-dependency-zero --runtime-dependency-expected-zero",
+    ]
+
+
+def test_frozen_edge_equipment_template_family_has_exact_guardrail_coverage() -> None:
+    expected_files = {
+        "zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritRateBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/PolarMetalFreezeBonus.py",
+    }
+    required_forbidden_kinds = frozenset(
+        {
+            XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND,
+            XLOGIC_ADAPTER_LEGACY_GET_PREPARED,
+        }
+    )
+
+    assert set(FROZEN_EDGE_EQUIPMENT_TEMPLATE_FILES) == expected_files
+
+    for relative_path in FROZEN_EDGE_EQUIPMENT_TEMPLATE_FILES:
+        assert relative_path in XLOGIC_ADAPTER_TEMPLATE_FILES
+        assert required_forbidden_kinds <= XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[
+            relative_path
+        ]
+
+        path = PROJECT_ROOT / relative_path
+        source = path.read_text(encoding="utf-8")
+        file_findings = _collect_xlogic_adapter_guardrail_findings_from_source(
+            path,
+            source,
+            required_forbidden_kinds,
+        )
+
+        assert not file_findings
+        assert "build_preparation_context_from_buff" in source
+        assert "preparation_context.find_equipper(" in source
+        assert "preparation_context.find_sub_exist_buff_dict(" in source
+        assert "JudgeTools.find_tick" in source
+
+
+def test_frozen_edge_equipment_template_checkpoint_matches_guardrail_scope() -> None:
+    with FROZEN_EDGE_EQUIPMENT_TEMPLATE_CHECKPOINT_PATH.open(
+        encoding="utf-8"
+    ) as handle:
+        checkpoint = json.load(handle)
+
+    selected_files = {entry["path"] for entry in checkpoint["selectedFiles"]}
+    helper_boundaries = {
+        boundary["name"] for boundary in checkpoint["helperBoundaries"]
+    }
+    retained_find_calls = {
+        entry["path"]: set(entry["calls"])
+        for entry in checkpoint["retainedDirectJudgeToolsFindCalls"]
+    }
+    blocked_patterns = set(checkpoint["blockedPatterns"])
+    preserved_guardrail_families = set(checkpoint["preservedGuardrailFamilies"])
+    exclusions = {family["name"] for family in checkpoint["exclusions"]}
+    deletion_readiness = checkpoint["broadDeletionReadiness"]
+
+    assert checkpoint["schemaVersion"] == (
+        "zsim-frozen-edge-equipment-template-checkpoint.v1"
+    )
+    assert checkpoint["storyId"] == "US-004"
+    assert selected_files == set(FROZEN_EDGE_EQUIPMENT_TEMPLATE_FILES)
+    assert {
+        "build_preparation_context_from_buff",
+        "PreparationContext.find_equipper",
+        "PreparationContext.find_sub_exist_buff_dict",
+        "read_enemy_frozen_edge_state",
+        "EnemyEdgeStateReadPort",
+    } <= helper_boundaries
+    assert retained_find_calls == {
+        relative_path: {"JudgeTools.find_tick"}
+        for relative_path in FROZEN_EDGE_EQUIPMENT_TEMPLATE_FILES
+    }
+    assert {
+        XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND,
+        XLOGIC_ADAPTER_LEGACY_GET_PREPARED,
+        "JudgeTools.find_equipper(...)",
+        "JudgeTools.find_exist_buff_dict(...)",
+    } <= blocked_patterns
+    assert {
+        "trigger tuple",
+        "active-view",
+        "Calculator reader",
+        "enemy helper",
+        "event/preload",
+        "record/template cache",
+    } <= preserved_guardrail_families
+    assert {
+        "copied-output",
+        "Hugo dispatch/report-state",
+        "trigger tuple",
+        "dot/debuff runtime-state",
+        "anomaly-map",
+        "event/preload",
+        "lifecycle",
+        "main-loop",
+    } <= exclusions
+    assert deletion_readiness == {
+        "find_exist_buff_dict": False,
+        "find_equipper": False,
+        "get_prepared": False,
+    }
+    assert checkpoint["validation"] == [
+        "uv run pytest tests/simulator/test_freeze_stun_edge_detection_characterization.py tests/simulator/test_buff_raw_container_guardrail.py tests/simulator/test_enemy_dynamic_read_guardrail.py -q",
         "uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events",
         "uv run python scripts/run_buff_refactor_validation.py --typecheck-profile runtime-dependency-zero --runtime-dependency-expected-zero",
     ]
