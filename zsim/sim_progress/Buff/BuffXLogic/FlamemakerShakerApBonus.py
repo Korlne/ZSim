@@ -1,5 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
-from ..JudgeTools import read_trigger_buff_state
+from ..JudgeTools import TriggerBuffRef, read_trigger_buff_state
 
 
 class FlamemakerShakerApBonusRecord:
@@ -39,7 +39,10 @@ class FlamemakerShakerApBonus(Buff.BuffLogic):
     def special_judge_logic(self, **kwargs):
         """检测到目标buff层数>=5时候放行"""
         self.check_record_module()
-        self.get_prepared(equipper="灼心摇壶", trigger_buff_0=("equipper", "灼心摇壶-增伤"))
+        self.get_prepared(
+            equipper="灼心摇壶",
+            trigger_buff_0=TriggerBuffRef.equipper("灼心摇壶-增伤"),
+        )
         trigger_state = read_trigger_buff_state(self.record)
         if not trigger_state.active:
             return False

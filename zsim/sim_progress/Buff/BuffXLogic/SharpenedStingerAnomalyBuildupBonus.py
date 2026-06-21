@@ -1,5 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
-from ..JudgeTools import read_trigger_buff_state
+from ..JudgeTools import TriggerBuffRef, read_trigger_buff_state
 
 
 class SharpenedStingerAnomalyBuildupBonusRecord:
@@ -46,7 +46,7 @@ class SharpenedStingerAnomalyBuildupBonus(Buff.BuffLogic):
         self.get_prepared(
             equipper="淬锋钳刺",
             preload_data=1,
-            trigger_buff_0=("equipper", "淬锋钳刺-猎意"),
+            trigger_buff_0=TriggerBuffRef.equipper("淬锋钳刺-猎意"),
         )
         trigger_state = read_trigger_buff_state(self.record)
         if trigger_state.count == 3:

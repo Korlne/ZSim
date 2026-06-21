@@ -1077,6 +1077,48 @@ def test_jane_trigger_state_sources_use_typed_trigger_ref_contract(
     assert f'trigger_buff_0=("{legacy_operator}",' not in compact_source
 
 
+@pytest.mark.parametrize(
+    ("file_name", "buff_index"),
+    [
+        pytest.param(
+            "CordisGerminaSNAAndQIgnoreDefense.py",
+            "机巧心种-电属性增伤",
+            id="cordis-germina",
+        ),
+        pytest.param(
+            "FlamemakerShakerApBonus.py",
+            "灼心摇壶-增伤",
+            id="flamemaker",
+        ),
+        pytest.param(
+            "SeveredInnocencELEDMGBonus.py",
+            "牺牲洁纯-触发暴伤",
+            id="severed-innocence",
+        ),
+        pytest.param(
+            "SharpenedStingerAnomalyBuildupBonus.py",
+            "淬锋钳刺-猎意",
+            id="sharpened-stinger",
+        ),
+        pytest.param(
+            "SpectralGazeImpactBonus.py",
+            "索魂影眸-魂锁",
+            id="spectral-gaze",
+        ),
+    ],
+)
+def test_literal_equipment_trigger_sources_use_typed_trigger_ref_contract(
+    *,
+    file_name: str,
+    buff_index: str,
+) -> None:
+    source = (_BUFF_XLOGIC_ROOT / file_name).read_text(encoding="utf-8")
+    compact_source = "".join(source.split())
+
+    assert f'TriggerBuffRef.equipper("{buff_index}")' in source
+    assert 'trigger_buff_0=("equipper",' not in compact_source
+
+
 _JANE_ACTIVE_GATE_CASES: tuple[tuple[type[Any], str, str], ...] = (
     (
         JaneCinema1APTransToDmgBonus,
