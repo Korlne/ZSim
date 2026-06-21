@@ -335,13 +335,36 @@ def _make_polar_fixture(
     index = "Buff-驱动盘-极地重金属-冰属性伤害提高"
     active_buff = _CurrentBuffProbe(index=index, tick=tick)
     buff_0 = _BuffTemplate(index=index)
-    _install_owner_lookup(
-        monkeypatch,
-        module=polar_module,
+    preparation_context = _BranchPreparationContextProbe(
         owner="测试装备者",
         index=index,
         buff_0=buff_0,
-        equipper="测试装备者",
+    )
+
+    def fail_legacy_polar_lookup(*args: object, **kwargs: object) -> None:
+        raise AssertionError(
+            "PolarMetalFreezeBonus must use PreparationContext for "
+            "equipment/template lookup"
+        )
+
+    def fake_build_preparation_context(buff_instance: object) -> object:
+        assert buff_instance is active_buff
+        return preparation_context
+
+    monkeypatch.setattr(
+        polar_module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context,
+    )
+    monkeypatch.setattr(
+        polar_module.JudgeTools,
+        "find_equipper",
+        fail_legacy_polar_lookup,
+    )
+    monkeypatch.setattr(
+        polar_module.JudgeTools,
+        "find_exist_buff_dict",
+        fail_legacy_polar_lookup,
     )
     monkeypatch.setattr(
         polar_module.JudgeTools,
@@ -570,6 +593,52 @@ def test_branch_blade_song_get_prepared_forwards_preparation_context(
             buff_0,
             preparation_context,
             {"equipper": "折枝剑歌", "enemy": 1},
+        )
+    ]
+
+
+def test_polar_metal_get_prepared_forwards_preparation_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    index = "Buff-驱动盘-极地重金属-冰属性伤害提高"
+    active_buff = _CurrentBuffProbe(index=index, tick=420)
+    buff_0 = _BuffTemplate(index=index)
+    buff_0.history.record = PolarMetalRecord()
+    logic = PolarMetalFreezeBonus(active_buff)
+    logic.buff_0 = buff_0
+    preparation_context = object()
+    build_calls: list[object] = []
+    check_calls: list[tuple[object, object, object | None, dict[str, object]]] = []
+
+    def fake_build_preparation_context(buff_instance: object) -> object:
+        build_calls.append(buff_instance)
+        return preparation_context
+
+    def fake_check_preparation(
+        *,
+        buff_instance: object,
+        buff_0: object,
+        preparation_context: object | None = None,
+        **kwargs: object,
+    ) -> str:
+        check_calls.append((buff_instance, buff_0, preparation_context, kwargs))
+        return "prepared"
+
+    monkeypatch.setattr(
+        polar_module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context,
+    )
+    monkeypatch.setattr(polar_module, "check_preparation", fake_check_preparation)
+
+    assert logic.get_prepared(enemy=1) == "prepared"
+    assert build_calls == [active_buff]
+    assert check_calls == [
+        (
+            active_buff,
+            buff_0,
+            preparation_context,
+            {"enemy": 1},
         )
     ]
 

@@ -1,4 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
+from ..JudgeTools import build_preparation_context_from_buff
 from .enemy_edge_state_read import EnemyEdgeStateReadPort
 
 
@@ -26,17 +27,27 @@ class PolarMetalFreezeBonus(Buff.BuffLogic):
         self.record = None
 
     def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+        preparation_context = build_preparation_context_from_buff(self.buff_instance)
+        return check_preparation(
+            buff_instance=self.buff_instance,
+            buff_0=self.buff_0,
+            preparation_context=preparation_context,
+            **kwargs,
+        )
 
     def check_record_module(self):
+        preparation_context = None
         if self.equipper is None:
-            self.equipper = JudgeTools.find_equipper(
-                "极地重金属", sim_instance=self.buff_instance.sim_instance
-            )
+            preparation_context = build_preparation_context_from_buff(self.buff_instance)
+            self.equipper = preparation_context.find_equipper("极地重金属")
         if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )[self.equipper][self.buff_instance.ft.index]
+            if preparation_context is None:
+                preparation_context = build_preparation_context_from_buff(
+                    self.buff_instance
+                )
+            self.buff_0 = preparation_context.find_sub_exist_buff_dict(self.equipper)[
+                self.buff_instance.ft.index
+            ]
         if self.buff_0.history.record is None:
             self.buff_0.history.record = PolarMetalRecord()
         self.record = self.buff_0.history.record
