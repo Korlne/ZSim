@@ -244,20 +244,24 @@ XLOGIC_ADAPTER_RECORD_RUNTIME_CACHE_FIELDS = frozenset(
     }
 )
 
-XLOGIC_ADAPTER_CALCULATOR_SERVICE_FILES = (
-    "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
+US005_ACTIVE_VIEW_CALCULATOR_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritDamageBonus.py",
-    "zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py",
     "zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritRateBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/JanePassionStateAPTransToATK.py",
+    "zsim/sim_progress/Buff/BuffXLogic/TriggerAdditionalAbilityStunBonus.py",
+)
+
+XLOGIC_ADAPTER_CALCULATOR_SERVICE_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py",
+    *US005_ACTIVE_VIEW_CALCULATOR_FILES,
     "zsim/sim_progress/Buff/BuffXLogic/LighterAdditionalAbility_IceFireBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/LinaCoreSkillPenRatioBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py",
     "zsim/sim_progress/Buff/BuffXLogic/QingYiAdditionalAbilityStunConvertToATK.py",
     "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCoreSkillCritDMGBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/TimeweaverDisorderDmgMul.py",
-    "zsim/sim_progress/Buff/BuffXLogic/TriggerAdditionalAbilityStunBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py",
     "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py",
     "zsim/sim_progress/Buff/BuffXLogic/WoodpeckerElectroSet4_CA.py",
@@ -1687,6 +1691,37 @@ def test_xlogic_adapter_migrated_files_do_not_reintroduce_legacy_inputs() -> Non
         "Migrated BuffXLogic adapter guardrail found legacy inputs:\n"
         + "\n".join(f"- {finding.message()}" for finding in findings)
     )
+
+
+def test_us005_active_view_calculator_batch_has_exact_guardrail_coverage() -> None:
+    findings = _collect_calculator_read_findings()
+    retained_snapshot_counts = _calculator_read_retained_snapshot_counts(findings)
+    required_forbidden_kinds = frozenset(
+        {
+            XLOGIC_ADAPTER_DIRECT_ACTIVE_VIEW,
+            XLOGIC_ADAPTER_DIRECT_READER_CONSTRUCTION,
+        }
+    )
+
+    for relative_path in US005_ACTIVE_VIEW_CALCULATOR_FILES:
+        assert relative_path in XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS
+        assert required_forbidden_kinds.issubset(
+            XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[relative_path]
+        )
+
+        path = PROJECT_ROOT / relative_path
+        source = path.read_text(encoding="utf-8")
+        file_findings = _collect_xlogic_adapter_guardrail_findings_from_source(
+            path,
+            source,
+            required_forbidden_kinds,
+        )
+
+        assert not file_findings
+        assert retained_snapshot_counts[relative_path] == 0
+        assert "create_calculator_runtime_read_context_from_sim_instance" in source
+        assert "get_calculator_buff_attribute_reader_service" in source
+        assert "CalculatorBuffAttributeReader" not in source
 
 
 def test_xlogic_adapter_guardrail_preserves_record_field_contract() -> None:
