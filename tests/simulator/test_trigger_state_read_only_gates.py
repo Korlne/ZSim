@@ -1119,6 +1119,48 @@ def test_literal_equipment_trigger_sources_use_typed_trigger_ref_contract(
     assert 'trigger_buff_0=("equipper",' not in compact_source
 
 
+@pytest.mark.parametrize(
+    ("file_name", "operator", "buff_index"),
+    [
+        pytest.param(
+            "Soldier0AnbyAdditionalSkillDMGBonus.py",
+            "零号·安比",
+            "Buff-角色-零号·安比-银星触发器",
+            id="soldier0-anby-additional-skill",
+        ),
+        pytest.param(
+            "Soldier0AnbyCinema4EleResReduce.py",
+            "零号·安比",
+            "Buff-角色-零号·安比-银星触发器",
+            id="soldier0-anby-cinema4",
+        ),
+        pytest.param(
+            "Soldier0AnbyCoreSkillCritDMGBonus.py",
+            "零号·安比",
+            "Buff-角色-零号·安比-银星触发器",
+            id="soldier0-anby-core",
+        ),
+        pytest.param(
+            "YangiCinema1ApBonus.py",
+            "柳",
+            "Buff-角色-柳-1画-洞悉",
+            id="yanagi-cinema1",
+        ),
+    ],
+)
+def test_literal_owner_trigger_sources_use_typed_trigger_ref_contract(
+    *,
+    file_name: str,
+    operator: str,
+    buff_index: str,
+) -> None:
+    source = (_BUFF_XLOGIC_ROOT / file_name).read_text(encoding="utf-8")
+    compact_source = "".join(source.split())
+
+    assert f'TriggerBuffRef.owner("{operator}","{buff_index}"' in compact_source
+    assert f'trigger_buff_0=("{operator}",' not in compact_source
+
+
 _JANE_ACTIVE_GATE_CASES: tuple[tuple[type[Any], str, str], ...] = (
     (
         JaneCinema1APTransToDmgBonus,

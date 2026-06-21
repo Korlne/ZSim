@@ -4,8 +4,15 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
 
 from .. import Buff, JudgeTools, check_preparation
 from ..JudgeTools import (
+    TriggerBuffRef,
     create_calculator_runtime_read_context_from_sim_instance,
     read_trigger_buff_state_active,
+)
+
+
+_SOLDIER0_ANBY_SILVER_STAR_TRIGGER_REF = TriggerBuffRef.owner(
+    "零号·安比",
+    "Buff-角色-零号·安比-银星触发器",
 )
 
 
@@ -50,7 +57,7 @@ class Soldier0AnbyCoreSkillCritDMGBonus(Buff.BuffLogic):
         self.check_record_module()
         self.get_prepared(
             char_CID=1381,
-            trigger_buff_0=("零号·安比", "Buff-角色-零号·安比-银星触发器"),
+            trigger_buff_0=_SOLDIER0_ANBY_SILVER_STAR_TRIGGER_REF,
         )
         if read_trigger_buff_state_active(self.record):
             return True

@@ -1,5 +1,11 @@
 from .. import Buff, JudgeTools, check_preparation
-from ..JudgeTools import read_trigger_buff_state
+from ..JudgeTools import TriggerBuffRef, read_trigger_buff_state
+
+
+_SOLDIER0_ANBY_SILVER_STAR_TRIGGER_REF = TriggerBuffRef.owner(
+    "零号·安比",
+    "Buff-角色-零号·安比-银星触发器",
+)
 
 
 class Soldier0AnbyAdditionalSkillDMGBonusRecord:
@@ -39,7 +45,7 @@ class Soldier0AnbyAdditionalSkillDMGBonus(Buff.BuffLogic):
         self.check_record_module()
         self.get_prepared(
             char_CID=1381,
-            trigger_buff_0=("零号·安比", "Buff-角色-零号·安比-银星触发器"),
+            trigger_buff_0=_SOLDIER0_ANBY_SILVER_STAR_TRIGGER_REF,
             preload_data=1,
         )
         trigger_state = read_trigger_buff_state(self.record)
