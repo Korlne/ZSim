@@ -5,6 +5,14 @@ from typing import Any, cast
 
 import pytest
 
+from zsim.sim_progress.Buff.BuffLoad import (
+    EXIST_FILE,
+    JUDGE_FILE,
+    BuffInitCache,
+    BuffInitialize,
+    BuffJudge,
+    BuffJudgeCache,
+)
 from zsim.sim_progress.Buff.buff_class import Buff
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     BuffRuntimeFacade,
@@ -25,6 +33,11 @@ class _BuffProbe(Buff):
         count: int = 1,
         alltime: bool = False,
         simple_exit_logic: bool = True,
+        simple_judge_logic: bool = True,
+        simple_start_logic: bool = True,
+        simple_hit_logic: bool = True,
+        simple_end_logic: bool = True,
+        simple_effect_logic: bool = True,
         individual_settled: bool = False,
         is_debuff: bool = False,
         built_in_buff_box: list[tuple[str, int]] | None = None,
@@ -35,6 +48,11 @@ class _BuffProbe(Buff):
             index=index,
             alltime=alltime,
             simple_exit_logic=simple_exit_logic,
+            simple_judge_logic=simple_judge_logic,
+            simple_start_logic=simple_start_logic,
+            simple_hit_logic=simple_hit_logic,
+            simple_end_logic=simple_end_logic,
+            simple_effect_logic=simple_effect_logic,
             individual_settled=individual_settled,
             is_debuff=is_debuff,
         )
@@ -109,6 +127,63 @@ def _create_facade(
         dynamic_buff_dict=dynamic_buff_dict if dynamic_buff_dict is not None else {},
         enemy_debuff_mirror=enemy_debuff_mirror if enemy_debuff_mirror is not None else [],
     )
+
+
+def _first_loaded_buff_name() -> str:
+    for index in JUDGE_FILE.index:
+        if index in EXIST_FILE.index:
+            return cast(str, index)
+    raise AssertionError("No Buff index is shared by JUDGE_FILE and EXIST_FILE")
+
+
+def test_buff_initialize_default_cache_retains_registry_identity_without_invalidation() -> None:
+    default_cache = BuffInitialize.__kwdefaults__["cache"]
+    assert isinstance(default_cache, BuffInitCache)
+
+    cache = BuffInitCache()
+    buff_name = _first_loaded_buff_name()
+    registered_buff = _BuffProbe(buff_name)
+    registry = {buff_name: registered_buff}
+
+    result = BuffInitialize(buff_name, registry, cache=cache)
+    cache_key = (buff_name, tuple(registry.items()))
+
+    assert cache.get(cache_key) is result
+    assert cache_key[1][0][1] is registered_buff
+
+    registry.clear()
+    assert cache.get(cache_key) is result
+
+
+def test_buff_init_cache_keeps_first_128_entries_after_overflow() -> None:
+    cache = BuffInitCache()
+    keys = [(f"buff-{index}", index) for index in range(129)]
+
+    for index, key in enumerate(keys):
+        cache.add(key, index)
+
+    assert len(cache.cache) == 128
+    assert keys[0] in cache.cache
+    assert keys[127] in cache.cache
+    assert keys[128] not in cache.cache
+
+
+def test_buff_judge_default_cache_is_identity_keyed_without_lifecycle_invalidation() -> None:
+    default_cache = BuffJudge.__kwdefaults__["cache"]
+    assert isinstance(default_cache, BuffJudgeCache)
+
+    cache = BuffJudgeCache()
+    buff = _BuffProbe("identity-cache", alltime=True)
+    mission = SimpleNamespace()
+    judge_conditions: dict[str, Any] = {}
+
+    assert BuffJudge(buff, judge_conditions, cast(Any, mission), cache=cache) is True
+    expected_key = hash((id(buff), tuple(judge_conditions.items()), id(mission)))
+    assert cache.cache == {expected_key: True}
+
+    buff.ft.alltime = False
+    assert BuffJudge(buff, judge_conditions, cast(Any, mission), cache=cache) is True
+    assert BuffJudge(buff, judge_conditions, cast(Any, SimpleNamespace()), cache=cache) is False
 
 
 def test_legacy_buff_runtime_facade_preserves_old_container_identity() -> None:
