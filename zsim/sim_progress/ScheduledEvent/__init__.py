@@ -45,6 +45,33 @@ class _ScheduledEventRuntimePorts:
     runtime_command_port: "RuntimeCommandPort"
 
 
+class ScheduledEventRuntimePortFactory:
+    """Creates ScheduledEvent runtime ports from current per-tick inputs."""
+
+    def create(
+        self,
+        *,
+        data: "ScheduleData",
+        action_stack: ActionStack,
+        buff_runtime_state: BuffRuntimeState,
+        buff_runtime_view: "BuffRuntimeReadPort",
+        sim_instance: "Simulator",
+    ) -> _ScheduledEventRuntimePorts:
+        return _ScheduledEventRuntimePorts(
+            buff_runtime_view=buff_runtime_view,
+            runtime_command_port=create_runtime_command_port(
+                data=data,
+                action_stack=action_stack,
+                sim_instance=sim_instance,
+                buff_runtime_state=buff_runtime_state,
+                buff_runtime_view=buff_runtime_view,
+            ),
+        )
+
+
+_SCHEDULED_EVENT_RUNTIME_PORT_FACTORY = ScheduledEventRuntimePortFactory()
+
+
 class ScheduledEvent:
     """
     计划事件方法类
@@ -127,15 +154,12 @@ class ScheduledEvent:
         self._record_buff_runtime_rebuild_count("scheduled_event_runtime_ports")
         assert self.buff_runtime_state is not None
         buff_runtime_view = self.buff_runtime_state.create_read_port()
-        return _ScheduledEventRuntimePorts(
+        return _SCHEDULED_EVENT_RUNTIME_PORT_FACTORY.create(
+            data=self.data,
+            action_stack=self.action_stack,
+            buff_runtime_state=self.buff_runtime_state,
             buff_runtime_view=buff_runtime_view,
-            runtime_command_port=create_runtime_command_port(
-                data=self.data,
-                action_stack=self.action_stack,
-                sim_instance=self.sim_instance,
-                buff_runtime_state=self.buff_runtime_state,
-                buff_runtime_view=buff_runtime_view,
-            ),
+            sim_instance=self.sim_instance,
         )
 
     def _create_event_context(self) -> EventContext:
