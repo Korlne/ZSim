@@ -8,7 +8,7 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
 )
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
-from .enemy_state_read import read_enemy_stun_active
+from .enemy_state_read import read_enemy_stun_active, read_enemy_stun_rest_tick
 
 
 class HugoCorePassiveTotalizeTriggerRecord:
@@ -160,7 +160,7 @@ class HugoCorePassiveTotalizeTrigger(Buff.BuffLogic):
         elif self.record.active_signal == 0 and self.record.char.cinema != 6:
             raise ValueError(f"在非6画的情况下检测到了非法的触发信号：{self.record.active_signal}")
         """准备数据"""
-        rest_tick = self.record.enemy.get_stun_rest_tick()
+        rest_tick = read_enemy_stun_rest_tick(self.record.enemy)
         ratio = 1000 + min(300, rest_tick) / 60 * 280 + min(600, max(rest_tick - 300, 0)) / 60 * 100
         if self.record.active_signal in [2, 6]:
             if HUGO_REPORT:
