@@ -1,11 +1,11 @@
 from typing import Any
 
 from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduledEventEmitter,
     ScheduledEventEmitterProvider,
 )
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
+from ..JudgeTools.PreparationContext import ResourceRefreshCommandPort
 
 
 class LunarNovilunaRecord:
@@ -38,8 +38,16 @@ class LunarNoviluna(Buff.BuffLogic):
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
 
-    def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
-        return self._scheduled_event_emitter_provider.create_emitter()
+    def _emit_scheduled_refresh(
+        self,
+        *,
+        sp_target: tuple[str, ...],
+        sp_value: float | int,
+    ) -> None:
+        refresh_commands = ResourceRefreshCommandPort(
+            self._scheduled_event_emitter_provider
+        )
+        refresh_commands.publish_refresh(sp_target=sp_target, sp_value=sp_value)
 
     def check_record_module(self):
         if self.equipper is None:
@@ -58,14 +66,11 @@ class LunarNoviluna(Buff.BuffLogic):
         self.check_record_module()
         self.get_prepared(equipper="「月相」-朔", sub_exist_buff_dict=1)
 
-        from zsim.sim_progress.data_struct import ScheduleRefreshData
-
         energy_value = self.record.enegy_value_map[self.buff_instance.ft.refinement]
-        refresh_data = ScheduleRefreshData(
+        self._emit_scheduled_refresh(
             sp_target=(self.record.char.NAME,),
             sp_value=energy_value,
         )
-        self._scheduled_event_emitter().emit_scheduled(refresh_data)
         self.buff_instance.simple_start(
             find_tick(sim_instance=self.buff_instance.sim_instance),
             self.record.sub_exist_buff_dict,
