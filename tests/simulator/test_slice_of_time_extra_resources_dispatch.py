@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import ast
 import sys
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -22,6 +24,10 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduledEventEmitterProvider,
 )
 from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+SLICE_OF_TIME_RESOURCE_REFRESH_FILE = Path(slice_module.__file__).resolve()
 
 
 class _FailFastEventList(list):
@@ -47,6 +53,50 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(
         JudgeTools, "find_event_list", fail_find_event_list, raising=False
+    )
+
+
+def _schedule_refresh_constructor_names(tree: ast.AST) -> set[str]:
+    constructor_names = {"ScheduleRefreshData"}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ImportFrom):
+            continue
+        for alias in node.names:
+            if alias.name == "ScheduleRefreshData":
+                constructor_names.add(alias.asname or alias.name)
+    return constructor_names
+
+
+def _direct_schedule_refresh_constructor_findings(path: Path) -> list[str]:
+    source = path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(path))
+    constructor_names = _schedule_refresh_constructor_names(tree)
+    findings: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if isinstance(node.func, ast.Name) and node.func.id in constructor_names:
+            findings.append(
+                f"{path.relative_to(PROJECT_ROOT).as_posix()}:{node.lineno}"
+            )
+        if (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr == "ScheduleRefreshData"
+        ):
+            findings.append(
+                f"{path.relative_to(PROJECT_ROOT).as_posix()}:{node.lineno}"
+            )
+    return findings
+
+
+def test_slice_of_time_extra_resources_does_not_directly_construct_schedule_refresh_data() -> None:
+    findings = _direct_schedule_refresh_constructor_findings(
+        SLICE_OF_TIME_RESOURCE_REFRESH_FILE
+    )
+
+    assert not findings, (
+        "Migrated SliceofTimeExtraResources directly constructs ScheduleRefreshData:\n"
+        + "\n".join(f"- {finding}" for finding in findings)
     )
 
 

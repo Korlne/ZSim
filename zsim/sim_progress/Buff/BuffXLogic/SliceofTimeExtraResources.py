@@ -1,11 +1,11 @@
 from typing import Any
 
 from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduledEventEmitter,
     ScheduledEventEmitterProvider,
 )
 
 from .. import Buff, JudgeTools, check_preparation
+from ..JudgeTools.PreparationContext import ResourceRefreshCommandPort
 
 
 class SliceofTimeExtraResourcesRecord:
@@ -63,8 +63,23 @@ class SliceofTimeExtraResources(Buff.BuffLogic):
     def get_prepared(self, **kwargs):
         return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
 
-    def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
-        return self._scheduled_event_emitter_provider.create_emitter()
+    def _emit_scheduled_refresh(
+        self,
+        *,
+        sp_target: tuple[str, ...],
+        sp_value: float | int,
+        decibel_target: tuple[str, ...],
+        decibel_value: float | int,
+    ) -> None:
+        refresh_commands = ResourceRefreshCommandPort(
+            self._scheduled_event_emitter_provider
+        )
+        refresh_commands.publish_refresh(
+            sp_target=sp_target,
+            sp_value=sp_value,
+            decibel_target=decibel_target,
+            decibel_value=decibel_value,
+        )
 
     def check_record_module(self):
         if self.equipper is None:
@@ -115,15 +130,12 @@ class SliceofTimeExtraResources(Buff.BuffLogic):
         ]
         energy_value = self.record.energy_value_dict[self.buff_instance.ft.refinement]
         actor_name = action_now.mission_character
-        from zsim.sim_progress.data_struct import ScheduleRefreshData
-
-        refresh_data = ScheduleRefreshData(
+        self._emit_scheduled_refresh(
             sp_target=(self.record.char.NAME,),
             sp_value=energy_value,
             decibel_target=(actor_name,),
             decibel_value=decibel_value,
         )
-        self._scheduled_event_emitter().emit_scheduled(refresh_data)
 
     def check_update_cd(self, tbl: int, tick_now: int):
         """
