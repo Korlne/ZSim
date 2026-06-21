@@ -187,10 +187,15 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
     )
     record.e_counter = {"update_from": "prev-hit", "count": 2}
     helper_calls: list[object] = []
+    active_bar_helper_calls: list[object] = []
 
     def fake_read_enemy_anomaly_active(enemy: Any) -> bool:
         helper_calls.append(enemy)
         return bool(enemy.dynamic.is_under_anomaly())
+
+    def fake_read_enemy_active_anomaly_bar(enemy: Any) -> object:
+        active_bar_helper_calls.append(enemy)
+        return enemy.get_active_anomaly_bar()
 
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
@@ -198,6 +203,11 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
         yanagi_module,
         "read_enemy_anomaly_active",
         fake_read_enemy_anomaly_active,
+    )
+    monkeypatch.setattr(
+        yanagi_module,
+        "read_enemy_active_anomaly_bar",
+        fake_read_enemy_active_anomaly_bar,
     )
     monkeypatch.setattr(yanagi_module, "find_tick", lambda *, sim_instance: sim_instance.tick)
     _patch_runtime_boundary_guards(monkeypatch)
@@ -242,6 +252,7 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
     logic.special_effect_logic(skill_node=skill_node)
 
     assert logic.record is record
+    assert active_bar_helper_calls == [record.enemy]
     assert dispatch_port.events == [published_output]
     assert schedule_data.event_list == []
     assert listener_calls == []

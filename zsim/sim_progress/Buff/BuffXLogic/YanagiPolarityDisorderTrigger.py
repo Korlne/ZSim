@@ -7,7 +7,10 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
 )
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
-from .enemy_anomaly_read import read_enemy_anomaly_active
+from .enemy_anomaly_read import (
+    read_enemy_active_anomaly_bar,
+    read_enemy_anomaly_active,
+)
 
 
 class YanagiPolarityDisorderTriggerRecord:
@@ -138,7 +141,7 @@ class YanagiPolarityDisorderTrigger(Buff.BuffLogic):
         )
 
         # 获取当前正在激活的属性异常条
-        active_anomaly_bar = self.record.enemy.get_active_anomaly_bar()
+        active_anomaly_bar = read_enemy_active_anomaly_bar(self.record.enemy)
 
         active_bar_deep_copy = deepcopy(active_anomaly_bar)
         if not active_bar_deep_copy.settled:
