@@ -289,6 +289,11 @@ TRIGGER_REF_TUPLE_FAMILY_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/YunkuiTalesSheerAtkBonus.py",
 )
 
+TRIGGER_REF_EQUIPMENT_TEMPLATE_RETAINED_TICK_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCoreSkillCritDMGBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/WeepingCradleDMGBonusIncrease.py",
+)
+
 FROZEN_EDGE_EQUIPMENT_TEMPLATE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritRateBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/PolarMetalFreezeBonus.py",
@@ -451,13 +456,20 @@ for path in XLOGIC_ADAPTER_RECORD_TEMPLATE_FILES:
 for path in TRIGGER_REF_TUPLE_FAMILY_FILES:
     XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[path] = XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS.get(
         path, frozenset()
-    ) | frozenset({XLOGIC_ADAPTER_LEGACY_TRIGGER_TUPLE})
+    ) | frozenset(
+        {
+            XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND,
+            XLOGIC_ADAPTER_LEGACY_GET_PREPARED,
+            XLOGIC_ADAPTER_LEGACY_TRIGGER_TUPLE,
+        }
+    )
 
 XLOGIC_ADAPTER_RETAINED_JUDGE_TOOLS_FIND_CALLS_BY_FILE = {
     path: frozenset({"JudgeTools.find_tick"})
     for path in (
         FROZEN_EDGE_EQUIPMENT_TEMPLATE_FILES
         + RESOURCE_REFRESH_EQUIPMENT_TEMPLATE_FILES
+        + TRIGGER_REF_EQUIPMENT_TEMPLATE_RETAINED_TICK_FILES
     )
 }
 
@@ -1904,7 +1916,13 @@ def test_trigger_ref_tuple_family_has_exact_xlogic_guardrail_coverage() -> None:
         "zsim/sim_progress/Buff/BuffXLogic/YangiCinema1ApBonus.py",
         "zsim/sim_progress/Buff/BuffXLogic/YunkuiTalesSheerAtkBonus.py",
     }
-    required_forbidden_kinds = frozenset({XLOGIC_ADAPTER_LEGACY_TRIGGER_TUPLE})
+    required_forbidden_kinds = frozenset(
+        {
+            XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND,
+            XLOGIC_ADAPTER_LEGACY_GET_PREPARED,
+            XLOGIC_ADAPTER_LEGACY_TRIGGER_TUPLE,
+        }
+    )
 
     assert set(TRIGGER_REF_TUPLE_FAMILY_FILES) == expected_files
 
@@ -1914,6 +1932,9 @@ def test_trigger_ref_tuple_family_has_exact_xlogic_guardrail_coverage() -> None:
             XLOGIC_ADAPTER_LEGACY_TRIGGER_TUPLE
             in XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[relative_path]
         )
+        assert required_forbidden_kinds <= XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[
+            relative_path
+        ]
 
         path = PROJECT_ROOT / relative_path
         source = path.read_text(encoding="utf-8")
@@ -1925,6 +1946,26 @@ def test_trigger_ref_tuple_family_has_exact_xlogic_guardrail_coverage() -> None:
 
         assert not file_findings
         assert "TriggerBuffRef." in source
+        assert "build_preparation_context_from_buff" in source
+        assert "preparation_context.find_sub_exist_buff_dict(" in source
+        assert "JudgeTools.find_equipper" not in source
+        assert "JudgeTools.find_exist_buff_dict" not in source
+
+    retained_tick_files = set(TRIGGER_REF_EQUIPMENT_TEMPLATE_RETAINED_TICK_FILES)
+    assert retained_tick_files <= set(TRIGGER_REF_TUPLE_FAMILY_FILES)
+    assert XLOGIC_ADAPTER_RETAINED_JUDGE_TOOLS_FIND_CALLS_BY_FILE == {
+        **{
+            relative_path: frozenset({"JudgeTools.find_tick"})
+            for relative_path in (
+                FROZEN_EDGE_EQUIPMENT_TEMPLATE_FILES
+                + RESOURCE_REFRESH_EQUIPMENT_TEMPLATE_FILES
+            )
+        },
+        **{
+            relative_path: frozenset({"JudgeTools.find_tick"})
+            for relative_path in TRIGGER_REF_EQUIPMENT_TEMPLATE_RETAINED_TICK_FILES
+        },
+    }
 
 
 def test_trigger_ref_tuple_checkpoint_matches_guardrail_scope() -> None:

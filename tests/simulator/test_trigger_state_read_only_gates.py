@@ -83,6 +83,15 @@ from zsim.sim_progress.Buff.BuffXLogic._buff_record_base_class import (
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _BUFF_XLOGIC_ROOT = _PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffXLogic"
 
+_EQUIPMENT_CONTEXT_ITEM_BY_LOGIC: dict[type[Any], str] = {
+    CordisGerminaSNAAndQIgnoreDefense: "机巧心种",
+    FlamemakerShakerApBonus: "灼心摇壶",
+    SeveredInnocencELEDMGBonus: "牺牲洁纯",
+    SharpenedStingerAnomalyBuildupBonus: "淬锋钳刺",
+    SpectralGazeImpactBonus: "索魂影眸",
+    YunkuiTalesSheerAtkBonus: "云岿如我",
+}
+
 
 def test_buff_record_base_field_classification_covers_current_fields() -> None:
     assert BUFF_RECORD_FIELD_CLASSIFICATION == {
@@ -395,6 +404,7 @@ def _install_preparation_context_data(
     equipper_name: str,
     item_name: str,
     char_name: str = "柳",
+    char_cid: int = 1211,
 ) -> None:
     two_piece_slot = item_name if "二件套" in item_name else "__not_two_piece__"
     current_buff.sim_instance.init_data.Judge_list_set = [
@@ -402,7 +412,7 @@ def _install_preparation_context_data(
     ]
     current_buff.sim_instance.char_data.char_obj_list = [
         SimpleNamespace(NAME=equipper_name, CID=0),
-        SimpleNamespace(NAME=char_name, CID=1211),
+        SimpleNamespace(NAME=char_name, CID=char_cid),
     ]
 
 
@@ -436,7 +446,7 @@ def _make_equipment_gate(
     _install_preparation_context_data(
         current_buff,
         equipper_name=equipper_name,
-        item_name=equipper_name,
+        item_name=_EQUIPMENT_CONTEXT_ITEM_BY_LOGIC.get(logic_type, equipper_name),
     )
     _install_lookup_fakes(
         monkeypatch,
@@ -548,6 +558,11 @@ def _make_weeping_cradle_gate(
         }
     }
     current_buff.sim_instance.load_data.exist_buff_dict = exist_buff_dict
+    _install_preparation_context_data(
+        current_buff,
+        equipper_name="啜泣摇篮",
+        item_name="啜泣摇篮",
+    )
     _install_lookup_fakes(
         monkeypatch,
         exist_buff_dict=exist_buff_dict,
@@ -610,6 +625,13 @@ def _make_yanagi_gate(
         }
     }
     current_buff.sim_instance.load_data.exist_buff_dict = exist_buff_dict
+    _install_preparation_context_data(
+        current_buff,
+        equipper_name="柳",
+        item_name="柳",
+        char_name="柳",
+        char_cid=1221,
+    )
     _install_lookup_fakes(monkeypatch, exist_buff_dict=exist_buff_dict)
 
     return _GateFixture(
@@ -732,6 +754,13 @@ def _make_soldier0_anby_fixture(
     current_buff.sim_instance.load_data.exist_buff_dict = exist_buff_dict
     current_buff.sim_instance.preload.preload_data = SimpleNamespace(
         operating_now=operating_now
+    )
+    _install_preparation_context_data(
+        current_buff,
+        equipper_name="零号·安比",
+        item_name="零号·安比",
+        char_name="零号·安比",
+        char_cid=1381,
     )
     _install_lookup_fakes(
         monkeypatch,
