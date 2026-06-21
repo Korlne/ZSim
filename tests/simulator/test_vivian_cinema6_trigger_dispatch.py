@@ -138,6 +138,21 @@ def _patch_anomaly_helper(monkeypatch: pytest.MonkeyPatch) -> list[object]:
     return helper_calls
 
 
+def _patch_active_anomaly_list_helper(monkeypatch: pytest.MonkeyPatch) -> list[object]:
+    helper_calls: list[object] = []
+
+    def fake_read_enemy_active_anomaly_list(enemy: Any) -> list[AnomalyBar]:
+        helper_calls.append(enemy)
+        return enemy.dynamic.get_active_anomaly()
+
+    monkeypatch.setattr(
+        trigger_module,
+        "read_enemy_active_anomaly_list",
+        fake_read_enemy_active_anomaly_list,
+    )
+    return helper_calls
+
+
 def _block_anomaly_helper(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_read_enemy_anomaly_active(enemy: object) -> bool:
         raise AssertionError("VivianCinema6Trigger xeffect should own active anomaly reads")
@@ -333,6 +348,7 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
     monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
     _patch_runtime_boundary_guards(monkeypatch)
     helper_calls = _patch_anomaly_helper(monkeypatch)
+    active_list_helper_calls = _patch_active_anomaly_list_helper(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
 
     def fake_anomaly_settled(self: AnomalyBar) -> None:
@@ -349,6 +365,7 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
 
     assert logic.special_judge_logic(skill_node=skill_node) is True
     assert helper_calls == [record.enemy]
+    assert active_list_helper_calls == []
     assert harness.dynamic.calls == ["is_under_anomaly"]
     assert record.last_update_node is skill_node
     assert record.guard_feather == 3
@@ -363,6 +380,7 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
     assert len(dispatch_port.events) == 1
     published_event = dispatch_port.events[0]
     assert helper_calls == [record.enemy]
+    assert active_list_helper_calls == [record.enemy]
     assert harness.emitter_factory_calls == [harness.sim_instance]
     assert harness.dynamic.calls == ["is_under_anomaly", "get_active_anomaly"]
     assert [entry[0] for entry in harness.action_log] == [
@@ -418,6 +436,7 @@ def test_vivian_cinema6_judge_wrong_skill_is_noop(
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
     monkeypatch.setattr(trigger_module, "VIVIAN_REPORT", False)
     helper_calls = _patch_anomaly_helper(monkeypatch)
+    active_list_helper_calls = _patch_active_anomaly_list_helper(monkeypatch)
     _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
 
@@ -430,6 +449,7 @@ def test_vivian_cinema6_judge_wrong_skill_is_noop(
 
     assert harness.dynamic.calls == []
     assert helper_calls == []
+    assert active_list_helper_calls == []
     assert harness.action_log == []
     assert record.last_update_node is None
     assert dispatch_port.events == []
@@ -448,6 +468,7 @@ def test_vivian_cinema6_no_anomaly_branch_updates_feathers_without_publish(
     monkeypatch.setattr(trigger_module, "VIVIAN_REPORT", True)
     monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
     helper_calls = _patch_anomaly_helper(monkeypatch)
+    active_list_helper_calls = _patch_active_anomaly_list_helper(monkeypatch)
     _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
 
@@ -455,6 +476,7 @@ def test_vivian_cinema6_no_anomaly_branch_updates_feathers_without_publish(
 
     assert logic.special_judge_logic(skill_node=skill_node) is True
     assert helper_calls == [record.enemy]
+    assert active_list_helper_calls == []
     assert harness.dynamic.calls == ["is_under_anomaly"]
 
     logic.special_effect_logic()
@@ -462,6 +484,7 @@ def test_vivian_cinema6_no_anomaly_branch_updates_feathers_without_publish(
     assert dispatch_port.events == []
     assert harness.schedule_data.event_list == []
     assert helper_calls == [record.enemy]
+    assert active_list_helper_calls == [record.enemy]
     assert harness.dynamic.calls == ["is_under_anomaly", "get_active_anomaly"]
     assert [entry[0] for entry in harness.action_log] == [
         "change_process_state",

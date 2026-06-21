@@ -12,7 +12,10 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
 )
 
 from .. import Buff, JudgeTools, check_preparation
-from .enemy_anomaly_read import read_enemy_anomaly_active
+from .enemy_anomaly_read import (
+    read_enemy_active_anomaly_list,
+    read_enemy_anomaly_active,
+)
 
 
 class VivianCinema6TriggerRecord:
@@ -136,7 +139,7 @@ class VivianCinema6Trigger(Buff.BuffLogic):
         )
         from zsim.sim_progress.anomaly_bar import AnomalyBar
 
-        get_result = self.record.enemy.dynamic.get_active_anomaly()
+        get_result = read_enemy_active_anomaly_list(self.record.enemy)
         if not get_result:
             self.record.char.feather_manager.update_myself(c6_signal=True)
             if VIVIAN_REPORT:

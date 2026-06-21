@@ -130,6 +130,7 @@ APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES = {
 }
 
 APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py",
     "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py",
 }
 
@@ -898,11 +899,12 @@ def test_enemy_dynamic_read_guardrail_limits_copied_output_anomaly_helper_to_exa
     assert copied_output_calls.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
 
 
-def test_enemy_dynamic_read_guardrail_limits_active_anomaly_list_helper_to_vivian_core() -> None:
+def test_enemy_dynamic_read_guardrail_limits_active_anomaly_list_helper_to_vivian_payload_triggers() -> None:
     references = _collect_helper_reference_paths()["read_enemy_active_anomaly_list"]
     helper_references = references["imports"] | references["calls"]
 
     assert APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES == {
+        "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py",
         "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py"
     }
     assert references["imports"] == APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
@@ -1331,9 +1333,7 @@ def test_enemy_dynamic_read_guardrail_keeps_copied_output_matrix_exact() -> None
     assert {finding.path for finding in copied_findings} == copied_output_direct_read_files
     assert matched_by_path == {
         "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py": [],
-        "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py": [
-            "self.record.enemy.dynamic.get_active_anomaly()",
-        ],
+        "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py": [],
         "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py": [],
         "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py": [],
     }
