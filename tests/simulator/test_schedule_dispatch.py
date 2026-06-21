@@ -3,6 +3,7 @@ from typing import Any, cast
 
 import pytest
 
+import zsim.sim_progress.data_struct.schedule_dispatch as schedule_dispatch_module
 from zsim.sim_progress.Dot.BaseDot import Dot
 from zsim.sim_progress.Load.LoadDamageEvent import (
     DamageEventJudge,
@@ -12,11 +13,20 @@ from zsim.sim_progress.Load.loading_mission import LoadingMission
 from zsim.sim_progress.data_struct.schedule_dispatch import (
     LegacyEventListScheduleDispatchAdapter,
     ScheduleDispatchPort,
+    ScheduledEventEmitterProvider,
     create_schedule_dispatch_port,
 )
 
 
 class _RecordingSchedulePublisher:
+    def __init__(self) -> None:
+        self.events: list[object] = []
+
+    def publish_scheduled(self, event: object) -> None:
+        self.events.append(event)
+
+
+class _RecordingProviderDispatchPort(ScheduleDispatchPort):
     def __init__(self) -> None:
         self.events: list[object] = []
 
@@ -102,6 +112,161 @@ def test_create_schedule_dispatch_port_follows_rebound_schedule_data_event_list(
 
     assert old_event_list == ["old-event"]
     assert schedule_data.event_list == ["new-event"]
+
+
+def test_scheduled_event_provider_from_sim_instance_creates_fresh_dispatch_port_each_emitter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sim_instance = SimpleNamespace(schedule_data=SimpleNamespace(event_list=[]))
+    created_ports: list[_RecordingProviderDispatchPort] = []
+
+    def create_recording_dispatch_port(
+        *,
+        sim_instance: object | None = None,
+        schedule_data: object | None = None,
+    ) -> _RecordingProviderDispatchPort:
+        assert sim_instance is sim_instance_arg
+        assert schedule_data is None
+        port = _RecordingProviderDispatchPort()
+        created_ports.append(port)
+        return port
+
+    sim_instance_arg = sim_instance
+    monkeypatch.setattr(
+        schedule_dispatch_module,
+        "create_schedule_dispatch_port",
+        create_recording_dispatch_port,
+    )
+
+    provider = ScheduledEventEmitterProvider.from_sim_instance(cast(Any, sim_instance))
+    first_emitter = provider.create_emitter()
+    second_emitter = provider.create_emitter()
+
+    first_emitter.emit_scheduled("first")
+    second_emitter.emit_scheduled("second")
+
+    assert len(created_ports) == 2
+    assert created_ports[0].events == ["first"]
+    assert created_ports[1].events == ["second"]
+
+
+def test_scheduled_event_provider_from_sim_instance_getter_uses_current_simulator_each_emitter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    first_sim = SimpleNamespace(schedule_data=SimpleNamespace(event_list=[]))
+    second_sim = SimpleNamespace(schedule_data=SimpleNamespace(event_list=[]))
+    current = {"sim_instance": first_sim}
+    requested_sim_instances: list[object | None] = []
+    created_ports: list[_RecordingProviderDispatchPort] = []
+
+    def create_recording_dispatch_port(
+        *,
+        sim_instance: object | None = None,
+        schedule_data: object | None = None,
+    ) -> _RecordingProviderDispatchPort:
+        assert schedule_data is None
+        requested_sim_instances.append(sim_instance)
+        port = _RecordingProviderDispatchPort()
+        created_ports.append(port)
+        return port
+
+    monkeypatch.setattr(
+        schedule_dispatch_module,
+        "create_schedule_dispatch_port",
+        create_recording_dispatch_port,
+    )
+
+    provider = ScheduledEventEmitterProvider.from_sim_instance_getter(
+        lambda: cast(Any, current["sim_instance"])
+    )
+    first_emitter = provider.create_emitter()
+    current["sim_instance"] = second_sim
+    second_emitter = provider.create_emitter()
+
+    first_emitter.emit_scheduled("first")
+    second_emitter.emit_scheduled("second")
+
+    assert requested_sim_instances == [first_sim, second_sim]
+    assert len(created_ports) == 2
+    assert created_ports[0].events == ["first"]
+    assert created_ports[1].events == ["second"]
+
+
+def test_scheduled_event_provider_from_schedule_data_creates_fresh_dispatch_port_each_emitter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    schedule_data = SimpleNamespace(event_list=[])
+    created_ports: list[_RecordingProviderDispatchPort] = []
+
+    def create_recording_dispatch_port(
+        *,
+        sim_instance: object | None = None,
+        schedule_data: object | None = None,
+    ) -> _RecordingProviderDispatchPort:
+        assert sim_instance is None
+        assert schedule_data is schedule_data_arg
+        port = _RecordingProviderDispatchPort()
+        created_ports.append(port)
+        return port
+
+    schedule_data_arg = schedule_data
+    monkeypatch.setattr(
+        schedule_dispatch_module,
+        "create_schedule_dispatch_port",
+        create_recording_dispatch_port,
+    )
+
+    provider = ScheduledEventEmitterProvider.from_schedule_data(cast(Any, schedule_data))
+    first_emitter = provider.create_emitter()
+    second_emitter = provider.create_emitter()
+
+    first_emitter.emit_scheduled("first")
+    second_emitter.emit_scheduled("second")
+
+    assert len(created_ports) == 2
+    assert created_ports[0].events == ["first"]
+    assert created_ports[1].events == ["second"]
+
+
+@pytest.mark.parametrize(
+    "provider_factory",
+    [
+        lambda schedule_data: ScheduledEventEmitterProvider.from_sim_instance(
+            cast(Any, SimpleNamespace(schedule_data=schedule_data))
+        ),
+        lambda schedule_data: ScheduledEventEmitterProvider.from_sim_instance_getter(
+            lambda: cast(Any, SimpleNamespace(schedule_data=schedule_data))
+        ),
+        lambda schedule_data: ScheduledEventEmitterProvider.from_schedule_data(
+            cast(Any, schedule_data)
+        ),
+    ],
+)
+def test_scheduled_event_provider_emit_follows_rebound_schedule_data_event_list(
+    provider_factory: Any,
+) -> None:
+    schedule_data = SimpleNamespace(event_list=[])
+    old_event_list = schedule_data.event_list
+    provider = provider_factory(schedule_data)
+    emitter = provider.create_emitter()
+
+    schedule_data.event_list = []
+    emitter.emit_scheduled("rebound-event")
+
+    assert old_event_list == []
+    assert schedule_data.event_list == ["rebound-event"]
+
+
+def test_scheduled_event_provider_retains_callable_factory_only() -> None:
+    schedule_data = SimpleNamespace(event_list=[])
+    provider = ScheduledEventEmitterProvider.from_schedule_data(cast(Any, schedule_data))
+    before_create = dict(provider.__dict__)
+
+    provider.create_emitter()
+
+    assert set(provider.__dict__) == {"_dispatch_port_factory"}
+    assert provider.__dict__ == before_create
+    assert callable(provider.__dict__["_dispatch_port_factory"])
 
 
 def test_schedule_dispatch_port_public_api_does_not_expose_raw_queue_mutation():
