@@ -129,6 +129,10 @@ APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
 }
 
+APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES = {
+    "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py",
+}
+
 APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES = {
     "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py",
 }
@@ -152,12 +156,17 @@ DELEGATED_COPIED_OUTPUT_ANOMALY_HELPER_FILES = {
 }
 
 APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME = {
+    "read_enemy_active_anomaly_list": (
+        APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
+    ),
     "read_enemy_anomaly_active": APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES,
     "read_enemy_stun_active": APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES,
 }
 
 DELEGATED_COPIED_OUTPUT_HELPER_FILES = (
-    APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES | YANAGI_COPIED_OUTPUT_ANOMALY_HELPER_FILES
+    APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
+    | YANAGI_COPIED_OUTPUT_ANOMALY_HELPER_FILES
+    | APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
 )
 
 APPROVED_EDGE_FROZEN_HELPER_FILES = {
@@ -210,6 +219,9 @@ APPROVED_ANOMALY_MAP_HELPER_FILES_BY_NAME = {
 }
 
 MIGRATED_HELPER_FILES_BY_NAME = {
+    "read_enemy_active_anomaly_list": (
+        APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
+    ),
     "read_enemy_anomaly_active": (
         APPROVED_ANOMALY_HELPER_FILES | APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
     ),
@@ -227,6 +239,9 @@ MIGRATED_HELPER_FILES_BY_NAME = {
 }
 
 APPROVED_HELPER_FILES_BY_NAME = {
+    "read_enemy_active_anomaly_list": (
+        APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
+    ),
     "read_enemy_anomaly_active": (
         APPROVED_ANOMALY_HELPER_FILES
         | APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
@@ -247,6 +262,7 @@ APPROVED_HELPER_FILES_BY_NAME = {
 }
 
 APPROVED_HELPER_CLASSIFICATIONS_BY_NAME = {
+    "read_enemy_active_anomaly_list": {"copied-output-adjacent read"},
     "read_enemy_anomaly_active": {
         "simple enemy read",
         "copied-output-adjacent read",
@@ -272,6 +288,7 @@ APPROVED_HELPER_CLASSIFICATIONS_BY_NAME = {
 }
 
 HELPER_NAMES_BY_FAMILY = {
+    "copied-output active anomaly list": frozenset({"read_enemy_active_anomaly_list"}),
     "simple anomaly": frozenset({"read_enemy_anomaly_active"}),
     "simple shock/stun": frozenset(
         {"read_enemy_shock_active", "read_enemy_stun_active", "EnemyStateReadPort"}
@@ -775,9 +792,14 @@ def test_enemy_dynamic_read_guardrail_approves_copied_output_predicate_helpers_b
     )
 
     assert set(APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME) == {
+        "read_enemy_active_anomaly_list",
         "read_enemy_anomaly_active",
         "read_enemy_stun_active",
     }
+    assert (
+        APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME["read_enemy_active_anomaly_list"]
+        == APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
+    )
     assert (
         APPROVED_COPIED_OUTPUT_HELPER_FILES_BY_NAME["read_enemy_anomaly_active"]
         == APPROVED_COPIED_OUTPUT_ANOMALY_HELPER_FILES
@@ -874,6 +896,25 @@ def test_enemy_dynamic_read_guardrail_limits_copied_output_anomaly_helper_to_exa
     assert copied_output_calls.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
     assert copied_output_imports.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
     assert copied_output_calls.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
+
+
+def test_enemy_dynamic_read_guardrail_limits_active_anomaly_list_helper_to_vivian_core() -> None:
+    references = _collect_helper_reference_paths()["read_enemy_active_anomaly_list"]
+    helper_references = references["imports"] | references["calls"]
+
+    assert APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES == {
+        "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py"
+    }
+    assert references["imports"] == APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
+    assert references["calls"] == APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
+    assert helper_references <= COPIED_OUTPUT_ADJACENT_FILES
+    assert helper_references.isdisjoint(
+        COPIED_OUTPUT_ADJACENT_FILES
+        - APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
+    )
+    assert helper_references.isdisjoint(APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES)
+    assert helper_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert helper_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
 
 
 def test_enemy_dynamic_read_guardrail_limits_vivian_dot_judge_helper_to_exact_file() -> None:
@@ -975,6 +1016,9 @@ def test_enemy_dynamic_read_guardrail_limits_yanagi_copied_output_anomaly_helper
 
 def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scope() -> None:
     references = _collect_helper_reference_paths()
+    active_anomaly_list_references_by_kind = _helper_references_for_names(
+        references, HELPER_NAMES_BY_FAMILY["copied-output active anomaly list"]
+    )
     anomaly_references_by_kind = _helper_references_for_names(
         references, HELPER_NAMES_BY_FAMILY["simple anomaly"]
     )
@@ -1010,7 +1054,14 @@ def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scop
     dot_runtime_references = (
         dot_runtime_references_by_kind["imports"] | dot_runtime_references_by_kind["calls"]
     )
+    active_anomaly_list_references = (
+        active_anomaly_list_references_by_kind["imports"]
+        | active_anomaly_list_references_by_kind["calls"]
+    )
 
+    assert active_anomaly_list_references == (
+        APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
+    )
     assert all(
         CLASSIFICATION_BY_FILE[path] == "edge-detection read" for path in EDGE_DETECTION_FILES
     )
@@ -1036,6 +1087,14 @@ def test_enemy_dynamic_read_guardrail_keeps_excluded_families_out_of_helper_scop
         DOT_DEBUFF_RUNTIME_STATE_FILES - APPROVED_DOT_RUNTIME_JUDGE_ANOMALY_HELPER_FILES
     )
     assert anomaly_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
+    assert active_anomaly_list_references <= COPIED_OUTPUT_ADJACENT_FILES
+    assert active_anomaly_list_references.isdisjoint(
+        COPIED_OUTPUT_ADJACENT_FILES
+        - APPROVED_COPIED_OUTPUT_ACTIVE_ANOMALY_LIST_HELPER_FILES
+    )
+    assert active_anomaly_list_references.isdisjoint(DOT_DEBUFF_RUNTIME_STATE_FILES)
+    assert active_anomaly_list_references.isdisjoint(ANOMALY_MAP_FUTURE_POOL_FILES)
+    assert active_anomaly_list_references.isdisjoint(EDGE_DETECTION_FILES)
     assert shock_stun_references.isdisjoint(EDGE_DETECTION_FILES)
     assert (
         shock_stun_references & COPIED_OUTPUT_ADJACENT_FILES
@@ -1275,9 +1334,7 @@ def test_enemy_dynamic_read_guardrail_keeps_copied_output_matrix_exact() -> None
         "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py": [
             "self.record.enemy.dynamic.get_active_anomaly()",
         ],
-        "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py": [
-            "self.record.enemy.dynamic.get_active_anomaly()",
-        ],
+        "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py": [],
         "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py": [],
     }
     assert all(

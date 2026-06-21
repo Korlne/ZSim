@@ -83,6 +83,21 @@ def _patch_anomaly_helper(monkeypatch: pytest.MonkeyPatch) -> list[object]:
     return helper_calls
 
 
+def _patch_active_anomaly_list_helper(monkeypatch: pytest.MonkeyPatch) -> list[object]:
+    helper_calls: list[object] = []
+
+    def fake_read_enemy_active_anomaly_list(enemy: Any) -> list[AnomalyBar]:
+        helper_calls.append(enemy)
+        return enemy.dynamic.get_active_anomaly()
+
+    monkeypatch.setattr(
+        trigger_module,
+        "read_enemy_active_anomaly_list",
+        fake_read_enemy_active_anomaly_list,
+    )
+    return helper_calls
+
+
 def _block_anomaly_helper(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_read_enemy_anomaly_active(enemy: object) -> bool:
         raise AssertionError("VivianCorePassiveTrigger xeffect should own active anomaly reads")
@@ -238,6 +253,7 @@ def test_vivian_core_passive_publishes_dirge_anomaly_via_dispatch_port(
     monkeypatch.setattr(trigger_module, "VIVIAN_REPORT", True)
     monkeypatch.setattr("builtins.print", lambda *args, **kwargs: None)
     _block_anomaly_helper(monkeypatch)
+    active_list_helper_calls = _patch_active_anomaly_list_helper(monkeypatch)
     _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
 
@@ -257,6 +273,7 @@ def test_vivian_core_passive_publishes_dirge_anomaly_via_dispatch_port(
 
     assert len(dispatch_port.events) == 1
     assert dispatch_factory_calls == [sim_instance]
+    assert active_list_helper_calls == [enemy]
     assert dynamic.calls == ["get_active_anomaly"]
     assert action_log == ["publish_scheduled", "change_process_state"]
     assert listener_calls == []
