@@ -311,9 +311,9 @@ def test_scheduled_event_context_requeue_uses_current_schedule_queue_after_rebin
     scheduled_event.action_stack = SimpleNamespace()
     scheduled_event.sim_instance = SimpleNamespace()
 
+    context = scheduled_event._create_event_context()
     schedule_data.event_list = current_event_list
 
-    context = scheduled_event._create_event_context()
     context.requeue_event("queued")
 
     assert current_event_list == ["queued"]

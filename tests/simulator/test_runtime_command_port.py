@@ -458,3 +458,86 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
     runtime_context.dispatch_port.publish_scheduled("scheduled")
     assert current_event_list == ["scheduled"]
     assert stale_event_list == ["stale"]
+
+
+def test_scheduled_event_runtime_ports_rebind_read_view_for_each_runtime_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    first_active = object()
+    second_active = object()
+    first_state = _runtime_state_for_test(
+        exist_buff_dict={"alpha": {"first": object()}, "enemy": {}},
+        dynamic_buff={"alpha": [first_active], "enemy": []},
+        loading_buff={"alpha": []},
+    )
+    second_state = _runtime_state_for_test(
+        exist_buff_dict={"alpha": {"second": object()}, "enemy": {}},
+        dynamic_buff={"alpha": [second_active], "enemy": []},
+        loading_buff={"alpha": []},
+    )
+    first_data = SimpleNamespace(enemy=SimpleNamespace(), event_list=[], char_obj_list=[])
+    second_data = SimpleNamespace(enemy=SimpleNamespace(), event_list=[], char_obj_list=[])
+    first_stack = SimpleNamespace(marker="first-stack")
+    second_stack = SimpleNamespace(marker="second-stack")
+    first_sim = SimpleNamespace(marker="first-sim")
+    second_sim = SimpleNamespace(marker="second-sim")
+    command_ports = [object(), object()]
+    captured_calls: list[dict[str, Any]] = []
+
+    def _fake_create_runtime_command_port(**kwargs: Any) -> object:
+        captured_calls.append(dict(kwargs))
+        return command_ports[len(captured_calls) - 1]
+
+    monkeypatch.setattr(
+        scheduled_event_module.ScheduledEvent,
+        "_ensure_handlers_registered",
+        lambda self: None,
+    )
+    monkeypatch.setattr(
+        scheduled_event_module,
+        "create_runtime_command_port",
+        _fake_create_runtime_command_port,
+    )
+
+    first_event = scheduled_event_module.ScheduledEvent(
+        {"alpha": [first_active], "enemy": []},
+        first_data,
+        1,
+        {"alpha": {"first": object()}, "enemy": {}},
+        first_stack,
+        loading_buff={"alpha": []},
+        buff_runtime_state=first_state,
+        sim_instance=cast(Any, first_sim),
+    )
+    second_event = scheduled_event_module.ScheduledEvent(
+        {"alpha": [second_active], "enemy": []},
+        second_data,
+        2,
+        {"alpha": {"second": object()}, "enemy": {}},
+        second_stack,
+        loading_buff={"alpha": []},
+        buff_runtime_state=second_state,
+        sim_instance=cast(Any, second_sim),
+    )
+
+    assert len(captured_calls) == 2
+    first_call, second_call = captured_calls
+    assert first_call["data"] is first_data
+    assert first_call["action_stack"] is first_stack
+    assert first_call["buff_runtime_state"] is first_state
+    assert first_call["buff_runtime_view"] is first_event.buff_runtime_view
+    assert first_call["sim_instance"] is first_sim
+    assert second_call["data"] is second_data
+    assert second_call["action_stack"] is second_stack
+    assert second_call["buff_runtime_state"] is second_state
+    assert second_call["buff_runtime_view"] is second_event.buff_runtime_view
+    assert second_call["sim_instance"] is second_sim
+    assert first_event.runtime_command_port is command_ports[0]
+    assert second_event.runtime_command_port is command_ports[1]
+    assert first_event.buff_runtime_view is not second_event.buff_runtime_view
+    assert tuple(first_event.buff_runtime_view.get_active_buffs("alpha")) == (
+        first_active,
+    )
+    assert tuple(second_event.buff_runtime_view.get_active_buffs("alpha")) == (
+        second_active,
+    )
