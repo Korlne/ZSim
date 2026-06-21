@@ -17,6 +17,10 @@ import zsim.sim_progress.Buff.JudgeTools as judge_tools
 from zsim.sim_progress.Buff.BuffXLogic.WoodpeckerElectroSet4_NA import (
     WoodpeckerElectroSet4_NA,
 )
+from zsim.sim_progress.Buff.BuffXLogic.AliceAdditionalAbilityApBonus import (
+    AliceAdditionalAbilityApBonus,
+    AliceAdditionalAbilityApBonusRecord,
+)
 from zsim.sim_progress.Buff.BuffXLogic._buff_record_base_class import BuffRecordBaseClass
 
 
@@ -244,13 +248,52 @@ def _make_preparation_context_fixture() -> SimpleNamespace:
     )
 
 
+def _make_alice_preparation_fixture() -> SimpleNamespace:
+    character = SimpleNamespace(NAME="爱丽丝", CID=1401)
+    enemy = SimpleNamespace(name="enemy")
+    action_stack = SimpleNamespace(name="action_stack")
+    preload_data = SimpleNamespace(name="preload_data")
+    buff_index = "alice-additional-ability-ap-bonus"
+    buff_0 = SimpleNamespace(history=SimpleNamespace(record=None))
+    exist_buff_dict = {character.NAME: {buff_index: buff_0}}
+    active_buff_view: dict[str, list[object]] = {character.NAME: []}
+    sim_instance = SimpleNamespace(
+        char_data=SimpleNamespace(char_obj_list=[character]),
+        init_data=SimpleNamespace(Judge_list_set=[]),
+        load_data=SimpleNamespace(
+            exist_buff_dict=exist_buff_dict,
+            action_stack=action_stack,
+        ),
+        schedule_data=SimpleNamespace(enemy=enemy),
+        global_stats=SimpleNamespace(DYNAMIC_BUFF_DICT=active_buff_view),
+        preload=SimpleNamespace(preload_data=preload_data),
+    )
+    return SimpleNamespace(
+        character=character,
+        enemy=enemy,
+        action_stack=action_stack,
+        active_buff_view=active_buff_view,
+        preload_data=preload_data,
+        sim_instance=sim_instance,
+        buff_index=buff_index,
+        buff_0=buff_0,
+        exist_buff_dict=exist_buff_dict,
+        buff_instance=SimpleNamespace(
+            sim_instance=sim_instance,
+            ft=SimpleNamespace(index=buff_index),
+        ),
+    )
+
+
 def _patch_legacy_preparation_helpers_to_fail(monkeypatch: pytest.MonkeyPatch) -> None:
     def unexpected_legacy_lookup(*args: object, **kwargs: object) -> object:
         raise AssertionError("PreparationContext path should not call legacy find_* helpers")
 
     for helper_name in (
         "find_equipper",
+        "find_char_from_CID",
         "find_char_from_name",
+        "find_exist_buff_dict",
         "find_enemy",
         "find_stack",
     ):
@@ -383,6 +426,62 @@ def test_woodpecker_na_get_prepared_has_no_broad_findmain_calls() -> None:
     assert "find_enemy(" not in source
     assert "find_stack(" not in source
     assert "find_char" not in source
+
+
+def test_alice_get_prepared_uses_preparation_context_for_core_reads(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_alice_preparation_fixture()
+    record = AliceAdditionalAbilityApBonusRecord()
+    fixture.buff_0.history.record = record
+    logic = AliceAdditionalAbilityApBonus.__new__(AliceAdditionalAbilityApBonus)
+    logic.buff_instance = fixture.buff_instance
+    logic.buff_0 = fixture.buff_0
+    _patch_legacy_preparation_helpers_to_fail(monkeypatch)
+
+    logic.get_prepared(char_CID=1401, sub_exist_buff_dict=1, enemy=1)
+
+    assert record.char is fixture.character
+    assert record.enemy is fixture.enemy
+    assert record.sub_exist_buff_dict is fixture.exist_buff_dict["爱丽丝"]
+
+
+def test_alice_check_record_module_uses_template_registry_and_lazy_record(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _make_alice_preparation_fixture()
+    logic = AliceAdditionalAbilityApBonus.__new__(AliceAdditionalAbilityApBonus)
+    logic.buff_instance = fixture.buff_instance
+    logic.buff_0 = None
+    logic.record = None
+    _patch_legacy_preparation_helpers_to_fail(monkeypatch)
+
+    logic.check_record_module()
+
+    assert logic.buff_0 is fixture.buff_0
+    assert logic.record is fixture.buff_0.history.record
+    assert isinstance(logic.record, AliceAdditionalAbilityApBonusRecord)
+
+    existing_record = logic.record
+    fixture.sim_instance.load_data.exist_buff_dict = {"爱丽丝": {}}
+    logic.check_record_module()
+
+    assert logic.buff_0 is fixture.buff_0
+    assert logic.record is existing_record
+    assert fixture.buff_0.history.record is existing_record
+
+
+def test_alice_preparation_wrapper_has_no_broad_findmain_calls() -> None:
+    source = textwrap.dedent(
+        inspect.getsource(AliceAdditionalAbilityApBonus.get_prepared)
+        + "\n"
+        + inspect.getsource(AliceAdditionalAbilityApBonus.check_record_module)
+    )
+
+    assert "build_preparation_context_from_buff" in source
+    assert "preparation_context=preparation_context" in source
+    assert "JudgeTools.find_" not in source
+    assert "find_exist_buff_dict" not in source
 
 
 def test_buff_xlogic_does_not_request_event_list_preparation_cache() -> None:
