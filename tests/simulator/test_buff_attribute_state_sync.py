@@ -1299,6 +1299,38 @@ def test_selected_owner_family_check_record_module_preserves_old_template_identi
         initial_count=7.0,
     )
     buff_0 = _make_buff_0(calls, initial_count=7.0, step=1.0)
+    expected_lookup_calls = (
+        []
+        if logic_cls is Soldier0AnbyCoreSkillCritDMGBonus
+        else [active_buff.sim_instance]
+    )
+    preparation_context_calls: list[tuple[str, object]] = []
+    expected_preparation_context_calls: list[tuple[str, object]] = []
+
+    if logic_cls is Soldier0AnbyCoreSkillCritDMGBonus:
+
+        class _FakePreparationContext:
+            def find_sub_exist_buff_dict(self, target_owner: str) -> dict[str, object]:
+                preparation_context_calls.append(
+                    ("find_sub_exist_buff_dict", target_owner)
+                )
+                return {index: buff_0}
+
+        def fake_build_preparation_context_from_buff(
+            buff_instance: object,
+        ) -> _FakePreparationContext:
+            preparation_context_calls.append(("build", buff_instance))
+            return _FakePreparationContext()
+
+        monkeypatch.setattr(
+            cast(Any, module),
+            "build_preparation_context_from_buff",
+            fake_build_preparation_context_from_buff,
+        )
+        expected_preparation_context_calls = [
+            ("build", active_buff),
+            ("find_sub_exist_buff_dict", owner),
+        ]
 
     lookup_calls: list[object] = []
 
@@ -1319,7 +1351,8 @@ def test_selected_owner_family_check_record_module_preserves_old_template_identi
 
     logic.check_record_module()
 
-    assert lookup_calls == [active_buff.sim_instance]
+    assert lookup_calls == expected_lookup_calls
+    assert preparation_context_calls == expected_preparation_context_calls
     assert logic.buff_0 is buff_0
     assert logic.record is buff_0.history.record
     assert isinstance(logic.record, record_cls)
@@ -1328,7 +1361,8 @@ def test_selected_owner_family_check_record_module_preserves_old_template_identi
     existing_record = logic.record
     logic.check_record_module()
 
-    assert lookup_calls == [active_buff.sim_instance]
+    assert lookup_calls == expected_lookup_calls
+    assert preparation_context_calls == expected_preparation_context_calls
     assert logic.buff_0 is buff_0
     assert logic.record is existing_record
     assert buff_0.history.record is existing_record
