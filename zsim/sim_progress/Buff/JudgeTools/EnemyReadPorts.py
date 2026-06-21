@@ -25,6 +25,10 @@ class _EnemyWithDynamicStunRead(Protocol):
     dynamic: _EnemyDynamicWithStunRead
 
 
+class _EnemyWithStunRestTickRead(Protocol):
+    def get_stun_rest_tick(self) -> float: ...
+
+
 class _EnemyDynamicWithStateRead(
     _EnemyDynamicWithShockRead,
     _EnemyDynamicWithStunRead,
@@ -125,6 +129,10 @@ def read_enemy_shock_active(enemy: _EnemyWithDynamicShockRead) -> bool:
 
 def read_enemy_stun_active(enemy: _EnemyWithDynamicStunRead) -> bool:
     return enemy.dynamic.stun
+
+
+def read_enemy_stun_rest_tick(enemy: _EnemyWithStunRestTickRead) -> float:
+    return enemy.get_stun_rest_tick()
 
 
 class EnemyStateReadPort:
@@ -253,6 +261,7 @@ __all__ = [
     "read_enemy_shock_active",
     "read_enemy_stun_active",
     "read_enemy_stun_edge_state",
+    "read_enemy_stun_rest_tick",
     "snapshot_enemy_anomaly_states",
     "snapshot_enemy_dot_runtime_state",
 ]
