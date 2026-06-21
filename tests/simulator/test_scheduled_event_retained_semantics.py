@@ -201,6 +201,30 @@ def test_retained_scheduler_handlers_requeue_future_events_without_executing(
     assert event.executed == []
 
 
+def test_retained_scheduler_handler_requeue_uses_rebound_schedule_queue() -> None:
+    stale_event_list: list[object] = []
+    current_event_list: list[object] = []
+    schedule_data = SimpleNamespace(event_list=stale_event_list)
+    context = EventContext(
+        data=cast(Any, schedule_data),
+        tick=10,
+        enemy=cast(Any, SimpleNamespace()),
+        buff_runtime_view=_RuntimeViewStub(),
+        runtime_command_port=cast(Any, SimpleNamespace()),
+        action_stack=cast(Any, SimpleNamespace()),
+        sim_instance=cast(Any, SimpleNamespace()),
+    )
+    event = _RetainedEventProbe(execute_tick=11)
+
+    schedule_data.event_list = current_event_list
+
+    PreloadEventHandler().handle(cast(Any, event), context)
+
+    assert current_event_list == [event]
+    assert stale_event_list == []
+    assert event.executed == []
+
+
 @pytest.mark.parametrize(
     ("handler_cls", "expected_call"),
     [
@@ -269,6 +293,31 @@ def test_scheduled_event_process_event_recurses_after_context_requeue() -> None:
     assert processed == [first_event, requeued_event]
     assert schedule_data.event_list == []
     assert schedule_data.processed_times == 2
+
+
+def test_scheduled_event_context_requeue_uses_current_schedule_queue_after_rebind() -> None:
+    stale_event_list: list[object] = []
+    current_event_list: list[object] = []
+    schedule_data = SimpleNamespace(event_list=stale_event_list)
+    scheduled_event = cast(
+        Any,
+        scheduled_event_module.ScheduledEvent.__new__(scheduled_event_module.ScheduledEvent),
+    )
+    scheduled_event.data = schedule_data
+    scheduled_event.tick = 10
+    scheduled_event.enemy = SimpleNamespace()
+    scheduled_event.buff_runtime_view = _RuntimeViewStub()
+    scheduled_event.runtime_command_port = SimpleNamespace()
+    scheduled_event.action_stack = SimpleNamespace()
+    scheduled_event.sim_instance = SimpleNamespace()
+
+    schedule_data.event_list = current_event_list
+
+    context = scheduled_event._create_event_context()
+    context.requeue_event("queued")
+
+    assert current_event_list == ["queued"]
+    assert stale_event_list == []
 
 
 def test_skill_handler_damage_effect_continuation_uses_current_schedule_queue(

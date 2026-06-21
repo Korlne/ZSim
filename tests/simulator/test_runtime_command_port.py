@@ -182,6 +182,7 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
     assert runtime_context.dot_runtime_state.snapshot() == ()
     runtime_context.dispatch_port.publish_scheduled("scheduled")
     assert current_event_list == ["scheduled"]
+    assert stale_event_list == ["stale"]
     assert captured["settle_tick"] == 10
     assert captured["settle_exist_buff_dict"] is exist_buff_dict
     assert captured["settle_enemy"] is enemy
@@ -357,12 +358,13 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
     dynamic_buff = {"alpha": [object()], "enemy": []}
     exist_buff_dict = {"alpha": {"buff": object()}, "enemy": {}}
     loading_buff: dict[str, list[Any]] = {"alpha": []}
+    stale_event_list = ["stale"]
     current_event_list: list[object] = []
     char_obj_list = [SimpleNamespace(NAME="alpha")]
     enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[]))
     schedule_data = SimpleNamespace(
         enemy=enemy,
-        event_list=["stale"],
+        event_list=stale_event_list,
         char_obj_list=char_obj_list,
     )
     action_stack = SimpleNamespace()
@@ -455,3 +457,4 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
     assert runtime_context.dot_runtime_state.snapshot() == ()
     runtime_context.dispatch_port.publish_scheduled("scheduled")
     assert current_event_list == ["scheduled"]
+    assert stale_event_list == ["stale"]
