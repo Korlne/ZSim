@@ -1,5 +1,7 @@
 from .. import Buff, JudgeTools, check_preparation
-from ..JudgeTools import read_trigger_buff_state
+from ..JudgeTools import TriggerBuffRef, read_trigger_buff_state
+
+_JANE_BITE_TRIGGER_REF = TriggerBuffRef.enemy("Buff-角色-简-核心被动-啮咬触发器")
 
 
 class JaneCoreSkillStrikeCritDmgBonusRecord:
@@ -36,9 +38,7 @@ class JaneCoreSkillStrikeCritDmgBonus(Buff.BuffLogic):
     def special_judge_logic(self, **kwargs):
         """强击的暴伤Debuff情况是和啮咬绑定的。"""
         self.check_record_module()
-        self.get_prepared(
-            char_CID=1261, trigger_buff_0=("enemy", "Buff-角色-简-核心被动-啮咬触发器")
-        )
+        self.get_prepared(char_CID=1261, trigger_buff_0=_JANE_BITE_TRIGGER_REF)
         trigger_state = read_trigger_buff_state(self.record)
         return trigger_state.active
 

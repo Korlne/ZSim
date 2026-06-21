@@ -1,5 +1,7 @@
 from .. import Buff, JudgeTools, check_preparation
-from ..JudgeTools import read_trigger_buff_state
+from ..JudgeTools import TriggerBuffRef, read_trigger_buff_state
+
+_JANE_PASSION_TRIGGER_REF = TriggerBuffRef.owner("简", "Buff-角色-简-狂热状态触发器")
 
 
 class JanePassionStatePhyBuildupBonusRecord:
@@ -33,7 +35,7 @@ class JanePassionStatePhyBuildupBonus(Buff.BuffLogic):
     def special_judge_logic(self, **kwargs):
         """积蓄效率Buff的判定和触发器有关，其状态和触发器相同"""
         self.check_record_module()
-        self.get_prepared(char_CID=1261, trigger_buff_0=("简", "Buff-角色-简-狂热状态触发器"))
+        self.get_prepared(char_CID=1261, trigger_buff_0=_JANE_PASSION_TRIGGER_REF)
 
         trigger_state = read_trigger_buff_state(self.record)
         return trigger_state.active

@@ -1029,14 +1029,52 @@ def test_migrated_trigger_state_gate_sources_use_trigger_state_helper(
         assert chain not in source
 
 
-def test_jane_core_skill_crit_rate_uses_typed_trigger_ref_contract() -> None:
-    source = (_BUFF_XLOGIC_ROOT / "JaneCoreSkillStrikeCritRateBonus.py").read_text(
-        encoding="utf-8"
-    )
+@pytest.mark.parametrize(
+    ("file_name", "ref_factory", "legacy_operator"),
+    [
+        pytest.param(
+            "JaneCinema1APTransToDmgBonus.py",
+            "TriggerBuffRef.owner(",
+            "简",
+            id="cinema1-passion-owner-ref",
+        ),
+        pytest.param(
+            "JaneCoreSkillStrikeCritDmgBonus.py",
+            "TriggerBuffRef.enemy(",
+            "enemy",
+            id="core-crit-dmg-bite-enemy-ref",
+        ),
+        pytest.param(
+            "JaneCoreSkillStrikeCritRateBonus.py",
+            "TriggerBuffRef.enemy(",
+            "enemy",
+            id="core-crit-rate-bite-enemy-ref",
+        ),
+        pytest.param(
+            "JanePassionStateAPTransToATK.py",
+            "TriggerBuffRef.owner(",
+            "简",
+            id="passion-ap-owner-ref",
+        ),
+        pytest.param(
+            "JanePassionStatePhyBuildupBonus.py",
+            "TriggerBuffRef.owner(",
+            "简",
+            id="passion-phy-owner-ref",
+        ),
+    ],
+)
+def test_jane_trigger_state_sources_use_typed_trigger_ref_contract(
+    *,
+    file_name: str,
+    ref_factory: str,
+    legacy_operator: str,
+) -> None:
+    source = (_BUFF_XLOGIC_ROOT / file_name).read_text(encoding="utf-8")
     compact_source = "".join(source.split())
 
-    assert "TriggerBuffRef.enemy(" in source
-    assert 'trigger_buff_0=("enemy",' not in compact_source
+    assert ref_factory in source
+    assert f'trigger_buff_0=("{legacy_operator}",' not in compact_source
 
 
 _JANE_ACTIVE_GATE_CASES: tuple[tuple[type[Any], str, str], ...] = (
