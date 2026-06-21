@@ -459,3 +459,33 @@ def test_migrated_p2d_guardrail_uses_ast_not_text_matching() -> None:
     path = BUFF_XLOGIC_ROOT / "_migrated_p2d_fixture.py"
 
     assert _collect_findings_from_source(path, source) == []
+
+
+def test_resource_refresh_command_port_boundary_avoids_raw_queue_and_cached_dispatch() -> None:
+    path = SIM_PROGRESS_ROOT / "Buff" / "JudgeTools" / "PreparationContext.py"
+    source = path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(path))
+    class_node = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "ResourceRefreshCommandPort"
+    )
+
+    forbidden_nodes: list[str] = []
+    for node in ast.walk(class_node):
+        if isinstance(node, ast.Attribute) and node.attr == "event_list":
+            forbidden_nodes.append("event_list")
+        if isinstance(node, ast.Name) and node.id in {
+            "ScheduleDispatchPort",
+            "ScheduledEvent",
+            "create_schedule_dispatch_port",
+        }:
+            forbidden_nodes.append(node.id)
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "publish_scheduled"
+        ):
+            forbidden_nodes.append("publish_scheduled")
+
+    assert forbidden_nodes == []

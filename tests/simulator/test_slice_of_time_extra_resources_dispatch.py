@@ -14,6 +14,9 @@ from zsim.sim_progress.Buff.BuffXLogic.SliceofTimeExtraResources import (
     SliceofTimeExtraResources,
     SliceofTimeExtraResourcesRecord,
 )
+from zsim.sim_progress.Buff.JudgeTools.PreparationContext import (
+    ResourceRefreshCommandPort,
+)
 from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduleDispatchPort,
     ScheduledEventEmitterProvider,
@@ -45,6 +48,33 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         JudgeTools, "find_event_list", fail_find_event_list, raising=False
     )
+
+
+def test_resource_refresh_command_port_publishes_mixed_refresh_at_call_site() -> None:
+    call_order: list[str] = ["before_publish_call"]
+    dispatch_port = _RecordingDispatchPort(call_order)
+    command_port = ResourceRefreshCommandPort(
+        ScheduledEventEmitterProvider(lambda: dispatch_port)
+    )
+    unused_raw_queue = _FailFastEventList()
+
+    command_port.publish_refresh(
+        sp_target=("support",),
+        sp_value=1.0,
+        decibel_target=("actor",),
+        decibel_value=50,
+    )
+    call_order.append("after_publish_call")
+
+    assert call_order == ["before_publish_call", "publish", "after_publish_call"]
+    assert unused_raw_queue == []
+    assert len(dispatch_port.events) == 1
+    refresh_data = dispatch_port.events[0]
+    assert isinstance(refresh_data, ScheduleRefreshData)
+    assert refresh_data.sp_target == ("support",)
+    assert refresh_data.sp_value == 1.0
+    assert refresh_data.decibel_target == ("actor",)
+    assert refresh_data.decibel_value == 50
 
 
 def test_slice_of_time_extra_resources_publishes_mixed_refresh_via_dispatch_port(

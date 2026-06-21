@@ -14,6 +14,9 @@ import zsim.sim_progress.Buff.BuffXLogic.LunarNoviluna as lunar_module
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.ElegantVanitySpRecover import ElegantVanitySpRecover
 from zsim.sim_progress.Buff.BuffXLogic.LunarNoviluna import LunarNoviluna
+from zsim.sim_progress.Buff.JudgeTools.PreparationContext import (
+    ResourceRefreshCommandPort,
+)
 from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduleDispatchPort,
     ScheduledEventEmitterProvider,
@@ -43,6 +46,34 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         JudgeTools, "find_event_list", fail_find_event_list, raising=False
     )
+
+
+def test_resource_refresh_command_port_publishes_sp_only_payload_via_emitter() -> None:
+    call_order: list[str] = []
+    dispatch_port = _RecordingDispatchPort(call_order)
+    command_port = ResourceRefreshCommandPort(
+        ScheduledEventEmitterProvider(lambda: dispatch_port)
+    )
+
+    command_port.publish_refresh(sp_target=("可琳",), sp_value=6)
+
+    assert call_order == ["publish"]
+    assert len(dispatch_port.events) == 1
+    refresh_data = dispatch_port.events[0]
+    assert isinstance(refresh_data, ScheduleRefreshData)
+    assert refresh_data.sp_target == ("可琳",)
+    assert refresh_data.sp_value == 6
+    assert refresh_data.decibel_target == ("",)
+    assert refresh_data.decibel_value == 0
+
+
+def test_resource_refresh_command_port_keeps_schedule_refresh_numeric_validation() -> None:
+    command_port = ResourceRefreshCommandPort(
+        ScheduledEventEmitterProvider(lambda: _RecordingDispatchPort([]))
+    )
+
+    with pytest.raises(TypeError, match="sp_value must be a number"):
+        command_port.publish_refresh(sp_target=("可琳",), sp_value=object())  # type: ignore[arg-type]
 
 
 def test_elegant_vanity_sp_recover_publishes_after_simple_start_via_dispatch_port(

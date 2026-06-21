@@ -200,6 +200,43 @@ class PreloadCommandPort:
 
 
 @dataclass(frozen=True)
+class ResourceRefreshCommandPort:
+    scheduled_event_emitter_provider: "ScheduledEventEmitterProvider"
+
+    @classmethod
+    def from_sim_instance(cls, sim_instance: "Simulator") -> "ResourceRefreshCommandPort":
+        from zsim.sim_progress.data_struct.schedule_dispatch import (
+            ScheduledEventEmitterProvider,
+        )
+
+        return cls(
+            scheduled_event_emitter_provider=ScheduledEventEmitterProvider.from_sim_instance_getter(
+                lambda: sim_instance
+            ),
+        )
+
+    def publish_refresh(
+        self,
+        *,
+        sp_target: tuple[str, ...] | None = None,
+        sp_value: float | int = 0,
+        decibel_target: tuple[str, ...] | None = None,
+        decibel_value: float | int = 0,
+    ) -> None:
+        from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
+
+        refresh_data = ScheduleRefreshData(
+            sp_target=sp_target,
+            sp_value=sp_value,
+            decibel_target=decibel_target,
+            decibel_value=decibel_value,
+        )
+        self.scheduled_event_emitter_provider.create_emitter().emit_scheduled(
+            refresh_data
+        )
+
+
+@dataclass(frozen=True)
 class PreparationContext:
     character_lookup: CharacterLookup
     equipment_owner_lookup: EquipmentOwnerLookup
@@ -210,6 +247,7 @@ class PreparationContext:
     action_stack: Any
     preload_data: Any
     preload_commands: PreloadCommandPort
+    resource_refresh_commands: ResourceRefreshCommandPort
     char_obj_list: Sequence[Any]
 
     @property
@@ -272,6 +310,9 @@ def build_preparation_context_from_sim_instance(
         action_stack=sim_instance.load_data.action_stack,
         preload_data=sim_instance.preload.preload_data,
         preload_commands=PreloadCommandPort.from_sim_instance(sim_instance),
+        resource_refresh_commands=ResourceRefreshCommandPort.from_sim_instance(
+            sim_instance
+        ),
         char_obj_list=sim_instance.char_data.char_obj_list,
     )
 
