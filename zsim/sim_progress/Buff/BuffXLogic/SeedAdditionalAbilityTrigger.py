@@ -3,12 +3,12 @@ from typing import Any
 
 from define import SEED_REPORT
 from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduledEventEmitter,
     ScheduledEventEmitterProvider,
 )
 
 from .. import Buff, check_preparation
 from ..JudgeTools import build_preparation_context_from_buff
+from ..JudgeTools.PreparationContext import ResourceRefreshCommandPort
 from ._buff_record_base_class import BuffRecordBaseClass as BRBC
 
 
@@ -48,8 +48,16 @@ class SeedAdditionalAbilityTrigger(Buff.BuffLogic):
             **kwargs,
         )
 
-    def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
-        return self._scheduled_event_emitter_provider.create_emitter()
+    def _emit_scheduled_refresh(
+        self,
+        *,
+        sp_target: tuple[str, ...],
+        sp_value: float | int,
+    ) -> None:
+        refresh_commands = ResourceRefreshCommandPort(
+            self._scheduled_event_emitter_provider
+        )
+        refresh_commands.publish_refresh(sp_target=sp_target, sp_value=sp_value)
 
     def check_record_module(self):
         if self.buff_0 is None:
@@ -102,14 +110,12 @@ class SeedAdditionalAbilityTrigger(Buff.BuffLogic):
             "席德在激活了组队被动的情况下没有指定正兵，请检查"
         )
         vanguard = self.record.char.vanguard
-        from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
 
         energy_value = self.record.energy_value
-        refresh_data = ScheduleRefreshData(
+        self._emit_scheduled_refresh(
             sp_target=(vanguard.NAME,),
             sp_value=energy_value,
         )
-        self._scheduled_event_emitter().emit_scheduled(refresh_data)
         self.record.last_active_tick = self.buff_instance.sim_instance.tick
         if SEED_REPORT:
             self.buff_instance.sim_instance.schedule_data.change_process_state()
