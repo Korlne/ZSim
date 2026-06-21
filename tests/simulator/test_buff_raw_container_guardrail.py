@@ -25,6 +25,13 @@ FULL_CONVERGENCE_ZERO_CENSUS_PATH = (
     / "checkpoints"
     / "2026-06-21-US-009-guardrail-zero-census.json"
 )
+TRIGGER_REF_TUPLE_CHECKPOINT_PATH = (
+    PROJECT_ROOT
+    / "scripts"
+    / "ralph"
+    / "checkpoints"
+    / "2026-06-21-US-005-trigger-ref-tuple-family-checkpoint.json"
+)
 
 SCANNED_PRODUCTION_FILES = (
     PROJECT_ROOT / "zsim" / "simulator" / "dataclasses.py",
@@ -230,6 +237,7 @@ XLOGIC_ADAPTER_LEGACY_GET_PREPARED = (
 XLOGIC_ADAPTER_RECORD_RUNTIME_CACHE = (
     "record/template cached runtime service"
 )
+XLOGIC_ADAPTER_LEGACY_TRIGGER_TUPLE = "legacy trigger_buff_0 tuple keyword"
 
 XLOGIC_ADAPTER_RECORD_RUNTIME_CACHE_FIELDS = frozenset(
     {
@@ -258,6 +266,20 @@ US005_ACTIVE_VIEW_CALCULATOR_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritRateBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/JanePassionStateAPTransToATK.py",
     "zsim/sim_progress/Buff/BuffXLogic/TriggerAdditionalAbilityStunBonus.py",
+)
+
+TRIGGER_REF_TUPLE_FAMILY_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/CordisGerminaSNAAndQIgnoreDefense.py",
+    "zsim/sim_progress/Buff/BuffXLogic/FlamemakerShakerApBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/SeveredInnocencELEDMGBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/SharpenedStingerAnomalyBuildupBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/SpectralGazeImpactBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyAdditionalSkillDMGBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCinema4EleResReduce.py",
+    "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCoreSkillCritDMGBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/WeepingCradleDMGBonusIncrease.py",
+    "zsim/sim_progress/Buff/BuffXLogic/YangiCinema1ApBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/YunkuiTalesSheerAtkBonus.py",
 )
 
 XLOGIC_ADAPTER_CALCULATOR_SERVICE_FILES = (
@@ -405,6 +427,10 @@ for path in XLOGIC_ADAPTER_RECORD_TEMPLATE_FILES:
     XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[path] = XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS.get(
         path, frozenset()
     ) | frozenset({XLOGIC_ADAPTER_RECORD_RUNTIME_CACHE})
+for path in TRIGGER_REF_TUPLE_FAMILY_FILES:
+    XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[path] = XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS.get(
+        path, frozenset()
+    ) | frozenset({XLOGIC_ADAPTER_LEGACY_TRIGGER_TUPLE})
 
 SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY = (
     "legacy ScheduleBuffSettle command-adapter internals"
@@ -1144,6 +1170,10 @@ def _check_preparation_call_has_context(node: ast.Call) -> bool:
     return any(keyword.arg == "preparation_context" for keyword in node.keywords)
 
 
+def _is_legacy_trigger_tuple_keyword(keyword: ast.keyword) -> bool:
+    return keyword.arg == "trigger_buff_0" and isinstance(keyword.value, ast.Tuple)
+
+
 def _legacy_get_prepared_check_preparation_calls(
     node: ast.FunctionDef,
 ) -> list[ast.Call]:
@@ -1320,6 +1350,18 @@ def _collect_xlogic_adapter_guardrail_findings_from_source(
                     matched_expression=_adapter_source_for(source, node),
                 )
             )
+
+        if XLOGIC_ADAPTER_LEGACY_TRIGGER_TUPLE in forbidden_kinds:
+            for keyword in node.keywords:
+                if _is_legacy_trigger_tuple_keyword(keyword):
+                    findings.append(
+                        XLogicAdapterGuardrailFinding(
+                            path=relative_path,
+                            line=keyword.value.lineno,
+                            kind=XLOGIC_ADAPTER_LEGACY_TRIGGER_TUPLE,
+                            matched_expression=_adapter_source_for(source, keyword),
+                        )
+                    )
 
         if XLOGIC_ADAPTER_DIRECT_ACTIVE_VIEW in forbidden_kinds:
             for keyword in node.keywords:
@@ -1806,6 +1848,104 @@ def test_full_convergence_campaign_batches_have_xlogic_guardrail_coverage() -> N
         } <= XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[relative_path]
 
 
+def test_trigger_ref_tuple_family_has_exact_xlogic_guardrail_coverage() -> None:
+    expected_files = {
+        "zsim/sim_progress/Buff/BuffXLogic/CordisGerminaSNAAndQIgnoreDefense.py",
+        "zsim/sim_progress/Buff/BuffXLogic/FlamemakerShakerApBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/SeveredInnocencELEDMGBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/SharpenedStingerAnomalyBuildupBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/SpectralGazeImpactBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyAdditionalSkillDMGBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCinema4EleResReduce.py",
+        "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCoreSkillCritDMGBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/WeepingCradleDMGBonusIncrease.py",
+        "zsim/sim_progress/Buff/BuffXLogic/YangiCinema1ApBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/YunkuiTalesSheerAtkBonus.py",
+    }
+    required_forbidden_kinds = frozenset({XLOGIC_ADAPTER_LEGACY_TRIGGER_TUPLE})
+
+    assert set(TRIGGER_REF_TUPLE_FAMILY_FILES) == expected_files
+
+    for relative_path in TRIGGER_REF_TUPLE_FAMILY_FILES:
+        assert relative_path in XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS
+        assert (
+            XLOGIC_ADAPTER_LEGACY_TRIGGER_TUPLE
+            in XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[relative_path]
+        )
+
+        path = PROJECT_ROOT / relative_path
+        source = path.read_text(encoding="utf-8")
+        file_findings = _collect_xlogic_adapter_guardrail_findings_from_source(
+            path,
+            source,
+            required_forbidden_kinds,
+        )
+
+        assert not file_findings
+        assert "TriggerBuffRef." in source
+
+
+def test_trigger_ref_tuple_checkpoint_matches_guardrail_scope() -> None:
+    with TRIGGER_REF_TUPLE_CHECKPOINT_PATH.open(encoding="utf-8") as handle:
+        checkpoint = json.load(handle)
+
+    migrated_files = {entry["path"] for entry in checkpoint["migratedTupleFiles"]}
+    helper_boundaries = {
+        boundary["name"] for boundary in checkpoint["helperBoundaries"]
+    }
+    retained_direct_reads = {
+        entry["path"]: set(entry["reads"])
+        for entry in checkpoint["retainedDirectTimeWindowReads"]
+    }
+    blocked_patterns = set(checkpoint["blockedPatterns"])
+    disjoint_families = {
+        family["name"]: set(family["files"])
+        for family in checkpoint["disjointFromFamilies"]
+    }
+    disjoint_files: set[str] = set().union(*disjoint_families.values())
+
+    assert checkpoint["schemaVersion"] == "zsim-trigger-ref-tuple-checkpoint.v1"
+    assert checkpoint["storyId"] == "US-005"
+    assert migrated_files == set(TRIGGER_REF_TUPLE_FAMILY_FILES)
+    assert {
+        "TriggerBuffRef.owner",
+        "TriggerBuffRef.equipper",
+        "TriggerBuffLookup.find_by_ref",
+        "check_preparation",
+        "trigger_buff_0_handler",
+    } <= helper_boundaries
+    assert retained_direct_reads == {
+        "zsim/sim_progress/Buff/BuffXLogic/WeepingCradleDMGBonusIncrease.py": {
+            "self.record.trigger_buff_0.dy.startticks",
+            "self.record.trigger_buff_0.dy.endticks",
+        }
+    }
+    assert {
+        XLOGIC_ADAPTER_LEGACY_TRIGGER_TUPLE,
+        XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND,
+        XLOGIC_ADAPTER_LEGACY_GET_PREPARED,
+        XLOGIC_ADAPTER_DIRECT_TRIGGER_REGISTRY_SCAN,
+        XLOGIC_ADAPTER_DIRECT_ACTIVE_VIEW,
+        XLOGIC_ADAPTER_DIRECT_READER_CONSTRUCTION,
+        XLOGIC_ADAPTER_RECORD_RUNTIME_CACHE,
+    } <= blocked_patterns
+    assert {
+        "copied-output",
+        "dot/debuff runtime-state",
+        "anomaly-map",
+        "edge-detection",
+        "event/preload producer",
+        "lifecycle",
+        "main-loop",
+    } <= set(disjoint_families)
+    assert set(TRIGGER_REF_TUPLE_FAMILY_FILES).isdisjoint(disjoint_files)
+    assert checkpoint["validation"] == [
+        "uv run pytest tests/simulator/test_trigger_state_read_only_gates.py tests/simulator/test_buff_raw_container_guardrail.py tests/simulator/test_enemy_dynamic_read_guardrail.py -q",
+        "uv run python scripts/run_buff_refactor_validation.py --typecheck-profile implicit-events",
+        "uv run python scripts/run_buff_refactor_validation.py --typecheck-profile runtime-dependency-zero --runtime-dependency-expected-zero",
+    ]
+
+
 def test_full_convergence_zero_census_matches_guardrail_scope() -> None:
     with FULL_CONVERGENCE_ZERO_CENSUS_PATH.open(encoding="utf-8") as handle:
         census = json.load(handle)
@@ -2040,6 +2180,34 @@ def test_xlogic_adapter_guardrail_flags_trigger_registry_scans() -> None:
     assert "find_exist_buff_dict" in message
     assert "[operator]" in message
     assert XLOGIC_ADAPTER_DIRECT_TRIGGER_REGISTRY_SCAN in message
+
+
+def test_xlogic_adapter_guardrail_flags_legacy_trigger_tuple_keyword() -> None:
+    source = (
+        "def prepare(self):\n"
+        "    return self.get_prepared(\n"
+        "        trigger_buff_0=(\"equipper\", \"fixture-trigger\"),\n"
+        "    )\n"
+    )
+    path = (
+        PROJECT_ROOT
+        / "zsim"
+        / "sim_progress"
+        / "Buff"
+        / "BuffXLogic"
+        / "_adapter_fixture.py"
+    )
+
+    findings = _collect_xlogic_adapter_guardrail_findings_from_source(
+        path,
+        source,
+        frozenset({XLOGIC_ADAPTER_LEGACY_TRIGGER_TUPLE}),
+    )
+
+    assert len(findings) == 1
+    message = findings[0].message()
+    assert "trigger_buff_0=(\"equipper\", \"fixture-trigger\")" in message
+    assert XLOGIC_ADAPTER_LEGACY_TRIGGER_TUPLE in message
 
 
 def test_calculator_read_guardrail_rejects_unlisted_retained_snapshot_file() -> None:
