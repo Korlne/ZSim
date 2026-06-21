@@ -4,8 +4,11 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduledEventEmitterProvider,
 )
 
-from .. import Buff, JudgeTools, check_preparation, find_tick
-from ..JudgeTools.PreparationContext import ResourceRefreshCommandPort
+from .. import Buff, check_preparation, find_tick
+from ..JudgeTools.PreparationContext import (
+    ResourceRefreshCommandPort,
+    build_preparation_context_from_buff,
+)
 
 
 class LunarNovilunaRecord:
@@ -36,7 +39,13 @@ class LunarNoviluna(Buff.BuffLogic):
         self.record: Any = None
 
     def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+        preparation_context = build_preparation_context_from_buff(self.buff_instance)
+        return check_preparation(
+            buff_instance=self.buff_instance,
+            buff_0=self.buff_0,
+            preparation_context=preparation_context,
+            **kwargs,
+        )
 
     def _emit_scheduled_refresh(
         self,
@@ -50,14 +59,20 @@ class LunarNoviluna(Buff.BuffLogic):
         refresh_commands.publish_refresh(sp_target=sp_target, sp_value=sp_value)
 
     def check_record_module(self):
+        preparation_context = None
         if self.equipper is None:
-            self.equipper = JudgeTools.find_equipper(
-                "「月相」-朔", sim_instance=self.buff_instance.sim_instance
+            preparation_context = build_preparation_context_from_buff(
+                self.buff_instance
             )
+            self.equipper = preparation_context.find_equipper("「月相」-朔")
         if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )[self.equipper][self.buff_instance.ft.index]
+            if preparation_context is None:
+                preparation_context = build_preparation_context_from_buff(
+                    self.buff_instance
+                )
+            self.buff_0 = preparation_context.find_sub_exist_buff_dict(
+                self.equipper
+            )[self.buff_instance.ft.index]
         if self.buff_0.history.record is None:
             self.buff_0.history.record = LunarNovilunaRecord()
         self.record = self.buff_0.history.record

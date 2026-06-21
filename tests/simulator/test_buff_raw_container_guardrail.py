@@ -294,6 +294,13 @@ FROZEN_EDGE_EQUIPMENT_TEMPLATE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/PolarMetalFreezeBonus.py",
 )
 
+RESOURCE_REFRESH_EQUIPMENT_TEMPLATE_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/ElegantVanitySpRecover.py",
+    "zsim/sim_progress/Buff/BuffXLogic/LunarNoviluna.py",
+    "zsim/sim_progress/Buff/BuffXLogic/MagneticStormCharlieSpRecover.py",
+    "zsim/sim_progress/Buff/BuffXLogic/SliceofTimeExtraResources.py",
+)
+
 XLOGIC_ADAPTER_CALCULATOR_SERVICE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py",
@@ -324,6 +331,7 @@ XLOGIC_ADAPTER_TEMPLATE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/AstralVoice.py",
     *FROZEN_EDGE_EQUIPMENT_TEMPLATE_FILES,
+    *RESOURCE_REFRESH_EQUIPMENT_TEMPLATE_FILES,
     "zsim/sim_progress/Buff/BuffXLogic/RoaringRideBuffTrigger.py",
     "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
     "zsim/sim_progress/Buff/BuffXLogic/SeedBesiegeBonus.py",
@@ -447,7 +455,10 @@ for path in TRIGGER_REF_TUPLE_FAMILY_FILES:
 
 XLOGIC_ADAPTER_RETAINED_JUDGE_TOOLS_FIND_CALLS_BY_FILE = {
     path: frozenset({"JudgeTools.find_tick"})
-    for path in FROZEN_EDGE_EQUIPMENT_TEMPLATE_FILES
+    for path in (
+        FROZEN_EDGE_EQUIPMENT_TEMPLATE_FILES
+        + RESOURCE_REFRESH_EQUIPMENT_TEMPLATE_FILES
+    )
 }
 
 SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY = (
@@ -2010,6 +2021,44 @@ def test_frozen_edge_equipment_template_family_has_exact_guardrail_coverage() ->
         assert "preparation_context.find_equipper(" in source
         assert "preparation_context.find_sub_exist_buff_dict(" in source
         assert "JudgeTools.find_tick" in source
+
+
+def test_resource_refresh_equipment_template_family_has_exact_guardrail_coverage() -> None:
+    expected_files = {
+        "zsim/sim_progress/Buff/BuffXLogic/ElegantVanitySpRecover.py",
+        "zsim/sim_progress/Buff/BuffXLogic/LunarNoviluna.py",
+        "zsim/sim_progress/Buff/BuffXLogic/MagneticStormCharlieSpRecover.py",
+        "zsim/sim_progress/Buff/BuffXLogic/SliceofTimeExtraResources.py",
+    }
+    required_forbidden_kinds = frozenset(
+        {
+            XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND,
+            XLOGIC_ADAPTER_LEGACY_GET_PREPARED,
+        }
+    )
+
+    assert set(RESOURCE_REFRESH_EQUIPMENT_TEMPLATE_FILES) == expected_files
+
+    for relative_path in RESOURCE_REFRESH_EQUIPMENT_TEMPLATE_FILES:
+        assert relative_path in XLOGIC_ADAPTER_TEMPLATE_FILES
+        assert required_forbidden_kinds <= XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[
+            relative_path
+        ]
+
+        path = PROJECT_ROOT / relative_path
+        source = path.read_text(encoding="utf-8")
+        file_findings = _collect_xlogic_adapter_guardrail_findings_from_source(
+            path,
+            source,
+            required_forbidden_kinds,
+        )
+
+        assert not file_findings
+        assert "build_preparation_context_from_buff" in source
+        assert "preparation_context.find_equipper(" in source
+        assert "preparation_context.find_sub_exist_buff_dict(" in source
+        assert "JudgeTools.find_equipper" not in source
+        assert "JudgeTools.find_exist_buff_dict" not in source
 
 
 def test_frozen_edge_equipment_template_checkpoint_matches_guardrail_scope() -> None:
