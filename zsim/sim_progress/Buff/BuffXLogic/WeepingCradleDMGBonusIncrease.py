@@ -1,5 +1,5 @@
 from .. import Buff, JudgeTools, check_preparation
-from ..JudgeTools import read_trigger_buff_state
+from ..JudgeTools import TriggerBuffRef, read_trigger_buff_state
 
 
 class WeepingCradleDMGBRecord:
@@ -53,7 +53,10 @@ class WeepingCradleDMGBonusIncrease(Buff.BuffLogic):
         trigger_index = f"Buff-武器-精{int(self.buff_instance.ft.refinement)}啜泣摇篮-全队增伤"
         self.get_prepared(
             equipper="啜泣摇篮",
-            trigger_buff_0=(self.buff_instance.ft.operator, trigger_index),
+            trigger_buff_0=TriggerBuffRef.owner(
+                self.buff_instance.ft.operator,
+                trigger_index,
+            ),
         )
         trigger_state = read_trigger_buff_state(self.record)
         if trigger_state.active:

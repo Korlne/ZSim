@@ -1161,6 +1161,39 @@ def test_literal_owner_trigger_sources_use_typed_trigger_ref_contract(
     assert f'trigger_buff_0=("{operator}",' not in compact_source
 
 
+@pytest.mark.parametrize(
+    ("file_name", "owner_expression", "buff_index_expression"),
+    [
+        pytest.param(
+            "WeepingCradleDMGBonusIncrease.py",
+            "self.buff_instance.ft.operator",
+            "trigger_index",
+            id="weeping-cradle-derived-owner",
+        ),
+        pytest.param(
+            "YunkuiTalesSheerAtkBonus.py",
+            "self.equipper",
+            '"Buff-驱动盘-云岿如我-四件套-暴击率提升"',
+            id="yunkui-tales-local-alias",
+        ),
+    ],
+)
+def test_derived_owner_trigger_sources_use_typed_trigger_ref_contract(
+    *,
+    file_name: str,
+    owner_expression: str,
+    buff_index_expression: str,
+) -> None:
+    source = (_BUFF_XLOGIC_ROOT / file_name).read_text(encoding="utf-8")
+    compact_source = "".join(source.split())
+
+    assert (
+        f"TriggerBuffRef.owner({owner_expression},{buff_index_expression}"
+        in compact_source
+    )
+    assert "trigger_buff_0=(" not in compact_source
+
+
 _JANE_ACTIVE_GATE_CASES: tuple[tuple[type[Any], str, str], ...] = (
     (
         JaneCinema1APTransToDmgBonus,
