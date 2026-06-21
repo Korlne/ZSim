@@ -155,6 +155,24 @@ class _BuffTemplate:
         self.history = SimpleNamespace(record=None)
 
 
+class _BranchPreparationContextProbe:
+    def __init__(self, *, owner: str, index: str, buff_0: _BuffTemplate) -> None:
+        self.owner = owner
+        self.index = index
+        self.buff_0 = buff_0
+        self.find_equipper_calls: list[str] = []
+        self.find_sub_exist_buff_dict_calls: list[str | None] = []
+
+    def find_equipper(self, item_name: str) -> str:
+        self.find_equipper_calls.append(item_name)
+        return self.owner
+
+    def find_sub_exist_buff_dict(self, owner_name: str | None) -> dict[str, object]:
+        self.find_sub_exist_buff_dict_calls.append(owner_name)
+        assert owner_name == self.owner
+        return {self.index: self.buff_0}
+
+
 class _CurrentBuffProbe:
     def __init__(self, *, index: str, tick: int) -> None:
         runtime_command_port = _FailFastRuntimeCommandPort()
@@ -260,13 +278,36 @@ def _make_branch_fixture(
     index = "Buff-驱动盘-折枝剑歌-暴击率提高"
     active_buff = _CurrentBuffProbe(index=index, tick=tick)
     buff_0 = _BuffTemplate(index=index)
-    _install_owner_lookup(
-        monkeypatch,
-        module=branch_module,
+    preparation_context = _BranchPreparationContextProbe(
         owner="测试装备者",
         index=index,
         buff_0=buff_0,
-        equipper="测试装备者",
+    )
+
+    def fail_legacy_branch_lookup(*args: object, **kwargs: object) -> None:
+        raise AssertionError(
+            "BranchBladeSongCritRateBonus must use PreparationContext for "
+            "equipment/template lookup"
+        )
+
+    def fake_build_preparation_context(buff_instance: object) -> object:
+        assert buff_instance is active_buff
+        return preparation_context
+
+    monkeypatch.setattr(
+        branch_module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context,
+    )
+    monkeypatch.setattr(
+        branch_module.JudgeTools,
+        "find_equipper",
+        fail_legacy_branch_lookup,
+    )
+    monkeypatch.setattr(
+        branch_module.JudgeTools,
+        "find_exist_buff_dict",
+        fail_legacy_branch_lookup,
     )
     monkeypatch.setattr(
         branch_module.JudgeTools,
@@ -485,6 +526,52 @@ def _assert_no_runtime_boundaries_touched(active_buff: _CurrentBuffProbe) -> Non
     assert active_buff.sim_instance.schedule_data.event_list == []
     assert active_buff.simple_exit_calls == []
     assert active_buff.update_to_buff_0_calls == []
+
+
+def test_branch_blade_song_get_prepared_forwards_preparation_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    index = "Buff-驱动盘-折枝剑歌-暴击率提高"
+    active_buff = _CurrentBuffProbe(index=index, tick=320)
+    buff_0 = _BuffTemplate(index=index)
+    buff_0.history.record = BranchBladeSongCritRateBonusRecord()
+    logic = BranchBladeSongCritRateBonus(active_buff)
+    logic.buff_0 = buff_0
+    preparation_context = object()
+    build_calls: list[object] = []
+    check_calls: list[tuple[object, object, object | None, dict[str, object]]] = []
+
+    def fake_build_preparation_context(buff_instance: object) -> object:
+        build_calls.append(buff_instance)
+        return preparation_context
+
+    def fake_check_preparation(
+        *,
+        buff_instance: object,
+        buff_0: object,
+        preparation_context: object | None = None,
+        **kwargs: object,
+    ) -> str:
+        check_calls.append((buff_instance, buff_0, preparation_context, kwargs))
+        return "prepared"
+
+    monkeypatch.setattr(
+        branch_module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context,
+    )
+    monkeypatch.setattr(branch_module, "check_preparation", fake_check_preparation)
+
+    assert logic.get_prepared(equipper="折枝剑歌", enemy=1) == "prepared"
+    assert build_calls == [active_buff]
+    assert check_calls == [
+        (
+            active_buff,
+            buff_0,
+            preparation_context,
+            {"equipper": "折枝剑歌", "enemy": 1},
+        )
+    ]
 
 
 def test_branch_blade_song_freeze_snapshot_lazy_record_and_unchanged_no_op(
