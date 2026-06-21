@@ -125,6 +125,35 @@ def process_buff(
                     buff_new.update_to_buff_0(enemy_buff_0)
 
 
+def _record_buff_load_loop_scan_metrics(
+    sim_instance: "Simulator",
+    *,
+    mission_count: int,
+    character_count: int,
+    registered_buff_count: int,
+    trigger_candidate_count: int,
+    pending_queue_count: int,
+) -> None:
+    metrics = getattr(sim_instance, "_buff_load_loop_scan_metrics", None)
+    if metrics is None:
+        metrics = {
+            "processed_tick_count": 0,
+            "mission_count": 0,
+            "character_count": 0,
+            "registered_buff_count": 0,
+            "trigger_candidate_count": 0,
+            "pending_queue_count": 0,
+        }
+        setattr(sim_instance, "_buff_load_loop_scan_metrics", metrics)
+
+    metrics["processed_tick_count"] += 1
+    metrics["mission_count"] += mission_count
+    metrics["character_count"] += character_count
+    metrics["registered_buff_count"] += registered_buff_count
+    metrics["trigger_candidate_count"] += trigger_candidate_count
+    metrics["pending_queue_count"] += pending_queue_count
+
+
 def BuffLoadLoop(
     time_now: int,
     load_mission_dict: dict,
@@ -145,6 +174,13 @@ def BuffLoadLoop(
     record_rebuild_count = getattr(sim_instance, "_record_buff_runtime_rebuild_count", None)
     if record_rebuild_count is not None:
         record_rebuild_count("buff_load_loop")
+    record_scan_metrics = getattr(sim_instance, "_buff_runtime_rebuild_counts", None) is not None
+    registered_buff_count = 0
+    trigger_candidate_count = 0
+    if record_scan_metrics:
+        registered_buff_count = sum(
+            len(existbuff_dict.get(character, {})) for character in character_name_box
+        )
 
     all_name_box = character_name_box + ["enemy"]
     for character in all_name_box:
@@ -161,6 +197,8 @@ def BuffLoadLoop(
 
         for char_name in character_name_box:
             sub_exist_buff_dict = existbuff_dict[char_name]
+            if record_scan_metrics:
+                trigger_candidate_count += len(sub_exist_buff_dict)
             if char_name == actor_name:
                 process_on_field_buff(
                     sub_exist_buff_dict,
@@ -181,6 +219,15 @@ def BuffLoadLoop(
                     existbuff_dict,
                     sim_instance=sim_instance,
                 )
+    if record_scan_metrics:
+        _record_buff_load_loop_scan_metrics(
+            sim_instance,
+            mission_count=len(load_mission_dict),
+            character_count=len(character_name_box),
+            registered_buff_count=registered_buff_count,
+            trigger_candidate_count=trigger_candidate_count,
+            pending_queue_count=sum(len(queue) for queue in LOADING_BUFF_DICT.values()),
+        )
     return LOADING_BUFF_DICT
 
 

@@ -37,13 +37,14 @@ class RuntimeBenchmarkSnapshot:
     total_runtime_ms: float
     hotspots: dict[str, float]
     rebuild_counts: dict[str, int] | None = None
+    buff_load_loop_scan_metrics: dict[str, int] | None = None
 
 
 def _run_single_runtime_benchmark_process(
     common_cfg_data: dict[str, Any],
     stop_tick: int,
     include_rebuild_counts: bool = False,
-) -> tuple[str, float, dict[str, int] | None]:
+) -> tuple[str, float, dict[str, int] | None, dict[str, int] | None]:
     os.chdir(PROJECT_ROOT)
     common_cfg = CommonCfg.model_validate(common_cfg_data)
     simulator = Simulator()
@@ -55,7 +56,12 @@ def _run_single_runtime_benchmark_process(
     rebuild_counts = (
         simulator.get_buff_runtime_rebuild_counts() if include_rebuild_counts else None
     )
-    return confirmation.session_id, simulator_runtime_ms, rebuild_counts
+    scan_metrics = (
+        dict(getattr(simulator, "_buff_load_loop_scan_metrics", {}))
+        if include_rebuild_counts
+        else None
+    )
+    return confirmation.session_id, simulator_runtime_ms, rebuild_counts, scan_metrics
 
 
 def _load_runtime_benchmark_snapshot(
@@ -63,6 +69,7 @@ def _load_runtime_benchmark_snapshot(
     session_id: str,
     simulator_runtime_ms: float,
     rebuild_counts: dict[str, int] | None = None,
+    buff_load_loop_scan_metrics: dict[str, int] | None = None,
 ) -> RuntimeBenchmarkSnapshot:
     damage_started_at = time.perf_counter()
     _prepare_damage_data_for_consistency(session_id)
@@ -84,6 +91,7 @@ def _load_runtime_benchmark_snapshot(
         total_runtime_ms=round(sum(hotspots.values()), 4),
         hotspots=hotspots,
         rebuild_counts=rebuild_counts,
+        buff_load_loop_scan_metrics=buff_load_loop_scan_metrics,
     )
 
 
@@ -134,6 +142,28 @@ def _rebuild_count_comparisons(
     }
 
 
+def _scan_metric_buckets(
+    buff_load_loop_scan_metrics: dict[str, dict[str, int]] | None,
+) -> dict[str, dict[str, int]]:
+    source = buff_load_loop_scan_metrics or {}
+    return {
+        "legacy": dict(source.get("legacy", {})),
+        "candidate": dict(source.get("candidate", {})),
+    }
+
+
+def _scan_metric_comparisons(
+    legacy_metrics: dict[str, int],
+    candidate_metrics: dict[str, int],
+) -> dict[str, int]:
+    metric_names = sorted(set(legacy_metrics) | set(candidate_metrics))
+    return {
+        metric_name: int(candidate_metrics.get(metric_name, 0))
+        - int(legacy_metrics.get(metric_name, 0))
+        for metric_name in metric_names
+    }
+
+
 def _numeric_summary(values: list[float | int]) -> dict[str, float]:
     if not values:
         return {"median": 0.0, "min": 0.0, "max": 0.0, "range": 0.0}
@@ -169,6 +199,14 @@ def _report_rebuild_count_buckets(report: dict[str, Any]) -> dict[str, dict[str,
     }
 
 
+def _report_scan_metric_buckets(report: dict[str, Any]) -> dict[str, dict[str, int]]:
+    buckets = report.get("buff_load_loop_scan_metrics") or {}
+    return {
+        "legacy": dict(buckets.get("legacy", {})),
+        "candidate": dict(buckets.get("candidate", {})),
+    }
+
+
 def _aggregate_rebuild_count_bucket(
     samples: list[dict[str, dict[str, int]]],
     bucket: str,
@@ -193,6 +231,30 @@ def _aggregate_rebuild_count_bucket(
     }
 
 
+def _aggregate_scan_metric_bucket(
+    samples: list[dict[str, dict[str, int]]],
+    bucket: str,
+) -> dict[str, dict[str, Any]]:
+    metric_names = sorted(
+        {
+            metric_name
+            for sample in samples
+            for metric_name in sample.get(bucket, {})
+        }
+    )
+    return {
+        metric_name: {
+            **_numeric_summary(
+                [int(sample.get(bucket, {}).get(metric_name, 0)) for sample in samples]
+            ),
+            "samples": [
+                int(sample.get(bucket, {}).get(metric_name, 0)) for sample in samples
+            ],
+        }
+        for metric_name in metric_names
+    }
+
+
 def build_repeat_runtime_benchmark_summary(
     *,
     reports: list[dict[str, Any]],
@@ -213,24 +275,30 @@ def build_repeat_runtime_benchmark_summary(
         if include_rebuild_counts
         else []
     )
+    scan_metric_samples = (
+        [_report_scan_metric_buckets(report) for report in reports]
+        if include_rebuild_counts
+        else []
+    )
 
     samples = []
     for index, report in enumerate(reports, start=1):
-        samples.append(
-            {
-                "sample_index": index,
-                "total_runtime_ms": dict(report["total_runtime_ms"]),
-                "simulator_runtime_ms": {
-                    "legacy": legacy_simulator_runtime_ms[index - 1],
-                    "candidate": candidate_simulator_runtime_ms[index - 1],
-                },
-                "rebuild_count_buckets": (
-                    rebuild_count_samples[index - 1] if include_rebuild_counts else None
-                ),
-            }
-        )
+        sample = {
+            "sample_index": index,
+            "total_runtime_ms": dict(report["total_runtime_ms"]),
+            "simulator_runtime_ms": {
+                "legacy": legacy_simulator_runtime_ms[index - 1],
+                "candidate": candidate_simulator_runtime_ms[index - 1],
+            },
+            "rebuild_count_buckets": (
+                rebuild_count_samples[index - 1] if include_rebuild_counts else None
+            ),
+        }
+        if include_rebuild_counts:
+            sample["scan_metric_buckets"] = scan_metric_samples[index - 1]
+        samples.append(sample)
 
-    return {
+    summary = {
         "schema": REPEAT_BENCHMARK_SUMMARY_SCHEMA,
         "team": first_report["team"],
         "apl": first_report["apl"],
@@ -272,6 +340,18 @@ def build_repeat_runtime_benchmark_summary(
         },
         "samples": samples,
     }
+    if include_rebuild_counts:
+        summary["scan_metric_buckets"] = {
+            "included": True,
+            "samples": scan_metric_samples,
+            "aggregate": {
+                "legacy": _aggregate_scan_metric_bucket(scan_metric_samples, "legacy"),
+                "candidate": _aggregate_scan_metric_bucket(
+                    scan_metric_samples, "candidate"
+                ),
+            },
+        }
+    return summary
 
 
 def build_runtime_benchmark_report(
@@ -283,6 +363,7 @@ def build_runtime_benchmark_report(
     candidate_snapshot: RuntimeBenchmarkSnapshot,
     include_rebuild_counts: bool = False,
     buff_runtime_rebuild_counts: dict[str, dict[str, int]] | None = None,
+    buff_load_loop_scan_metrics: dict[str, dict[str, int]] | None = None,
 ) -> dict[str, Any]:
     total_runtime_delta = round(
         candidate_snapshot.total_runtime_ms - legacy_snapshot.total_runtime_ms,
@@ -340,6 +421,18 @@ def build_runtime_benchmark_report(
             rebuild_counts["legacy"],
             rebuild_counts["candidate"],
         )
+        scan_source = buff_load_loop_scan_metrics
+        if scan_source is None:
+            scan_source = {
+                "legacy": legacy_snapshot.buff_load_loop_scan_metrics or {},
+                "candidate": candidate_snapshot.buff_load_loop_scan_metrics or {},
+            }
+        scan_metrics = _scan_metric_buckets(scan_source)
+        report["buff_load_loop_scan_metrics"] = scan_metrics
+        comparisons["buff_load_loop_scan_metrics"] = _scan_metric_comparisons(
+            scan_metrics["legacy"],
+            scan_metrics["candidate"],
+        )
     return report
 
 
@@ -370,7 +463,12 @@ def run_runtime_benchmark(
                 stop_tick,
                 include_rebuild_counts,
             )
-            finished_session_id, simulator_runtime_ms, rebuild_counts = future.result()
+            (
+                finished_session_id,
+                simulator_runtime_ms,
+                rebuild_counts,
+                scan_metrics,
+            ) = future.result()
 
         try:
             snapshots.append(
@@ -379,6 +477,7 @@ def run_runtime_benchmark(
                     finished_session_id,
                     simulator_runtime_ms,
                     rebuild_counts,
+                    scan_metrics,
                 )
             )
         finally:
@@ -494,7 +593,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--include-rebuild-counts",
         action="store_true",
-        help="Include Buff runtime rebuild count buckets in the report.",
+        help="Include Buff runtime rebuild count and BuffLoadLoop scan metric buckets in the report.",
     )
     return parser
 
@@ -529,6 +628,20 @@ def _format_human_report(report: dict[str, Any]) -> str:
                     sort_keys=True,
                 )
             )
+    if "buff_load_loop_scan_metrics" in report:
+        lines.append(
+            "buff_load_loop_scan_metrics: "
+            + json.dumps(report["buff_load_loop_scan_metrics"], ensure_ascii=False, sort_keys=True)
+        )
+        if "buff_load_loop_scan_metrics" in report["comparisons"]:
+            lines.append(
+                "buff_load_loop_scan_metric_deltas: "
+                + json.dumps(
+                    report["comparisons"]["buff_load_loop_scan_metrics"],
+                    ensure_ascii=False,
+                    sort_keys=True,
+                )
+            )
     return "\n".join(lines)
 
 
@@ -556,6 +669,12 @@ def _format_repeat_summary(summary: dict[str, Any]) -> str:
         lines.append(
             "rebuild_count_buckets: "
             + json.dumps(rebuild_counts["aggregate"], ensure_ascii=False, sort_keys=True)
+        )
+    scan_metrics = summary.get("scan_metric_buckets", {})
+    if scan_metrics.get("included"):
+        lines.append(
+            "scan_metric_buckets: "
+            + json.dumps(scan_metrics["aggregate"], ensure_ascii=False, sort_keys=True)
         )
     lines.append(
         "future_threshold_use: "

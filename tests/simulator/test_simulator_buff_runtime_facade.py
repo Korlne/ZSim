@@ -6,6 +6,8 @@ from typing import Any, cast
 import pytest
 
 import zsim.sim_progress.ScheduledEvent as scheduled_event_module
+import zsim.sim_progress.Buff.BuffLoad as buff_load_module
+from zsim.sim_progress import Load as load_module
 from zsim.sim_progress.Buff.BuffLoad import BuffLoadLoop
 from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
 from zsim.simulator import simulator_class
@@ -117,6 +119,13 @@ def _patch_main_loop_leaf_calls(monkeypatch: pytest.MonkeyPatch, order: list[str
     monkeypatch.setattr(simulator_class, "ScE", FakeScheduledEvent)
 
 
+def _buff_load_loop_scan_metrics(sim: Any) -> dict[str, int] | None:
+    metrics = getattr(sim, "_buff_load_loop_scan_metrics", None)
+    if metrics is None:
+        return None
+    return dict(metrics)
+
+
 def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -212,6 +221,7 @@ def test_buff_load_loop_records_count_only_when_opted_in() -> None:
     )
 
     assert sim.get_buff_runtime_rebuild_counts() is None
+    assert _buff_load_loop_scan_metrics(sim) is None
     assert loading_buff_dict == {"enemy": []}
 
     sim.enable_buff_runtime_rebuild_counting()
@@ -226,6 +236,91 @@ def test_buff_load_loop_records_count_only_when_opted_in() -> None:
     )
 
     assert sim.get_buff_runtime_rebuild_counts() == {"buff_load_loop": 1}
+    assert _buff_load_loop_scan_metrics(sim) == {
+        "processed_tick_count": 1,
+        "mission_count": 0,
+        "character_count": 0,
+        "registered_buff_count": 0,
+        "trigger_candidate_count": 0,
+        "pending_queue_count": 0,
+    }
+
+
+def test_buff_load_loop_records_opt_in_scan_metric_shape(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeLoadingMission:
+        def __init__(self, mission_character: str) -> None:
+            self.mission_character = mission_character
+
+    def fake_process_on_field_buff(
+        sub_exist_buff_dict: dict[str, Any],
+        mission: Any,
+        time_now: int,
+        LOADING_BUFF_DICT: dict[str, list[Any]],
+        all_name_order_box: dict[str, Any],
+        exist_buff_dict: dict[str, dict[str, Any]],
+        sim_instance: Any,
+    ) -> None:
+        LOADING_BUFF_DICT["alpha"].append("alpha-pending")
+
+    def fake_process_backend_buff(
+        sub_exist_buff_dict: dict[str, Any],
+        all_name_order_box: dict[str, Any],
+        mission: Any,
+        time_now: int,
+        LOADING_BUFF_DICT: dict[str, list[Any]],
+        exist_buff_dict: dict[str, dict[str, Any]],
+        sim_instance: Any,
+    ) -> None:
+        LOADING_BUFF_DICT["bravo"].append("bravo-pending")
+
+    monkeypatch.setattr(load_module, "LoadingMission", FakeLoadingMission)
+    monkeypatch.setattr(
+        buff_load_module,
+        "process_on_field_buff",
+        fake_process_on_field_buff,
+    )
+    monkeypatch.setattr(
+        buff_load_module,
+        "process_backend_buff",
+        fake_process_backend_buff,
+    )
+    sim = cast(Any, Simulator())
+    sim.enable_buff_runtime_rebuild_counting()
+    loading_buff_dict: dict[str, list[Any]] = {}
+
+    result = BuffLoadLoop(
+        time_now=5,
+        load_mission_dict={"m1": FakeLoadingMission("alpha")},
+        existbuff_dict={
+            "alpha": {"alpha-a": object(), "alpha-b": object()},
+            "bravo": {"bravo-a": object()},
+            "enemy": {"enemy-a": object()},
+        },
+        character_name_box=["alpha", "bravo"],
+        LOADING_BUFF_DICT=loading_buff_dict,
+        all_name_order_box={
+            "alpha": ["alpha", "bravo", "enemy"],
+            "bravo": ["bravo", "alpha", "enemy"],
+        },
+        sim_instance=sim,
+    )
+
+    assert result is loading_buff_dict
+    assert loading_buff_dict == {
+        "alpha": ["alpha-pending"],
+        "bravo": ["bravo-pending"],
+        "enemy": [],
+    }
+    assert _buff_load_loop_scan_metrics(sim) == {
+        "processed_tick_count": 1,
+        "mission_count": 1,
+        "character_count": 2,
+        "registered_buff_count": 3,
+        "trigger_candidate_count": 3,
+        "pending_queue_count": 2,
+    }
 
 
 def test_buff_runtime_facade_load_pending_buffs_owns_load_containers() -> None:
@@ -251,6 +346,14 @@ def test_buff_runtime_facade_load_pending_buffs_owns_load_containers() -> None:
     assert result is loading_buff_dict
     assert loading_buff_dict == {"alpha": [], "enemy": []}
     assert sim.get_buff_runtime_rebuild_counts() == {"buff_load_loop": 1}
+    assert _buff_load_loop_scan_metrics(sim) == {
+        "processed_tick_count": 1,
+        "mission_count": 0,
+        "character_count": 1,
+        "registered_buff_count": 0,
+        "trigger_candidate_count": 0,
+        "pending_queue_count": 0,
+    }
 
 
 def test_scheduled_event_records_opt_in_construction_and_runtime_port_counts(

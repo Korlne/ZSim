@@ -45,6 +45,8 @@ def test_build_runtime_benchmark_report_keeps_required_json_fields():
 
     assert legacy_snapshot.rebuild_counts is None
     assert candidate_snapshot.rebuild_counts is None
+    assert legacy_snapshot.buff_load_loop_scan_metrics is None
+    assert candidate_snapshot.buff_load_loop_scan_metrics is None
 
     report = build_runtime_benchmark_report(
         team="team-a",
@@ -67,6 +69,8 @@ def test_build_runtime_benchmark_report_keeps_required_json_fields():
     assert report["comparisons"]["candidate_vs_legacy_ratio"] == 0.8299
     assert "buff_runtime_rebuild_counts" not in report
     assert "buff_runtime_rebuild_counts" not in report["comparisons"]
+    assert "buff_load_loop_scan_metrics" not in report
+    assert "buff_load_loop_scan_metrics" not in report["comparisons"]
 
 
 def test_build_runtime_benchmark_report_includes_rebuild_counts_when_opted_in():
@@ -108,6 +112,18 @@ def test_build_runtime_benchmark_report_includes_rebuild_counts_when_opted_in():
                 "scheduled_event_runtime_ports": 7,
             },
         },
+        buff_load_loop_scan_metrics={
+            "legacy": {
+                "processed_tick_count": 3,
+                "mission_count": 9,
+                "trigger_candidate_count": 30,
+            },
+            "candidate": {
+                "processed_tick_count": 3,
+                "mission_count": 9,
+                "trigger_candidate_count": 42,
+            },
+        },
     )
 
     assert report["buff_runtime_rebuild_counts"] == {
@@ -124,6 +140,23 @@ def test_build_runtime_benchmark_report_includes_rebuild_counts_when_opted_in():
         "buff_load_loop": -5,
         "scheduled_event": 2,
         "scheduled_event_runtime_ports": 7,
+    }
+    assert report["buff_load_loop_scan_metrics"] == {
+        "legacy": {
+            "processed_tick_count": 3,
+            "mission_count": 9,
+            "trigger_candidate_count": 30,
+        },
+        "candidate": {
+            "processed_tick_count": 3,
+            "mission_count": 9,
+            "trigger_candidate_count": 42,
+        },
+    }
+    assert report["comparisons"]["buff_load_loop_scan_metrics"] == {
+        "mission_count": 0,
+        "processed_tick_count": 0,
+        "trigger_candidate_count": 12,
     }
 
 
@@ -168,6 +201,8 @@ def _repeat_sample_report(
     candidate_simulator_ms: float,
     legacy_counts: dict[str, int] | None = None,
     candidate_counts: dict[str, int] | None = None,
+    legacy_scan_metrics: dict[str, int] | None = None,
+    candidate_scan_metrics: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     report: dict[str, Any] = {
         "team": "fake-team",
@@ -207,6 +242,12 @@ def _repeat_sample_report(
             "candidate": candidate_counts or {},
         }
         report["comparisons"]["buff_runtime_rebuild_counts"] = {}
+    if legacy_scan_metrics is not None or candidate_scan_metrics is not None:
+        report["buff_load_loop_scan_metrics"] = {
+            "legacy": legacy_scan_metrics or {},
+            "candidate": candidate_scan_metrics or {},
+        }
+        report["comparisons"]["buff_load_loop_scan_metrics"] = {}
     return report
 
 
@@ -217,18 +258,42 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
             candidate_simulator_ms=94.0,
             legacy_counts={"buff_load_loop": 1},
             candidate_counts={"buff_load_loop": 2, "scheduled_event": 2},
+            legacy_scan_metrics={
+                "processed_tick_count": 1,
+                "trigger_candidate_count": 10,
+            },
+            candidate_scan_metrics={
+                "processed_tick_count": 1,
+                "trigger_candidate_count": 12,
+            },
         ),
         _repeat_sample_report(
             legacy_simulator_ms=104.0,
             candidate_simulator_ms=98.0,
             legacy_counts={"buff_load_loop": 3},
             candidate_counts={"buff_load_loop": 3},
+            legacy_scan_metrics={
+                "processed_tick_count": 1,
+                "trigger_candidate_count": 14,
+            },
+            candidate_scan_metrics={
+                "processed_tick_count": 1,
+                "trigger_candidate_count": 18,
+            },
         ),
         _repeat_sample_report(
             legacy_simulator_ms=102.0,
             candidate_simulator_ms=96.0,
             legacy_counts={"buff_load_loop": 2},
             candidate_counts={"buff_load_loop": 4, "scheduled_event": 4},
+            legacy_scan_metrics={
+                "processed_tick_count": 1,
+                "trigger_candidate_count": 12,
+            },
+            candidate_scan_metrics={
+                "processed_tick_count": 1,
+                "trigger_candidate_count": 16,
+            },
         ),
     ]
 
@@ -276,6 +341,35 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
         "range": 4.0,
         "samples": [2, 0, 4],
     }
+    assert summary["samples"][0]["scan_metric_buckets"] == {
+        "legacy": {
+            "processed_tick_count": 1,
+            "trigger_candidate_count": 10,
+        },
+        "candidate": {
+            "processed_tick_count": 1,
+            "trigger_candidate_count": 12,
+        },
+    }
+    assert summary["scan_metric_buckets"]["included"] is True
+    assert summary["scan_metric_buckets"]["aggregate"]["legacy"][
+        "trigger_candidate_count"
+    ] == {
+        "median": 12.0,
+        "min": 10.0,
+        "max": 14.0,
+        "range": 4.0,
+        "samples": [10, 14, 12],
+    }
+    assert summary["scan_metric_buckets"]["aggregate"]["candidate"][
+        "processed_tick_count"
+    ] == {
+        "median": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "range": 0.0,
+        "samples": [1, 1, 1],
+    }
     assert summary["future_threshold_use"]["speedup_target_defined"] is False
     assert summary["future_threshold_use"]["minimum_repeat_samples"] == 5
     assert "does not claim a speedup target" in summary["future_threshold_use"]["rule"]
@@ -296,6 +390,12 @@ def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
             if kwargs["include_rebuild_counts"]
             else None,
             candidate_counts={"buff_load_loop": sample_index + 1}
+            if kwargs["include_rebuild_counts"]
+            else None,
+            legacy_scan_metrics={"processed_tick_count": sample_index}
+            if kwargs["include_rebuild_counts"]
+            else None,
+            candidate_scan_metrics={"processed_tick_count": sample_index + 1}
             if kwargs["include_rebuild_counts"]
             else None,
         )
@@ -319,6 +419,8 @@ def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
         "samples": [],
         "aggregate": {"legacy": {}, "candidate": {}},
     }
+    assert "scan_metric_buckets" not in default_summary
+    assert "scan_metric_buckets" not in default_summary["samples"][0]
 
     captured_calls.clear()
     counted_summary = run_repeated_runtime_benchmark(
@@ -336,6 +438,17 @@ def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
     assert counted_summary["rebuild_count_buckets"]["samples"] == [
         {"legacy": {"buff_load_loop": 1}, "candidate": {"buff_load_loop": 2}},
         {"legacy": {"buff_load_loop": 2}, "candidate": {"buff_load_loop": 3}},
+    ]
+    assert counted_summary["scan_metric_buckets"]["included"] is True
+    assert counted_summary["scan_metric_buckets"]["samples"] == [
+        {
+            "legacy": {"processed_tick_count": 1},
+            "candidate": {"processed_tick_count": 2},
+        },
+        {
+            "legacy": {"processed_tick_count": 2},
+            "candidate": {"processed_tick_count": 3},
+        },
     ]
 
 
@@ -366,9 +479,15 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
         "101": {"buff_load_loop": 1},
         "102": {"buff_load_loop": 3, "scheduled_event": 2},
     }
+    scan_metrics_by_session = {
+        "101": {"processed_tick_count": 2, "trigger_candidate_count": 10},
+        "102": {"processed_tick_count": 2, "trigger_candidate_count": 15},
+    }
     created_session_ids: list[str] = []
     submitted_payloads: list[tuple[dict[str, Any], int, bool]] = []
-    snapshot_loads: list[tuple[str, str, float, dict[str, int] | None]] = []
+    snapshot_loads: list[
+        tuple[str, str, float, dict[str, int] | None, dict[str, int] | None]
+    ] = []
     cleaned_sessions: list[str] = []
 
     monkeypatch.setattr(
@@ -402,11 +521,15 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
             self._session_id = session_id
             self._include_rebuild_counts = include_rebuild_counts
 
-        def result(self) -> tuple[str, float, dict[str, int] | None]:
+        def result(
+            self,
+        ) -> tuple[str, float, dict[str, int] | None, dict[str, int] | None]:
             rebuild_counts = None
+            scan_metrics = None
             if self._include_rebuild_counts:
                 rebuild_counts = dict(rebuild_counts_by_session[self._session_id])
-            return self._session_id, 88.8, rebuild_counts
+                scan_metrics = dict(scan_metrics_by_session[self._session_id])
+            return self._session_id, 88.8, rebuild_counts, scan_metrics
 
     class FakeExecutor:
         def __init__(self, max_workers: int):
@@ -429,8 +552,9 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
         sid: str,
         simulator_runtime_ms: float,
         rebuild_counts: dict[str, int] | None = None,
+        scan_metrics: dict[str, int] | None = None,
     ) -> RuntimeBenchmarkSnapshot:
-        snapshot_loads.append((label, sid, simulator_runtime_ms, rebuild_counts))
+        snapshot_loads.append((label, sid, simulator_runtime_ms, rebuild_counts, scan_metrics))
         base_snapshot = snapshots_by_session[sid]
         return RuntimeBenchmarkSnapshot(
             runtime_label=label,
@@ -438,6 +562,7 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
             total_runtime_ms=base_snapshot.total_runtime_ms,
             hotspots=base_snapshot.hotspots,
             rebuild_counts=rebuild_counts,
+            buff_load_loop_scan_metrics=scan_metrics,
         )
 
     monkeypatch.setattr(rb, "_load_runtime_benchmark_snapshot", fake_load_runtime_benchmark_snapshot)
@@ -458,8 +583,20 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
     assert all(stop_tick == 77 for _, stop_tick, _ in submitted_payloads)
     assert [include_counts for _, _, include_counts in submitted_payloads] == [True, True]
     assert snapshot_loads == [
-        ("legacy-label", "101", 88.8, {"buff_load_loop": 1}),
-        ("candidate-label", "102", 88.8, {"buff_load_loop": 3, "scheduled_event": 2}),
+        (
+            "legacy-label",
+            "101",
+            88.8,
+            {"buff_load_loop": 1},
+            {"processed_tick_count": 2, "trigger_candidate_count": 10},
+        ),
+        (
+            "candidate-label",
+            "102",
+            88.8,
+            {"buff_load_loop": 3, "scheduled_event": 2},
+            {"processed_tick_count": 2, "trigger_candidate_count": 15},
+        ),
     ]
     assert report["legacy_runtime"] == "legacy-label"
     assert report["candidate_runtime"] == "candidate-label"
@@ -472,6 +609,14 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
     assert report["comparisons"]["buff_runtime_rebuild_counts"] == {
         "buff_load_loop": 2,
         "scheduled_event": 2,
+    }
+    assert report["buff_load_loop_scan_metrics"] == {
+        "legacy": {"processed_tick_count": 2, "trigger_candidate_count": 10},
+        "candidate": {"processed_tick_count": 2, "trigger_candidate_count": 15},
+    }
+    assert report["comparisons"]["buff_load_loop_scan_metrics"] == {
+        "processed_tick_count": 0,
+        "trigger_candidate_count": 5,
     }
     assert cleaned_sessions == ["101", "102"]
 
@@ -493,11 +638,31 @@ def test_single_runtime_benchmark_process_collects_opt_in_rebuild_counts(
 
         def enable_buff_runtime_rebuild_counting(self) -> None:
             self.rebuild_counts = {}
+            self._buff_load_loop_scan_metrics = {
+                "processed_tick_count": 0,
+                "mission_count": 0,
+                "character_count": 0,
+                "registered_buff_count": 0,
+                "trigger_candidate_count": 0,
+                "pending_queue_count": 0,
+            }
 
         def api_run_simulator(self, common_cfg: Any, sim_cfg: Any, stop_tick: int) -> Any:
             if self.rebuild_counts is not None:
                 self.rebuild_counts["legacy_buff_runtime_facade"] = 1
                 self.rebuild_counts["buff_load_loop"] = stop_tick
+            scan_metrics = getattr(self, "_buff_load_loop_scan_metrics", None)
+            if scan_metrics is not None:
+                scan_metrics.update(
+                    {
+                        "processed_tick_count": stop_tick,
+                        "mission_count": stop_tick * 2,
+                        "character_count": stop_tick * 3,
+                        "registered_buff_count": stop_tick * 4,
+                        "trigger_candidate_count": stop_tick * 5,
+                        "pending_queue_count": stop_tick * 6,
+                    }
+                )
             return SimpleNamespace(session_id=common_cfg.session_id)
 
         def get_buff_runtime_rebuild_counts(self) -> dict[str, int] | None:
@@ -521,7 +686,7 @@ def test_single_runtime_benchmark_process_collects_opt_in_rebuild_counts(
         include_rebuild_counts=True,
     )
 
-    assert default_result == ("default-session", 125.0, None)
+    assert default_result == ("default-session", 125.0, None, None)
     assert opt_in_result == (
         "counted-session",
         250.0,
@@ -529,8 +694,17 @@ def test_single_runtime_benchmark_process_collects_opt_in_rebuild_counts(
             "legacy_buff_runtime_facade": 1,
             "buff_load_loop": 4,
         },
+        {
+            "processed_tick_count": 4,
+            "mission_count": 8,
+            "character_count": 12,
+            "registered_buff_count": 16,
+            "trigger_candidate_count": 20,
+            "pending_queue_count": 24,
+        },
     )
     assert FakeSimulator.instances[0].rebuild_counts is None
+    assert not hasattr(FakeSimulator.instances[0], "_buff_load_loop_scan_metrics")
 
 
 def test_format_human_report_only_prints_rebuild_counts_when_present():
@@ -553,19 +727,29 @@ def test_format_human_report_only_prints_rebuild_counts_when_present():
     default_output = rb._format_human_report(base_report)
 
     assert "buff_runtime_rebuild_counts" not in default_output
+    assert "buff_load_loop_scan_metrics" not in default_output
 
     opt_in_report = dict(base_report)
     opt_in_report["buff_runtime_rebuild_counts"] = {
         "legacy": {"scheduled_event": 1},
         "candidate": {"scheduled_event": 3},
     }
+    opt_in_report["buff_load_loop_scan_metrics"] = {
+        "legacy": {"processed_tick_count": 1},
+        "candidate": {"processed_tick_count": 2},
+    }
     opt_in_report["comparisons"] = dict(base_report["comparisons"])
     opt_in_report["comparisons"]["buff_runtime_rebuild_counts"] = {"scheduled_event": 2}
+    opt_in_report["comparisons"]["buff_load_loop_scan_metrics"] = {
+        "processed_tick_count": 1
+    }
 
     opt_in_output = rb._format_human_report(opt_in_report)
 
     assert "buff_runtime_rebuild_counts:" in opt_in_output
     assert "buff_runtime_rebuild_count_deltas:" in opt_in_output
+    assert "buff_load_loop_scan_metrics:" in opt_in_output
+    assert "buff_load_loop_scan_metric_deltas:" in opt_in_output
 
 
 def test_load_runtime_benchmark_snapshot_falls_back_for_blank_anomaly_column(
@@ -619,6 +803,8 @@ def test_main_repeat_summary_writes_json_artifact(
                 candidate_simulator_ms=95.0 + index,
                 legacy_counts={"buff_load_loop": index + 1},
                 candidate_counts={"buff_load_loop": index + 2},
+                legacy_scan_metrics={"processed_tick_count": index + 1},
+                candidate_scan_metrics={"processed_tick_count": index + 2},
             )
             for index in range(kwargs["repeat_samples"])
         ]
@@ -655,7 +841,10 @@ def test_main_repeat_summary_writes_json_artifact(
     assert summary["sample_count"] == 3
     assert summary["runtime_selection"]["mode"] == "label-only-current-runtime"
     assert summary["rebuild_count_buckets"]["included"] is True
-    assert "sample_count: 3" in capsys.readouterr().out
+    assert summary["scan_metric_buckets"]["included"] is True
+    output = capsys.readouterr().out
+    assert "sample_count: 3" in output
+    assert "scan_metric_buckets:" in output
 
 
 def test_script_entrypoint_runs_with_json_output(
@@ -685,6 +874,13 @@ def test_script_entrypoint_runs_with_json_output(
         if kwargs["include_rebuild_counts"]:
             report["buff_runtime_rebuild_counts"] = {"legacy": {}, "candidate": {}}
             report["comparisons"]["buff_runtime_rebuild_counts"] = {}
+            report["buff_load_loop_scan_metrics"] = {
+                "legacy": {"processed_tick_count": 1},
+                "candidate": {"processed_tick_count": 1},
+            }
+            report["comparisons"]["buff_load_loop_scan_metrics"] = {
+                "processed_tick_count": 0
+            }
         return report
 
     monkeypatch.setattr(rb, "run_runtime_benchmark", fake_run_runtime_benchmark)
@@ -706,6 +902,7 @@ def test_script_entrypoint_runs_with_json_output(
         assert '"team": "fake-team"' in output
         assert '"faster_runtime": "tie"' in output
         assert '"buff_runtime_rebuild_counts"' in output
+        assert '"buff_load_loop_scan_metrics"' in output
         assert captured_kwargs["include_rebuild_counts"] is True
     finally:
         rb.sys.argv = argv_before
