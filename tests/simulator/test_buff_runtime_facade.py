@@ -16,6 +16,7 @@ from zsim.sim_progress.Buff.BuffLoad import (
 from zsim.sim_progress.Buff.buff_class import Buff
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     ActiveBuffStore,
+    BuffTemplateRegistry,
     BuffRuntimeFacade,
     BuffRuntimeState,
     EnemyDebuffMirror,
@@ -255,6 +256,40 @@ def test_buff_runtime_state_exposes_active_store_owner_with_compat_identity() ->
     assert active_owner.count() == 1
     assert active_owner.ensure_beneficiary("beta") is active_store["beta"]
     assert active_owner.beneficiaries() == ("alpha", "enemy", "beta")
+
+
+def test_buff_runtime_state_exposes_template_registry_owner_with_compat_identity() -> None:
+    registered_buff = _BuffProbe("registered")
+    replacement_buff = _BuffProbe("replacement")
+    registry: dict[str, dict[str, Any]] = {
+        "alpha": {"registered": registered_buff},
+        "enemy": {},
+    }
+    runtime_state = BuffRuntimeState(
+        template_registry=registry,
+        pending_queue={"alpha": [], "enemy": []},
+        active_store={"alpha": [], "enemy": []},
+        enemy_mirror=[],
+    )
+
+    template_owner = runtime_state.template_registry_owner()
+
+    assert isinstance(template_owner, BuffTemplateRegistry)
+    assert template_owner.as_compat_dict() is registry
+    assert runtime_state.template_registry_for_compat() is registry
+    assert template_owner.for_owner("alpha") is registry["alpha"]
+    assert template_owner.get_registered_buff("alpha", "registered") is registered_buff
+
+    owner_snapshot = template_owner.owner_snapshot("alpha")
+    registry_snapshot = template_owner.registry_snapshot()
+    registry["alpha"]["replacement"] = replacement_buff
+
+    assert dict(owner_snapshot) == {"registered": registered_buff}
+    assert dict(registry_snapshot["alpha"]) == {"registered": registered_buff}
+    with pytest.raises(TypeError):
+        cast(Any, owner_snapshot)["mutated"] = replacement_buff
+    with pytest.raises(TypeError):
+        cast(Any, registry_snapshot)["bravo"] = {}
 
 
 def test_buff_runtime_read_port_reads_active_view_through_active_owner(
@@ -572,6 +607,64 @@ def test_legacy_buff_runtime_facade_registry_view_is_read_only_snapshot() -> Non
     assert dict(registered_view) == {"registered": registered_buff}
     with pytest.raises(TypeError):
         cast(Any, registered_view)["another"] = _BuffProbe("another")
+
+
+def test_legacy_buff_runtime_facade_registry_reads_use_template_owner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    registered_buff = _BuffProbe("registered")
+    other_buff = _BuffProbe("other")
+    registry: dict[str, dict[str, Any]] = {
+        "alpha": {"registered": registered_buff},
+        "bravo": {"other": other_buff},
+    }
+    runtime_state = BuffRuntimeState(
+        template_registry=registry,
+        pending_queue={"alpha": [], "bravo": []},
+        active_store={"alpha": [], "bravo": []},
+        enemy_mirror=[],
+    )
+    template_owner = runtime_state.template_registry_owner()
+    calls: list[tuple[str, str | None, str | None]] = []
+    original_get_registered_buff = template_owner.get_registered_buff
+    original_owner_snapshot = template_owner.owner_snapshot
+    original_items = template_owner.items
+
+    def recording_get_registered_buff(owner: str, buff_index: str) -> Any:
+        calls.append(("get", owner, buff_index))
+        return original_get_registered_buff(owner, buff_index)
+
+    def recording_owner_snapshot(owner: str) -> Any:
+        calls.append(("snapshot", owner, None))
+        return original_owner_snapshot(owner)
+
+    def recording_items() -> Any:
+        calls.append(("items", None, None))
+        return original_items()
+
+    def fail_compat_access() -> dict[str, dict[str, Any]]:
+        raise AssertionError("facade registry reads must use BuffTemplateRegistry")
+
+    monkeypatch.setattr(
+        template_owner,
+        "get_registered_buff",
+        recording_get_registered_buff,
+    )
+    monkeypatch.setattr(template_owner, "owner_snapshot", recording_owner_snapshot)
+    monkeypatch.setattr(template_owner, "items", recording_items)
+    monkeypatch.setattr(runtime_state, "template_registry_for_compat", fail_compat_access)
+    facade = runtime_state.create_facade()
+
+    assert facade.get_registered_buff("alpha", "registered") is registered_buff
+    assert dict(facade.get_registered_buff_view("alpha")) == {
+        "registered": registered_buff
+    }
+    assert facade.find_registered_buff_source("other") == ("bravo", other_buff)
+    assert calls == [
+        ("get", "alpha", "registered"),
+        ("snapshot", "alpha", None),
+        ("items", None, None),
+    ]
 
 
 def test_legacy_buff_runtime_facade_tick_sweep_uses_wrapped_legacy_containers(

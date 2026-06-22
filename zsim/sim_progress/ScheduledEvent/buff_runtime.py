@@ -26,7 +26,7 @@ class BuffRuntimeState:
         active_store: dict[str, list["Buff"]],
         enemy_mirror: list["Buff"],
     ) -> None:
-        self._template_registry = template_registry
+        self._template_registry = BuffTemplateRegistry(template_registry)
         self._pending_queue = PendingBuffQueue(pending_queue)
         self._collapse_enemy_debuff_store(
             active_store,
@@ -59,8 +59,11 @@ class BuffRuntimeState:
     def create_read_port(self) -> "BuffRuntimeReadPort":
         return LegacyBuffRuntimeReadAdapter(runtime_state=self)
 
-    def template_registry_for_compat(self) -> dict[str, dict[str, "Buff"]]:
+    def template_registry_owner(self) -> "BuffTemplateRegistry":
         return self._template_registry
+
+    def template_registry_for_compat(self) -> dict[str, dict[str, "Buff"]]:
+        return self._template_registry.as_compat_dict()
 
     def pending_queue_owner(self) -> "PendingBuffQueue":
         return self._pending_queue
@@ -79,6 +82,36 @@ class BuffRuntimeState:
 
     def enemy_mirror_for_compat(self) -> list["Buff"]:
         return self._enemy_mirror_owner.as_compat_list()
+
+
+class BuffTemplateRegistry:
+    """Runtime-owned template registry with retained dict compatibility."""
+
+    def __init__(self, registry: dict[str, dict[str, "Buff"]]) -> None:
+        self._registry = registry
+
+    def for_owner(self, owner: str) -> dict[str, "Buff"]:
+        return self._registry[owner]
+
+    def get_registered_buff(self, owner: str, buff_index: str) -> "Buff | None":
+        return self._registry.get(owner, {}).get(buff_index)
+
+    def owner_snapshot(self, owner: str) -> Mapping[str, "Buff"]:
+        return MappingProxyType(dict(self._registry.get(owner, {})))
+
+    def registry_snapshot(self) -> Mapping[str, Mapping[str, "Buff"]]:
+        return MappingProxyType(
+            {
+                owner: MappingProxyType(dict(registered_buffs))
+                for owner, registered_buffs in self._registry.items()
+            }
+        )
+
+    def as_compat_dict(self) -> dict[str, dict[str, "Buff"]]:
+        return self._registry
+
+    def items(self):
+        return self._registry.items()
 
 
 class PendingBuffQueue:
@@ -258,17 +291,10 @@ class LegacyBuffRuntimeReadAdapter(BuffRuntimeReadPort):
         return self._runtime_state.active_store_owner().active_buff_view_snapshot()
 
     def get_exist_buff_snapshot(self, beneficiary: str) -> Mapping[str, "Buff"]:
-        return MappingProxyType(
-            dict(self._runtime_state.template_registry_for_compat().get(beneficiary, {}))
-        )
+        return self._runtime_state.template_registry_owner().owner_snapshot(beneficiary)
 
     def get_exist_buff_snapshot_view(self) -> Mapping[str, Mapping[str, "Buff"]]:
-        return MappingProxyType(
-            {
-                beneficiary: MappingProxyType(dict(buff_dict))
-                for beneficiary, buff_dict in self._runtime_state.template_registry_for_compat().items()
-            }
-        )
+        return self._runtime_state.template_registry_owner().registry_snapshot()
 
 
 class BuffRuntimeFacade(ABC):
@@ -395,18 +421,17 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         self._runtime_state = runtime_state
 
     def get_registered_buff(self, beneficiary: str, buff_index: str) -> "Buff | None":
-        return self._runtime_state.template_registry_for_compat().get(beneficiary, {}).get(
+        return self._runtime_state.template_registry_owner().get_registered_buff(
+            beneficiary,
             buff_index
         )
 
     def get_registered_buff_view(self, beneficiary: str) -> Mapping[str, "Buff"]:
-        return MappingProxyType(
-            dict(self._runtime_state.template_registry_for_compat().get(beneficiary, {}))
-        )
+        return self._runtime_state.template_registry_owner().owner_snapshot(beneficiary)
 
     def find_registered_buff_source(self, buff_index: str) -> tuple[str, "Buff"] | None:
         for beneficiary, registered_buffs in (
-            self._runtime_state.template_registry_for_compat().items()
+            self._runtime_state.template_registry_owner().items()
         ):
             if buff_index in registered_buffs:
                 return beneficiary, registered_buffs[buff_index]
