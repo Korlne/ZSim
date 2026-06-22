@@ -8,6 +8,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PRODUCTION_ROOT = PROJECT_ROOT / "zsim" / "sim_progress"
+SIMULATOR_CLASS_PATH = PROJECT_ROOT / "zsim" / "simulator" / "simulator_class.py"
 
 RAW_EVENT_APPEND_KINDS = {
     "compatibility_only_queue_append",
@@ -22,6 +23,21 @@ RAW_EVENT_APPEND_KINDS = {
 
 LOCAL_EVENT_GROUP_NAMES = {"adrenaline_events"}
 AMBIGUOUS_LOCAL_EVENT_GROUP_NAMES = {"local_event_group"}
+MAIN_LOOP_RAW_PLANNED_QUEUE_NAMES = {
+    "event_list",
+    "event_queue",
+    "planned_events",
+    "planned_event_queue",
+    "planned_queue",
+    "scheduled_events",
+    "scheduled_event_queue",
+}
+MAIN_LOOP_PLANNED_PRODUCER_CALLS = {
+    "DamageEventJudge",
+    "ScE",
+    "ScheduledEvent",
+    "SkillEventSplit",
+}
 
 CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS = {
     (
@@ -412,6 +428,148 @@ def _active_prd_story_ids() -> set[str]:
     return {story["id"] for story in prd["userStories"]}
 
 
+def _find_simulator_main_loop(tree: ast.Module) -> ast.FunctionDef:
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == "Simulator":
+            for child in node.body:
+                if isinstance(child, ast.FunctionDef) and child.name == "main_loop":
+                    return child
+    raise AssertionError("Simulator.main_loop was not found")
+
+
+def _call_name(func: ast.expr) -> str | None:
+    if isinstance(func, ast.Name):
+        return func.id
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    return None
+
+
+def _dotted_name(node: ast.AST) -> str | None:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        owner = _dotted_name(node.value)
+        if owner is None:
+            return node.attr
+        return f"{owner}.{node.attr}"
+    return None
+
+
+def _source_for_main_loop_node(source: str, node: ast.AST) -> str:
+    segment = ast.get_source_segment(source, node)
+    if segment is None:
+        return f"<{type(node).__name__}>"
+    return " ".join(segment.strip().split())
+
+
+def _looks_like_raw_planned_queue_name(name: str) -> bool:
+    return (
+        name in MAIN_LOOP_RAW_PLANNED_QUEUE_NAMES
+        or name.endswith("_event_list")
+        or name.endswith("_event_queue")
+        or name.endswith("_planned_events")
+        or name.endswith("_planned_queue")
+    )
+
+
+def _raw_main_loop_planned_queue_expression(
+    source: str,
+    node: ast.AST,
+    *,
+    producer_call: str | None,
+) -> str | None:
+    if isinstance(node, ast.Attribute):
+        dotted = _dotted_name(node)
+        if dotted and (dotted == "event_list" or dotted.endswith(".event_list")):
+            return _source_for_main_loop_node(source, node)
+    if isinstance(node, ast.Name) and _looks_like_raw_planned_queue_name(node.id):
+        return _source_for_main_loop_node(source, node)
+    if (
+        isinstance(node, (ast.List, ast.ListComp, ast.Call))
+        and producer_call in MAIN_LOOP_PLANNED_PRODUCER_CALLS
+    ):
+        if isinstance(node, ast.Call) and _call_name(node.func) == "create_schedule_dispatch_port":
+            return None
+        if isinstance(node, ast.Call) and _call_name(node.func) not in {"list"}:
+            return None
+        return _source_for_main_loop_node(source, node)
+    return None
+
+
+def _collect_main_loop_raw_planned_queue_findings_from_source(source: str) -> list[str]:
+    tree = ast.parse(source)
+    main_loop = _find_simulator_main_loop(tree)
+    findings: list[str] = []
+
+    for node in ast.walk(main_loop):
+        if not isinstance(node, ast.Call):
+            continue
+
+        call_name = _call_name(node.func)
+        if (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr == "append"
+            and (
+                expression := _raw_main_loop_planned_queue_expression(
+                    source,
+                    node.func.value,
+                    producer_call=call_name,
+                )
+            )
+        ):
+            findings.append(f"raw append in Simulator.main_loop: {expression}.append(...)")
+
+        if call_name == "create_schedule_dispatch_port":
+            continue
+
+        for index, arg in enumerate(node.args):
+            expression = _raw_main_loop_planned_queue_expression(
+                source,
+                arg,
+                producer_call=call_name,
+            )
+            if expression is not None:
+                findings.append(
+                    f"{call_name or '<call>'} positional arg {index} uses raw planned queue "
+                    f"{expression}"
+                )
+        for keyword in node.keywords:
+            expression = _raw_main_loop_planned_queue_expression(
+                source,
+                keyword.value,
+                producer_call=call_name,
+            )
+            if expression is not None:
+                name = keyword.arg or "**"
+                findings.append(
+                    f"{call_name or '<call>'} keyword {name} uses raw planned queue "
+                    f"{expression}"
+                )
+
+    return findings
+
+
+def _main_loop_damage_judge_uses_schedule_dispatch_port(source: str) -> bool:
+    tree = ast.parse(source)
+    main_loop = _find_simulator_main_loop(tree)
+
+    for node in ast.walk(main_loop):
+        if not isinstance(node, ast.Call) or _call_name(node.func) != "DamageEventJudge":
+            continue
+        return any(
+            isinstance(arg, ast.Call)
+            and _call_name(arg.func) == "create_schedule_dispatch_port"
+            and any(
+                keyword.arg == "schedule_data"
+                and _dotted_name(keyword.value) == "self.schedule_data"
+                for keyword in arg.keywords
+            )
+            for arg in node.args
+        )
+    return False
+
+
 def test_find_event_list_legacy_discovery_surface_has_no_new_production_uses() -> None:
     findings = [
         finding
@@ -455,6 +613,43 @@ def test_raw_event_list_append_guardrail_has_only_owner_api_or_local_group_findi
     assert not missing_story_ids, (
         "Current-root allowed event queue mutation entries must name follow-up stories "
         f"in scripts/ralph/prd.json; missing: {missing_story_ids}"
+    )
+
+
+def test_main_loop_uses_dispatch_port_and_has_no_raw_planned_queue_handoff() -> None:
+    source = SIMULATOR_CLASS_PATH.read_text(encoding="utf-8")
+
+    findings = _collect_main_loop_raw_planned_queue_findings_from_source(source)
+
+    assert findings == []
+    assert _main_loop_damage_judge_uses_schedule_dispatch_port(source)
+
+
+def test_main_loop_raw_planned_queue_guardrail_blocks_synthetic_regressions() -> None:
+    source = (
+        "class Simulator:\n"
+        "    def main_loop(self):\n"
+        "        event_list = []\n"
+        "        DamageEventJudge(self.tick, missions, enemy, self.schedule_data.event_list, chars)\n"
+        "        ScheduledEvent(dynamic_buff, schedule_data, self.tick, event_list)\n"
+        "        self.schedule_data.event_list.append(payload)\n"
+    )
+
+    findings = _collect_main_loop_raw_planned_queue_findings_from_source(source)
+
+    assert any(
+        "DamageEventJudge positional arg 3 uses raw planned queue "
+        "self.schedule_data.event_list" in finding
+        for finding in findings
+    )
+    assert any(
+        "ScheduledEvent positional arg 3 uses raw planned queue event_list" in finding
+        for finding in findings
+    )
+    assert any(
+        "raw append in Simulator.main_loop: self.schedule_data.event_list.append(...)"
+        in finding
+        for finding in findings
     )
 
 
