@@ -292,11 +292,26 @@ def _create_buff_runtime_read_port_from_sim_instance(
     )
 
 
+def _create_template_registry_read_port_from_sim_instance(
+    sim_instance: "Simulator",
+) -> BuffTemplateRegistryReadPort:
+    runtime_state = getattr(sim_instance, "buff_runtime_state", None)
+    if runtime_state is not None:
+        template_registry_owner = getattr(runtime_state, "template_registry_owner", None)
+        if template_registry_owner is not None:
+            return BuffTemplateRegistryReadPort(
+                templates_by_owner=template_registry_owner().as_compat_dict()
+            )
+    return BuffTemplateRegistryReadPort(
+        templates_by_owner=sim_instance.load_data.exist_buff_dict
+    )
+
+
 def build_preparation_context_from_sim_instance(
     sim_instance: "Simulator",
 ) -> PreparationContext:
-    template_registry = BuffTemplateRegistryReadPort(
-        templates_by_owner=sim_instance.load_data.exist_buff_dict
+    template_registry = _create_template_registry_read_port_from_sim_instance(
+        sim_instance
     )
     return PreparationContext(
         character_lookup=CharacterLookup(sim_instance.char_data.char_obj_list),

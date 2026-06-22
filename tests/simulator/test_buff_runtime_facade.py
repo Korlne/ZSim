@@ -342,7 +342,7 @@ def test_buff_runtime_read_port_reads_active_view_through_active_owner(
     assert active_view["alpha"] == (active_buff,)
     assert active_view["enemy"] == (enemy_buff,)
     with pytest.raises(TypeError):
-        active_view["alpha"] = ()
+        cast(Any, active_view)["alpha"] = ()
     assert calls == [
         ("single", "alpha"),
         ("single", "missing"),

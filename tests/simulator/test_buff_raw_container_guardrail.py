@@ -2891,6 +2891,21 @@ def test_frozen_edge_equipment_template_family_has_exact_guardrail_coverage() ->
         assert "JudgeTools.find_tick" in source
 
 
+def test_prd001c_selected_xlogic_helpers_stay_on_preparation_context() -> None:
+    selected_files = {
+        "zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritRateBonus.py",
+        "zsim/sim_progress/Buff/BuffXLogic/PolarMetalFreezeBonus.py",
+    }
+
+    for relative_path in selected_files:
+        path = PROJECT_ROOT / relative_path
+        source = path.read_text(encoding="utf-8")
+
+        assert "build_preparation_context_from_buff" in source
+        assert "preparation_context.find_sub_exist_buff_dict(" in source
+        assert "JudgeTools.find_exist_buff_dict" not in source
+
+
 def test_resource_refresh_equipment_template_family_has_exact_guardrail_coverage() -> None:
     expected_files = {
         "zsim/sim_progress/Buff/BuffXLogic/ElegantVanitySpRecover.py",

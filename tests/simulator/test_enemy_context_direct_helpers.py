@@ -21,7 +21,11 @@ from zsim.sim_progress.Buff.BuffXLogic.YixuanAdditionalAbilityDmgBonus import (
     YixuanAdditionalAbilityDmgBonus,
     YixuanAdditionalAbilityDmgBonusRecord,
 )
+from zsim.sim_progress.Buff.JudgeTools.PreparationContext import (
+    build_preparation_context_from_sim_instance,
+)
 from zsim.sim_progress.Preload import SkillNode
+from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
 
 
 class _FailFastEventList(list[object]):
@@ -69,6 +73,116 @@ class _BuffInstanceProbe:
         self.ft = SimpleNamespace(
             index="Buff-\u89d2\u8272-\u4eea\u7384-\u7ec4\u961f\u88ab\u52a8\u589e\u4f24"
         )
+
+
+def _buff_template(index: str) -> SimpleNamespace:
+    return SimpleNamespace(
+        ft=SimpleNamespace(index=index),
+        dy=SimpleNamespace(count=0.0),
+        history=SimpleNamespace(record=None),
+    )
+
+
+def _build_preparation_sim_instance(
+    *,
+    runtime_registry: dict[str, dict[str, object]],
+    fallback_registry: dict[str, dict[str, object]],
+) -> SimpleNamespace:
+    runtime_state = BuffRuntimeState(
+        template_registry=runtime_registry,
+        pending_queue={},
+        active_store={},
+        enemy_mirror=[],
+    )
+    return SimpleNamespace(
+        buff_runtime_state=runtime_state,
+        char_data=SimpleNamespace(char_obj_list=[]),
+        init_data=SimpleNamespace(Judge_list_set=[]),
+        schedule_data=SimpleNamespace(enemy=object(), event_list=[]),
+        load_data=SimpleNamespace(
+            exist_buff_dict=fallback_registry,
+            action_stack=object(),
+        ),
+        preload=SimpleNamespace(preload_data=object()),
+        global_stats=SimpleNamespace(DYNAMIC_BUFF_DICT={}),
+    )
+
+
+def test_build_preparation_context_uses_runtime_template_registry_owner() -> None:
+    runtime_buff = _buff_template("Runtime-Buff-Template")
+    fallback_buff = _buff_template("Fallback-Buff-Template")
+    runtime_registry = {"runtime-owner": {"runtime-buff": runtime_buff}}
+    fallback_registry = {"fallback-owner": {"fallback-buff": fallback_buff}}
+    sim_instance = _build_preparation_sim_instance(
+        runtime_registry=runtime_registry,
+        fallback_registry=fallback_registry,
+    )
+
+    context = build_preparation_context_from_sim_instance(sim_instance)
+
+    assert context.find_sub_exist_buff_dict("runtime-owner") is runtime_registry[
+        "runtime-owner"
+    ]
+    assert context.find_trigger_buff("runtime-owner", "Template") is runtime_buff
+    runtime_late_buff = _buff_template("Runtime-Buff-Late")
+    runtime_registry["runtime-owner"]["runtime-late-buff"] = runtime_late_buff
+    assert (
+        context.find_sub_exist_buff_dict("runtime-owner")["runtime-late-buff"]
+        is runtime_late_buff
+    )
+    with pytest.raises(KeyError):
+        context.find_sub_exist_buff_dict("fallback-owner")
+
+
+def test_build_preparation_context_falls_back_for_runtime_state_without_registry_owner() -> None:
+    fallback_buff = _buff_template("Fallback-Buff-Template")
+    fallback_registry = {"fallback-owner": {"fallback-buff": fallback_buff}}
+    sim_instance = _build_preparation_sim_instance(
+        runtime_registry={"runtime-owner": {"runtime-buff": object()}},
+        fallback_registry=fallback_registry,
+    )
+    sim_instance.buff_runtime_state = SimpleNamespace(create_read_port=lambda: object())
+
+    context = build_preparation_context_from_sim_instance(sim_instance)
+
+    assert context.find_sub_exist_buff_dict("fallback-owner") is fallback_registry[
+        "fallback-owner"
+    ]
+    assert context.find_trigger_buff("fallback-owner", "Template") is fallback_buff
+
+
+def test_build_preparation_context_keeps_template_registry_run_scoped() -> None:
+    first_buff = _buff_template("Runtime-One-Template")
+    second_buff = _buff_template("Runtime-Two-Template")
+    first_registry = {"same-owner": {"same-key": first_buff}}
+    second_registry = {"same-owner": {"same-key": second_buff}}
+
+    first_context = build_preparation_context_from_sim_instance(
+        _build_preparation_sim_instance(
+            runtime_registry=first_registry,
+            fallback_registry={"fallback": {}},
+        )
+    )
+    second_context = build_preparation_context_from_sim_instance(
+        _build_preparation_sim_instance(
+            runtime_registry=second_registry,
+            fallback_registry={"fallback": {}},
+        )
+    )
+
+    assert first_context.find_sub_exist_buff_dict("same-owner") is first_registry[
+        "same-owner"
+    ]
+    assert second_context.find_sub_exist_buff_dict("same-owner") is second_registry[
+        "same-owner"
+    ]
+    assert first_context.find_trigger_buff("same-owner", "One-Template") is first_buff
+    assert second_context.find_trigger_buff("same-owner", "Two-Template") is second_buff
+    second_registry["same-owner"]["second-only"] = _buff_template(
+        "Runtime-Two-Second"
+    )
+    assert "second-only" not in first_context.find_sub_exist_buff_dict("same-owner")
+    assert "second-only" in second_context.find_sub_exist_buff_dict("same-owner")
 
 
 def _build_yixuan_trigger_harness(
