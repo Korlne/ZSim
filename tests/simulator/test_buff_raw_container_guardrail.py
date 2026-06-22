@@ -226,10 +226,48 @@ PENDING_QUEUE_RAW_WRITE_NEXT_ACTION = (
     "mutation inside the documented owner/compat adapter, or block the story"
 )
 
+ACTIVE_STORE_RAW_WRITE_NEXT_ACTION = (
+    "route active writes through ActiveBuffStore or EnemyDebuffMirror owner APIs, "
+    "keep raw mutation inside the documented owner/migration adapter, or block the story"
+)
+
 CALCULATOR_READ_NEXT_ACTION = (
     "migrate read-only usage to CalculatorBuffAttributeReader, retain as "
     "documented formula/compatibility snapshot, or block the story"
 )
+
+ACTIVE_STORE_RAW_DICT_NAMES = {
+    "DYNAMIC_BUFF_DICT",
+    "_dynamic_buff",
+    "_dynamic_buff_dict",
+    "_stores",
+    "active_store",
+    "dynamic_buff",
+    "dynamic_buff_dict",
+}
+
+ACTIVE_STORE_COMPAT_DICT_METHODS = {
+    "_active_store_for_compat",
+    "active_store_for_compat",
+}
+
+ACTIVE_STORE_COMPAT_LIST_METHODS = {
+    "active_buffs_for_compat",
+    "get_active_buffs_for_compat",
+}
+
+ENEMY_MIRROR_RAW_LIST_NAMES = {
+    "_enemy_debuff_mirror",
+    "_mirror",
+    "dynamic_debuff_list",
+    "enemy_debuff_mirror",
+}
+
+ENEMY_MIRROR_COMPAT_LIST_METHODS = {
+    "as_compat_list",
+    "enemy_mirror_for_compat",
+    "get_enemy_debuff_mirror_for_compat",
+}
 
 RETAINED_XLOGIC_COMPATIBILITY_SNAPSHOT_ALLOWANCE = (
     "retained XLogic compatibility snapshot read"
@@ -509,6 +547,45 @@ PENDING_QUEUE_RAW_WRITE_ALLOWED_CONTEXTS = {
     ),
 }
 
+ACTIVE_STORE_RAW_WRITE_ALLOWED_CONTEXTS = {
+    (
+        "zsim/simulator/dataclasses.py",
+        "ScheduleData.reset_myself",
+    ),
+    (
+        "zsim/simulator/dataclasses.py",
+        "GlobalStats.__post_init__",
+    ),
+    (
+        "zsim/simulator/dataclasses.py",
+        "GlobalStats.reset_myself",
+    ),
+    (
+        "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+        "BuffRuntimeState._collapse_enemy_debuff_store",
+    ),
+    (
+        "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+        "ActiveBuffStore.append",
+    ),
+    (
+        "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+        "ActiveBuffStore.remove",
+    ),
+    (
+        "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+        "EnemyDebuffMirror.sync",
+    ),
+    (
+        "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+        "EnemyDebuffMirror.remove",
+    ),
+    (
+        "zsim/sim_progress/Buff/ScheduleBuffSettle.py",
+        "add_schedule_buff",
+    ),
+}
+
 SCHEDULE_BUFF_SETTLE_RETAINED_SIGNATURES = {
     (
         "ScheduleBuffSettle",
@@ -658,6 +735,24 @@ class PendingQueueRawWriteFinding:
             f"{self.path}:{self.line}: matched expression: {self.matched_expression}; "
             f"forbidden pending raw write: {self.kind}; "
             f"next action: {PENDING_QUEUE_RAW_WRITE_NEXT_ACTION}"
+        )
+
+
+@dataclass(frozen=True)
+class ActiveStoreRawWriteFinding:
+    path: str
+    line: int
+    kind: str
+    matched_expression: str
+    classification_suggestion: str
+    context: str
+
+    def message(self) -> str:
+        return (
+            f"{self.path}:{self.line}: matched expression: {self.matched_expression}; "
+            f"classification suggestion: {self.classification_suggestion}; "
+            f"forbidden active raw write: {self.kind}; "
+            f"next action: {ACTIVE_STORE_RAW_WRITE_NEXT_ACTION}"
         )
 
 
@@ -939,6 +1034,188 @@ class PendingQueueRawWriteVisitor(ast.NodeVisitor):
         return " ".join(expression.strip().split())
 
 
+class ActiveStoreRawWriteVisitor(ast.NodeVisitor):
+    def __init__(self, path: Path, source: str) -> None:
+        self.path = path
+        self.source = source
+        self.findings: list[ActiveStoreRawWriteFinding] = []
+        self._class_stack: list[str] = []
+        self._function_stack: list[str] = []
+        self._active_list_alias_stack: list[set[str]] = [set()]
+        self._enemy_mirror_alias_stack: list[set[str]] = [set()]
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        self._class_stack.append(node.name)
+        self.generic_visit(node)
+        self._class_stack.pop()
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._function_stack.append(node.name)
+        self._active_list_alias_stack.append(set())
+        self._enemy_mirror_alias_stack.append(set())
+        try:
+            self.generic_visit(node)
+        finally:
+            self._enemy_mirror_alias_stack.pop()
+            self._active_list_alias_stack.pop()
+            self._function_stack.pop()
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._function_stack.append(node.name)
+        self._active_list_alias_stack.append(set())
+        self._enemy_mirror_alias_stack.append(set())
+        try:
+            self.generic_visit(node)
+        finally:
+            self._enemy_mirror_alias_stack.pop()
+            self._active_list_alias_stack.pop()
+            self._function_stack.pop()
+
+    def visit_Assign(self, node: ast.Assign) -> None:
+        for target in node.targets:
+            self._add_subscript_write_if_active(target, "active_store_subscript_write")
+            self._record_alias_if_raw_list(target, node.value)
+        self.generic_visit(node)
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+        self._add_subscript_write_if_active(node.target, "active_store_subscript_write")
+        if node.value is not None:
+            self._record_alias_if_raw_list(node.target, node.value)
+        self.generic_visit(node)
+
+    def visit_AugAssign(self, node: ast.AugAssign) -> None:
+        self._add_subscript_write_if_active(node.target, "active_store_subscript_write")
+        self.generic_visit(node)
+
+    def visit_Delete(self, node: ast.Delete) -> None:
+        for target in node.targets:
+            self._add_subscript_write_if_active(target, "active_store_subscript_delete")
+        self.generic_visit(node)
+
+    def visit_Call(self, node: ast.Call) -> None:
+        if isinstance(node.func, ast.Attribute) and node.func.attr in {"append", "remove"}:
+            method = node.func.attr
+            value = node.func.value
+            if isinstance(value, ast.Subscript) and self._is_active_store_expr(value.value):
+                self._add_finding(
+                    line=node.lineno,
+                    kind=f"active_store_raw_list_{method}",
+                    expression=self._source_for(value),
+                    classification_suggestion="active store raw write",
+                )
+            elif self._is_active_list_expr(value):
+                self._add_finding(
+                    line=node.lineno,
+                    kind=f"active_store_compat_list_{method}",
+                    expression=self._source_for(value),
+                    classification_suggestion="active-store compatibility write",
+                )
+            elif self._is_enemy_mirror_expr(value):
+                self._add_finding(
+                    line=node.lineno,
+                    kind=f"enemy_mirror_raw_list_{method}",
+                    expression=self._source_for(value),
+                    classification_suggestion="enemy debuff mirror raw write",
+                )
+        self.generic_visit(node)
+
+    def _add_subscript_write_if_active(self, node: ast.AST, kind: str) -> None:
+        if isinstance(node, ast.Subscript) and self._is_active_store_expr(node.value):
+            self._add_finding(
+                line=node.lineno,
+                kind=kind,
+                expression=self._source_for(node),
+                classification_suggestion="active store raw write",
+            )
+
+    def _record_alias_if_raw_list(self, target: ast.AST, value: ast.AST) -> None:
+        if not isinstance(target, ast.Name):
+            return
+        if (
+            isinstance(value, ast.Subscript)
+            and self._is_active_store_expr(value.value)
+        ) or self._is_active_list_expr(value):
+            self._active_list_alias_stack[-1].add(target.id)
+            return
+        if self._is_enemy_mirror_expr(value):
+            self._enemy_mirror_alias_stack[-1].add(target.id)
+
+    def _is_active_store_expr(self, node: ast.AST) -> bool:
+        if isinstance(node, ast.Name):
+            return node.id in ACTIVE_STORE_RAW_DICT_NAMES
+        if isinstance(node, ast.Attribute):
+            return node.attr in ACTIVE_STORE_RAW_DICT_NAMES
+        if isinstance(node, ast.Call):
+            return self._call_name(node.func) in ACTIVE_STORE_COMPAT_DICT_METHODS
+        return False
+
+    def _is_active_list_expr(self, node: ast.AST) -> bool:
+        if isinstance(node, ast.Name):
+            return any(node.id in aliases for aliases in self._active_list_alias_stack)
+        if isinstance(node, ast.Call):
+            return self._call_name(node.func) in ACTIVE_STORE_COMPAT_LIST_METHODS
+        if isinstance(node, ast.Subscript):
+            return self._is_active_store_expr(node.value)
+        return False
+
+    def _is_enemy_mirror_expr(self, node: ast.AST) -> bool:
+        if isinstance(node, ast.Name):
+            return node.id in ENEMY_MIRROR_RAW_LIST_NAMES or any(
+                node.id in aliases for aliases in self._enemy_mirror_alias_stack
+            )
+        if isinstance(node, ast.Attribute):
+            return node.attr in ENEMY_MIRROR_RAW_LIST_NAMES
+        if isinstance(node, ast.Call):
+            return self._call_name(node.func) in ENEMY_MIRROR_COMPAT_LIST_METHODS
+        return False
+
+    @staticmethod
+    def _call_name(func: ast.AST) -> str | None:
+        if isinstance(func, ast.Name):
+            return func.id
+        if isinstance(func, ast.Attribute):
+            return func.attr
+        return None
+
+    def _add_finding(
+        self,
+        *,
+        line: int,
+        kind: str,
+        expression: str,
+        classification_suggestion: str,
+    ) -> None:
+        self.findings.append(
+            ActiveStoreRawWriteFinding(
+                path=self._relative_path(),
+                line=line,
+                kind=kind,
+                matched_expression=self._normalize(expression),
+                classification_suggestion=classification_suggestion,
+                context=self._context(),
+            )
+        )
+
+    def _relative_path(self) -> str:
+        return self.path.relative_to(PROJECT_ROOT).as_posix()
+
+    def _context(self) -> str:
+        parts = [*self._class_stack, *self._function_stack]
+        if not parts:
+            return "<module>"
+        return ".".join(parts)
+
+    def _source_for(self, node: ast.AST) -> str:
+        segment = ast.get_source_segment(self.source, node)
+        if segment is None:
+            return f"<{type(node).__name__}>"
+        return self._normalize(segment)
+
+    @staticmethod
+    def _normalize(expression: str) -> str:
+        return " ".join(expression.strip().split())
+
+
 class ScheduledEventRuntimeVisitor(RawContainerVisitor):
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self._function_stack.append(node.name)
@@ -1129,6 +1406,32 @@ def _is_allowed_pending_queue_raw_write(
         finding.path,
         finding.context,
     ) in PENDING_QUEUE_RAW_WRITE_ALLOWED_CONTEXTS
+
+
+def _collect_active_store_raw_write_findings_from_source(
+    path: Path, source: str
+) -> list[ActiveStoreRawWriteFinding]:
+    tree = ast.parse(source, filename=str(path))
+    visitor = ActiveStoreRawWriteVisitor(path, source)
+    visitor.visit(tree)
+    return visitor.findings
+
+
+def _collect_active_store_raw_write_findings() -> list[ActiveStoreRawWriteFinding]:
+    findings: list[ActiveStoreRawWriteFinding] = []
+    for path in SCANNED_PRODUCTION_FILES:
+        source = path.read_text(encoding="utf-8")
+        findings.extend(_collect_active_store_raw_write_findings_from_source(path, source))
+    return findings
+
+
+def _is_allowed_active_store_raw_write(
+    finding: ActiveStoreRawWriteFinding,
+) -> bool:
+    return (
+        finding.path,
+        finding.context,
+    ) in ACTIVE_STORE_RAW_WRITE_ALLOWED_CONTEXTS
 
 
 def _collect_scheduled_runtime_findings_from_source(
@@ -1774,6 +2077,62 @@ def test_pending_queue_runtime_dependency_scanner_classifies_reference_categorie
     } == {"comment"}
 
 
+def test_active_store_runtime_dependency_scanner_classifies_compat_references() -> None:
+    scanner = RuntimeDependencyZeroScanner(PROJECT_ROOT)
+
+    production_findings = scanner.scan_source(
+        "zsim/api_src/_fixture.py",
+        "def leak(runtime_state):\n"
+        "    return runtime_state.active_store_for_compat()\n",
+    )
+    migration_findings = scanner.scan_source(
+        "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+        "def compat(runtime_state):\n"
+        "    return runtime_state.active_store_for_compat()\n",
+    )
+    test_findings = scanner.scan_source(
+        "tests/simulator/_fixture.py",
+        "def compat(facade):\n"
+        "    return facade.get_active_buffs_for_compat('enemy')\n",
+    )
+    docs_findings = scanner.scan_source(
+        "docs/_fixture.md",
+        "`active_store_for_compat()` is a migration-only compatibility view.\n",
+    )
+    comment_findings = scanner.scan_source(
+        "zsim/api_src/_fixture.py",
+        "# active_store_for_compat historical note only\n"
+        "def clean():\n"
+        "    return None\n",
+    )
+
+    assert {
+        finding.category
+        for finding in production_findings
+        if finding.family == "active-store compatibility references"
+    } == {"production runtime"}
+    assert {
+        finding.category
+        for finding in migration_findings
+        if finding.family == "active-store compatibility references"
+    } == {"migration-only"}
+    assert {
+        finding.category
+        for finding in test_findings
+        if finding.family == "active-store compatibility references"
+    } == {"test-only"}
+    assert {
+        finding.category
+        for finding in docs_findings
+        if finding.family == "active-store compatibility references"
+    } == {"docs-only"}
+    assert {
+        finding.category
+        for finding in comment_findings
+        if finding.family == "active-store compatibility references"
+    } == {"comment"}
+
+
 def test_raw_old_container_passthroughs_stay_inside_retained_boundaries() -> None:
     findings = _collect_findings()
     disallowed = [finding for finding in findings if _allowance_for(finding) is None]
@@ -1872,6 +2231,125 @@ def test_pending_queue_raw_write_guardrail_blocks_production_dict_and_list_write
     assert "LOADING_BUFF_DICT['enemy']" in disallowed[0].matched_expression
     assert "pending_buff_queue['enemy']" in disallowed[1].matched_expression
     assert f"next action: {PENDING_QUEUE_RAW_WRITE_NEXT_ACTION}" in disallowed[1].message()
+
+
+def test_active_store_raw_writes_stay_inside_owner_and_migration_adapter() -> None:
+    findings = _collect_active_store_raw_write_findings()
+    disallowed = [
+        finding
+        for finding in findings
+        if not _is_allowed_active_store_raw_write(finding)
+    ]
+
+    assert not disallowed, (
+        "Active store ownership guardrail found raw writes outside owner APIs:\n"
+        + "\n".join(f"- {finding.message()}" for finding in disallowed)
+    )
+    assert {
+        (finding.path, finding.context, finding.kind)
+        for finding in findings
+    } == {
+        (
+            "zsim/simulator/dataclasses.py",
+            "ScheduleData.reset_myself",
+            "active_store_subscript_write",
+        ),
+        (
+            "zsim/simulator/dataclasses.py",
+            "GlobalStats.__post_init__",
+            "active_store_subscript_write",
+        ),
+        (
+            "zsim/simulator/dataclasses.py",
+            "GlobalStats.reset_myself",
+            "active_store_subscript_write",
+        ),
+        (
+            "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+            "BuffRuntimeState._collapse_enemy_debuff_store",
+            "active_store_subscript_write",
+        ),
+        (
+            "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+            "ActiveBuffStore.append",
+            "active_store_raw_list_append",
+        ),
+        (
+            "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+            "ActiveBuffStore.remove",
+            "active_store_raw_list_remove",
+        ),
+        (
+            "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+            "EnemyDebuffMirror.sync",
+            "enemy_mirror_raw_list_remove",
+        ),
+        (
+            "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+            "EnemyDebuffMirror.sync",
+            "enemy_mirror_raw_list_append",
+        ),
+        (
+            "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+            "EnemyDebuffMirror.remove",
+            "enemy_mirror_raw_list_remove",
+        ),
+        (
+            "zsim/sim_progress/Buff/ScheduleBuffSettle.py",
+            "add_schedule_buff",
+            "active_store_raw_list_remove",
+        ),
+        (
+            "zsim/sim_progress/Buff/ScheduleBuffSettle.py",
+            "add_schedule_buff",
+            "active_store_raw_list_append",
+        ),
+        (
+            "zsim/sim_progress/Buff/ScheduleBuffSettle.py",
+            "add_schedule_buff",
+            "enemy_mirror_raw_list_remove",
+        ),
+    }
+
+
+def test_active_store_raw_write_guardrail_blocks_production_writes() -> None:
+    source = (
+        "def raw_active_writes(DYNAMIC_BUFF_DICT, dynamic_buff, runtime_state, facade, enemy, buff):\n"
+        "    DYNAMIC_BUFF_DICT['enemy'] = []\n"
+        "    DYNAMIC_BUFF_DICT['enemy'].append(buff)\n"
+        "    dynamic_buff['enemy'].remove(buff)\n"
+        "    active_list = runtime_state.active_store_for_compat()['enemy']\n"
+        "    active_list.append(buff)\n"
+        "    facade.get_active_buffs_for_compat('enemy').remove(buff)\n"
+        "    mirror = runtime_state.enemy_mirror_for_compat()\n"
+        "    mirror.remove(buff)\n"
+        "    enemy.dynamic.dynamic_debuff_list.append(buff)\n"
+    )
+    path = PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffAddStrategy.py"
+    findings = _collect_active_store_raw_write_findings_from_source(path, source)
+    disallowed = [
+        finding
+        for finding in findings
+        if not _is_allowed_active_store_raw_write(finding)
+    ]
+
+    assert [finding.kind for finding in disallowed] == [
+        "active_store_subscript_write",
+        "active_store_raw_list_append",
+        "active_store_raw_list_remove",
+        "active_store_compat_list_append",
+        "active_store_compat_list_remove",
+        "enemy_mirror_raw_list_remove",
+        "enemy_mirror_raw_list_append",
+    ]
+    message = "\n".join(finding.message() for finding in disallowed)
+    assert "matched expression: DYNAMIC_BUFF_DICT['enemy']" in message
+    assert "matched expression: active_list" in message
+    assert "matched expression: facade.get_active_buffs_for_compat('enemy')" in message
+    assert "matched expression: enemy.dynamic.dynamic_debuff_list" in message
+    assert "classification suggestion: active-store compatibility write" in message
+    assert "classification suggestion: enemy debuff mirror raw write" in message
+    assert f"next action: {ACTIVE_STORE_RAW_WRITE_NEXT_ACTION}" in message
 
 
 def test_main_loop_keeps_buffload_pending_queue_behind_runtime_api() -> None:
