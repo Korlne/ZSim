@@ -165,6 +165,43 @@ def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
     ]
 
 
+def test_main_loop_opt_in_preserves_runtime_api_order_and_pending_queue_identity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    order: list[str] = []
+    runtime = _RuntimeProbe(order)
+
+    def fake_create_facade() -> _RuntimeProbe:
+        order.append("create_facade")
+        return runtime
+
+    _patch_main_loop_leaf_calls(monkeypatch, order)
+    sim, _, loading_buff_dict, _, enemy = _make_minimal_sim(order)
+    monkeypatch.setattr(sim.buff_runtime_state, "create_facade", fake_create_facade)
+
+    sim.main_loop(stop_tick=1, use_api=True, use_indexed_buff_load_loop=True)
+
+    assert sim.use_indexed_buff_load_loop is True
+    assert sim.buff_runtime_state.pending_queue_for_compat() is loading_buff_dict
+    assert runtime.calls == [(0, enemy), (1, enemy)]
+    assert runtime.load_ticks == [0]
+    assert runtime.activation_ticks == [0]
+    assert order == [
+        "create_facade",
+        "tick_sweep:0",
+        "preload:0",
+        "damage_judge",
+        "load_pending:0",
+        "activate_pending:0",
+        "scheduled_init",
+        "scheduled_start",
+        "reset_processed_event",
+        "tick_sweep:1",
+        "preload:1",
+        "stop_report_threads",
+    ]
+
+
 def test_main_loop_creates_one_buff_runtime_facade_per_run_not_per_tick(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -226,6 +263,7 @@ def test_indexed_buff_load_loop_option_defaults_off_and_api_is_explicit(
     default_sim = Simulator()
     ctor_opt_in_sim = Simulator(use_indexed_buff_load_loop=True)
     api_opt_in_sim = Simulator()
+    api_explicit_false_sim = Simulator(use_indexed_buff_load_loop=True)
     common_cfg = SimpleNamespace(session_id="api-session")
 
     default_sim.api_run_simulator(common_cfg, sim_cfg=None, stop_tick=1)
@@ -235,15 +273,24 @@ def test_indexed_buff_load_loop_option_defaults_off_and_api_is_explicit(
         stop_tick=1,
         use_indexed_buff_load_loop=True,
     )
+    api_explicit_false_sim.api_run_simulator(
+        common_cfg,
+        sim_cfg=None,
+        stop_tick=1,
+        use_indexed_buff_load_loop=False,
+    )
 
     assert default_sim.use_indexed_buff_load_loop is False
     assert ctor_opt_in_sim.use_indexed_buff_load_loop is True
     assert api_opt_in_sim.use_indexed_buff_load_loop is True
+    assert api_explicit_false_sim.use_indexed_buff_load_loop is False
     assert calls == [
         ("init", False, None),
         ("main_loop", False, None),
         ("init", True, None),
         ("main_loop", True, None),
+        ("init", False, None),
+        ("main_loop", False, None),
     ]
 
 
@@ -970,6 +1017,7 @@ def test_buff_load_processing_helpers_own_candidate_filters(
         "alpha": ["alpha", "bravo", "charlie", "enemy"],
         "bravo": ["bravo", "alpha", "charlie", "enemy"],
     }
+    opt_in_sim = cast(Any, Simulator(use_indexed_buff_load_loop=True))
 
     buff_load_module.process_on_field_buff(
         {
@@ -1000,7 +1048,7 @@ def test_buff_load_processing_helpers_own_candidate_filters(
         loading_buff_dict,
         all_name_order_box,
         exist_buff_dict,
-        sim_instance=cast(Any, Simulator()),
+        sim_instance=opt_in_sim,
     )
     buff_load_module.process_backend_buff(
         {
@@ -1038,9 +1086,10 @@ def test_buff_load_processing_helpers_own_candidate_filters(
         10,
         loading_buff_dict,
         exist_buff_dict,
-        sim_instance=cast(Any, Simulator()),
+        sim_instance=opt_in_sim,
     )
 
+    assert opt_in_sim.use_indexed_buff_load_loop is True
     assert process_calls == [
         ("mission", "on-eligible", ("alpha",)),
         ("mission", "back-eligible", ("bravo",)),

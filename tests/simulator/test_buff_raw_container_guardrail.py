@@ -1566,6 +1566,31 @@ def test_main_loop_keeps_buffload_pending_queue_behind_runtime_api() -> None:
     )
 
 
+def test_main_loop_keeps_runtime_api_order_before_scheduled_events() -> None:
+    source_path = PROJECT_ROOT / "zsim" / "simulator" / "simulator_class.py"
+    source = source_path.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    simulator_class = next(
+        node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "Simulator"
+    )
+    main_loop = next(
+        node
+        for node in simulator_class.body
+        if isinstance(node, ast.FunctionDef) and node.name == "main_loop"
+    )
+    main_loop_source = ast.get_source_segment(source, main_loop)
+
+    assert main_loop_source is not None
+    load_index = main_loop_source.index("buff_runtime.load_pending_buffs")
+    activate_index = main_loop_source.index("buff_runtime.activate_pending_buffs")
+    scheduled_index = main_loop_source.index("sce = ScE(")
+    shutdown_index = main_loop_source.index("stop_report_threads()")
+
+    assert load_index < activate_index < scheduled_index < shutdown_index
+    assert "BuffLoadLoop(" not in main_loop_source
+    assert "LOADING_BUFF_DICT" not in main_loop_source
+
+
 def test_update_buff_active_sweep_is_runtime_owned_without_kickout_fallback() -> None:
     findings = [
         finding

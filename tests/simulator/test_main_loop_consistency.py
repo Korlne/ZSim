@@ -394,6 +394,39 @@ def _matching_opt_in_report(team: str, stop_tick: int = 120) -> dict[str, Any]:
     )
 
 
+def _matching_default_report(team: str, stop_tick: int = 120) -> dict[str, Any]:
+    legacy_snapshot = RuntimeSnapshot(
+        runtime_label="default-current-path",
+        session_id=f"{team}-legacy",
+        total_damage=123.4,
+        event_counts={
+            "total": 2,
+            "anomaly_total": 0,
+            "disorder_total": 0,
+            "by_skill_tag": {"alpha": 2},
+            "by_skill_name": {"Alpha": 2},
+            "by_element_type": {"1": 2},
+        },
+        buff_timeline={
+            "alpha": [{"Task": "buff-a", "Start": 1, "Finish": 2, "Value": 1.0}]
+        },
+    )
+    candidate_snapshot = RuntimeSnapshot(
+        runtime_label="candidate-current-path",
+        session_id=f"{team}-candidate",
+        total_damage=123.4,
+        event_counts=dict(legacy_snapshot.event_counts),
+        buff_timeline=dict(legacy_snapshot.buff_timeline),
+    )
+    return build_consistency_report(
+        team=team,
+        apl=f"./{team}.toml",
+        stop_tick=stop_tick,
+        legacy_snapshot=legacy_snapshot,
+        candidate_snapshot=candidate_snapshot,
+    )
+
+
 def test_build_multi_team_consistency_summary_records_parity_fields():
     reports = [
         _matching_opt_in_report("team-a"),
@@ -550,6 +583,40 @@ def test_run_multi_team_main_loop_consistency_accepts_stop_tick_matrix(
     assert summary["stop_ticks"] == [120, 600]
     assert summary["matrix_row_count"] == 4
     assert summary["candidate_use_indexed_buff_load_loop"] is True
+
+
+def test_run_multi_team_main_loop_consistency_defaults_candidate_flag_off(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    captured_calls: list[dict[str, Any]] = []
+
+    def fake_run_main_loop_consistency(**kwargs: Any) -> dict[str, Any]:
+        captured_calls.append(kwargs)
+        return _matching_default_report(kwargs["team"], kwargs["stop_tick"])
+
+    monkeypatch.setattr(mlc, "run_main_loop_consistency", fake_run_main_loop_consistency)
+
+    summary = mlc.run_multi_team_main_loop_consistency(
+        teams=["team-a"],
+        stop_tick=120,
+        stop_ticks=[120, 600],
+        cleanup=True,
+        candidate_use_indexed_buff_load_loop=False,
+    )
+
+    assert [(call["team"], call["stop_tick"]) for call in captured_calls] == [
+        ("team-a", 120),
+        ("team-a", 600),
+    ]
+    assert [call["candidate_use_indexed_buff_load_loop"] for call in captured_calls] == [
+        False,
+        False,
+    ]
+    assert summary["candidate_use_indexed_buff_load_loop"] is False
+    assert summary["default_indexed_execution"] == "blocked"
+    assert [
+        row["opt_in_flag_status"] for row in summary["matrix_results"]
+    ] == ["default_off_label_only", "default_off_label_only"]
 
 
 def test_load_runtime_snapshot_falls_back_for_blank_anomaly_column(

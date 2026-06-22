@@ -580,6 +580,11 @@ def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
         False,
     ]
     assert default_summary["runtime_selection"]["mode"] == "label-only-current-runtime"
+    assert default_summary["opt_in_flag_status"] == {
+        "candidate_use_indexed_buff_load_loop": False,
+        "default_off": True,
+        "default_indexed_execution": "blocked",
+    }
     assert default_summary["repeat_samples"] == 2
     assert default_summary["rebuild_count_buckets"] == {
         "included": False,
