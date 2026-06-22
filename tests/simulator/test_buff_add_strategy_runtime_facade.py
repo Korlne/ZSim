@@ -216,6 +216,80 @@ def _assert_pending_queues_untouched(
         assert pending_queue == []
 
 
+def test_buff_add_strategy_forced_add_template_lookup_uses_runtime_owner(
+    monkeypatch: Any,
+) -> None:
+    from zsim.sim_progress.ScheduledEvent import buff_runtime
+
+    _install_runtime_command_creation_guard(monkeypatch)
+    owner_template = _BuffAddProbe("owner-buff", count=2, step=1)
+    raw_shadow_template = _BuffAddProbe("owner-buff", count=40, step=1)
+    active_store: list[Buff] = []
+    sim_instance = _make_sim_instance(
+        exist_buff_dict={"Alice": {"owner-buff": owner_template}},
+        loading_buff_dict={"Alice": _FailFastPendingQueue()},
+        dynamic_buff_dict={"Alice": active_store},
+        enemy_debuff_mirror=[],
+    )
+    sim_instance.load_data.exist_buff_dict = {
+        "Alice": {"owner-buff": raw_shadow_template}
+    }
+    template_owner = sim_instance.buff_runtime_state.template_registry_owner()
+    owner_calls: list[tuple[str, str]] = []
+    original_items = template_owner.items
+    original_for_owner = template_owner.for_owner
+
+    def recording_items() -> Any:
+        owner_calls.append(("items", "*"))
+        return original_items()
+
+    def recording_for_owner(beneficiary: str) -> dict[str, Buff]:
+        owner_calls.append(("for_owner", beneficiary))
+        return original_for_owner(beneficiary)
+
+    def fail_compat_access() -> dict[str, dict[str, Buff]]:
+        raise AssertionError("forced add must not read the compatibility registry")
+
+    class _OwnerOnlyForcedAddFacade(buff_runtime.LegacyBuffRuntimeFacade):
+        def create_forced_add_buff(
+            self,
+            beneficiary: str,
+            buff_index: str,
+            *,
+            tick: int,
+            specified_count: int | float | None = None,
+        ) -> Buff:
+            raise AssertionError(
+                "buff_add_strategy should clone through BuffTemplateRegistry"
+            )
+
+    monkeypatch.setattr(template_owner, "items", recording_items)
+    monkeypatch.setattr(template_owner, "for_owner", recording_for_owner)
+    monkeypatch.setattr(
+        sim_instance.buff_runtime_state,
+        "template_registry_for_compat",
+        fail_compat_access,
+    )
+    monkeypatch.setattr(
+        buff_runtime.BuffRuntimeState,
+        "create_facade",
+        lambda self: _OwnerOnlyForcedAddFacade(runtime_state=self),
+    )
+
+    buff_add_strategy("owner-buff", benifit_list=["Alice"], sim_instance=sim_instance)
+
+    assert owner_calls == [("items", "*"), ("for_owner", "Alice")]
+    assert len(active_store) == 1
+    new_active_buff = active_store[0]
+    assert new_active_buff is not owner_template
+    assert new_active_buff.dy.count == 3
+    assert owner_template.dy.count == 3
+    assert owner_template.history.active_times == 1
+    assert raw_shadow_template.dy.count == 40
+    assert raw_shadow_template.history.active_times == 0
+    assert sim_instance.load_data.LOADING_BUFF_DICT["Alice"] == []
+
+
 def test_buff_add_strategy_replaces_active_store_through_runtime_facade(
     monkeypatch: Any,
 ) -> None:

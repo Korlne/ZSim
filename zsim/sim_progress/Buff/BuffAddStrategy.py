@@ -1,16 +1,21 @@
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from .buff_class import Buff
 
 if TYPE_CHECKING:
-    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeFacade
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import (
+        BuffRuntimeFacade,
+        BuffTemplateRegistry,
+    )
     from zsim.simulator.simulator_class import Simulator
 
 
 @dataclass(frozen=True)
 class BuffAddRuntimeContext:
     runtime_facade: "BuffRuntimeFacade"
+    template_registry_owner: "BuffTemplateRegistry"
     all_name_order_box: dict[str, list[str]]
     tick: int
 
@@ -74,6 +79,7 @@ def buff_add_strategy(
         for names in selected_characters:
             let_buff_start(
                 runtime_facade,
+                runtime_context.template_registry_owner,
                 buff_name,
                 names,
                 specified_count,
@@ -86,13 +92,48 @@ def _create_buff_add_runtime_context(
 ) -> BuffAddRuntimeContext:
     return BuffAddRuntimeContext(
         runtime_facade=sim_instance.buff_runtime_state.create_facade(),
+        template_registry_owner=(
+            sim_instance.buff_runtime_state.template_registry_owner()
+        ),
         all_name_order_box=sim_instance.load_data.all_name_order_box,
         tick=sim_instance.tick,
     )
 
 
+def _create_forced_add_buff_from_template_owner(
+    template_registry_owner: "BuffTemplateRegistry",
+    beneficiary: str,
+    buff_index: str,
+    *,
+    tick: int,
+    specified_count: int | float | None = None,
+) -> Buff:
+    source_registry = template_registry_owner.for_owner(beneficiary)
+    source_buff = source_registry[buff_index]
+    buff_new = deepcopy(source_buff)
+    buff_new.ft.operator = source_buff.ft.operator
+    buff_new.ft.passively_updating = source_buff.ft.passively_updating
+    buff_new.ft.beneficiary = source_buff.ft.beneficiary
+
+    if source_buff.ft.simple_start_logic and buff_new.ft.simple_effect_logic:
+        if specified_count is not None:
+            buff_new.simple_start(
+                tick,
+                source_registry,
+                specified_count=specified_count,
+            )
+        else:
+            buff_new.simple_start(tick, source_registry)
+    elif not source_buff.ft.simple_start_logic:
+        buff_new.logic.xstart(benifit=beneficiary)
+    elif not source_buff.ft.simple_effect_logic:
+        buff_new.logic.xeffect()
+    return buff_new
+
+
 def let_buff_start(
     runtime_facade: "BuffRuntimeFacade",
+    template_registry_owner: "BuffTemplateRegistry",
     buff_name: str,
     names: str,
     specified_count: int | float | None,
@@ -107,7 +148,8 @@ def let_buff_start(
         specified_count: int | float | None: 指定层数，非必要参数
         tick: int: 当前时间
     """
-    buff_new = runtime_facade.create_forced_add_buff(
+    buff_new = _create_forced_add_buff_from_template_owner(
+        template_registry_owner,
         names,
         buff_name,
         tick=tick,
