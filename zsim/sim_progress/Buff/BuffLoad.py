@@ -240,6 +240,37 @@ def _summarize_buff_load_loop_candidate_plan(
     }
 
 
+def _snapshot_buff_load_loop_registry_lengths(
+    load_mission_dict: dict,
+    buff_registry_by_character: dict,
+    character_name_box: list,
+) -> dict[str, object]:
+    registry_lengths_by_character: dict[str, int] = {}
+
+    for mission in load_mission_dict.values():
+        actor_name = mission.mission_character
+        if actor_name not in buff_registry_by_character:
+            raise ValueError("当前角色的Buff源并未创建！")
+
+        for char_name in character_name_box:
+            if char_name not in registry_lengths_by_character:
+                registry_lengths_by_character[char_name] = len(
+                    buff_registry_by_character[char_name]
+                )
+
+    character_registry_lengths = tuple(
+        (char_name, registry_lengths_by_character[char_name])
+        for char_name in character_name_box
+        if char_name in registry_lengths_by_character
+    )
+    return {
+        "character_registry_lengths": character_registry_lengths,
+        "registered_candidate_count": sum(
+            candidate_count for _, candidate_count in character_registry_lengths
+        ),
+    }
+
+
 def _describe_buff_load_loop_candidate_plan(
     load_mission_dict: dict,
     buff_registry_by_character: dict,

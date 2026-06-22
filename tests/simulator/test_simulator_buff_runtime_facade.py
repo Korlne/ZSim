@@ -824,6 +824,131 @@ def test_buff_load_loop_candidate_plan_summary_matches_detailed_counts() -> None
         assert summary[key] == detailed[key]
 
 
+def test_buff_load_loop_registry_length_snapshot_matches_detailed_counts() -> None:
+    class FakeLoadingMission:
+        def __init__(self, mission_character: str) -> None:
+            self.mission_character = mission_character
+
+    existbuff_dict: dict[str, dict[str, Any]] = {
+        "alpha": {
+            "alpha-schedule": object(),
+            "alpha-passive": object(),
+            "alpha-live": object(),
+        },
+        "bravo": {
+            "bravo-backend-inactive": object(),
+            "bravo-live": object(),
+        },
+        "charlie": {
+            "charlie-live": object(),
+        },
+    }
+    load_mission_dict = {
+        "first": FakeLoadingMission("bravo"),
+        "second": FakeLoadingMission("alpha"),
+    }
+    character_name_box = ["alpha", "bravo", "charlie"]
+
+    snapshot = buff_load_module._snapshot_buff_load_loop_registry_lengths(
+        load_mission_dict,
+        existbuff_dict,
+        character_name_box,
+    )
+    detailed = buff_load_module._describe_buff_load_loop_candidate_plan(
+        load_mission_dict,
+        existbuff_dict,
+        character_name_box,
+    )
+    registry_lengths = dict(
+        cast(tuple[tuple[str, int], ...], snapshot["character_registry_lengths"])
+    )
+    detailed_steps = cast(tuple[dict[str, Any], ...], detailed["steps"])
+
+    assert snapshot == {
+        "character_registry_lengths": (("alpha", 3), ("bravo", 2), ("charlie", 1)),
+        "registered_candidate_count": 6,
+    }
+    assert [
+        step["candidate_count"]
+        for step in detailed_steps
+    ] == [
+        registry_lengths[cast(str, step["character_name"])]
+        for step in detailed_steps
+    ]
+    assert sum(
+        cast(int, step["candidate_count"]) for step in detailed_steps
+    ) == detailed["candidate_count"]
+
+
+def test_buff_load_loop_registry_length_snapshot_excludes_detailed_payload() -> None:
+    class FakeLoadingMission:
+        def __init__(self, mission_character: str) -> None:
+            self.mission_character = mission_character
+
+    alpha_buff = object()
+    bravo_buff = object()
+    snapshot = buff_load_module._snapshot_buff_load_loop_registry_lengths(
+        {"first": FakeLoadingMission("alpha")},
+        {
+            "alpha": {"alpha-a": alpha_buff},
+            "bravo": {"bravo-a": bravo_buff, "bravo-b": object()},
+        },
+        ["alpha", "bravo"],
+    )
+
+    assert set(snapshot) == {
+        "character_registry_lengths",
+        "registered_candidate_count",
+    }
+    assert "steps" not in snapshot
+    assert "buff_keys" not in snapshot
+    assert "processor" not in snapshot
+    assert "selected_targets" not in snapshot
+    assert snapshot["character_registry_lengths"] == (("alpha", 1), ("bravo", 2))
+    for character_name, registry_length in cast(
+        tuple[tuple[str, int], ...], snapshot["character_registry_lengths"]
+    ):
+        assert isinstance(character_name, str)
+        assert isinstance(registry_length, int)
+    assert alpha_buff not in snapshot.values()
+    assert bravo_buff not in snapshot.values()
+
+
+def test_buff_load_loop_registry_length_snapshot_preserves_missing_registry_failures() -> None:
+    class FakeLoadingMission:
+        def __init__(self, mission_character: str) -> None:
+            self.mission_character = mission_character
+
+    missing_actor_missions = {"first": FakeLoadingMission("bravo")}
+    missing_character_missions = {"first": FakeLoadingMission("alpha")}
+
+    with pytest.raises(ValueError, match="当前角色的Buff源并未创建！"):
+        buff_load_module._snapshot_buff_load_loop_registry_lengths(
+            missing_actor_missions,
+            {"alpha": {}},
+            ["alpha"],
+        )
+    with pytest.raises(ValueError, match="当前角色的Buff源并未创建！"):
+        buff_load_module._describe_buff_load_loop_candidate_plan(
+            missing_actor_missions,
+            {"alpha": {}},
+            ["alpha"],
+        )
+
+    with pytest.raises(KeyError, match="bravo"):
+        buff_load_module._snapshot_buff_load_loop_registry_lengths(
+            missing_character_missions,
+            {"alpha": {}},
+            ["alpha", "bravo"],
+        )
+    with pytest.raises(KeyError, match="bravo"):
+        buff_load_module._describe_buff_load_loop_candidate_plan(
+            missing_character_missions,
+            {"alpha": {}},
+            ["alpha", "bravo"],
+        )
+
+
 def test_buff_load_loop_candidate_plan_summary_excludes_detailed_payload() -> None:
     class FakeLoadingMission:
         def __init__(self, mission_character: str) -> None:
