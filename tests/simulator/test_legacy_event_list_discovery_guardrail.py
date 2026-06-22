@@ -11,7 +11,9 @@ PRODUCTION_ROOT = PROJECT_ROOT / "zsim" / "sim_progress"
 
 RAW_EVENT_APPEND_KINDS = {
     "compatibility_only_queue_append",
+    "event_context_requeue_append",
     "handler_requeue_append",
+    "local_event_group_append",
     "raw_data_event_list_append",
     "raw_event_list_append",
     "raw_schedule_data_event_list_append",
@@ -19,12 +21,31 @@ RAW_EVENT_APPEND_KINDS = {
 
 LOCAL_EVENT_GROUP_NAMES = {"adrenaline_events", "local_event_group"}
 
-TEMPORARY_RAW_EVENT_APPEND_ALLOWLIST = {
+CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS = {
     (
         "zsim/sim_progress/data_struct/schedule_dispatch.py",
+        84,
         "compatibility_only_queue_append",
         "self._event_queue.append(event)",
     ): "US-003",
+    (
+        "zsim/sim_progress/data_struct/schedule_dispatch.py",
+        97,
+        "compatibility_only_queue_append",
+        "self._event_queue.append(event)",
+    ): "US-003",
+    (
+        "zsim/sim_progress/ScheduledEvent/event_handlers/context.py",
+        46,
+        "event_context_requeue_append",
+        "self.data.event_list.append(event)",
+    ): "US-003",
+    (
+        "zsim/sim_progress/Character/Yixuan/AdrenalineManagerClass.py",
+        17,
+        "local_event_group_append",
+        "adrenaline_events.append(event(char_instance=char_instance))",
+    ): "US-007",
 }
 
 
@@ -52,6 +73,7 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
         self.findings: list[Finding] = []
         self._parents: list[ast.AST] = []
         self._class_stack: list[str] = []
+        self._function_stack: list[str] = []
         self._local_event_group_stack: list[set[str]] = []
 
     def visit(self, node: ast.AST):
@@ -67,14 +89,18 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
         self._class_stack.pop()
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._function_stack.append(node.name)
         self._local_event_group_stack.append(self._local_event_groups_in_scope(node))
         self.generic_visit(node)
         self._local_event_group_stack.pop()
+        self._function_stack.pop()
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._function_stack.append(node.name)
         self._local_event_group_stack.append(self._local_event_groups_in_scope(node))
         self.generic_visit(node)
         self._local_event_group_stack.pop()
+        self._function_stack.pop()
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
         for alias in node.names:
@@ -201,6 +227,9 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
         if target.attr != "event_list":
             return None
 
+        if self._is_event_context_requeue_api(target):
+            return "event_context_requeue_append"
+
         owner = self._dotted_name(target.value)
         if owner == "data":
             if self._is_scheduled_event_handler_path():
@@ -258,6 +287,18 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             return False
         return self._dotted_name(target) in {"_event_queue", "self._event_queue"}
 
+    def _is_event_context_requeue_api(self, target: ast.Attribute) -> bool:
+        if (
+            self._relative_path()
+            != "zsim/sim_progress/ScheduledEvent/event_handlers/context.py"
+        ):
+            return False
+        return (
+            self._class_stack[-1:] == ["EventContext"]
+            and self._function_stack[-1:] == ["requeue_event"]
+            and self._dotted_name(target) == "self.data.event_list"
+        )
+
     def _dotted_name(self, node: ast.AST) -> str | None:
         if isinstance(node, ast.Name):
             return node.id
@@ -276,6 +317,9 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             "buff_record_event_list_access": "deleted BuffRecordBaseClass.event_list cache access",
             "compatibility_only_queue_append": (
                 "compatibility-only queue append inside schedule dispatch adapter"
+            ),
+            "event_context_requeue_append": (
+                "EventContext requeue API append to current ScheduleData.event_list"
             ),
             "handler_requeue_append": (
                 "handler requeue raw data.event_list.append write"
@@ -302,8 +346,11 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             "compatibility_only_queue_append": (
                 "US-003 owns the schedule queue implementation boundary"
             ),
+            "event_context_requeue_append": (
+                "keep requeue behind EventContext.requeue_event(...)"
+            ),
             "handler_requeue_append": (
-                "US-004 owns migration to an EventContext requeue API"
+                "US-003 owns migration to an EventContext requeue API"
             ),
             "local_event_group_append": (
                 "keep local event groups distinctly named and outside ScheduleData.event_list"
@@ -345,8 +392,8 @@ def _assert_no_disallowed(findings: list[Finding]) -> None:
     )
 
 
-def _raw_append_key(finding: Finding) -> tuple[str, str, str]:
-    return (finding.path, finding.kind, finding.matched_expression)
+def _raw_append_key(finding: Finding) -> tuple[str, int, str, str]:
+    return (finding.path, finding.line, finding.kind, finding.matched_expression)
 
 
 def _active_prd_story_ids() -> set[str]:
@@ -375,12 +422,12 @@ def test_buff_record_event_list_cache_has_no_new_production_uses() -> None:
     _assert_no_disallowed(findings)
 
 
-def test_raw_event_list_append_guardrail_has_only_follow_up_owned_findings() -> None:
+def test_raw_event_list_append_guardrail_has_only_owner_api_or_local_group_findings() -> None:
     findings = [
         finding for finding in _collect_findings() if finding.kind in RAW_EVENT_APPEND_KINDS
     ]
     actual = {_raw_append_key(finding) for finding in findings}
-    expected = set(TEMPORARY_RAW_EVENT_APPEND_ALLOWLIST)
+    expected = set(CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS)
 
     assert actual == expected, (
         "Raw event-list append guardrail found unexpected production queue writes:\n"
@@ -391,12 +438,12 @@ def test_raw_event_list_append_guardrail_has_only_follow_up_owned_findings() -> 
     missing_story_ids = sorted(
         {
             owner_story_id
-            for owner_story_id in TEMPORARY_RAW_EVENT_APPEND_ALLOWLIST.values()
+            for owner_story_id in CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS.values()
             if owner_story_id not in prd_story_ids
         }
     )
     assert not missing_story_ids, (
-        "Temporary raw append allowlist entries must name follow-up stories "
+        "Current-root allowed event queue mutation entries must name follow-up stories "
         f"in scripts/ralph/prd.json; missing: {missing_story_ids}"
     )
 
@@ -421,6 +468,18 @@ def test_raw_event_list_append_guardrail_reports_event_layer_classifications() -
             PRODUCTION_ROOT / "data_struct" / "schedule_dispatch.py",
             "class Adapter:\n    def publish(self, event):\n        self._event_queue.append(event)\n",
             "compatibility-only queue append inside schedule dispatch adapter",
+        ),
+        (
+            PRODUCTION_ROOT
+            / "ScheduledEvent"
+            / "event_handlers"
+            / "context.py",
+            (
+                "class EventContext:\n"
+                "    def requeue_event(self, event):\n"
+                "        self.data.event_list.append(event)\n"
+            ),
+            "EventContext requeue API append to current ScheduleData.event_list",
         ),
         (
             PRODUCTION_ROOT / "data_struct" / "_synthetic_raw_schedule_data.py",
@@ -475,6 +534,55 @@ def test_local_event_group_classification_uses_name_and_scope_not_path() -> None
 
     assert len(raw_visitor.findings) == 1
     assert raw_visitor.findings[0].kind == "raw_event_list_append"
+
+
+def test_raw_planned_queue_writes_are_blocked_outside_owner_api_or_local_groups() -> None:
+    samples = [
+        (
+            PRODUCTION_ROOT / "Load" / "LoadDamageEvent.py",
+            "def publish(event_list, event):\n    event_list.append(event)\n",
+            "raw_event_list_append",
+        ),
+        (
+            PRODUCTION_ROOT
+            / "ScheduledEvent"
+            / "event_handlers"
+            / "handlers"
+            / "preload.py",
+            "def requeue(data, event):\n    data.event_list.append(event)\n",
+            "handler_requeue_append",
+        ),
+        (
+            PRODUCTION_ROOT / "Buff" / "BuffXLogic" / "_synthetic_queue_write.py",
+            "def publish(record, event):\n    record.event_list.append(event)\n",
+            "record_event_list_append",
+        ),
+        (
+            PRODUCTION_ROOT / "Character" / "Yixuan" / "_synthetic_raw_queue.py",
+            "def publish(event_list, event):\n    event_list.append(event)\n",
+            "raw_event_list_append",
+        ),
+        (
+            PRODUCTION_ROOT / "Enemy" / "_synthetic_raw_queue.py",
+            "def publish(schedule_data, event):\n    schedule_data.event_list.append(event)\n",
+            "raw_schedule_data_event_list_append",
+        ),
+        (
+            PRODUCTION_ROOT / "Update" / "UpdateAnomaly.py",
+            "def publish(schedule_data, event):\n    schedule_data.event_list.append(event)\n",
+            "raw_schedule_data_event_list_append",
+        ),
+    ]
+
+    allowed_keys = set(CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS)
+    for path, source, expected_kind in samples:
+        visitor = LegacyEventListDiscoveryVisitor(path, source)
+        visitor.visit(ast.parse(source))
+
+        assert len(visitor.findings) == 1
+        finding = visitor.findings[0]
+        assert finding.kind == expected_kind
+        assert _raw_append_key(finding) not in allowed_keys
 
 
 def test_guardrail_failure_message_includes_post_deletion_triage_fields() -> None:
