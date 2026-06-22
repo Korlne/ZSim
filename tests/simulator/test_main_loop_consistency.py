@@ -23,7 +23,7 @@ from tests.teams import auto_register_teams
 
 def test_build_consistency_report_keeps_required_json_fields():
     legacy_snapshot = RuntimeSnapshot(
-        runtime_label="legacy",
+        runtime_label="default-current",
         session_id="1",
         total_damage=123.4,
         event_counts={
@@ -71,7 +71,15 @@ def test_build_consistency_report_keeps_required_json_fields():
     assert report["team"] == "team-a"
     assert report["apl"] == "./zsim/data/APLData/example.toml"
     assert report["runtime_selection"]["mode"] == "label-only-current-runtime"
-    assert report["total_damage"] == {"legacy": 123.4, "candidate": 130.0}
+    assert report["baseline_runtime"] == "default-current"
+    assert report["legacy_runtime"] == "default-current"
+    assert report["report_compatibility"]["legacy_runtime"] == "alias for baseline_runtime"
+    assert report["total_damage"] == {
+        "baseline": 123.4,
+        "legacy": 123.4,
+        "candidate": 130.0,
+    }
+    assert report["event_counts"]["baseline"]["by_skill_tag"] == {"alpha": 1, "beta": 1}
     assert report["event_counts"]["legacy"]["by_skill_tag"] == {"alpha": 1, "beta": 1}
     assert report["buff_timeline"]["candidate"]["alpha"][1]["Task"] == "buff-b"
     assert report["differences"]["total_damage"] == 6.6
@@ -111,11 +119,21 @@ def test_build_parser_accepts_required_cli_flags():
             "team-a",
             "--apl",
             "./zsim/data/APLData/example.toml",
+            "--baseline-runtime",
+            "default-a",
+            "--candidate-runtime",
+            "candidate-b",
+            "--json",
+        ]
+    )
+    compat_args = parser.parse_args(
+        [
+            "--team",
+            "team-a",
             "--legacy-runtime",
             "legacy-a",
             "--candidate-runtime",
             "candidate-b",
-            "--json",
         ]
     )
     flagged_args = parser.parse_args(
@@ -142,21 +160,27 @@ def test_build_parser_accepts_required_cli_flags():
 
     assert args.team == "team-a"
     assert args.apl == "./zsim/data/APLData/example.toml"
-    assert args.legacy_runtime == "legacy-a"
+    assert args.baseline_runtime == "default-a"
     assert args.candidate_runtime == "candidate-b"
     assert args.json is True
+    assert compat_args.baseline_runtime == "legacy-a"
+    assert not hasattr(args, "legacy_runtime")
     assert args.candidate_use_indexed_buff_load_loop is False
     assert flagged_args.candidate_use_indexed_buff_load_loop is True
     assert multi_team_args.teams == ["team-a", "team-b", "team-c"]
     assert multi_team_args.stop_ticks == [120, 600]
     assert multi_team_args.summary_json == "scripts/ralph/benchmarks/summary.json"
     assert multi_team_args.candidate_use_indexed_buff_load_loop is True
+    help_text = parser.format_help()
+    assert "--baseline-runtime" in help_text
+    assert "Compatibility alias for --baseline-runtime" in help_text
+    assert "not old runtime selection" in help_text
 
 
 def test_run_main_loop_consistency_uses_runtime_labels_and_cleanup(monkeypatch: pytest.MonkeyPatch):
     snapshots_by_session: dict[str, RuntimeSnapshot] = {
         "101": RuntimeSnapshot(
-            runtime_label="legacy-label",
+            runtime_label="default-label",
             session_id="101",
             total_damage=100.0,
             event_counts={
@@ -249,7 +273,7 @@ def test_run_main_loop_consistency_uses_runtime_labels_and_cleanup(monkeypatch: 
         team="fake-team",
         apl="./override.toml",
         stop_tick=77,
-        legacy_runtime="legacy-label",
+        baseline_runtime="default-label",
         candidate_runtime="candidate-label",
         cleanup=True,
     )
@@ -258,7 +282,8 @@ def test_run_main_loop_consistency_uses_runtime_labels_and_cleanup(monkeypatch: 
     assert [payload["session_id"] for payload, _, _ in submitted_payloads] == ["101", "102"]
     assert all(stop_tick == 77 for _, stop_tick, _ in submitted_payloads)
     assert [flag for _, _, flag in submitted_payloads] == [False, False]
-    assert report["legacy_runtime"] == "legacy-label"
+    assert report["baseline_runtime"] == "default-label"
+    assert report["legacy_runtime"] == "default-label"
     assert report["candidate_runtime"] == "candidate-label"
     assert report["runtime_selection"]["mode"] == "label-only-current-runtime"
     assert report["apl"] == "./override.toml"
@@ -270,7 +295,7 @@ def test_run_main_loop_consistency_candidate_opt_in_only_flags_candidate(
 ):
     snapshots_by_session: dict[str, RuntimeSnapshot] = {
         "201": RuntimeSnapshot(
-            runtime_label="legacy-label",
+            runtime_label="default-label",
             session_id="201",
             total_damage=100.0,
             event_counts={
@@ -350,7 +375,7 @@ def test_run_main_loop_consistency_candidate_opt_in_only_flags_candidate(
         team="fake-team",
         apl=None,
         stop_tick=77,
-        legacy_runtime="legacy-label",
+        baseline_runtime="default-label",
         candidate_runtime="candidate-label",
         candidate_use_indexed_buff_load_loop=True,
     )
@@ -534,7 +559,7 @@ def test_run_multi_team_main_loop_consistency_writes_summary_json(
         True,
         True,
     ]
-    assert [call["legacy_runtime"] for call in captured_calls] == [
+    assert [call["baseline_runtime"] for call in captured_calls] == [
         "default-current-path",
         "default-current-path",
         "default-current-path",
@@ -699,11 +724,12 @@ def test_script_entrypoint_runs_with_json_output(
             "team": "fake-team",
             "apl": "./fake.toml",
             "stop_tick": 20,
-            "legacy_runtime": "legacy",
+            "baseline_runtime": "default-current",
+            "legacy_runtime": "default-current",
             "candidate_runtime": "candidate",
-            "total_damage": {"legacy": 1.0, "candidate": 1.0},
-            "event_counts": {"legacy": {}, "candidate": {}},
-            "buff_timeline": {"legacy": {}, "candidate": {}},
+            "total_damage": {"baseline": 1.0, "legacy": 1.0, "candidate": 1.0},
+            "event_counts": {"baseline": {}, "legacy": {}, "candidate": {}},
+            "buff_timeline": {"baseline": {}, "legacy": {}, "candidate": {}},
             "differences": {
                 "matches": True,
                 "total_damage": 0.0,

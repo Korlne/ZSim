@@ -29,9 +29,12 @@ MULTI_TEAM_CONSISTENCY_SCHEMA = "zsim-buffload-opt-in-multi-team-consistency.v1"
 RUNTIME_LABEL_CONTRACT = {
     "mode": "label-only-current-runtime",
     "description": (
-        "legacy_runtime and candidate_runtime are report labels only; "
+        "baseline_runtime and candidate_runtime are report labels only; "
         "both executions use the Simulator default Buff runtime."
     ),
+    "compatibility_aliases": {
+        "legacy_runtime": "report compatibility alias for baseline_runtime",
+    },
 }
 
 
@@ -62,6 +65,19 @@ def _runtime_selection_contract(
         "default_off": True,
         "default_indexed_execution": "blocked",
     }
+
+
+def _resolve_baseline_runtime_label(
+    *,
+    baseline_runtime: str | None,
+    legacy_runtime: str | None,
+    default: str,
+) -> str:
+    if baseline_runtime is not None:
+        return baseline_runtime
+    if legacy_runtime is not None:
+        return legacy_runtime
+    return default
 
 
 def _load_team_config(team_name: str) -> CommonCfg:
@@ -281,27 +297,36 @@ def build_consistency_report(
     total_damage_delta = round(candidate_snapshot.total_damage - legacy_snapshot.total_damage, 4)
 
     has_event_differences = any(bool(value) for value in event_count_differences.values())
+    baseline_label = legacy_snapshot.runtime_label
 
     return {
         "team": team,
         "apl": apl,
         "stop_tick": stop_tick,
-        "legacy_runtime": legacy_snapshot.runtime_label,
+        "baseline_runtime": baseline_label,
+        "legacy_runtime": baseline_label,
         "candidate_runtime": candidate_snapshot.runtime_label,
         "runtime_selection": _runtime_selection_contract(
             candidate_use_indexed_buff_load_loop=candidate_use_indexed_buff_load_loop,
         ),
         "total_damage": {
+            "baseline": legacy_snapshot.total_damage,
             "legacy": legacy_snapshot.total_damage,
             "candidate": candidate_snapshot.total_damage,
         },
         "event_counts": {
+            "baseline": legacy_snapshot.event_counts,
             "legacy": legacy_snapshot.event_counts,
             "candidate": candidate_snapshot.event_counts,
         },
         "buff_timeline": {
+            "baseline": legacy_snapshot.buff_timeline,
             "legacy": legacy_snapshot.buff_timeline,
             "candidate": candidate_snapshot.buff_timeline,
+        },
+        "report_compatibility": {
+            "legacy_runtime": "alias for baseline_runtime",
+            "legacy": "alias bucket for baseline",
         },
         "differences": {
             "matches": total_damage_delta == 0
@@ -339,7 +364,7 @@ def _team_consistency_summary(report: dict[str, Any]) -> dict[str, Any]:
         "apl": report["apl"],
         "stop_tick": int(report["stop_tick"]),
         "runtime_labels": {
-            "default_path": report["legacy_runtime"],
+            "default_path": report.get("baseline_runtime", report["legacy_runtime"]),
             "opt_in_indexed_path": report["candidate_runtime"],
         },
         "runtime_selection": runtime_selection,
@@ -348,7 +373,10 @@ def _team_consistency_summary(report: dict[str, Any]) -> dict[str, Any]:
             "candidate_explicit_opt_in" if candidate_opt_in else "default_off_label_only"
         ),
         "damage_parity": {
-            "default_path": report["total_damage"]["legacy"],
+            "default_path": report["total_damage"].get(
+                "baseline",
+                report["total_damage"]["legacy"],
+            ),
             "opt_in_indexed_path": report["total_damage"]["candidate"],
             "delta": differences["total_damage"],
             "matches": differences["total_damage"] == 0,
@@ -434,8 +462,9 @@ def run_multi_team_main_loop_consistency(
     teams: list[str],
     stop_tick: int,
     stop_ticks: list[int] | None = None,
-    legacy_runtime: str = "default-current-path",
+    baseline_runtime: str | None = None,
     candidate_runtime: str = "opt-in-indexed-path",
+    legacy_runtime: str | None = None,
     cleanup: bool = True,
     candidate_use_indexed_buff_load_loop: bool = True,
     output_path: str | Path | None = None,
@@ -445,13 +474,18 @@ def run_multi_team_main_loop_consistency(
     matrix_stop_ticks = list(stop_ticks or [stop_tick])
     if not matrix_stop_ticks:
         raise ValueError("at least one stop tick is required")
+    baseline_label = _resolve_baseline_runtime_label(
+        baseline_runtime=baseline_runtime,
+        legacy_runtime=legacy_runtime,
+        default="default-current-path",
+    )
 
     reports = [
         run_main_loop_consistency(
             team=team,
             apl=None,
             stop_tick=matrix_stop_tick,
-            legacy_runtime=legacy_runtime,
+            baseline_runtime=baseline_label,
             candidate_runtime=candidate_runtime,
             cleanup=cleanup,
             candidate_use_indexed_buff_load_loop=candidate_use_indexed_buff_load_loop,
@@ -476,8 +510,9 @@ def run_main_loop_consistency(
     team: str,
     apl: str | None,
     stop_tick: int,
-    legacy_runtime: str,
-    candidate_runtime: str,
+    baseline_runtime: str | None = None,
+    candidate_runtime: str = "candidate-current",
+    legacy_runtime: str | None = None,
     cleanup: bool = True,
     candidate_use_indexed_buff_load_loop: bool = False,
 ) -> dict[str, Any]:
@@ -485,10 +520,15 @@ def run_main_loop_consistency(
     base_cfg = _prepare_common_cfg(team, apl)
     apl_path = base_cfg.apl_path
     snapshots: list[RuntimeSnapshot] = []
+    baseline_label = _resolve_baseline_runtime_label(
+        baseline_runtime=baseline_runtime,
+        legacy_runtime=legacy_runtime,
+        default="default-current",
+    )
 
     runtime_flags = (False, candidate_use_indexed_buff_load_loop)
     for runtime_label, use_indexed_buff_load_loop in zip(
-        (legacy_runtime, candidate_runtime),
+        (baseline_label, candidate_runtime),
         runtime_flags,
         strict=True,
     ):
@@ -552,13 +592,19 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--baseline-runtime",
+        dest="baseline_runtime",
+        default="default-current",
+        help="First/default current run label to record in the report; this does not select a runtime.",
+    )
+    parser.add_argument(
         "--legacy-runtime",
-        default="legacy",
-        help="First run label to record in the report; this does not select a runtime.",
+        dest="baseline_runtime",
+        help="Compatibility alias for --baseline-runtime; report label only, not old runtime selection.",
     )
     parser.add_argument(
         "--candidate-runtime",
-        default="candidate",
+        default="candidate-current",
         help="Second run label to record in the report; this does not select a runtime.",
     )
     parser.add_argument(
@@ -609,7 +655,7 @@ def _format_human_report(report: dict[str, Any]) -> str:
         + report.get("runtime_selection", {}).get("mode", "label-only-current-runtime"),
         (
             "total_damage: "
-            f"{report['legacy_runtime']}={report['total_damage']['legacy']}, "
+            f"{report['baseline_runtime']}={report['total_damage']['baseline']}, "
             f"{report['candidate_runtime']}={report['total_damage']['candidate']}"
         ),
         f"matches: {report['differences']['matches']}",
@@ -629,7 +675,7 @@ def main(argv: list[str] | None = None) -> int:
             teams=args.teams,
             stop_tick=args.stop_tick,
             stop_ticks=args.stop_ticks,
-            legacy_runtime=args.legacy_runtime,
+            baseline_runtime=args.baseline_runtime,
             candidate_runtime=args.candidate_runtime,
             cleanup=not args.keep_artifacts,
             candidate_use_indexed_buff_load_loop=args.candidate_use_indexed_buff_load_loop,
@@ -648,7 +694,7 @@ def main(argv: list[str] | None = None) -> int:
         team=args.team,
         apl=args.apl,
         stop_tick=args.stop_tick,
-        legacy_runtime=args.legacy_runtime,
+        baseline_runtime=args.baseline_runtime,
         candidate_runtime=args.candidate_runtime,
         cleanup=not args.keep_artifacts,
         candidate_use_indexed_buff_load_loop=args.candidate_use_indexed_buff_load_loop,

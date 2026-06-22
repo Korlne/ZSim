@@ -23,7 +23,7 @@ from zsim.utils.runtime_benchmark import (
 
 def test_build_runtime_benchmark_report_keeps_required_json_fields():
     legacy_snapshot = RuntimeBenchmarkSnapshot(
-        runtime_label="legacy",
+        runtime_label="default-current",
         session_id="1",
         total_runtime_ms=120.5,
         hotspots={
@@ -60,12 +60,21 @@ def test_build_runtime_benchmark_report_keeps_required_json_fields():
     assert report["apl"] == "./zsim/data/APLData/example.toml"
     assert report["stop_tick"] == 120
     assert report["runtime_selection"]["mode"] == "label-only-current-runtime"
-    assert report["total_runtime_ms"] == {"legacy": 120.5, "candidate": 100.0}
+    assert report["baseline_runtime"] == "default-current"
+    assert report["legacy_runtime"] == "default-current"
+    assert report["report_compatibility"]["legacy_runtime"] == "alias for baseline_runtime"
+    assert report["total_runtime_ms"] == {
+        "baseline": 120.5,
+        "legacy": 120.5,
+        "candidate": 100.0,
+    }
+    assert report["hotspots"]["baseline"][0]["name"] == "simulator_run_ms"
     assert report["hotspots"]["legacy"][0]["name"] == "simulator_run_ms"
     assert report["hotspots"]["candidate"][0]["runtime_ms"] == 80.0
     assert report["comparisons"]["total_runtime_ms"] == -20.5
     assert report["comparisons"]["hotspots"]["simulator_run_ms"] == -20.0
     assert report["comparisons"]["faster_runtime"] == "candidate"
+    assert report["comparisons"]["candidate_vs_baseline_ratio"] == 0.8299
     assert report["comparisons"]["candidate_vs_legacy_ratio"] == 0.8299
     assert "buff_runtime_rebuild_counts" not in report
     assert "buff_runtime_rebuild_counts" not in report["comparisons"]
@@ -131,6 +140,10 @@ def test_build_runtime_benchmark_report_includes_rebuild_counts_when_opted_in():
     )
 
     assert report["buff_runtime_rebuild_counts"] == {
+        "baseline": {
+            "buff_load_loop": 5,
+            "scheduled_event": 2,
+        },
         "legacy": {
             "buff_load_loop": 5,
             "scheduled_event": 2,
@@ -146,6 +159,13 @@ def test_build_runtime_benchmark_report_includes_rebuild_counts_when_opted_in():
         "scheduled_event_runtime_ports": 7,
     }
     assert report["buff_load_loop_scan_metrics"] == {
+        "baseline": {
+            "candidate_plan_count": 30,
+            "candidate_plan_mismatch_count": 0,
+            "processed_tick_count": 3,
+            "mission_count": 9,
+            "trigger_candidate_count": 30,
+        },
         "legacy": {
             "candidate_plan_count": 30,
             "candidate_plan_mismatch_count": 0,
@@ -181,8 +201,8 @@ def test_build_parser_accepts_required_cli_flags():
             "./zsim/data/APLData/example.toml",
             "--stop-tick",
             "240",
-            "--legacy-runtime",
-            "legacy-a",
+            "--baseline-runtime",
+            "default-a",
             "--candidate-runtime",
             "candidate-b",
             "--json",
@@ -194,17 +214,42 @@ def test_build_parser_accepts_required_cli_flags():
             "scripts/ralph/benchmarks/repeat-summary.json",
         ]
     )
+    compat_args = parser.parse_args(
+        [
+            "--team",
+            "team-a",
+            "--legacy-runtime",
+            "legacy-a",
+            "--candidate-runtime",
+            "candidate-b",
+        ]
+    )
+    repeat_alias_args = parser.parse_args(
+        [
+            "--team",
+            "team-a",
+            "--repeat",
+            "4",
+        ]
+    )
 
     assert args.team == "team-a"
     assert args.apl == "./zsim/data/APLData/example.toml"
     assert args.stop_tick == 240
-    assert args.legacy_runtime == "legacy-a"
+    assert args.baseline_runtime == "default-a"
     assert args.candidate_runtime == "candidate-b"
+    assert compat_args.baseline_runtime == "legacy-a"
+    assert repeat_alias_args.repeat_samples == 4
+    assert not hasattr(args, "legacy_runtime")
     assert args.json is True
     assert args.include_rebuild_counts is True
     assert args.candidate_use_indexed_buff_load_loop is True
     assert args.repeat_samples == 3
     assert args.summary_json == "scripts/ralph/benchmarks/repeat-summary.json"
+    help_text = parser.format_help()
+    assert "--baseline-runtime" in help_text
+    assert "Compatibility alias for --baseline-runtime" in help_text
+    assert "not old runtime selection" in help_text
 
 
 def _repeat_sample_report(
@@ -220,14 +265,21 @@ def _repeat_sample_report(
         "team": "fake-team",
         "apl": "./fake.toml",
         "stop_tick": 120,
-        "legacy_runtime": "legacy-label",
+        "baseline_runtime": "default-label",
+        "legacy_runtime": "default-label",
         "candidate_runtime": "candidate-label",
         "runtime_selection": {"mode": "label-only-current-runtime"},
         "total_runtime_ms": {
+            "baseline": legacy_simulator_ms + 20.0,
             "legacy": legacy_simulator_ms + 20.0,
             "candidate": candidate_simulator_ms + 20.0,
         },
         "hotspots": {
+            "baseline": [
+                {"name": "simulator_run_ms", "runtime_ms": legacy_simulator_ms},
+                {"name": "damage_report_ms", "runtime_ms": 15.0},
+                {"name": "buff_report_ms", "runtime_ms": 5.0},
+            ],
             "legacy": [
                 {"name": "simulator_run_ms", "runtime_ms": legacy_simulator_ms},
                 {"name": "damage_report_ms", "runtime_ms": 15.0},
@@ -245,6 +297,7 @@ def _repeat_sample_report(
                 "simulator_run_ms": candidate_simulator_ms - legacy_simulator_ms,
             },
             "faster_runtime": "candidate-label",
+            "candidate_vs_baseline_ratio": 1.0,
             "candidate_vs_legacy_ratio": 1.0,
         },
     }
@@ -333,7 +386,8 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
     assert summary["apl"] == "./fake.toml"
     assert summary["stop_tick"] == 120
     assert summary["runtime_labels"] == {
-        "legacy": "legacy-label",
+        "baseline": "default-label",
+        "legacy": "default-label",
         "candidate": "candidate-label",
     }
     assert summary["runtime_selection"]["mode"] == "label-only-current-runtime"
@@ -349,6 +403,7 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
         "range": 4.0,
         "samples": [100.0, 104.0, 102.0],
     }
+    assert summary["simulator_runtime_ms"]["baseline"] == summary["simulator_runtime_ms"]["legacy"]
     assert summary["simulator_runtime_ms"]["candidate"] == {
         "median": 96.0,
         "min": 94.0,
@@ -359,6 +414,10 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
     assert summary["relative_delta"] == {
         "basis": "simulator_runtime_ms.median",
         "candidate_minus_legacy_median_ms": -6.0,
+        "candidate_minus_baseline_median_ms": -6.0,
+        "candidate_vs_baseline_median_ratio": 0.941176,
+        "candidate_vs_baseline_median_relative_delta": -0.058824,
+        "candidate_vs_baseline_median_percent": -5.8824,
         "candidate_vs_legacy_median_ratio": 0.941176,
         "candidate_vs_legacy_median_relative_delta": -0.058824,
         "candidate_vs_legacy_median_percent": -5.8824,
@@ -379,6 +438,12 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
         "samples": [2, 0, 4],
     }
     assert summary["samples"][0]["scan_metric_buckets"] == {
+        "baseline": {
+            "candidate_plan_count": 10,
+            "candidate_plan_mismatch_count": 0,
+            "processed_tick_count": 1,
+            "trigger_candidate_count": 10,
+        },
         "legacy": {
             "candidate_plan_count": 10,
             "candidate_plan_mismatch_count": 0,
@@ -410,6 +475,22 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
     assert summary["candidate_plan_metrics"] == {
         "included": True,
         "aggregate": {
+            "baseline": {
+                "candidate_plan_count": {
+                    "median": 12.0,
+                    "min": 10.0,
+                    "max": 14.0,
+                    "range": 4.0,
+                    "samples": [10, 14, 12],
+                },
+                "candidate_plan_mismatch_count": {
+                    "median": 0.0,
+                    "min": 0.0,
+                    "max": 0.0,
+                    "range": 0.0,
+                    "samples": [0, 0, 0],
+                },
+            },
             "legacy": {
                 "candidate_plan_count": {
                     "median": 12.0,
@@ -460,6 +541,13 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
     assert summary["enablement_policy"]["speedup_target_authorized"] is False
     assert summary["mismatch_counts"]["candidate_plan_mismatch_count"] == {
         "included": True,
+        "baseline": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0,
+            "samples": [0, 0, 0],
+        },
         "legacy": {
             "median": 0.0,
             "min": 0.0,
@@ -589,10 +677,11 @@ def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
     assert default_summary["rebuild_count_buckets"] == {
         "included": False,
         "samples": [],
-        "aggregate": {"legacy": {}, "candidate": {}},
+        "aggregate": {"baseline": {}, "legacy": {}, "candidate": {}},
     }
     assert default_summary["mismatch_counts"]["candidate_plan_mismatch_count"] == {
         "included": False,
+        "baseline": {"median": 0.0, "min": 0.0, "max": 0.0, "range": 0.0, "samples": []},
         "legacy": {"median": 0.0, "min": 0.0, "max": 0.0, "range": 0.0, "samples": []},
         "candidate": {"median": 0.0, "min": 0.0, "max": 0.0, "range": 0.0, "samples": []},
     }
@@ -627,16 +716,26 @@ def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
     }
     assert counted_summary["rebuild_count_buckets"]["included"] is True
     assert counted_summary["rebuild_count_buckets"]["samples"] == [
-        {"legacy": {"buff_load_loop": 1}, "candidate": {"buff_load_loop": 2}},
-        {"legacy": {"buff_load_loop": 2}, "candidate": {"buff_load_loop": 3}},
+        {
+            "baseline": {"buff_load_loop": 1},
+            "legacy": {"buff_load_loop": 1},
+            "candidate": {"buff_load_loop": 2},
+        },
+        {
+            "baseline": {"buff_load_loop": 2},
+            "legacy": {"buff_load_loop": 2},
+            "candidate": {"buff_load_loop": 3},
+        },
     ]
     assert counted_summary["scan_metric_buckets"]["included"] is True
     assert counted_summary["scan_metric_buckets"]["samples"] == [
         {
+            "baseline": {"processed_tick_count": 1},
             "legacy": {"processed_tick_count": 1},
             "candidate": {"processed_tick_count": 2},
         },
         {
+            "baseline": {"processed_tick_count": 2},
             "legacy": {"processed_tick_count": 2},
             "candidate": {"processed_tick_count": 3},
         },
@@ -646,7 +745,7 @@ def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
 def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pytest.MonkeyPatch):
     snapshots_by_session: dict[str, RuntimeBenchmarkSnapshot] = {
         "101": RuntimeBenchmarkSnapshot(
-            runtime_label="legacy-label",
+            runtime_label="default-label",
             session_id="101",
             total_runtime_ms=100.0,
             hotspots={
@@ -787,7 +886,7 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
         team="fake-team",
         apl="./override.toml",
         stop_tick=77,
-        legacy_runtime="legacy-label",
+        baseline_runtime="default-label",
         candidate_runtime="candidate-label",
         cleanup=True,
         include_rebuild_counts=True,
@@ -801,7 +900,7 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
     assert [flag for _, _, _, flag in submitted_payloads] == [False, True]
     assert snapshot_loads == [
         (
-            "legacy-label",
+            "default-label",
             "101",
             88.8,
             {"buff_load_loop": 1},
@@ -825,12 +924,14 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
             },
         ),
     ]
-    assert report["legacy_runtime"] == "legacy-label"
+    assert report["baseline_runtime"] == "default-label"
+    assert report["legacy_runtime"] == "default-label"
     assert report["candidate_runtime"] == "candidate-label"
     assert report["runtime_selection"]["mode"] == "candidate-explicit-opt-in-indexed-buff-load-loop"
     assert report["runtime_selection"]["default_off"] is True
     assert report["apl"] == "./override.toml"
     assert report["buff_runtime_rebuild_counts"] == {
+        "baseline": {"buff_load_loop": 1},
         "legacy": {"buff_load_loop": 1},
         "candidate": {"buff_load_loop": 3, "scheduled_event": 2},
     }
@@ -839,6 +940,12 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
         "scheduled_event": 2,
     }
     assert report["buff_load_loop_scan_metrics"] == {
+        "baseline": {
+            "processed_tick_count": 2,
+            "trigger_candidate_count": 10,
+            "candidate_plan_count": 10,
+            "candidate_plan_mismatch_count": 0,
+        },
         "legacy": {
             "processed_tick_count": 2,
             "trigger_candidate_count": 10,
@@ -995,14 +1102,16 @@ def test_format_human_report_only_prints_rebuild_counts_when_present():
         "team": "fake-team",
         "apl": "./fake.toml",
         "stop_tick": 20,
-        "legacy_runtime": "legacy",
+        "baseline_runtime": "default-current",
+        "legacy_runtime": "default-current",
         "candidate_runtime": "candidate",
-        "total_runtime_ms": {"legacy": 1.0, "candidate": 1.0},
-        "hotspots": {"legacy": [], "candidate": []},
+        "total_runtime_ms": {"baseline": 1.0, "legacy": 1.0, "candidate": 1.0},
+        "hotspots": {"baseline": [], "legacy": [], "candidate": []},
         "comparisons": {
             "total_runtime_ms": 0.0,
             "hotspots": {},
             "faster_runtime": "tie",
+            "candidate_vs_baseline_ratio": 1.0,
             "candidate_vs_legacy_ratio": 1.0,
         },
     }
@@ -1153,14 +1262,16 @@ def test_script_entrypoint_runs_with_json_output(
             "team": "fake-team",
             "apl": "./fake.toml",
             "stop_tick": 20,
-            "legacy_runtime": "legacy",
+            "baseline_runtime": "default-current",
+            "legacy_runtime": "default-current",
             "candidate_runtime": "candidate",
-            "total_runtime_ms": {"legacy": 1.0, "candidate": 1.0},
-            "hotspots": {"legacy": [], "candidate": []},
+            "total_runtime_ms": {"baseline": 1.0, "legacy": 1.0, "candidate": 1.0},
+            "hotspots": {"baseline": [], "legacy": [], "candidate": []},
             "comparisons": {
                 "total_runtime_ms": 0.0,
                 "hotspots": {},
                 "faster_runtime": "tie",
+                "candidate_vs_baseline_ratio": 1.0,
                 "candidate_vs_legacy_ratio": 1.0,
             },
         }
@@ -1195,6 +1306,7 @@ def test_script_entrypoint_runs_with_json_output(
         assert '"faster_runtime": "tie"' in output
         assert '"buff_runtime_rebuild_counts"' in output
         assert '"buff_load_loop_scan_metrics"' in output
+        assert captured_kwargs["baseline_runtime"] == "default-current"
         assert captured_kwargs["include_rebuild_counts"] is True
         assert captured_kwargs["candidate_use_indexed_buff_load_loop"] is True
     finally:

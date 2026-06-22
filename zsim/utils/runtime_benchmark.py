@@ -23,6 +23,7 @@ from zsim.utils.main_loop_consistency import (
     _cleanup_result_artifacts,
     _prepare_damage_data_for_consistency,
     _prepare_common_cfg,
+    _resolve_baseline_runtime_label,
     _runtime_selection_contract,
 )
 from zsim.utils.process_buff_result import prepare_buff_data_and_cache
@@ -136,8 +137,10 @@ def _rebuild_count_buckets(
     buff_runtime_rebuild_counts: dict[str, dict[str, int]] | None,
 ) -> dict[str, dict[str, int]]:
     source = buff_runtime_rebuild_counts or {}
+    baseline_counts = dict(source.get("baseline", source.get("legacy", {})))
     return {
-        "legacy": dict(source.get("legacy", {})),
+        "baseline": baseline_counts,
+        "legacy": baseline_counts,
         "candidate": dict(source.get("candidate", {})),
     }
 
@@ -158,8 +161,10 @@ def _scan_metric_buckets(
     buff_load_loop_scan_metrics: dict[str, dict[str, int]] | None,
 ) -> dict[str, dict[str, int]]:
     source = buff_load_loop_scan_metrics or {}
+    baseline_metrics = dict(source.get("baseline", source.get("legacy", {})))
     return {
-        "legacy": dict(source.get("legacy", {})),
+        "baseline": baseline_metrics,
+        "legacy": baseline_metrics,
         "candidate": dict(source.get("candidate", {})),
     }
 
@@ -205,16 +210,20 @@ def _simulator_runtime_ms(report: dict[str, Any], bucket: str) -> float:
 
 def _report_rebuild_count_buckets(report: dict[str, Any]) -> dict[str, dict[str, int]]:
     buckets = report.get("buff_runtime_rebuild_counts") or {}
+    baseline_counts = dict(buckets.get("baseline", buckets.get("legacy", {})))
     return {
-        "legacy": dict(buckets.get("legacy", {})),
+        "baseline": baseline_counts,
+        "legacy": baseline_counts,
         "candidate": dict(buckets.get("candidate", {})),
     }
 
 
 def _report_scan_metric_buckets(report: dict[str, Any]) -> dict[str, dict[str, int]]:
     buckets = report.get("buff_load_loop_scan_metrics") or {}
+    baseline_metrics = dict(buckets.get("baseline", buckets.get("legacy", {})))
     return {
-        "legacy": dict(buckets.get("legacy", {})),
+        "baseline": baseline_metrics,
+        "legacy": baseline_metrics,
         "candidate": dict(buckets.get("candidate", {})),
     }
 
@@ -303,6 +312,10 @@ def _build_runtime_relative_delta(
     return {
         "basis": "simulator_runtime_ms.median",
         "candidate_minus_legacy_median_ms": round(candidate_median - legacy_median, 4),
+        "candidate_minus_baseline_median_ms": round(candidate_median - legacy_median, 4),
+        "candidate_vs_baseline_median_ratio": ratio,
+        "candidate_vs_baseline_median_relative_delta": relative_delta,
+        "candidate_vs_baseline_median_percent": percent,
         "candidate_vs_legacy_median_ratio": ratio,
         "candidate_vs_legacy_median_relative_delta": relative_delta,
         "candidate_vs_legacy_median_percent": percent,
@@ -374,7 +387,10 @@ def _build_threshold_verdict(
             ],
         }
 
-    median_relative_delta = relative_delta["candidate_vs_legacy_median_relative_delta"]
+    median_relative_delta = relative_delta.get(
+        "candidate_vs_baseline_median_relative_delta",
+        relative_delta["candidate_vs_legacy_median_relative_delta"],
+    )
     if median_relative_delta is None:
         return {
             "status": "blocked",
@@ -423,16 +439,22 @@ def build_repeat_runtime_benchmark_summary(
     )
     runtime_selection = dict(first_report.get("runtime_selection", RUNTIME_LABEL_CONTRACT))
     simulator_runtime_summary = {
+        "baseline": _summary_with_samples(legacy_simulator_runtime_ms),
         "legacy": _summary_with_samples(legacy_simulator_runtime_ms),
         "candidate": _summary_with_samples(candidate_simulator_runtime_ms),
     }
     relative_delta = _build_runtime_relative_delta(
-        simulator_runtime_summary["legacy"],
+        simulator_runtime_summary["baseline"],
         simulator_runtime_summary["candidate"],
     )
     candidate_plan_metrics = {
         "included": include_rebuild_counts,
         "aggregate": {
+            "baseline": (
+                _aggregate_scan_metric_prefix(scan_metric_samples, "baseline", "candidate_plan")
+                if include_rebuild_counts
+                else {}
+            ),
             "legacy": (
                 _aggregate_scan_metric_prefix(scan_metric_samples, "legacy", "candidate_plan")
                 if include_rebuild_counts
@@ -448,6 +470,15 @@ def build_repeat_runtime_benchmark_summary(
     mismatch_counts = {
         "candidate_plan_mismatch_count": {
             "included": include_rebuild_counts,
+            "baseline": (
+                _aggregate_scan_metric_value(
+                    scan_metric_samples,
+                    "baseline",
+                    "candidate_plan_mismatch_count",
+                )
+                if include_rebuild_counts
+                else _summary_with_samples([])
+            ),
             "legacy": (
                 _aggregate_scan_metric_value(
                     scan_metric_samples,
@@ -475,6 +506,7 @@ def build_repeat_runtime_benchmark_summary(
             "sample_index": index,
             "total_runtime_ms": dict(report["total_runtime_ms"]),
             "simulator_runtime_ms": {
+                "baseline": legacy_simulator_runtime_ms[index - 1],
                 "legacy": legacy_simulator_runtime_ms[index - 1],
                 "candidate": candidate_simulator_runtime_ms[index - 1],
             },
@@ -494,6 +526,7 @@ def build_repeat_runtime_benchmark_summary(
         "sample_count": len(reports),
         "repeat_samples": len(reports),
         "runtime_labels": {
+            "baseline": first_report.get("baseline_runtime", first_report["legacy_runtime"]),
             "legacy": first_report["legacy_runtime"],
             "candidate": first_report["candidate_runtime"],
         },
@@ -514,6 +547,7 @@ def build_repeat_runtime_benchmark_summary(
             "included": include_rebuild_counts,
             "samples": rebuild_count_samples,
             "aggregate": {
+                "baseline": _aggregate_rebuild_count_bucket(rebuild_count_samples, "baseline"),
                 "legacy": _aggregate_rebuild_count_bucket(rebuild_count_samples, "legacy"),
                 "candidate": _aggregate_rebuild_count_bucket(rebuild_count_samples, "candidate"),
             },
@@ -554,6 +588,7 @@ def build_repeat_runtime_benchmark_summary(
             "included": True,
             "samples": scan_metric_samples,
             "aggregate": {
+                "baseline": _aggregate_scan_metric_bucket(scan_metric_samples, "baseline"),
                 "legacy": _aggregate_scan_metric_bucket(scan_metric_samples, "legacy"),
                 "candidate": _aggregate_scan_metric_bucket(scan_metric_samples, "candidate"),
             },
@@ -597,24 +632,34 @@ def build_runtime_benchmark_report(
             candidate_snapshot.hotspots,
         ),
         "faster_runtime": faster_runtime,
+        "candidate_vs_baseline_ratio": speedup_ratio,
         "candidate_vs_legacy_ratio": speedup_ratio,
     }
+    baseline_label = legacy_snapshot.runtime_label
     report: dict[str, Any] = {
         "team": team,
         "apl": apl,
         "stop_tick": stop_tick,
-        "legacy_runtime": legacy_snapshot.runtime_label,
+        "baseline_runtime": baseline_label,
+        "legacy_runtime": baseline_label,
         "candidate_runtime": candidate_snapshot.runtime_label,
         "runtime_selection": _runtime_selection_contract(
             candidate_use_indexed_buff_load_loop=candidate_use_indexed_buff_load_loop,
         ),
         "total_runtime_ms": {
+            "baseline": legacy_snapshot.total_runtime_ms,
             "legacy": legacy_snapshot.total_runtime_ms,
             "candidate": candidate_snapshot.total_runtime_ms,
         },
         "hotspots": {
+            "baseline": _sorted_hotspots(legacy_snapshot.hotspots),
             "legacy": _sorted_hotspots(legacy_snapshot.hotspots),
             "candidate": _sorted_hotspots(candidate_snapshot.hotspots),
+        },
+        "report_compatibility": {
+            "legacy_runtime": "alias for baseline_runtime",
+            "legacy": "alias bucket for baseline",
+            "candidate_vs_legacy_ratio": "alias for candidate_vs_baseline_ratio",
         },
         "comparisons": comparisons,
     }
@@ -622,6 +667,7 @@ def build_runtime_benchmark_report(
         count_source = buff_runtime_rebuild_counts
         if count_source is None:
             count_source = {
+                "baseline": legacy_snapshot.rebuild_counts or {},
                 "legacy": legacy_snapshot.rebuild_counts or {},
                 "candidate": candidate_snapshot.rebuild_counts or {},
             }
@@ -634,6 +680,7 @@ def build_runtime_benchmark_report(
         scan_source = buff_load_loop_scan_metrics
         if scan_source is None:
             scan_source = {
+                "baseline": legacy_snapshot.buff_load_loop_scan_metrics or {},
                 "legacy": legacy_snapshot.buff_load_loop_scan_metrics or {},
                 "candidate": candidate_snapshot.buff_load_loop_scan_metrics or {},
             }
@@ -651,8 +698,9 @@ def run_runtime_benchmark(
     team: str,
     apl: str | None,
     stop_tick: int,
-    legacy_runtime: str,
-    candidate_runtime: str,
+    baseline_runtime: str | None = None,
+    candidate_runtime: str = "candidate-current",
+    legacy_runtime: str | None = None,
     cleanup: bool = True,
     include_rebuild_counts: bool = False,
     candidate_use_indexed_buff_load_loop: bool = False,
@@ -661,10 +709,15 @@ def run_runtime_benchmark(
     base_cfg = _prepare_common_cfg(team, apl)
     apl_path = base_cfg.apl_path
     snapshots: list[RuntimeBenchmarkSnapshot] = []
+    baseline_label = _resolve_baseline_runtime_label(
+        baseline_runtime=baseline_runtime,
+        legacy_runtime=legacy_runtime,
+        default="default-current",
+    )
 
     runtime_flags = (False, candidate_use_indexed_buff_load_loop)
     for runtime_label, use_indexed_buff_load_loop in zip(
-        (legacy_runtime, candidate_runtime),
+        (baseline_label, candidate_runtime),
         runtime_flags,
         strict=True,
     ):
@@ -717,9 +770,10 @@ def run_repeated_runtime_benchmark(
     team: str,
     apl: str | None,
     stop_tick: int,
-    legacy_runtime: str,
-    candidate_runtime: str,
     repeat_samples: int,
+    baseline_runtime: str | None = None,
+    candidate_runtime: str = "candidate-current",
+    legacy_runtime: str | None = None,
     cleanup: bool = True,
     include_rebuild_counts: bool = False,
     candidate_use_indexed_buff_load_loop: bool = False,
@@ -731,6 +785,7 @@ def run_repeated_runtime_benchmark(
             team=team,
             apl=apl,
             stop_tick=stop_tick,
+            baseline_runtime=baseline_runtime,
             legacy_runtime=legacy_runtime,
             candidate_runtime=candidate_runtime,
             cleanup=cleanup,
@@ -780,13 +835,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="Stop tick for each benchmarked runtime run.",
     )
     parser.add_argument(
+        "--baseline-runtime",
+        dest="baseline_runtime",
+        default="default-current",
+        help="First/default current run label to record in the report; this does not select a runtime.",
+    )
+    parser.add_argument(
         "--legacy-runtime",
-        default="legacy",
-        help="First run label to record in the report; this does not select a runtime.",
+        dest="baseline_runtime",
+        help="Compatibility alias for --baseline-runtime; report label only, not old runtime selection.",
     )
     parser.add_argument(
         "--candidate-runtime",
-        default="candidate",
+        default="candidate-current",
         help="Second run label to record in the report; this does not select a runtime.",
     )
     parser.add_argument(
@@ -801,6 +862,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--repeat-samples",
+        "--repeat",
+        dest="repeat_samples",
         type=_positive_int,
         default=1,
         help="Run this many label-only benchmark samples before summarizing.",
@@ -835,7 +898,7 @@ def _format_human_report(report: dict[str, Any]) -> str:
         + report.get("runtime_selection", {}).get("mode", "label-only-current-runtime"),
         (
             "total_runtime_ms: "
-            f"{report['legacy_runtime']}={report['total_runtime_ms']['legacy']}, "
+            f"{report['baseline_runtime']}={report['total_runtime_ms']['baseline']}, "
             f"{report['candidate_runtime']}={report['total_runtime_ms']['candidate']}"
         ),
         f"faster_runtime: {report['comparisons']['faster_runtime']}",
@@ -887,8 +950,8 @@ def _format_repeat_summary(summary: dict[str, Any]) -> str:
         + summary.get("runtime_selection", {}).get("mode", "label-only-current-runtime"),
         (
             "simulator_runtime_ms: "
-            f"{labels['legacy']} median={runtimes['legacy']['median']} "
-            f"min={runtimes['legacy']['min']} max={runtimes['legacy']['max']}; "
+            f"{labels['baseline']} median={runtimes['baseline']['median']} "
+            f"min={runtimes['baseline']['min']} max={runtimes['baseline']['max']}; "
             f"{labels['candidate']} median={runtimes['candidate']['median']} "
             f"min={runtimes['candidate']['min']} max={runtimes['candidate']['max']}"
         ),
@@ -926,7 +989,7 @@ def main(argv: list[str] | None = None) -> int:
             team=args.team,
             apl=args.apl,
             stop_tick=args.stop_tick,
-            legacy_runtime=args.legacy_runtime,
+            baseline_runtime=args.baseline_runtime,
             candidate_runtime=args.candidate_runtime,
             repeat_samples=args.repeat_samples,
             cleanup=not args.keep_artifacts,
@@ -945,7 +1008,7 @@ def main(argv: list[str] | None = None) -> int:
         team=args.team,
         apl=args.apl,
         stop_tick=args.stop_tick,
-        legacy_runtime=args.legacy_runtime,
+        baseline_runtime=args.baseline_runtime,
         candidate_runtime=args.candidate_runtime,
         cleanup=not args.keep_artifacts,
         include_rebuild_counts=args.include_rebuild_counts,
