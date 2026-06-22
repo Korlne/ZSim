@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 
 import numpy as np
 import pandas as pd
@@ -17,7 +17,12 @@ from .buff_class import Buff
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Load import LoadingMission
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import PendingBuffQueue
     from zsim.simulator.simulator_class import Simulator
+
+    PendingQueueLike: TypeAlias = PendingBuffQueue | dict[str, list[Buff]]
+else:
+    PendingQueueLike = object
 
 EXIST_FILE = pd.read_csv(EXIST_FILE_PATH, index_col="BuffName")
 JUDGE_FILE = pd.read_csv(JUDGE_FILE_PATH, index_col="BuffName")
@@ -98,7 +103,7 @@ def process_buff(
                     buff_new.ft.passively_updating = buff_0.ft.passively_updating
                     buff_new.ft.beneficiary = buff_0.ft.beneficiary
                     if buff_new.dy.is_changed:
-                        LOADING_BUFF_DICT[char].append(buff_new)
+                        _enqueue_pending_buff(LOADING_BUFF_DICT, char, buff_new)
                         """
                         这里要注意：process_buff函数中传入的buff_0，只会来自于角色，
                         所以，如果有上个Enemy的debuff，那么角色自身作为触发源头，正常更新以外，
@@ -120,10 +125,48 @@ def process_buff(
                 buff_new.ft.operator = buff_0.ft.operator
                 buff_new.ft.passively_updating = buff_0.ft.passively_updating
                 buff_new.ft.beneficiary = buff_0.ft.beneficiary
-                LOADING_BUFF_DICT[char].append(buff_new)
+                _enqueue_pending_buff(LOADING_BUFF_DICT, char, buff_new)
                 if char == "enemy":
                     enemy_buff_0 = exist_buff_dict["enemy"][buff_0.ft.index]
                     buff_new.update_to_buff_0(enemy_buff_0)
+
+
+def _reset_pending_queues(
+    pending_queues: PendingQueueLike,
+    beneficiaries: list[str],
+) -> None:
+    reset = getattr(pending_queues, "reset_for_beneficiaries", None)
+    if reset is not None:
+        reset(beneficiaries)
+        return
+    for beneficiary in beneficiaries:
+        pending_queues[beneficiary] = []
+
+
+def _enqueue_pending_buff(
+    pending_queues: PendingQueueLike,
+    beneficiary: str,
+    buff: Buff,
+) -> None:
+    enqueue = getattr(pending_queues, "enqueue", None)
+    if enqueue is not None:
+        enqueue(beneficiary, buff)
+        return
+    pending_queues[beneficiary].append(buff)
+
+
+def _count_pending_buffs(pending_queues: PendingQueueLike) -> int:
+    count = getattr(pending_queues, "count", None)
+    if count is not None:
+        return int(count())
+    return sum(len(queue) for queue in pending_queues.values())
+
+
+def _pending_queue_result(pending_queues: PendingQueueLike) -> dict[str, list[Buff]]:
+    as_compat_dict = getattr(pending_queues, "as_compat_dict", None)
+    if as_compat_dict is not None:
+        return as_compat_dict()
+    return pending_queues
 
 
 def _record_buff_load_loop_scan_metrics(
@@ -343,7 +386,7 @@ def _execute_buff_load_loop_candidate_step(
     registry: dict,
     mission: "LoadingMission",
     time_now: int,
-    pending_queues: dict,
+    pending_queues: PendingQueueLike,
     all_name_order_box: dict,
     registry_by_character: dict,
     sim_instance: "Simulator",
@@ -378,7 +421,7 @@ def BuffLoadLoop(
     load_mission_dict: dict,
     existbuff_dict: dict,
     character_name_box: list,
-    LOADING_BUFF_DICT: dict,
+    LOADING_BUFF_DICT: PendingQueueLike,
     all_name_order_box: dict,
     sim_instance: "Simulator",
 ):
@@ -408,8 +451,7 @@ def BuffLoadLoop(
         )
 
     all_name_box = character_name_box + ["enemy"]
-    for character in all_name_box:
-        pending_queues[character] = []
+    _reset_pending_queues(pending_queues, all_name_box)
 
     candidate_plan = None
     if use_indexed_execution:
@@ -495,10 +537,10 @@ def BuffLoadLoop(
             trigger_candidate_count=trigger_candidate_count,
             on_field_candidate_count=on_field_candidate_count,
             backend_candidate_count=backend_candidate_count,
-            pending_queue_count=sum(len(queue) for queue in pending_queues.values()),
+            pending_queue_count=_count_pending_buffs(pending_queues),
             candidate_plan=candidate_plan,
         )
-    return pending_queues
+    return _pending_queue_result(pending_queues)
 
 
 def process_on_field_buff(

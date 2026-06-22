@@ -10,7 +10,10 @@ import zsim.sim_progress.Buff.BuffLoad as buff_load_module
 import zsim.main as zsim_main
 from zsim.sim_progress import Load as load_module
 from zsim.sim_progress.Buff.BuffLoad import BuffLoadLoop
-from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
+from zsim.sim_progress.ScheduledEvent.buff_runtime import (
+    BuffRuntimeState,
+    PendingBuffQueue,
+)
 from zsim.simulator import simulator_class
 from zsim.simulator.simulator_class import Simulator
 
@@ -837,6 +840,55 @@ def test_buff_load_loop_resets_pending_queue_in_character_order_and_returns_same
         "charlie": [],
         "enemy": [],
     }
+
+
+def test_buff_load_loop_uses_pending_owner_reset_and_count(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeLoadingMission:
+        pass
+
+    class TrackingPendingBuffQueue(PendingBuffQueue):
+        def __init__(self, queues: dict[str, list[Any]]) -> None:
+            super().__init__(queues)
+            self.reset_calls: list[tuple[str, ...]] = []
+            self.count_calls = 0
+
+        def reset_for_beneficiaries(self, beneficiaries: list[str]) -> None:
+            self.reset_calls.append(tuple(beneficiaries))
+            super().reset_for_beneficiaries(beneficiaries)
+
+        def count(self) -> int:
+            self.count_calls += 1
+            return super().count()
+
+    monkeypatch.setattr(load_module, "LoadingMission", FakeLoadingMission)
+    stale_buff = object()
+    loading_buff_dict: dict[str, list[Any]] = {"stale": [stale_buff]}
+    pending_owner = TrackingPendingBuffQueue(loading_buff_dict)
+    sim = cast(Any, Simulator())
+    sim.enable_buff_runtime_rebuild_counting()
+
+    result = BuffLoadLoop(
+        time_now=0,
+        load_mission_dict={},
+        existbuff_dict={},
+        character_name_box=["alpha", "bravo"],
+        LOADING_BUFF_DICT=pending_owner,
+        all_name_order_box={},
+        sim_instance=sim,
+    )
+
+    assert result is loading_buff_dict
+    assert pending_owner.reset_calls == [("alpha", "bravo", "enemy")]
+    assert pending_owner.count_calls == 1
+    assert loading_buff_dict == {
+        "stale": [stale_buff],
+        "alpha": [],
+        "bravo": [],
+        "enemy": [],
+    }
+    assert _buff_load_loop_scan_metrics(sim)["pending_queue_count"] == 1
 
 
 def test_buff_load_loop_visits_mission_registries_in_character_order(
@@ -1732,6 +1784,8 @@ def test_buff_runtime_facade_load_pending_buffs_owns_load_containers() -> None:
     )
 
     assert result is loading_buff_dict
+    assert runtime_state.pending_queue_owner().as_compat_dict() is loading_buff_dict
+    assert runtime_state.pending_queue_for_compat() is loading_buff_dict
     assert loading_buff_dict == {"alpha": [], "enemy": []}
     assert sim.get_buff_runtime_rebuild_counts() == {"buff_load_loop": 1}
     assert _buff_load_loop_scan_metrics(sim) == {
@@ -1750,6 +1804,57 @@ def test_buff_runtime_facade_load_pending_buffs_owns_load_containers() -> None:
         "candidate_plan_character_count": 1,
         "candidate_plan_mismatch_count": 0,
     }
+
+
+def test_buff_runtime_facade_load_pending_buffs_passes_pending_owner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sim = cast(Any, Simulator())
+    exist_buff_dict: dict[str, dict[str, Any]] = {"alpha": {}}
+    loading_buff_dict: dict[str, list[Any]] = {"alpha": [object()]}
+    runtime_state = BuffRuntimeState(
+        template_registry=exist_buff_dict,
+        pending_queue=loading_buff_dict,
+        active_store={"alpha": []},
+        enemy_mirror=[],
+    )
+    captured: dict[str, Any] = {}
+
+    def fake_buff_load_loop(
+        time_now: int,
+        load_mission_dict: dict[str, Any],
+        existbuff_dict: dict[str, dict[str, Any]],
+        character_name_box: list[str],
+        LOADING_BUFF_DICT: PendingBuffQueue,
+        all_name_order_box: dict[str, Any],
+        sim_instance: Any,
+    ) -> dict[str, list[Any]]:
+        captured["time_now"] = time_now
+        captured["existbuff_dict"] = existbuff_dict
+        captured["pending_owner"] = LOADING_BUFF_DICT
+        captured["sim_instance"] = sim_instance
+        LOADING_BUFF_DICT.reset_for_beneficiaries([*character_name_box, "enemy"])
+        LOADING_BUFF_DICT.enqueue("alpha", "pending-alpha")
+        return cast(dict[str, list[Any]], LOADING_BUFF_DICT.as_compat_dict())
+
+    monkeypatch.setattr(buff_load_module, "BuffLoadLoop", fake_buff_load_loop)
+
+    result = runtime_state.create_facade().load_pending_buffs(
+        time_now=7,
+        load_mission_dict={},
+        character_name_box=["alpha"],
+        all_name_order_box={},
+        sim_instance=sim,
+    )
+
+    assert captured == {
+        "time_now": 7,
+        "existbuff_dict": exist_buff_dict,
+        "pending_owner": runtime_state.pending_queue_owner(),
+        "sim_instance": sim,
+    }
+    assert result is loading_buff_dict
+    assert loading_buff_dict == {"alpha": ["pending-alpha"], "enemy": []}
 
 
 def test_scheduled_event_records_opt_in_construction_and_runtime_port_counts(

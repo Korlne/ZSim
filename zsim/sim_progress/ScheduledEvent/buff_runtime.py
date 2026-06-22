@@ -27,7 +27,7 @@ class BuffRuntimeState:
         enemy_mirror: list["Buff"],
     ) -> None:
         self._template_registry = template_registry
-        self._pending_queue = pending_queue
+        self._pending_queue = PendingBuffQueue(pending_queue)
         self._active_store = active_store
         self._enemy_mirror = self._collapse_enemy_debuff_store(
             active_store,
@@ -59,14 +59,68 @@ class BuffRuntimeState:
     def template_registry_for_compat(self) -> dict[str, dict[str, "Buff"]]:
         return self._template_registry
 
-    def pending_queue_for_compat(self) -> dict[str, list["Buff"]]:
+    def pending_queue_owner(self) -> "PendingBuffQueue":
         return self._pending_queue
+
+    def pending_queue_for_compat(self) -> dict[str, list["Buff"]]:
+        return self._pending_queue.as_compat_dict()
 
     def active_store_for_compat(self) -> dict[str, list["Buff"]]:
         return self._active_store
 
     def enemy_mirror_for_compat(self) -> list["Buff"]:
         return self._enemy_mirror
+
+
+class PendingBuffQueue:
+    """Runtime-owned pending Buff queue with retained dict compatibility."""
+
+    def __init__(self, queues: dict[str, list["Buff"]]) -> None:
+        self._queues = queues
+
+    def reset_for_beneficiaries(self, beneficiaries: Sequence[str]) -> None:
+        for beneficiary in beneficiaries:
+            self._queues[beneficiary] = []
+
+    def enqueue(self, beneficiary: str, buff: "Buff") -> None:
+        self._queues[beneficiary].append(buff)
+
+    def drain(self, beneficiary: str) -> list["Buff"]:
+        queue = self.queue_for_compat(beneficiary)
+        drained: list["Buff"] = []
+        while queue:
+            drained.append(queue.pop())
+        return drained
+
+    def clear(self, beneficiary: str) -> None:
+        self.queue_for_compat(beneficiary).clear()
+
+    def count(self) -> int:
+        return sum(len(queue) for queue in self._queues.values())
+
+    def queue_for_compat(self, beneficiary: str) -> list["Buff"]:
+        return self._queues.setdefault(beneficiary, [])
+
+    def as_compat_dict(self) -> dict[str, list["Buff"]]:
+        return self._queues
+
+    def __getitem__(self, beneficiary: str) -> list["Buff"]:
+        return self._queues[beneficiary]
+
+    def __setitem__(self, beneficiary: str, queue: list["Buff"]) -> None:
+        self._queues[beneficiary] = queue
+
+    def __iter__(self):
+        return iter(self._queues)
+
+    def __len__(self) -> int:
+        return len(self._queues)
+
+    def values(self):
+        return self._queues.values()
+
+    def items(self):
+        return self._queues.items()
 
 
 class BuffRuntimeReadPort(ABC):
@@ -294,17 +348,13 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         return buff_new
 
     def enqueue_pending_buff(self, beneficiary: str, buff: "Buff") -> None:
-        self._get_pending_queue(beneficiary).append(buff)
+        self._runtime_state.pending_queue_owner().enqueue(beneficiary, buff)
 
     def drain_pending_buffs(self, beneficiary: str) -> list["Buff"]:
-        queue = self._get_pending_queue(beneficiary)
-        drained: list["Buff"] = []
-        while queue:
-            drained.append(queue.pop())
-        return drained
+        return self._runtime_state.pending_queue_owner().drain(beneficiary)
 
     def clear_pending_buffs(self, beneficiary: str) -> None:
-        self._get_pending_queue(beneficiary).clear()
+        self._runtime_state.pending_queue_owner().clear(beneficiary)
 
     def append_active_buff(self, beneficiary: str, buff: "Buff") -> None:
         self._get_active_buffs(beneficiary).append(buff)
@@ -428,7 +478,7 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
             load_mission_dict,
             self._runtime_state.template_registry_for_compat(),
             character_name_box,
-            self._runtime_state.pending_queue_for_compat(),
+            self._runtime_state.pending_queue_owner(),
             all_name_order_box,
             sim_instance=sim_instance,
         )
@@ -762,6 +812,7 @@ __all__ = [
     "BuffRuntimeReadPort",
     "BuffRuntimeFacade",
     "BuffRuntimeState",
+    "PendingBuffQueue",
     "LegacyBuffRuntimeReadAdapter",
     "LegacyBuffRuntimeFacade",
     "create_buff_runtime_read_port",
