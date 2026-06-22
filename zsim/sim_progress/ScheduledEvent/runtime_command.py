@@ -9,21 +9,32 @@ from zsim.sim_progress.Update.UpdateAnomaly import (
 )
 
 _MISSING_COMPAT_HOOK = object()
-_OLD_ANOMALY_HOOK_NAME = "legacy_" + "update_anomaly"
+_MIGRATION_TEST_ANOMALY_HOOK_NAME = "legacy_" + "update_anomaly"
+
+
+def _migration_test_update_anomaly_hook():
+    """Return a patched legacy hook for migration/test compatibility only."""
+    compatibility_hook = globals().get(
+        _MIGRATION_TEST_ANOMALY_HOOK_NAME,
+        _MISSING_COMPAT_HOOK,
+    )
+    if (
+        compatibility_hook is _MISSING_COMPAT_HOOK
+        or compatibility_hook is _run_update_anomaly
+    ):
+        return None
+    return compatibility_hook
 
 
 def __getattr__(name: str):
-    if name == _OLD_ANOMALY_HOOK_NAME:
+    if name == _MIGRATION_TEST_ANOMALY_HOOK_NAME:
         return _run_update_anomaly
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def run_update_anomaly(**kwargs) -> None:
-    compatibility_hook = globals().get(_OLD_ANOMALY_HOOK_NAME, _MISSING_COMPAT_HOOK)
-    if (
-        compatibility_hook is not _MISSING_COMPAT_HOOK
-        and compatibility_hook is not _run_update_anomaly
-    ):
+    compatibility_hook = _migration_test_update_anomaly_hook()
+    if compatibility_hook is not None:
         runtime_context = kwargs["runtime_context"]
         queue_attr = "event_" + "list"
         active_store_key = "dynamic_" + "buff_dict"

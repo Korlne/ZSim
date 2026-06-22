@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 from types import SimpleNamespace
+from typing import Any, cast
 
 import numpy as np
 import pytest
@@ -276,6 +277,59 @@ def _build_skill_node(*, element_type: int, char_name: str = "alpha", skill_tag:
         skill_tag=skill_tag,
         skill=SimpleNamespace(char_obj=SimpleNamespace(CID=1001)),
     )
+
+
+def test_anomaly_runtime_context_builds_explicit_layer_collaborators(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    dispatch_port = object()
+    dot_runtime_state = object()
+    dispatch_calls: list[tuple[object, object]] = []
+    dot_calls: list[object] = []
+
+    def fake_create_schedule_dispatch_port(*, sim_instance, schedule_data=None):
+        dispatch_calls.append((sim_instance, schedule_data))
+        return dispatch_port
+
+    def fake_from_enemy(cls, enemy):
+        dot_calls.append(enemy)
+        return dot_runtime_state
+
+    def broadcast_event(**kwargs):
+        raise AssertionError("context construction should not broadcast listener events")
+
+    monkeypatch.setattr(
+        update_anomaly_module,
+        "create_schedule_dispatch_port",
+        fake_create_schedule_dispatch_port,
+    )
+    monkeypatch.setattr(
+        update_anomaly_module.DotRuntimeStateAdapter,
+        "from_enemy",
+        classmethod(fake_from_enemy),
+    )
+
+    schedule_data = SimpleNamespace(event_list=[])
+    listener_manager = SimpleNamespace(broadcast_event=broadcast_event)
+    sim_instance = SimpleNamespace(listener_manager=listener_manager)
+    enemy = object()
+    buff_runtime_view = object()
+
+    context = update_anomaly_module.create_anomaly_runtime_context(
+        sim_instance=cast(Any, sim_instance),
+        enemy=enemy,
+        buff_runtime_view=cast(Any, buff_runtime_view),
+        schedule_data=schedule_data,
+    )
+
+    assert dispatch_calls == [(sim_instance, schedule_data)]
+    assert dot_calls == [enemy]
+    assert sim_instance.schedule_data is schedule_data
+    assert context.dispatch_port is dispatch_port
+    assert context.listener_broadcaster is listener_manager.broadcast_event
+    assert context.dot_runtime_state is dot_runtime_state
+    assert context.buff_runtime_view is buff_runtime_view
+    assert context.sim_instance is sim_instance
 
 
 def test_spawn_output_mode_zero_settles_without_listener_or_scheduled_publish():

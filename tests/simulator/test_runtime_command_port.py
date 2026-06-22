@@ -1,3 +1,4 @@
+import inspect
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -83,6 +84,111 @@ def _make_schedule_buff(
         xeffect=lambda **kwargs: None,
     )
     return buff
+
+
+def test_runtime_command_update_anomaly_surface_keeps_layer_apis_private() -> None:
+    hook_name = runtime_command_module._MIGRATION_TEST_ANOMALY_HOOK_NAME
+
+    assert hook_name not in runtime_command_module.__all__
+    assert hook_name not in vars(runtime_command_module)
+    assert getattr(runtime_command_module, hook_name) is runtime_command_module._run_update_anomaly
+
+    public_source = inspect.getsource(runtime_command_module.RuntimeCommandPort.update_anomaly)
+    adapter_source = inspect.getsource(LegacyRuntimeCommandAdapter.update_anomaly)
+    for source in (public_source, adapter_source):
+        for forbidden in {
+            "publish_scheduled",
+            "broadcast_event",
+            "event_list",
+            "compatibility_hook",
+            "_migration_test_update_anomaly_hook",
+        }:
+            assert forbidden not in source
+
+    assert "run_update_anomaly(" in adapter_source
+    assert "create_anomaly_runtime_context" in adapter_source
+
+
+def test_run_update_anomaly_defaults_to_current_path_until_migration_test_hook_is_patched(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    default_calls: list[dict[str, Any]] = []
+    compatibility_calls: list[tuple[Any, Any, Any, Any, Any, dict[str, Any]]] = []
+
+    def fake_current_update_anomaly(**kwargs: Any) -> None:
+        default_calls.append(kwargs)
+
+    def fake_legacy_update_anomaly(
+        element_type: object,
+        enemy: object,
+        time_now: object,
+        event_list: object,
+        char_obj_list: object,
+        **kwargs: Any,
+    ) -> None:
+        compatibility_calls.append(
+            (element_type, enemy, time_now, event_list, char_obj_list, kwargs)
+        )
+
+    monkeypatch.setattr(
+        runtime_command_module,
+        "_run_update_anomaly",
+        fake_current_update_anomaly,
+    )
+
+    schedule_queue: list[object] = []
+    runtime_view = object()
+    runtime_context = SimpleNamespace(
+        sim_instance=SimpleNamespace(
+            schedule_data=SimpleNamespace(event_list=schedule_queue)
+        ),
+        buff_runtime_view=runtime_view,
+    )
+    enemy = object()
+    skill_node = object()
+    char_obj_list = [object()]
+    active_store: dict[str, list[object]] = {"enemy": []}
+    kwargs = {
+        "element_type": 1,
+        "enemy": enemy,
+        "time_now": 17,
+        "char_obj_list": char_obj_list,
+        "sim_instance": runtime_context.sim_instance,
+        "skill_node": skill_node,
+        "dynamic_buff_dict": active_store,
+        "runtime_context": runtime_context,
+    }
+
+    runtime_command_module.run_update_anomaly(**kwargs)
+
+    assert default_calls == [kwargs]
+    assert compatibility_calls == []
+
+    monkeypatch.setattr(
+        runtime_command_module,
+        runtime_command_module._MIGRATION_TEST_ANOMALY_HOOK_NAME,
+        fake_legacy_update_anomaly,
+        raising=False,
+    )
+
+    runtime_command_module.run_update_anomaly(**kwargs)
+
+    assert default_calls == [kwargs]
+    assert compatibility_calls == [
+        (
+            1,
+            enemy,
+            17,
+            schedule_queue,
+            char_obj_list,
+            {
+                "skill_node": skill_node,
+                "dynamic_buff_dict": active_store,
+                "sim_instance": runtime_context.sim_instance,
+                "buff_runtime_view": runtime_view,
+            },
+        )
+    ]
 
 
 def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_writes(
