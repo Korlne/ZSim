@@ -14,6 +14,7 @@ from zsim.sim_progress.ScheduledEvent.buff_runtime import (
 )
 from zsim.sim_progress.ScheduledEvent import runtime_command as runtime_command_module
 from zsim.sim_progress.ScheduledEvent.runtime_command import (
+    DefaultRuntimeCommandAdapter,
     LegacyRuntimeCommandAdapter,
     create_runtime_command_port,
 )
@@ -94,7 +95,8 @@ def test_runtime_command_update_anomaly_surface_keeps_layer_apis_private() -> No
     assert getattr(runtime_command_module, hook_name) is runtime_command_module._run_update_anomaly
 
     public_source = inspect.getsource(runtime_command_module.RuntimeCommandPort.update_anomaly)
-    adapter_source = inspect.getsource(LegacyRuntimeCommandAdapter.update_anomaly)
+    adapter_source = inspect.getsource(DefaultRuntimeCommandAdapter.update_anomaly)
+    legacy_adapter_source = inspect.getsource(LegacyRuntimeCommandAdapter.update_anomaly)
     for source in (public_source, adapter_source):
         for forbidden in {
             "publish_scheduled",
@@ -107,6 +109,7 @@ def test_runtime_command_update_anomaly_surface_keeps_layer_apis_private() -> No
 
     assert "run_update_anomaly(" in adapter_source
     assert "create_anomaly_runtime_context" in adapter_source
+    assert legacy_adapter_source == adapter_source
 
 
 def test_run_update_anomaly_defaults_to_current_path_until_migration_test_hook_is_patched(
@@ -314,6 +317,54 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
     assert captured["settle_anomaly_bar"] is None
 
 
+def test_runtime_command_factory_uses_default_adapter_for_runtime_state() -> None:
+    dynamic_buff: dict[str, list[Any]] = {"alpha": [], "enemy": []}
+    runtime_state = _runtime_state_for_test(
+        exist_buff_dict={"alpha": {}, "enemy": {}},
+        dynamic_buff=dynamic_buff,
+    )
+    port = create_runtime_command_port(
+        data=cast(
+            Any,
+            SimpleNamespace(event_list=[], char_obj_list=[], dynamic_buff=dynamic_buff),
+        ),
+        action_stack=cast(Any, SimpleNamespace()),
+        sim_instance=cast(Any, SimpleNamespace()),
+        exist_buff_dict={"alpha": {"shadow": object()}},
+        buff_runtime_state=runtime_state,
+        buff_runtime_view=runtime_state.create_read_port(),
+    )
+
+    assert isinstance(port, DefaultRuntimeCommandAdapter)
+    assert not isinstance(port, LegacyRuntimeCommandAdapter)
+
+    legacy_port = create_runtime_command_port(
+        data=cast(
+            Any,
+            SimpleNamespace(event_list=[], char_obj_list=[], dynamic_buff=dynamic_buff),
+        ),
+        action_stack=cast(Any, SimpleNamespace()),
+        sim_instance=cast(Any, SimpleNamespace()),
+        exist_buff_dict={"alpha": {}, "enemy": {}},
+    )
+
+    assert isinstance(legacy_port, LegacyRuntimeCommandAdapter)
+
+    with pytest.raises(ValueError, match="buff_runtime_state or legacy exist_buff_dict"):
+        create_runtime_command_port(
+            data=cast(
+                Any,
+                SimpleNamespace(
+                    event_list=[],
+                    char_obj_list=[],
+                    dynamic_buff=dynamic_buff,
+                ),
+            ),
+            action_stack=cast(Any, SimpleNamespace()),
+            sim_instance=cast(Any, SimpleNamespace()),
+        )
+
+
 def test_runtime_command_settle_buffs_uses_runtime_owner_for_schedule_active_writes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -393,6 +444,9 @@ def test_runtime_command_settle_buffs_uses_runtime_owner_for_schedule_active_wri
         sim_instance=cast(Any, sim_instance),
         buff_runtime_state=runtime_state,
     )
+
+    assert isinstance(port, DefaultRuntimeCommandAdapter)
+    assert not isinstance(port, LegacyRuntimeCommandAdapter)
 
     port.settle_buffs(tick=18, enemy=cast(Any, enemy))
 
@@ -485,6 +539,9 @@ def test_runtime_command_settle_buffs_uses_template_owner_for_schedule_templates
         exist_buff_dict={"alpha": {"owner-schedule-buff": shadow_schedule_buff}},
         buff_runtime_state=runtime_state,
     )
+
+    assert isinstance(port, DefaultRuntimeCommandAdapter)
+    assert not isinstance(port, LegacyRuntimeCommandAdapter)
 
     port.settle_buffs(tick=24, enemy=cast(Any, SimpleNamespace(dynamic=SimpleNamespace())))
 
@@ -667,7 +724,10 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
 
     assert isinstance(scheduled_event.buff_runtime_view, DefaultBuffRuntimeReadAdapter)
     assert not isinstance(scheduled_event.buff_runtime_view, LegacyBuffRuntimeReadAdapter)
-    assert isinstance(scheduled_event.runtime_command_port, LegacyRuntimeCommandAdapter)
+    assert isinstance(scheduled_event.runtime_command_port, DefaultRuntimeCommandAdapter)
+    assert not isinstance(
+        scheduled_event.runtime_command_port, LegacyRuntimeCommandAdapter
+    )
     assert tuple(scheduled_event.buff_runtime_view.get_active_buffs("alpha")) == tuple(
         dynamic_buff["alpha"]
     )

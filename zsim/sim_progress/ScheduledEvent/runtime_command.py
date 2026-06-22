@@ -95,9 +95,7 @@ class RuntimeCommandPort(ABC):
         """执行 Schedule 阶段 Buff 结算命令。"""
 
 
-class LegacyRuntimeCommandAdapter(RuntimeCommandPort):
-    """基于旧容器的 runtime command 兼容适配器。"""
-
+class _RuntimeCommandAdapterBase(RuntimeCommandPort):
     def __init__(
         self,
         *,
@@ -193,6 +191,31 @@ class LegacyRuntimeCommandAdapter(RuntimeCommandPort):
         return self._data.dynamic_buff
 
 
+class DefaultRuntimeCommandAdapter(_RuntimeCommandAdapterBase):
+    """Production runtime command adapter backed by run-scoped Buff runtime state."""
+
+    def __init__(
+        self,
+        *,
+        data: "ScheduleData",
+        action_stack: "ActionStack",
+        sim_instance: "Simulator",
+        buff_runtime_state: "BuffRuntimeState",
+        buff_runtime_view: "BuffRuntimeReadPort | None" = None,
+    ) -> None:
+        super().__init__(
+            data=data,
+            action_stack=action_stack,
+            sim_instance=sim_instance,
+            buff_runtime_state=buff_runtime_state,
+            buff_runtime_view=buff_runtime_view,
+        )
+
+
+class LegacyRuntimeCommandAdapter(_RuntimeCommandAdapterBase):
+    """Explicit legacy runtime command compatibility adapter."""
+
+
 def create_runtime_command_port(
     *,
     data: "ScheduleData",
@@ -203,6 +226,14 @@ def create_runtime_command_port(
     buff_runtime_view: "BuffRuntimeReadPort | None" = None,
 ) -> RuntimeCommandPort:
     """创建同 tick runtime 写侧命令入口。"""
+    if buff_runtime_state is not None:
+        return DefaultRuntimeCommandAdapter(
+            data=data,
+            action_stack=action_stack,
+            sim_instance=sim_instance,
+            buff_runtime_state=buff_runtime_state,
+            buff_runtime_view=buff_runtime_view,
+        )
     return LegacyRuntimeCommandAdapter(
         data=data,
         action_stack=action_stack,
@@ -215,6 +246,7 @@ def create_runtime_command_port(
 
 __all__ = [
     "RuntimeCommandPort",
+    "DefaultRuntimeCommandAdapter",
     "LegacyRuntimeCommandAdapter",
     "create_runtime_command_port",
 ]
