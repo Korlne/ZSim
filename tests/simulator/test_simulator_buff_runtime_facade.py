@@ -730,7 +730,7 @@ def test_buff_load_loop_candidate_plan_matches_current_scan_order(
     assert plan["backend_candidate_count"] == 7
 
 
-def test_buff_load_loop_opt_in_candidate_execution_matches_default_call_order(
+def test_buff_load_loop_opt_in_candidate_iterator_matches_default_without_plan(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class FakeLoadingMission:
@@ -749,20 +749,9 @@ def test_buff_load_loop_opt_in_candidate_execution_matches_default_call_order(
         "second": FakeLoadingMission("second", "alpha"),
     }
     character_name_box = ["alpha", "bravo", "charlie"]
-    describe_calls: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
-    original_describe = buff_load_module._describe_buff_load_loop_candidate_plan
 
-    def tracking_describe(
-        load_mission_dict: dict[str, Any],
-        buff_registry_by_character: dict[str, dict[str, Any]],
-        character_name_box: list[str],
-    ) -> dict[str, object]:
-        describe_calls.append((tuple(load_mission_dict), tuple(character_name_box)))
-        return original_describe(
-            load_mission_dict,
-            buff_registry_by_character,
-            character_name_box,
-        )
+    def fail_describe(*args: Any, **kwargs: Any) -> dict[str, object]:
+        raise AssertionError("non-metrics opt-in execution must not materialize a plan")
 
     def fake_process_on_field_buff(
         sub_exist_buff_dict: dict[str, Any],
@@ -798,7 +787,7 @@ def test_buff_load_loop_opt_in_candidate_execution_matches_default_call_order(
     monkeypatch.setattr(
         buff_load_module,
         "_describe_buff_load_loop_candidate_plan",
-        tracking_describe,
+        fail_describe,
     )
     monkeypatch.setattr(
         buff_load_module,
@@ -841,7 +830,6 @@ def test_buff_load_loop_opt_in_candidate_execution_matches_default_call_order(
     assert opt_in_result is opt_in_pending
     assert default_pending == opt_in_pending
     assert default_sim._observed_buff_load_calls == opt_in_sim._observed_buff_load_calls
-    assert describe_calls == [(("first", "second"), ("alpha", "bravo", "charlie"))]
 
 
 def test_buff_load_loop_candidate_plan_is_per_call_snapshot_without_pending_queue_mutation(
@@ -883,7 +871,7 @@ def test_buff_load_loop_candidate_plan_is_per_call_snapshot_without_pending_queu
     assert second_plan["candidate_count"] == 2
 
 
-def test_buff_load_loop_opt_in_candidate_plan_is_not_cached_between_calls(
+def test_buff_load_loop_opt_in_candidate_iterator_is_not_cached_between_calls(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class FakeLoadingMission:
@@ -891,20 +879,9 @@ def test_buff_load_loop_opt_in_candidate_plan_is_not_cached_between_calls(
             self.mission_character = mission_character
 
     calls: list[tuple[str, ...]] = []
-    describe_calls: list[tuple[str, ...]] = []
-    original_describe = buff_load_module._describe_buff_load_loop_candidate_plan
 
-    def tracking_describe(
-        load_mission_dict: dict[str, Any],
-        buff_registry_by_character: dict[str, dict[str, Any]],
-        character_name_box: list[str],
-    ) -> dict[str, object]:
-        describe_calls.append(tuple(buff_registry_by_character["alpha"]))
-        return original_describe(
-            load_mission_dict,
-            buff_registry_by_character,
-            character_name_box,
-        )
+    def fail_describe(*args: Any, **kwargs: Any) -> dict[str, object]:
+        raise AssertionError("non-metrics opt-in execution must not materialize a plan")
 
     def fake_process_on_field_buff(
         sub_exist_buff_dict: dict[str, Any],
@@ -926,7 +903,7 @@ def test_buff_load_loop_opt_in_candidate_plan_is_not_cached_between_calls(
     monkeypatch.setattr(
         buff_load_module,
         "_describe_buff_load_loop_candidate_plan",
-        tracking_describe,
+        fail_describe,
     )
     monkeypatch.setattr(
         buff_load_module,
@@ -963,7 +940,6 @@ def test_buff_load_loop_opt_in_candidate_plan_is_not_cached_between_calls(
     assert first_result is loading_buff_dict
     assert second_result is loading_buff_dict
     assert calls == [("alpha-old",), ("alpha-old", "alpha-new")]
-    assert describe_calls == [("alpha-old",), ("alpha-old", "alpha-new")]
     assert loading_buff_dict == {"alpha": [("alpha-old", "alpha-new")], "enemy": []}
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -252,6 +253,22 @@ def _describe_buff_load_loop_candidate_plan(
     }
 
 
+def _iter_buff_load_loop_candidate_steps(
+    load_mission_dict: dict,
+    buff_registry_by_character: dict,
+    character_name_box: list,
+) -> Iterator[tuple[str, dict, "LoadingMission"]]:
+    for mission in load_mission_dict.values():
+        actor_name = mission.mission_character
+        if actor_name not in buff_registry_by_character:
+            raise ValueError("当前角色的Buff源并未创建！")
+
+        for char_name in character_name_box:
+            registry = buff_registry_by_character[char_name]
+            processor = "on_field" if char_name == actor_name else "backend"
+            yield processor, registry, mission
+
+
 def _execute_buff_load_loop_candidate_step(
     *,
     processor: str,
@@ -331,28 +348,44 @@ def BuffLoadLoop(
         for mission in load_mission_dict.values():
             if not isinstance(mission, LoadingMission):
                 raise TypeError(f"当前{mission}不是LoadingMission类！")
-        candidate_plan = _describe_buff_load_loop_candidate_plan(
-            load_mission_dict,
-            buff_registry_by_character,
-            character_name_box,
-        )
         if record_scan_metrics:
+            candidate_plan = _describe_buff_load_loop_candidate_plan(
+                load_mission_dict,
+                buff_registry_by_character,
+                character_name_box,
+            )
             trigger_candidate_count = int(candidate_plan["candidate_count"])
             on_field_candidate_count = int(candidate_plan["on_field_candidate_count"])
             backend_candidate_count = int(candidate_plan["backend_candidate_count"])
-        for step in candidate_plan["steps"]:
-            mission = load_mission_dict[step["mission_key"]]
-            registry = buff_registry_by_character[step["character_name"]]
-            _execute_buff_load_loop_candidate_step(
-                processor=step["processor"],
-                registry=registry,
-                mission=mission,
-                time_now=time_now,
-                pending_queues=pending_queues,
-                all_name_order_box=all_name_order_box,
-                registry_by_character=buff_registry_by_character,
-                sim_instance=sim_instance,
-            )
+            for step in candidate_plan["steps"]:
+                mission = load_mission_dict[step["mission_key"]]
+                registry = buff_registry_by_character[step["character_name"]]
+                _execute_buff_load_loop_candidate_step(
+                    processor=step["processor"],
+                    registry=registry,
+                    mission=mission,
+                    time_now=time_now,
+                    pending_queues=pending_queues,
+                    all_name_order_box=all_name_order_box,
+                    registry_by_character=buff_registry_by_character,
+                    sim_instance=sim_instance,
+                )
+        else:
+            for processor, registry, mission in _iter_buff_load_loop_candidate_steps(
+                load_mission_dict,
+                buff_registry_by_character,
+                character_name_box,
+            ):
+                _execute_buff_load_loop_candidate_step(
+                    processor=processor,
+                    registry=registry,
+                    mission=mission,
+                    time_now=time_now,
+                    pending_queues=pending_queues,
+                    all_name_order_box=all_name_order_box,
+                    registry_by_character=buff_registry_by_character,
+                    sim_instance=sim_instance,
+                )
     else:
         # 遍历load_mission_dict中的任务
         for mission in load_mission_dict.values():
