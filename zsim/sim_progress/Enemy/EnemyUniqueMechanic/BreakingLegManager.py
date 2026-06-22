@@ -22,18 +22,28 @@ FOCUS_RATIO_MAP 的存在，是为了模拟角色在破腿的过程中，
 
 
 class BreakingLegManager:
-    def __init__(self, enemy_instance):
+    def __init__(
+        self,
+        enemy_instance,
+        scheduled_event_emitter_provider: ScheduledEventEmitterProvider | None = None,
+    ):
+        self.enemy = enemy_instance
+        self._scheduled_event_emitter_provider = (
+            scheduled_event_emitter_provider
+            or ScheduledEventEmitterProvider.from_sim_instance_getter(
+                lambda: self.enemy.sim_instance
+            )
+        )
         self.leg_group = {
-            0: SingleLeg(enemy_instance, self),
-            1: SingleLeg(enemy_instance, self),
-            2: SingleLeg(enemy_instance, self),
-            3: SingleLeg(enemy_instance, self),
-            4: SingleLeg(enemy_instance, self),
-            5: SingleLeg(enemy_instance, self),
+            0: SingleLeg(enemy_instance, self, self._scheduled_event_emitter_provider),
+            1: SingleLeg(enemy_instance, self, self._scheduled_event_emitter_provider),
+            2: SingleLeg(enemy_instance, self, self._scheduled_event_emitter_provider),
+            3: SingleLeg(enemy_instance, self, self._scheduled_event_emitter_provider),
+            4: SingleLeg(enemy_instance, self, self._scheduled_event_emitter_provider),
+            5: SingleLeg(enemy_instance, self, self._scheduled_event_emitter_provider),
         }
         self.major_target = 0
         self.FOCUS_RATIO_MAP = {1361: 0.6, 1381: 0.6}
-        self.enemy = enemy_instance
 
     def update_myself(self, single_hit: SingleHit, tick: int):
         """这是整个manager的对外总接口，负责接收SingleHit，并且分配伤害到对应的腿上"""
@@ -83,14 +93,22 @@ class SingleLeg(BaseUniqueMechanic):
     而它们的事件触发核心是：event_active()函数
     """
 
-    def __init__(self, enemy_instance, manager_instance):
+    def __init__(
+        self,
+        enemy_instance,
+        manager_instance,
+        scheduled_event_emitter_provider: ScheduledEventEmitterProvider,
+    ):
         super().__init__(enemy_instance)
         self.leg_hp_ratio = 0.08  # 腿的倍率
         self.max_leg_hp = self.enemy.max_HP * self.leg_hp_ratio
         self.lost_leg_hp = 0  # 已经损失的腿的HP
         self.cd = 180  # 给了破腿的CD，暂定3秒
         self.last_broken = 0  # 上一次破腿的时间
-        self.event = BreakingEvent(enemy_instance)
+        self.event = BreakingEvent(
+            enemy_instance,
+            scheduled_event_emitter_provider=scheduled_event_emitter_provider,
+        )
         self.manager = manager_instance
 
     def update_myself(self, single_hit: SingleHit, tick: int, ratio: float):
@@ -148,7 +166,7 @@ class BreakingEvent:
     def __init__(
         self,
         enemy_instance,
-        scheduled_event_emitter_provider: ScheduledEventEmitterProvider | None = None,
+        scheduled_event_emitter_provider: ScheduledEventEmitterProvider,
     ):
         self.enemy: "Enemy" = enemy_instance
         self.decibel_rewards = 1000  # 奖励喧响值
@@ -156,12 +174,7 @@ class BreakingEvent:
         self.damage_ratio = 0.055  # 破腿的直伤倍率
         self.game_state = None
         self.found_char_dict: dict[int, "Character"] = {}
-        self._scheduled_event_emitter_provider = (
-            scheduled_event_emitter_provider
-            or ScheduledEventEmitterProvider.from_sim_instance_getter(
-                lambda: self.enemy.sim_instance
-            )
-        )
+        self._scheduled_event_emitter_provider = scheduled_event_emitter_provider
 
     def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
         return self._scheduled_event_emitter_provider.create_emitter()

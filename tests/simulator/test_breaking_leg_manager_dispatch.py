@@ -19,7 +19,9 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
 )
 
 breaking_module = import_module("zsim.sim_progress.Enemy.EnemyUniqueMechanic.BreakingLegManager")
+BreakingLegManager = breaking_module.BreakingLegManager
 BreakingEvent = breaking_module.BreakingEvent
+SingleLeg = breaking_module.SingleLeg
 
 
 class _FailFastEventList(list):
@@ -153,6 +155,49 @@ def test_breaking_event_reuses_cached_char_for_repeated_part_break_rewards(
     assert all(isinstance(event, ScheduleRefreshData) for event in dispatch_port.events)
     assert find_calls == [(1301, sim_instance)]
     assert schedule_data.event_list == []
+
+
+def test_breaking_leg_manager_injects_rebound_safe_emitter_provider(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    call_order: list[str] = []
+    old_event_list: list[object] = []
+    new_event_list: list[object] = []
+    schedule_data = SimpleNamespace(event_list=old_event_list)
+    sim_instance = SimpleNamespace(schedule_data=schedule_data)
+    enemy = _FakeEnemy(sim_instance, call_order)
+    manager = BreakingLegManager(enemy)
+    find_calls = _patch_breaking_dependencies(
+        monkeypatch,
+        call_order=call_order,
+    )
+
+    event = manager.leg_group[0].event
+    event.update_decibel(SimpleNamespace(skill_tag="1301_TEST_1"))
+    schedule_data.event_list = new_event_list
+    event.update_decibel(SimpleNamespace(skill_tag="1301_TEST_2"))
+
+    assert manager.leg_group[0].event._scheduled_event_emitter_provider is (
+        manager._scheduled_event_emitter_provider
+    )
+    assert len(old_event_list) == 1
+    assert len(new_event_list) == 1
+    assert all(
+        isinstance(event, ScheduleRefreshData)
+        for event in [old_event_list[0], new_event_list[0]]
+    )
+    assert find_calls == [(1301, sim_instance)]
+
+
+def test_breaking_event_family_moves_provider_fallback_out_of_producer() -> None:
+    breaking_event_source = inspect.getsource(BreakingEvent)
+    single_leg_source = inspect.getsource(SingleLeg)
+    manager_source = inspect.getsource(BreakingLegManager)
+
+    assert "from_sim_instance" not in breaking_event_source
+    assert "scheduled_event_emitter_provider or" not in breaking_event_source
+    assert "scheduled_event_emitter_provider=scheduled_event_emitter_provider" in single_leg_source
+    assert "ScheduledEventEmitterProvider.from_sim_instance_getter" in manager_source
 
 
 def test_non_buffxlogic_producers_receive_emitters_not_dispatch_ports():
