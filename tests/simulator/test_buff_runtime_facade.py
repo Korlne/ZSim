@@ -449,6 +449,81 @@ def test_legacy_buff_runtime_facade_tick_sweep_uses_wrapped_legacy_containers(
     assert calls == [(77, enemy, facade)]
 
 
+def test_sweep_active_buffs_iterates_active_store_owner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    buff_reports, log_reports = _capture_update_reports(monkeypatch)
+    active = _BuffProbe("active", endticks=10)
+    alltime = _BuffProbe("alltime", alltime=True, endticks=1)
+    active_store: dict[str, list[Any]] = {"alpha": [active, alltime], "enemy": []}
+    runtime_state = BuffRuntimeState(
+        template_registry={"alpha": {}, "enemy": {}},
+        pending_queue={"alpha": [], "enemy": []},
+        active_store=active_store,
+        enemy_mirror=active_store["enemy"],
+    )
+    active_owner = runtime_state.active_store_owner()
+    facade = runtime_state.create_facade()
+    iter_calls: list[str] = []
+    original_items = active_owner.items
+
+    def recording_items() -> Any:
+        iter_calls.append("items")
+        return original_items()
+
+    def fail_compat_access() -> dict[str, list[Any]]:
+        raise AssertionError("sweep_active_buffs must iterate through ActiveBuffStore")
+
+    monkeypatch.setattr(active_owner, "items", recording_items)
+    monkeypatch.setattr(runtime_state, "active_store_for_compat", fail_compat_access)
+
+    result = facade.sweep_active_buffs(tick=5)
+
+    assert result is active_store
+    assert iter_calls == ["items"]
+    assert active_store["alpha"] == [active, alltime]
+    assert buff_reports == [
+        (("alpha", 5, "active", 1, True), {"level": 4}),
+        (("alpha", 5, "alltime", 1, True), {"level": 4}),
+    ]
+    assert log_reports == []
+
+
+def test_end_active_buff_removes_through_active_store_owner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, log_reports = _capture_update_reports(monkeypatch)
+    events: list[str] = []
+    expired = _BuffProbe("expired", endticks=5, events=events)
+    active_store: dict[str, list[Any]] = {"alpha": [expired], "enemy": []}
+    runtime_state = BuffRuntimeState(
+        template_registry={"alpha": {"expired": _BuffProbe("expired")}, "enemy": {}},
+        pending_queue={"alpha": [], "enemy": []},
+        active_store=active_store,
+        enemy_mirror=active_store["enemy"],
+    )
+    active_owner = runtime_state.active_store_owner()
+    facade = runtime_state.create_facade()
+    remove_calls: list[tuple[str, str]] = []
+    original_remove = active_owner.remove
+
+    def recording_remove(beneficiary: str, buff: Any) -> None:
+        remove_calls.append((beneficiary, buff.ft.index))
+        original_remove(beneficiary, buff)
+
+    monkeypatch.setattr(active_owner, "remove", recording_remove)
+
+    facade.end_active_buff("alpha", expired, tick=6)
+
+    assert remove_calls == [("alpha", "expired")]
+    assert active_store["alpha"] == []
+    assert expired.end_calls == [(6, runtime_state.template_registry_for_compat()["alpha"])]
+    assert events == ["end:expired:6"]
+    assert log_reports == [
+        ("[Buff END]:6:alpha 的 expired 结束，已从动态列表移除", 4),
+    ]
+
+
 def test_update_buff_expired_simple_buff_uses_facade_active_removal(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

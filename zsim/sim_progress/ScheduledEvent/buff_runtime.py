@@ -433,7 +433,8 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
     def sweep_active_buffs(self, *, tick: int) -> dict[str, list["Buff"]]:
         from zsim.sim_progress.Update import Update_Buff
 
-        for beneficiary, active_buffs in self._runtime_state.active_store_for_compat().items():
+        active_store = self._runtime_state.active_store_owner()
+        for beneficiary, active_buffs in active_store.items():
             buffs_to_remove: list["Buff"] = []
             for buff in active_buffs:
                 Update_Buff.CheckBuff(buff, beneficiary)
@@ -482,7 +483,7 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
             for buff in buffs_to_remove:
                 self.end_active_buff(beneficiary, buff, tick=tick)
 
-        return self._runtime_state.active_store_for_compat()
+        return active_store.as_compat_dict()
 
     def find_active_buff_by_index(self, beneficiary: str, buff_index: str) -> "Buff | None":
         return self._runtime_state.active_store_owner().find_by_index(
