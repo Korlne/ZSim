@@ -62,6 +62,9 @@ SCHEDULED_EVENT_RUNTIME_GUARDRAIL_FILES = (
     SCHEDULED_EVENT_DIR / "runtime_command.py",
     *sorted(EVENT_HANDLERS_DIR.rglob("*.py")),
 )
+RUNTIME_COMMAND_LEGACY_ADAPTER_GUARDRAIL_FILES = tuple(
+    sorted((PROJECT_ROOT / "zsim").rglob("*.py"))
+)
 
 CALCULATOR_READ_GUARDRAIL_FILES = (
     PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent" / "Calculator.py",
@@ -235,6 +238,12 @@ ACTIVE_STORE_RAW_WRITE_NEXT_ACTION = (
 CALCULATOR_READ_NEXT_ACTION = (
     "migrate read-only usage to CalculatorBuffAttributeReader, retain as "
     "documented formula/compatibility snapshot, or block the story"
+)
+
+RUNTIME_COMMAND_LEGACY_ADAPTER_NEXT_ACTION = (
+    "pass buff_runtime_state to create_runtime_command_port, or keep "
+    "LegacyRuntimeCommandAdapter construction inside the explicit "
+    "migration/test/rollback factory fallback"
 )
 
 ACTIVE_STORE_RAW_DICT_NAMES = {
@@ -771,6 +780,23 @@ class XLogicAdapterGuardrailFinding:
         )
 
 
+@dataclass(frozen=True)
+class RuntimeCommandLegacyAdapterFinding:
+    path: str
+    line: int
+    kind: str
+    matched_expression: str
+    classification_suggestion: str
+    context: str
+
+    def message(self) -> str:
+        return (
+            f"{self.path}:{self.line}: matched expression: {self.matched_expression}; "
+            f"classification suggestion: {self.classification_suggestion}; "
+            f"next action: {RUNTIME_COMMAND_LEGACY_ADAPTER_NEXT_ACTION}"
+        )
+
+
 class RawContainerVisitor(ast.NodeVisitor):
     def __init__(self, path: Path, source: str) -> None:
         self.path = path
@@ -1280,6 +1306,125 @@ class ScheduledEventRuntimeVisitor(RawContainerVisitor):
         self.generic_visit(node)
 
 
+class RuntimeCommandLegacyAdapterVisitor(ast.NodeVisitor):
+    def __init__(self, path: Path, source: str) -> None:
+        self.path = path
+        self.source = source
+        self.findings: list[RuntimeCommandLegacyAdapterFinding] = []
+        self._class_stack: list[str] = []
+        self._function_stack: list[str] = []
+        self._legacy_adapter_aliases = {"LegacyRuntimeCommandAdapter"}
+        self._factory_aliases = {"create_runtime_command_port"}
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        for alias in node.names:
+            imported_name = alias.name
+            local_name = alias.asname or alias.name
+            if imported_name == "LegacyRuntimeCommandAdapter":
+                self._legacy_adapter_aliases.add(local_name)
+            if imported_name == "create_runtime_command_port":
+                self._factory_aliases.add(local_name)
+        self.generic_visit(node)
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        self._class_stack.append(node.name)
+        self.generic_visit(node)
+        self._class_stack.pop()
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._function_stack.append(node.name)
+        try:
+            self.generic_visit(node)
+        finally:
+            self._function_stack.pop()
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._function_stack.append(node.name)
+        try:
+            self.generic_visit(node)
+        finally:
+            self._function_stack.pop()
+
+    def visit_Call(self, node: ast.Call) -> None:
+        call_name = self._call_name(node.func)
+        if call_name in self._legacy_adapter_aliases:
+            self._add_finding(
+                line=node.lineno,
+                kind="legacy_runtime_command_adapter_constructor",
+                expression=self._source_for(node),
+                classification_suggestion=(
+                    "legacy runtime command adapter construction"
+                ),
+            )
+        if call_name in self._factory_aliases and self._omits_runtime_state(node):
+            self._add_finding(
+                line=node.lineno,
+                kind="runtime_command_factory_without_state",
+                expression=self._source_for(node),
+                classification_suggestion=(
+                    "create_runtime_command_port fallback without BuffRuntimeState"
+                ),
+            )
+        self.generic_visit(node)
+
+    @staticmethod
+    def _call_name(func: ast.AST) -> str | None:
+        if isinstance(func, ast.Name):
+            return func.id
+        if isinstance(func, ast.Attribute):
+            return func.attr
+        return None
+
+    @staticmethod
+    def _omits_runtime_state(node: ast.Call) -> bool:
+        for keyword in node.keywords:
+            if keyword.arg != "buff_runtime_state":
+                continue
+            return (
+                isinstance(keyword.value, ast.Constant)
+                and keyword.value.value is None
+            )
+        return True
+
+    def _add_finding(
+        self,
+        *,
+        line: int,
+        kind: str,
+        expression: str,
+        classification_suggestion: str,
+    ) -> None:
+        self.findings.append(
+            RuntimeCommandLegacyAdapterFinding(
+                path=self._relative_path(),
+                line=line,
+                kind=kind,
+                matched_expression=self._normalize(expression),
+                classification_suggestion=classification_suggestion,
+                context=self._context(),
+            )
+        )
+
+    def _relative_path(self) -> str:
+        return self.path.relative_to(PROJECT_ROOT).as_posix()
+
+    def _context(self) -> str:
+        parts = [*self._class_stack, *self._function_stack]
+        if not parts:
+            return "<module>"
+        return ".".join(parts)
+
+    def _source_for(self, node: ast.AST) -> str:
+        segment = ast.get_source_segment(self.source, node)
+        if segment is None:
+            return f"<{type(node).__name__}>"
+        return self._normalize(segment)
+
+    @staticmethod
+    def _normalize(expression: str) -> str:
+        return " ".join(expression.strip().split())
+
+
 class CalculatorReadVisitor(RawContainerVisitor):
     def __init__(self, path: Path, source: str) -> None:
         super().__init__(path, source)
@@ -1452,6 +1597,27 @@ def _collect_scheduled_runtime_findings() -> list[Finding]:
     return findings
 
 
+def _collect_runtime_command_legacy_adapter_findings_from_source(
+    path: Path, source: str
+) -> list[RuntimeCommandLegacyAdapterFinding]:
+    tree = ast.parse(source, filename=str(path))
+    visitor = RuntimeCommandLegacyAdapterVisitor(path, source)
+    visitor.visit(tree)
+    return visitor.findings
+
+
+def _collect_runtime_command_legacy_adapter_findings() -> list[
+    RuntimeCommandLegacyAdapterFinding
+]:
+    findings: list[RuntimeCommandLegacyAdapterFinding] = []
+    for path in RUNTIME_COMMAND_LEGACY_ADAPTER_GUARDRAIL_FILES:
+        source = path.read_text(encoding="utf-8")
+        findings.extend(
+            _collect_runtime_command_legacy_adapter_findings_from_source(path, source)
+        )
+    return findings
+
+
 def _collect_calculator_read_findings_from_source(
     path: Path, source: str
 ) -> list[Finding]:
@@ -1553,6 +1719,18 @@ def _scheduled_runtime_allowance_for(finding: Finding) -> str | None:
     return None
 
 
+def _runtime_command_legacy_adapter_allowance_for(
+    finding: RuntimeCommandLegacyAdapterFinding,
+) -> str | None:
+    if (
+        finding.path == "zsim/sim_progress/ScheduledEvent/runtime_command.py"
+        and finding.context == "create_runtime_command_port"
+        and finding.kind == "legacy_runtime_command_adapter_constructor"
+    ):
+        return "explicit legacy runtime command factory fallback"
+    return None
+
+
 def _calculator_read_allowance_for(finding: Finding) -> str | None:
     path = finding.path
     context = finding.context
@@ -1598,6 +1776,17 @@ def _scheduled_runtime_allowance_counts(findings: list[Finding]) -> Counter[str]
     return counts
 
 
+def _runtime_command_legacy_adapter_allowance_counts(
+    findings: list[RuntimeCommandLegacyAdapterFinding],
+) -> Counter[str]:
+    counts: Counter[str] = Counter()
+    for finding in findings:
+        allowance = _runtime_command_legacy_adapter_allowance_for(finding)
+        if allowance is not None:
+            counts[allowance] += 1
+    return counts
+
+
 def _calculator_read_allowance_counts(findings: list[Finding]) -> Counter[str]:
     counts: Counter[str] = Counter()
     for finding in findings:
@@ -1634,6 +1823,10 @@ EXPECTED_SCHEDULED_RUNTIME_REFERENCE_CEILINGS = {
     "existing RuntimeCommandPort adapter reads": 11,
     "runtime view passed to Calculator formula boundary": 3,
     "runtime view passed to anomaly formula boundary": 4,
+}
+
+EXPECTED_RUNTIME_COMMAND_LEGACY_ADAPTER_CEILINGS = {
+    "explicit legacy runtime command factory fallback": 1,
 }
 
 EXPECTED_CALCULATOR_READ_RETAINED_SNAPSHOT_COUNTS = {
@@ -2892,6 +3085,141 @@ def test_scheduled_event_raw_runtime_retained_counts_do_not_expand() -> None:
             f"{EXPECTED_SCHEDULED_RUNTIME_REFERENCE_CEILINGS[allowance]}"
             for allowance, count in sorted(expanded.items())
         )
+    )
+
+
+def test_runtime_command_legacy_adapter_stays_inside_explicit_fallback() -> None:
+    findings = _collect_runtime_command_legacy_adapter_findings()
+    disallowed = [
+        finding
+        for finding in findings
+        if _runtime_command_legacy_adapter_allowance_for(finding) is None
+    ]
+
+    assert not disallowed, (
+        "RuntimeCommand legacy adapter guardrail found default-path production uses:\n"
+        + "\n".join(f"- {finding.message()}" for finding in disallowed)
+    )
+
+
+def test_runtime_command_legacy_adapter_retained_counts_do_not_expand() -> None:
+    findings = _collect_runtime_command_legacy_adapter_findings()
+    counts = _runtime_command_legacy_adapter_allowance_counts(findings)
+    expanded = {
+        allowance: count
+        for allowance, count in counts.items()
+        if count > EXPECTED_RUNTIME_COMMAND_LEGACY_ADAPTER_CEILINGS[allowance]
+    }
+
+    assert not expanded, (
+        "RuntimeCommand legacy adapter guardrail found widened retained fallbacks:\n"
+        + "\n".join(
+            f"- {allowance}: {count} > "
+            f"{EXPECTED_RUNTIME_COMMAND_LEGACY_ADAPTER_CEILINGS[allowance]}"
+            for allowance, count in sorted(expanded.items())
+        )
+    )
+
+
+def test_runtime_command_legacy_adapter_guardrail_blocks_direct_constructor() -> None:
+    source = (
+        "from zsim.sim_progress.ScheduledEvent.runtime_command import "
+        "LegacyRuntimeCommandAdapter\n"
+        "def build_default(data, action_stack, sim_instance, exist_buff_dict):\n"
+        "    return LegacyRuntimeCommandAdapter(\n"
+        "        data=data,\n"
+        "        action_stack=action_stack,\n"
+        "        sim_instance=sim_instance,\n"
+        "        exist_buff_dict=exist_buff_dict,\n"
+        "    )\n"
+    )
+    path = (
+        PROJECT_ROOT
+        / "zsim"
+        / "sim_progress"
+        / "ScheduledEvent"
+        / "event_handlers"
+        / "handlers"
+        / "_fixture.py"
+    )
+    findings = _collect_runtime_command_legacy_adapter_findings_from_source(
+        path, source
+    )
+    disallowed = [
+        finding
+        for finding in findings
+        if _runtime_command_legacy_adapter_allowance_for(finding) is None
+    ]
+
+    assert len(disallowed) == 1
+    message = disallowed[0].message()
+    assert (
+        "zsim/sim_progress/ScheduledEvent/event_handlers/handlers/_fixture.py:3"
+        in message
+    )
+    assert "matched expression: LegacyRuntimeCommandAdapter(" in message
+    assert (
+        "classification suggestion: legacy runtime command adapter construction"
+        in message
+    )
+    assert f"next action: {RUNTIME_COMMAND_LEGACY_ADAPTER_NEXT_ACTION}" in message
+
+
+def test_runtime_command_legacy_adapter_guardrail_blocks_factory_without_state() -> None:
+    source = (
+        "from zsim.sim_progress.ScheduledEvent.runtime_command import "
+        "create_runtime_command_port as make_runtime_command_port\n"
+        "def build_default(data, action_stack, sim_instance, exist_buff_dict):\n"
+        "    return make_runtime_command_port(\n"
+        "        data=data,\n"
+        "        action_stack=action_stack,\n"
+        "        sim_instance=sim_instance,\n"
+        "        exist_buff_dict=exist_buff_dict,\n"
+        "    )\n"
+    )
+    path = PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent" / "_fixture.py"
+    findings = _collect_runtime_command_legacy_adapter_findings_from_source(
+        path, source
+    )
+    disallowed = [
+        finding
+        for finding in findings
+        if _runtime_command_legacy_adapter_allowance_for(finding) is None
+    ]
+
+    assert len(disallowed) == 1
+    message = disallowed[0].message()
+    assert "zsim/sim_progress/ScheduledEvent/_fixture.py:3" in message
+    assert "matched expression: make_runtime_command_port(" in message
+    assert (
+        "classification suggestion: create_runtime_command_port fallback "
+        "without BuffRuntimeState"
+    ) in message
+    assert f"next action: {RUNTIME_COMMAND_LEGACY_ADAPTER_NEXT_ACTION}" in message
+
+
+def test_runtime_command_legacy_adapter_guardrail_allows_current_factory_state() -> None:
+    source = (
+        "from zsim.sim_progress.ScheduledEvent.runtime_command import "
+        "RuntimeCommandPort, create_runtime_command_port\n"
+        "class LegacyRuntimeCommandAdapter(RuntimeCommandPort):\n"
+        "    pass\n"
+        "def build_default(\n"
+        "    data, action_stack, sim_instance, exist_buff_dict, buff_runtime_state\n"
+        "):\n"
+        "    return create_runtime_command_port(\n"
+        "        data=data,\n"
+        "        action_stack=action_stack,\n"
+        "        sim_instance=sim_instance,\n"
+        "        exist_buff_dict=exist_buff_dict,\n"
+        "        buff_runtime_state=buff_runtime_state,\n"
+        "    )\n"
+    )
+    path = PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent" / "_fixture.py"
+
+    assert (
+        _collect_runtime_command_legacy_adapter_findings_from_source(path, source)
+        == []
     )
 
 
