@@ -232,7 +232,7 @@ class Simulator:
         self.load_data.buff_0_manager.initialize_buff_listener()
 
     def _create_buff_runtime_facade(self) -> BuffRuntimeFacade:
-        self._record_buff_runtime_rebuild_count("legacy_buff_runtime_facade")
+        self._record_buff_runtime_rebuild_count("default_buff_runtime_facade")
         return self.buff_runtime_state.create_facade()
 
     def main_loop(

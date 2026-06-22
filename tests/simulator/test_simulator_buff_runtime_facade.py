@@ -410,7 +410,7 @@ def test_main_loop_creates_one_buff_runtime_facade_per_run_not_per_tick(
 def test_rebuild_counting_is_inert_until_opted_in() -> None:
     sim = cast(Any, Simulator())
 
-    sim._record_buff_runtime_rebuild_count("legacy_buff_runtime_facade")
+    sim._record_buff_runtime_rebuild_count("default_buff_runtime_facade")
 
     assert sim.get_buff_runtime_rebuild_counts() is None
 
@@ -2227,7 +2227,7 @@ def test_main_loop_records_opt_in_facade_and_buff_load_counts(
     sim.main_loop(stop_tick=2, use_api=True)
 
     assert sim.get_buff_runtime_rebuild_counts() == {
-        "legacy_buff_runtime_facade": 1,
+        "default_buff_runtime_facade": 1,
         "buff_load_loop": 2,
     }
     assert runtime.calls == [(0, enemy), (1, enemy), (2, enemy)]

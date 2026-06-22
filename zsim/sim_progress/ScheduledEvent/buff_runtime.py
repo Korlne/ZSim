@@ -54,7 +54,7 @@ class BuffRuntimeState:
         return enemy_mirror
 
     def create_facade(self) -> "BuffRuntimeFacade":
-        return LegacyBuffRuntimeFacade(runtime_state=self)
+        return DefaultBuffRuntimeFacade(runtime_state=self)
 
     def create_read_port(self) -> "BuffRuntimeReadPort":
         return LegacyBuffRuntimeReadAdapter(runtime_state=self)
@@ -298,15 +298,15 @@ class LegacyBuffRuntimeReadAdapter(BuffRuntimeReadPort):
 
 
 class BuffRuntimeFacade(ABC):
-    """旧 Buff 容器运行时写侧门面。"""
+    """Buff runtime 写侧门面。"""
 
     @abstractmethod
     def get_registered_buff(self, beneficiary: str, buff_index: str) -> "Buff | None":
-        """读取旧模板注册表中的 Buff。"""
+        """读取 runtime-owned 模板注册表中的 Buff。"""
 
     @abstractmethod
     def get_registered_buff_view(self, beneficiary: str) -> Mapping[str, "Buff"]:
-        """读取旧模板注册表的只读视图。"""
+        """读取 runtime-owned 模板注册表的只读视图。"""
 
     @abstractmethod
     def find_registered_buff_source(self, buff_index: str) -> tuple[str, "Buff"] | None:
@@ -414,8 +414,8 @@ class BuffRuntimeFacade(ABC):
         """执行 Schedule 阶段 Buff 结算。"""
 
 
-class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
-    """基于旧容器身份的 Buff runtime 门面。"""
+class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
+    """默认 Buff runtime 门面，包装 run-scoped runtime state owner。"""
 
     def __init__(self, *, runtime_state: BuffRuntimeState) -> None:
         self._runtime_state = runtime_state
@@ -905,14 +905,18 @@ def create_legacy_buff_runtime_facade(
     dynamic_buff_dict: dict[str, list["Buff"]],
     enemy_debuff_mirror: list["Buff"],
 ) -> BuffRuntimeFacade:
-    """创建旧 Buff 容器运行时门面，不复制或替换旧容器身份。"""
+    """创建显式 legacy 兼容门面，不复制或替换旧容器身份。"""
     runtime_state = BuffRuntimeState(
         template_registry=exist_buff_dict,
         pending_queue=loading_buff_dict,
         active_store=dynamic_buff_dict,
         enemy_mirror=enemy_debuff_mirror,
     )
-    return runtime_state.create_facade()
+    return LegacyBuffRuntimeFacade(runtime_state=runtime_state)
+
+
+class LegacyBuffRuntimeFacade(DefaultBuffRuntimeFacade):
+    """显式 migration/test/rollback 兼容门面。"""
 
 
 __all__ = [
@@ -921,6 +925,7 @@ __all__ = [
     "BuffRuntimeState",
     "ActiveBuffStore",
     "PendingBuffQueue",
+    "DefaultBuffRuntimeFacade",
     "LegacyBuffRuntimeReadAdapter",
     "LegacyBuffRuntimeFacade",
     "create_buff_runtime_read_port",

@@ -19,6 +19,7 @@ from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     BuffTemplateRegistry,
     BuffRuntimeFacade,
     BuffRuntimeState,
+    DefaultBuffRuntimeFacade,
     EnemyDebuffMirror,
     LegacyBuffRuntimeFacade,
     PendingBuffQueue,
@@ -223,6 +224,21 @@ def test_legacy_buff_runtime_facade_preserves_old_container_identity() -> None:
     assert loading_buff_dict["alpha"] == [pending_buff]
     assert dynamic_buff_dict["alpha"] == [active_buff]
     assert enemy_debuff_mirror == [enemy_debuff]
+
+
+def test_buff_runtime_state_create_facade_uses_default_runtime_contract() -> None:
+    runtime_state = BuffRuntimeState(
+        template_registry={"alpha": {}, "enemy": {}},
+        pending_queue={"alpha": [], "enemy": []},
+        active_store={"alpha": [], "enemy": []},
+        enemy_mirror=[],
+    )
+
+    facade = runtime_state.create_facade()
+
+    assert isinstance(facade, DefaultBuffRuntimeFacade)
+    assert isinstance(facade, BuffRuntimeFacade)
+    assert not isinstance(facade, LegacyBuffRuntimeFacade)
 
 
 def test_buff_runtime_state_exposes_active_store_owner_with_compat_identity() -> None:
