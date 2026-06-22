@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from scripts.run_buff_refactor_validation import (
+    DEFAULT_PATH_LEGACY_RUNTIME_REFERENCE_FAMILY,
     RUNTIME_DEPENDENCY_CATEGORIES,
     RUNTIME_DEPENDENCY_STRICT_COMMAND,
     RUNTIME_DEPENDENCY_TRACKED_PRODUCTION_FAMILIES,
@@ -1973,6 +1974,12 @@ def test_runtime_dependency_zero_scanner_reports_required_schema_and_families() 
     )
     assert report["productionRuntimeTotal"] == 0
     assert report["productionRuntimeFamilies"] == []
+    assert (
+        report["families"][DEFAULT_PATH_LEGACY_RUNTIME_REFERENCE_FAMILY][
+            "production runtime"
+        ]
+        == 0
+    )
     assert report["findingCount"] > 0
 
 
@@ -2023,6 +2030,115 @@ def test_runtime_dependency_zero_scanner_classifies_reference_categories() -> No
     assert "production runtime" in {
         finding.category for finding in api_findings
     }
+
+
+def test_default_path_legacy_runtime_scanner_blocks_production_defaults() -> None:
+    scanner = RuntimeDependencyZeroScanner(PROJECT_ROOT)
+    simulator_findings = scanner.scan_source(
+        "zsim/simulator/_fixture.py",
+        "from zsim.sim_progress.ScheduledEvent.buff_runtime import create_legacy_buff_runtime_facade\n"
+        "def build_default_runtime(self):\n"
+        "    self._record_buff_runtime_rebuild('legacy_buff_runtime_facade')\n"
+        "    return create_legacy_buff_runtime_facade(runtime_state=self.buff_runtime_state)\n",
+    )
+    api_findings = scanner.scan_source(
+        "zsim/api_src/services/sim_controller/_fixture.py",
+        "from zsim.sim_progress.ScheduledEvent.buff_runtime import LegacyBuffRuntimeFacade\n"
+        "def build_api_runtime(runtime_state):\n"
+        "    return LegacyBuffRuntimeFacade(runtime_state=runtime_state)\n",
+    )
+    webui_findings = scanner.scan_source(
+        "zsim/lib_webui/_fixture.py",
+        "DEFAULT_RUNTIME_LABEL = 'legacy_runtime'\n",
+    )
+    benchmark_findings = scanner.scan_source(
+        "zsim/utils/_fixture.py",
+        "def build_parser(parser):\n"
+        "    parser.add_argument('--legacy-runtime', dest='legacy_runtime')\n",
+    )
+
+    assert {
+        finding.matched_text
+        for finding in simulator_findings
+        if finding.family == DEFAULT_PATH_LEGACY_RUNTIME_REFERENCE_FAMILY
+        and finding.category == "production runtime"
+    } == {
+        "create_legacy_buff_runtime_facade",
+        "legacy_buff_runtime_facade",
+    }
+    assert {
+        finding.matched_text
+        for finding in api_findings
+        if finding.family == "LegacyBuffRuntimeFacade"
+        and finding.category == "production runtime"
+    } == {"LegacyBuffRuntimeFacade"}
+    assert {
+        finding.matched_text
+        for finding in webui_findings
+        if finding.family == DEFAULT_PATH_LEGACY_RUNTIME_REFERENCE_FAMILY
+        and finding.category == "production runtime"
+    } == {"legacy_runtime"}
+    assert {
+        finding.matched_text
+        for finding in benchmark_findings
+        if finding.family == DEFAULT_PATH_LEGACY_RUNTIME_REFERENCE_FAMILY
+        and finding.category == "production runtime"
+    } == {"--legacy-runtime", "legacy_runtime"}
+
+
+def test_default_path_legacy_runtime_scanner_allows_report_compat_aliases() -> None:
+    scanner = RuntimeDependencyZeroScanner(PROJECT_ROOT)
+    consistency_findings = scanner.scan_source(
+        "zsim/utils/main_loop_consistency.py",
+        "def required_alias(\n"
+        "    legacy_runtime: str | None,\n"
+        "):\n"
+        "    if legacy_runtime is not None:\n"
+        "        return legacy_runtime\n"
+        "    return {\n"
+        '        "legacy_runtime": "report compatibility alias for baseline_runtime",\n'
+        '        "legacy_runtime": baseline_label,\n'
+        '        "legacy_runtime": "alias for baseline_runtime",\n'
+        '        "default_path": report.get("baseline_runtime", report["legacy_runtime"]),\n'
+        "    }\n"
+        "def optional_alias(\n"
+        "    legacy_runtime: str | None = None,\n"
+        "):\n"
+        "    return run(\n"
+        "        legacy_runtime=legacy_runtime,\n"
+        "    )\n"
+        "parser.add_argument(\n"
+        '    "--legacy-runtime",\n'
+        ")\n",
+    )
+    benchmark_findings = scanner.scan_source(
+        "zsim/utils/runtime_benchmark.py",
+        "def optional_alias(\n"
+        "    legacy_runtime: str | None = None,\n"
+        "):\n"
+        "    report = {\n"
+        '        "baseline": first_report.get("baseline_runtime", first_report["legacy_runtime"]),\n'
+        '        "legacy": first_report["legacy_runtime"],\n'
+        '        "legacy_runtime": baseline_label,\n'
+        '        "legacy_runtime": "alias for baseline_runtime",\n'
+        "    }\n"
+        "    return run(\n"
+        "        legacy_runtime=legacy_runtime,\n"
+        "        report=report,\n"
+        "    )\n"
+        "parser.add_argument(\n"
+        '    "--legacy-runtime",\n'
+        ")\n",
+    )
+
+    alias_findings = [
+        finding
+        for finding in [*consistency_findings, *benchmark_findings]
+        if finding.family == DEFAULT_PATH_LEGACY_RUNTIME_REFERENCE_FAMILY
+    ]
+
+    assert alias_findings
+    assert {finding.category for finding in alias_findings} == {"migration-only"}
 
 
 def test_template_registry_runtime_dependency_scanner_blocks_direct_load_data_truth_sources() -> None:
