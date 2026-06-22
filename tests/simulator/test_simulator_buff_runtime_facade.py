@@ -438,6 +438,130 @@ def test_buff_load_loop_records_opt_in_scan_metric_shape(
     }
 
 
+def test_buff_load_loop_opt_in_metrics_still_materialize_candidate_plan(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeLoadingMission:
+        def __init__(self, name: str, mission_character: str) -> None:
+            self.name = name
+            self.mission_character = mission_character
+
+    existbuff_dict: dict[str, dict[str, Any]] = {
+        "alpha": {"alpha-a": object(), "alpha-b": object()},
+        "bravo": {"bravo-a": object()},
+        "enemy": {"enemy-a": object()},
+    }
+    registry_owner_by_id = {id(registry): owner for owner, registry in existbuff_dict.items()}
+    load_mission_dict = {
+        "first": FakeLoadingMission("first", "alpha"),
+        "second": FakeLoadingMission("second", "bravo"),
+    }
+    character_name_box = ["alpha", "bravo"]
+    materialized_plans: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
+    calls: list[tuple[str, str, str, tuple[str, ...]]] = []
+    original_describe = buff_load_module._describe_buff_load_loop_candidate_plan
+
+    def spy_describe_candidate_plan(
+        load_mission_dict_arg: dict[str, Any],
+        buff_registry_by_character_arg: dict[str, dict[str, Any]],
+        character_name_box_arg: list[str],
+    ) -> dict[str, object]:
+        materialized_plans.append(
+            (tuple(load_mission_dict_arg), tuple(character_name_box_arg))
+        )
+        return original_describe(
+            load_mission_dict_arg,
+            buff_registry_by_character_arg,
+            character_name_box_arg,
+        )
+
+    def fake_process_on_field_buff(
+        sub_exist_buff_dict: dict[str, Any],
+        mission: Any,
+        time_now: int,
+        LOADING_BUFF_DICT: dict[str, list[Any]],
+        all_name_order_box: dict[str, Any],
+        exist_buff_dict: dict[str, dict[str, Any]],
+        sim_instance: Any,
+    ) -> None:
+        owner = registry_owner_by_id[id(sub_exist_buff_dict)]
+        calls.append(("on_field", mission.name, owner, tuple(sub_exist_buff_dict)))
+        LOADING_BUFF_DICT[owner].append(f"on:{mission.name}:{time_now}")
+
+    def fake_process_backend_buff(
+        sub_exist_buff_dict: dict[str, Any],
+        all_name_order_box: dict[str, Any],
+        mission: Any,
+        time_now: int,
+        LOADING_BUFF_DICT: dict[str, list[Any]],
+        exist_buff_dict: dict[str, dict[str, Any]],
+        sim_instance: Any,
+    ) -> None:
+        owner = registry_owner_by_id[id(sub_exist_buff_dict)]
+        calls.append(("backend", mission.name, owner, tuple(sub_exist_buff_dict)))
+        LOADING_BUFF_DICT[owner].append(f"back:{mission.name}:{time_now}")
+
+    monkeypatch.setattr(load_module, "LoadingMission", FakeLoadingMission)
+    monkeypatch.setattr(
+        buff_load_module,
+        "_describe_buff_load_loop_candidate_plan",
+        spy_describe_candidate_plan,
+    )
+    monkeypatch.setattr(
+        buff_load_module,
+        "process_on_field_buff",
+        fake_process_on_field_buff,
+    )
+    monkeypatch.setattr(
+        buff_load_module,
+        "process_backend_buff",
+        fake_process_backend_buff,
+    )
+    sim = cast(Any, Simulator(use_indexed_buff_load_loop=True))
+    sim.enable_buff_runtime_rebuild_counting()
+    loading_buff_dict: dict[str, list[Any]] = {}
+
+    result = BuffLoadLoop(
+        time_now=7,
+        load_mission_dict=load_mission_dict,
+        existbuff_dict=existbuff_dict,
+        character_name_box=character_name_box,
+        LOADING_BUFF_DICT=loading_buff_dict,
+        all_name_order_box={},
+        sim_instance=sim,
+    )
+
+    assert result is loading_buff_dict
+    assert materialized_plans == [(("first", "second"), ("alpha", "bravo"))]
+    assert calls == [
+        ("on_field", "first", "alpha", ("alpha-a", "alpha-b")),
+        ("backend", "first", "bravo", ("bravo-a",)),
+        ("backend", "second", "alpha", ("alpha-a", "alpha-b")),
+        ("on_field", "second", "bravo", ("bravo-a",)),
+    ]
+    assert loading_buff_dict == {
+        "alpha": ["on:first:7", "back:second:7"],
+        "bravo": ["back:first:7", "on:second:7"],
+        "enemy": [],
+    }
+    assert _buff_load_loop_scan_metrics(sim) == {
+        "processed_tick_count": 1,
+        "mission_count": 2,
+        "character_count": 2,
+        "registered_buff_count": 3,
+        "trigger_candidate_count": 6,
+        "on_field_candidate_count": 3,
+        "backend_candidate_count": 3,
+        "pending_queue_count": 4,
+        "candidate_plan_count": 6,
+        "candidate_plan_on_field_candidate_count": 3,
+        "candidate_plan_backend_candidate_count": 3,
+        "candidate_plan_mission_count": 2,
+        "candidate_plan_character_count": 2,
+        "candidate_plan_mismatch_count": 0,
+    }
+
+
 def test_buff_load_loop_resets_pending_queue_in_character_order_and_returns_same_object(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
