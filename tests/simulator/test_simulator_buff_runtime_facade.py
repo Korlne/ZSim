@@ -397,6 +397,99 @@ def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
     ]
 
 
+def test_main_loop_oracle_preserves_order_through_stop_tick_and_reset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    order: list[str] = []
+    runtime = _RuntimeProbe(order)
+
+    def fake_create_facade() -> _RuntimeProbe:
+        order.append("create_facade")
+        return runtime
+
+    def fake_skill_event_split(*args: Any, **kwargs: Any) -> None:
+        order.append(f"skill_split:{args[3]}")
+
+    def fake_damage_event_judge(*args: Any, **kwargs: Any) -> None:
+        order.append(f"damage_judge:{args[0]}")
+
+    def fake_print(*args: Any, **kwargs: Any) -> None:
+        order.append("processed_banner_print")
+
+    monkeypatch.setattr(simulator_class, "SkillEventSplit", fake_skill_event_split)
+    monkeypatch.setattr(simulator_class, "DamageEventJudge", fake_damage_event_judge)
+    monkeypatch.setattr(
+        simulator_class,
+        "stop_report_threads",
+        lambda: order.append("stop_report_threads"),
+    )
+    monkeypatch.setattr("builtins.print", fake_print)
+
+    class FakeScheduledEvent:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            self.data = args[1]
+            self.tick = args[2]
+            order.append(f"scheduled_init:{self.tick}")
+
+        def event_start(self) -> None:
+            order.append(f"scheduled_start:{self.tick}")
+            if self.tick == 1:
+                self.data.processed_state_this_tick = True
+
+    monkeypatch.setattr(simulator_class, "ScE", FakeScheduledEvent)
+    sim, _, _, _, enemy = _make_minimal_sim(order)
+
+    def do_preload(tick: int, *args: Any, **kwargs: Any) -> None:
+        order.append(f"preload:{tick}")
+        sim.preload.preload_data.preload_action = [f"skill:{tick}"]
+
+    def reset_processed_event() -> None:
+        order.append(f"reset_processed_event:{sim.tick}")
+        sim.schedule_data.processed_state_this_tick = False
+
+    sim.preload.do_preload = do_preload
+    sim.schedule_data.reset_processed_event = reset_processed_event
+    monkeypatch.setattr(sim.buff_runtime_state, "create_facade", fake_create_facade)
+
+    sim.main_loop(stop_tick=2, use_api=True)
+
+    assert runtime.calls == [(0, enemy), (1, enemy), (2, enemy)]
+    assert runtime.load_ticks == [0, 1]
+    assert runtime.activation_ticks == [0, 1]
+    assert sim.tick == 2
+    assert "skill_split:2" not in order
+    assert "damage_judge:2" not in order
+    assert "load_pending:2" not in order
+    assert "scheduled_init:2" not in order
+    assert order == [
+        "create_facade",
+        "tick_sweep:0",
+        "preload:0",
+        "skill_split:0",
+        "damage_judge:0",
+        "load_pending:0",
+        "activate_pending:0",
+        "scheduled_init:0",
+        "scheduled_start:0",
+        "reset_processed_event:1",
+        "tick_sweep:1",
+        "preload:1",
+        "skill_split:1",
+        "damage_judge:1",
+        "load_pending:1",
+        "activate_pending:1",
+        "scheduled_init:1",
+        "scheduled_start:1",
+        "processed_banner_print",
+        "processed_banner_print",
+        "processed_banner_print",
+        "reset_processed_event:2",
+        "tick_sweep:2",
+        "preload:2",
+        "stop_report_threads",
+    ]
+
+
 def test_main_loop_scheduled_event_registry_reads_bind_to_run_scoped_owner(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
