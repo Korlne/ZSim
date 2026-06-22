@@ -11,9 +11,11 @@ import pytest
 
 from scripts.run_buff_refactor_validation import (
     DEFAULT_PATH_LEGACY_RUNTIME_REFERENCE_FAMILY,
+    LEGACY_RUNTIME_COMMAND_ADAPTER_FAMILY,
     RUNTIME_DEPENDENCY_CATEGORIES,
     RUNTIME_DEPENDENCY_STRICT_COMMAND,
     RUNTIME_DEPENDENCY_TRACKED_PRODUCTION_FAMILIES,
+    SCHEDULED_EVENT_IMPLICIT_CONSTRUCTOR_FAMILY,
     RuntimeDependencyZeroScanner,
 )
 
@@ -2405,7 +2407,118 @@ def test_runtime_dependency_zero_scanner_reports_required_schema_and_families() 
         ]
         == 0
     )
+    assert (
+        report["families"][LEGACY_RUNTIME_COMMAND_ADAPTER_FAMILY][
+            "production runtime"
+        ]
+        == 0
+    )
+    assert (
+        report["families"][SCHEDULED_EVENT_IMPLICIT_CONSTRUCTOR_FAMILY][
+            "production runtime"
+        ]
+        == 0
+    )
     assert report["findingCount"] > 0
+
+
+def test_runtime_dependency_zero_scanner_tracks_legacy_command_adapter_separately() -> None:
+    scanner = RuntimeDependencyZeroScanner(PROJECT_ROOT)
+    production_findings = scanner.scan_source(
+        "zsim/simulator/_fixture.py",
+        "from zsim.sim_progress.ScheduledEvent.runtime_command import (\n"
+        "    LegacyRuntimeCommandAdapter,\n"
+        "    RuntimeCommandPort,\n"
+        ")\n"
+        "def build_legacy(data, action_stack, sim_instance, exist_buff_dict):\n"
+        "    return LegacyRuntimeCommandAdapter(\n"
+        "        data=data,\n"
+        "        action_stack=action_stack,\n"
+        "        sim_instance=sim_instance,\n"
+        "        exist_buff_dict=exist_buff_dict,\n"
+        "    )\n",
+    )
+    migration_findings = scanner.scan_source(
+        "zsim/sim_progress/ScheduledEvent/runtime_command.py",
+        "class LegacyRuntimeCommandAdapter(RuntimeCommandPort):\n"
+        "    pass\n",
+    )
+
+    assert {
+        finding.matched_text
+        for finding in production_findings
+        if finding.family == LEGACY_RUNTIME_COMMAND_ADAPTER_FAMILY
+        and finding.category == "production runtime"
+    } == {"LegacyRuntimeCommandAdapter"}
+    assert {
+        finding.matched_text
+        for finding in production_findings
+        if finding.family == "stable runtime contract names"
+        and finding.category == "stable contract name"
+    } == {"RuntimeCommandPort"}
+    assert {
+        finding.category
+        for finding in migration_findings
+        if finding.family == LEGACY_RUNTIME_COMMAND_ADAPTER_FAMILY
+    } == {"migration-only"}
+
+
+def test_runtime_dependency_zero_scanner_blocks_scheduled_event_implicit_fallback() -> None:
+    scanner = RuntimeDependencyZeroScanner(PROJECT_ROOT)
+    production_findings = scanner.scan_source(
+        "zsim/simulator/_fixture.py",
+        "from zsim.sim_progress.ScheduledEvent import ScheduledEvent as ScE\n"
+        "def build_event(self):\n"
+        "    return ScE(\n"
+        "        self.global_stats.DYNAMIC_BUFF_DICT,\n"
+        "        self.schedule_data,\n"
+        "        self.tick,\n"
+        "        self.load_data.exist_buff_dict,\n"
+        "        self.load_data.action_stack,\n"
+        "    )\n",
+    )
+    runtime_state_findings = scanner.scan_source(
+        "zsim/simulator/_fixture.py",
+        "from zsim.sim_progress.ScheduledEvent import ScheduledEvent as ScE\n"
+        "def build_event(self):\n"
+        "    return ScE.from_runtime_state(\n"
+        "        schedule_data=self.schedule_data,\n"
+        "        tick=self.tick,\n"
+        "        action_stack=self.load_data.action_stack,\n"
+        "        buff_runtime_state=self.buff_runtime_state,\n"
+        "        sim_instance=self,\n"
+        "    )\n",
+    )
+    test_findings = scanner.scan_source(
+        "tests/simulator/_fixture.py",
+        "from zsim.sim_progress.ScheduledEvent import ScheduledEvent\n"
+        "def build_event(dynamic_buff, data, tick, exist_buff_dict, action_stack):\n"
+        "    return ScheduledEvent(\n"
+        "        dynamic_buff,\n"
+        "        data,\n"
+        "        tick,\n"
+        "        exist_buff_dict,\n"
+        "        action_stack,\n"
+        "        legacy_raw_container_compat=True,\n"
+        "    )\n",
+    )
+
+    assert {
+        finding.matched_text
+        for finding in production_findings
+        if finding.family == SCHEDULED_EVENT_IMPLICIT_CONSTRUCTOR_FAMILY
+        and finding.category == "production runtime"
+    } == {"ScE(...)"}
+    assert [
+        finding
+        for finding in runtime_state_findings
+        if finding.family == SCHEDULED_EVENT_IMPLICIT_CONSTRUCTOR_FAMILY
+    ] == []
+    assert {
+        finding.category
+        for finding in test_findings
+        if finding.family == SCHEDULED_EVENT_IMPLICIT_CONSTRUCTOR_FAMILY
+    } == {"test-only"}
 
 
 def test_runtime_dependency_zero_scanner_classifies_reference_categories() -> None:
