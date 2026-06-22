@@ -1,3 +1,4 @@
+import inspect
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -297,6 +298,23 @@ def test_schedule_dispatch_port_public_api_does_not_expose_raw_queue_mutation():
     for raw_name in raw_queue_api:
         assert not hasattr(ScheduleDispatchPort, raw_name)
         assert not hasattr(adapter, raw_name)
+
+
+def test_schedule_dispatch_module_remains_queue_only_boundary():
+    source = inspect.getsource(schedule_dispatch_module)
+
+    assert "self._queue_owner.enqueue(event)" in source
+    assert source.count("self._event_queue.append(event)") == 2
+    for forbidden_token in (
+        "listener_manager",
+        "broadcast_event",
+        "RuntimeCommandPort",
+        "runtime_command",
+        "create_runtime_command_port",
+        "run_update_anomaly",
+        "dot_runtime",
+    ):
+        assert forbidden_token not in source
 
 
 def test_legacy_event_list_adapter_is_documented_as_compatibility_only():

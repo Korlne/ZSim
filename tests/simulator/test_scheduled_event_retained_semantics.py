@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 from types import SimpleNamespace
 from typing import Any, Sequence, cast
 
@@ -223,6 +224,33 @@ def test_retained_scheduler_handler_requeue_uses_rebound_schedule_queue() -> Non
     assert current_event_list == [event]
     assert stale_event_list == []
     assert event.executed == []
+
+
+@pytest.mark.parametrize(
+    "handler_cls",
+    [
+        PreloadEventHandler,
+        QuickAssistEventHandler,
+        PolarizedAssaultEventHandler,
+        StunForcedTerminationEventHandler,
+    ],
+)
+def test_retained_scheduler_handlers_requeue_only_through_event_context_api(
+    handler_cls: type[Any],
+) -> None:
+    source = inspect.getsource(handler_cls.handle)
+
+    assert "context.requeue_event(event)" in source
+    for forbidden_token in (
+        ".event_list.append",
+        "publish_scheduled",
+        "ScheduleDispatchPort",
+        "runtime_command_port",
+        "RuntimeCommandPort",
+        "listener_manager",
+        "broadcast_event",
+    ):
+        assert forbidden_token not in source
 
 
 @pytest.mark.parametrize(
