@@ -479,7 +479,7 @@ def test_runtime_command_same_tick_write_does_not_publish_or_broadcast(
 
     monkeypatch.setattr(runtime_command_module, "run_update_anomaly", fake_update_anomaly)
     monkeypatch.setattr(
-        buff_runtime_module.LegacyBuffRuntimeFacade,
+        buff_runtime_module.DefaultBuffRuntimeFacade,
         "settle_schedule_buffs",
         fake_settle_schedule_buffs,
     )

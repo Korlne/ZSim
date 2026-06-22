@@ -283,27 +283,16 @@ def test_skill_handler_runtime_command_adapter_preserves_legacy_container_identi
         def cal_dmg_crit(self):
             return 5.5
 
-    def _fake_update_anomaly(
-        element_type,
-        target_enemy,
-        tick,
-        event_list,
-        char_obj_list,
-        *,
-        skill_node,
-        dynamic_buff_dict,
-        sim_instance,
-        **kwargs,
-    ) -> None:
+    def _fake_update_anomaly(**kwargs) -> None:
         call_order.append("update_anomaly")
-        captured["update_element_type"] = element_type
-        captured["update_enemy"] = target_enemy
-        captured["update_tick"] = tick
-        captured["update_event_list"] = event_list
-        captured["update_char_obj_list"] = char_obj_list
-        captured["update_skill_node"] = skill_node
-        captured["update_dynamic_buff_dict"] = dynamic_buff_dict
-        captured["update_sim_instance"] = sim_instance
+        captured["update_element_type"] = kwargs["element_type"]
+        captured["update_enemy"] = kwargs["enemy"]
+        captured["update_tick"] = kwargs["time_now"]
+        captured["update_char_obj_list"] = kwargs["char_obj_list"]
+        captured["update_skill_node"] = kwargs["skill_node"]
+        captured["update_dynamic_buff_dict"] = kwargs["dynamic_buff_dict"]
+        captured["update_sim_instance"] = kwargs["sim_instance"]
+        captured["update_runtime_context"] = kwargs["runtime_context"]
 
     def _fake_settle_schedule_buffs(
         self,
@@ -329,11 +318,11 @@ def test_skill_handler_runtime_command_adapter_preserves_legacy_container_identi
     monkeypatch.setattr(skill_module.Report, "report_dmg_result", lambda **kwargs: None)
     monkeypatch.setattr(
         runtime_command_module,
-        "legacy_update_anomaly",
+        "run_update_anomaly",
         _fake_update_anomaly,
     )
     monkeypatch.setattr(
-        buff_runtime_module.LegacyBuffRuntimeFacade,
+        buff_runtime_module.DefaultBuffRuntimeFacade,
         "settle_schedule_buffs",
         _fake_settle_schedule_buffs,
     )
@@ -366,11 +355,15 @@ def test_skill_handler_runtime_command_adapter_preserves_legacy_container_identi
     assert captured["update_element_type"] == event.element_type
     assert captured["update_enemy"] is enemy
     assert captured["update_tick"] == context.tick
-    assert captured["update_event_list"] is current_event_list
     assert captured["update_char_obj_list"] is schedule_data.char_obj_list
     assert captured["update_skill_node"] is event
     assert captured["update_dynamic_buff_dict"] is legacy_dynamic_buff
     assert captured["update_sim_instance"] is sim_instance
+    runtime_context = cast(Any, captured["update_runtime_context"])
+    assert runtime_context.sim_instance is sim_instance
+    runtime_context.dispatch_port.publish_scheduled("scheduled")
+    assert current_event_list == ["scheduled"]
+    assert stale_event_list == ["stale"]
 
     assert captured["settle_tick"] == context.tick
     assert captured["settle_exist_buff_dict"] is legacy_exist_buff_dict
