@@ -1,6 +1,7 @@
 import asyncio
 import gc
 import os
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -364,6 +365,69 @@ class TestSimulator:
         controller1 = SimController()
         controller2 = SimController()
         assert controller1 is controller2
+
+    @pytest.mark.asyncio
+    async def test_sim_controller_no_flag_uses_default_buff_runtime_path(self, monkeypatch):
+        """SimController should not require a runtime opt-in for the default Buff runtime."""
+        from zsim.api_src.services.sim_controller import sim_controller as controller_module
+        from zsim.sim_progress.ScheduledEvent.buff_runtime import (
+            BuffRuntimeState,
+            DefaultBuffRuntimeFacade,
+            LegacyBuffRuntimeFacade,
+        )
+
+        captured = {}
+        confirmation = object()
+
+        class ProbeSimulator(Simulator):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                captured["constructor_kwargs"] = kwargs
+                captured["use_indexed_buff_load_loop"] = self.use_indexed_buff_load_loop
+
+            def api_run_simulator(
+                self,
+                common_cfg,
+                sim_cfg,
+                stop_tick=None,
+                *,
+                use_indexed_buff_load_loop=None,
+            ):
+                self.buff_runtime_state = BuffRuntimeState(
+                    template_registry={},
+                    pending_queue={},
+                    active_store={"enemy": []},
+                    enemy_mirror=[],
+                )
+                self.enable_buff_runtime_rebuild_counting()
+                facade = self._create_buff_runtime_facade()
+                captured["api_args"] = (common_cfg, sim_cfg, stop_tick)
+                captured["api_use_indexed_buff_load_loop"] = use_indexed_buff_load_loop
+                captured["facade"] = facade
+                captured["rebuild_counts"] = self.get_buff_runtime_rebuild_counts()
+                return confirmation
+
+        monkeypatch.setattr(controller_module, "Simulator", ProbeSimulator)
+        common_cfg = self.create_test_common_config()
+        controller = SimController()
+        controller._shutdown_executor()
+        thread_executor = ThreadPoolExecutor(max_workers=1)
+        controller._executor = thread_executor
+
+        try:
+            result = await controller.run_single_simulation(common_cfg, None, 120)
+        finally:
+            thread_executor.shutdown(wait=True)
+            controller._executor = None
+
+        assert result is confirmation
+        assert captured["constructor_kwargs"] == {}
+        assert captured["use_indexed_buff_load_loop"] is False
+        assert captured["api_args"] == (common_cfg, None, 120)
+        assert captured["api_use_indexed_buff_load_loop"] is None
+        assert isinstance(captured["facade"], DefaultBuffRuntimeFacade)
+        assert not isinstance(captured["facade"], LegacyBuffRuntimeFacade)
+        assert captured["rebuild_counts"] == {"default_buff_runtime_facade": 1}
 
     # 队列基础的异步测试
     @pytest.mark.asyncio

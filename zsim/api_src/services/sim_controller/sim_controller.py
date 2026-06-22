@@ -50,6 +50,13 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _run_default_runtime_simulator(
+    common_cfg: CommonCfg, sim_cfg: SimCfg | None, stop_tick: int
+) -> "Confirmation":
+    simulator = Simulator()
+    return simulator.api_run_simulator(common_cfg, sim_cfg, stop_tick)
+
+
 class SimController:
     _instance = None
     _lock = threading.Lock()
@@ -147,15 +154,13 @@ class SimController:
                     logger.warning(f"会话 {session_id} 未设置 stop_tick，使用默认值 3600")
                     stop_tick = 3600
 
-                def run_simulator(
-                    _common_cfg: CommonCfg, _sim_cfg: SimCfg | None, _stop_tick: int
-                ) -> "Confirmation":
-                    simulator = Simulator()
-                    return simulator.api_run_simulator(_common_cfg, _sim_cfg, _stop_tick)
-
                 # 创建模拟器实例并提交任务
                 future: asyncio.Future["Confirmation"] = event_loop.run_in_executor(
-                    self.executor, run_simulator, common_cfg, sim_cfg, stop_tick
+                    self.executor,
+                    _run_default_runtime_simulator,
+                    common_cfg,
+                    sim_cfg,
+                    stop_tick,
                 )
                 self._running_tasks.add(future)
                 future.add_done_callback(lambda f: self._task_done_callback(f, session_id))
@@ -204,16 +209,14 @@ class SimController:
                     logger.warning(f"会话 {session_id} 未设置 stop_tick，使用默认值 3600")
                     stop_tick = 3600
 
-                def run_simulator(
-                    _common_cfg: CommonCfg, _sim_cfg: SimCfg | None, _stop_tick: int
-                ) -> "Confirmation":
-                    simulator = Simulator()
-                    return simulator.api_run_simulator(_common_cfg, _sim_cfg, _stop_tick)
-
                 # 使用 ThreadPoolExecutor 避免序列化问题
                 with ThreadPoolExecutor() as thread_executor:
                     future: asyncio.Future["Confirmation"] = event_loop.run_in_executor(
-                        thread_executor, run_simulator, common_cfg, sim_cfg, stop_tick
+                        thread_executor,
+                        _run_default_runtime_simulator,
+                        common_cfg,
+                        sim_cfg,
+                        stop_tick,
                     )
 
                     result = await future  # noqa: F841
@@ -270,8 +273,7 @@ class SimController:
             sim_cfg: SimCfg | None,
             stop_tick: int,
         ) -> tuple[str, "Confirmation"]:
-            simulator = Simulator()
-            result = simulator.api_run_simulator(common_cfg, sim_cfg, stop_tick)
+            result = _run_default_runtime_simulator(common_cfg, sim_cfg, stop_tick)
             return session_id_inner, result
 
         # 并行执行所有任务
@@ -346,8 +348,7 @@ class SimController:
         from concurrent.futures import ThreadPoolExecutor
 
         def _run_simulator() -> "Confirmation":
-            simulator = Simulator()
-            return simulator.api_run_simulator(common_cfg, sim_cfg, stop_tick)
+            return _run_default_runtime_simulator(common_cfg, sim_cfg, stop_tick)
 
         if isinstance(self.executor, ProcessPoolExecutor):
             # For testing, use thread executor to avoid serialization issues

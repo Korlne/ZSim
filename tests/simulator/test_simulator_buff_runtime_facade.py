@@ -604,10 +604,27 @@ def test_main_cli_parser_keeps_indexed_buff_load_loop_default_off() -> None:
 
     default_args = parser.parse_args([])
     opt_in_args = parser.parse_args(["--use-indexed-buff-load-loop"])
+    default_sim = zsim_main.create_cli_simulator(default_args)
+    opt_in_sim = zsim_main.create_cli_simulator(opt_in_args)
+    default_sim.buff_runtime_state = BuffRuntimeState(
+        template_registry={},
+        pending_queue={},
+        active_store={"enemy": []},
+        enemy_mirror=[],
+    )
+    default_sim.enable_buff_runtime_rebuild_counting()
+    default_facade = default_sim._create_buff_runtime_facade()
 
     assert not hasattr(default_args, "use_indexed_buff_load_loop")
     assert zsim_main.resolve_use_indexed_buff_load_loop(default_args) is False
     assert zsim_main.resolve_use_indexed_buff_load_loop(opt_in_args) is True
+    assert default_sim.use_indexed_buff_load_loop is False
+    assert opt_in_sim.use_indexed_buff_load_loop is True
+    assert isinstance(default_facade, DefaultBuffRuntimeFacade)
+    assert not isinstance(default_facade, LegacyBuffRuntimeFacade)
+    assert default_sim.get_buff_runtime_rebuild_counts() == {
+        "default_buff_runtime_facade": 1
+    }
 
 
 def test_buff_load_loop_records_count_only_when_opted_in() -> None:

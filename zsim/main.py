@@ -68,16 +68,21 @@ def resolve_use_indexed_buff_load_loop(args: argparse.Namespace) -> bool:
     return getattr(args, "use_indexed_buff_load_loop", False)
 
 
+def create_cli_simulator(args: argparse.Namespace) -> Simulator:
+    return Simulator(
+        use_indexed_buff_load_loop=resolve_use_indexed_buff_load_loop(args)
+    )
+
+
 if __name__ == "__main__":
     # 创建命令行参数解析器
     parser = build_parser()
     args = parser.parse_args()
-    use_indexed_buff_load_loop = resolve_use_indexed_buff_load_loop(args)
     print(args)
     if args.mode == "normal":
         print("常规模式")
         # 常规模式，作为单进程运行，读取全部的配置
-        simulator_instance = Simulator(use_indexed_buff_load_loop=use_indexed_buff_load_loop)
+        simulator_instance = create_cli_simulator(args)
 
         if args.stop_tick is not None:
             print(
@@ -92,7 +97,7 @@ if __name__ == "__main__":
     elif args.mode == "parallel":
         print("并行模式")
         print(args)
-        simulator_instance = Simulator(use_indexed_buff_load_loop=use_indexed_buff_load_loop)
+        simulator_instance = create_cli_simulator(args)
         # 并行模式，作为子进程运行，角色的指定副词条将被设为传入值，并根据是否移除其他主副词条进行模拟
         if func := args.func == "attr_curve":
             sim_cfg: ExecAttrCurveCfg = ExecAttrCurveCfg(
