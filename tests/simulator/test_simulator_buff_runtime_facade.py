@@ -242,7 +242,15 @@ def test_buff_load_loop_records_count_only_when_opted_in() -> None:
         "character_count": 0,
         "registered_buff_count": 0,
         "trigger_candidate_count": 0,
+        "on_field_candidate_count": 0,
+        "backend_candidate_count": 0,
         "pending_queue_count": 0,
+        "candidate_plan_count": 0,
+        "candidate_plan_on_field_candidate_count": 0,
+        "candidate_plan_backend_candidate_count": 0,
+        "candidate_plan_mission_count": 0,
+        "candidate_plan_character_count": 0,
+        "candidate_plan_mismatch_count": 0,
     }
 
 
@@ -319,7 +327,15 @@ def test_buff_load_loop_records_opt_in_scan_metric_shape(
         "character_count": 2,
         "registered_buff_count": 3,
         "trigger_candidate_count": 3,
+        "on_field_candidate_count": 2,
+        "backend_candidate_count": 1,
         "pending_queue_count": 2,
+        "candidate_plan_count": 3,
+        "candidate_plan_on_field_candidate_count": 2,
+        "candidate_plan_backend_candidate_count": 1,
+        "candidate_plan_mission_count": 1,
+        "candidate_plan_character_count": 2,
+        "candidate_plan_mismatch_count": 0,
     }
 
 
@@ -816,7 +832,15 @@ def test_buff_runtime_facade_load_pending_buffs_owns_load_containers() -> None:
         "character_count": 1,
         "registered_buff_count": 0,
         "trigger_candidate_count": 0,
+        "on_field_candidate_count": 0,
+        "backend_candidate_count": 0,
         "pending_queue_count": 0,
+        "candidate_plan_count": 0,
+        "candidate_plan_on_field_candidate_count": 0,
+        "candidate_plan_backend_candidate_count": 0,
+        "candidate_plan_mission_count": 0,
+        "candidate_plan_character_count": 1,
+        "candidate_plan_mismatch_count": 0,
     }
 
 

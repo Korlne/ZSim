@@ -132,26 +132,79 @@ def _record_buff_load_loop_scan_metrics(
     character_count: int,
     registered_buff_count: int,
     trigger_candidate_count: int,
+    on_field_candidate_count: int,
+    backend_candidate_count: int,
     pending_queue_count: int,
+    candidate_plan: dict[str, object] | None = None,
 ) -> None:
     metrics = getattr(sim_instance, "_buff_load_loop_scan_metrics", None)
+    zero_values = {
+        "processed_tick_count": 0,
+        "mission_count": 0,
+        "character_count": 0,
+        "registered_buff_count": 0,
+        "trigger_candidate_count": 0,
+        "on_field_candidate_count": 0,
+        "backend_candidate_count": 0,
+        "pending_queue_count": 0,
+        "candidate_plan_count": 0,
+        "candidate_plan_on_field_candidate_count": 0,
+        "candidate_plan_backend_candidate_count": 0,
+        "candidate_plan_mission_count": 0,
+        "candidate_plan_character_count": 0,
+        "candidate_plan_mismatch_count": 0,
+    }
     if metrics is None:
-        metrics = {
-            "processed_tick_count": 0,
-            "mission_count": 0,
-            "character_count": 0,
-            "registered_buff_count": 0,
-            "trigger_candidate_count": 0,
-            "pending_queue_count": 0,
-        }
+        metrics = dict(zero_values)
         setattr(sim_instance, "_buff_load_loop_scan_metrics", metrics)
+    else:
+        for metric_name, default_value in zero_values.items():
+            metrics.setdefault(metric_name, default_value)
+
+    candidate_plan_count = 0
+    candidate_plan_on_field_candidate_count = 0
+    candidate_plan_backend_candidate_count = 0
+    candidate_plan_mission_count = 0
+    candidate_plan_character_count = 0
+    candidate_plan_mismatch_count = 0
+    if candidate_plan is not None:
+        candidate_plan_count = int(candidate_plan.get("candidate_count", 0))
+        candidate_plan_on_field_candidate_count = int(
+            candidate_plan.get("on_field_candidate_count", 0)
+        )
+        candidate_plan_backend_candidate_count = int(
+            candidate_plan.get("backend_candidate_count", 0)
+        )
+        candidate_plan_mission_count = int(candidate_plan.get("mission_count", 0))
+        candidate_plan_character_count = int(candidate_plan.get("character_count", 0))
+        candidate_plan_mismatch_count = sum(
+            [
+                candidate_plan_count != trigger_candidate_count,
+                candidate_plan_on_field_candidate_count != on_field_candidate_count,
+                candidate_plan_backend_candidate_count != backend_candidate_count,
+                candidate_plan_mission_count != mission_count,
+                candidate_plan_character_count != character_count,
+            ]
+        )
 
     metrics["processed_tick_count"] += 1
     metrics["mission_count"] += mission_count
     metrics["character_count"] += character_count
     metrics["registered_buff_count"] += registered_buff_count
     metrics["trigger_candidate_count"] += trigger_candidate_count
+    metrics["on_field_candidate_count"] += on_field_candidate_count
+    metrics["backend_candidate_count"] += backend_candidate_count
     metrics["pending_queue_count"] += pending_queue_count
+    metrics["candidate_plan_count"] += candidate_plan_count
+    metrics["candidate_plan_on_field_candidate_count"] += (
+        candidate_plan_on_field_candidate_count
+    )
+    metrics["candidate_plan_backend_candidate_count"] += (
+        candidate_plan_backend_candidate_count
+    )
+    metrics["candidate_plan_mission_count"] += candidate_plan_mission_count
+    metrics["candidate_plan_character_count"] += candidate_plan_character_count
+    metrics["candidate_plan_mismatch_count"] += candidate_plan_mismatch_count
 
 
 def _describe_buff_load_loop_candidate_plan(
@@ -216,15 +269,19 @@ def BuffLoadLoop(
     # 初始化LOADING_BUFF_DICT
     from zsim.sim_progress.Load import LoadingMission
 
+    buff_registry_by_character = existbuff_dict
     record_rebuild_count = getattr(sim_instance, "_record_buff_runtime_rebuild_count", None)
     if record_rebuild_count is not None:
         record_rebuild_count("buff_load_loop")
     record_scan_metrics = getattr(sim_instance, "_buff_runtime_rebuild_counts", None) is not None
     registered_buff_count = 0
     trigger_candidate_count = 0
+    on_field_candidate_count = 0
+    backend_candidate_count = 0
     if record_scan_metrics:
         registered_buff_count = sum(
-            len(existbuff_dict.get(character, {})) for character in character_name_box
+            len(buff_registry_by_character.get(character, {}))
+            for character in character_name_box
         )
 
     all_name_box = character_name_box + ["enemy"]
@@ -235,15 +292,20 @@ def BuffLoadLoop(
         if not isinstance(mission, LoadingMission):
             raise TypeError(f"当前{mission}不是LoadingMission类！")
         actor_name = mission.mission_character
-        if actor_name not in existbuff_dict:
+        if actor_name not in buff_registry_by_character:
             raise ValueError("当前角色的Buff源并未创建！")
         # 提取当前角色的 Buff 列表
         # sub_exist_debuff_dict = existbuff_dict['enemy']
 
         for char_name in character_name_box:
-            sub_exist_buff_dict = existbuff_dict[char_name]
+            sub_exist_buff_dict = buff_registry_by_character[char_name]
+            candidate_count = len(sub_exist_buff_dict)
             if record_scan_metrics:
-                trigger_candidate_count += len(sub_exist_buff_dict)
+                trigger_candidate_count += candidate_count
+                if char_name == actor_name:
+                    on_field_candidate_count += candidate_count
+                else:
+                    backend_candidate_count += candidate_count
             if char_name == actor_name:
                 process_on_field_buff(
                     sub_exist_buff_dict,
@@ -251,7 +313,7 @@ def BuffLoadLoop(
                     time_now,
                     LOADING_BUFF_DICT,
                     all_name_order_box,
-                    existbuff_dict,
+                    buff_registry_by_character,
                     sim_instance=sim_instance,
                 )
             else:
@@ -261,17 +323,25 @@ def BuffLoadLoop(
                     mission,
                     time_now,
                     LOADING_BUFF_DICT,
-                    existbuff_dict,
+                    buff_registry_by_character,
                     sim_instance=sim_instance,
                 )
     if record_scan_metrics:
+        candidate_plan = _describe_buff_load_loop_candidate_plan(
+            load_mission_dict,
+            buff_registry_by_character,
+            character_name_box,
+        )
         _record_buff_load_loop_scan_metrics(
             sim_instance,
             mission_count=len(load_mission_dict),
             character_count=len(character_name_box),
             registered_buff_count=registered_buff_count,
             trigger_candidate_count=trigger_candidate_count,
+            on_field_candidate_count=on_field_candidate_count,
+            backend_candidate_count=backend_candidate_count,
             pending_queue_count=sum(len(queue) for queue in LOADING_BUFF_DICT.values()),
+            candidate_plan=candidate_plan,
         )
     return LOADING_BUFF_DICT
 

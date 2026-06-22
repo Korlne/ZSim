@@ -117,11 +117,15 @@ def test_build_runtime_benchmark_report_includes_rebuild_counts_when_opted_in():
                 "processed_tick_count": 3,
                 "mission_count": 9,
                 "trigger_candidate_count": 30,
+                "candidate_plan_count": 30,
+                "candidate_plan_mismatch_count": 0,
             },
             "candidate": {
                 "processed_tick_count": 3,
                 "mission_count": 9,
                 "trigger_candidate_count": 42,
+                "candidate_plan_count": 42,
+                "candidate_plan_mismatch_count": 0,
             },
         },
     )
@@ -143,17 +147,23 @@ def test_build_runtime_benchmark_report_includes_rebuild_counts_when_opted_in():
     }
     assert report["buff_load_loop_scan_metrics"] == {
         "legacy": {
+            "candidate_plan_count": 30,
+            "candidate_plan_mismatch_count": 0,
             "processed_tick_count": 3,
             "mission_count": 9,
             "trigger_candidate_count": 30,
         },
         "candidate": {
+            "candidate_plan_count": 42,
+            "candidate_plan_mismatch_count": 0,
             "processed_tick_count": 3,
             "mission_count": 9,
             "trigger_candidate_count": 42,
         },
     }
     assert report["comparisons"]["buff_load_loop_scan_metrics"] == {
+        "candidate_plan_count": 12,
+        "candidate_plan_mismatch_count": 0,
         "mission_count": 0,
         "processed_tick_count": 0,
         "trigger_candidate_count": 12,
@@ -480,8 +490,18 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
         "102": {"buff_load_loop": 3, "scheduled_event": 2},
     }
     scan_metrics_by_session = {
-        "101": {"processed_tick_count": 2, "trigger_candidate_count": 10},
-        "102": {"processed_tick_count": 2, "trigger_candidate_count": 15},
+        "101": {
+            "processed_tick_count": 2,
+            "trigger_candidate_count": 10,
+            "candidate_plan_count": 10,
+            "candidate_plan_mismatch_count": 0,
+        },
+        "102": {
+            "processed_tick_count": 2,
+            "trigger_candidate_count": 15,
+            "candidate_plan_count": 15,
+            "candidate_plan_mismatch_count": 0,
+        },
     }
     created_session_ids: list[str] = []
     submitted_payloads: list[tuple[dict[str, Any], int, bool]] = []
@@ -588,14 +608,24 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
             "101",
             88.8,
             {"buff_load_loop": 1},
-            {"processed_tick_count": 2, "trigger_candidate_count": 10},
+            {
+                "processed_tick_count": 2,
+                "trigger_candidate_count": 10,
+                "candidate_plan_count": 10,
+                "candidate_plan_mismatch_count": 0,
+            },
         ),
         (
             "candidate-label",
             "102",
             88.8,
             {"buff_load_loop": 3, "scheduled_event": 2},
-            {"processed_tick_count": 2, "trigger_candidate_count": 15},
+            {
+                "processed_tick_count": 2,
+                "trigger_candidate_count": 15,
+                "candidate_plan_count": 15,
+                "candidate_plan_mismatch_count": 0,
+            },
         ),
     ]
     assert report["legacy_runtime"] == "legacy-label"
@@ -611,10 +641,22 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
         "scheduled_event": 2,
     }
     assert report["buff_load_loop_scan_metrics"] == {
-        "legacy": {"processed_tick_count": 2, "trigger_candidate_count": 10},
-        "candidate": {"processed_tick_count": 2, "trigger_candidate_count": 15},
+        "legacy": {
+            "processed_tick_count": 2,
+            "trigger_candidate_count": 10,
+            "candidate_plan_count": 10,
+            "candidate_plan_mismatch_count": 0,
+        },
+        "candidate": {
+            "processed_tick_count": 2,
+            "trigger_candidate_count": 15,
+            "candidate_plan_count": 15,
+            "candidate_plan_mismatch_count": 0,
+        },
     }
     assert report["comparisons"]["buff_load_loop_scan_metrics"] == {
+        "candidate_plan_count": 5,
+        "candidate_plan_mismatch_count": 0,
         "processed_tick_count": 0,
         "trigger_candidate_count": 5,
     }
@@ -644,7 +686,15 @@ def test_single_runtime_benchmark_process_collects_opt_in_rebuild_counts(
                 "character_count": 0,
                 "registered_buff_count": 0,
                 "trigger_candidate_count": 0,
+                "on_field_candidate_count": 0,
+                "backend_candidate_count": 0,
                 "pending_queue_count": 0,
+                "candidate_plan_count": 0,
+                "candidate_plan_on_field_candidate_count": 0,
+                "candidate_plan_backend_candidate_count": 0,
+                "candidate_plan_mission_count": 0,
+                "candidate_plan_character_count": 0,
+                "candidate_plan_mismatch_count": 0,
             }
 
         def api_run_simulator(self, common_cfg: Any, sim_cfg: Any, stop_tick: int) -> Any:
@@ -660,7 +710,15 @@ def test_single_runtime_benchmark_process_collects_opt_in_rebuild_counts(
                         "character_count": stop_tick * 3,
                         "registered_buff_count": stop_tick * 4,
                         "trigger_candidate_count": stop_tick * 5,
-                        "pending_queue_count": stop_tick * 6,
+                        "on_field_candidate_count": stop_tick * 6,
+                        "backend_candidate_count": stop_tick * 7,
+                        "pending_queue_count": stop_tick * 8,
+                        "candidate_plan_count": stop_tick * 5,
+                        "candidate_plan_on_field_candidate_count": stop_tick * 6,
+                        "candidate_plan_backend_candidate_count": stop_tick * 7,
+                        "candidate_plan_mission_count": stop_tick * 2,
+                        "candidate_plan_character_count": stop_tick * 3,
+                        "candidate_plan_mismatch_count": 0,
                     }
                 )
             return SimpleNamespace(session_id=common_cfg.session_id)
@@ -700,7 +758,15 @@ def test_single_runtime_benchmark_process_collects_opt_in_rebuild_counts(
             "character_count": 12,
             "registered_buff_count": 16,
             "trigger_candidate_count": 20,
-            "pending_queue_count": 24,
+            "on_field_candidate_count": 24,
+            "backend_candidate_count": 28,
+            "pending_queue_count": 32,
+            "candidate_plan_count": 20,
+            "candidate_plan_on_field_candidate_count": 24,
+            "candidate_plan_backend_candidate_count": 28,
+            "candidate_plan_mission_count": 8,
+            "candidate_plan_character_count": 12,
+            "candidate_plan_mismatch_count": 0,
         },
     )
     assert FakeSimulator.instances[0].rebuild_counts is None
