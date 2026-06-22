@@ -6,6 +6,14 @@ if TYPE_CHECKING:
     from zsim.simulator.config_classes import (
         SimulationConfig as SimCfg,
     )
+    from zsim.simulator import Simulator
+
+
+def _create_webui_default_runtime_simulator() -> "Simulator":
+    """Create the WebUI worker simulator on the no-flag default runtime path."""
+    from zsim.simulator import Simulator  # 真正启动模拟再导入，以优化启动速度
+
+    return Simulator()
 
 
 def run_single_simulation(stop_tick: int) -> str:
@@ -19,12 +27,10 @@ def run_single_simulation(stop_tick: int) -> str:
     Returns:
         模拟结果字符串
     """
-    from zsim.simulator import Simulator  # 真正启动模拟再导入，以优化启动速度
-
     f = io.StringIO()
     with redirect_stdout(f):
         print("启动子进程")
-        sim_ins = Simulator()
+        sim_ins = _create_webui_default_runtime_simulator()
         sim_ins.main_loop(stop_tick)
     return f.getvalue()
 
@@ -41,12 +47,10 @@ def run_parallel_simulation(sim_cfg: "SimCfg") -> str:
     Returns:
         模拟结果字符串
     """
-    from zsim.simulator import Simulator  # 真正启动模拟再导入，以优化启动速度
-
     f = io.StringIO()
     with redirect_stdout(f):
         print("启动子进程")
-        sim_ins = Simulator()
+        sim_ins = _create_webui_default_runtime_simulator()
         sim_ins.main_loop(
             stop_tick=sim_cfg.stop_tick if sim_cfg.stop_tick is not None else 1000, sim_cfg=sim_cfg
         )

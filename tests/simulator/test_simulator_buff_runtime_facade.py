@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -625,6 +626,113 @@ def test_main_cli_parser_keeps_indexed_buff_load_loop_default_off() -> None:
     assert default_sim.get_buff_runtime_rebuild_counts() == {
         "default_buff_runtime_facade": 1
     }
+
+
+def test_webui_single_worker_no_flag_uses_default_buff_runtime_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from zsim.lib_webui import multiprocess_wrapper
+    import zsim.simulator as simulator_package
+
+    captured: dict[str, Any] = {}
+
+    class ProbeSimulator(Simulator):
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            super().__init__(*args, **kwargs)
+            captured["constructor_kwargs"] = kwargs
+            captured["use_indexed_buff_load_loop"] = self.use_indexed_buff_load_loop
+
+        def main_loop(
+            self,
+            stop_tick: int | None = None,
+            *args: Any,
+            **kwargs: Any,
+        ) -> None:
+            self.buff_runtime_state = BuffRuntimeState(
+                template_registry={},
+                pending_queue={},
+                active_store={"enemy": []},
+                enemy_mirror=[],
+            )
+            self.enable_buff_runtime_rebuild_counting()
+            facade = self._create_buff_runtime_facade()
+            captured["main_loop_args"] = (stop_tick, args)
+            captured["main_loop_kwargs"] = kwargs
+            captured["facade"] = facade
+            captured["rebuild_counts"] = self.get_buff_runtime_rebuild_counts()
+
+    monkeypatch.setattr(simulator_package, "Simulator", ProbeSimulator)
+
+    output = multiprocess_wrapper.run_single_simulation(120)
+
+    assert "启动子进程" in output
+    assert captured["constructor_kwargs"] == {}
+    assert captured["use_indexed_buff_load_loop"] is False
+    assert captured["main_loop_args"] == (120, ())
+    assert captured["main_loop_kwargs"] == {}
+    assert isinstance(captured["facade"], DefaultBuffRuntimeFacade)
+    assert not isinstance(captured["facade"], LegacyBuffRuntimeFacade)
+    assert captured["rebuild_counts"] == {"default_buff_runtime_facade": 1}
+
+
+def test_webui_parallel_worker_no_flag_uses_default_buff_runtime_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from zsim.lib_webui import multiprocess_wrapper
+    import zsim.simulator as simulator_package
+
+    captured: dict[str, Any] = {}
+    sim_cfg = SimpleNamespace(stop_tick=None)
+
+    class ProbeSimulator(Simulator):
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            super().__init__(*args, **kwargs)
+            captured["constructor_kwargs"] = kwargs
+            captured["use_indexed_buff_load_loop"] = self.use_indexed_buff_load_loop
+
+        def main_loop(
+            self,
+            stop_tick: int | None = None,
+            *args: Any,
+            **kwargs: Any,
+        ) -> None:
+            self.buff_runtime_state = BuffRuntimeState(
+                template_registry={},
+                pending_queue={},
+                active_store={"enemy": []},
+                enemy_mirror=[],
+            )
+            self.enable_buff_runtime_rebuild_counting()
+            facade = self._create_buff_runtime_facade()
+            captured["main_loop_args"] = (stop_tick, args)
+            captured["main_loop_kwargs"] = kwargs
+            captured["facade"] = facade
+            captured["rebuild_counts"] = self.get_buff_runtime_rebuild_counts()
+
+    monkeypatch.setattr(simulator_package, "Simulator", ProbeSimulator)
+
+    output = multiprocess_wrapper.run_parallel_simulation(sim_cfg)
+
+    assert "启动子进程" in output
+    assert captured["constructor_kwargs"] == {}
+    assert captured["use_indexed_buff_load_loop"] is False
+    assert captured["main_loop_args"] == (1000, ())
+    assert captured["main_loop_kwargs"] == {"sim_cfg": sim_cfg}
+    assert "use_indexed_buff_load_loop" not in captured["main_loop_kwargs"]
+    assert isinstance(captured["facade"], DefaultBuffRuntimeFacade)
+    assert not isinstance(captured["facade"], LegacyBuffRuntimeFacade)
+    assert captured["rebuild_counts"] == {"default_buff_runtime_facade": 1}
+
+
+def test_page_simulator_delegates_to_webui_workers_without_runtime_selector() -> None:
+    page_source = Path("zsim/page_simulator.py").read_text(encoding="utf-8")
+
+    assert "run_single_simulation" in page_source
+    assert "run_parallel_simulation" in page_source
+    assert "Simulator(" not in page_source
+    assert "use_indexed_buff_load_loop" not in page_source
+    assert "LegacyBuffRuntime" not in page_source
+    assert "legacy_runtime" not in page_source
 
 
 def test_buff_load_loop_records_count_only_when_opted_in() -> None:
