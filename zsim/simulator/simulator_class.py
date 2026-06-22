@@ -84,7 +84,16 @@ class Simulator:
     rng_instance: RNG
     in_parallel_mode: bool
     sim_cfg: SimCfg | None
+    use_indexed_buff_load_loop: bool
     _buff_runtime_rebuild_counts: dict[str, int] | None
+
+    def __init__(self, *, use_indexed_buff_load_loop: bool = False) -> None:
+        self.use_indexed_buff_load_loop = use_indexed_buff_load_loop
+        self._buff_runtime_rebuild_counts = None
+
+    def _apply_indexed_buff_load_loop_option(self, use_indexed_buff_load_loop: bool | None) -> None:
+        if use_indexed_buff_load_loop is not None:
+            self.use_indexed_buff_load_loop = use_indexed_buff_load_loop
 
     def enable_buff_runtime_rebuild_counting(self) -> None:
         self._buff_runtime_rebuild_counts = {}
@@ -130,7 +139,12 @@ class Simulator:
         )  # 启动线程以处理日志和结果写入
 
     def api_run_simulator(
-        self, common_cfg: "CommonCfg", sim_cfg: SimCfg | None, stop_tick: int | None = None
+        self,
+        common_cfg: "CommonCfg",
+        sim_cfg: SimCfg | None,
+        stop_tick: int | None = None,
+        *,
+        use_indexed_buff_load_loop: bool | None = None,
     ) -> Confirmation:
         """api运行模拟器实例的接口。
 
@@ -138,12 +152,14 @@ class Simulator:
             common_cfg: 通用配置对象，包含角色和敌人配置
             sim_cfg: 模拟配置对象，包含模拟的详细参数
             stop_tick: 停止模拟的帧数，默认为10800帧（3分钟）
+            use_indexed_buff_load_loop: 显式请求索引化 BuffLoadLoop 的开关。
 
         Returns:
             包含运行确认信息的字典
         """
         if stop_tick is None:
             stop_tick = 10800
+        self._apply_indexed_buff_load_loop_option(use_indexed_buff_load_loop)
         self.api_init_simulator(common_cfg, sim_cfg)
         self.main_loop(stop_tick=stop_tick, sim_cfg=sim_cfg, use_api=True)
 
@@ -220,12 +236,18 @@ class Simulator:
         return self.buff_runtime_state.create_facade()
 
     def main_loop(
-        self, stop_tick: int = 10800, *, sim_cfg: SimCfg | None = None, use_api: bool = False
+        self,
+        stop_tick: int = 10800,
+        *,
+        sim_cfg: SimCfg | None = None,
+        use_api: bool = False,
+        use_indexed_buff_load_loop: bool | None = None,
     ):
         """
         CLI和WebUI使用此方法直接从文件读取数据，运行模拟器。
         传入的值仅为stop_tick和并行模拟配置。
         """
+        self._apply_indexed_buff_load_loop_option(use_indexed_buff_load_loop)
         if not use_api:
             self.cli_init_simulator(sim_cfg)
         buff_runtime = self._create_buff_runtime_facade()

@@ -48,6 +48,21 @@ def _build_session_id() -> str:
     return f"{time.time_ns()}{next(_SESSION_ID_COUNTER):03d}"
 
 
+def _runtime_selection_contract(
+    *,
+    candidate_use_indexed_buff_load_loop: bool = False,
+) -> dict[str, Any]:
+    if not candidate_use_indexed_buff_load_loop:
+        return dict(RUNTIME_LABEL_CONTRACT)
+    return {
+        **RUNTIME_LABEL_CONTRACT,
+        "mode": "candidate-explicit-opt-in-indexed-buff-load-loop",
+        "candidate_use_indexed_buff_load_loop": True,
+        "default_off": True,
+        "default_indexed_execution": "blocked",
+    }
+
+
 def _load_team_config(team_name: str) -> CommonCfg:
     from tests.teams import auto_register_teams
 
@@ -66,11 +81,20 @@ def _prepare_common_cfg(team: str, apl: str | None) -> CommonCfg:
     return common_cfg.model_copy(update={"apl_path": apl}, deep=True)
 
 
-def _run_single_runtime_process(common_cfg_data: dict[str, Any], stop_tick: int) -> str:
+def _run_single_runtime_process(
+    common_cfg_data: dict[str, Any],
+    stop_tick: int,
+    use_indexed_buff_load_loop: bool = False,
+) -> str:
     os.chdir(PROJECT_ROOT)
     common_cfg = CommonCfg.model_validate(common_cfg_data)
-    simulator = Simulator()
-    confirmation = simulator.api_run_simulator(common_cfg, sim_cfg=None, stop_tick=stop_tick)
+    simulator = Simulator(use_indexed_buff_load_loop=use_indexed_buff_load_loop)
+    confirmation = simulator.api_run_simulator(
+        common_cfg,
+        sim_cfg=None,
+        stop_tick=stop_tick,
+        use_indexed_buff_load_loop=use_indexed_buff_load_loop,
+    )
     return confirmation.session_id
 
 
@@ -244,6 +268,7 @@ def build_consistency_report(
     stop_tick: int,
     legacy_snapshot: RuntimeSnapshot,
     candidate_snapshot: RuntimeSnapshot,
+    candidate_use_indexed_buff_load_loop: bool = False,
 ) -> dict[str, Any]:
     event_count_differences = _event_count_differences(
         legacy_snapshot.event_counts, candidate_snapshot.event_counts
@@ -254,9 +279,7 @@ def build_consistency_report(
     )
     total_damage_delta = round(candidate_snapshot.total_damage - legacy_snapshot.total_damage, 4)
 
-    has_event_differences = any(
-        bool(value) for value in event_count_differences.values()
-    )
+    has_event_differences = any(bool(value) for value in event_count_differences.values())
 
     return {
         "team": team,
@@ -264,7 +287,9 @@ def build_consistency_report(
         "stop_tick": stop_tick,
         "legacy_runtime": legacy_snapshot.runtime_label,
         "candidate_runtime": candidate_snapshot.runtime_label,
-        "runtime_selection": dict(RUNTIME_LABEL_CONTRACT),
+        "runtime_selection": _runtime_selection_contract(
+            candidate_use_indexed_buff_load_loop=candidate_use_indexed_buff_load_loop,
+        ),
         "total_damage": {
             "legacy": legacy_snapshot.total_damage,
             "candidate": candidate_snapshot.total_damage,
@@ -303,19 +328,30 @@ def run_main_loop_consistency(
     legacy_runtime: str,
     candidate_runtime: str,
     cleanup: bool = True,
+    candidate_use_indexed_buff_load_loop: bool = False,
 ) -> dict[str, Any]:
     os.chdir(PROJECT_ROOT)
     base_cfg = _prepare_common_cfg(team, apl)
     apl_path = base_cfg.apl_path
     snapshots: list[RuntimeSnapshot] = []
 
-    for runtime_label in (legacy_runtime, candidate_runtime):
+    runtime_flags = (False, candidate_use_indexed_buff_load_loop)
+    for runtime_label, use_indexed_buff_load_loop in zip(
+        (legacy_runtime, candidate_runtime),
+        runtime_flags,
+        strict=True,
+    ):
         session_id = _build_session_id()
         runtime_cfg = base_cfg.model_copy(update={"session_id": session_id}, deep=True)
         runtime_cfg_data = runtime_cfg.model_dump(mode="json")
 
         with ProcessPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(_run_single_runtime_process, runtime_cfg_data, stop_tick)
+            future = executor.submit(
+                _run_single_runtime_process,
+                runtime_cfg_data,
+                stop_tick,
+                use_indexed_buff_load_loop,
+            )
             finished_session_id = future.result()
 
         try:
@@ -330,6 +366,7 @@ def run_main_loop_consistency(
         stop_tick=stop_tick,
         legacy_snapshot=snapshots[0],
         candidate_snapshot=snapshots[1],
+        candidate_use_indexed_buff_load_loop=candidate_use_indexed_buff_load_loop,
     )
 
 
@@ -361,6 +398,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--keep-artifacts",
         action="store_true",
         help="Keep raw results/<session_id> artifacts after the report is generated.",
+    )
+    parser.add_argument(
+        "--candidate-use-indexed-buff-load-loop",
+        action="store_true",
+        help=(
+            "Explicitly request indexed BuffLoadLoop for the candidate run only; "
+            "omitting this keeps both runs on the default current path."
+        ),
     )
     parser.add_argument(
         "--json",
@@ -401,6 +446,7 @@ def main(argv: list[str] | None = None) -> int:
         legacy_runtime=args.legacy_runtime,
         candidate_runtime=args.candidate_runtime,
         cleanup=not args.keep_artifacts,
+        candidate_use_indexed_buff_load_loop=args.candidate_use_indexed_buff_load_loop,
     )
     if args.json:
         print(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2))

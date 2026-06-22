@@ -187,6 +187,7 @@ def test_build_parser_accepts_required_cli_flags():
             "candidate-b",
             "--json",
             "--include-rebuild-counts",
+            "--candidate-use-indexed-buff-load-loop",
             "--repeat-samples",
             "3",
             "--summary-json",
@@ -201,6 +202,7 @@ def test_build_parser_accepts_required_cli_flags():
     assert args.candidate_runtime == "candidate-b"
     assert args.json is True
     assert args.include_rebuild_counts is True
+    assert args.candidate_use_indexed_buff_load_loop is True
     assert args.repeat_samples == 3
     assert args.summary_json == "scripts/ralph/benchmarks/repeat-summary.json"
 
@@ -362,18 +364,14 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
         },
     }
     assert summary["scan_metric_buckets"]["included"] is True
-    assert summary["scan_metric_buckets"]["aggregate"]["legacy"][
-        "trigger_candidate_count"
-    ] == {
+    assert summary["scan_metric_buckets"]["aggregate"]["legacy"]["trigger_candidate_count"] == {
         "median": 12.0,
         "min": 10.0,
         "max": 14.0,
         "range": 4.0,
         "samples": [10, 14, 12],
     }
-    assert summary["scan_metric_buckets"]["aggregate"]["candidate"][
-        "processed_tick_count"
-    ] == {
+    assert summary["scan_metric_buckets"]["aggregate"]["candidate"]["processed_tick_count"] == {
         "median": 1.0,
         "min": 1.0,
         "max": 1.0,
@@ -393,7 +391,7 @@ def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
     def fake_run_runtime_benchmark(**kwargs: Any) -> dict[str, Any]:
         captured_calls.append(kwargs)
         sample_index = len(captured_calls)
-        return _repeat_sample_report(
+        report = _repeat_sample_report(
             legacy_simulator_ms=100.0 + sample_index,
             candidate_simulator_ms=90.0 + sample_index,
             legacy_counts={"buff_load_loop": sample_index}
@@ -409,6 +407,14 @@ def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
             if kwargs["include_rebuild_counts"]
             else None,
         )
+        if kwargs["candidate_use_indexed_buff_load_loop"]:
+            report["runtime_selection"] = {
+                "mode": "candidate-explicit-opt-in-indexed-buff-load-loop",
+                "candidate_use_indexed_buff_load_loop": True,
+                "default_off": True,
+                "default_indexed_execution": "blocked",
+            }
+        return report
 
     monkeypatch.setattr(rb, "run_runtime_benchmark", fake_run_runtime_benchmark)
 
@@ -423,6 +429,10 @@ def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
     )
 
     assert [call["include_rebuild_counts"] for call in captured_calls] == [False, False]
+    assert [call["candidate_use_indexed_buff_load_loop"] for call in captured_calls] == [
+        False,
+        False,
+    ]
     assert default_summary["runtime_selection"]["mode"] == "label-only-current-runtime"
     assert default_summary["rebuild_count_buckets"] == {
         "included": False,
@@ -441,9 +451,18 @@ def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
         candidate_runtime="candidate-label",
         repeat_samples=2,
         include_rebuild_counts=True,
+        candidate_use_indexed_buff_load_loop=True,
     )
 
     assert [call["include_rebuild_counts"] for call in captured_calls] == [True, True]
+    assert [call["candidate_use_indexed_buff_load_loop"] for call in captured_calls] == [
+        True,
+        True,
+    ]
+    assert (
+        counted_summary["runtime_selection"]["mode"]
+        == "candidate-explicit-opt-in-indexed-buff-load-loop"
+    )
     assert counted_summary["rebuild_count_buckets"]["included"] is True
     assert counted_summary["rebuild_count_buckets"]["samples"] == [
         {"legacy": {"buff_load_loop": 1}, "candidate": {"buff_load_loop": 2}},
@@ -504,10 +523,8 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
         },
     }
     created_session_ids: list[str] = []
-    submitted_payloads: list[tuple[dict[str, Any], int, bool]] = []
-    snapshot_loads: list[
-        tuple[str, str, float, dict[str, int] | None, dict[str, int] | None]
-    ] = []
+    submitted_payloads: list[tuple[dict[str, Any], int, bool, bool]] = []
+    snapshot_loads: list[tuple[str, str, float, dict[str, int] | None, dict[str, int] | None]] = []
     cleaned_sessions: list[str] = []
 
     monkeypatch.setattr(
@@ -561,8 +578,22 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
         def __exit__(self, exc_type, exc, tb) -> Literal[False]:
             return False
 
-        def submit(self, func, common_cfg_data, stop_tick, include_rebuild_counts=False):
-            submitted_payloads.append((common_cfg_data, stop_tick, include_rebuild_counts))
+        def submit(
+            self,
+            func,
+            common_cfg_data,
+            stop_tick,
+            include_rebuild_counts=False,
+            use_indexed_buff_load_loop=False,
+        ):
+            submitted_payloads.append(
+                (
+                    common_cfg_data,
+                    stop_tick,
+                    include_rebuild_counts,
+                    use_indexed_buff_load_loop,
+                )
+            )
             return FakeFuture(common_cfg_data["session_id"], include_rebuild_counts)
 
     monkeypatch.setattr(rb, "ProcessPoolExecutor", FakeExecutor)
@@ -585,7 +616,9 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
             buff_load_loop_scan_metrics=scan_metrics,
         )
 
-    monkeypatch.setattr(rb, "_load_runtime_benchmark_snapshot", fake_load_runtime_benchmark_snapshot)
+    monkeypatch.setattr(
+        rb, "_load_runtime_benchmark_snapshot", fake_load_runtime_benchmark_snapshot
+    )
     monkeypatch.setattr(rb, "_cleanup_result_artifacts", cleaned_sessions.append)
 
     report = run_runtime_benchmark(
@@ -596,12 +629,14 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
         candidate_runtime="candidate-label",
         cleanup=True,
         include_rebuild_counts=True,
+        candidate_use_indexed_buff_load_loop=True,
     )
 
     assert created_session_ids == ["101", "102"]
-    assert [payload["session_id"] for payload, _, _ in submitted_payloads] == ["101", "102"]
-    assert all(stop_tick == 77 for _, stop_tick, _ in submitted_payloads)
-    assert [include_counts for _, _, include_counts in submitted_payloads] == [True, True]
+    assert [payload["session_id"] for payload, _, _, _ in submitted_payloads] == ["101", "102"]
+    assert all(stop_tick == 77 for _, stop_tick, _, _ in submitted_payloads)
+    assert [include_counts for _, _, include_counts, _ in submitted_payloads] == [True, True]
+    assert [flag for _, _, _, flag in submitted_payloads] == [False, True]
     assert snapshot_loads == [
         (
             "legacy-label",
@@ -630,7 +665,8 @@ def test_run_runtime_benchmark_uses_runtime_labels_and_cleanup(monkeypatch: pyte
     ]
     assert report["legacy_runtime"] == "legacy-label"
     assert report["candidate_runtime"] == "candidate-label"
-    assert report["runtime_selection"]["mode"] == "label-only-current-runtime"
+    assert report["runtime_selection"]["mode"] == "candidate-explicit-opt-in-indexed-buff-load-loop"
+    assert report["runtime_selection"]["default_off"] is True
     assert report["apl"] == "./override.toml"
     assert report["buff_runtime_rebuild_counts"] == {
         "legacy": {"buff_load_loop": 1},
@@ -674,7 +710,8 @@ def test_single_runtime_benchmark_process_collects_opt_in_rebuild_counts(
     class FakeSimulator:
         instances: list["FakeSimulator"] = []
 
-        def __init__(self) -> None:
+        def __init__(self, *, use_indexed_buff_load_loop: bool = False) -> None:
+            self.use_indexed_buff_load_loop = use_indexed_buff_load_loop
             self.rebuild_counts: dict[str, int] | None = None
             FakeSimulator.instances.append(self)
 
@@ -697,7 +734,16 @@ def test_single_runtime_benchmark_process_collects_opt_in_rebuild_counts(
                 "candidate_plan_mismatch_count": 0,
             }
 
-        def api_run_simulator(self, common_cfg: Any, sim_cfg: Any, stop_tick: int) -> Any:
+        def api_run_simulator(
+            self,
+            common_cfg: Any,
+            sim_cfg: Any,
+            stop_tick: int,
+            *,
+            use_indexed_buff_load_loop: bool | None = None,
+        ) -> Any:
+            if use_indexed_buff_load_loop is not None:
+                self.use_indexed_buff_load_loop = use_indexed_buff_load_loop
             if self.rebuild_counts is not None:
                 self.rebuild_counts["legacy_buff_runtime_facade"] = 1
                 self.rebuild_counts["buff_load_loop"] = stop_tick
@@ -728,7 +774,7 @@ def test_single_runtime_benchmark_process_collects_opt_in_rebuild_counts(
                 return None
             return dict(self.rebuild_counts)
 
-    perf_counter_values = iter([1.0, 1.125, 2.0, 2.25])
+    perf_counter_values = iter([1.0, 1.125, 2.0, 2.25, 3.0, 3.5])
     monkeypatch.setattr(rb.os, "chdir", lambda _: None)
     monkeypatch.setattr(rb.time, "perf_counter", lambda: next(perf_counter_values))
     monkeypatch.setattr(rb, "CommonCfg", FakeCommonCfg)
@@ -742,6 +788,11 @@ def test_single_runtime_benchmark_process_collects_opt_in_rebuild_counts(
         {"session_id": "counted-session"},
         stop_tick=4,
         include_rebuild_counts=True,
+    )
+    indexed_result = rb._run_single_runtime_benchmark_process(
+        {"session_id": "indexed-session"},
+        stop_tick=5,
+        use_indexed_buff_load_loop=True,
     )
 
     assert default_result == ("default-session", 125.0, None, None)
@@ -769,7 +820,11 @@ def test_single_runtime_benchmark_process_collects_opt_in_rebuild_counts(
             "candidate_plan_mismatch_count": 0,
         },
     )
+    assert indexed_result == ("indexed-session", 500.0, None, None)
     assert FakeSimulator.instances[0].rebuild_counts is None
+    assert FakeSimulator.instances[0].use_indexed_buff_load_loop is False
+    assert FakeSimulator.instances[1].use_indexed_buff_load_loop is False
+    assert FakeSimulator.instances[2].use_indexed_buff_load_loop is True
     assert not hasattr(FakeSimulator.instances[0], "_buff_load_loop_scan_metrics")
 
 
@@ -806,9 +861,7 @@ def test_format_human_report_only_prints_rebuild_counts_when_present():
     }
     opt_in_report["comparisons"] = dict(base_report["comparisons"])
     opt_in_report["comparisons"]["buff_runtime_rebuild_counts"] = {"scheduled_event": 2}
-    opt_in_report["comparisons"]["buff_load_loop_scan_metrics"] = {
-        "processed_tick_count": 1
-    }
+    opt_in_report["comparisons"]["buff_load_loop_scan_metrics"] = {"processed_tick_count": 1}
 
     opt_in_output = rb._format_human_report(opt_in_report)
 
@@ -874,6 +927,14 @@ def test_main_repeat_summary_writes_json_artifact(
             )
             for index in range(kwargs["repeat_samples"])
         ]
+        if kwargs["candidate_use_indexed_buff_load_loop"]:
+            for report in reports:
+                report["runtime_selection"] = {
+                    "mode": "candidate-explicit-opt-in-indexed-buff-load-loop",
+                    "candidate_use_indexed_buff_load_loop": True,
+                    "default_off": True,
+                    "default_indexed_execution": "blocked",
+                }
         return build_repeat_runtime_benchmark_summary(
             reports=reports,
             include_rebuild_counts=kwargs["include_rebuild_counts"],
@@ -897,15 +958,19 @@ def test_main_repeat_summary_writes_json_artifact(
             "--summary-json",
             str(output_path),
             "--include-rebuild-counts",
+            "--candidate-use-indexed-buff-load-loop",
         ]
     )
 
     assert exit_code == 0
     assert captured_kwargs["repeat_samples"] == 3
     assert captured_kwargs["include_rebuild_counts"] is True
+    assert captured_kwargs["candidate_use_indexed_buff_load_loop"] is True
     summary = json.loads(output_path.read_text(encoding="utf-8"))
     assert summary["sample_count"] == 3
-    assert summary["runtime_selection"]["mode"] == "label-only-current-runtime"
+    assert (
+        summary["runtime_selection"]["mode"] == "candidate-explicit-opt-in-indexed-buff-load-loop"
+    )
     assert summary["rebuild_count_buckets"]["included"] is True
     assert summary["scan_metric_buckets"]["included"] is True
     output = capsys.readouterr().out
@@ -944,9 +1009,7 @@ def test_script_entrypoint_runs_with_json_output(
                 "legacy": {"processed_tick_count": 1},
                 "candidate": {"processed_tick_count": 1},
             }
-            report["comparisons"]["buff_load_loop_scan_metrics"] = {
-                "processed_tick_count": 0
-            }
+            report["comparisons"]["buff_load_loop_scan_metrics"] = {"processed_tick_count": 0}
         return report
 
     monkeypatch.setattr(rb, "run_runtime_benchmark", fake_run_runtime_benchmark)
@@ -960,6 +1023,7 @@ def test_script_entrypoint_runs_with_json_output(
             "fake-team",
             "--json",
             "--include-rebuild-counts",
+            "--candidate-use-indexed-buff-load-loop",
         ]
         with pytest.raises(SystemExit) as excinfo:
             exec(script_path.read_text(encoding="utf-8"), namespace)
@@ -970,6 +1034,7 @@ def test_script_entrypoint_runs_with_json_output(
         assert '"buff_runtime_rebuild_counts"' in output
         assert '"buff_load_loop_scan_metrics"' in output
         assert captured_kwargs["include_rebuild_counts"] is True
+        assert captured_kwargs["candidate_use_indexed_buff_load_loop"] is True
     finally:
         rb.sys.argv = argv_before
 

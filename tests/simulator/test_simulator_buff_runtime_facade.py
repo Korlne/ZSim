@@ -7,6 +7,7 @@ import pytest
 
 import zsim.sim_progress.ScheduledEvent as scheduled_event_module
 import zsim.sim_progress.Buff.BuffLoad as buff_load_module
+import zsim.main as zsim_main
 from zsim.sim_progress import Load as load_module
 from zsim.sim_progress.Buff.BuffLoad import BuffLoadLoop
 from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
@@ -36,9 +37,7 @@ class _RuntimeProbe:
     ) -> dict[str, list[Any]]:
         self.load_ticks.append(time_now)
         self._order.append(f"load_pending:{time_now}")
-        record_rebuild_count = getattr(
-            sim_instance, "_record_buff_runtime_rebuild_count", None
-        )
+        record_rebuild_count = getattr(sim_instance, "_record_buff_runtime_rebuild_count", None)
         if record_rebuild_count is not None:
             record_rebuild_count("buff_load_loop")
         pending_queue = sim_instance.buff_runtime_state.pending_queue_for_compat()
@@ -137,9 +136,7 @@ def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
         return runtime
 
     _patch_main_loop_leaf_calls(monkeypatch, order)
-    sim, exist_buff_dict, loading_buff_dict, dynamic_buff_dict, enemy = _make_minimal_sim(
-        order
-    )
+    sim, exist_buff_dict, loading_buff_dict, dynamic_buff_dict, enemy = _make_minimal_sim(order)
     monkeypatch.setattr(sim.buff_runtime_state, "create_facade", fake_create_facade)
 
     sim.main_loop(stop_tick=1, use_api=True)
@@ -204,6 +201,61 @@ def test_rebuild_counting_is_inert_until_opted_in() -> None:
     sim._record_buff_runtime_rebuild_count("legacy_buff_runtime_facade")
 
     assert sim.get_buff_runtime_rebuild_counts() is None
+
+
+def test_indexed_buff_load_loop_option_defaults_off_and_api_is_explicit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[str, bool, bool | None]] = []
+
+    def fake_api_init_simulator(self: Simulator, common_cfg: Any, sim_cfg: Any) -> None:
+        calls.append(("init", self.use_indexed_buff_load_loop, None))
+
+    def fake_main_loop(self: Simulator, *args: Any, **kwargs: Any) -> None:
+        calls.append(
+            (
+                "main_loop",
+                self.use_indexed_buff_load_loop,
+                kwargs.get("use_indexed_buff_load_loop"),
+            )
+        )
+
+    monkeypatch.setattr(Simulator, "api_init_simulator", fake_api_init_simulator)
+    monkeypatch.setattr(Simulator, "main_loop", fake_main_loop)
+
+    default_sim = Simulator()
+    ctor_opt_in_sim = Simulator(use_indexed_buff_load_loop=True)
+    api_opt_in_sim = Simulator()
+    common_cfg = SimpleNamespace(session_id="api-session")
+
+    default_sim.api_run_simulator(common_cfg, sim_cfg=None, stop_tick=1)
+    api_opt_in_sim.api_run_simulator(
+        common_cfg,
+        sim_cfg=None,
+        stop_tick=1,
+        use_indexed_buff_load_loop=True,
+    )
+
+    assert default_sim.use_indexed_buff_load_loop is False
+    assert ctor_opt_in_sim.use_indexed_buff_load_loop is True
+    assert api_opt_in_sim.use_indexed_buff_load_loop is True
+    assert calls == [
+        ("init", False, None),
+        ("main_loop", False, None),
+        ("init", True, None),
+        ("main_loop", True, None),
+    ]
+
+
+def test_main_cli_parser_keeps_indexed_buff_load_loop_default_off() -> None:
+    parser = zsim_main.build_parser()
+
+    default_args = parser.parse_args([])
+    opt_in_args = parser.parse_args(["--use-indexed-buff-load-loop"])
+
+    assert not hasattr(default_args, "use_indexed_buff_load_loop")
+    assert zsim_main.resolve_use_indexed_buff_load_loop(default_args) is False
+    assert zsim_main.resolve_use_indexed_buff_load_loop(opt_in_args) is True
 
 
 def test_buff_load_loop_records_count_only_when_opted_in() -> None:
@@ -391,9 +443,7 @@ def test_buff_load_loop_visits_mission_registries_in_character_order(
             "charlie-live": object(),
         },
     }
-    registry_owner_by_id = {
-        id(registry): owner for owner, registry in existbuff_dict.items()
-    }
+    registry_owner_by_id = {id(registry): owner for owner, registry in existbuff_dict.items()}
     calls: list[tuple[str, str, str, tuple[str, ...]]] = []
 
     def fake_process_on_field_buff(
@@ -510,9 +560,7 @@ def test_buff_load_loop_candidate_plan_matches_current_scan_order(
             "charlie-live": object(),
         },
     }
-    registry_owner_by_id = {
-        id(registry): owner for owner, registry in existbuff_dict.items()
-    }
+    registry_owner_by_id = {id(registry): owner for owner, registry in existbuff_dict.items()}
     load_mission_dict = {
         "first": FakeLoadingMission("first", "bravo"),
         "second": FakeLoadingMission("second", "alpha"),
@@ -708,9 +756,7 @@ def test_buff_load_processing_helpers_own_candidate_filters(
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
     ) -> None:
-        process_calls.append(
-            (mission.name, buff_0.ft.index, tuple(selected_characters))
-        )
+        process_calls.append((mission.name, buff_0.ft.index, tuple(selected_characters)))
 
     monkeypatch.setattr(buff_load_module, "Buff", FakeBuff)
     monkeypatch.setattr(buff_load_module, "process_buff", fake_process_buff)

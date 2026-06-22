@@ -117,12 +117,21 @@ def test_build_parser_accepts_required_cli_flags():
             "--json",
         ]
     )
+    flagged_args = parser.parse_args(
+        [
+            "--team",
+            "team-a",
+            "--candidate-use-indexed-buff-load-loop",
+        ]
+    )
 
     assert args.team == "team-a"
     assert args.apl == "./zsim/data/APLData/example.toml"
     assert args.legacy_runtime == "legacy-a"
     assert args.candidate_runtime == "candidate-b"
     assert args.json is True
+    assert args.candidate_use_indexed_buff_load_loop is False
+    assert flagged_args.candidate_use_indexed_buff_load_loop is True
 
 
 def test_run_main_loop_consistency_uses_runtime_labels_and_cleanup(monkeypatch: pytest.MonkeyPatch):
@@ -157,7 +166,7 @@ def test_run_main_loop_consistency_uses_runtime_labels_and_cleanup(monkeypatch: 
         ),
     }
     created_session_ids: list[str] = []
-    submitted_payloads: list[tuple[dict[str, Any], int]] = []
+    submitted_payloads: list[tuple[dict[str, Any], int, bool]] = []
     cleaned_sessions: list[str] = []
 
     monkeypatch.setattr(
@@ -203,8 +212,14 @@ def test_run_main_loop_consistency_uses_runtime_labels_and_cleanup(monkeypatch: 
         def __exit__(self, exc_type, exc, tb) -> Literal[False]:
             return False
 
-        def submit(self, func, common_cfg_data, stop_tick):
-            submitted_payloads.append((common_cfg_data, stop_tick))
+        def submit(
+            self,
+            func,
+            common_cfg_data,
+            stop_tick,
+            use_indexed_buff_load_loop=False,
+        ):
+            submitted_payloads.append((common_cfg_data, stop_tick, use_indexed_buff_load_loop))
             return FakeFuture(common_cfg_data["session_id"])
 
     monkeypatch.setattr(mlc, "ProcessPoolExecutor", FakeExecutor)
@@ -221,13 +236,109 @@ def test_run_main_loop_consistency_uses_runtime_labels_and_cleanup(monkeypatch: 
     )
 
     assert created_session_ids == ["101", "102"]
-    assert [payload["session_id"] for payload, _ in submitted_payloads] == ["101", "102"]
-    assert all(stop_tick == 77 for _, stop_tick in submitted_payloads)
+    assert [payload["session_id"] for payload, _, _ in submitted_payloads] == ["101", "102"]
+    assert all(stop_tick == 77 for _, stop_tick, _ in submitted_payloads)
+    assert [flag for _, _, flag in submitted_payloads] == [False, False]
     assert report["legacy_runtime"] == "legacy-label"
     assert report["candidate_runtime"] == "candidate-label"
     assert report["runtime_selection"]["mode"] == "label-only-current-runtime"
     assert report["apl"] == "./override.toml"
     assert cleaned_sessions == ["101", "102"]
+
+
+def test_run_main_loop_consistency_candidate_opt_in_only_flags_candidate(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    snapshots_by_session: dict[str, RuntimeSnapshot] = {
+        "201": RuntimeSnapshot(
+            runtime_label="legacy-label",
+            session_id="201",
+            total_damage=100.0,
+            event_counts={
+                "total": 1,
+                "anomaly_total": 0,
+                "disorder_total": 0,
+                "by_skill_tag": {},
+                "by_skill_name": {},
+                "by_element_type": {},
+            },
+            buff_timeline={},
+        ),
+        "202": RuntimeSnapshot(
+            runtime_label="candidate-label",
+            session_id="202",
+            total_damage=100.0,
+            event_counts={
+                "total": 1,
+                "anomaly_total": 0,
+                "disorder_total": 0,
+                "by_skill_tag": {},
+                "by_skill_name": {},
+                "by_element_type": {},
+            },
+            buff_timeline={},
+        ),
+    }
+    submitted_flags: list[bool] = []
+
+    monkeypatch.setattr(
+        mlc,
+        "_prepare_common_cfg",
+        lambda team, apl: mlc.CommonCfg.model_validate(
+            {
+                "session_id": "base",
+                "char_config": [{"name": "a"}, {"name": "b"}, {"name": "c"}],
+                "enemy_config": {"index_id": 11412, "adjustment_id": 22412, "difficulty": 8.74},
+                "apl_path": apl or "./default.toml",
+            }
+        ),
+    )
+    session_id_iter = iter(["201", "202"])
+    monkeypatch.setattr(mlc, "_build_session_id", lambda: next(session_id_iter))
+
+    class FakeFuture:
+        def __init__(self, session_id: str):
+            self._session_id = session_id
+
+        def result(self) -> str:
+            return self._session_id
+
+    class FakeExecutor:
+        def __init__(self, max_workers: int):
+            self.max_workers = max_workers
+
+        def __enter__(self) -> "FakeExecutor":
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> Literal[False]:
+            return False
+
+        def submit(
+            self,
+            func,
+            common_cfg_data,
+            stop_tick,
+            use_indexed_buff_load_loop=False,
+        ):
+            submitted_flags.append(use_indexed_buff_load_loop)
+            return FakeFuture(common_cfg_data["session_id"])
+
+    monkeypatch.setattr(mlc, "ProcessPoolExecutor", FakeExecutor)
+    monkeypatch.setattr(mlc, "_load_runtime_snapshot", lambda label, sid: snapshots_by_session[sid])
+    monkeypatch.setattr(mlc, "_cleanup_result_artifacts", lambda _: None)
+
+    report = run_main_loop_consistency(
+        team="fake-team",
+        apl=None,
+        stop_tick=77,
+        legacy_runtime="legacy-label",
+        candidate_runtime="candidate-label",
+        candidate_use_indexed_buff_load_loop=True,
+    )
+
+    assert submitted_flags == [False, True]
+    assert report["runtime_selection"]["mode"] == "candidate-explicit-opt-in-indexed-buff-load-loop"
+    assert report["runtime_selection"]["default_off"] is True
 
 
 def test_load_runtime_snapshot_falls_back_for_blank_anomaly_column(

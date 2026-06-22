@@ -22,6 +22,7 @@ from zsim.utils.main_loop_consistency import (
     _cleanup_result_artifacts,
     _prepare_damage_data_for_consistency,
     _prepare_common_cfg,
+    _runtime_selection_contract,
 )
 from zsim.utils.process_buff_result import prepare_buff_data_and_cache
 
@@ -44,18 +45,22 @@ def _run_single_runtime_benchmark_process(
     common_cfg_data: dict[str, Any],
     stop_tick: int,
     include_rebuild_counts: bool = False,
+    use_indexed_buff_load_loop: bool = False,
 ) -> tuple[str, float, dict[str, int] | None, dict[str, int] | None]:
     os.chdir(PROJECT_ROOT)
     common_cfg = CommonCfg.model_validate(common_cfg_data)
-    simulator = Simulator()
+    simulator = Simulator(use_indexed_buff_load_loop=use_indexed_buff_load_loop)
     if include_rebuild_counts:
         simulator.enable_buff_runtime_rebuild_counting()
     started_at = time.perf_counter()
-    confirmation = simulator.api_run_simulator(common_cfg, sim_cfg=None, stop_tick=stop_tick)
-    simulator_runtime_ms = round((time.perf_counter() - started_at) * 1000, 4)
-    rebuild_counts = (
-        simulator.get_buff_runtime_rebuild_counts() if include_rebuild_counts else None
+    confirmation = simulator.api_run_simulator(
+        common_cfg,
+        sim_cfg=None,
+        stop_tick=stop_tick,
+        use_indexed_buff_load_loop=use_indexed_buff_load_loop,
     )
+    simulator_runtime_ms = round((time.perf_counter() - started_at) * 1000, 4)
+    rebuild_counts = simulator.get_buff_runtime_rebuild_counts() if include_rebuild_counts else None
     scan_metrics = (
         dict(getattr(simulator, "_buff_load_loop_scan_metrics", {}))
         if include_rebuild_counts
@@ -212,20 +217,14 @@ def _aggregate_rebuild_count_bucket(
     bucket: str,
 ) -> dict[str, dict[str, Any]]:
     counter_names = sorted(
-        {
-            counter_name
-            for sample in samples
-            for counter_name in sample.get(bucket, {})
-        }
+        {counter_name for sample in samples for counter_name in sample.get(bucket, {})}
     )
     return {
         counter_name: {
             **_numeric_summary(
                 [int(sample.get(bucket, {}).get(counter_name, 0)) for sample in samples]
             ),
-            "samples": [
-                int(sample.get(bucket, {}).get(counter_name, 0)) for sample in samples
-            ],
+            "samples": [int(sample.get(bucket, {}).get(counter_name, 0)) for sample in samples],
         }
         for counter_name in counter_names
     }
@@ -236,20 +235,14 @@ def _aggregate_scan_metric_bucket(
     bucket: str,
 ) -> dict[str, dict[str, Any]]:
     metric_names = sorted(
-        {
-            metric_name
-            for sample in samples
-            for metric_name in sample.get(bucket, {})
-        }
+        {metric_name for sample in samples for metric_name in sample.get(bucket, {})}
     )
     return {
         metric_name: {
             **_numeric_summary(
                 [int(sample.get(bucket, {}).get(metric_name, 0)) for sample in samples]
             ),
-            "samples": [
-                int(sample.get(bucket, {}).get(metric_name, 0)) for sample in samples
-            ],
+            "samples": [int(sample.get(bucket, {}).get(metric_name, 0)) for sample in samples],
         }
         for metric_name in metric_names
     }
@@ -264,9 +257,7 @@ def build_repeat_runtime_benchmark_summary(
         raise ValueError("repeat benchmark summary requires at least one report")
 
     first_report = reports[0]
-    legacy_simulator_runtime_ms = [
-        _simulator_runtime_ms(report, "legacy") for report in reports
-    ]
+    legacy_simulator_runtime_ms = [_simulator_runtime_ms(report, "legacy") for report in reports]
     candidate_simulator_runtime_ms = [
         _simulator_runtime_ms(report, "candidate") for report in reports
     ]
@@ -308,7 +299,7 @@ def build_repeat_runtime_benchmark_summary(
             "legacy": first_report["legacy_runtime"],
             "candidate": first_report["candidate_runtime"],
         },
-        "runtime_selection": dict(RUNTIME_LABEL_CONTRACT),
+        "runtime_selection": dict(first_report.get("runtime_selection", RUNTIME_LABEL_CONTRACT)),
         "simulator_runtime_ms": {
             "legacy": _summary_with_samples(legacy_simulator_runtime_ms),
             "candidate": _summary_with_samples(candidate_simulator_runtime_ms),
@@ -317,12 +308,8 @@ def build_repeat_runtime_benchmark_summary(
             "included": include_rebuild_counts,
             "samples": rebuild_count_samples,
             "aggregate": {
-                "legacy": _aggregate_rebuild_count_bucket(
-                    rebuild_count_samples, "legacy"
-                ),
-                "candidate": _aggregate_rebuild_count_bucket(
-                    rebuild_count_samples, "candidate"
-                ),
+                "legacy": _aggregate_rebuild_count_bucket(rebuild_count_samples, "legacy"),
+                "candidate": _aggregate_rebuild_count_bucket(rebuild_count_samples, "candidate"),
             },
         },
         "future_threshold_use": {
@@ -346,9 +333,7 @@ def build_repeat_runtime_benchmark_summary(
             "samples": scan_metric_samples,
             "aggregate": {
                 "legacy": _aggregate_scan_metric_bucket(scan_metric_samples, "legacy"),
-                "candidate": _aggregate_scan_metric_bucket(
-                    scan_metric_samples, "candidate"
-                ),
+                "candidate": _aggregate_scan_metric_bucket(scan_metric_samples, "candidate"),
             },
         }
     return summary
@@ -362,6 +347,7 @@ def build_runtime_benchmark_report(
     legacy_snapshot: RuntimeBenchmarkSnapshot,
     candidate_snapshot: RuntimeBenchmarkSnapshot,
     include_rebuild_counts: bool = False,
+    candidate_use_indexed_buff_load_loop: bool = False,
     buff_runtime_rebuild_counts: dict[str, dict[str, int]] | None = None,
     buff_load_loop_scan_metrics: dict[str, dict[str, int]] | None = None,
 ) -> dict[str, Any]:
@@ -397,7 +383,9 @@ def build_runtime_benchmark_report(
         "stop_tick": stop_tick,
         "legacy_runtime": legacy_snapshot.runtime_label,
         "candidate_runtime": candidate_snapshot.runtime_label,
-        "runtime_selection": dict(RUNTIME_LABEL_CONTRACT),
+        "runtime_selection": _runtime_selection_contract(
+            candidate_use_indexed_buff_load_loop=candidate_use_indexed_buff_load_loop,
+        ),
         "total_runtime_ms": {
             "legacy": legacy_snapshot.total_runtime_ms,
             "candidate": candidate_snapshot.total_runtime_ms,
@@ -445,13 +433,19 @@ def run_runtime_benchmark(
     candidate_runtime: str,
     cleanup: bool = True,
     include_rebuild_counts: bool = False,
+    candidate_use_indexed_buff_load_loop: bool = False,
 ) -> dict[str, Any]:
     os.chdir(PROJECT_ROOT)
     base_cfg = _prepare_common_cfg(team, apl)
     apl_path = base_cfg.apl_path
     snapshots: list[RuntimeBenchmarkSnapshot] = []
 
-    for runtime_label in (legacy_runtime, candidate_runtime):
+    runtime_flags = (False, candidate_use_indexed_buff_load_loop)
+    for runtime_label, use_indexed_buff_load_loop in zip(
+        (legacy_runtime, candidate_runtime),
+        runtime_flags,
+        strict=True,
+    ):
         session_id = _build_session_id()
         runtime_cfg = base_cfg.model_copy(update={"session_id": session_id}, deep=True)
         runtime_cfg_data = runtime_cfg.model_dump(mode="json")
@@ -462,6 +456,7 @@ def run_runtime_benchmark(
                 runtime_cfg_data,
                 stop_tick,
                 include_rebuild_counts,
+                use_indexed_buff_load_loop,
             )
             (
                 finished_session_id,
@@ -491,6 +486,7 @@ def run_runtime_benchmark(
         legacy_snapshot=snapshots[0],
         candidate_snapshot=snapshots[1],
         include_rebuild_counts=include_rebuild_counts,
+        candidate_use_indexed_buff_load_loop=candidate_use_indexed_buff_load_loop,
     )
 
 
@@ -504,6 +500,7 @@ def run_repeated_runtime_benchmark(
     repeat_samples: int,
     cleanup: bool = True,
     include_rebuild_counts: bool = False,
+    candidate_use_indexed_buff_load_loop: bool = False,
 ) -> dict[str, Any]:
     if repeat_samples < 1:
         raise ValueError("repeat_samples must be at least 1")
@@ -516,6 +513,7 @@ def run_repeated_runtime_benchmark(
             candidate_runtime=candidate_runtime,
             cleanup=cleanup,
             include_rebuild_counts=include_rebuild_counts,
+            candidate_use_indexed_buff_load_loop=candidate_use_indexed_buff_load_loop,
         )
         for _ in range(repeat_samples)
     ]
@@ -594,6 +592,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--include-rebuild-counts",
         action="store_true",
         help="Include Buff runtime rebuild count and BuffLoadLoop scan metric buckets in the report.",
+    )
+    parser.add_argument(
+        "--candidate-use-indexed-buff-load-loop",
+        action="store_true",
+        help=(
+            "Explicitly request indexed BuffLoadLoop for the candidate run only; "
+            "omitting this keeps both runs on the default current path."
+        ),
     )
     return parser
 
@@ -679,8 +685,7 @@ def _format_repeat_summary(summary: dict[str, Any]) -> str:
     lines.append(
         "future_threshold_use: "
         f"speedup_target_defined={policy['speedup_target_defined']}; "
-        f"minimum_repeat_samples={policy['minimum_repeat_samples']}; "
-        + policy["noise_reporting"]
+        f"minimum_repeat_samples={policy['minimum_repeat_samples']}; " + policy["noise_reporting"]
     )
     return "\n".join(lines)
 
@@ -699,6 +704,7 @@ def main(argv: list[str] | None = None) -> int:
             repeat_samples=args.repeat_samples,
             cleanup=not args.keep_artifacts,
             include_rebuild_counts=args.include_rebuild_counts,
+            candidate_use_indexed_buff_load_loop=args.candidate_use_indexed_buff_load_loop,
         )
         if args.summary_json:
             write_repeat_runtime_benchmark_summary(args.summary_json, summary)
@@ -716,6 +722,7 @@ def main(argv: list[str] | None = None) -> int:
         candidate_runtime=args.candidate_runtime,
         cleanup=not args.keep_artifacts,
         include_rebuild_counts=args.include_rebuild_counts,
+        candidate_use_indexed_buff_load_loop=args.candidate_use_indexed_buff_load_loop,
     )
     if args.json:
         print(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2))
