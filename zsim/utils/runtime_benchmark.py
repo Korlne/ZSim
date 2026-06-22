@@ -6,6 +6,7 @@ import json
 import os
 import sys
 import time
+from collections.abc import Sequence
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
@@ -172,7 +173,7 @@ def _scan_metric_comparisons(
     }
 
 
-def _numeric_summary(values: list[float | int]) -> dict[str, float]:
+def _numeric_summary(values: Sequence[float | int]) -> dict[str, float]:
     if not values:
         return {"median": 0.0, "min": 0.0, "max": 0.0, "range": 0.0}
     minimum = float(min(values))
