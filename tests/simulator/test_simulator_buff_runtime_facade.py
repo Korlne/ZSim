@@ -824,6 +824,73 @@ def test_buff_load_loop_candidate_plan_summary_matches_detailed_counts() -> None
         assert summary[key] == detailed[key]
 
 
+def test_buff_load_loop_candidate_plan_summary_reads_each_registry_length_once() -> None:
+    class FakeLoadingMission:
+        def __init__(self, mission_character: str) -> None:
+            self.mission_character = mission_character
+
+    class CountingRegistry(dict[str, Any]):
+        def __init__(self, owner: str, values: dict[str, object]) -> None:
+            super().__init__(values)
+            self.owner = owner
+
+        def __len__(self) -> int:
+            length_reads.append(self.owner)
+            return super().__len__()
+
+    length_reads: list[str] = []
+    existbuff_dict: dict[str, CountingRegistry] = {
+        "alpha": CountingRegistry(
+            "alpha",
+            {
+                "alpha-schedule": object(),
+                "alpha-passive": object(),
+                "alpha-live": object(),
+            },
+        ),
+        "bravo": CountingRegistry(
+            "bravo",
+            {
+                "bravo-backend-inactive": object(),
+                "bravo-live": object(),
+            },
+        ),
+        "charlie": CountingRegistry("charlie", {"charlie-live": object()}),
+    }
+    load_mission_dict = {
+        "first": FakeLoadingMission("bravo"),
+        "second": FakeLoadingMission("alpha"),
+        "third": FakeLoadingMission("alpha"),
+    }
+    character_name_box = ["alpha", "bravo", "charlie"]
+
+    summary = buff_load_module._summarize_buff_load_loop_candidate_plan(
+        load_mission_dict,
+        existbuff_dict,
+        character_name_box,
+    )
+    detailed = buff_load_module._describe_buff_load_loop_candidate_plan(
+        load_mission_dict,
+        {
+            character_name: dict(registry)
+            for character_name, registry in existbuff_dict.items()
+        },
+        character_name_box,
+    )
+
+    assert length_reads == ["alpha", "bravo", "charlie"]
+    for key in (
+        "pending_queue_order",
+        "mission_order",
+        "mission_count",
+        "character_count",
+        "candidate_count",
+        "on_field_candidate_count",
+        "backend_candidate_count",
+    ):
+        assert summary[key] == detailed[key]
+
+
 def test_buff_load_loop_registry_length_snapshot_matches_detailed_counts() -> None:
     class FakeLoadingMission:
         def __init__(self, mission_character: str) -> None:

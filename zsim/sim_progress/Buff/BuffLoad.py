@@ -213,21 +213,26 @@ def _summarize_buff_load_loop_candidate_plan(
     buff_registry_by_character: dict,
     character_name_box: list,
 ) -> dict[str, object]:
-    on_field_candidate_count = 0
-    backend_candidate_count = 0
-
+    registry_snapshot = _snapshot_buff_load_loop_registry_lengths(
+        load_mission_dict,
+        buff_registry_by_character,
+        character_name_box,
+    )
+    registry_lengths_by_character = dict(registry_snapshot["character_registry_lengths"])
+    registered_candidate_count = int(registry_snapshot["registered_candidate_count"])
+    mission_count_by_actor: dict[str, int] = {}
     for mission in load_mission_dict.values():
         actor_name = mission.mission_character
-        if actor_name not in buff_registry_by_character:
-            raise ValueError("当前角色的Buff源并未创建！")
+        mission_count_by_actor[actor_name] = mission_count_by_actor.get(actor_name, 0) + 1
 
-        for char_name in character_name_box:
-            registry = buff_registry_by_character[char_name]
-            candidate_count = len(registry)
-            if char_name == actor_name:
-                on_field_candidate_count += candidate_count
-            else:
-                backend_candidate_count += candidate_count
+    on_field_candidate_count = 0
+    backend_candidate_count = 0
+    for actor_name, mission_count in mission_count_by_actor.items():
+        actor_candidate_count = registry_lengths_by_character.get(actor_name, 0)
+        on_field_candidate_count += actor_candidate_count * mission_count
+        backend_candidate_count += (
+            registered_candidate_count - actor_candidate_count
+        ) * mission_count
 
     return {
         "pending_queue_order": tuple([*character_name_box, "enemy"]),
