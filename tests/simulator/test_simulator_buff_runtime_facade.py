@@ -11,6 +11,7 @@ import zsim.main as zsim_main
 from zsim.sim_progress import Load as load_module
 from zsim.sim_progress.Buff.BuffLoad import BuffLoadLoop
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
+    ActiveBuffStore,
     BuffRuntimeState,
     PendingBuffQueue,
 )
@@ -162,6 +163,8 @@ def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
 
     assert sim.buff_runtime_state.template_registry_for_compat() is exist_buff_dict
     assert sim.buff_runtime_state.pending_queue_for_compat() is loading_buff_dict
+    assert isinstance(sim.buff_runtime_state.active_store_owner(), ActiveBuffStore)
+    assert sim.buff_runtime_state.active_store_owner().as_compat_dict() is dynamic_buff_dict
     assert sim.buff_runtime_state.active_store_for_compat() is dynamic_buff_dict
     assert dynamic_buff_dict["enemy"] is enemy.dynamic.dynamic_debuff_list
     assert sim.buff_runtime_state.enemy_mirror_for_compat() is enemy.dynamic.dynamic_debuff_list

@@ -15,6 +15,7 @@ from zsim.sim_progress.Buff.BuffLoad import (
 )
 from zsim.sim_progress.Buff.buff_class import Buff
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
+    ActiveBuffStore,
     BuffRuntimeFacade,
     BuffRuntimeState,
     LegacyBuffRuntimeFacade,
@@ -220,6 +221,93 @@ def test_legacy_buff_runtime_facade_preserves_old_container_identity() -> None:
     assert loading_buff_dict["alpha"] == [pending_buff]
     assert dynamic_buff_dict["alpha"] == [active_buff]
     assert enemy_debuff_mirror == [enemy_debuff]
+
+
+def test_buff_runtime_state_exposes_active_store_owner_with_compat_identity() -> None:
+    active_buff = _BuffProbe("active")
+    replacement = _BuffProbe("replacement")
+    active_store: dict[str, list[Any]] = {"alpha": [active_buff], "enemy": []}
+    pending_queue: dict[str, list[Any]] = {"alpha": [], "enemy": []}
+    enemy_mirror: list[Any] = []
+
+    runtime_state = BuffRuntimeState(
+        template_registry={"alpha": {}, "enemy": {}},
+        pending_queue=pending_queue,
+        active_store=active_store,
+        enemy_mirror=enemy_mirror,
+    )
+
+    active_owner = runtime_state.active_store_owner()
+
+    assert isinstance(active_owner, ActiveBuffStore)
+    assert active_owner.as_compat_dict() is active_store
+    assert runtime_state.active_store_for_compat() is active_store
+    assert active_owner.active_buffs_for_compat("alpha") is active_store["alpha"]
+    assert active_owner.find_by_index("alpha", "active") is active_buff
+
+    active_owner.append("alpha", replacement)
+    active_owner.remove("alpha", active_buff)
+
+    assert active_store["alpha"] == [replacement]
+    assert active_owner.find_by_index("alpha", "active") is None
+    assert active_owner.find_by_index("alpha", "replacement") is replacement
+    assert active_owner.count() == 1
+    assert active_owner.ensure_beneficiary("beta") is active_store["beta"]
+    assert active_owner.beneficiaries() == ("alpha", "enemy", "beta")
+
+
+def test_legacy_facade_active_helpers_route_through_active_store_owner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    active_buff = _BuffProbe("active")
+    replacement = _BuffProbe("replacement")
+    active_store: dict[str, list[Any]] = {"alpha": [active_buff], "enemy": []}
+    runtime_state = BuffRuntimeState(
+        template_registry={"alpha": {}, "enemy": {}},
+        pending_queue={"alpha": [], "enemy": []},
+        active_store=active_store,
+        enemy_mirror=active_store["enemy"],
+    )
+    active_owner = runtime_state.active_store_owner()
+    facade = runtime_state.create_facade()
+    calls: list[tuple[str, str, str | None]] = []
+
+    def fake_append(beneficiary: str, buff: Any) -> None:
+        calls.append(("append", beneficiary, buff.ft.index))
+        active_store[beneficiary].append(buff)
+
+    def fake_remove(beneficiary: str, buff: Any) -> None:
+        calls.append(("remove", beneficiary, buff.ft.index))
+        active_store[beneficiary].remove(buff)
+
+    def fake_find_by_index(beneficiary: str, buff_index: str) -> Any:
+        calls.append(("find", beneficiary, buff_index))
+        return replacement
+
+    def fake_active_buffs_for_compat(beneficiary: str) -> list[Any]:
+        calls.append(("compat", beneficiary, None))
+        return active_store[beneficiary]
+
+    monkeypatch.setattr(active_owner, "append", fake_append)
+    monkeypatch.setattr(active_owner, "remove", fake_remove)
+    monkeypatch.setattr(active_owner, "find_by_index", fake_find_by_index)
+    monkeypatch.setattr(
+        active_owner,
+        "active_buffs_for_compat",
+        fake_active_buffs_for_compat,
+    )
+
+    facade.append_active_buff("alpha", replacement)
+    facade.remove_active_buff("alpha", active_buff)
+
+    assert facade.find_active_buff_by_index("alpha", "replacement") is replacement
+    assert facade.get_active_buffs_for_compat("alpha") == [replacement]
+    assert calls == [
+        ("append", "alpha", "replacement"),
+        ("remove", "alpha", "active"),
+        ("find", "alpha", "replacement"),
+        ("compat", "alpha", None),
+    ]
 
 
 def test_legacy_buff_runtime_facade_keeps_pending_and_active_store_semantics_separate() -> None:

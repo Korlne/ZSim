@@ -28,11 +28,11 @@ class BuffRuntimeState:
     ) -> None:
         self._template_registry = template_registry
         self._pending_queue = PendingBuffQueue(pending_queue)
-        self._active_store = active_store
         self._enemy_mirror = self._collapse_enemy_debuff_store(
             active_store,
             enemy_mirror,
         )
+        self._active_store = ActiveBuffStore(active_store)
 
     @staticmethod
     def _collapse_enemy_debuff_store(
@@ -65,8 +65,11 @@ class BuffRuntimeState:
     def pending_queue_for_compat(self) -> dict[str, list["Buff"]]:
         return self._pending_queue.as_compat_dict()
 
-    def active_store_for_compat(self) -> dict[str, list["Buff"]]:
+    def active_store_owner(self) -> "ActiveBuffStore":
         return self._active_store
+
+    def active_store_for_compat(self) -> dict[str, list["Buff"]]:
+        return self._active_store.as_compat_dict()
 
     def enemy_mirror_for_compat(self) -> list["Buff"]:
         return self._enemy_mirror
@@ -124,6 +127,47 @@ class PendingBuffQueue:
 
     def items(self):
         return self._queues.items()
+
+
+class ActiveBuffStore:
+    """Runtime-owned active Buff store with retained dict/list compatibility."""
+
+    def __init__(self, stores: dict[str, list["Buff"]]) -> None:
+        self._stores = stores
+
+    def ensure_beneficiary(self, beneficiary: str) -> list["Buff"]:
+        return self._stores.setdefault(beneficiary, [])
+
+    def append(self, beneficiary: str, buff: "Buff") -> None:
+        self._stores[beneficiary].append(buff)
+
+    def remove(self, beneficiary: str, buff: "Buff") -> None:
+        self._stores[beneficiary].remove(buff)
+
+    def find_by_index(self, beneficiary: str, buff_index: str) -> "Buff | None":
+        return next(
+            (
+                active_buff
+                for active_buff in self.active_buffs_for_compat(beneficiary)
+                if active_buff.ft.index == buff_index
+            ),
+            None,
+        )
+
+    def active_buffs_for_compat(self, beneficiary: str) -> list["Buff"]:
+        return self._stores[beneficiary]
+
+    def as_compat_dict(self) -> dict[str, list["Buff"]]:
+        return self._stores
+
+    def count(self) -> int:
+        return sum(len(active_buffs) for active_buffs in self._stores.values())
+
+    def beneficiaries(self) -> tuple[str, ...]:
+        return tuple(self._stores)
+
+    def items(self):
+        return self._stores.items()
 
 
 class BuffRuntimeReadPort(ABC):
@@ -360,10 +404,10 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         self._runtime_state.pending_queue_owner().clear(beneficiary)
 
     def append_active_buff(self, beneficiary: str, buff: "Buff") -> None:
-        self._get_active_buffs(beneficiary).append(buff)
+        self._runtime_state.active_store_owner().append(beneficiary, buff)
 
     def remove_active_buff(self, beneficiary: str, buff: "Buff") -> None:
-        self._get_active_buffs(beneficiary).remove(buff)
+        self._runtime_state.active_store_owner().remove(beneficiary, buff)
 
     def end_active_buff(self, beneficiary: str, buff: "Buff", *, tick: int) -> None:
         sub_exist_buff_dict = self._runtime_state.template_registry_for_compat()[
@@ -441,13 +485,9 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         return self._runtime_state.active_store_for_compat()
 
     def find_active_buff_by_index(self, beneficiary: str, buff_index: str) -> "Buff | None":
-        return next(
-            (
-                active_buff
-                for active_buff in self._get_active_buffs(beneficiary)
-                if self._get_buff_index(active_buff) == buff_index
-            ),
-            None,
+        return self._runtime_state.active_store_owner().find_by_index(
+            beneficiary,
+            buff_index,
         )
 
     def sync_enemy_debuff_mirror(self, buff: "Buff") -> None:
@@ -573,7 +613,9 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         return self._runtime_state.pending_queue_for_compat()[beneficiary]
 
     def _get_active_buffs(self, beneficiary: str) -> list["Buff"]:
-        return self._runtime_state.active_store_for_compat()[beneficiary]
+        return self._runtime_state.active_store_owner().active_buffs_for_compat(
+            beneficiary
+        )
 
     def _find_enemy_debuff_mirror(self, buff: "Buff") -> "Buff | None":
         buff_index = self._get_buff_index(buff)
@@ -816,6 +858,7 @@ __all__ = [
     "BuffRuntimeReadPort",
     "BuffRuntimeFacade",
     "BuffRuntimeState",
+    "ActiveBuffStore",
     "PendingBuffQueue",
     "LegacyBuffRuntimeReadAdapter",
     "LegacyBuffRuntimeFacade",
