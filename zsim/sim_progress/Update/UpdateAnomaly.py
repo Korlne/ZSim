@@ -34,6 +34,8 @@ anomlay_dot_dict = {
     6: "AuricInkCorruption",
 }
 
+FREEZE_DISORDER_DOT_INDEXES = {"Freez", "Freezdot"}
+
 
 @dataclass(frozen=True)
 class AnomalyRuntimeContext:
@@ -419,31 +421,80 @@ def remove_dots_cause_disorder(
     """
     if dot_runtime_state is None:
         dot_runtime_state = DotRuntimeStateAdapter.from_enemy(enemy)
-    remove_dots_list = []
-    for dots in dot_runtime_state.snapshot():
-        if not isinstance(dots, Dot):
-            raise TypeError(f"{dots}不是DOT类！")
-        if dots.ft.index in ["Freez", "Freezdot"] or dots.ft.index == disorder.accompany_dot:
-            if dots.dy.effect_times > dots.ft.max_effect_times:
-                raise ValueError("该Dot任务已经完成，应当被删除！")
-            remove_dots_list.append(dots)
-    else:
-        sim_instance = enemy.sim_instance
-        for _dot in remove_dots_list:
-            if _dot.ft.index in ["Freez", "Freezdot"]:
-                _publish_scheduled_event(dispatch_port, _dot.anomaly_data)
-                _dot.dy.ready = False
-                _dot.dy.last_effect_ticks = time_now
-                _dot.dy.effect_times += 1
-                _dot.end(time_now)
-                dot_runtime_state.remove_all([_dot])
-                enemy.dynamic.frozen = False
-                enemy.dynamic.frostbite = False
-            else:
-                _dot.end(time_now)
-                dot_runtime_state.remove_all([_dot])
-            sim_instance.schedule_data.change_process_state()
-            print(f"因紊乱而强行移除Dot {_dot.ft.index}")
+    remove_dots_list = _collect_disorder_dots_to_remove(
+        dot_runtime_state,
+        disorder,
+    )
+    sim_instance = enemy.sim_instance
+    for dot in remove_dots_list:
+        if _is_freeze_disorder_dot(dot):
+            _publish_freeze_follow_up_for_removed_dot(dispatch_port, dot)
+            _mark_freeze_dot_removed_by_disorder(dot, time_now)
+            _remove_disorder_dot_from_runtime(dot_runtime_state, dot, time_now)
+            _clear_freeze_runtime_flags(enemy)
+        else:
+            _remove_disorder_dot_from_runtime(dot_runtime_state, dot, time_now)
+        _record_disorder_dot_removal_process(sim_instance)
+        print(f"因紊乱而强行移除Dot {dot.ft.index}")
+
+
+def _collect_disorder_dots_to_remove(
+    dot_runtime_state: DotRuntimeStateAdapter,
+    disorder,
+) -> list[Dot]:
+    dots_to_remove: list[Dot] = []
+    for dot in dot_runtime_state.snapshot():
+        if not isinstance(dot, Dot):
+            raise TypeError(f"{dot}不是DOT类！")
+        if not _should_remove_dot_for_disorder(dot, disorder):
+            continue
+        _validate_disorder_dot_can_be_removed(dot)
+        dots_to_remove.append(dot)
+    return dots_to_remove
+
+
+def _should_remove_dot_for_disorder(dot: Dot, disorder) -> bool:
+    return _is_freeze_disorder_dot(dot) or dot.ft.index == disorder.accompany_dot
+
+
+def _validate_disorder_dot_can_be_removed(dot: Dot) -> None:
+    if dot.dy.effect_times > dot.ft.max_effect_times:
+        raise ValueError("该Dot任务已经完成，应当被删除！")
+
+
+def _is_freeze_disorder_dot(dot: Dot) -> bool:
+    return dot.ft.index in FREEZE_DISORDER_DOT_INDEXES
+
+
+def _publish_freeze_follow_up_for_removed_dot(
+    dispatch_port: "ScheduleDispatchPort",
+    dot: Dot,
+) -> None:
+    _publish_scheduled_event(dispatch_port, dot.anomaly_data)
+
+
+def _mark_freeze_dot_removed_by_disorder(dot: Dot, time_now: int) -> None:
+    dot.dy.ready = False
+    dot.dy.last_effect_ticks = time_now
+    dot.dy.effect_times += 1
+
+
+def _remove_disorder_dot_from_runtime(
+    dot_runtime_state: DotRuntimeStateAdapter,
+    dot: Dot,
+    time_now: int,
+) -> None:
+    dot.end(time_now)
+    dot_runtime_state.remove_all([dot])
+
+
+def _clear_freeze_runtime_flags(enemy) -> None:
+    enemy.dynamic.frozen = False
+    enemy.dynamic.frostbite = False
+
+
+def _record_disorder_dot_removal_process(sim_instance: "Simulator") -> None:
+    sim_instance.schedule_data.change_process_state()
 
 
 def check_anomaly_bar(enemy):

@@ -972,8 +972,19 @@ def test_update_anomaly_runtime_layers_are_split_into_helpers():
         "_broadcast_active_anomaly",
         "_process_new_or_replaced_anomaly",
         "_process_disorder_anomaly",
+        "_collect_disorder_dots_to_remove",
+        "_publish_freeze_follow_up_for_removed_dot",
+        "_remove_disorder_dot_from_runtime",
+        "_record_disorder_dot_removal_process",
     }
-    for helper_name in helper_names:
+    update_helper_names = {
+        "_record_decibel_update",
+        "_activate_anomaly_state",
+        "_broadcast_active_anomaly",
+        "_process_new_or_replaced_anomaly",
+        "_process_disorder_anomaly",
+    }
+    for helper_name in update_helper_names:
         assert f"{helper_name}(" in update_source
 
     inline_forbidden_terms = {
@@ -1000,9 +1011,82 @@ def test_update_anomaly_runtime_layers_are_split_into_helpers():
     )
     assert "anomaly_effect_active" in helper_sources["_process_new_or_replaced_anomaly"]
     assert "anomaly_effect_active" in helper_sources["_process_disorder_anomaly"]
+    assert "remove_dots_cause_disorder" in helper_sources["_process_disorder_anomaly"]
     assert "_record_decibel_update(sim_instance, skill_node, \"disorder\")" in helper_sources[
         "_process_disorder_anomaly"
     ]
+    assert "dot_runtime_state.snapshot()" in helper_sources["_collect_disorder_dots_to_remove"]
+    assert "_publish_scheduled_event" in helper_sources[
+        "_publish_freeze_follow_up_for_removed_dot"
+    ]
+    assert "dot_runtime_state.remove_all" in helper_sources[
+        "_remove_disorder_dot_from_runtime"
+    ]
+    assert "change_process_state" in helper_sources["_record_disorder_dot_removal_process"]
+
+
+def test_remove_dots_cause_disorder_keeps_publish_and_runtime_removal_helpers_distinct():
+    remove_source = inspect.getsource(update_anomaly_module.remove_dots_cause_disorder)
+    publish_helper_source = inspect.getsource(
+        update_anomaly_module._publish_freeze_follow_up_for_removed_dot
+    )
+    runtime_remove_helper_source = inspect.getsource(
+        update_anomaly_module._remove_disorder_dot_from_runtime
+    )
+    collect_helper_source = inspect.getsource(
+        update_anomaly_module._collect_disorder_dots_to_remove
+    )
+
+    for helper_name in {
+        "_collect_disorder_dots_to_remove",
+        "_publish_freeze_follow_up_for_removed_dot",
+        "_mark_freeze_dot_removed_by_disorder",
+        "_remove_disorder_dot_from_runtime",
+        "_clear_freeze_runtime_flags",
+        "_record_disorder_dot_removal_process",
+    }:
+        assert helper_name in remove_source
+
+    inline_forbidden_terms = {
+        "_publish_scheduled_event",
+        "dot_runtime_state.remove_all",
+        "listener_broadcaster",
+        "broadcast_event",
+        "buff_add_strategy",
+    }
+    for term in inline_forbidden_terms:
+        assert term not in remove_source
+
+    assert "_publish_scheduled_event" in publish_helper_source
+    for term in {
+        "dot_runtime_state",
+        "remove_all",
+        "listener_broadcaster",
+        "broadcast_event",
+        "buff_add_strategy",
+    }:
+        assert term not in publish_helper_source
+
+    assert "dot.end(time_now)" in runtime_remove_helper_source
+    assert "dot_runtime_state.remove_all([dot])" in runtime_remove_helper_source
+    for term in {
+        "_publish_scheduled_event",
+        "listener_broadcaster",
+        "broadcast_event",
+        "buff_add_strategy",
+    }:
+        assert term not in runtime_remove_helper_source
+
+    assert "dot_runtime_state.snapshot()" in collect_helper_source
+    assert "_validate_disorder_dot_can_be_removed" in collect_helper_source
+    for term in {
+        "_publish_scheduled_event",
+        "remove_all",
+        "listener_broadcaster",
+        "broadcast_event",
+        "buff_add_strategy",
+    }:
+        assert term not in collect_helper_source
 
 
 def test_anomaly_effect_active_replaces_same_index_dot_without_scheduled_publish(
@@ -1231,10 +1315,10 @@ def test_anomaly_effect_active_does_not_introduce_runtime_write_ports():
     }
     for term in remove_forbidden_terms:
         assert term not in remove_source
-    assert "_publish_scheduled_event" in remove_source
+    assert "_publish_freeze_follow_up_for_removed_dot" in remove_source
+    assert "_remove_disorder_dot_from_runtime" in remove_source
+    assert "_record_disorder_dot_removal_process" in remove_source
     assert "DotRuntimeStateAdapter.from_enemy" in remove_source
-    assert "remove_all" in remove_source
-    assert "change_process_state" in remove_source
 
     buff_add_forbidden_terms = {
         "ScheduleDispatchPort",
