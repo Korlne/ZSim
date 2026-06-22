@@ -71,7 +71,7 @@ def _make_minimal_sim(
     enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_debuff_list=[]))
     sim.load_data = SimpleNamespace(
         exist_buff_dict=exist_buff_dict,
-        LOADING_BUFF_DICT=loading_buff_dict,
+        pending_buff_queue=loading_buff_dict,
         load_mission_dict={},
         name_dict={},
         action_stack=object(),
@@ -317,7 +317,7 @@ def test_buff_load_loop_records_count_only_when_opted_in() -> None:
         load_mission_dict={},
         existbuff_dict={},
         character_name_box=[],
-        LOADING_BUFF_DICT=loading_buff_dict,
+        pending_buff_queue=loading_buff_dict,
         all_name_order_box={},
         sim_instance=sim,
     )
@@ -332,7 +332,7 @@ def test_buff_load_loop_records_count_only_when_opted_in() -> None:
         load_mission_dict={},
         existbuff_dict={},
         character_name_box=[],
-        LOADING_BUFF_DICT=loading_buff_dict,
+        pending_buff_queue=loading_buff_dict,
         all_name_order_box={},
         sim_instance=sim,
     )
@@ -367,23 +367,23 @@ def test_buff_load_loop_records_opt_in_scan_metric_shape(
         sub_exist_buff_dict: dict[str, Any],
         mission: Any,
         time_now: int,
-        LOADING_BUFF_DICT: dict[str, list[Any]],
+        pending_buff_queue: dict[str, list[Any]],
         all_name_order_box: dict[str, Any],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
     ) -> None:
-        LOADING_BUFF_DICT["alpha"].append("alpha-pending")
+        pending_buff_queue["alpha"].append("alpha-pending")
 
     def fake_process_backend_buff(
         sub_exist_buff_dict: dict[str, Any],
         all_name_order_box: dict[str, Any],
         mission: Any,
         time_now: int,
-        LOADING_BUFF_DICT: dict[str, list[Any]],
+        pending_buff_queue: dict[str, list[Any]],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
     ) -> None:
-        LOADING_BUFF_DICT["bravo"].append("bravo-pending")
+        pending_buff_queue["bravo"].append("bravo-pending")
 
     summary_calls: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
     original_summary = buff_load_module._summarize_buff_load_loop_candidate_plan
@@ -442,7 +442,7 @@ def test_buff_load_loop_records_opt_in_scan_metric_shape(
             "enemy": {"enemy-a": object()},
         },
         character_name_box=["alpha", "bravo"],
-        LOADING_BUFF_DICT=loading_buff_dict,
+        pending_buff_queue=loading_buff_dict,
         all_name_order_box={
             "alpha": ["alpha", "bravo", "enemy"],
             "bravo": ["bravo", "alpha", "enemy"],
@@ -538,27 +538,27 @@ def test_buff_load_loop_opt_in_metrics_use_summary_without_detailed_plan(
         sub_exist_buff_dict: dict[str, Any],
         mission: Any,
         time_now: int,
-        LOADING_BUFF_DICT: dict[str, list[Any]],
+        pending_buff_queue: dict[str, list[Any]],
         all_name_order_box: dict[str, Any],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
     ) -> None:
         owner = registry_owner_by_id[id(sub_exist_buff_dict)]
         calls.append(("on_field", mission.name, owner, tuple(sub_exist_buff_dict)))
-        LOADING_BUFF_DICT[owner].append(f"on:{mission.name}:{time_now}")
+        pending_buff_queue[owner].append(f"on:{mission.name}:{time_now}")
 
     def fake_process_backend_buff(
         sub_exist_buff_dict: dict[str, Any],
         all_name_order_box: dict[str, Any],
         mission: Any,
         time_now: int,
-        LOADING_BUFF_DICT: dict[str, list[Any]],
+        pending_buff_queue: dict[str, list[Any]],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
     ) -> None:
         owner = registry_owner_by_id[id(sub_exist_buff_dict)]
         calls.append(("backend", mission.name, owner, tuple(sub_exist_buff_dict)))
-        LOADING_BUFF_DICT[owner].append(f"back:{mission.name}:{time_now}")
+        pending_buff_queue[owner].append(f"back:{mission.name}:{time_now}")
 
     monkeypatch.setattr(load_module, "LoadingMission", FakeLoadingMission)
     monkeypatch.setattr(
@@ -595,7 +595,7 @@ def test_buff_load_loop_opt_in_metrics_use_summary_without_detailed_plan(
         load_mission_dict=load_mission_dict,
         existbuff_dict=existbuff_dict,
         character_name_box=character_name_box,
-        LOADING_BUFF_DICT=loading_buff_dict,
+        pending_buff_queue=loading_buff_dict,
         all_name_order_box={},
         sim_instance=sim,
     )
@@ -697,7 +697,7 @@ def test_buff_load_loop_metrics_preserve_queue_order_and_zero_mismatch(
         sub_exist_buff_dict: dict[str, Any],
         mission: Any,
         time_now: int,
-        LOADING_BUFF_DICT: dict[str, list[Any]],
+        pending_buff_queue: dict[str, list[Any]],
         all_name_order_box: dict[str, Any],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
@@ -706,14 +706,14 @@ def test_buff_load_loop_metrics_preserve_queue_order_and_zero_mismatch(
         sim_instance._observed_buff_load_calls.append(
             ("on_field", mission.name, owner, tuple(sub_exist_buff_dict))
         )
-        LOADING_BUFF_DICT[owner].append(f"on:{mission.name}:{owner}:{time_now}")
+        pending_buff_queue[owner].append(f"on:{mission.name}:{owner}:{time_now}")
 
     def fake_process_backend_buff(
         sub_exist_buff_dict: dict[str, Any],
         all_name_order_box: dict[str, Any],
         mission: Any,
         time_now: int,
-        LOADING_BUFF_DICT: dict[str, list[Any]],
+        pending_buff_queue: dict[str, list[Any]],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
     ) -> None:
@@ -721,7 +721,7 @@ def test_buff_load_loop_metrics_preserve_queue_order_and_zero_mismatch(
         sim_instance._observed_buff_load_calls.append(
             ("backend", mission.name, owner, tuple(sub_exist_buff_dict))
         )
-        LOADING_BUFF_DICT[owner].append(f"back:{mission.name}:{owner}:{time_now}")
+        pending_buff_queue[owner].append(f"back:{mission.name}:{owner}:{time_now}")
 
     monkeypatch.setattr(load_module, "LoadingMission", FakeLoadingMission)
     monkeypatch.setattr(
@@ -793,7 +793,7 @@ def test_buff_load_loop_metrics_preserve_queue_order_and_zero_mismatch(
             load_mission_dict=load_mission_dict,
             existbuff_dict=existbuff_dict,
             character_name_box=character_name_box,
-            LOADING_BUFF_DICT=loading_buff_dict,
+            pending_buff_queue=loading_buff_dict,
             all_name_order_box={},
             sim_instance=sim,
         )
@@ -812,7 +812,7 @@ def test_buff_load_loop_metrics_preserve_queue_order_and_zero_mismatch(
     ]
 
 
-def test_buff_load_loop_resets_pending_queue_in_character_order_and_returns_same_object(
+def test_buff_load_loop_raw_dict_compat_adapter_resets_pending_queue_in_order(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class FakeLoadingMission:
@@ -827,7 +827,7 @@ def test_buff_load_loop_resets_pending_queue_in_character_order_and_returns_same
         load_mission_dict={},
         existbuff_dict={},
         character_name_box=["alpha", "bravo", "charlie"],
-        LOADING_BUFF_DICT=loading_buff_dict,
+        pending_buff_queue=loading_buff_dict,
         all_name_order_box={},
         sim_instance=sim,
     )
@@ -838,6 +838,89 @@ def test_buff_load_loop_resets_pending_queue_in_character_order_and_returns_same
         "alpha": [],
         "bravo": [],
         "charlie": [],
+        "enemy": [],
+    }
+
+
+def test_buff_load_loop_owner_backed_steps_enqueue_through_pending_owner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeLoadingMission:
+        def __init__(self, mission_character: str) -> None:
+            self.mission_character = mission_character
+
+    class TrackingPendingBuffQueue(PendingBuffQueue):
+        def __init__(self, queues: dict[str, list[Any]]) -> None:
+            super().__init__(queues)
+            self.enqueue_calls: list[tuple[str, Any]] = []
+
+        def enqueue(self, beneficiary: str, buff: Any) -> None:
+            self.enqueue_calls.append((beneficiary, buff))
+            super().enqueue(beneficiary, buff)
+
+    def fake_process_on_field_buff(
+        sub_exist_buff_dict: dict[str, Any],
+        mission: Any,
+        time_now: int,
+        pending_buff_queue: PendingBuffQueue,
+        all_name_order_box: dict[str, Any],
+        exist_buff_dict: dict[str, dict[str, Any]],
+        sim_instance: Any,
+    ) -> None:
+        buff_load_module._enqueue_pending_buff(
+            pending_buff_queue,
+            mission.mission_character,
+            f"on:{time_now}",
+        )
+
+    def fake_process_backend_buff(
+        sub_exist_buff_dict: dict[str, Any],
+        all_name_order_box: dict[str, Any],
+        mission: Any,
+        time_now: int,
+        pending_buff_queue: PendingBuffQueue,
+        exist_buff_dict: dict[str, dict[str, Any]],
+        sim_instance: Any,
+    ) -> None:
+        buff_load_module._enqueue_pending_buff(
+            pending_buff_queue,
+            "bravo",
+            f"back:{time_now}",
+        )
+
+    monkeypatch.setattr(load_module, "LoadingMission", FakeLoadingMission)
+    monkeypatch.setattr(
+        buff_load_module,
+        "process_on_field_buff",
+        fake_process_on_field_buff,
+    )
+    monkeypatch.setattr(
+        buff_load_module,
+        "process_backend_buff",
+        fake_process_backend_buff,
+    )
+    loading_buff_dict: dict[str, list[Any]] = {}
+    pending_owner = TrackingPendingBuffQueue(loading_buff_dict)
+    sim = cast(Any, Simulator())
+
+    result = BuffLoadLoop(
+        time_now=9,
+        load_mission_dict={"mission": FakeLoadingMission("alpha")},
+        existbuff_dict={"alpha": {"alpha-buff": object()}, "bravo": {"bravo-buff": object()}},
+        character_name_box=["alpha", "bravo"],
+        pending_buff_queue=pending_owner,
+        all_name_order_box={},
+        sim_instance=sim,
+    )
+
+    assert result is loading_buff_dict
+    assert pending_owner.enqueue_calls == [
+        ("alpha", "on:9"),
+        ("bravo", "back:9"),
+    ]
+    assert loading_buff_dict == {
+        "alpha": ["on:9"],
+        "bravo": ["back:9"],
         "enemy": [],
     }
 
@@ -874,7 +957,7 @@ def test_buff_load_loop_uses_pending_owner_reset_and_count(
         load_mission_dict={},
         existbuff_dict={},
         character_name_box=["alpha", "bravo"],
-        LOADING_BUFF_DICT=pending_owner,
+        pending_buff_queue=pending_owner,
         all_name_order_box={},
         sim_instance=sim,
     )
@@ -920,7 +1003,7 @@ def test_buff_load_loop_visits_mission_registries_in_character_order(
         sub_exist_buff_dict: dict[str, Any],
         mission: Any,
         time_now: int,
-        LOADING_BUFF_DICT: dict[str, list[Any]],
+        pending_buff_queue: dict[str, list[Any]],
         all_name_order_box: dict[str, Any],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
@@ -939,7 +1022,7 @@ def test_buff_load_loop_visits_mission_registries_in_character_order(
         all_name_order_box: dict[str, Any],
         mission: Any,
         time_now: int,
-        LOADING_BUFF_DICT: dict[str, list[Any]],
+        pending_buff_queue: dict[str, list[Any]],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
     ) -> None:
@@ -972,7 +1055,7 @@ def test_buff_load_loop_visits_mission_registries_in_character_order(
         },
         existbuff_dict=existbuff_dict,
         character_name_box=["alpha", "bravo", "charlie"],
-        LOADING_BUFF_DICT={},
+        pending_buff_queue={},
         all_name_order_box={},
         sim_instance=cast(Any, Simulator()),
     )
@@ -1310,7 +1393,7 @@ def test_buff_load_loop_candidate_plan_matches_current_scan_order(
         sub_exist_buff_dict: dict[str, Any],
         mission: Any,
         time_now: int,
-        LOADING_BUFF_DICT: dict[str, list[Any]],
+        pending_buff_queue: dict[str, list[Any]],
         all_name_order_box: dict[str, Any],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
@@ -1329,7 +1412,7 @@ def test_buff_load_loop_candidate_plan_matches_current_scan_order(
         all_name_order_box: dict[str, Any],
         mission: Any,
         time_now: int,
-        LOADING_BUFF_DICT: dict[str, list[Any]],
+        pending_buff_queue: dict[str, list[Any]],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
     ) -> None:
@@ -1375,7 +1458,7 @@ def test_buff_load_loop_candidate_plan_matches_current_scan_order(
         load_mission_dict=load_mission_dict,
         existbuff_dict=existbuff_dict,
         character_name_box=character_name_box,
-        LOADING_BUFF_DICT={},
+        pending_buff_queue={},
         all_name_order_box={},
         sim_instance=cast(Any, Simulator()),
     )
@@ -1448,7 +1531,7 @@ def test_buff_load_loop_opt_in_candidate_iterator_matches_default_without_plan(
         sub_exist_buff_dict: dict[str, Any],
         mission: Any,
         time_now: int,
-        LOADING_BUFF_DICT: dict[str, list[Any]],
+        pending_buff_queue: dict[str, list[Any]],
         all_name_order_box: dict[str, Any],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
@@ -1457,14 +1540,14 @@ def test_buff_load_loop_opt_in_candidate_iterator_matches_default_without_plan(
         sim_instance._observed_buff_load_calls.append(
             ("on_field", mission.name, owner, tuple(sub_exist_buff_dict))
         )
-        LOADING_BUFF_DICT[owner].append(f"on:{mission.name}:{owner}:{time_now}")
+        pending_buff_queue[owner].append(f"on:{mission.name}:{owner}:{time_now}")
 
     def fake_process_backend_buff(
         sub_exist_buff_dict: dict[str, Any],
         all_name_order_box: dict[str, Any],
         mission: Any,
         time_now: int,
-        LOADING_BUFF_DICT: dict[str, list[Any]],
+        pending_buff_queue: dict[str, list[Any]],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
     ) -> None:
@@ -1472,7 +1555,7 @@ def test_buff_load_loop_opt_in_candidate_iterator_matches_default_without_plan(
         sim_instance._observed_buff_load_calls.append(
             ("backend", mission.name, owner, tuple(sub_exist_buff_dict))
         )
-        LOADING_BUFF_DICT[owner].append(f"back:{mission.name}:{owner}:{time_now}")
+        pending_buff_queue[owner].append(f"back:{mission.name}:{owner}:{time_now}")
 
     monkeypatch.setattr(load_module, "LoadingMission", FakeLoadingMission)
     monkeypatch.setattr(
@@ -1503,7 +1586,7 @@ def test_buff_load_loop_opt_in_candidate_iterator_matches_default_without_plan(
         load_mission_dict=load_mission_dict,
         existbuff_dict=existbuff_dict,
         character_name_box=character_name_box,
-        LOADING_BUFF_DICT=default_pending,
+        pending_buff_queue=default_pending,
         all_name_order_box={},
         sim_instance=default_sim,
     )
@@ -1512,7 +1595,7 @@ def test_buff_load_loop_opt_in_candidate_iterator_matches_default_without_plan(
         load_mission_dict=load_mission_dict,
         existbuff_dict=existbuff_dict,
         character_name_box=character_name_box,
-        LOADING_BUFF_DICT=opt_in_pending,
+        pending_buff_queue=opt_in_pending,
         all_name_order_box={},
         sim_instance=opt_in_sim,
     )
@@ -1578,14 +1661,14 @@ def test_buff_load_loop_opt_in_candidate_iterator_is_not_cached_between_calls(
         sub_exist_buff_dict: dict[str, Any],
         mission: Any,
         time_now: int,
-        LOADING_BUFF_DICT: dict[str, list[Any]],
+        pending_buff_queue: dict[str, list[Any]],
         all_name_order_box: dict[str, Any],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
     ) -> None:
         keys = tuple(sub_exist_buff_dict)
         calls.append(keys)
-        LOADING_BUFF_DICT["alpha"].append(keys)
+        pending_buff_queue["alpha"].append(keys)
 
     def fail_backend_call(*args: Any, **kwargs: Any) -> None:
         raise AssertionError("single-character on-field case should not call backend")
@@ -1612,7 +1695,7 @@ def test_buff_load_loop_opt_in_candidate_iterator_is_not_cached_between_calls(
         load_mission_dict=load_mission_dict,
         existbuff_dict=existbuff_dict,
         character_name_box=["alpha"],
-        LOADING_BUFF_DICT=loading_buff_dict,
+        pending_buff_queue=loading_buff_dict,
         all_name_order_box={},
         sim_instance=sim,
     )
@@ -1623,7 +1706,7 @@ def test_buff_load_loop_opt_in_candidate_iterator_is_not_cached_between_calls(
         load_mission_dict=load_mission_dict,
         existbuff_dict=existbuff_dict,
         character_name_box=["alpha"],
-        LOADING_BUFF_DICT=loading_buff_dict,
+        pending_buff_queue=loading_buff_dict,
         all_name_order_box={},
         sim_instance=sim,
     )
@@ -1664,7 +1747,7 @@ def test_buff_load_processing_helpers_own_candidate_filters(
         mission: Any,
         time_now: int,
         selected_characters: list[str],
-        LOADING_BUFF_DICT: dict[str, list[Any]],
+        pending_buff_queue: dict[str, list[Any]],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
     ) -> None:
@@ -1825,17 +1908,17 @@ def test_buff_runtime_facade_load_pending_buffs_passes_pending_owner(
         load_mission_dict: dict[str, Any],
         existbuff_dict: dict[str, dict[str, Any]],
         character_name_box: list[str],
-        LOADING_BUFF_DICT: PendingBuffQueue,
+        pending_buff_queue: PendingBuffQueue,
         all_name_order_box: dict[str, Any],
         sim_instance: Any,
     ) -> dict[str, list[Any]]:
         captured["time_now"] = time_now
         captured["existbuff_dict"] = existbuff_dict
-        captured["pending_owner"] = LOADING_BUFF_DICT
+        captured["pending_owner"] = pending_buff_queue
         captured["sim_instance"] = sim_instance
-        LOADING_BUFF_DICT.reset_for_beneficiaries([*character_name_box, "enemy"])
-        LOADING_BUFF_DICT.enqueue("alpha", "pending-alpha")
-        return cast(dict[str, list[Any]], LOADING_BUFF_DICT.as_compat_dict())
+        pending_buff_queue.reset_for_beneficiaries([*character_name_box, "enemy"])
+        pending_buff_queue.enqueue("alpha", "pending-alpha")
+        return cast(dict[str, list[Any]], pending_buff_queue.as_compat_dict())
 
     monkeypatch.setattr(buff_load_module, "BuffLoadLoop", fake_buff_load_loop)
 

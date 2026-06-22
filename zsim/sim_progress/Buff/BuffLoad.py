@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from zsim.sim_progress.ScheduledEvent.buff_runtime import PendingBuffQueue
     from zsim.simulator.simulator_class import Simulator
 
-    PendingQueueLike: TypeAlias = PendingBuffQueue | dict[str, list[Buff]]
+    PendingQueueLike: TypeAlias = PendingBuffQueue | _LegacyPendingQueueCompatAdapter
 else:
     PendingQueueLike = object
 
@@ -58,7 +58,7 @@ def process_buff(
     mission,
     time_now,
     selected_characters,
-    LOADING_BUFF_DICT,
+    pending_buff_queue,
     exist_buff_dict: dict,
     sim_instance: "Simulator",
 ):
@@ -103,7 +103,7 @@ def process_buff(
                     buff_new.ft.passively_updating = buff_0.ft.passively_updating
                     buff_new.ft.beneficiary = buff_0.ft.beneficiary
                     if buff_new.dy.is_changed:
-                        _enqueue_pending_buff(LOADING_BUFF_DICT, char, buff_new)
+                        _enqueue_pending_buff(pending_buff_queue, char, buff_new)
                         """
                         这里要注意：process_buff函数中传入的buff_0，只会来自于角色，
                         所以，如果有上个Enemy的debuff，那么角色自身作为触发源头，正常更新以外，
@@ -125,48 +125,67 @@ def process_buff(
                 buff_new.ft.operator = buff_0.ft.operator
                 buff_new.ft.passively_updating = buff_0.ft.passively_updating
                 buff_new.ft.beneficiary = buff_0.ft.beneficiary
-                _enqueue_pending_buff(LOADING_BUFF_DICT, char, buff_new)
+                _enqueue_pending_buff(pending_buff_queue, char, buff_new)
                 if char == "enemy":
                     enemy_buff_0 = exist_buff_dict["enemy"][buff_0.ft.index]
                     buff_new.update_to_buff_0(enemy_buff_0)
 
 
+class _LegacyPendingQueueCompatAdapter:
+    """Migration/test-only adapter for raw pending dict callers."""
+
+    def __init__(self, queues: dict[str, list[Buff]]) -> None:
+        self._queues = queues
+
+    def reset_for_beneficiaries(self, beneficiaries: list[str]) -> None:
+        for beneficiary in beneficiaries:
+            self._queues[beneficiary] = []
+
+    def enqueue(self, beneficiary: str, buff: Buff) -> None:
+        self._queues[beneficiary].append(buff)
+
+    def count(self) -> int:
+        return sum(len(queue) for queue in self._queues.values())
+
+    def as_compat_dict(self) -> dict[str, list[Buff]]:
+        return self._queues
+
+    def __getitem__(self, beneficiary: str) -> list[Buff]:
+        return self._queues[beneficiary]
+
+    def __setitem__(self, beneficiary: str, queue: list[Buff]) -> None:
+        self._queues[beneficiary] = queue
+
+
+def _pending_queue_owner_for_migration_tests(
+    pending_buff_queue: PendingQueueLike | dict[str, list[Buff]],
+) -> PendingQueueLike:
+    if hasattr(pending_buff_queue, "reset_for_beneficiaries"):
+        return pending_buff_queue
+    return _LegacyPendingQueueCompatAdapter(pending_buff_queue)
+
+
 def _reset_pending_queues(
-    pending_queues: PendingQueueLike,
+    pending_queue_owner: PendingQueueLike,
     beneficiaries: list[str],
 ) -> None:
-    reset = getattr(pending_queues, "reset_for_beneficiaries", None)
-    if reset is not None:
-        reset(beneficiaries)
-        return
-    for beneficiary in beneficiaries:
-        pending_queues[beneficiary] = []
+    pending_queue_owner.reset_for_beneficiaries(beneficiaries)
 
 
 def _enqueue_pending_buff(
-    pending_queues: PendingQueueLike,
+    pending_queue_owner: PendingQueueLike,
     beneficiary: str,
     buff: Buff,
 ) -> None:
-    enqueue = getattr(pending_queues, "enqueue", None)
-    if enqueue is not None:
-        enqueue(beneficiary, buff)
-        return
-    pending_queues[beneficiary].append(buff)
+    pending_queue_owner.enqueue(beneficiary, buff)
 
 
-def _count_pending_buffs(pending_queues: PendingQueueLike) -> int:
-    count = getattr(pending_queues, "count", None)
-    if count is not None:
-        return int(count())
-    return sum(len(queue) for queue in pending_queues.values())
+def _count_pending_buffs(pending_queue_owner: PendingQueueLike) -> int:
+    return int(pending_queue_owner.count())
 
 
-def _pending_queue_result(pending_queues: PendingQueueLike) -> dict[str, list[Buff]]:
-    as_compat_dict = getattr(pending_queues, "as_compat_dict", None)
-    if as_compat_dict is not None:
-        return as_compat_dict()
-    return pending_queues
+def _pending_queue_result(pending_queue_owner: PendingQueueLike) -> dict[str, list[Buff]]:
+    return pending_queue_owner.as_compat_dict()
 
 
 def _record_buff_load_loop_scan_metrics(
@@ -386,7 +405,7 @@ def _execute_buff_load_loop_candidate_step(
     registry: dict,
     mission: "LoadingMission",
     time_now: int,
-    pending_queues: PendingQueueLike,
+    pending_buff_queue: PendingQueueLike,
     all_name_order_box: dict,
     registry_by_character: dict,
     sim_instance: "Simulator",
@@ -396,7 +415,7 @@ def _execute_buff_load_loop_candidate_step(
             registry,
             mission,
             time_now,
-            pending_queues,
+            pending_buff_queue,
             all_name_order_box,
             registry_by_character,
             sim_instance=sim_instance,
@@ -408,7 +427,7 @@ def _execute_buff_load_loop_candidate_step(
             all_name_order_box,
             mission,
             time_now,
-            pending_queues,
+            pending_buff_queue,
             registry_by_character,
             sim_instance=sim_instance,
         )
@@ -421,20 +440,20 @@ def BuffLoadLoop(
     load_mission_dict: dict,
     existbuff_dict: dict,
     character_name_box: list,
-    LOADING_BUFF_DICT: PendingQueueLike,
+    pending_buff_queue: PendingQueueLike,
     all_name_order_box: dict,
     sim_instance: "Simulator",
 ):
     """
     这是buff修改三部曲的第二步,也是最核心的一个步骤，
-    该函数会向外抛出LOADING_BUFF_DICT——本tick触发了多少BUFF/DEBUFF，并且移交给BuffAdd函数，执行buff的添加。
+    该函数会通过 runtime-owned pending queue 记录本tick触发了多少BUFF/DEBUFF，
+    并移交给 pending activation 执行buff的添加。
     本函数的核心调用函数是ProcessBuff函数。
     """
-    # 初始化LOADING_BUFF_DICT
     from zsim.sim_progress.Load import LoadingMission
 
     buff_registry_by_character = existbuff_dict
-    pending_queues = LOADING_BUFF_DICT
+    pending_queue_owner = _pending_queue_owner_for_migration_tests(pending_buff_queue)
     record_rebuild_count = getattr(sim_instance, "_record_buff_runtime_rebuild_count", None)
     if record_rebuild_count is not None:
         record_rebuild_count("buff_load_loop")
@@ -451,7 +470,7 @@ def BuffLoadLoop(
         )
 
     all_name_box = character_name_box + ["enemy"]
-    _reset_pending_queues(pending_queues, all_name_box)
+    _reset_pending_queues(pending_queue_owner, all_name_box)
 
     candidate_plan = None
     if use_indexed_execution:
@@ -477,7 +496,7 @@ def BuffLoadLoop(
                 registry=registry,
                 mission=mission,
                 time_now=time_now,
-                pending_queues=pending_queues,
+                pending_buff_queue=pending_queue_owner,
                 all_name_order_box=all_name_order_box,
                 registry_by_character=buff_registry_by_character,
                 sim_instance=sim_instance,
@@ -507,7 +526,7 @@ def BuffLoadLoop(
                         registry,
                         mission,
                         time_now,
-                        pending_queues,
+                        pending_queue_owner,
                         all_name_order_box,
                         buff_registry_by_character,
                         sim_instance=sim_instance,
@@ -518,7 +537,7 @@ def BuffLoadLoop(
                         all_name_order_box,
                         mission,
                         time_now,
-                        pending_queues,
+                        pending_queue_owner,
                         buff_registry_by_character,
                         sim_instance=sim_instance,
                     )
@@ -537,17 +556,17 @@ def BuffLoadLoop(
             trigger_candidate_count=trigger_candidate_count,
             on_field_candidate_count=on_field_candidate_count,
             backend_candidate_count=backend_candidate_count,
-            pending_queue_count=_count_pending_buffs(pending_queues),
+            pending_queue_count=_count_pending_buffs(pending_queue_owner),
             candidate_plan=candidate_plan,
         )
-    return _pending_queue_result(pending_queues)
+    return _pending_queue_result(pending_queue_owner)
 
 
 def process_on_field_buff(
     sub_exist_buff_dict: dict,
     mission: "LoadingMission",
     time_now: int,
-    LOADING_BUFF_DICT: dict,
+    pending_buff_queue: PendingQueueLike,
     all_name_order_box: dict,
     exist_buff_dict: dict,
     sim_instance: "Simulator",
@@ -579,7 +598,7 @@ def process_on_field_buff(
             mission,
             time_now,
             selected_characters,
-            LOADING_BUFF_DICT,
+            pending_buff_queue,
             exist_buff_dict,
             sim_instance=sim_instance,
         )
@@ -590,7 +609,7 @@ def process_backend_buff(
     all_name_order_box: dict,
     mission: "LoadingMission",
     time_now: int,
-    LOADING_BUFF_DICT: dict,
+    pending_buff_queue: PendingQueueLike,
     exist_buff_dict: dict,
     sim_instance: "Simulator",
 ):
@@ -624,7 +643,7 @@ def process_backend_buff(
             mission,
             time_now,
             selected_characters_back,
-            LOADING_BUFF_DICT,
+            pending_buff_queue,
             exist_buff_dict,
             sim_instance=sim_instance,
         )
