@@ -252,6 +252,42 @@ def _describe_buff_load_loop_candidate_plan(
     }
 
 
+def _execute_buff_load_loop_candidate_step(
+    *,
+    processor: str,
+    registry: dict,
+    mission: "LoadingMission",
+    time_now: int,
+    pending_queues: dict,
+    all_name_order_box: dict,
+    registry_by_character: dict,
+    sim_instance: "Simulator",
+) -> None:
+    if processor == "on_field":
+        process_on_field_buff(
+            registry,
+            mission,
+            time_now,
+            pending_queues,
+            all_name_order_box,
+            registry_by_character,
+            sim_instance=sim_instance,
+        )
+        return
+    if processor == "backend":
+        process_backend_buff(
+            registry,
+            all_name_order_box,
+            mission,
+            time_now,
+            pending_queues,
+            registry_by_character,
+            sim_instance=sim_instance,
+        )
+        return
+    raise ValueError(f"未知的BuffLoadLoop候选执行器：{processor}")
+
+
 def BuffLoadLoop(
     time_now: int,
     load_mission_dict: dict,
@@ -270,10 +306,12 @@ def BuffLoadLoop(
     from zsim.sim_progress.Load import LoadingMission
 
     buff_registry_by_character = existbuff_dict
+    pending_queues = LOADING_BUFF_DICT
     record_rebuild_count = getattr(sim_instance, "_record_buff_runtime_rebuild_count", None)
     if record_rebuild_count is not None:
         record_rebuild_count("buff_load_loop")
     record_scan_metrics = getattr(sim_instance, "_buff_runtime_rebuild_counts", None) is not None
+    use_indexed_execution = bool(getattr(sim_instance, "use_indexed_buff_load_loop", False))
     registered_buff_count = 0
     trigger_candidate_count = 0
     on_field_candidate_count = 0
@@ -286,52 +324,82 @@ def BuffLoadLoop(
 
     all_name_box = character_name_box + ["enemy"]
     for character in all_name_box:
-        LOADING_BUFF_DICT[character] = []
-    # 遍历load_mission_dict中的任务
-    for mission in load_mission_dict.values():
-        if not isinstance(mission, LoadingMission):
-            raise TypeError(f"当前{mission}不是LoadingMission类！")
-        actor_name = mission.mission_character
-        if actor_name not in buff_registry_by_character:
-            raise ValueError("当前角色的Buff源并未创建！")
-        # 提取当前角色的 Buff 列表
-        # sub_exist_debuff_dict = existbuff_dict['enemy']
+        pending_queues[character] = []
 
-        for char_name in character_name_box:
-            sub_exist_buff_dict = buff_registry_by_character[char_name]
-            candidate_count = len(sub_exist_buff_dict)
-            if record_scan_metrics:
-                trigger_candidate_count += candidate_count
-                if char_name == actor_name:
-                    on_field_candidate_count += candidate_count
-                else:
-                    backend_candidate_count += candidate_count
-            if char_name == actor_name:
-                process_on_field_buff(
-                    sub_exist_buff_dict,
-                    mission,
-                    time_now,
-                    LOADING_BUFF_DICT,
-                    all_name_order_box,
-                    buff_registry_by_character,
-                    sim_instance=sim_instance,
-                )
-            else:
-                process_backend_buff(
-                    sub_exist_buff_dict,
-                    all_name_order_box,
-                    mission,
-                    time_now,
-                    LOADING_BUFF_DICT,
-                    buff_registry_by_character,
-                    sim_instance=sim_instance,
-                )
-    if record_scan_metrics:
+    candidate_plan = None
+    if use_indexed_execution:
+        for mission in load_mission_dict.values():
+            if not isinstance(mission, LoadingMission):
+                raise TypeError(f"当前{mission}不是LoadingMission类！")
         candidate_plan = _describe_buff_load_loop_candidate_plan(
             load_mission_dict,
             buff_registry_by_character,
             character_name_box,
         )
+        if record_scan_metrics:
+            trigger_candidate_count = int(candidate_plan["candidate_count"])
+            on_field_candidate_count = int(candidate_plan["on_field_candidate_count"])
+            backend_candidate_count = int(candidate_plan["backend_candidate_count"])
+        for step in candidate_plan["steps"]:
+            mission = load_mission_dict[step["mission_key"]]
+            registry = buff_registry_by_character[step["character_name"]]
+            _execute_buff_load_loop_candidate_step(
+                processor=step["processor"],
+                registry=registry,
+                mission=mission,
+                time_now=time_now,
+                pending_queues=pending_queues,
+                all_name_order_box=all_name_order_box,
+                registry_by_character=buff_registry_by_character,
+                sim_instance=sim_instance,
+            )
+    else:
+        # 遍历load_mission_dict中的任务
+        for mission in load_mission_dict.values():
+            if not isinstance(mission, LoadingMission):
+                raise TypeError(f"当前{mission}不是LoadingMission类！")
+            actor_name = mission.mission_character
+            if actor_name not in buff_registry_by_character:
+                raise ValueError("当前角色的Buff源并未创建！")
+            # 提取当前角色的 Buff 列表
+            # sub_exist_debuff_dict = existbuff_dict['enemy']
+
+            for char_name in character_name_box:
+                registry = buff_registry_by_character[char_name]
+                candidate_count = len(registry)
+                if record_scan_metrics:
+                    trigger_candidate_count += candidate_count
+                    if char_name == actor_name:
+                        on_field_candidate_count += candidate_count
+                    else:
+                        backend_candidate_count += candidate_count
+                if char_name == actor_name:
+                    process_on_field_buff(
+                        registry,
+                        mission,
+                        time_now,
+                        pending_queues,
+                        all_name_order_box,
+                        buff_registry_by_character,
+                        sim_instance=sim_instance,
+                    )
+                else:
+                    process_backend_buff(
+                        registry,
+                        all_name_order_box,
+                        mission,
+                        time_now,
+                        pending_queues,
+                        buff_registry_by_character,
+                        sim_instance=sim_instance,
+                    )
+    if record_scan_metrics:
+        if candidate_plan is None:
+            candidate_plan = _describe_buff_load_loop_candidate_plan(
+                load_mission_dict,
+                buff_registry_by_character,
+                character_name_box,
+            )
         _record_buff_load_loop_scan_metrics(
             sim_instance,
             mission_count=len(load_mission_dict),
@@ -340,10 +408,10 @@ def BuffLoadLoop(
             trigger_candidate_count=trigger_candidate_count,
             on_field_candidate_count=on_field_candidate_count,
             backend_candidate_count=backend_candidate_count,
-            pending_queue_count=sum(len(queue) for queue in LOADING_BUFF_DICT.values()),
+            pending_queue_count=sum(len(queue) for queue in pending_queues.values()),
             candidate_plan=candidate_plan,
         )
-    return LOADING_BUFF_DICT
+    return pending_queues
 
 
 def process_on_field_buff(

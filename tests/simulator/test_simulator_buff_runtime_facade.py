@@ -683,6 +683,120 @@ def test_buff_load_loop_candidate_plan_matches_current_scan_order(
     assert plan["backend_candidate_count"] == 7
 
 
+def test_buff_load_loop_opt_in_candidate_execution_matches_default_call_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeLoadingMission:
+        def __init__(self, name: str, mission_character: str) -> None:
+            self.name = name
+            self.mission_character = mission_character
+
+    existbuff_dict: dict[str, dict[str, Any]] = {
+        "alpha": {"alpha-a": object(), "alpha-b": object()},
+        "bravo": {"bravo-a": object()},
+        "charlie": {"charlie-a": object()},
+    }
+    registry_owner_by_id = {id(registry): owner for owner, registry in existbuff_dict.items()}
+    load_mission_dict = {
+        "first": FakeLoadingMission("first", "bravo"),
+        "second": FakeLoadingMission("second", "alpha"),
+    }
+    character_name_box = ["alpha", "bravo", "charlie"]
+    describe_calls: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
+    original_describe = buff_load_module._describe_buff_load_loop_candidate_plan
+
+    def tracking_describe(
+        load_mission_dict: dict[str, Any],
+        buff_registry_by_character: dict[str, dict[str, Any]],
+        character_name_box: list[str],
+    ) -> dict[str, object]:
+        describe_calls.append((tuple(load_mission_dict), tuple(character_name_box)))
+        return original_describe(
+            load_mission_dict,
+            buff_registry_by_character,
+            character_name_box,
+        )
+
+    def fake_process_on_field_buff(
+        sub_exist_buff_dict: dict[str, Any],
+        mission: Any,
+        time_now: int,
+        LOADING_BUFF_DICT: dict[str, list[Any]],
+        all_name_order_box: dict[str, Any],
+        exist_buff_dict: dict[str, dict[str, Any]],
+        sim_instance: Any,
+    ) -> None:
+        owner = registry_owner_by_id[id(sub_exist_buff_dict)]
+        sim_instance._observed_buff_load_calls.append(
+            ("on_field", mission.name, owner, tuple(sub_exist_buff_dict))
+        )
+        LOADING_BUFF_DICT[owner].append(f"on:{mission.name}:{owner}:{time_now}")
+
+    def fake_process_backend_buff(
+        sub_exist_buff_dict: dict[str, Any],
+        all_name_order_box: dict[str, Any],
+        mission: Any,
+        time_now: int,
+        LOADING_BUFF_DICT: dict[str, list[Any]],
+        exist_buff_dict: dict[str, dict[str, Any]],
+        sim_instance: Any,
+    ) -> None:
+        owner = registry_owner_by_id[id(sub_exist_buff_dict)]
+        sim_instance._observed_buff_load_calls.append(
+            ("backend", mission.name, owner, tuple(sub_exist_buff_dict))
+        )
+        LOADING_BUFF_DICT[owner].append(f"back:{mission.name}:{owner}:{time_now}")
+
+    monkeypatch.setattr(load_module, "LoadingMission", FakeLoadingMission)
+    monkeypatch.setattr(
+        buff_load_module,
+        "_describe_buff_load_loop_candidate_plan",
+        tracking_describe,
+    )
+    monkeypatch.setattr(
+        buff_load_module,
+        "process_on_field_buff",
+        fake_process_on_field_buff,
+    )
+    monkeypatch.setattr(
+        buff_load_module,
+        "process_backend_buff",
+        fake_process_backend_buff,
+    )
+
+    default_sim = cast(Any, Simulator())
+    default_sim._observed_buff_load_calls = []
+    opt_in_sim = cast(Any, Simulator(use_indexed_buff_load_loop=True))
+    opt_in_sim._observed_buff_load_calls = []
+    default_pending: dict[str, list[Any]] = {}
+    opt_in_pending: dict[str, list[Any]] = {}
+
+    default_result = BuffLoadLoop(
+        time_now=10,
+        load_mission_dict=load_mission_dict,
+        existbuff_dict=existbuff_dict,
+        character_name_box=character_name_box,
+        LOADING_BUFF_DICT=default_pending,
+        all_name_order_box={},
+        sim_instance=default_sim,
+    )
+    opt_in_result = BuffLoadLoop(
+        time_now=10,
+        load_mission_dict=load_mission_dict,
+        existbuff_dict=existbuff_dict,
+        character_name_box=character_name_box,
+        LOADING_BUFF_DICT=opt_in_pending,
+        all_name_order_box={},
+        sim_instance=opt_in_sim,
+    )
+
+    assert default_result is default_pending
+    assert opt_in_result is opt_in_pending
+    assert default_pending == opt_in_pending
+    assert default_sim._observed_buff_load_calls == opt_in_sim._observed_buff_load_calls
+    assert describe_calls == [(("first", "second"), ("alpha", "bravo", "charlie"))]
+
+
 def test_buff_load_loop_candidate_plan_is_per_call_snapshot_without_pending_queue_mutation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -720,6 +834,90 @@ def test_buff_load_loop_candidate_plan_is_per_call_snapshot_without_pending_queu
     assert second_steps[0]["candidate_count"] == 2
     assert first_plan["candidate_count"] == 1
     assert second_plan["candidate_count"] == 2
+
+
+def test_buff_load_loop_opt_in_candidate_plan_is_not_cached_between_calls(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeLoadingMission:
+        def __init__(self, mission_character: str) -> None:
+            self.mission_character = mission_character
+
+    calls: list[tuple[str, ...]] = []
+    describe_calls: list[tuple[str, ...]] = []
+    original_describe = buff_load_module._describe_buff_load_loop_candidate_plan
+
+    def tracking_describe(
+        load_mission_dict: dict[str, Any],
+        buff_registry_by_character: dict[str, dict[str, Any]],
+        character_name_box: list[str],
+    ) -> dict[str, object]:
+        describe_calls.append(tuple(buff_registry_by_character["alpha"]))
+        return original_describe(
+            load_mission_dict,
+            buff_registry_by_character,
+            character_name_box,
+        )
+
+    def fake_process_on_field_buff(
+        sub_exist_buff_dict: dict[str, Any],
+        mission: Any,
+        time_now: int,
+        LOADING_BUFF_DICT: dict[str, list[Any]],
+        all_name_order_box: dict[str, Any],
+        exist_buff_dict: dict[str, dict[str, Any]],
+        sim_instance: Any,
+    ) -> None:
+        keys = tuple(sub_exist_buff_dict)
+        calls.append(keys)
+        LOADING_BUFF_DICT["alpha"].append(keys)
+
+    def fail_backend_call(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("single-character on-field case should not call backend")
+
+    monkeypatch.setattr(load_module, "LoadingMission", FakeLoadingMission)
+    monkeypatch.setattr(
+        buff_load_module,
+        "_describe_buff_load_loop_candidate_plan",
+        tracking_describe,
+    )
+    monkeypatch.setattr(
+        buff_load_module,
+        "process_on_field_buff",
+        fake_process_on_field_buff,
+    )
+    monkeypatch.setattr(buff_load_module, "process_backend_buff", fail_backend_call)
+    sim = cast(Any, Simulator(use_indexed_buff_load_loop=True))
+    loading_buff_dict: dict[str, list[Any]] = {"alpha": ["stale-pending"]}
+    existbuff_dict: dict[str, dict[str, Any]] = {"alpha": {"alpha-old": object()}}
+    load_mission_dict = {"first": FakeLoadingMission("alpha")}
+
+    first_result = BuffLoadLoop(
+        time_now=1,
+        load_mission_dict=load_mission_dict,
+        existbuff_dict=existbuff_dict,
+        character_name_box=["alpha"],
+        LOADING_BUFF_DICT=loading_buff_dict,
+        all_name_order_box={},
+        sim_instance=sim,
+    )
+    existbuff_dict["alpha"]["alpha-new"] = object()
+    loading_buff_dict["alpha"].append("stale-between-calls")
+    second_result = BuffLoadLoop(
+        time_now=2,
+        load_mission_dict=load_mission_dict,
+        existbuff_dict=existbuff_dict,
+        character_name_box=["alpha"],
+        LOADING_BUFF_DICT=loading_buff_dict,
+        all_name_order_box={},
+        sim_instance=sim,
+    )
+
+    assert first_result is loading_buff_dict
+    assert second_result is loading_buff_dict
+    assert calls == [("alpha-old",), ("alpha-old", "alpha-new")]
+    assert describe_calls == [("alpha-old",), ("alpha-old", "alpha-new")]
+    assert loading_buff_dict == {"alpha": [("alpha-old", "alpha-new")], "enemy": []}
 
 
 def test_buff_load_processing_helpers_own_candidate_filters(
