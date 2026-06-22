@@ -2596,7 +2596,7 @@ def test_main_loop_keeps_runtime_api_order_before_scheduled_events() -> None:
     assert main_loop_source is not None
     load_index = main_loop_source.index("buff_runtime.load_pending_buffs")
     activate_index = main_loop_source.index("buff_runtime.activate_pending_buffs")
-    scheduled_index = main_loop_source.index("sce = ScE(")
+    scheduled_index = main_loop_source.index("sce = ScE.from_runtime_state(")
     shutdown_index = main_loop_source.index("stop_report_threads()")
 
     assert load_index < activate_index < scheduled_index < shutdown_index

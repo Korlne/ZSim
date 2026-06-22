@@ -87,6 +87,29 @@ class _RuntimeProbe:
         return {}
 
 
+class _FakeScheduledEventFromRuntimeStateMixin:
+    @classmethod
+    def from_runtime_state(
+        cls,
+        *,
+        schedule_data: Any,
+        tick: int,
+        action_stack: Any,
+        buff_runtime_state: BuffRuntimeState,
+        sim_instance: Any,
+    ) -> Any:
+        constructor = cast(Any, cls)
+        return constructor(
+            buff_runtime_state.active_store_for_compat(),
+            schedule_data,
+            tick,
+            buff_runtime_state.template_registry_for_compat(),
+            action_stack,
+            buff_runtime_state=buff_runtime_state,
+            sim_instance=sim_instance,
+        )
+
+
 def _make_minimal_sim(
     order: list[str],
 ) -> tuple[
@@ -192,7 +215,7 @@ def _patch_main_loop_leaf_calls(
         lambda: order.append("stop_report_threads"),
     )
 
-    class FakeScheduledEvent:
+    class FakeScheduledEvent(_FakeScheduledEventFromRuntimeStateMixin):
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             if scheduled_active_views is not None:
                 dynamic_buff = args[0]
@@ -294,7 +317,7 @@ def test_main_loop_no_flag_constructs_default_runtime_facade_and_read_port(
         lambda: order.append("stop_report_threads"),
     )
 
-    class FakeScheduledEvent:
+    class FakeScheduledEvent(_FakeScheduledEventFromRuntimeStateMixin):
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             runtime_state = kwargs["buff_runtime_state"]
             read_port = runtime_state.create_read_port()
@@ -335,6 +358,105 @@ def test_main_loop_no_flag_constructs_default_runtime_facade_and_read_port(
         "load_pending:0",
         "activate_pending:0",
         "scheduled_init",
+        "scheduled_start",
+        "reset_processed_event",
+        "tick_sweep:1",
+        "preload:1",
+        "stop_report_threads",
+    ]
+
+
+def test_main_loop_scheduled_event_call_site_uses_runtime_state_factory() -> None:
+    source_path = Path("zsim/simulator/simulator_class.py")
+    source = source_path.read_text(encoding="utf-8")
+    main_loop_start = source.index("    def main_loop(")
+    main_loop_end = source.index("    def __deepcopy__", main_loop_start)
+    main_loop_source = source[main_loop_start:main_loop_end]
+
+    assert "sce = ScE.from_runtime_state(" in main_loop_source
+    assert "self.global_stats.DYNAMIC_BUFF_DICT" not in main_loop_source
+    assert "self.load_data.exist_buff_dict" not in main_loop_source
+
+
+def test_main_loop_constructs_scheduled_event_from_runtime_state_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    order: list[str] = []
+    runtime = _RuntimeProbe(order)
+    captured: dict[str, Any] = {}
+
+    def fake_create_facade() -> _RuntimeProbe:
+        order.append("create_facade")
+        return runtime
+
+    monkeypatch.setattr(
+        simulator_class,
+        "DamageEventJudge",
+        lambda *args, **kwargs: order.append("damage_judge"),
+    )
+    monkeypatch.setattr(
+        simulator_class,
+        "stop_report_threads",
+        lambda: order.append("stop_report_threads"),
+    )
+
+    class FakeScheduledEvent:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            raise AssertionError("main_loop must use ScE.from_runtime_state(...)")
+
+        @classmethod
+        def from_runtime_state(
+            cls,
+            *,
+            schedule_data: Any,
+            tick: int,
+            action_stack: Any,
+            buff_runtime_state: BuffRuntimeState,
+            sim_instance: Any,
+        ) -> Any:
+            captured["schedule_data"] = schedule_data
+            captured["tick"] = tick
+            captured["action_stack"] = action_stack
+            captured["buff_runtime_state"] = buff_runtime_state
+            captured["sim_instance"] = sim_instance
+            captured["runtime_active_store"] = buff_runtime_state.active_store_for_compat()
+            captured["runtime_registry"] = buff_runtime_state.template_registry_for_compat()
+            order.append("scheduled_factory")
+            return cls.__new__(cls)
+
+        def event_start(self) -> None:
+            order.append("scheduled_start")
+
+    monkeypatch.setattr(simulator_class, "ScE", FakeScheduledEvent)
+    sim, exist_buff_dict, _, dynamic_buff_dict, enemy = _make_minimal_sim(order)
+    stale_registry = {"alpha": {"stale-template": object()}, "enemy": {}}
+    stale_active_store = {"alpha": ["stale-active"], "enemy": []}
+    sim.load_data.exist_buff_dict = stale_registry
+    sim.global_stats.DYNAMIC_BUFF_DICT = stale_active_store
+    monkeypatch.setattr(sim.buff_runtime_state, "create_facade", fake_create_facade)
+
+    sim.main_loop(stop_tick=1, use_api=True)
+
+    assert captured["schedule_data"] is sim.schedule_data
+    assert captured["tick"] == 0
+    assert captured["action_stack"] is sim.load_data.action_stack
+    assert captured["buff_runtime_state"] is sim.buff_runtime_state
+    assert captured["sim_instance"] is sim
+    assert captured["runtime_active_store"] is dynamic_buff_dict
+    assert captured["runtime_registry"] is exist_buff_dict
+    assert captured["runtime_active_store"] is not stale_active_store
+    assert captured["runtime_registry"] is not stale_registry
+    assert runtime.calls == [(0, enemy), (1, enemy)]
+    assert runtime.load_ticks == [0]
+    assert runtime.activation_ticks == [0]
+    assert order == [
+        "create_facade",
+        "tick_sweep:0",
+        "preload:0",
+        "damage_judge",
+        "load_pending:0",
+        "activate_pending:0",
+        "scheduled_factory",
         "scheduled_start",
         "reset_processed_event",
         "tick_sweep:1",
@@ -425,7 +547,7 @@ def test_main_loop_oracle_preserves_order_through_stop_tick_and_reset(
     )
     monkeypatch.setattr("builtins.print", fake_print)
 
-    class FakeScheduledEvent:
+    class FakeScheduledEvent(_FakeScheduledEventFromRuntimeStateMixin):
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             self.data = args[1]
             self.tick = args[2]
@@ -524,7 +646,7 @@ def test_main_loop_passes_dispatch_port_to_damage_event_judge(
         lambda: order.append("stop_report_threads"),
     )
 
-    class FakeScheduledEvent:
+    class FakeScheduledEvent(_FakeScheduledEventFromRuntimeStateMixin):
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             order.append("scheduled_init")
 
@@ -589,11 +711,11 @@ def test_main_loop_scheduled_event_registry_reads_bind_to_run_scoped_owner(
         lambda: order.append("stop_report_threads"),
     )
 
-    class FakeScheduledEvent:
+    class FakeScheduledEvent(_FakeScheduledEventFromRuntimeStateMixin):
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             runtime_state = kwargs["buff_runtime_state"]
             read_port = runtime_state.create_read_port()
-            captured["raw_registry_arg"] = args[3]
+            captured["constructor_registry_arg"] = args[3]
             captured["runtime_state"] = runtime_state
             captured["runtime_snapshot"] = dict(
                 read_port.get_exist_buff_snapshot("alpha")
@@ -612,7 +734,8 @@ def test_main_loop_scheduled_event_registry_reads_bind_to_run_scoped_owner(
 
     sim.main_loop(stop_tick=1, use_api=True)
 
-    assert captured["raw_registry_arg"] is stale_registry
+    assert captured["constructor_registry_arg"] is exist_buff_dict
+    assert captured["constructor_registry_arg"] is not stale_registry
     assert captured["runtime_state"] is sim.buff_runtime_state
     assert captured["runtime_snapshot"] == {
         "runtime-template": runtime_template
@@ -2635,7 +2758,7 @@ def test_main_loop_records_opt_in_facade_and_buff_load_counts(
         lambda: order.append("stop_report_threads"),
     )
 
-    class FakeScheduledEvent:
+    class FakeScheduledEvent(_FakeScheduledEventFromRuntimeStateMixin):
         def __init__(self, *args: Any, **kwargs: Any) -> None:
             order.append("scheduled_init")
 

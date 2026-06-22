@@ -708,6 +708,72 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
     assert stale_event_list == ["stale"]
 
 
+def test_scheduled_event_from_runtime_state_builds_ports_from_current_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    active_buff = object()
+    registered_buff = object()
+    dynamic_buff = {"alpha": [active_buff], "enemy": []}
+    exist_buff_dict = {"alpha": {"buff": registered_buff}, "enemy": {}}
+    runtime_state = _runtime_state_for_test(
+        exist_buff_dict=exist_buff_dict,
+        dynamic_buff=dynamic_buff,
+        loading_buff={"alpha": []},
+    )
+    schedule_data = SimpleNamespace(
+        enemy=SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[])),
+        event_list=[],
+        char_obj_list=[],
+    )
+    action_stack = SimpleNamespace(marker="action-stack")
+    sim_instance = cast(Any, SimpleNamespace(marker="sim-instance"))
+    command_port = object()
+    captured_call: dict[str, Any] = {}
+
+    def _fake_create_runtime_command_port(**kwargs: Any) -> object:
+        captured_call.update(kwargs)
+        return command_port
+
+    monkeypatch.setattr(
+        scheduled_event_module.ScheduledEvent,
+        "_ensure_handlers_registered",
+        lambda self: None,
+    )
+    monkeypatch.setattr(
+        scheduled_event_module,
+        "create_runtime_command_port",
+        _fake_create_runtime_command_port,
+    )
+
+    scheduled_event = scheduled_event_module.ScheduledEvent.from_runtime_state(
+        schedule_data=cast(Any, schedule_data),
+        tick=12,
+        action_stack=cast(Any, action_stack),
+        buff_runtime_state=runtime_state,
+        sim_instance=sim_instance,
+    )
+
+    assert scheduled_event.data is schedule_data
+    assert scheduled_event.tick == 12
+    assert scheduled_event.action_stack is action_stack
+    assert scheduled_event.buff_runtime_state is runtime_state
+    assert scheduled_event.runtime_command_port is command_port
+    assert schedule_data.dynamic_buff is dynamic_buff
+    assert scheduled_event.exist_buff_dict is exist_buff_dict
+    assert tuple(scheduled_event.buff_runtime_view.get_active_buffs("alpha")) == (
+        active_buff,
+    )
+    assert dict(scheduled_event.buff_runtime_view.get_exist_buff_snapshot("alpha")) == {
+        "buff": registered_buff
+    }
+    assert captured_call["data"] is schedule_data
+    assert captured_call["action_stack"] is action_stack
+    assert captured_call["buff_runtime_state"] is runtime_state
+    assert captured_call["buff_runtime_view"] is scheduled_event.buff_runtime_view
+    assert captured_call["sim_instance"] is sim_instance
+    assert "exist_buff_dict" not in captured_call
+
+
 def test_scheduled_event_runtime_ports_rebind_read_view_for_each_runtime_state(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

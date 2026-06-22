@@ -306,12 +306,10 @@ class Simulator:
 
             # Load.DamageEventJudge publishes planned damage events through ScheduleDispatchPort.
             # ScheduledEvent
-            sce = ScE(
-                self.global_stats.DYNAMIC_BUFF_DICT,
-                self.schedule_data,
-                self.tick,
-                self.load_data.exist_buff_dict,
-                self.load_data.action_stack,
+            sce = ScE.from_runtime_state(
+                schedule_data=self.schedule_data,
+                tick=self.tick,
+                action_stack=self.load_data.action_stack,
                 buff_runtime_state=self.buff_runtime_state,
                 sim_instance=self,
             )

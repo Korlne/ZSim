@@ -81,6 +81,27 @@ class ScheduledEvent:
     2、遍历事件列表，从开始到结束，将每一个事件派发到分支逻辑链内进行处理
     """
 
+    @classmethod
+    def from_runtime_state(
+        cls,
+        *,
+        schedule_data: "ScheduleData",
+        tick: int,
+        action_stack: ActionStack,
+        buff_runtime_state: BuffRuntimeState,
+        sim_instance: "Simulator",
+    ) -> "ScheduledEvent":
+        """Production constructor boundary backed by the run-scoped Buff runtime."""
+        return cls(
+            buff_runtime_state.active_store_for_compat(),
+            schedule_data,
+            tick,
+            buff_runtime_state.template_registry_for_compat(),
+            action_stack,
+            buff_runtime_state=buff_runtime_state,
+            sim_instance=sim_instance,
+        )
+
     def __init__(
         self,
         dynamic_buff: dict,
