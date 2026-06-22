@@ -98,6 +98,9 @@ class PendingBuffQueue:
     def count(self) -> int:
         return sum(len(queue) for queue in self._queues.values())
 
+    def beneficiaries(self) -> tuple[str, ...]:
+        return tuple(self._queues)
+
     def queue_for_compat(self, beneficiary: str) -> list["Buff"]:
         return self._queues.setdefault(beneficiary, [])
 
@@ -484,8 +487,9 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         )
 
     def activate_pending_buffs(self, *, timenow: float) -> dict[str, list["Buff"]]:
-        for beneficiary in self._runtime_state.pending_queue_for_compat():
-            for buff in self.drain_pending_buffs(beneficiary):
+        pending_queue = self._runtime_state.pending_queue_owner()
+        for beneficiary in pending_queue.beneficiaries():
+            for buff in pending_queue.drain(beneficiary):
                 self._activate_pending_buff(beneficiary, buff)
         return self._runtime_state.active_store_for_compat()
 

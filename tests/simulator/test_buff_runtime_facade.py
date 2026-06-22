@@ -18,6 +18,7 @@ from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     BuffRuntimeFacade,
     BuffRuntimeState,
     LegacyBuffRuntimeFacade,
+    PendingBuffQueue,
     create_legacy_buff_runtime_facade,
 )
 
@@ -548,6 +549,51 @@ def test_legacy_buff_runtime_facade_activates_pending_buffs_in_old_pop_order() -
     assert result is dynamic_buff_dict
     assert loading_buff_dict["alpha"] == []
     assert dynamic_buff_dict["alpha"] == [second_pending, first_pending]
+
+
+def test_legacy_buff_runtime_facade_activation_drains_pending_owner() -> None:
+    class TrackingPendingBuffQueue(PendingBuffQueue):
+        def __init__(self, queues: dict[str, list[Any]]) -> None:
+            super().__init__(queues)
+            self.beneficiary_calls = 0
+            self.drain_calls: list[str] = []
+
+        def beneficiaries(self) -> tuple[str, ...]:
+            self.beneficiary_calls += 1
+            return super().beneficiaries()
+
+        def drain(self, beneficiary: str) -> list[Any]:
+            self.drain_calls.append(beneficiary)
+            return super().drain(beneficiary)
+
+    first_pending = _BuffProbe("first")
+    second_pending = _BuffProbe("second")
+    loading_buff_dict: dict[str, list[Any]] = {
+        "alpha": [first_pending],
+        "bravo": [second_pending],
+    }
+    dynamic_buff_dict: dict[str, list[Any]] = {"alpha": [], "bravo": []}
+    runtime_state = BuffRuntimeState(
+        template_registry={"alpha": {}, "bravo": {}},
+        pending_queue=loading_buff_dict,
+        active_store=dynamic_buff_dict,
+        enemy_mirror=[],
+    )
+    pending_owner = TrackingPendingBuffQueue(loading_buff_dict)
+    runtime_state._pending_queue = pending_owner
+    facade = runtime_state.create_facade()
+
+    result = facade.activate_pending_buffs(timenow=10)
+
+    assert result is dynamic_buff_dict
+    assert pending_owner.beneficiary_calls == 1
+    assert pending_owner.drain_calls == ["alpha", "bravo"]
+    assert loading_buff_dict == {"alpha": [], "bravo": []}
+    assert dynamic_buff_dict == {
+        "alpha": [first_pending],
+        "bravo": [second_pending],
+        "enemy": [],
+    }
 
 
 def test_legacy_buff_runtime_facade_skips_invalid_pending_buffs() -> None:
