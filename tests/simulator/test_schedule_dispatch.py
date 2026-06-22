@@ -343,6 +343,46 @@ def test_damage_event_judge_publishes_loading_missions_in_current_order():
     assert second_mission.hitted_count == 1
 
 
+def test_damage_event_judge_dispatch_port_follows_rebound_queue_order():
+    first_mission = _make_loading_mission("1001_First", hit_tick=5)
+    second_mission = _make_loading_mission("1001_Second", hit_tick=5)
+    anomaly_payload = object()
+    hidden_skill_payload = object()
+    skill_payload = object()
+    anomaly_dot = _ReadyDot(
+        anomaly_data=anomaly_payload,
+        skill_node_data=hidden_skill_payload,
+    )
+    skill_dot = _ReadyDot(anomaly_data=None, skill_node_data=skill_payload)
+    enemy = SimpleNamespace(
+        dynamic=SimpleNamespace(dynamic_dot_list=[anomaly_dot, skill_dot])
+    )
+    schedule_data = SimpleNamespace(event_list=[])
+    old_event_list = schedule_data.event_list
+    dispatch_port = create_schedule_dispatch_port(schedule_data=schedule_data)
+
+    schedule_data.event_list = []
+    DamageEventJudge(
+        5,
+        {"first": first_mission, "second": second_mission},
+        cast(Any, enemy),
+        dispatch_port,
+        [],
+    )
+
+    assert old_event_list == []
+    assert schedule_data.event_list == [
+        first_mission,
+        second_mission,
+        anomaly_payload,
+        skill_payload,
+    ]
+    assert first_mission.hitted_count == 1
+    assert second_mission.hitted_count == 1
+    assert anomaly_dot.dy.effect_times == 1
+    assert skill_dot.dy.effect_times == 1
+
+
 def test_process_time_update_dots_publishes_anomaly_then_skill_node_payloads():
     anomaly_payload = object()
     hidden_skill_payload = object()

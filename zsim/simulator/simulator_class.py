@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from zsim.define import config
 from zsim.sim_progress.Character.skill_class import Skill
 from zsim.sim_progress.data_struct import ActionStack, Decibelmanager, ListenerManger
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 from zsim.sim_progress.Enemy import Enemy
 from zsim.sim_progress.Load import DamageEventJudge, SkillEventSplit
 from zsim.sim_progress.Preload import PreloadClass
@@ -291,7 +292,7 @@ class Simulator:
                 self.tick,
                 self.load_data.load_mission_dict,
                 self.schedule_data.enemy,
-                self.schedule_data.event_list,
+                create_schedule_dispatch_port(schedule_data=self.schedule_data),
                 self.char_data.char_obj_list,
             )
             buff_runtime.load_pending_buffs(
@@ -303,7 +304,7 @@ class Simulator:
             )
             buff_runtime.activate_pending_buffs(timenow=self.tick)
 
-            # Load.DamageEventJudge(tick, load_data.load_mission_dict, schedule_data.enemy, schedule_data.event_list, char_data.char_obj_list)
+            # Load.DamageEventJudge publishes planned damage events through ScheduleDispatchPort.
             # ScheduledEvent
             sce = ScE(
                 self.global_stats.DYNAMIC_BUFF_DICT,

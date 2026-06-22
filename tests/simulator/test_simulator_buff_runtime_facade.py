@@ -490,6 +490,81 @@ def test_main_loop_oracle_preserves_order_through_stop_tick_and_reset(
     ]
 
 
+def test_main_loop_passes_dispatch_port_to_damage_event_judge(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    order: list[str] = []
+    runtime = _RuntimeProbe(order)
+    captured: dict[str, Any] = {}
+
+    def fake_create_facade() -> _RuntimeProbe:
+        order.append("create_facade")
+        return runtime
+
+    def fake_damage_event_judge(
+        tick: int,
+        load_mission_dict: dict[str, Any],
+        enemy: Any,
+        schedule_publisher: Any,
+        char_obj_list: list[Any],
+    ) -> None:
+        order.append(f"damage_judge:{tick}")
+        old_event_list = sim.schedule_data.event_list
+        sim.schedule_data.event_list = []
+        schedule_publisher.publish_scheduled("damage-event")
+        captured["publisher"] = schedule_publisher
+        captured["old_event_list"] = old_event_list
+        captured["current_event_list"] = sim.schedule_data.event_list
+        captured["char_obj_list"] = char_obj_list
+
+    monkeypatch.setattr(simulator_class, "DamageEventJudge", fake_damage_event_judge)
+    monkeypatch.setattr(
+        simulator_class,
+        "stop_report_threads",
+        lambda: order.append("stop_report_threads"),
+    )
+
+    class FakeScheduledEvent:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            order.append("scheduled_init")
+
+        def event_start(self) -> None:
+            order.append("scheduled_start")
+
+    monkeypatch.setattr(simulator_class, "ScE", FakeScheduledEvent)
+    sim, _, _, _, enemy = _make_minimal_sim(order)
+    original_event_list = sim.schedule_data.event_list
+    monkeypatch.setattr(sim.buff_runtime_state, "create_facade", fake_create_facade)
+
+    sim.main_loop(stop_tick=1, use_api=True)
+
+    assert hasattr(captured["publisher"], "publish_scheduled")
+    assert captured["publisher"] is not original_event_list
+    assert not isinstance(captured["publisher"], list)
+    assert not hasattr(captured["publisher"], "event_list")
+    assert captured["old_event_list"] is original_event_list
+    assert captured["old_event_list"] == []
+    assert captured["current_event_list"] == ["damage-event"]
+    assert captured["char_obj_list"] is sim.char_data.char_obj_list
+    assert runtime.calls == [(0, enemy), (1, enemy)]
+    assert runtime.load_ticks == [0]
+    assert runtime.activation_ticks == [0]
+    assert order == [
+        "create_facade",
+        "tick_sweep:0",
+        "preload:0",
+        "damage_judge:0",
+        "load_pending:0",
+        "activate_pending:0",
+        "scheduled_init",
+        "scheduled_start",
+        "reset_processed_event",
+        "tick_sweep:1",
+        "preload:1",
+        "stop_report_threads",
+    ]
+
+
 def test_main_loop_scheduled_event_registry_reads_bind_to_run_scoped_owner(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
