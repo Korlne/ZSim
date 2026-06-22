@@ -81,7 +81,7 @@ class PendingBuffQueue:
     def __init__(self, queues: dict[str, list["Buff"]]) -> None:
         self._queues = queues
 
-    def reset_for_beneficiaries(self, beneficiaries: Sequence[str]) -> None:
+    def reset_for_beneficiaries(self, beneficiaries: list[str]) -> None:
         for beneficiary in beneficiaries:
             self._queues[beneficiary] = []
 

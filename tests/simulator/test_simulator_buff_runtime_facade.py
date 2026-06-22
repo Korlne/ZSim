@@ -999,7 +999,9 @@ def test_buff_load_loop_uses_pending_owner_reset_and_count(
         "bravo": [],
         "enemy": [],
     }
-    assert _buff_load_loop_scan_metrics(sim)["pending_queue_count"] == 1
+    scan_metrics = _buff_load_loop_scan_metrics(sim)
+    assert scan_metrics is not None
+    assert scan_metrics["pending_queue_count"] == 1
 
 
 def test_buff_load_loop_visits_mission_registries_in_character_order(

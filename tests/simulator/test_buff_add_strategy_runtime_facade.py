@@ -168,6 +168,33 @@ def _install_recording_runtime_facade(monkeypatch: Any) -> list[tuple[str, str, 
     return calls
 
 
+def _record_active_owner_calls(
+    monkeypatch: Any, sim_instance: Any
+) -> list[tuple[str, str, str]]:
+    active_owner = sim_instance.buff_runtime_state.active_store_owner()
+    calls: list[tuple[str, str, str]] = []
+    original_find_by_index = active_owner.find_by_index
+    original_remove = active_owner.remove
+    original_append = active_owner.append
+
+    def recording_find_by_index(beneficiary: str, buff_index: str) -> Buff | None:
+        calls.append(("find", beneficiary, buff_index))
+        return original_find_by_index(beneficiary, buff_index)
+
+    def recording_remove(beneficiary: str, buff: Buff) -> None:
+        calls.append(("remove", beneficiary, buff.ft.index))
+        original_remove(beneficiary, buff)
+
+    def recording_append(beneficiary: str, buff: Buff) -> None:
+        calls.append(("append", beneficiary, buff.ft.index))
+        original_append(beneficiary, buff)
+
+    monkeypatch.setattr(active_owner, "find_by_index", recording_find_by_index)
+    monkeypatch.setattr(active_owner, "remove", recording_remove)
+    monkeypatch.setattr(active_owner, "append", recording_append)
+    return calls
+
+
 def _install_runtime_command_creation_guard(monkeypatch: Any) -> None:
     from zsim.sim_progress.ScheduledEvent import runtime_command
 
@@ -207,6 +234,7 @@ def test_buff_add_strategy_replaces_active_store_through_runtime_facade(
         dynamic_buff_dict={"Alice": active_store, "Bob": other_target_active_store},
         enemy_debuff_mirror=[],
     )
+    active_owner_calls = _record_active_owner_calls(monkeypatch, sim_instance)
 
     buff_add_strategy(
         "forced-buff",
@@ -233,6 +261,11 @@ def test_buff_add_strategy_replaces_active_store_through_runtime_facade(
         ("find_active_buff_by_index", "Alice", "forced-buff"),
         ("remove_active_buff", "Alice", old_active_buff),
         ("append_active_buff", "Alice", new_active_buff),
+    ]
+    assert active_owner_calls == [
+        ("find", "Alice", "forced-buff"),
+        ("remove", "Alice", "forced-buff"),
+        ("append", "Alice", "forced-buff"),
     ]
 
 

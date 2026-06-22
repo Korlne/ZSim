@@ -222,6 +222,33 @@ def test_runtime_command_settle_buffs_uses_runtime_owner_for_schedule_active_wri
     )
     enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_debuff_list=enemy_mirror))
     sim_instance = SimpleNamespace()
+    runtime_state = BuffRuntimeState(
+        template_registry=exist_buff_dict,
+        pending_queue=schedule_data.loading_buff,
+        active_store=dynamic_buff,
+        enemy_mirror=enemy_mirror,
+    )
+    active_owner = runtime_state.active_store_owner()
+    active_owner_calls: list[tuple[str, str, str]] = []
+    original_find_by_index = active_owner.find_by_index
+    original_remove = active_owner.remove
+    original_append = active_owner.append
+
+    def recording_find_by_index(beneficiary: str, buff_index: str) -> Buff | None:
+        active_owner_calls.append(("find", beneficiary, buff_index))
+        return original_find_by_index(beneficiary, buff_index)
+
+    def recording_remove(beneficiary: str, buff: Buff) -> None:
+        active_owner_calls.append(("remove", beneficiary, buff.ft.index))
+        original_remove(beneficiary, buff)
+
+    def recording_append(beneficiary: str, buff: Buff) -> None:
+        active_owner_calls.append(("append", beneficiary, buff.ft.index))
+        original_append(beneficiary, buff)
+
+    monkeypatch.setattr(active_owner, "find_by_index", recording_find_by_index)
+    monkeypatch.setattr(active_owner, "remove", recording_remove)
+    monkeypatch.setattr(active_owner, "append", recording_append)
 
     monkeypatch.setattr(
         "zsim.sim_progress.Buff.JudgeTools.find_preload_data",
@@ -240,9 +267,9 @@ def test_runtime_command_settle_buffs_uses_runtime_owner_for_schedule_active_wri
 
     port = create_runtime_command_port(
         data=cast(Any, schedule_data),
-        exist_buff_dict=cast(Any, exist_buff_dict),
         action_stack=cast(Any, SimpleNamespace()),
         sim_instance=cast(Any, sim_instance),
+        buff_runtime_state=runtime_state,
     )
 
     port.settle_buffs(tick=18, enemy=cast(Any, enemy))
@@ -254,6 +281,11 @@ def test_runtime_command_settle_buffs_uses_runtime_owner_for_schedule_active_wri
     assert new_enemy_buff is not schedule_buff
     assert new_enemy_buff.ft.index == "enemy-schedule-buff"
     assert enemy_mirror == [new_enemy_buff]
+    assert active_owner_calls == [
+        ("find", "enemy", "enemy-schedule-buff"),
+        ("remove", "enemy", "enemy-schedule-buff"),
+        ("append", "enemy", "enemy-schedule-buff"),
+    ]
 
 
 class _FakeSkillNode:
