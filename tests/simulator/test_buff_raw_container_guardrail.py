@@ -1498,6 +1498,9 @@ def _allowance_for(finding: Finding) -> str | None:
         )
         if signature in SCHEDULE_BUFF_SETTLE_RETAINED_SIGNATURES:
             return SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY
+    if path == "zsim/sim_progress/Buff/JudgeTools/FindMain.py":
+        if context == "_legacy_exist_buff_dict_for_compat":
+            return "JudgeTools registry compatibility fallback"
     if path == "zsim/sim_progress/Update/Update_Buff.py":
         if context == "update_time_related_effect":
             return "retained Update_Buff time-effect compatibility wrapper"
@@ -1616,6 +1619,7 @@ EXPECTED_RETAINED_REFERENCE_CEILINGS = {
     "legacy buff_add pending-to-active compatibility path": 10,
     "legacy buff_add enemy debuff mirror sync": 3,
     SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY: 26,
+    "JudgeTools registry compatibility fallback": 1,
     "retained Update_Buff time-effect compatibility wrapper": 5,
     "retained Update_Buff active-store traversal and no-facade fallback": 7,
     "legacy KickOutBuff active-removal compatibility path": 5,
@@ -2484,6 +2488,43 @@ def test_raw_old_container_guardrail_classifies_schedule_buff_settle_boundary() 
         len(findings)
         == EXPECTED_RETAINED_REFERENCE_CEILINGS[SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY]
     )
+
+
+def test_judgetools_registry_lookup_boundary_is_only_allowed_fallback() -> None:
+    path = PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "JudgeTools" / "FindMain.py"
+    findings = [
+        finding
+        for finding in _collect_findings_from_source(
+            path,
+            path.read_text(encoding="utf-8"),
+        )
+        if "exist_buff_dict" in finding.matched_expression
+    ]
+
+    assert findings
+    assert {_allowance_for(finding) for finding in findings} == {
+        "JudgeTools registry compatibility fallback"
+    }
+    assert len(findings) == EXPECTED_RETAINED_REFERENCE_CEILINGS[
+        "JudgeTools registry compatibility fallback"
+    ]
+
+
+def test_judgetools_registry_guardrail_blocks_new_direct_load_data_lookup() -> None:
+    source = (
+        "def unexpected_lookup(sim_instance):\n"
+        "    return sim_instance.load_data.exist_buff_dict\n"
+    )
+    path = PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "JudgeTools" / "FindMain.py"
+    findings = _collect_findings_from_source(path, source)
+    disallowed = [finding for finding in findings if _allowance_for(finding) is None]
+
+    assert len(disallowed) == 1
+    message = disallowed[0].message()
+    assert "zsim/sim_progress/Buff/JudgeTools/FindMain.py:2" in message
+    assert "matched expression: sim_instance.load_data.exist_buff_dict" in message
+    assert "old-container passthrough" in message
+    assert f"next action: {TRIAGE_NEXT_ACTION}" in message
 
 
 def test_raw_old_container_guardrail_blocks_new_schedule_buff_settle_raw_write() -> None:

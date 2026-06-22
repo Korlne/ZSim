@@ -10,6 +10,7 @@ import zsim.sim_progress.Buff.BuffLoad as buff_load_module
 import zsim.main as zsim_main
 from zsim.sim_progress import Load as load_module
 from zsim.sim_progress.Buff.BuffLoad import BuffLoadLoop
+from zsim.sim_progress.Buff.JudgeTools.FindMain import find_exist_buff_dict
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     ActiveBuffStore,
     BuffRuntimeState,
@@ -124,6 +125,50 @@ def _make_minimal_sim(
         enemy_mirror=enemy.dynamic.dynamic_debuff_list,
     )
     return sim, exist_buff_dict, loading_buff_dict, dynamic_buff_dict, enemy
+
+
+def test_judgetools_find_exist_buff_dict_uses_runtime_registry_owner_when_available() -> None:
+    runtime_buff = object()
+    fallback_buff = object()
+    runtime_registry: dict[str, dict[str, Any]] = {
+        "runtime-owner": {"runtime-buff": runtime_buff}
+    }
+    fallback_registry: dict[str, dict[str, Any]] = {
+        "fallback-owner": {"fallback-buff": fallback_buff}
+    }
+    sim = SimpleNamespace(
+        load_data=SimpleNamespace(exist_buff_dict=fallback_registry),
+        buff_runtime_state=BuffRuntimeState(
+            template_registry=runtime_registry,
+            pending_queue={},
+            active_store={},
+            enemy_mirror=[],
+        ),
+    )
+
+    result = find_exist_buff_dict(sim_instance=sim)
+
+    assert result is runtime_registry
+    assert result["runtime-owner"]["runtime-buff"] is runtime_buff
+    assert "fallback-owner" not in result
+
+
+def test_judgetools_find_exist_buff_dict_preserves_legacy_fallback_identity() -> None:
+    fallback_buff = object()
+    fallback_registry: dict[str, dict[str, Any]] = {
+        "fallback-owner": {"fallback-buff": fallback_buff}
+    }
+    fake_runtime_state = SimpleNamespace(create_read_port=lambda: object())
+    sim_with_fake_runtime = SimpleNamespace(
+        load_data=SimpleNamespace(exist_buff_dict=fallback_registry),
+        buff_runtime_state=fake_runtime_state,
+    )
+    sim_without_runtime = SimpleNamespace(
+        load_data=SimpleNamespace(exist_buff_dict=fallback_registry)
+    )
+
+    assert find_exist_buff_dict(sim_instance=sim_with_fake_runtime) is fallback_registry
+    assert find_exist_buff_dict(sim_instance=sim_without_runtime) is fallback_registry
 
 
 def _patch_main_loop_leaf_calls(
