@@ -13,13 +13,15 @@ RAW_EVENT_APPEND_KINDS = {
     "compatibility_only_queue_append",
     "event_context_requeue_append",
     "handler_requeue_append",
+    "ambiguous_local_event_group_append",
     "local_event_group_append",
     "raw_data_event_list_append",
     "raw_event_list_append",
     "raw_schedule_data_event_list_append",
 }
 
-LOCAL_EVENT_GROUP_NAMES = {"adrenaline_events", "local_event_group"}
+LOCAL_EVENT_GROUP_NAMES = {"adrenaline_events"}
+AMBIGUOUS_LOCAL_EVENT_GROUP_NAMES = {"local_event_group"}
 
 CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS = {
     (
@@ -214,6 +216,8 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
         if isinstance(target, ast.Name):
             if self._is_local_event_group_name(target.id):
                 return "local_event_group_append"
+            if target.id in AMBIGUOUS_LOCAL_EVENT_GROUP_NAMES:
+                return "ambiguous_local_event_group_append"
             if target.id == "event_list":
                 return "raw_event_list_append"
             return None
@@ -324,6 +328,9 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             "handler_requeue_append": (
                 "handler requeue raw data.event_list.append write"
             ),
+            "ambiguous_local_event_group_append": (
+                "ambiguous local event group append; use a domain-specific name"
+            ),
             "local_event_group_append": (
                 "local event group append; not ScheduleData.event_list"
             ),
@@ -351,6 +358,9 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             ),
             "handler_requeue_append": (
                 "US-003 owns migration to an EventContext requeue API"
+            ),
+            "ambiguous_local_event_group_append": (
+                "rename to a domain-specific local group or publish through ScheduleDispatchPort"
             ),
             "local_event_group_append": (
                 "keep local event groups distinctly named and outside ScheduleData.event_list"
@@ -495,6 +505,15 @@ def test_raw_event_list_append_guardrail_reports_event_layer_classifications() -
             ),
             "local event group append; not ScheduleData.event_list",
         ),
+        (
+            PRODUCTION_ROOT / "Character" / "Yixuan" / "AdrenalineManagerClass.py",
+            (
+                "def factory(event):\n"
+                "    local_event_group = []\n"
+                "    local_event_group.append(event)\n"
+            ),
+            "ambiguous local event group append; use a domain-specific name",
+        ),
     ]
 
     messages: list[str] = []
@@ -534,6 +553,24 @@ def test_local_event_group_classification_uses_name_and_scope_not_path() -> None
 
     assert len(raw_visitor.findings) == 1
     assert raw_visitor.findings[0].kind == "raw_event_list_append"
+
+
+def test_local_event_group_classification_requires_domain_specific_name() -> None:
+    yixuan_path = PRODUCTION_ROOT / "Character" / "Yixuan" / "AdrenalineManagerClass.py"
+    ambiguous_source = (
+        "def factory(event):\n"
+        "    local_event_group = []\n"
+        "    local_event_group.append(event)\n"
+    )
+    visitor = LegacyEventListDiscoveryVisitor(yixuan_path, ambiguous_source)
+    visitor.visit(ast.parse(ambiguous_source))
+
+    assert len(visitor.findings) == 1
+    assert visitor.findings[0].kind == "ambiguous_local_event_group_append"
+    assert (
+        visitor.findings[0].classification_suggestion
+        == "ambiguous local event group append; use a domain-specific name"
+    )
 
 
 def test_raw_planned_queue_writes_are_blocked_outside_owner_api_or_local_groups() -> None:

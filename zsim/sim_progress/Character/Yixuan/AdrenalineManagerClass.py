@@ -5,12 +5,12 @@ from .AdrenalineEventClass import AuricArray, AuricInkUndercurrent, BaseAdrenali
 if TYPE_CHECKING:
     from zsim.sim_progress.Character.Yixuan import Yixuan
     from zsim.sim_progress.Preload import SkillNode
-ADRENALINE_EVENT_LIST = [AuricArray, AuricInkUndercurrent]
+ADRENALINE_EVENT_TYPES = [AuricArray, AuricInkUndercurrent]
 
 
-def adrenaline_event_factory(char_instance: "Yixuan") -> list:
-    adrenaline_events = []
-    for event in ADRENALINE_EVENT_LIST:
+def adrenaline_event_factory(char_instance: "Yixuan") -> list[BaseAdrenalineEvent]:
+    adrenaline_events: list[BaseAdrenalineEvent] = []
+    for event in ADRENALINE_EVENT_TYPES:
         if event == AuricInkUndercurrent:
             if not char_instance.additional_abililty_active:
                 continue
