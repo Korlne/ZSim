@@ -629,6 +629,186 @@ def test_buff_load_loop_opt_in_metrics_use_summary_without_detailed_plan(
     }
 
 
+def test_buff_load_loop_metrics_preserve_queue_order_and_zero_mismatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeLoadingMission:
+        def __init__(self, name: str, mission_character: str) -> None:
+            self.name = name
+            self.mission_character = mission_character
+
+    load_mission_dict = {
+        "first": FakeLoadingMission("first", "alpha"),
+        "second": FakeLoadingMission("second", "bravo"),
+    }
+    character_name_box = ["alpha", "bravo", "charlie"]
+    summary_calls: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
+    iterated_candidate_steps: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
+    original_summary = buff_load_module._summarize_buff_load_loop_candidate_plan
+    original_iter_candidate_steps = buff_load_module._iter_buff_load_loop_candidate_steps
+
+    def make_existbuff_dict() -> dict[str, dict[str, Any]]:
+        return {
+            "alpha": {"alpha-a": object(), "alpha-b": object()},
+            "bravo": {"bravo-a": object()},
+            "charlie": {
+                "charlie-a": object(),
+                "charlie-b": object(),
+                "charlie-c": object(),
+            },
+            "enemy": {"enemy-a": object()},
+        }
+
+    def fail_describe_candidate_plan(*args: Any, **kwargs: Any) -> dict[str, object]:
+        raise AssertionError("metrics execution must not materialize detailed plan")
+
+    def spy_summarize_candidate_plan(
+        load_mission_dict_arg: dict[str, Any],
+        buff_registry_by_character_arg: dict[str, dict[str, Any]],
+        character_name_box_arg: list[str],
+    ) -> dict[str, object]:
+        summary_calls.append(
+            (tuple(load_mission_dict_arg), tuple(character_name_box_arg))
+        )
+        return original_summary(
+            load_mission_dict_arg,
+            buff_registry_by_character_arg,
+            character_name_box_arg,
+        )
+
+    def spy_iter_candidate_steps(
+        load_mission_dict_arg: dict[str, Any],
+        buff_registry_by_character_arg: dict[str, dict[str, Any]],
+        character_name_box_arg: list[str],
+    ) -> Any:
+        iterated_candidate_steps.append(
+            (tuple(load_mission_dict_arg), tuple(character_name_box_arg))
+        )
+        yield from original_iter_candidate_steps(
+            load_mission_dict_arg,
+            buff_registry_by_character_arg,
+            character_name_box_arg,
+        )
+
+    def fake_process_on_field_buff(
+        sub_exist_buff_dict: dict[str, Any],
+        mission: Any,
+        time_now: int,
+        LOADING_BUFF_DICT: dict[str, list[Any]],
+        all_name_order_box: dict[str, Any],
+        exist_buff_dict: dict[str, dict[str, Any]],
+        sim_instance: Any,
+    ) -> None:
+        owner = sim_instance._registry_owner_by_id[id(sub_exist_buff_dict)]
+        sim_instance._observed_buff_load_calls.append(
+            ("on_field", mission.name, owner, tuple(sub_exist_buff_dict))
+        )
+        LOADING_BUFF_DICT[owner].append(f"on:{mission.name}:{owner}:{time_now}")
+
+    def fake_process_backend_buff(
+        sub_exist_buff_dict: dict[str, Any],
+        all_name_order_box: dict[str, Any],
+        mission: Any,
+        time_now: int,
+        LOADING_BUFF_DICT: dict[str, list[Any]],
+        exist_buff_dict: dict[str, dict[str, Any]],
+        sim_instance: Any,
+    ) -> None:
+        owner = sim_instance._registry_owner_by_id[id(sub_exist_buff_dict)]
+        sim_instance._observed_buff_load_calls.append(
+            ("backend", mission.name, owner, tuple(sub_exist_buff_dict))
+        )
+        LOADING_BUFF_DICT[owner].append(f"back:{mission.name}:{owner}:{time_now}")
+
+    monkeypatch.setattr(load_module, "LoadingMission", FakeLoadingMission)
+    monkeypatch.setattr(
+        buff_load_module,
+        "_describe_buff_load_loop_candidate_plan",
+        fail_describe_candidate_plan,
+    )
+    monkeypatch.setattr(
+        buff_load_module,
+        "_summarize_buff_load_loop_candidate_plan",
+        spy_summarize_candidate_plan,
+    )
+    monkeypatch.setattr(
+        buff_load_module,
+        "_iter_buff_load_loop_candidate_steps",
+        spy_iter_candidate_steps,
+    )
+    monkeypatch.setattr(
+        buff_load_module,
+        "process_on_field_buff",
+        fake_process_on_field_buff,
+    )
+    monkeypatch.setattr(
+        buff_load_module,
+        "process_backend_buff",
+        fake_process_backend_buff,
+    )
+
+    expected_calls = [
+        ("on_field", "first", "alpha", ("alpha-a", "alpha-b")),
+        ("backend", "first", "bravo", ("bravo-a",)),
+        ("backend", "first", "charlie", ("charlie-a", "charlie-b", "charlie-c")),
+        ("backend", "second", "alpha", ("alpha-a", "alpha-b")),
+        ("on_field", "second", "bravo", ("bravo-a",)),
+        ("backend", "second", "charlie", ("charlie-a", "charlie-b", "charlie-c")),
+    ]
+    expected_metrics = {
+        "processed_tick_count": 1,
+        "mission_count": 2,
+        "character_count": 3,
+        "registered_buff_count": 6,
+        "trigger_candidate_count": 12,
+        "on_field_candidate_count": 3,
+        "backend_candidate_count": 9,
+        "pending_queue_count": 6,
+        "candidate_plan_count": 12,
+        "candidate_plan_on_field_candidate_count": 3,
+        "candidate_plan_backend_candidate_count": 9,
+        "candidate_plan_mission_count": 2,
+        "candidate_plan_character_count": 3,
+        "candidate_plan_mismatch_count": 0,
+    }
+
+    for use_indexed_execution in (False, True):
+        existbuff_dict = make_existbuff_dict()
+        loading_buff_dict: dict[str, list[Any]] = {}
+        sim = cast(
+            Any,
+            Simulator(use_indexed_buff_load_loop=use_indexed_execution),
+        )
+        sim.enable_buff_runtime_rebuild_counting()
+        sim._registry_owner_by_id = {
+            id(registry): owner for owner, registry in existbuff_dict.items()
+        }
+        sim._observed_buff_load_calls = []
+
+        result = BuffLoadLoop(
+            time_now=11,
+            load_mission_dict=load_mission_dict,
+            existbuff_dict=existbuff_dict,
+            character_name_box=character_name_box,
+            LOADING_BUFF_DICT=loading_buff_dict,
+            all_name_order_box={},
+            sim_instance=sim,
+        )
+
+        assert result is loading_buff_dict
+        assert list(result) == ["alpha", "bravo", "charlie", "enemy"]
+        assert sim._observed_buff_load_calls == expected_calls
+        assert _buff_load_loop_scan_metrics(sim) == expected_metrics
+
+    assert summary_calls == [
+        (("first", "second"), ("alpha", "bravo", "charlie")),
+        (("first", "second"), ("alpha", "bravo", "charlie")),
+    ]
+    assert iterated_candidate_steps == [
+        (("first", "second"), ("alpha", "bravo", "charlie"))
+    ]
+
+
 def test_buff_load_loop_resets_pending_queue_in_character_order_and_returns_same_object(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
