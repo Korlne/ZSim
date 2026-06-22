@@ -30,6 +30,9 @@ from zsim.utils.process_buff_result import prepare_buff_data_and_cache
 
 REPEAT_BENCHMARK_SUMMARY_SCHEMA = "zsim-buff-runtime-repeat-benchmark.v1"
 FUTURE_THRESHOLD_MIN_REPEAT_SAMPLES = 5
+BENCHMARK_THRESHOLD_MIN_REPEAT_SAMPLES = 10
+BENCHMARK_ELIGIBLE_MEDIAN_RELATIVE_DELTA = -0.05
+BENCHMARK_NOISE_RELATIVE_DELTA = 0.05
 NO_DEFAULT_ENABLEMENT_STATEMENT = (
     "No default enablement or speedup target is authorized by this PRD."
 )
@@ -264,6 +267,137 @@ def _aggregate_scan_metric_value(
     }
 
 
+def _aggregate_scan_metric_prefix(
+    samples: list[dict[str, dict[str, int]]],
+    bucket: str,
+    prefix: str,
+) -> dict[str, dict[str, Any]]:
+    metric_names = sorted(
+        {
+            metric_name
+            for sample in samples
+            for metric_name in sample.get(bucket, {})
+            if metric_name.startswith(prefix)
+        }
+    )
+    return {
+        metric_name: _aggregate_scan_metric_value(samples, bucket, metric_name)
+        for metric_name in metric_names
+    }
+
+
+def _build_runtime_relative_delta(
+    legacy_summary: dict[str, Any],
+    candidate_summary: dict[str, Any],
+) -> dict[str, Any]:
+    legacy_median = float(legacy_summary["median"])
+    candidate_median = float(candidate_summary["median"])
+    if legacy_median == 0:
+        ratio = None
+        relative_delta = None
+        percent = None
+    else:
+        relative_delta = round((candidate_median - legacy_median) / legacy_median, 6)
+        ratio = round(candidate_median / legacy_median, 6)
+        percent = round(relative_delta * 100, 4)
+    return {
+        "basis": "simulator_runtime_ms.median",
+        "candidate_minus_legacy_median_ms": round(candidate_median - legacy_median, 4),
+        "candidate_vs_legacy_median_ratio": ratio,
+        "candidate_vs_legacy_median_relative_delta": relative_delta,
+        "candidate_vs_legacy_median_percent": percent,
+    }
+
+
+def _build_threshold_policy() -> dict[str, Any]:
+    return {
+        "minimum_repeat_samples": BENCHMARK_THRESHOLD_MIN_REPEAT_SAMPLES,
+        "eligible_median_relative_delta_at_or_below": BENCHMARK_ELIGIBLE_MEDIAN_RELATIVE_DELTA,
+        "noise_band_relative_delta": [
+            BENCHMARK_ELIGIBLE_MEDIAN_RELATIVE_DELTA,
+            BENCHMARK_NOISE_RELATIVE_DELTA,
+        ],
+        "blocked_if_candidate_plan_mismatch_count_above": 0,
+        "blocked_if_required_metrics_missing": True,
+        "default_enablement_authorized": False,
+        "rule": (
+            "Ten samples, rebuild metrics, scan metrics, candidate-plan metrics, and "
+            "zero candidate-plan mismatches are required before benchmark evidence can "
+            "be eligible for a later enablement PRD. Relative median delta must be at "
+            "or below -5%; otherwise the evidence needs more samples. "
+            + NO_DEFAULT_ENABLEMENT_STATEMENT
+        ),
+    }
+
+
+def _build_threshold_verdict(
+    *,
+    sample_count: int,
+    include_rebuild_counts: bool,
+    relative_delta: dict[str, Any],
+    candidate_plan_metrics: dict[str, Any],
+    mismatch_counts: dict[str, Any],
+) -> dict[str, Any]:
+    reasons: list[str] = []
+    candidate_plan_mismatch_count = mismatch_counts["candidate_plan_mismatch_count"]
+    mismatch_max = max(
+        float(candidate_plan_mismatch_count["legacy"]["max"]),
+        float(candidate_plan_mismatch_count["candidate"]["max"]),
+    )
+    if mismatch_max > 0:
+        return {
+            "status": "blocked",
+            "reasons": [
+                f"candidate_plan_mismatch_count max {mismatch_max:g} is above zero"
+            ],
+        }
+
+    if not include_rebuild_counts:
+        return {
+            "status": "blocked",
+            "reasons": ["rebuild, scan, and candidate-plan metrics were not included"],
+        }
+
+    aggregate = candidate_plan_metrics.get("aggregate", {})
+    if not aggregate.get("legacy") or not aggregate.get("candidate"):
+        return {
+            "status": "blocked",
+            "reasons": ["candidate-plan metrics are missing from one or both runtime buckets"],
+        }
+
+    if sample_count < BENCHMARK_THRESHOLD_MIN_REPEAT_SAMPLES:
+        return {
+            "status": "needs_more_samples",
+            "reasons": [
+                f"sample_count {sample_count} is below "
+                f"{BENCHMARK_THRESHOLD_MIN_REPEAT_SAMPLES}"
+            ],
+        }
+
+    median_relative_delta = relative_delta["candidate_vs_legacy_median_relative_delta"]
+    if median_relative_delta is None:
+        return {
+            "status": "blocked",
+            "reasons": ["legacy median simulator runtime is zero"],
+        }
+
+    if median_relative_delta <= BENCHMARK_ELIGIBLE_MEDIAN_RELATIVE_DELTA:
+        reasons.append(
+            "relative median delta is at or below the conservative -5% eligibility line"
+        )
+        return {"status": "eligible_for_enablement_prd", "reasons": reasons}
+
+    if median_relative_delta > BENCHMARK_NOISE_RELATIVE_DELTA:
+        reasons.append(
+            "relative median delta is slower than the +5% noise boundary and needs more samples"
+        )
+    else:
+        reasons.append(
+            "relative median delta is inside the conservative noise band and needs more samples"
+        )
+    return {"status": "needs_more_samples", "reasons": reasons}
+
+
 def build_repeat_runtime_benchmark_summary(
     *,
     reports: list[dict[str, Any]],
@@ -288,6 +422,52 @@ def build_repeat_runtime_benchmark_summary(
         else []
     )
     runtime_selection = dict(first_report.get("runtime_selection", RUNTIME_LABEL_CONTRACT))
+    simulator_runtime_summary = {
+        "legacy": _summary_with_samples(legacy_simulator_runtime_ms),
+        "candidate": _summary_with_samples(candidate_simulator_runtime_ms),
+    }
+    relative_delta = _build_runtime_relative_delta(
+        simulator_runtime_summary["legacy"],
+        simulator_runtime_summary["candidate"],
+    )
+    candidate_plan_metrics = {
+        "included": include_rebuild_counts,
+        "aggregate": {
+            "legacy": (
+                _aggregate_scan_metric_prefix(scan_metric_samples, "legacy", "candidate_plan")
+                if include_rebuild_counts
+                else {}
+            ),
+            "candidate": (
+                _aggregate_scan_metric_prefix(scan_metric_samples, "candidate", "candidate_plan")
+                if include_rebuild_counts
+                else {}
+            ),
+        },
+    }
+    mismatch_counts = {
+        "candidate_plan_mismatch_count": {
+            "included": include_rebuild_counts,
+            "legacy": (
+                _aggregate_scan_metric_value(
+                    scan_metric_samples,
+                    "legacy",
+                    "candidate_plan_mismatch_count",
+                )
+                if include_rebuild_counts
+                else _summary_with_samples([])
+            ),
+            "candidate": (
+                _aggregate_scan_metric_value(
+                    scan_metric_samples,
+                    "candidate",
+                    "candidate_plan_mismatch_count",
+                )
+                if include_rebuild_counts
+                else _summary_with_samples([])
+            ),
+        },
+    }
 
     samples = []
     for index, report in enumerate(reports, start=1):
@@ -328,10 +508,8 @@ def build_repeat_runtime_benchmark_summary(
                 "blocked",
             ),
         },
-        "simulator_runtime_ms": {
-            "legacy": _summary_with_samples(legacy_simulator_runtime_ms),
-            "candidate": _summary_with_samples(candidate_simulator_runtime_ms),
-        },
+        "simulator_runtime_ms": simulator_runtime_summary,
+        "relative_delta": relative_delta,
         "rebuild_count_buckets": {
             "included": include_rebuild_counts,
             "samples": rebuild_count_samples,
@@ -354,34 +532,21 @@ def build_repeat_runtime_benchmark_summary(
                 + NO_DEFAULT_ENABLEMENT_STATEMENT
             ),
         },
+        "threshold_policy": _build_threshold_policy(),
         "enablement_policy": {
             "default_enablement_authorized": False,
             "speedup_target_authorized": False,
             "statement": NO_DEFAULT_ENABLEMENT_STATEMENT,
         },
-        "mismatch_counts": {
-            "candidate_plan_mismatch_count": {
-                "included": include_rebuild_counts,
-                "legacy": (
-                    _aggregate_scan_metric_value(
-                        scan_metric_samples,
-                        "legacy",
-                        "candidate_plan_mismatch_count",
-                    )
-                    if include_rebuild_counts
-                    else _summary_with_samples([])
-                ),
-                "candidate": (
-                    _aggregate_scan_metric_value(
-                        scan_metric_samples,
-                        "candidate",
-                        "candidate_plan_mismatch_count",
-                    )
-                    if include_rebuild_counts
-                    else _summary_with_samples([])
-                ),
-            },
-        },
+        "candidate_plan_metrics": candidate_plan_metrics,
+        "mismatch_counts": mismatch_counts,
+        "threshold_verdict": _build_threshold_verdict(
+            sample_count=len(reports),
+            include_rebuild_counts=include_rebuild_counts,
+            relative_delta=relative_delta,
+            candidate_plan_metrics=candidate_plan_metrics,
+            mismatch_counts=mismatch_counts,
+        ),
         "samples": samples,
     }
     if include_rebuild_counts:
@@ -712,6 +877,7 @@ def _format_repeat_summary(summary: dict[str, Any]) -> str:
     labels = summary["runtime_labels"]
     runtimes = summary["simulator_runtime_ms"]
     policy = summary["future_threshold_use"]
+    threshold_verdict = summary.get("threshold_verdict", {})
     lines = [
         f"team: {summary['team']}",
         f"apl: {summary['apl']}",
@@ -743,6 +909,10 @@ def _format_repeat_summary(summary: dict[str, Any]) -> str:
         "future_threshold_use: "
         f"speedup_target_defined={policy['speedup_target_defined']}; "
         f"minimum_repeat_samples={policy['minimum_repeat_samples']}; " + policy["noise_reporting"]
+    )
+    lines.append(
+        "threshold_verdict: "
+        + threshold_verdict.get("status", "needs_more_samples")
     )
     return "\n".join(lines)
 

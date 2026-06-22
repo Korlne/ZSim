@@ -273,10 +273,14 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
             legacy_scan_metrics={
                 "processed_tick_count": 1,
                 "trigger_candidate_count": 10,
+                "candidate_plan_count": 10,
+                "candidate_plan_mismatch_count": 0,
             },
             candidate_scan_metrics={
                 "processed_tick_count": 1,
                 "trigger_candidate_count": 12,
+                "candidate_plan_count": 12,
+                "candidate_plan_mismatch_count": 0,
             },
         ),
         _repeat_sample_report(
@@ -287,10 +291,14 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
             legacy_scan_metrics={
                 "processed_tick_count": 1,
                 "trigger_candidate_count": 14,
+                "candidate_plan_count": 14,
+                "candidate_plan_mismatch_count": 0,
             },
             candidate_scan_metrics={
                 "processed_tick_count": 1,
                 "trigger_candidate_count": 18,
+                "candidate_plan_count": 18,
+                "candidate_plan_mismatch_count": 0,
             },
         ),
         _repeat_sample_report(
@@ -301,10 +309,14 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
             legacy_scan_metrics={
                 "processed_tick_count": 1,
                 "trigger_candidate_count": 12,
+                "candidate_plan_count": 12,
+                "candidate_plan_mismatch_count": 0,
             },
             candidate_scan_metrics={
                 "processed_tick_count": 1,
                 "trigger_candidate_count": 16,
+                "candidate_plan_count": 16,
+                "candidate_plan_mismatch_count": 0,
             },
         ),
     ]
@@ -344,6 +356,13 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
         "range": 4.0,
         "samples": [94.0, 98.0, 96.0],
     }
+    assert summary["relative_delta"] == {
+        "basis": "simulator_runtime_ms.median",
+        "candidate_minus_legacy_median_ms": -6.0,
+        "candidate_vs_legacy_median_ratio": 0.941176,
+        "candidate_vs_legacy_median_relative_delta": -0.058824,
+        "candidate_vs_legacy_median_percent": -5.8824,
+    }
     assert summary["rebuild_count_buckets"]["included"] is True
     assert summary["rebuild_count_buckets"]["aggregate"]["legacy"]["buff_load_loop"] == {
         "median": 2.0,
@@ -361,10 +380,14 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
     }
     assert summary["samples"][0]["scan_metric_buckets"] == {
         "legacy": {
+            "candidate_plan_count": 10,
+            "candidate_plan_mismatch_count": 0,
             "processed_tick_count": 1,
             "trigger_candidate_count": 10,
         },
         "candidate": {
+            "candidate_plan_count": 12,
+            "candidate_plan_mismatch_count": 0,
             "processed_tick_count": 1,
             "trigger_candidate_count": 12,
         },
@@ -384,9 +407,51 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
         "range": 0.0,
         "samples": [1, 1, 1],
     }
+    assert summary["candidate_plan_metrics"] == {
+        "included": True,
+        "aggregate": {
+            "legacy": {
+                "candidate_plan_count": {
+                    "median": 12.0,
+                    "min": 10.0,
+                    "max": 14.0,
+                    "range": 4.0,
+                    "samples": [10, 14, 12],
+                },
+                "candidate_plan_mismatch_count": {
+                    "median": 0.0,
+                    "min": 0.0,
+                    "max": 0.0,
+                    "range": 0.0,
+                    "samples": [0, 0, 0],
+                },
+            },
+            "candidate": {
+                "candidate_plan_count": {
+                    "median": 16.0,
+                    "min": 12.0,
+                    "max": 18.0,
+                    "range": 6.0,
+                    "samples": [12, 18, 16],
+                },
+                "candidate_plan_mismatch_count": {
+                    "median": 0.0,
+                    "min": 0.0,
+                    "max": 0.0,
+                    "range": 0.0,
+                    "samples": [0, 0, 0],
+                },
+            },
+        },
+    }
     assert summary["future_threshold_use"]["speedup_target_defined"] is False
     assert summary["future_threshold_use"]["minimum_repeat_samples"] == 5
     assert "does not claim a speedup target" in summary["future_threshold_use"]["rule"]
+    assert summary["threshold_policy"]["minimum_repeat_samples"] == 10
+    assert summary["threshold_policy"]["eligible_median_relative_delta_at_or_below"] == -0.05
+    assert summary["threshold_policy"]["blocked_if_candidate_plan_mismatch_count_above"] == 0
+    assert summary["threshold_policy"]["default_enablement_authorized"] is False
+    assert summary["threshold_verdict"]["status"] == "needs_more_samples"
     assert (
         summary["enablement_policy"]["statement"]
         == "No default enablement or speedup target is authorized by this PRD."
@@ -410,6 +475,58 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
             "samples": [0, 0, 0],
         },
     }
+
+
+def test_build_repeat_runtime_benchmark_summary_threshold_verdicts():
+    eligible_reports = [
+        _repeat_sample_report(
+            legacy_simulator_ms=100.0,
+            candidate_simulator_ms=94.0,
+            legacy_counts={"buff_load_loop": 1},
+            candidate_counts={"buff_load_loop": 1},
+            legacy_scan_metrics={
+                "candidate_plan_count": 10,
+                "candidate_plan_mismatch_count": 0,
+            },
+            candidate_scan_metrics={
+                "candidate_plan_count": 10,
+                "candidate_plan_mismatch_count": 0,
+            },
+        )
+        for _ in range(10)
+    ]
+
+    eligible_summary = build_repeat_runtime_benchmark_summary(
+        reports=eligible_reports,
+        include_rebuild_counts=True,
+    )
+
+    assert eligible_summary["threshold_verdict"]["status"] == "eligible_for_enablement_prd"
+
+    mismatched_reports = [
+        _repeat_sample_report(
+            legacy_simulator_ms=100.0,
+            candidate_simulator_ms=94.0,
+            legacy_counts={"buff_load_loop": 1},
+            candidate_counts={"buff_load_loop": 1},
+            legacy_scan_metrics={
+                "candidate_plan_count": 10,
+                "candidate_plan_mismatch_count": 0,
+            },
+            candidate_scan_metrics={
+                "candidate_plan_count": 10,
+                "candidate_plan_mismatch_count": 1,
+            },
+        )
+        for _ in range(10)
+    ]
+
+    mismatched_summary = build_repeat_runtime_benchmark_summary(
+        reports=mismatched_reports,
+        include_rebuild_counts=True,
+    )
+
+    assert mismatched_summary["threshold_verdict"]["status"] == "blocked"
 
 
 def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
