@@ -147,6 +147,9 @@ class LegacyRuntimeCommandAdapter(RuntimeCommandPort):
         )
 
     def _buff_runtime_facade_for_settle(self, enemy: "Enemy") -> "BuffRuntimeFacade":
+        return self._runtime_state_for_settle(enemy).create_facade()
+
+    def _runtime_state_for_settle(self, enemy: "Enemy") -> "BuffRuntimeState":
         if self._buff_runtime_state is None:
             from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
 
@@ -156,7 +159,7 @@ class LegacyRuntimeCommandAdapter(RuntimeCommandPort):
                 active_store=self._active_store_for_compat(),
                 enemy_mirror=self._enemy_debuff_mirror_for_settle(enemy),
             )
-        return self._buff_runtime_state.create_facade()
+        return self._buff_runtime_state
 
     @staticmethod
     def _enemy_debuff_mirror_for_settle(enemy: "Enemy") -> list:

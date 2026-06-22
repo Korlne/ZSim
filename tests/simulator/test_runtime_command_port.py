@@ -50,6 +50,8 @@ def _make_schedule_buff(
     logic: object | None = None,
     add_buff_to: int = 1,
     operator: str = "alpha",
+    simple_effect_logic: bool = False,
+    count: int = 0,
 ) -> Buff:
     buff = Buff.__new__(Buff)
     buff.ft = SimpleNamespace(
@@ -59,9 +61,22 @@ def _make_schedule_buff(
         backend_acitve=True,
         add_buff_to=add_buff_to,
         operator=operator,
-        simple_effect_logic=False,
+        simple_effect_logic=simple_effect_logic,
+        individual_settled=False,
+        maxduration=10,
+        step=1,
+        maxcount=99,
     )
-    buff.dy = SimpleNamespace()
+    buff.dy = SimpleNamespace(
+        active=False,
+        ready=True,
+        startticks=0,
+        endticks=0,
+        count=count,
+        built_in_buff_box=[],
+        is_changed=False,
+    )
+    buff.history = SimpleNamespace(active_times=0)
     buff.logic = logic if logic is not None else SimpleNamespace(
         xjudge=lambda **kwargs: True,
         xeffect=lambda **kwargs: None,
@@ -286,6 +301,99 @@ def test_runtime_command_settle_buffs_uses_runtime_owner_for_schedule_active_wri
         ("remove", "enemy", "enemy-schedule-buff"),
         ("append", "enemy", "enemy-schedule-buff"),
     ]
+
+
+def test_runtime_command_settle_buffs_uses_template_owner_for_schedule_templates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[str, dict[str, object]]] = []
+    owner_schedule_buff = _make_schedule_buff(
+        "owner-schedule-buff",
+        logic=_ScheduleLogicProbe(calls),
+        simple_effect_logic=True,
+    )
+    shadow_schedule_buff = _make_schedule_buff(
+        "owner-schedule-buff",
+        simple_effect_logic=True,
+        count=40,
+    )
+    dynamic_buff: dict[str, list[Buff]] = {
+        "alpha": [],
+        "beta": [],
+        "gamma": [],
+        "enemy": [],
+    }
+    runtime_registry: dict[str, dict[str, Buff]] = {
+        "alpha": {"owner-schedule-buff": owner_schedule_buff},
+        "beta": {},
+        "gamma": {},
+        "enemy": {},
+    }
+    runtime_state = BuffRuntimeState(
+        template_registry=runtime_registry,
+        pending_queue={},
+        active_store=dynamic_buff,
+        enemy_mirror=dynamic_buff["enemy"],
+    )
+    template_owner = runtime_state.template_registry_owner()
+    owner_calls: list[str] = []
+    original_for_owner = template_owner.for_owner
+
+    def recording_for_owner(owner: str) -> dict[str, Buff]:
+        owner_calls.append(owner)
+        return original_for_owner(owner)
+
+    def fail_compat_access() -> dict[str, dict[str, Buff]]:
+        raise AssertionError("schedule settlement must use BuffTemplateRegistry owner")
+
+    monkeypatch.setattr(template_owner, "for_owner", recording_for_owner)
+    monkeypatch.setattr(runtime_state, "template_registry_for_compat", fail_compat_access)
+    monkeypatch.setattr(
+        "zsim.sim_progress.Buff.JudgeTools.find_preload_data",
+        lambda sim_instance: SimpleNamespace(
+            get_on_field_node=lambda tick: SimpleNamespace(char_name="alpha")
+        ),
+    )
+    monkeypatch.setattr(
+        "zsim.sim_progress.Buff.JudgeTools.find_all_name_order_box",
+        lambda sim_instance: {
+            "alpha": ["alpha", "beta", "gamma", "enemy"],
+            "beta": ["beta", "alpha", "gamma", "enemy"],
+            "gamma": ["gamma", "alpha", "beta", "enemy"],
+        },
+    )
+
+    port = create_runtime_command_port(
+        data=cast(
+            Any,
+            SimpleNamespace(
+                event_list=[],
+                char_obj_list=[],
+                dynamic_buff=dynamic_buff,
+                loading_buff={},
+            ),
+        ),
+        action_stack=cast(Any, SimpleNamespace()),
+        sim_instance=cast(Any, SimpleNamespace()),
+        exist_buff_dict={"alpha": {"owner-schedule-buff": shadow_schedule_buff}},
+        buff_runtime_state=runtime_state,
+    )
+
+    port.settle_buffs(tick=24, enemy=cast(Any, SimpleNamespace(dynamic=SimpleNamespace())))
+
+    assert owner_calls == ["alpha", "beta", "gamma"]
+    assert calls == [("xjudge", {})]
+    assert len(dynamic_buff["enemy"]) == 1
+    new_enemy_buff = dynamic_buff["enemy"][0]
+    assert new_enemy_buff is not owner_schedule_buff
+    assert new_enemy_buff.ft.index == "owner-schedule-buff"
+    assert new_enemy_buff.dy.startticks == 24
+    assert new_enemy_buff.dy.endticks == 34
+    assert new_enemy_buff.dy.count == 1
+    assert owner_schedule_buff.dy.count == 1
+    assert owner_schedule_buff.history.active_times == 1
+    assert shadow_schedule_buff.dy.count == 40
+    assert shadow_schedule_buff.history.active_times == 0
 
 
 class _FakeSkillNode:

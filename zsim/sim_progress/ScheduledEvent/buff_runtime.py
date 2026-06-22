@@ -649,7 +649,7 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         char_on_field = getattr(action_now, "char_name")
         all_name_order_box = JudgeTools.find_all_name_order_box(sim_instance=sim_instance)
         name_box_on_field = all_name_order_box[char_on_field]
-        template_registry = self._runtime_state.template_registry_for_compat()
+        template_registry_owner = self._runtime_state.template_registry_owner()
         event_kwargs = self._schedule_event_kwargs(
             skill_node=skill_node,
             anomaly_bar=anomaly_bar,
@@ -659,7 +659,7 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
             if char_name == "enemy":
                 continue
 
-            sub_template_registry = template_registry[char_name]
+            sub_template_registry = template_registry_owner.for_owner(char_name)
             if char_name == char_on_field:
                 self._process_schedule_on_field_buffs(
                     template_buffs=sub_template_registry,
