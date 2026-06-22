@@ -759,6 +759,89 @@ def test_legacy_buff_runtime_facade_activation_drains_pending_owner() -> None:
     }
 
 
+def test_legacy_buff_runtime_facade_activation_uses_active_owner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    existing_buff = _BuffProbe("same")
+    replacement_buff = _BuffProbe("same")
+    loading_buff_dict: dict[str, list[Any]] = {"alpha": [replacement_buff], "enemy": []}
+    dynamic_buff_dict: dict[str, list[Any]] = {"alpha": [existing_buff], "enemy": []}
+    runtime_state = BuffRuntimeState(
+        template_registry={"alpha": {}, "enemy": {}},
+        pending_queue=loading_buff_dict,
+        active_store=dynamic_buff_dict,
+        enemy_mirror=dynamic_buff_dict["enemy"],
+    )
+    active_owner = runtime_state.active_store_owner()
+    facade = runtime_state.create_facade()
+    calls: list[tuple[str, str | None, str | None]] = []
+    original_find_by_index = active_owner.find_by_index
+    original_remove = active_owner.remove
+    original_append = active_owner.append
+    original_as_compat_dict = active_owner.as_compat_dict
+
+    def recording_find_by_index(beneficiary: str, buff_index: str) -> Any:
+        calls.append(("find", beneficiary, buff_index))
+        return original_find_by_index(beneficiary, buff_index)
+
+    def recording_remove(beneficiary: str, buff: Any) -> None:
+        calls.append(("remove", beneficiary, buff.ft.index))
+        original_remove(beneficiary, buff)
+
+    def recording_append(beneficiary: str, buff: Any) -> None:
+        calls.append(("append", beneficiary, buff.ft.index))
+        original_append(beneficiary, buff)
+
+    def recording_as_compat_dict() -> dict[str, list[Any]]:
+        calls.append(("result", None, None))
+        return original_as_compat_dict()
+
+    def fail_compat_access() -> dict[str, list[Any]]:
+        raise AssertionError("activation must return through ActiveBuffStore")
+
+    monkeypatch.setattr(active_owner, "find_by_index", recording_find_by_index)
+    monkeypatch.setattr(active_owner, "remove", recording_remove)
+    monkeypatch.setattr(active_owner, "append", recording_append)
+    monkeypatch.setattr(active_owner, "as_compat_dict", recording_as_compat_dict)
+    monkeypatch.setattr(runtime_state, "active_store_for_compat", fail_compat_access)
+
+    result = facade.activate_pending_buffs(timenow=10)
+
+    assert result is dynamic_buff_dict
+    assert loading_buff_dict == {"alpha": [], "enemy": []}
+    assert dynamic_buff_dict["alpha"] == [replacement_buff]
+    assert calls == [
+        ("find", "alpha", "same"),
+        ("remove", "alpha", "same"),
+        ("append", "alpha", "same"),
+        ("result", None, None),
+    ]
+
+
+def test_activation_drains_pending_and_writes_active_owner_on_same_runtime_state() -> None:
+    pending_buff = _BuffProbe("pending")
+    loading_buff_dict: dict[str, list[Any]] = {"alpha": [pending_buff], "enemy": []}
+    dynamic_buff_dict: dict[str, list[Any]] = {"alpha": [], "enemy": []}
+    runtime_state = BuffRuntimeState(
+        template_registry={"alpha": {}, "enemy": {}},
+        pending_queue=loading_buff_dict,
+        active_store=dynamic_buff_dict,
+        enemy_mirror=dynamic_buff_dict["enemy"],
+    )
+    pending_owner = runtime_state.pending_queue_owner()
+    active_owner = runtime_state.active_store_owner()
+    facade = runtime_state.create_facade()
+
+    assert pending_owner.as_compat_dict() is loading_buff_dict
+    assert active_owner.as_compat_dict() is dynamic_buff_dict
+
+    result = facade.activate_pending_buffs(timenow=10)
+
+    assert result is active_owner.as_compat_dict()
+    assert pending_owner.as_compat_dict() == {"alpha": [], "enemy": []}
+    assert active_owner.active_buffs_for_compat("alpha") == [pending_buff]
+
+
 def test_legacy_buff_runtime_facade_skips_invalid_pending_buffs() -> None:
     inactive = _BuffProbe("inactive", active=False)
     zero_ticks = _BuffProbe("zero-ticks", startticks=0, endticks=0)

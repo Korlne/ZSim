@@ -532,7 +532,7 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         for beneficiary in pending_queue.beneficiaries():
             for buff in pending_queue.drain(beneficiary):
                 self._activate_pending_buff(beneficiary, buff)
-        return self._runtime_state.active_store_for_compat()
+        return self._runtime_state.active_store_owner().as_compat_dict()
 
     def get_pending_queue_for_compat(self, beneficiary: str) -> list["Buff"]:
         # 兼容旧容器身份；仅供迁移期局部桥接，不是新的主契约。
