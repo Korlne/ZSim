@@ -208,6 +208,38 @@ def _record_buff_load_loop_scan_metrics(
     metrics["candidate_plan_mismatch_count"] += candidate_plan_mismatch_count
 
 
+def _summarize_buff_load_loop_candidate_plan(
+    load_mission_dict: dict,
+    buff_registry_by_character: dict,
+    character_name_box: list,
+) -> dict[str, object]:
+    on_field_candidate_count = 0
+    backend_candidate_count = 0
+
+    for mission in load_mission_dict.values():
+        actor_name = mission.mission_character
+        if actor_name not in buff_registry_by_character:
+            raise ValueError("当前角色的Buff源并未创建！")
+
+        for char_name in character_name_box:
+            registry = buff_registry_by_character[char_name]
+            candidate_count = len(registry)
+            if char_name == actor_name:
+                on_field_candidate_count += candidate_count
+            else:
+                backend_candidate_count += candidate_count
+
+    return {
+        "pending_queue_order": tuple([*character_name_box, "enemy"]),
+        "mission_order": tuple(load_mission_dict),
+        "mission_count": len(load_mission_dict),
+        "character_count": len(character_name_box),
+        "candidate_count": on_field_candidate_count + backend_candidate_count,
+        "on_field_candidate_count": on_field_candidate_count,
+        "backend_candidate_count": backend_candidate_count,
+    }
+
+
 def _describe_buff_load_loop_candidate_plan(
     load_mission_dict: dict,
     buff_registry_by_character: dict,

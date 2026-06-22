@@ -709,6 +709,82 @@ def test_buff_load_loop_visits_mission_registries_in_character_order(
     ]
 
 
+def test_buff_load_loop_candidate_plan_summary_matches_detailed_counts() -> None:
+    class FakeLoadingMission:
+        def __init__(self, mission_character: str) -> None:
+            self.mission_character = mission_character
+
+    existbuff_dict: dict[str, dict[str, Any]] = {
+        "alpha": {
+            "alpha-schedule": object(),
+            "alpha-passive": object(),
+            "alpha-live": object(),
+        },
+        "bravo": {
+            "bravo-backend-inactive": object(),
+            "bravo-live": object(),
+        },
+        "charlie": {
+            "charlie-live": object(),
+        },
+    }
+    load_mission_dict = {
+        "first": FakeLoadingMission("bravo"),
+        "second": FakeLoadingMission("alpha"),
+    }
+    character_name_box = ["alpha", "bravo", "charlie"]
+
+    summary = buff_load_module._summarize_buff_load_loop_candidate_plan(
+        load_mission_dict,
+        existbuff_dict,
+        character_name_box,
+    )
+    detailed = buff_load_module._describe_buff_load_loop_candidate_plan(
+        load_mission_dict,
+        existbuff_dict,
+        character_name_box,
+    )
+
+    for key in (
+        "pending_queue_order",
+        "mission_order",
+        "mission_count",
+        "character_count",
+        "candidate_count",
+        "on_field_candidate_count",
+        "backend_candidate_count",
+    ):
+        assert summary[key] == detailed[key]
+
+
+def test_buff_load_loop_candidate_plan_summary_excludes_detailed_payload() -> None:
+    class FakeLoadingMission:
+        def __init__(self, mission_character: str) -> None:
+            self.mission_character = mission_character
+
+    summary = buff_load_module._summarize_buff_load_loop_candidate_plan(
+        {"first": FakeLoadingMission("alpha")},
+        {
+            "alpha": {"alpha-a": object()},
+            "bravo": {"bravo-a": object(), "bravo-b": object()},
+            "enemy": {"enemy-a": object()},
+        },
+        ["alpha", "bravo"],
+    )
+
+    assert "steps" not in summary
+    assert "buff_keys" not in summary
+    assert summary == {
+        "pending_queue_order": ("alpha", "bravo", "enemy"),
+        "mission_order": ("first",),
+        "mission_count": 1,
+        "character_count": 2,
+        "candidate_count": 3,
+        "on_field_candidate_count": 1,
+        "backend_candidate_count": 2,
+    }
+
+
 def test_buff_load_loop_candidate_plan_matches_current_scan_order(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
