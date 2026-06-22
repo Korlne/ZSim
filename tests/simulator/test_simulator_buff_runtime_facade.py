@@ -323,6 +323,284 @@ def test_buff_load_loop_records_opt_in_scan_metric_shape(
     }
 
 
+def test_buff_load_loop_resets_pending_queue_in_character_order_and_returns_same_object(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeLoadingMission:
+        pass
+
+    monkeypatch.setattr(load_module, "LoadingMission", FakeLoadingMission)
+    loading_buff_dict: dict[str, list[Any]] = {}
+    sim = cast(Any, Simulator())
+
+    result = BuffLoadLoop(
+        time_now=0,
+        load_mission_dict={},
+        existbuff_dict={},
+        character_name_box=["alpha", "bravo", "charlie"],
+        LOADING_BUFF_DICT=loading_buff_dict,
+        all_name_order_box={},
+        sim_instance=sim,
+    )
+
+    assert result is loading_buff_dict
+    assert list(loading_buff_dict) == ["alpha", "bravo", "charlie", "enemy"]
+    assert loading_buff_dict == {
+        "alpha": [],
+        "bravo": [],
+        "charlie": [],
+        "enemy": [],
+    }
+
+
+def test_buff_load_loop_visits_mission_registries_in_character_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeLoadingMission:
+        def __init__(self, name: str, mission_character: str) -> None:
+            self.name = name
+            self.mission_character = mission_character
+
+    existbuff_dict: dict[str, dict[str, Any]] = {
+        "alpha": {
+            "alpha-schedule": object(),
+            "alpha-passive": object(),
+            "alpha-live": object(),
+        },
+        "bravo": {
+            "bravo-backend-inactive": object(),
+            "bravo-live": object(),
+        },
+        "charlie": {
+            "charlie-live": object(),
+        },
+    }
+    registry_owner_by_id = {
+        id(registry): owner for owner, registry in existbuff_dict.items()
+    }
+    calls: list[tuple[str, str, str, tuple[str, ...]]] = []
+
+    def fake_process_on_field_buff(
+        sub_exist_buff_dict: dict[str, Any],
+        mission: Any,
+        time_now: int,
+        LOADING_BUFF_DICT: dict[str, list[Any]],
+        all_name_order_box: dict[str, Any],
+        exist_buff_dict: dict[str, dict[str, Any]],
+        sim_instance: Any,
+    ) -> None:
+        calls.append(
+            (
+                "on_field",
+                mission.name,
+                registry_owner_by_id[id(sub_exist_buff_dict)],
+                tuple(sub_exist_buff_dict),
+            )
+        )
+
+    def fake_process_backend_buff(
+        sub_exist_buff_dict: dict[str, Any],
+        all_name_order_box: dict[str, Any],
+        mission: Any,
+        time_now: int,
+        LOADING_BUFF_DICT: dict[str, list[Any]],
+        exist_buff_dict: dict[str, dict[str, Any]],
+        sim_instance: Any,
+    ) -> None:
+        calls.append(
+            (
+                "backend",
+                mission.name,
+                registry_owner_by_id[id(sub_exist_buff_dict)],
+                tuple(sub_exist_buff_dict),
+            )
+        )
+
+    monkeypatch.setattr(load_module, "LoadingMission", FakeLoadingMission)
+    monkeypatch.setattr(
+        buff_load_module,
+        "process_on_field_buff",
+        fake_process_on_field_buff,
+    )
+    monkeypatch.setattr(
+        buff_load_module,
+        "process_backend_buff",
+        fake_process_backend_buff,
+    )
+
+    result = BuffLoadLoop(
+        time_now=10,
+        load_mission_dict={
+            "first": FakeLoadingMission("first", "bravo"),
+            "second": FakeLoadingMission("second", "alpha"),
+        },
+        existbuff_dict=existbuff_dict,
+        character_name_box=["alpha", "bravo", "charlie"],
+        LOADING_BUFF_DICT={},
+        all_name_order_box={},
+        sim_instance=cast(Any, Simulator()),
+    )
+
+    assert result == {"alpha": [], "bravo": [], "charlie": [], "enemy": []}
+    assert calls == [
+        (
+            "backend",
+            "first",
+            "alpha",
+            ("alpha-schedule", "alpha-passive", "alpha-live"),
+        ),
+        (
+            "on_field",
+            "first",
+            "bravo",
+            ("bravo-backend-inactive", "bravo-live"),
+        ),
+        ("backend", "first", "charlie", ("charlie-live",)),
+        (
+            "on_field",
+            "second",
+            "alpha",
+            ("alpha-schedule", "alpha-passive", "alpha-live"),
+        ),
+        (
+            "backend",
+            "second",
+            "bravo",
+            ("bravo-backend-inactive", "bravo-live"),
+        ),
+        ("backend", "second", "charlie", ("charlie-live",)),
+    ]
+
+
+def test_buff_load_processing_helpers_own_candidate_filters(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeBuff:
+        def __init__(
+            self,
+            index: str,
+            *,
+            operator: str,
+            schedule_judge: bool,
+            passively_updating: bool,
+            backend_acitve: bool,
+        ) -> None:
+            self.ft = SimpleNamespace(
+                index=index,
+                operator=operator,
+                schedule_judge=schedule_judge,
+                passively_updating=passively_updating,
+                backend_acitve=backend_acitve,
+                add_buff_to=1000,
+            )
+
+    process_calls: list[tuple[str, str, tuple[str, ...]]] = []
+
+    def fake_process_buff(
+        buff_0: Any,
+        sub_exist_buff_dict: dict[str, Any],
+        mission: Any,
+        time_now: int,
+        selected_characters: list[str],
+        LOADING_BUFF_DICT: dict[str, list[Any]],
+        exist_buff_dict: dict[str, dict[str, Any]],
+        sim_instance: Any,
+    ) -> None:
+        process_calls.append(
+            (mission.name, buff_0.ft.index, tuple(selected_characters))
+        )
+
+    monkeypatch.setattr(buff_load_module, "Buff", FakeBuff)
+    monkeypatch.setattr(buff_load_module, "process_buff", fake_process_buff)
+
+    mission = SimpleNamespace(name="mission")
+    loading_buff_dict: dict[str, list[Any]] = {
+        "alpha": [],
+        "bravo": [],
+        "enemy": [],
+    }
+    exist_buff_dict: dict[str, dict[str, Any]] = {"alpha": {}, "bravo": {}, "enemy": {}}
+    all_name_order_box = {
+        "alpha": ["alpha", "bravo", "charlie", "enemy"],
+        "bravo": ["bravo", "alpha", "charlie", "enemy"],
+    }
+
+    buff_load_module.process_on_field_buff(
+        {
+            "on-schedule": FakeBuff(
+                "on-schedule",
+                operator="alpha",
+                schedule_judge=True,
+                passively_updating=False,
+                backend_acitve=True,
+            ),
+            "on-passive": FakeBuff(
+                "on-passive",
+                operator="alpha",
+                schedule_judge=False,
+                passively_updating=True,
+                backend_acitve=True,
+            ),
+            "on-eligible": FakeBuff(
+                "on-eligible",
+                operator="alpha",
+                schedule_judge=False,
+                passively_updating=False,
+                backend_acitve=False,
+            ),
+        },
+        mission,
+        10,
+        loading_buff_dict,
+        all_name_order_box,
+        exist_buff_dict,
+        sim_instance=cast(Any, Simulator()),
+    )
+    buff_load_module.process_backend_buff(
+        {
+            "back-schedule": FakeBuff(
+                "back-schedule",
+                operator="bravo",
+                schedule_judge=True,
+                passively_updating=False,
+                backend_acitve=True,
+            ),
+            "back-passive": FakeBuff(
+                "back-passive",
+                operator="bravo",
+                schedule_judge=False,
+                passively_updating=True,
+                backend_acitve=True,
+            ),
+            "back-inactive": FakeBuff(
+                "back-inactive",
+                operator="bravo",
+                schedule_judge=False,
+                passively_updating=False,
+                backend_acitve=False,
+            ),
+            "back-eligible": FakeBuff(
+                "back-eligible",
+                operator="bravo",
+                schedule_judge=False,
+                passively_updating=False,
+                backend_acitve=True,
+            ),
+        },
+        all_name_order_box,
+        mission,
+        10,
+        loading_buff_dict,
+        exist_buff_dict,
+        sim_instance=cast(Any, Simulator()),
+    )
+
+    assert process_calls == [
+        ("mission", "on-eligible", ("alpha",)),
+        ("mission", "back-eligible", ("bravo",)),
+    ]
+
+
 def test_buff_runtime_facade_load_pending_buffs_owns_load_containers() -> None:
     sim = cast(Any, Simulator())
     sim.enable_buff_runtime_rebuild_counting()
