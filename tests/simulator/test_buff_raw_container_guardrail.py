@@ -65,6 +65,9 @@ SCHEDULED_EVENT_RUNTIME_GUARDRAIL_FILES = (
 RUNTIME_COMMAND_LEGACY_ADAPTER_GUARDRAIL_FILES = tuple(
     sorted((PROJECT_ROOT / "zsim").rglob("*.py"))
 )
+SCHEDULED_EVENT_RAW_CONSTRUCTOR_GUARDRAIL_FILES = tuple(
+    sorted((PROJECT_ROOT / "zsim").rglob("*.py"))
+)
 
 CALCULATOR_READ_GUARDRAIL_FILES = (
     PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent" / "Calculator.py",
@@ -245,6 +248,20 @@ RUNTIME_COMMAND_LEGACY_ADAPTER_NEXT_ACTION = (
     "LegacyRuntimeCommandAdapter construction inside the explicit "
     "migration/test/rollback factory fallback"
 )
+
+SCHEDULED_EVENT_RAW_CONSTRUCTOR_NEXT_ACTION = (
+    "use ScheduledEvent.from_runtime_state(...) for production scheduled-event "
+    "processing, or keep direct raw-container construction inside explicit "
+    "migration/test/rollback compatibility"
+)
+
+SCHEDULED_EVENT_RAW_CONSTRUCTOR_NAMES = {
+    "DYNAMIC_BUFF_DICT",
+    "LOADING_BUFF_DICT",
+    "dynamic_buff",
+    "exist_buff_dict",
+    "loading_buff",
+}
 
 ACTIVE_STORE_RAW_DICT_NAMES = {
     "DYNAMIC_BUFF_DICT",
@@ -794,6 +811,23 @@ class RuntimeCommandLegacyAdapterFinding:
             f"{self.path}:{self.line}: matched expression: {self.matched_expression}; "
             f"classification suggestion: {self.classification_suggestion}; "
             f"next action: {RUNTIME_COMMAND_LEGACY_ADAPTER_NEXT_ACTION}"
+        )
+
+
+@dataclass(frozen=True)
+class ScheduledEventRawConstructorFinding:
+    path: str
+    line: int
+    kind: str
+    matched_expression: str
+    classification_suggestion: str
+    context: str
+
+    def message(self) -> str:
+        return (
+            f"{self.path}:{self.line}: matched expression: {self.matched_expression}; "
+            f"classification suggestion: {self.classification_suggestion}; "
+            f"next action: {SCHEDULED_EVENT_RAW_CONSTRUCTOR_NEXT_ACTION}"
         )
 
 
@@ -1425,6 +1459,162 @@ class RuntimeCommandLegacyAdapterVisitor(ast.NodeVisitor):
         return " ".join(expression.strip().split())
 
 
+class ScheduledEventRawConstructorVisitor(ast.NodeVisitor):
+    def __init__(self, path: Path, source: str) -> None:
+        self.path = path
+        self.source = source
+        self.findings: list[ScheduledEventRawConstructorFinding] = []
+        self._class_stack: list[str] = []
+        self._function_stack: list[str] = []
+        self._constructor_aliases = {"ScheduledEvent", "ScE"}
+
+    def visit_Import(self, node: ast.Import) -> None:
+        for alias in node.names:
+            if alias.name.endswith("ScheduledEvent") and alias.asname is not None:
+                self._constructor_aliases.add(alias.asname)
+        self.generic_visit(node)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        for alias in node.names:
+            imported_name = alias.name
+            local_name = alias.asname or alias.name
+            if imported_name in {"ScheduledEvent", "ScE"}:
+                self._constructor_aliases.add(local_name)
+        self.generic_visit(node)
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        self._class_stack.append(node.name)
+        self.generic_visit(node)
+        self._class_stack.pop()
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._function_stack.append(node.name)
+        try:
+            self.generic_visit(node)
+        finally:
+            self._function_stack.pop()
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._function_stack.append(node.name)
+        try:
+            self.generic_visit(node)
+        finally:
+            self._function_stack.pop()
+
+    def visit_Call(self, node: ast.Call) -> None:
+        constructor_name = self._constructor_name(node.func)
+        if constructor_name is None:
+            self.generic_visit(node)
+            return
+
+        if self._uses_raw_container_handoff(node):
+            self._add_finding(
+                line=node.lineno,
+                kind="scheduled_event_raw_constructor_handoff",
+                expression=self._source_for(node),
+                classification_suggestion=(
+                    "raw-container ScheduledEvent constructor handoff"
+                ),
+            )
+        elif self._uses_compat_marker(node):
+            self._add_finding(
+                line=node.lineno,
+                kind="scheduled_event_compat_constructor",
+                expression=self._source_for(node),
+                classification_suggestion=(
+                    "direct ScheduledEvent constructor compatibility"
+                ),
+            )
+        else:
+            self._add_finding(
+                line=node.lineno,
+                kind="scheduled_event_direct_constructor",
+                expression=self._source_for(node),
+                classification_suggestion=(
+                    "direct ScheduledEvent constructor bypass"
+                ),
+            )
+        self.generic_visit(node)
+
+    def _constructor_name(self, func: ast.AST) -> str | None:
+        if isinstance(func, ast.Name) and func.id in self._constructor_aliases:
+            return func.id
+        if isinstance(func, ast.Attribute) and func.attr in self._constructor_aliases:
+            return func.attr
+        return None
+
+    @staticmethod
+    def _uses_compat_marker(node: ast.Call) -> bool:
+        return any(
+            keyword.arg == "legacy_raw_container_compat"
+            for keyword in node.keywords
+        )
+
+    def _uses_raw_container_handoff(self, node: ast.Call) -> bool:
+        for argument in node.args:
+            if self._contains_raw_container_name(argument):
+                return True
+        for keyword in node.keywords:
+            if keyword.arg in SCHEDULED_EVENT_RAW_CONSTRUCTOR_NAMES:
+                return True
+            if self._contains_raw_container_name(keyword.value):
+                return True
+        return False
+
+    @staticmethod
+    def _contains_raw_container_name(node: ast.AST) -> bool:
+        for child in ast.walk(node):
+            if (
+                isinstance(child, ast.Name)
+                and child.id in SCHEDULED_EVENT_RAW_CONSTRUCTOR_NAMES
+            ):
+                return True
+            if (
+                isinstance(child, ast.Attribute)
+                and child.attr in SCHEDULED_EVENT_RAW_CONSTRUCTOR_NAMES
+            ):
+                return True
+        return False
+
+    def _add_finding(
+        self,
+        *,
+        line: int,
+        kind: str,
+        expression: str,
+        classification_suggestion: str,
+    ) -> None:
+        self.findings.append(
+            ScheduledEventRawConstructorFinding(
+                path=self._relative_path(),
+                line=line,
+                kind=kind,
+                matched_expression=self._normalize(expression),
+                classification_suggestion=classification_suggestion,
+                context=self._context(),
+            )
+        )
+
+    def _relative_path(self) -> str:
+        return self.path.relative_to(PROJECT_ROOT).as_posix()
+
+    def _context(self) -> str:
+        parts = [*self._class_stack, *self._function_stack]
+        if not parts:
+            return "<module>"
+        return ".".join(parts)
+
+    def _source_for(self, node: ast.AST) -> str:
+        segment = ast.get_source_segment(self.source, node)
+        if segment is None:
+            return f"<{type(node).__name__}>"
+        return self._normalize(segment)
+
+    @staticmethod
+    def _normalize(expression: str) -> str:
+        return " ".join(expression.strip().split())
+
+
 class CalculatorReadVisitor(RawContainerVisitor):
     def __init__(self, path: Path, source: str) -> None:
         super().__init__(path, source)
@@ -1618,6 +1808,29 @@ def _collect_runtime_command_legacy_adapter_findings() -> list[
     return findings
 
 
+def _collect_scheduled_event_raw_constructor_findings_from_source(
+    path: Path, source: str
+) -> list[ScheduledEventRawConstructorFinding]:
+    tree = ast.parse(source, filename=str(path))
+    visitor = ScheduledEventRawConstructorVisitor(path, source)
+    visitor.visit(tree)
+    return visitor.findings
+
+
+def _collect_scheduled_event_raw_constructor_findings() -> list[
+    ScheduledEventRawConstructorFinding
+]:
+    findings: list[ScheduledEventRawConstructorFinding] = []
+    for path in SCHEDULED_EVENT_RAW_CONSTRUCTOR_GUARDRAIL_FILES:
+        source = path.read_text(encoding="utf-8")
+        findings.extend(
+            _collect_scheduled_event_raw_constructor_findings_from_source(
+                path, source
+            )
+        )
+    return findings
+
+
 def _collect_calculator_read_findings_from_source(
     path: Path, source: str
 ) -> list[Finding]:
@@ -1731,6 +1944,16 @@ def _runtime_command_legacy_adapter_allowance_for(
     return None
 
 
+def _scheduled_event_raw_constructor_allowance_for(
+    finding: ScheduledEventRawConstructorFinding,
+) -> str | None:
+    if finding.path.startswith("tests/"):
+        return "test-only ScheduledEvent constructor compatibility"
+    if finding.path.startswith("scripts/"):
+        return "migration/rollback ScheduledEvent constructor compatibility"
+    return None
+
+
 def _calculator_read_allowance_for(finding: Finding) -> str | None:
     path = finding.path
     context = finding.context
@@ -1782,6 +2005,17 @@ def _runtime_command_legacy_adapter_allowance_counts(
     counts: Counter[str] = Counter()
     for finding in findings:
         allowance = _runtime_command_legacy_adapter_allowance_for(finding)
+        if allowance is not None:
+            counts[allowance] += 1
+    return counts
+
+
+def _scheduled_event_raw_constructor_allowance_counts(
+    findings: list[ScheduledEventRawConstructorFinding],
+) -> Counter[str]:
+    counts: Counter[str] = Counter()
+    for finding in findings:
+        allowance = _scheduled_event_raw_constructor_allowance_for(finding)
         if allowance is not None:
             counts[allowance] += 1
     return counts
@@ -2821,6 +3055,108 @@ def test_scheduled_event_raw_container_allowance_is_constructor_only() -> None:
     assert {_allowance_for(finding) for finding in allowed} == {
         "retained ScheduledEvent constructor setup"
     }
+
+
+def test_scheduled_event_raw_constructor_guardrail_blocks_production_raw_handoff() -> None:
+    source = (
+        "from zsim.sim_progress.ScheduledEvent import ScheduledEvent as ScE\n"
+        "class Simulator:\n"
+        "    def main_loop(self):\n"
+        "        sce = ScE(\n"
+        "            self.global_stats.DYNAMIC_BUFF_DICT,\n"
+        "            self.schedule_data,\n"
+        "            self.tick,\n"
+        "            self.load_data.exist_buff_dict,\n"
+        "            self.load_data.action_stack,\n"
+        "            loading_buff=self.load_data.LOADING_BUFF_DICT,\n"
+        "            legacy_raw_container_compat=True,\n"
+        "            sim_instance=self,\n"
+        "        )\n"
+        "        return sce\n"
+    )
+    path = PROJECT_ROOT / "zsim" / "simulator" / "simulator_class.py"
+    findings = _collect_scheduled_event_raw_constructor_findings_from_source(
+        path, source
+    )
+    disallowed = [
+        finding
+        for finding in findings
+        if _scheduled_event_raw_constructor_allowance_for(finding) is None
+    ]
+
+    assert len(disallowed) == 1
+    message = disallowed[0].message()
+    assert "zsim/simulator/simulator_class.py:4" in message
+    assert "matched expression: ScE(" in message
+    assert (
+        "classification suggestion: raw-container ScheduledEvent constructor "
+        "handoff"
+    ) in message
+    assert f"next action: {SCHEDULED_EVENT_RAW_CONSTRUCTOR_NEXT_ACTION}" in message
+
+
+def test_scheduled_event_raw_constructor_guardrail_allows_from_runtime_state_path() -> None:
+    source = (
+        "from zsim.sim_progress.ScheduledEvent import ScheduledEvent as ScE\n"
+        "class Simulator:\n"
+        "    def main_loop(self):\n"
+        "        return ScE.from_runtime_state(\n"
+        "            schedule_data=self.schedule_data,\n"
+        "            tick=self.tick,\n"
+        "            action_stack=self.load_data.action_stack,\n"
+        "            buff_runtime_state=self.buff_runtime_state,\n"
+        "            sim_instance=self,\n"
+        "        )\n"
+    )
+    path = PROJECT_ROOT / "zsim" / "simulator" / "simulator_class.py"
+
+    assert _collect_scheduled_event_raw_constructor_findings_from_source(
+        path, source
+    ) == []
+
+
+def test_scheduled_event_raw_constructor_guardrail_current_production_has_no_bypass() -> None:
+    source_path = PROJECT_ROOT / "zsim" / "simulator" / "simulator_class.py"
+    source = source_path.read_text(encoding="utf-8")
+    findings = _collect_scheduled_event_raw_constructor_findings()
+    disallowed = [
+        finding
+        for finding in findings
+        if _scheduled_event_raw_constructor_allowance_for(finding) is None
+    ]
+
+    assert "sce = ScE.from_runtime_state(" in source
+    assert disallowed == []
+
+
+def test_scheduled_event_raw_constructor_guardrail_classifies_test_compatibility() -> None:
+    source = (
+        "from zsim.sim_progress.ScheduledEvent import ScheduledEvent\n"
+        "def build_test_event(\n"
+        "    dynamic_buff, data, tick, exist_buff_dict, action_stack, loading_buff\n"
+        "):\n"
+        "    return ScheduledEvent(\n"
+        "        dynamic_buff,\n"
+        "        data,\n"
+        "        tick,\n"
+        "        exist_buff_dict,\n"
+        "        action_stack,\n"
+        "        loading_buff=loading_buff,\n"
+        "        legacy_raw_container_compat=True,\n"
+        "    )\n"
+    )
+    path = PROJECT_ROOT / "tests" / "simulator" / "_scheduled_event_fixture.py"
+    findings = _collect_scheduled_event_raw_constructor_findings_from_source(
+        path, source
+    )
+
+    assert len(findings) == 1
+    assert _scheduled_event_raw_constructor_allowance_for(findings[0]) == (
+        "test-only ScheduledEvent constructor compatibility"
+    )
+    assert _scheduled_event_raw_constructor_allowance_counts(findings) == Counter(
+        {"test-only ScheduledEvent constructor compatibility": 1}
+    )
 
 
 def test_main_loop_keeps_runtime_api_order_before_scheduled_events() -> None:
