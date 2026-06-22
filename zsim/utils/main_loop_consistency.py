@@ -25,6 +25,7 @@ from zsim.utils.process_dmg_result import prepare_dmg_data_and_cache, sort_df_by
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _BUFF_TIMELINE_SAMPLE_LIMIT = 20
 _SESSION_ID_COUNTER = count(1)
+MULTI_TEAM_CONSISTENCY_SCHEMA = "zsim-buffload-opt-in-multi-team-consistency.v1"
 RUNTIME_LABEL_CONTRACT = {
     "mode": "label-only-current-runtime",
     "description": (
@@ -314,6 +315,133 @@ def build_consistency_report(
     }
 
 
+def _event_count_differences_match(event_count_differences: dict[str, Any]) -> bool:
+    return not any(bool(value) for value in event_count_differences.values())
+
+
+def _buff_timeline_differences_match(buff_timeline_differences: dict[str, Any]) -> bool:
+    return (
+        int(buff_timeline_differences.get("legacy_only_count", 0)) == 0
+        and int(buff_timeline_differences.get("candidate_only_count", 0)) == 0
+    )
+
+
+def _team_consistency_summary(report: dict[str, Any]) -> dict[str, Any]:
+    differences = report["differences"]
+    event_count_differences = differences["event_counts"]
+    buff_timeline_differences = differences["buff_timeline"]
+
+    return {
+        "team": report["team"],
+        "apl": report["apl"],
+        "stop_tick": int(report["stop_tick"]),
+        "runtime_labels": {
+            "default_path": report["legacy_runtime"],
+            "opt_in_indexed_path": report["candidate_runtime"],
+        },
+        "runtime_selection": dict(report.get("runtime_selection", {})),
+        "damage_parity": {
+            "default_path": report["total_damage"]["legacy"],
+            "opt_in_indexed_path": report["total_damage"]["candidate"],
+            "delta": differences["total_damage"],
+            "matches": differences["total_damage"] == 0,
+        },
+        "event_count_parity": {
+            "matches": _event_count_differences_match(event_count_differences),
+            "differences": event_count_differences,
+        },
+        "buff_timeline_parity": {
+            "matches": _buff_timeline_differences_match(buff_timeline_differences),
+            "legacy_only_count": buff_timeline_differences["legacy_only_count"],
+            "candidate_only_count": buff_timeline_differences["candidate_only_count"],
+            "sample_legacy_only": buff_timeline_differences["sample_legacy_only"],
+            "sample_candidate_only": buff_timeline_differences["sample_candidate_only"],
+        },
+        "matches": bool(differences["matches"]),
+    }
+
+
+def build_multi_team_consistency_summary(
+    *,
+    reports: list[dict[str, Any]],
+    generated_at: str | None = None,
+) -> dict[str, Any]:
+    if not reports:
+        raise ValueError("multi-team consistency summary requires at least one report")
+
+    team_results = [_team_consistency_summary(report) for report in reports]
+    mismatch_teams = [result["team"] for result in team_results if not result["matches"]]
+    stop_ticks = sorted({int(result["stop_tick"]) for result in team_results})
+
+    return {
+        "schema": MULTI_TEAM_CONSISTENCY_SCHEMA,
+        "generated_at": generated_at or time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "team_count": len(team_results),
+        "teams": [result["team"] for result in team_results],
+        "stop_ticks": stop_ticks,
+        "required_minimum_stop_tick": 120,
+        "minimum_stop_tick_met": all(stop_tick >= 120 for stop_tick in stop_ticks),
+        "runtime_paths": {
+            "default_path": "default current BuffLoadLoop execution",
+            "opt_in_indexed_path": "candidate explicit opt-in indexed BuffLoadLoop execution",
+        },
+        "candidate_use_indexed_buff_load_loop": all(
+            bool(
+                report.get("runtime_selection", {}).get(
+                    "candidate_use_indexed_buff_load_loop", False
+                )
+            )
+            for report in reports
+        ),
+        "default_indexed_execution": "blocked",
+        "mismatch_count": len(mismatch_teams),
+        "mismatch_teams": mismatch_teams,
+        "all_match": not mismatch_teams,
+        "team_results": team_results,
+        "reports": reports,
+    }
+
+
+def _write_json_artifact(output_path: str | Path, payload: dict[str, Any]) -> None:
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
+def run_multi_team_main_loop_consistency(
+    *,
+    teams: list[str],
+    stop_tick: int,
+    legacy_runtime: str = "default-current-path",
+    candidate_runtime: str = "opt-in-indexed-path",
+    cleanup: bool = True,
+    candidate_use_indexed_buff_load_loop: bool = True,
+    output_path: str | Path | None = None,
+) -> dict[str, Any]:
+    if not teams:
+        raise ValueError("at least one team is required")
+
+    reports = [
+        run_main_loop_consistency(
+            team=team,
+            apl=None,
+            stop_tick=stop_tick,
+            legacy_runtime=legacy_runtime,
+            candidate_runtime=candidate_runtime,
+            cleanup=cleanup,
+            candidate_use_indexed_buff_load_loop=candidate_use_indexed_buff_load_loop,
+        )
+        for team in teams
+    ]
+    summary = build_multi_team_consistency_summary(reports=reports)
+    if output_path is not None:
+        _write_json_artifact(output_path, summary)
+    return summary
+
+
 def _cleanup_result_artifacts(session_id: str) -> None:
     result_path = Path(results_dir) / session_id
     if result_path.exists():
@@ -372,7 +500,13 @@ def run_main_loop_consistency(
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run a Buff main-loop consistency comparison")
-    parser.add_argument("--team", required=True, help="Registered team name to simulate")
+    parser.add_argument("--team", default=None, help="Registered team name to simulate")
+    parser.add_argument(
+        "--teams",
+        nargs="+",
+        default=None,
+        help="Registered team names to simulate into one multi-team summary.",
+    )
     parser.add_argument(
         "--apl",
         default=None,
@@ -408,11 +542,28 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--summary-json",
+        default=None,
+        help="Optional JSON artifact path for the generated report or multi-team summary.",
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="Print the full JSON report to stdout.",
     )
     return parser
+
+
+def _format_multi_team_human_summary(summary: dict[str, Any]) -> str:
+    lines = [
+        f"schema: {summary['schema']}",
+        "teams: " + ", ".join(summary["teams"]),
+        f"stop_ticks: {summary['stop_ticks']}",
+        f"runtime_selection: indexed_opt_in={summary['candidate_use_indexed_buff_load_loop']}",
+        f"all_match: {summary['all_match']}",
+        f"mismatch_count: {summary['mismatch_count']}",
+    ]
+    return "\n".join(lines)
 
 
 def _format_human_report(report: dict[str, Any]) -> str:
@@ -439,6 +590,25 @@ def _format_human_report(report: dict[str, Any]) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.teams:
+        summary = run_multi_team_main_loop_consistency(
+            teams=args.teams,
+            stop_tick=args.stop_tick,
+            legacy_runtime=args.legacy_runtime,
+            candidate_runtime=args.candidate_runtime,
+            cleanup=not args.keep_artifacts,
+            candidate_use_indexed_buff_load_loop=args.candidate_use_indexed_buff_load_loop,
+            output_path=args.summary_json,
+        )
+        if args.json:
+            print(json.dumps(summary, ensure_ascii=False, sort_keys=True, indent=2))
+        else:
+            print(_format_multi_team_human_summary(summary))
+        return 0 if summary["all_match"] else 2
+
+    if args.team is None:
+        parser.error("--team is required unless --teams is provided")
+
     report = run_main_loop_consistency(
         team=args.team,
         apl=args.apl,
@@ -448,6 +618,8 @@ def main(argv: list[str] | None = None) -> int:
         cleanup=not args.keep_artifacts,
         candidate_use_indexed_buff_load_loop=args.candidate_use_indexed_buff_load_loop,
     )
+    if args.summary_json:
+        _write_json_artifact(args.summary_json, report)
     if args.json:
         print(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2))
     else:
@@ -457,12 +629,15 @@ def main(argv: list[str] | None = None) -> int:
 
 __all__ = [
     "PROJECT_ROOT",
+    "MULTI_TEAM_CONSISTENCY_SCHEMA",
     "RUNTIME_LABEL_CONTRACT",
     "RuntimeSnapshot",
     "build_consistency_report",
+    "build_multi_team_consistency_summary",
     "build_parser",
     "main",
     "run_main_loop_consistency",
+    "run_multi_team_main_loop_consistency",
 ]
 
 

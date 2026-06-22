@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 from typing import Literal
@@ -124,6 +125,17 @@ def test_build_parser_accepts_required_cli_flags():
             "--candidate-use-indexed-buff-load-loop",
         ]
     )
+    multi_team_args = parser.parse_args(
+        [
+            "--teams",
+            "team-a",
+            "team-b",
+            "team-c",
+            "--summary-json",
+            "scripts/ralph/benchmarks/summary.json",
+            "--candidate-use-indexed-buff-load-loop",
+        ]
+    )
 
     assert args.team == "team-a"
     assert args.apl == "./zsim/data/APLData/example.toml"
@@ -132,6 +144,9 @@ def test_build_parser_accepts_required_cli_flags():
     assert args.json is True
     assert args.candidate_use_indexed_buff_load_loop is False
     assert flagged_args.candidate_use_indexed_buff_load_loop is True
+    assert multi_team_args.teams == ["team-a", "team-b", "team-c"]
+    assert multi_team_args.summary_json == "scripts/ralph/benchmarks/summary.json"
+    assert multi_team_args.candidate_use_indexed_buff_load_loop is True
 
 
 def test_run_main_loop_consistency_uses_runtime_labels_and_cleanup(monkeypatch: pytest.MonkeyPatch):
@@ -339,6 +354,116 @@ def test_run_main_loop_consistency_candidate_opt_in_only_flags_candidate(
     assert submitted_flags == [False, True]
     assert report["runtime_selection"]["mode"] == "candidate-explicit-opt-in-indexed-buff-load-loop"
     assert report["runtime_selection"]["default_off"] is True
+
+
+def _matching_opt_in_report(team: str, stop_tick: int = 120) -> dict[str, Any]:
+    legacy_snapshot = RuntimeSnapshot(
+        runtime_label="default-current-path",
+        session_id=f"{team}-legacy",
+        total_damage=123.4,
+        event_counts={
+            "total": 2,
+            "anomaly_total": 0,
+            "disorder_total": 0,
+            "by_skill_tag": {"alpha": 2},
+            "by_skill_name": {"Alpha": 2},
+            "by_element_type": {"1": 2},
+        },
+        buff_timeline={
+            "alpha": [{"Task": "buff-a", "Start": 1, "Finish": 2, "Value": 1.0}]
+        },
+    )
+    candidate_snapshot = RuntimeSnapshot(
+        runtime_label="opt-in-indexed-path",
+        session_id=f"{team}-candidate",
+        total_damage=123.4,
+        event_counts=dict(legacy_snapshot.event_counts),
+        buff_timeline=dict(legacy_snapshot.buff_timeline),
+    )
+    return build_consistency_report(
+        team=team,
+        apl=f"./{team}.toml",
+        stop_tick=stop_tick,
+        legacy_snapshot=legacy_snapshot,
+        candidate_snapshot=candidate_snapshot,
+        candidate_use_indexed_buff_load_loop=True,
+    )
+
+
+def test_build_multi_team_consistency_summary_records_parity_fields():
+    reports = [
+        _matching_opt_in_report("team-a"),
+        _matching_opt_in_report("team-b"),
+        _matching_opt_in_report("team-c"),
+    ]
+
+    summary = mlc.build_multi_team_consistency_summary(
+        reports=reports,
+        generated_at="2026-06-22T00:00:00+0800",
+    )
+
+    assert summary["schema"] == mlc.MULTI_TEAM_CONSISTENCY_SCHEMA
+    assert summary["team_count"] == 3
+    assert summary["teams"] == ["team-a", "team-b", "team-c"]
+    assert summary["stop_ticks"] == [120]
+    assert summary["minimum_stop_tick_met"] is True
+    assert summary["candidate_use_indexed_buff_load_loop"] is True
+    assert summary["default_indexed_execution"] == "blocked"
+    assert summary["all_match"] is True
+    assert summary["mismatch_count"] == 0
+    first_result = summary["team_results"][0]
+    assert first_result["runtime_labels"] == {
+        "default_path": "default-current-path",
+        "opt_in_indexed_path": "opt-in-indexed-path",
+    }
+    assert first_result["damage_parity"]["matches"] is True
+    assert first_result["event_count_parity"]["matches"] is True
+    assert first_result["buff_timeline_parity"]["matches"] is True
+
+
+def test_run_multi_team_main_loop_consistency_writes_summary_json(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    captured_calls: list[dict[str, Any]] = []
+
+    def fake_run_main_loop_consistency(**kwargs: Any) -> dict[str, Any]:
+        captured_calls.append(kwargs)
+        return _matching_opt_in_report(kwargs["team"], kwargs["stop_tick"])
+
+    monkeypatch.setattr(mlc, "run_main_loop_consistency", fake_run_main_loop_consistency)
+    output_path = tmp_path / "multi-team-consistency.json"
+
+    summary = mlc.run_multi_team_main_loop_consistency(
+        teams=["team-a", "team-b", "team-c"],
+        stop_tick=120,
+        cleanup=True,
+        candidate_use_indexed_buff_load_loop=True,
+        output_path=output_path,
+    )
+
+    assert [call["team"] for call in captured_calls] == ["team-a", "team-b", "team-c"]
+    assert [call["candidate_use_indexed_buff_load_loop"] for call in captured_calls] == [
+        True,
+        True,
+        True,
+    ]
+    assert [call["legacy_runtime"] for call in captured_calls] == [
+        "default-current-path",
+        "default-current-path",
+        "default-current-path",
+    ]
+    assert [call["candidate_runtime"] for call in captured_calls] == [
+        "opt-in-indexed-path",
+        "opt-in-indexed-path",
+        "opt-in-indexed-path",
+    ]
+    assert summary["all_match"] is True
+
+    artifact = json.loads(output_path.read_text(encoding="utf-8"))
+    assert artifact["teams"] == ["team-a", "team-b", "team-c"]
+    assert artifact["candidate_use_indexed_buff_load_loop"] is True
+    assert artifact["team_results"][0]["damage_parity"]["delta"] == 0.0
 
 
 def test_load_runtime_snapshot_falls_back_for_blank_anomaly_column(
