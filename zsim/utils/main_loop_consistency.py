@@ -330,6 +330,9 @@ def _team_consistency_summary(report: dict[str, Any]) -> dict[str, Any]:
     differences = report["differences"]
     event_count_differences = differences["event_counts"]
     buff_timeline_differences = differences["buff_timeline"]
+    runtime_selection = dict(report.get("runtime_selection", {}))
+    candidate_opt_in = bool(runtime_selection.get("candidate_use_indexed_buff_load_loop", False))
+    matches = bool(differences["matches"])
 
     return {
         "team": report["team"],
@@ -339,7 +342,11 @@ def _team_consistency_summary(report: dict[str, Any]) -> dict[str, Any]:
             "default_path": report["legacy_runtime"],
             "opt_in_indexed_path": report["candidate_runtime"],
         },
-        "runtime_selection": dict(report.get("runtime_selection", {})),
+        "runtime_selection": runtime_selection,
+        "candidate_use_indexed_buff_load_loop": candidate_opt_in,
+        "opt_in_flag_status": (
+            "candidate_explicit_opt_in" if candidate_opt_in else "default_off_label_only"
+        ),
         "damage_parity": {
             "default_path": report["total_damage"]["legacy"],
             "opt_in_indexed_path": report["total_damage"]["candidate"],
@@ -357,7 +364,8 @@ def _team_consistency_summary(report: dict[str, Any]) -> dict[str, Any]:
             "sample_legacy_only": buff_timeline_differences["sample_legacy_only"],
             "sample_candidate_only": buff_timeline_differences["sample_candidate_only"],
         },
-        "matches": bool(differences["matches"]),
+        "mismatch_count": 0 if matches else 1,
+        "matches": matches,
     }
 
 
@@ -369,16 +377,21 @@ def build_multi_team_consistency_summary(
     if not reports:
         raise ValueError("multi-team consistency summary requires at least one report")
 
-    team_results = [_team_consistency_summary(report) for report in reports]
-    mismatch_teams = [result["team"] for result in team_results if not result["matches"]]
-    stop_ticks = sorted({int(result["stop_tick"]) for result in team_results})
+    matrix_results = [_team_consistency_summary(report) for report in reports]
+    teams = list(dict.fromkeys(result["team"] for result in matrix_results))
+    mismatch_results = [result for result in matrix_results if not result["matches"]]
+    mismatch_teams = list(dict.fromkeys(result["team"] for result in mismatch_results))
+    stop_ticks = sorted({int(result["stop_tick"]) for result in matrix_results})
+    mismatch_count = sum(int(result["mismatch_count"]) for result in matrix_results)
 
     return {
         "schema": MULTI_TEAM_CONSISTENCY_SCHEMA,
         "generated_at": generated_at or time.strftime("%Y-%m-%dT%H:%M:%S%z"),
-        "team_count": len(team_results),
-        "teams": [result["team"] for result in team_results],
+        "team_count": len(teams),
+        "teams": teams,
         "stop_ticks": stop_ticks,
+        "stop_tick_count": len(stop_ticks),
+        "matrix_row_count": len(matrix_results),
         "required_minimum_stop_tick": 120,
         "minimum_stop_tick_met": all(stop_tick >= 120 for stop_tick in stop_ticks),
         "runtime_paths": {
@@ -394,10 +407,15 @@ def build_multi_team_consistency_summary(
             for report in reports
         ),
         "default_indexed_execution": "blocked",
-        "mismatch_count": len(mismatch_teams),
+        "mismatch_count": mismatch_count,
         "mismatch_teams": mismatch_teams,
+        "mismatch_matrix_keys": [
+            {"team": result["team"], "stop_tick": result["stop_tick"]}
+            for result in mismatch_results
+        ],
         "all_match": not mismatch_teams,
-        "team_results": team_results,
+        "matrix_results": matrix_results,
+        "team_results": matrix_results,
         "reports": reports,
     }
 
@@ -415,6 +433,7 @@ def run_multi_team_main_loop_consistency(
     *,
     teams: list[str],
     stop_tick: int,
+    stop_ticks: list[int] | None = None,
     legacy_runtime: str = "default-current-path",
     candidate_runtime: str = "opt-in-indexed-path",
     cleanup: bool = True,
@@ -423,18 +442,22 @@ def run_multi_team_main_loop_consistency(
 ) -> dict[str, Any]:
     if not teams:
         raise ValueError("at least one team is required")
+    matrix_stop_ticks = list(stop_ticks or [stop_tick])
+    if not matrix_stop_ticks:
+        raise ValueError("at least one stop tick is required")
 
     reports = [
         run_main_loop_consistency(
             team=team,
             apl=None,
-            stop_tick=stop_tick,
+            stop_tick=matrix_stop_tick,
             legacy_runtime=legacy_runtime,
             candidate_runtime=candidate_runtime,
             cleanup=cleanup,
             candidate_use_indexed_buff_load_loop=candidate_use_indexed_buff_load_loop,
         )
         for team in teams
+        for matrix_stop_tick in matrix_stop_ticks
     ]
     summary = build_multi_team_consistency_summary(reports=reports)
     if output_path is not None:
@@ -519,6 +542,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="Stop tick for each runtime run.",
     )
     parser.add_argument(
+        "--stop-ticks",
+        nargs="+",
+        type=int,
+        default=None,
+        help=(
+            "Optional stop-tick matrix for --teams. When omitted, --teams preserves "
+            "the single --stop-tick behavior."
+        ),
+    )
+    parser.add_argument(
         "--legacy-runtime",
         default="legacy",
         help="First run label to record in the report; this does not select a runtime.",
@@ -559,6 +592,7 @@ def _format_multi_team_human_summary(summary: dict[str, Any]) -> str:
         f"schema: {summary['schema']}",
         "teams: " + ", ".join(summary["teams"]),
         f"stop_ticks: {summary['stop_ticks']}",
+        f"matrix_row_count: {summary['matrix_row_count']}",
         f"runtime_selection: indexed_opt_in={summary['candidate_use_indexed_buff_load_loop']}",
         f"all_match: {summary['all_match']}",
         f"mismatch_count: {summary['mismatch_count']}",
@@ -594,6 +628,7 @@ def main(argv: list[str] | None = None) -> int:
         summary = run_multi_team_main_loop_consistency(
             teams=args.teams,
             stop_tick=args.stop_tick,
+            stop_ticks=args.stop_ticks,
             legacy_runtime=args.legacy_runtime,
             candidate_runtime=args.candidate_runtime,
             cleanup=not args.keep_artifacts,

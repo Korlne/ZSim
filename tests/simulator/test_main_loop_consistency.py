@@ -131,6 +131,9 @@ def test_build_parser_accepts_required_cli_flags():
             "team-a",
             "team-b",
             "team-c",
+            "--stop-ticks",
+            "120",
+            "600",
             "--summary-json",
             "scripts/ralph/benchmarks/summary.json",
             "--candidate-use-indexed-buff-load-loop",
@@ -145,6 +148,7 @@ def test_build_parser_accepts_required_cli_flags():
     assert args.candidate_use_indexed_buff_load_loop is False
     assert flagged_args.candidate_use_indexed_buff_load_loop is True
     assert multi_team_args.teams == ["team-a", "team-b", "team-c"]
+    assert multi_team_args.stop_ticks == [120, 600]
     assert multi_team_args.summary_json == "scripts/ralph/benchmarks/summary.json"
     assert multi_team_args.candidate_use_indexed_buff_load_loop is True
 
@@ -406,19 +410,67 @@ def test_build_multi_team_consistency_summary_records_parity_fields():
     assert summary["team_count"] == 3
     assert summary["teams"] == ["team-a", "team-b", "team-c"]
     assert summary["stop_ticks"] == [120]
+    assert summary["stop_tick_count"] == 1
+    assert summary["matrix_row_count"] == 3
     assert summary["minimum_stop_tick_met"] is True
     assert summary["candidate_use_indexed_buff_load_loop"] is True
     assert summary["default_indexed_execution"] == "blocked"
     assert summary["all_match"] is True
     assert summary["mismatch_count"] == 0
+    assert summary["matrix_results"] == summary["team_results"]
     first_result = summary["team_results"][0]
     assert first_result["runtime_labels"] == {
         "default_path": "default-current-path",
         "opt_in_indexed_path": "opt-in-indexed-path",
     }
+    assert first_result["candidate_use_indexed_buff_load_loop"] is True
+    assert first_result["opt_in_flag_status"] == "candidate_explicit_opt_in"
     assert first_result["damage_parity"]["matches"] is True
     assert first_result["event_count_parity"]["matches"] is True
     assert first_result["buff_timeline_parity"]["matches"] is True
+    assert first_result["mismatch_count"] == 0
+
+
+def test_build_multi_team_consistency_summary_records_stop_tick_matrix_fields():
+    reports = [
+        _matching_opt_in_report("team-a", stop_tick=120),
+        _matching_opt_in_report("team-a", stop_tick=600),
+        _matching_opt_in_report("team-b", stop_tick=120),
+        _matching_opt_in_report("team-b", stop_tick=600),
+    ]
+
+    summary = mlc.build_multi_team_consistency_summary(
+        reports=reports,
+        generated_at="2026-06-22T00:00:00+0800",
+    )
+
+    assert summary["team_count"] == 2
+    assert summary["teams"] == ["team-a", "team-b"]
+    assert summary["stop_ticks"] == [120, 600]
+    assert summary["stop_tick_count"] == 2
+    assert summary["matrix_row_count"] == 4
+    assert summary["mismatch_count"] == 0
+    matrix_keys = [
+        (row["team"], row["stop_tick"], row["candidate_use_indexed_buff_load_loop"])
+        for row in summary["matrix_results"]
+    ]
+    assert matrix_keys == [
+        ("team-a", 120, True),
+        ("team-a", 600, True),
+        ("team-b", 120, True),
+        ("team-b", 600, True),
+    ]
+
+    stop_600_result = summary["matrix_results"][1]
+    assert stop_600_result["runtime_labels"] == {
+        "default_path": "default-current-path",
+        "opt_in_indexed_path": "opt-in-indexed-path",
+    }
+    assert stop_600_result["opt_in_flag_status"] == "candidate_explicit_opt_in"
+    assert stop_600_result["damage_parity"]["matches"] is True
+    assert stop_600_result["event_count_parity"]["matches"] is True
+    assert stop_600_result["buff_timeline_parity"]["matches"] is True
+    assert stop_600_result["mismatch_count"] == 0
 
 
 def test_run_multi_team_main_loop_consistency_writes_summary_json(
@@ -443,6 +495,7 @@ def test_run_multi_team_main_loop_consistency_writes_summary_json(
     )
 
     assert [call["team"] for call in captured_calls] == ["team-a", "team-b", "team-c"]
+    assert [call["stop_tick"] for call in captured_calls] == [120, 120, 120]
     assert [call["candidate_use_indexed_buff_load_loop"] for call in captured_calls] == [
         True,
         True,
@@ -459,11 +512,44 @@ def test_run_multi_team_main_loop_consistency_writes_summary_json(
         "opt-in-indexed-path",
     ]
     assert summary["all_match"] is True
+    assert summary["matrix_row_count"] == 3
 
     artifact = json.loads(output_path.read_text(encoding="utf-8"))
     assert artifact["teams"] == ["team-a", "team-b", "team-c"]
     assert artifact["candidate_use_indexed_buff_load_loop"] is True
+    assert artifact["matrix_row_count"] == 3
     assert artifact["team_results"][0]["damage_parity"]["delta"] == 0.0
+
+
+def test_run_multi_team_main_loop_consistency_accepts_stop_tick_matrix(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    captured_calls: list[dict[str, Any]] = []
+
+    def fake_run_main_loop_consistency(**kwargs: Any) -> dict[str, Any]:
+        captured_calls.append(kwargs)
+        return _matching_opt_in_report(kwargs["team"], kwargs["stop_tick"])
+
+    monkeypatch.setattr(mlc, "run_main_loop_consistency", fake_run_main_loop_consistency)
+
+    summary = mlc.run_multi_team_main_loop_consistency(
+        teams=["team-a", "team-b"],
+        stop_tick=120,
+        stop_ticks=[120, 600],
+        cleanup=True,
+        candidate_use_indexed_buff_load_loop=True,
+    )
+
+    assert [(call["team"], call["stop_tick"]) for call in captured_calls] == [
+        ("team-a", 120),
+        ("team-a", 600),
+        ("team-b", 120),
+        ("team-b", 600),
+    ]
+    assert summary["teams"] == ["team-a", "team-b"]
+    assert summary["stop_ticks"] == [120, 600]
+    assert summary["matrix_row_count"] == 4
+    assert summary["candidate_use_indexed_buff_load_loop"] is True
 
 
 def test_load_runtime_snapshot_falls_back_for_blank_anomaly_column(
