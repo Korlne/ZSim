@@ -1481,8 +1481,6 @@ def _allowance_for(finding: Finding) -> str | None:
             return "BuffRuntimeState owner construction"
         if context == "Simulator._create_buff_runtime_facade":
             return "legacy facade construction"
-        if context == "Simulator.main_loop":
-            return "retained ScheduledEvent main-loop boundary"
     if path == "zsim/sim_progress/Buff/BuffLoad.py":
         return "retained BuffLoadLoop trigger judgement and pending queue population"
     if path == "zsim/sim_progress/Buff/BuffAdd.py":
@@ -1510,7 +1508,8 @@ def _allowance_for(finding: Finding) -> str | None:
         if context == "KickOutBuff":
             return "legacy KickOutBuff active-removal compatibility path"
     if path == "zsim/sim_progress/ScheduledEvent/__init__.py":
-        return "retained ScheduledEvent raw-container boundary"
+        if context == "ScheduledEvent.__init__":
+            return "retained ScheduledEvent constructor setup"
     if path == "zsim/sim_progress/ScheduledEvent/runtime_command.py":
         return "RuntimeCommandPort compatibility reads"
     return None
@@ -1613,7 +1612,6 @@ EXPECTED_RETAINED_REFERENCE_CEILINGS = {
     "BuffRuntimeState owner construction": 4,
     "legacy facade adapter internals": 59,
     "legacy facade construction": 8,
-    "retained ScheduledEvent main-loop boundary": 2,
     # US-002 documents the three metrics-only BuffLoadLoop scan observations
     # that moved this retained-boundary ceiling from 41 to 44.
     "retained BuffLoadLoop trigger judgement and pending queue population": 44,
@@ -1624,7 +1622,7 @@ EXPECTED_RETAINED_REFERENCE_CEILINGS = {
     "retained Update_Buff time-effect compatibility wrapper": 5,
     "retained Update_Buff active-store traversal and no-facade fallback": 7,
     "legacy KickOutBuff active-removal compatibility path": 5,
-    "retained ScheduledEvent raw-container boundary": 21,
+    "retained ScheduledEvent constructor setup": 16,
     "RuntimeCommandPort compatibility reads": 11,
 }
 
@@ -2565,7 +2563,7 @@ def test_active_store_raw_write_guardrail_blocks_production_writes() -> None:
     assert f"next action: {ACTIVE_STORE_RAW_WRITE_NEXT_ACTION}" in message
 
 
-def test_main_loop_keeps_buffload_pending_queue_behind_runtime_api() -> None:
+def test_main_loop_has_no_raw_container_passthroughs_after_runtime_state_factory() -> None:
     findings = [
         finding
         for finding in _collect_findings()
@@ -2573,10 +2571,63 @@ def test_main_loop_keeps_buffload_pending_queue_behind_runtime_api() -> None:
         and finding.context == "Simulator.main_loop"
     ]
 
-    assert all(
-        finding.classification_suggestion != "pending queue old-container passthrough"
-        for finding in findings
+    assert findings == []
+
+
+def test_raw_old_container_guardrail_blocks_main_loop_scheduled_event_handoff() -> None:
+    source = (
+        "class Simulator:\n"
+        "    def main_loop(self):\n"
+        "        sce = ScE(\n"
+        "            self.global_stats.DYNAMIC_BUFF_DICT,\n"
+        "            self.schedule_data,\n"
+        "            self.tick,\n"
+        "            self.load_data.exist_buff_dict,\n"
+        "            self.load_data.action_stack,\n"
+        "            loading_buff=self.load_data.LOADING_BUFF_DICT,\n"
+        "        )\n"
+        "        return sce\n"
     )
+    path = PROJECT_ROOT / "zsim" / "simulator" / "simulator_class.py"
+    findings = _collect_findings_from_source(path, source)
+    disallowed = [finding for finding in findings if _allowance_for(finding) is None]
+
+    assert disallowed
+    message = "\n".join(finding.message() for finding in disallowed)
+    assert "matched expression: self.global_stats.DYNAMIC_BUFF_DICT" in message
+    assert "matched expression: self.load_data.exist_buff_dict" in message
+    assert "loading_buff=self.load_data.LOADING_BUFF_DICT" in message
+    assert "classification suggestion: active store old-container passthrough" in message
+    assert "classification suggestion: registry/template old-container passthrough" in message
+    assert "classification suggestion: pending queue old-container passthrough" in message
+    assert f"next action: {TRIAGE_NEXT_ACTION}" in message
+
+
+def test_scheduled_event_raw_container_allowance_is_constructor_only() -> None:
+    source = (
+        "class ScheduledEvent:\n"
+        "    @classmethod\n"
+        "    def from_runtime_state(cls, sim_instance):\n"
+        "        return sim_instance.global_stats.DYNAMIC_BUFF_DICT\n"
+        "    def __init__(self, dynamic_buff, data, tick, exist_buff_dict, action_stack):\n"
+        "        self.data = data\n"
+        "        self.data.dynamic_buff = dynamic_buff\n"
+        "        self.exist_buff_dict = exist_buff_dict\n"
+    )
+    path = PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent" / "__init__.py"
+    findings = _collect_findings_from_source(path, source)
+
+    disallowed = [finding for finding in findings if _allowance_for(finding) is None]
+    allowed = [finding for finding in findings if _allowance_for(finding) is not None]
+
+    assert disallowed
+    assert {finding.context for finding in disallowed} == {
+        "ScheduledEvent.from_runtime_state"
+    }
+    assert {finding.context for finding in allowed} == {"ScheduledEvent.__init__"}
+    assert {_allowance_for(finding) for finding in allowed} == {
+        "retained ScheduledEvent constructor setup"
+    }
 
 
 def test_main_loop_keeps_runtime_api_order_before_scheduled_events() -> None:
