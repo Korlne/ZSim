@@ -2025,6 +2025,99 @@ def test_runtime_dependency_zero_scanner_classifies_reference_categories() -> No
     }
 
 
+def test_template_registry_runtime_dependency_scanner_blocks_direct_load_data_truth_sources() -> None:
+    scanner = RuntimeDependencyZeroScanner(PROJECT_ROOT)
+
+    simulator_findings = scanner.scan_source(
+        "zsim/simulator/simulator_class.py",
+        "def leak(self):\n"
+        "    return self.load_data.exist_buff_dict\n",
+    )
+    api_findings = scanner.scan_source(
+        "zsim/api_src/_fixture.py",
+        "def leak(sim_instance):\n"
+        "    return sim_instance.load_data.exist_buff_dict\n",
+    )
+    sim_progress_read_findings = scanner.scan_source(
+        "zsim/sim_progress/Buff/BuffXLogic/_fixture.py",
+        "def leak(sim_instance):\n"
+        "    return sim_instance.load_data.exist_buff_dict\n",
+    )
+    sim_progress_write_findings = scanner.scan_source(
+        "zsim/sim_progress/Buff/BuffXLogic/_fixture.py",
+        "def leak(sim_instance, templates):\n"
+        "    sim_instance.load_data.exist_buff_dict['enemy'] = templates\n",
+    )
+
+    for findings in (
+        simulator_findings,
+        api_findings,
+        sim_progress_read_findings,
+        sim_progress_write_findings,
+    ):
+        assert {
+            finding.category
+            for finding in findings
+            if finding.family == "exist_buff_dict"
+        } == {"production runtime"}
+
+
+def test_template_registry_runtime_dependency_scanner_allows_bounded_owner_and_migration_contexts() -> None:
+    scanner = RuntimeDependencyZeroScanner(PROJECT_ROOT)
+
+    simulator_owner_findings = scanner.scan_source(
+        "zsim/simulator/simulator_class.py",
+        "template_registry=self.load_data.exist_buff_dict,\n",
+    )
+    simulator_scheduled_event_findings = scanner.scan_source(
+        "zsim/simulator/simulator_class.py",
+        "    self.load_data.exist_buff_dict,\n",
+    )
+    judgetools_fallback_findings = scanner.scan_source(
+        "zsim/sim_progress/Buff/JudgeTools/FindMain.py",
+        "def _legacy_exist_buff_dict_for_compat(sim_instance):\n"
+        "    return sim_instance.load_data.exist_buff_dict\n",
+    )
+    preparation_read_port_findings = scanner.scan_source(
+        "zsim/sim_progress/Buff/JudgeTools/PreparationContext.py",
+        "return create_buff_runtime_read_port(\n"
+        "    exist_buff_dict=sim_instance.load_data.exist_buff_dict,\n"
+        ")\n",
+    )
+    preparation_registry_findings = scanner.scan_source(
+        "zsim/sim_progress/Buff/JudgeTools/PreparationContext.py",
+        "return BuffTemplateRegistryReadPort(\n"
+        "    templates_by_owner=sim_instance.load_data.exist_buff_dict\n"
+        ")\n",
+    )
+    dot_initialization_findings = scanner.scan_source(
+        "zsim/sim_progress/Dot/initialization.py",
+        "return DotInitializationReadContext(\n"
+        "    exist_buff_dict=sim_instance.load_data.exist_buff_dict,\n"
+        ")\n",
+    )
+    runtime_owner_findings = scanner.scan_source(
+        "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+        "def compat(self):\n"
+        "    return self._exist_buff_dict\n",
+    )
+
+    for findings in (
+        simulator_owner_findings,
+        simulator_scheduled_event_findings,
+        judgetools_fallback_findings,
+        preparation_read_port_findings,
+        preparation_registry_findings,
+        dot_initialization_findings,
+        runtime_owner_findings,
+    ):
+        assert {
+            finding.category
+            for finding in findings
+            if finding.family == "exist_buff_dict"
+        } == {"migration-only"}
+
+
 def test_pending_queue_runtime_dependency_scanner_classifies_reference_categories() -> None:
     scanner = RuntimeDependencyZeroScanner(PROJECT_ROOT)
 
