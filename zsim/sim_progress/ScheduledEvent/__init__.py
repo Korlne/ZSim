@@ -112,6 +112,7 @@ class ScheduledEvent:
         *,
         loading_buff: dict | None = None,
         buff_runtime_state: BuffRuntimeState | None = None,
+        legacy_raw_container_compat: bool = False,
         sim_instance: Simulator,
     ):
         self.data: "ScheduleData" = data
@@ -135,6 +136,12 @@ class ScheduledEvent:
         self.enemy = self.data.enemy
         self.buff_runtime_state = buff_runtime_state
         if self.buff_runtime_state is None:
+            if not legacy_raw_container_compat:
+                raise ValueError(
+                    "ScheduledEvent direct raw-container construction requires "
+                    "legacy_raw_container_compat=True; production code must use "
+                    "ScheduledEvent.from_runtime_state(...)."
+                )
             self.buff_runtime_state = BuffRuntimeState(
                 template_registry=exist_buff_dict,
                 pending_queue=loading_buff,

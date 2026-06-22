@@ -92,6 +92,7 @@ def _make_scheduled_event_for_sim(sim_instance: Any, tick: int = 10) -> Any:
         exist_buff_dict,
         SimpleNamespace(),
         loading_buff=loading_buff,
+        legacy_raw_container_compat=True,
         sim_instance=cast(Any, sim_instance),
     )
 

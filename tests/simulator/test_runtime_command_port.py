@@ -717,6 +717,7 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
         exist_buff_dict,
         action_stack,
         loading_buff=loading_buff,
+        legacy_raw_container_compat=True,
         sim_instance=sim_instance,
     )
     schedule_data.event_list = current_event_list
@@ -766,6 +767,31 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
     runtime_context.dispatch_port.publish_scheduled("scheduled")
     assert current_event_list == ["scheduled"]
     assert stale_event_list == ["stale"]
+
+
+def test_scheduled_event_direct_constructor_requires_explicit_compat_marker() -> None:
+    schedule_data = SimpleNamespace(
+        enemy=SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[])),
+        event_list=[],
+        char_obj_list=[],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "direct raw-container construction requires "
+            "legacy_raw_container_compat=True"
+        ),
+    ):
+        scheduled_event_module.ScheduledEvent(
+            {"alpha": [], "enemy": []},
+            schedule_data,
+            10,
+            {"alpha": {}, "enemy": {}},
+            SimpleNamespace(),
+            loading_buff={"alpha": []},
+            sim_instance=cast(Any, SimpleNamespace()),
+        )
 
 
 def test_scheduled_event_from_runtime_state_builds_ports_from_current_context(
