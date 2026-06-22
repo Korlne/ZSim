@@ -14,6 +14,10 @@ from zsim.sim_progress.Buff.JudgeTools.FindMain import find_exist_buff_dict
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     ActiveBuffStore,
     BuffRuntimeState,
+    DefaultBuffRuntimeFacade,
+    DefaultBuffRuntimeReadAdapter,
+    LegacyBuffRuntimeFacade,
+    LegacyBuffRuntimeReadAdapter,
     PendingBuffQueue,
 )
 from zsim.simulator import simulator_class
@@ -210,6 +214,132 @@ def _buff_load_loop_scan_metrics(sim: Any) -> dict[str, int] | None:
     if metrics is None:
         return None
     return dict(metrics)
+
+
+def test_simulator_no_flag_runtime_factory_uses_default_contract() -> None:
+    order: list[str] = []
+    sim, _, _, _, _ = _make_minimal_sim(order)
+    sim.enable_buff_runtime_rebuild_counting()
+
+    facade = sim._create_buff_runtime_facade()
+    read_port = sim.buff_runtime_state.create_read_port()
+
+    assert sim.use_indexed_buff_load_loop is False
+    assert isinstance(facade, DefaultBuffRuntimeFacade)
+    assert not isinstance(facade, LegacyBuffRuntimeFacade)
+    assert getattr(facade, "_runtime_state") is sim.buff_runtime_state
+    assert isinstance(read_port, DefaultBuffRuntimeReadAdapter)
+    assert not isinstance(read_port, LegacyBuffRuntimeReadAdapter)
+    assert sim.get_buff_runtime_rebuild_counts() == {"default_buff_runtime_facade": 1}
+
+
+def test_main_loop_no_flag_constructs_default_runtime_facade_and_read_port(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    order: list[str] = []
+    captured: dict[str, Any] = {}
+
+    def fake_update_time_related_effects(
+        self: DefaultBuffRuntimeFacade, *, tick: int, enemy: Any
+    ) -> dict[str, list[Any]]:
+        captured.setdefault("tick_facades", []).append(self)
+        order.append(f"tick_sweep:{tick}")
+        return {}
+
+    def fake_load_pending_buffs(
+        self: DefaultBuffRuntimeFacade,
+        *,
+        time_now: int,
+        load_mission_dict: dict[str, Any],
+        character_name_box: list[str],
+        all_name_order_box: dict[str, Any],
+        sim_instance: Any,
+    ) -> dict[str, list[Any]]:
+        captured["load_facade"] = self
+        captured["load_sim_instance"] = sim_instance
+        order.append(f"load_pending:{time_now}")
+        return {}
+
+    def fake_activate_pending_buffs(
+        self: DefaultBuffRuntimeFacade, *, timenow: float
+    ) -> dict[str, list[Any]]:
+        captured["activation_facade"] = self
+        order.append(f"activate_pending:{timenow}")
+        return {}
+
+    monkeypatch.setattr(
+        DefaultBuffRuntimeFacade,
+        "update_time_related_effects",
+        fake_update_time_related_effects,
+    )
+    monkeypatch.setattr(
+        DefaultBuffRuntimeFacade,
+        "load_pending_buffs",
+        fake_load_pending_buffs,
+    )
+    monkeypatch.setattr(
+        DefaultBuffRuntimeFacade,
+        "activate_pending_buffs",
+        fake_activate_pending_buffs,
+    )
+    monkeypatch.setattr(
+        simulator_class,
+        "DamageEventJudge",
+        lambda *args, **kwargs: order.append("damage_judge"),
+    )
+    monkeypatch.setattr(
+        simulator_class,
+        "stop_report_threads",
+        lambda: order.append("stop_report_threads"),
+    )
+
+    class FakeScheduledEvent:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            runtime_state = kwargs["buff_runtime_state"]
+            read_port = runtime_state.create_read_port()
+            captured["scheduled_runtime_state"] = runtime_state
+            captured["scheduled_read_port"] = read_port
+            captured["scheduled_dynamic_arg"] = args[0]
+            captured["scheduled_registry_arg"] = args[3]
+            order.append("scheduled_init")
+
+        def event_start(self) -> None:
+            order.append("scheduled_start")
+
+    monkeypatch.setattr(simulator_class, "ScE", FakeScheduledEvent)
+    sim, exist_buff_dict, _, dynamic_buff_dict, _ = _make_minimal_sim(order)
+    sim.enable_buff_runtime_rebuild_counting()
+
+    sim.main_loop(stop_tick=1, use_api=True)
+
+    tick_facades = captured["tick_facades"]
+    assert sim.use_indexed_buff_load_loop is False
+    assert len(tick_facades) == 2
+    assert tick_facades[0] is tick_facades[1]
+    assert isinstance(tick_facades[0], DefaultBuffRuntimeFacade)
+    assert not isinstance(tick_facades[0], LegacyBuffRuntimeFacade)
+    assert captured["load_facade"] is tick_facades[0]
+    assert captured["activation_facade"] is tick_facades[0]
+    assert captured["load_sim_instance"] is sim
+    assert captured["scheduled_runtime_state"] is sim.buff_runtime_state
+    assert isinstance(captured["scheduled_read_port"], DefaultBuffRuntimeReadAdapter)
+    assert not isinstance(captured["scheduled_read_port"], LegacyBuffRuntimeReadAdapter)
+    assert captured["scheduled_dynamic_arg"] is dynamic_buff_dict
+    assert captured["scheduled_registry_arg"] is exist_buff_dict
+    assert sim.get_buff_runtime_rebuild_counts() == {"default_buff_runtime_facade": 1}
+    assert order == [
+        "tick_sweep:0",
+        "preload:0",
+        "damage_judge",
+        "load_pending:0",
+        "activate_pending:0",
+        "scheduled_init",
+        "scheduled_start",
+        "reset_processed_event",
+        "tick_sweep:1",
+        "preload:1",
+        "stop_report_threads",
+    ]
 
 
 def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
