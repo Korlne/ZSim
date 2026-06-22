@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
-from typing import TYPE_CHECKING, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias, TypedDict, cast
 
 import numpy as np
 import pandas as pd
@@ -20,9 +20,29 @@ if TYPE_CHECKING:
     from zsim.sim_progress.ScheduledEvent.buff_runtime import PendingBuffQueue
     from zsim.simulator.simulator_class import Simulator
 
-    PendingQueueLike: TypeAlias = PendingBuffQueue | _LegacyPendingQueueCompatAdapter
+    PendingQueueLike: TypeAlias = "PendingBuffQueue | _LegacyPendingQueueCompatAdapter"
 else:
     PendingQueueLike = object
+
+
+class BuffLoadLoopCandidatePlanSummary(TypedDict):
+    pending_queue_order: tuple[str, ...]
+    mission_order: tuple[Any, ...]
+    mission_count: int
+    character_count: int
+    candidate_count: int
+    on_field_candidate_count: int
+    backend_candidate_count: int
+
+
+class BuffLoadLoopCandidatePlanDetail(BuffLoadLoopCandidatePlanSummary):
+    steps: tuple[dict[str, object], ...]
+
+
+class BuffLoadLoopRegistryLengthSnapshot(TypedDict):
+    character_registry_lengths: tuple[tuple[str, int], ...]
+    registered_candidate_count: int
+
 
 EXIST_FILE = pd.read_csv(EXIST_FILE_PATH, index_col="BuffName")
 JUDGE_FILE = pd.read_csv(JUDGE_FILE_PATH, index_col="BuffName")
@@ -198,10 +218,13 @@ def _record_buff_load_loop_scan_metrics(
     on_field_candidate_count: int,
     backend_candidate_count: int,
     pending_queue_count: int,
-    candidate_plan: dict[str, object] | None = None,
+    candidate_plan: BuffLoadLoopCandidatePlanSummary | None = None,
 ) -> None:
-    metrics = getattr(sim_instance, "_buff_load_loop_scan_metrics", None)
-    zero_values = {
+    metrics = cast(
+        dict[str, int] | None,
+        getattr(sim_instance, "_buff_load_loop_scan_metrics", None),
+    )
+    zero_values: dict[str, int] = {
         "processed_tick_count": 0,
         "mission_count": 0,
         "character_count": 0,
@@ -231,15 +254,15 @@ def _record_buff_load_loop_scan_metrics(
     candidate_plan_character_count = 0
     candidate_plan_mismatch_count = 0
     if candidate_plan is not None:
-        candidate_plan_count = int(candidate_plan.get("candidate_count", 0))
-        candidate_plan_on_field_candidate_count = int(
-            candidate_plan.get("on_field_candidate_count", 0)
-        )
-        candidate_plan_backend_candidate_count = int(
-            candidate_plan.get("backend_candidate_count", 0)
-        )
-        candidate_plan_mission_count = int(candidate_plan.get("mission_count", 0))
-        candidate_plan_character_count = int(candidate_plan.get("character_count", 0))
+        candidate_plan_count = candidate_plan["candidate_count"]
+        candidate_plan_on_field_candidate_count = candidate_plan[
+            "on_field_candidate_count"
+        ]
+        candidate_plan_backend_candidate_count = candidate_plan[
+            "backend_candidate_count"
+        ]
+        candidate_plan_mission_count = candidate_plan["mission_count"]
+        candidate_plan_character_count = candidate_plan["character_count"]
         candidate_plan_mismatch_count = sum(
             [
                 candidate_plan_count != trigger_candidate_count,
@@ -274,14 +297,14 @@ def _summarize_buff_load_loop_candidate_plan(
     load_mission_dict: dict,
     buff_registry_by_character: dict,
     character_name_box: list,
-) -> dict[str, object]:
+) -> BuffLoadLoopCandidatePlanSummary:
     registry_snapshot = _snapshot_buff_load_loop_registry_lengths(
         load_mission_dict,
         buff_registry_by_character,
         character_name_box,
     )
     registry_lengths_by_character = dict(registry_snapshot["character_registry_lengths"])
-    registered_candidate_count = int(registry_snapshot["registered_candidate_count"])
+    registered_candidate_count = registry_snapshot["registered_candidate_count"]
     mission_count_by_actor: dict[str, int] = {}
     for mission in load_mission_dict.values():
         actor_name = mission.mission_character
@@ -311,7 +334,7 @@ def _snapshot_buff_load_loop_registry_lengths(
     load_mission_dict: dict,
     buff_registry_by_character: dict,
     character_name_box: list,
-) -> dict[str, object]:
+) -> BuffLoadLoopRegistryLengthSnapshot:
     registry_lengths_by_character: dict[str, int] = {}
 
     for mission in load_mission_dict.values():
@@ -342,7 +365,7 @@ def _describe_buff_load_loop_candidate_plan(
     load_mission_dict: dict,
     buff_registry_by_character: dict,
     character_name_box: list,
-) -> dict[str, object]:
+) -> BuffLoadLoopCandidatePlanDetail:
     steps = []
     on_field_candidate_count = 0
     backend_candidate_count = 0
