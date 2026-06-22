@@ -8,6 +8,7 @@ from zsim.sim_progress.Buff.buff_class import Buff
 from zsim.sim_progress.ScheduledEvent import buff_runtime as buff_runtime_module
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     BuffRuntimeState,
+    DefaultBuffRuntimeReadAdapter,
     LegacyBuffRuntimeReadAdapter,
 )
 from zsim.sim_progress.ScheduledEvent import runtime_command as runtime_command_module
@@ -163,7 +164,7 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
 
     monkeypatch.setattr(runtime_command_module, "run_update_anomaly", _fake_update_anomaly)
     monkeypatch.setattr(
-        buff_runtime_module.LegacyBuffRuntimeFacade,
+        buff_runtime_module.DefaultBuffRuntimeFacade,
         "settle_schedule_buffs",
         _fake_settle_schedule_buffs,
     )
@@ -558,7 +559,8 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
     schedule_data.event_list = current_event_list
     skill_node = SimpleNamespace(skill_tag="1001_TEST")
 
-    assert isinstance(scheduled_event.buff_runtime_view, LegacyBuffRuntimeReadAdapter)
+    assert isinstance(scheduled_event.buff_runtime_view, DefaultBuffRuntimeReadAdapter)
+    assert not isinstance(scheduled_event.buff_runtime_view, LegacyBuffRuntimeReadAdapter)
     assert isinstance(scheduled_event.runtime_command_port, LegacyRuntimeCommandAdapter)
     assert tuple(scheduled_event.buff_runtime_view.get_active_buffs("alpha")) == tuple(
         dynamic_buff["alpha"]
@@ -592,7 +594,7 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
     assert captured["sim_instance"] is sim_instance
     runtime_context = captured["runtime_context"]
     assert runtime_context.sim_instance is sim_instance
-    assert isinstance(runtime_context.buff_runtime_view, LegacyBuffRuntimeReadAdapter)
+    assert isinstance(runtime_context.buff_runtime_view, DefaultBuffRuntimeReadAdapter)
     assert runtime_context.buff_runtime_view is scheduled_event.buff_runtime_view
     assert runtime_context.dot_runtime_state.snapshot() == ()
     runtime_context.dispatch_port.publish_scheduled("scheduled")

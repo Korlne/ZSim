@@ -57,7 +57,7 @@ class BuffRuntimeState:
         return DefaultBuffRuntimeFacade(runtime_state=self)
 
     def create_read_port(self) -> "BuffRuntimeReadPort":
-        return LegacyBuffRuntimeReadAdapter(runtime_state=self)
+        return DefaultBuffRuntimeReadAdapter(runtime_state=self)
 
     def template_registry_owner(self) -> "BuffTemplateRegistry":
         return self._template_registry
@@ -271,15 +271,15 @@ class BuffRuntimeReadPort(ABC):
 
     @abstractmethod
     def get_exist_buff_snapshot(self, beneficiary: str) -> Mapping[str, "Buff"]:
-        """读取指定受益者的旧快照 Buff 只读视图。"""
+        """读取指定受益者的模板 Buff 只读快照。"""
 
     @abstractmethod
     def get_exist_buff_snapshot_view(self) -> Mapping[str, Mapping[str, "Buff"]]:
-        """读取全部受益者的旧快照 Buff 只读视图。"""
+        """读取全部受益者的模板 Buff 只读快照。"""
 
 
-class LegacyBuffRuntimeReadAdapter(BuffRuntimeReadPort):
-    """基于旧容器的 Buff runtime 兼容只读适配器。"""
+class DefaultBuffRuntimeReadAdapter(BuffRuntimeReadPort):
+    """默认 Buff runtime 只读适配器，包装 run-scoped runtime state owner。"""
 
     def __init__(self, *, runtime_state: BuffRuntimeState) -> None:
         self._runtime_state = runtime_state
@@ -295,6 +295,10 @@ class LegacyBuffRuntimeReadAdapter(BuffRuntimeReadPort):
 
     def get_exist_buff_snapshot_view(self) -> Mapping[str, Mapping[str, "Buff"]]:
         return self._runtime_state.template_registry_owner().registry_snapshot()
+
+
+class LegacyBuffRuntimeReadAdapter(DefaultBuffRuntimeReadAdapter):
+    """显式 migration/test/rollback 兼容只读适配器。"""
 
 
 class BuffRuntimeFacade(ABC):
@@ -926,6 +930,7 @@ __all__ = [
     "ActiveBuffStore",
     "PendingBuffQueue",
     "DefaultBuffRuntimeFacade",
+    "DefaultBuffRuntimeReadAdapter",
     "LegacyBuffRuntimeReadAdapter",
     "LegacyBuffRuntimeFacade",
     "create_buff_runtime_read_port",

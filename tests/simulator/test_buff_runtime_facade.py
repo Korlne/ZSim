@@ -20,8 +20,10 @@ from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     BuffRuntimeFacade,
     BuffRuntimeState,
     DefaultBuffRuntimeFacade,
+    DefaultBuffRuntimeReadAdapter,
     EnemyDebuffMirror,
     LegacyBuffRuntimeFacade,
+    LegacyBuffRuntimeReadAdapter,
     PendingBuffQueue,
     create_legacy_buff_runtime_facade,
 )
@@ -352,6 +354,8 @@ def test_buff_runtime_read_port_reads_active_view_through_active_owner(
     )
     monkeypatch.setattr(runtime_state, "active_store_for_compat", fail_compat_access)
 
+    assert isinstance(read_port, DefaultBuffRuntimeReadAdapter)
+    assert not isinstance(read_port, LegacyBuffRuntimeReadAdapter)
     assert read_port.get_active_buffs("alpha") == (active_buff,)
     assert read_port.get_active_buffs("missing") == ()
     active_view = read_port.get_active_buff_view()
