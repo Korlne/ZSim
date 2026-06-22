@@ -382,7 +382,40 @@ def test_buff_load_loop_records_opt_in_scan_metric_shape(
     ) -> None:
         LOADING_BUFF_DICT["bravo"].append("bravo-pending")
 
+    summary_calls: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
+    original_summary = buff_load_module._summarize_buff_load_loop_candidate_plan
+
+    def fail_describe_candidate_plan(*args: Any, **kwargs: Any) -> dict[str, object]:
+        raise AssertionError("metrics execution must not materialize detailed plan")
+
+    def spy_summarize_candidate_plan(
+        load_mission_dict_arg: dict[str, Any],
+        buff_registry_by_character_arg: dict[str, dict[str, Any]],
+        character_name_box_arg: list[str],
+    ) -> dict[str, object]:
+        summary_calls.append(
+            (tuple(load_mission_dict_arg), tuple(character_name_box_arg))
+        )
+        summary = original_summary(
+            load_mission_dict_arg,
+            buff_registry_by_character_arg,
+            character_name_box_arg,
+        )
+        assert "steps" not in summary
+        assert "buff_keys" not in summary
+        return summary
+
     monkeypatch.setattr(load_module, "LoadingMission", FakeLoadingMission)
+    monkeypatch.setattr(
+        buff_load_module,
+        "_describe_buff_load_loop_candidate_plan",
+        fail_describe_candidate_plan,
+    )
+    monkeypatch.setattr(
+        buff_load_module,
+        "_summarize_buff_load_loop_candidate_plan",
+        spy_summarize_candidate_plan,
+    )
     monkeypatch.setattr(
         buff_load_module,
         "process_on_field_buff",
@@ -415,6 +448,7 @@ def test_buff_load_loop_records_opt_in_scan_metric_shape(
     )
 
     assert result is loading_buff_dict
+    assert summary_calls == [(("m1",), ("alpha", "bravo"))]
     assert loading_buff_dict == {
         "alpha": ["alpha-pending"],
         "bravo": ["bravo-pending"],
@@ -438,7 +472,7 @@ def test_buff_load_loop_records_opt_in_scan_metric_shape(
     }
 
 
-def test_buff_load_loop_opt_in_metrics_still_materialize_candidate_plan(
+def test_buff_load_loop_opt_in_metrics_use_summary_without_detailed_plan(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class FakeLoadingMission:
@@ -457,19 +491,41 @@ def test_buff_load_loop_opt_in_metrics_still_materialize_candidate_plan(
         "second": FakeLoadingMission("second", "bravo"),
     }
     character_name_box = ["alpha", "bravo"]
-    materialized_plans: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
+    summary_calls: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
+    iterated_candidate_steps: list[tuple[tuple[str, ...], tuple[str, ...]]] = []
     calls: list[tuple[str, str, str, tuple[str, ...]]] = []
-    original_describe = buff_load_module._describe_buff_load_loop_candidate_plan
+    original_summary = buff_load_module._summarize_buff_load_loop_candidate_plan
+    original_iter_candidate_steps = buff_load_module._iter_buff_load_loop_candidate_steps
 
-    def spy_describe_candidate_plan(
+    def fail_describe_candidate_plan(*args: Any, **kwargs: Any) -> dict[str, object]:
+        raise AssertionError("metrics execution must not materialize detailed plan")
+
+    def spy_summarize_candidate_plan(
         load_mission_dict_arg: dict[str, Any],
         buff_registry_by_character_arg: dict[str, dict[str, Any]],
         character_name_box_arg: list[str],
     ) -> dict[str, object]:
-        materialized_plans.append(
+        summary_calls.append(
             (tuple(load_mission_dict_arg), tuple(character_name_box_arg))
         )
-        return original_describe(
+        summary = original_summary(
+            load_mission_dict_arg,
+            buff_registry_by_character_arg,
+            character_name_box_arg,
+        )
+        assert "steps" not in summary
+        assert "buff_keys" not in summary
+        return summary
+
+    def spy_iter_candidate_steps(
+        load_mission_dict_arg: dict[str, Any],
+        buff_registry_by_character_arg: dict[str, dict[str, Any]],
+        character_name_box_arg: list[str],
+    ) -> Any:
+        iterated_candidate_steps.append(
+            (tuple(load_mission_dict_arg), tuple(character_name_box_arg))
+        )
+        yield from original_iter_candidate_steps(
             load_mission_dict_arg,
             buff_registry_by_character_arg,
             character_name_box_arg,
@@ -505,7 +561,17 @@ def test_buff_load_loop_opt_in_metrics_still_materialize_candidate_plan(
     monkeypatch.setattr(
         buff_load_module,
         "_describe_buff_load_loop_candidate_plan",
-        spy_describe_candidate_plan,
+        fail_describe_candidate_plan,
+    )
+    monkeypatch.setattr(
+        buff_load_module,
+        "_summarize_buff_load_loop_candidate_plan",
+        spy_summarize_candidate_plan,
+    )
+    monkeypatch.setattr(
+        buff_load_module,
+        "_iter_buff_load_loop_candidate_steps",
+        spy_iter_candidate_steps,
     )
     monkeypatch.setattr(
         buff_load_module,
@@ -532,7 +598,8 @@ def test_buff_load_loop_opt_in_metrics_still_materialize_candidate_plan(
     )
 
     assert result is loading_buff_dict
-    assert materialized_plans == [(("first", "second"), ("alpha", "bravo"))]
+    assert summary_calls == [(("first", "second"), ("alpha", "bravo"))]
+    assert iterated_candidate_steps == [(("first", "second"), ("alpha", "bravo"))]
     assert calls == [
         ("on_field", "first", "alpha", ("alpha-a", "alpha-b")),
         ("backend", "first", "bravo", ("bravo-a",)),

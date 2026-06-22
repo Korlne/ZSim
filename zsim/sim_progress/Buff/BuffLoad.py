@@ -381,7 +381,7 @@ def BuffLoadLoop(
             if not isinstance(mission, LoadingMission):
                 raise TypeError(f"当前{mission}不是LoadingMission类！")
         if record_scan_metrics:
-            candidate_plan = _describe_buff_load_loop_candidate_plan(
+            candidate_plan = _summarize_buff_load_loop_candidate_plan(
                 load_mission_dict,
                 buff_registry_by_character,
                 character_name_box,
@@ -389,35 +389,21 @@ def BuffLoadLoop(
             trigger_candidate_count = int(candidate_plan["candidate_count"])
             on_field_candidate_count = int(candidate_plan["on_field_candidate_count"])
             backend_candidate_count = int(candidate_plan["backend_candidate_count"])
-            for step in candidate_plan["steps"]:
-                mission = load_mission_dict[step["mission_key"]]
-                registry = buff_registry_by_character[step["character_name"]]
-                _execute_buff_load_loop_candidate_step(
-                    processor=step["processor"],
-                    registry=registry,
-                    mission=mission,
-                    time_now=time_now,
-                    pending_queues=pending_queues,
-                    all_name_order_box=all_name_order_box,
-                    registry_by_character=buff_registry_by_character,
-                    sim_instance=sim_instance,
-                )
-        else:
-            for processor, registry, mission in _iter_buff_load_loop_candidate_steps(
-                load_mission_dict,
-                buff_registry_by_character,
-                character_name_box,
-            ):
-                _execute_buff_load_loop_candidate_step(
-                    processor=processor,
-                    registry=registry,
-                    mission=mission,
-                    time_now=time_now,
-                    pending_queues=pending_queues,
-                    all_name_order_box=all_name_order_box,
-                    registry_by_character=buff_registry_by_character,
-                    sim_instance=sim_instance,
-                )
+        for processor, registry, mission in _iter_buff_load_loop_candidate_steps(
+            load_mission_dict,
+            buff_registry_by_character,
+            character_name_box,
+        ):
+            _execute_buff_load_loop_candidate_step(
+                processor=processor,
+                registry=registry,
+                mission=mission,
+                time_now=time_now,
+                pending_queues=pending_queues,
+                all_name_order_box=all_name_order_box,
+                registry_by_character=buff_registry_by_character,
+                sim_instance=sim_instance,
+            )
     else:
         # 遍历load_mission_dict中的任务
         for mission in load_mission_dict.values():
@@ -460,7 +446,7 @@ def BuffLoadLoop(
                     )
     if record_scan_metrics:
         if candidate_plan is None:
-            candidate_plan = _describe_buff_load_loop_candidate_plan(
+            candidate_plan = _summarize_buff_load_loop_candidate_plan(
                 load_mission_dict,
                 buff_registry_by_character,
                 character_name_box,
