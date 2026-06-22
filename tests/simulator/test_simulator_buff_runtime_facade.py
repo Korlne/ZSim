@@ -612,6 +612,137 @@ def test_main_loop_oracle_preserves_order_through_stop_tick_and_reset(
     ]
 
 
+def test_main_loop_resets_processed_state_before_next_tick_load_and_shutdown(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    order: list[str] = []
+
+    class ProcessedStateRuntimeProbe(_RuntimeProbe):
+        def load_pending_buffs(
+            self,
+            *,
+            time_now: int,
+            load_mission_dict: dict[str, Any],
+            character_name_box: list[str],
+            all_name_order_box: dict[str, Any],
+            sim_instance: Any,
+        ) -> dict[str, list[Any]]:
+            order.append(
+                f"load_pending_sees_processed:{time_now}:"
+                f"{sim_instance.schedule_data.processed_state_this_tick}"
+            )
+            return super().load_pending_buffs(
+                time_now=time_now,
+                load_mission_dict=load_mission_dict,
+                character_name_box=character_name_box,
+                all_name_order_box=all_name_order_box,
+                sim_instance=sim_instance,
+            )
+
+    runtime = ProcessedStateRuntimeProbe(order)
+
+    def fake_create_facade() -> ProcessedStateRuntimeProbe:
+        order.append("create_facade")
+        return runtime
+
+    def fake_damage_event_judge(tick: int, *args: Any, **kwargs: Any) -> None:
+        order.append(
+            f"damage_judge:{tick}:"
+            f"processed={sim.schedule_data.processed_state_this_tick}"
+        )
+
+    def fake_print(*args: Any, **kwargs: Any) -> None:
+        order.append(
+            f"processed_banner_print:{sim.tick}:"
+            f"{sim.schedule_data.processed_state_this_tick}"
+        )
+
+    monkeypatch.setattr(simulator_class, "DamageEventJudge", fake_damage_event_judge)
+    monkeypatch.setattr(
+        simulator_class,
+        "stop_report_threads",
+        lambda: order.append("stop_report_threads"),
+    )
+    monkeypatch.setattr("builtins.print", fake_print)
+
+    class FakeScheduledEvent(_FakeScheduledEventFromRuntimeStateMixin):
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            self.data = args[1]
+            self.tick = args[2]
+            order.append(f"scheduled_init:{self.tick}")
+
+        def event_start(self) -> None:
+            order.append(f"scheduled_start:{self.tick}")
+            if self.tick == 1:
+                self.data.processed_state_this_tick = True
+                order.append(f"processed_set:{self.tick}")
+
+    monkeypatch.setattr(simulator_class, "ScE", FakeScheduledEvent)
+    sim, _, _, _, enemy = _make_minimal_sim(order)
+
+    def do_preload(tick: int, *args: Any, **kwargs: Any) -> None:
+        order.append(
+            f"preload:{tick}:processed={sim.schedule_data.processed_state_this_tick}"
+        )
+        sim.preload.preload_data.preload_action = []
+
+    def reset_processed_event() -> None:
+        order.append(
+            f"reset_processed_event:{sim.tick}:"
+            f"{sim.schedule_data.processed_state_this_tick}"
+        )
+        sim.schedule_data.processed_state_this_tick = False
+
+    sim.preload.do_preload = do_preload
+    sim.schedule_data.reset_processed_event = reset_processed_event
+    monkeypatch.setattr(sim.buff_runtime_state, "create_facade", fake_create_facade)
+
+    sim.main_loop(stop_tick=3, use_api=True)
+
+    assert runtime.calls == [(0, enemy), (1, enemy), (2, enemy), (3, enemy)]
+    assert runtime.load_ticks == [0, 1, 2]
+    assert runtime.activation_ticks == [0, 1, 2]
+    assert sim.tick == 3
+    assert "load_pending:3" not in order
+    assert order == [
+        "create_facade",
+        "tick_sweep:0",
+        "preload:0:processed=False",
+        "damage_judge:0:processed=False",
+        "load_pending_sees_processed:0:False",
+        "load_pending:0",
+        "activate_pending:0",
+        "scheduled_init:0",
+        "scheduled_start:0",
+        "reset_processed_event:1:False",
+        "tick_sweep:1",
+        "preload:1:processed=False",
+        "damage_judge:1:processed=False",
+        "load_pending_sees_processed:1:False",
+        "load_pending:1",
+        "activate_pending:1",
+        "scheduled_init:1",
+        "scheduled_start:1",
+        "processed_set:1",
+        "processed_banner_print:1:True",
+        "processed_banner_print:1:True",
+        "processed_banner_print:1:True",
+        "reset_processed_event:2:True",
+        "tick_sweep:2",
+        "preload:2:processed=False",
+        "damage_judge:2:processed=False",
+        "load_pending_sees_processed:2:False",
+        "load_pending:2",
+        "activate_pending:2",
+        "scheduled_init:2",
+        "scheduled_start:2",
+        "reset_processed_event:3:False",
+        "tick_sweep:3",
+        "preload:3:processed=False",
+        "stop_report_threads",
+    ]
+
+
 def test_main_loop_passes_dispatch_port_to_damage_event_judge(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
