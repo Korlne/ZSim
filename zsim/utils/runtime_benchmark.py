@@ -29,6 +29,9 @@ from zsim.utils.process_buff_result import prepare_buff_data_and_cache
 
 REPEAT_BENCHMARK_SUMMARY_SCHEMA = "zsim-buff-runtime-repeat-benchmark.v1"
 FUTURE_THRESHOLD_MIN_REPEAT_SAMPLES = 5
+NO_DEFAULT_ENABLEMENT_STATEMENT = (
+    "No default enablement or speedup target is authorized by this PRD."
+)
 
 
 @dataclass(frozen=True)
@@ -248,6 +251,18 @@ def _aggregate_scan_metric_bucket(
     }
 
 
+def _aggregate_scan_metric_value(
+    samples: list[dict[str, dict[str, int]]],
+    bucket: str,
+    metric_name: str,
+) -> dict[str, Any]:
+    values = [int(sample.get(bucket, {}).get(metric_name, 0)) for sample in samples]
+    return {
+        **_numeric_summary(values),
+        "samples": values,
+    }
+
+
 def build_repeat_runtime_benchmark_summary(
     *,
     reports: list[dict[str, Any]],
@@ -271,6 +286,7 @@ def build_repeat_runtime_benchmark_summary(
         if include_rebuild_counts
         else []
     )
+    runtime_selection = dict(first_report.get("runtime_selection", RUNTIME_LABEL_CONTRACT))
 
     samples = []
     for index, report in enumerate(reports, start=1):
@@ -295,11 +311,22 @@ def build_repeat_runtime_benchmark_summary(
         "apl": first_report["apl"],
         "stop_tick": int(first_report["stop_tick"]),
         "sample_count": len(reports),
+        "repeat_samples": len(reports),
         "runtime_labels": {
             "legacy": first_report["legacy_runtime"],
             "candidate": first_report["candidate_runtime"],
         },
-        "runtime_selection": dict(first_report.get("runtime_selection", RUNTIME_LABEL_CONTRACT)),
+        "runtime_selection": runtime_selection,
+        "opt_in_flag_status": {
+            "candidate_use_indexed_buff_load_loop": bool(
+                runtime_selection.get("candidate_use_indexed_buff_load_loop", False)
+            ),
+            "default_off": bool(runtime_selection.get("default_off", True)),
+            "default_indexed_execution": runtime_selection.get(
+                "default_indexed_execution",
+                "blocked",
+            ),
+        },
         "simulator_runtime_ms": {
             "legacy": _summary_with_samples(legacy_simulator_runtime_ms),
             "candidate": _summary_with_samples(candidate_simulator_runtime_ms),
@@ -322,8 +349,37 @@ def build_repeat_runtime_benchmark_summary(
             "rule": (
                 "A later PRD may define numeric thresholds only after at least "
                 f"{FUTURE_THRESHOLD_MIN_REPEAT_SAMPLES} repeats and explicit noise "
-                "reporting; this baseline does not claim a speedup target."
+                "reporting; this baseline does not claim a speedup target. "
+                + NO_DEFAULT_ENABLEMENT_STATEMENT
             ),
+        },
+        "enablement_policy": {
+            "default_enablement_authorized": False,
+            "speedup_target_authorized": False,
+            "statement": NO_DEFAULT_ENABLEMENT_STATEMENT,
+        },
+        "mismatch_counts": {
+            "candidate_plan_mismatch_count": {
+                "included": include_rebuild_counts,
+                "legacy": (
+                    _aggregate_scan_metric_value(
+                        scan_metric_samples,
+                        "legacy",
+                        "candidate_plan_mismatch_count",
+                    )
+                    if include_rebuild_counts
+                    else _summary_with_samples([])
+                ),
+                "candidate": (
+                    _aggregate_scan_metric_value(
+                        scan_metric_samples,
+                        "candidate",
+                        "candidate_plan_mismatch_count",
+                    )
+                    if include_rebuild_counts
+                    else _summary_with_samples([])
+                ),
+            },
         },
         "samples": samples,
     }

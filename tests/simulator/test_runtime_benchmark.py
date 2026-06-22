@@ -316,6 +316,7 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
 
     assert summary["schema"] == "zsim-buff-runtime-repeat-benchmark.v1"
     assert summary["sample_count"] == 3
+    assert summary["repeat_samples"] == 3
     assert summary["team"] == "fake-team"
     assert summary["apl"] == "./fake.toml"
     assert summary["stop_tick"] == 120
@@ -324,6 +325,11 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
         "candidate": "candidate-label",
     }
     assert summary["runtime_selection"]["mode"] == "label-only-current-runtime"
+    assert summary["opt_in_flag_status"] == {
+        "candidate_use_indexed_buff_load_loop": False,
+        "default_off": True,
+        "default_indexed_execution": "blocked",
+    }
     assert summary["simulator_runtime_ms"]["legacy"] == {
         "median": 102.0,
         "min": 100.0,
@@ -381,6 +387,29 @@ def test_build_repeat_runtime_benchmark_summary_records_shape_policy_and_counts(
     assert summary["future_threshold_use"]["speedup_target_defined"] is False
     assert summary["future_threshold_use"]["minimum_repeat_samples"] == 5
     assert "does not claim a speedup target" in summary["future_threshold_use"]["rule"]
+    assert (
+        summary["enablement_policy"]["statement"]
+        == "No default enablement or speedup target is authorized by this PRD."
+    )
+    assert summary["enablement_policy"]["default_enablement_authorized"] is False
+    assert summary["enablement_policy"]["speedup_target_authorized"] is False
+    assert summary["mismatch_counts"]["candidate_plan_mismatch_count"] == {
+        "included": True,
+        "legacy": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0,
+            "samples": [0, 0, 0],
+        },
+        "candidate": {
+            "median": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "range": 0.0,
+            "samples": [0, 0, 0],
+        },
+    }
 
 
 def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
@@ -434,10 +463,16 @@ def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
         False,
     ]
     assert default_summary["runtime_selection"]["mode"] == "label-only-current-runtime"
+    assert default_summary["repeat_samples"] == 2
     assert default_summary["rebuild_count_buckets"] == {
         "included": False,
         "samples": [],
         "aggregate": {"legacy": {}, "candidate": {}},
+    }
+    assert default_summary["mismatch_counts"]["candidate_plan_mismatch_count"] == {
+        "included": False,
+        "legacy": {"median": 0.0, "min": 0.0, "max": 0.0, "range": 0.0, "samples": []},
+        "candidate": {"median": 0.0, "min": 0.0, "max": 0.0, "range": 0.0, "samples": []},
     }
     assert "scan_metric_buckets" not in default_summary
     assert "scan_metric_buckets" not in default_summary["samples"][0]
@@ -463,6 +498,11 @@ def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
         counted_summary["runtime_selection"]["mode"]
         == "candidate-explicit-opt-in-indexed-buff-load-loop"
     )
+    assert counted_summary["opt_in_flag_status"] == {
+        "candidate_use_indexed_buff_load_loop": True,
+        "default_off": True,
+        "default_indexed_execution": "blocked",
+    }
     assert counted_summary["rebuild_count_buckets"]["included"] is True
     assert counted_summary["rebuild_count_buckets"]["samples"] == [
         {"legacy": {"buff_load_loop": 1}, "candidate": {"buff_load_loop": 2}},
