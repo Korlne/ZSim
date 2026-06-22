@@ -472,6 +472,192 @@ def test_buff_load_loop_visits_mission_registries_in_character_order(
     ]
 
 
+def test_buff_load_loop_candidate_plan_matches_current_scan_order(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeLoadingMission:
+        def __init__(self, name: str, mission_character: str) -> None:
+            self.name = name
+            self.mission_character = mission_character
+
+    existbuff_dict: dict[str, dict[str, Any]] = {
+        "alpha": {
+            "alpha-schedule": object(),
+            "alpha-passive": object(),
+            "alpha-live": object(),
+        },
+        "bravo": {
+            "bravo-backend-inactive": object(),
+            "bravo-live": object(),
+        },
+        "charlie": {
+            "charlie-live": object(),
+        },
+    }
+    registry_owner_by_id = {
+        id(registry): owner for owner, registry in existbuff_dict.items()
+    }
+    load_mission_dict = {
+        "first": FakeLoadingMission("first", "bravo"),
+        "second": FakeLoadingMission("second", "alpha"),
+    }
+    character_name_box = ["alpha", "bravo", "charlie"]
+    calls: list[tuple[str, str, str, tuple[str, ...]]] = []
+
+    def fake_process_on_field_buff(
+        sub_exist_buff_dict: dict[str, Any],
+        mission: Any,
+        time_now: int,
+        LOADING_BUFF_DICT: dict[str, list[Any]],
+        all_name_order_box: dict[str, Any],
+        exist_buff_dict: dict[str, dict[str, Any]],
+        sim_instance: Any,
+    ) -> None:
+        calls.append(
+            (
+                "on_field",
+                mission.name,
+                registry_owner_by_id[id(sub_exist_buff_dict)],
+                tuple(sub_exist_buff_dict),
+            )
+        )
+
+    def fake_process_backend_buff(
+        sub_exist_buff_dict: dict[str, Any],
+        all_name_order_box: dict[str, Any],
+        mission: Any,
+        time_now: int,
+        LOADING_BUFF_DICT: dict[str, list[Any]],
+        exist_buff_dict: dict[str, dict[str, Any]],
+        sim_instance: Any,
+    ) -> None:
+        calls.append(
+            (
+                "backend",
+                mission.name,
+                registry_owner_by_id[id(sub_exist_buff_dict)],
+                tuple(sub_exist_buff_dict),
+            )
+        )
+
+    plan = buff_load_module._describe_buff_load_loop_candidate_plan(
+        load_mission_dict,
+        existbuff_dict,
+        character_name_box,
+    )
+    plan_steps = cast(tuple[dict[str, Any], ...], plan["steps"])
+    plan_order = [
+        (
+            step["processor"],
+            step["mission_key"],
+            step["character_name"],
+            step["buff_keys"],
+        )
+        for step in plan_steps
+    ]
+
+    monkeypatch.setattr(load_module, "LoadingMission", FakeLoadingMission)
+    monkeypatch.setattr(
+        buff_load_module,
+        "process_on_field_buff",
+        fake_process_on_field_buff,
+    )
+    monkeypatch.setattr(
+        buff_load_module,
+        "process_backend_buff",
+        fake_process_backend_buff,
+    )
+
+    result = BuffLoadLoop(
+        time_now=10,
+        load_mission_dict=load_mission_dict,
+        existbuff_dict=existbuff_dict,
+        character_name_box=character_name_box,
+        LOADING_BUFF_DICT={},
+        all_name_order_box={},
+        sim_instance=cast(Any, Simulator()),
+    )
+
+    expected_order = [
+        (
+            "backend",
+            "first",
+            "alpha",
+            ("alpha-schedule", "alpha-passive", "alpha-live"),
+        ),
+        (
+            "on_field",
+            "first",
+            "bravo",
+            ("bravo-backend-inactive", "bravo-live"),
+        ),
+        ("backend", "first", "charlie", ("charlie-live",)),
+        (
+            "on_field",
+            "second",
+            "alpha",
+            ("alpha-schedule", "alpha-passive", "alpha-live"),
+        ),
+        (
+            "backend",
+            "second",
+            "bravo",
+            ("bravo-backend-inactive", "bravo-live"),
+        ),
+        ("backend", "second", "charlie", ("charlie-live",)),
+    ]
+
+    assert result == {"alpha": [], "bravo": [], "charlie": [], "enemy": []}
+    assert calls == expected_order
+    assert plan_order == expected_order
+    assert plan["pending_queue_order"] == ("alpha", "bravo", "charlie", "enemy")
+    assert plan["mission_order"] == ("first", "second")
+    assert plan["mission_count"] == 2
+    assert plan["character_count"] == 3
+    assert plan["candidate_count"] == 12
+    assert plan["on_field_candidate_count"] == 5
+    assert plan["backend_candidate_count"] == 7
+
+
+def test_buff_load_loop_candidate_plan_is_per_call_snapshot_without_pending_queue_mutation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeLoadingMission:
+        def __init__(self, mission_character: str) -> None:
+            self.mission_character = mission_character
+
+    class RaisingBuff:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            raise AssertionError("candidate planning must not construct Buff")
+
+    monkeypatch.setattr(buff_load_module, "Buff", RaisingBuff)
+    pending_queue = {"alpha": ["stale-pending"]}
+    existbuff_dict: dict[str, dict[str, Any]] = {"alpha": {"alpha-old": object()}}
+
+    first_plan = buff_load_module._describe_buff_load_loop_candidate_plan(
+        {"first": FakeLoadingMission("alpha")},
+        existbuff_dict,
+        ["alpha"],
+    )
+    first_steps = cast(tuple[dict[str, Any], ...], first_plan["steps"])
+    existbuff_dict["alpha"]["alpha-new"] = object()
+    second_plan = buff_load_module._describe_buff_load_loop_candidate_plan(
+        {"second": FakeLoadingMission("alpha")},
+        existbuff_dict,
+        ["alpha"],
+    )
+    second_steps = cast(tuple[dict[str, Any], ...], second_plan["steps"])
+
+    assert pending_queue == {"alpha": ["stale-pending"]}
+    assert first_steps is not second_steps
+    assert first_steps[0]["buff_keys"] == ("alpha-old",)
+    assert first_steps[0]["candidate_count"] == 1
+    assert second_steps[0]["buff_keys"] == ("alpha-old", "alpha-new")
+    assert second_steps[0]["candidate_count"] == 2
+    assert first_plan["candidate_count"] == 1
+    assert second_plan["candidate_count"] == 2
+
+
 def test_buff_load_processing_helpers_own_candidate_filters(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

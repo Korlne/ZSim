@@ -154,6 +154,51 @@ def _record_buff_load_loop_scan_metrics(
     metrics["pending_queue_count"] += pending_queue_count
 
 
+def _describe_buff_load_loop_candidate_plan(
+    load_mission_dict: dict,
+    buff_registry_by_character: dict,
+    character_name_box: list,
+) -> dict[str, object]:
+    steps = []
+    on_field_candidate_count = 0
+    backend_candidate_count = 0
+
+    for mission_key, mission in load_mission_dict.items():
+        actor_name = mission.mission_character
+        if actor_name not in buff_registry_by_character:
+            raise ValueError("当前角色的Buff源并未创建！")
+
+        for char_name in character_name_box:
+            registry = buff_registry_by_character[char_name]
+            candidate_count = len(registry)
+            processor = "on_field" if char_name == actor_name else "backend"
+            if processor == "on_field":
+                on_field_candidate_count += candidate_count
+            else:
+                backend_candidate_count += candidate_count
+            steps.append(
+                {
+                    "mission_key": mission_key,
+                    "mission_character": actor_name,
+                    "character_name": char_name,
+                    "processor": processor,
+                    "buff_keys": tuple(registry),
+                    "candidate_count": candidate_count,
+                }
+            )
+
+    return {
+        "pending_queue_order": tuple([*character_name_box, "enemy"]),
+        "mission_order": tuple(load_mission_dict),
+        "mission_count": len(load_mission_dict),
+        "character_count": len(character_name_box),
+        "candidate_count": on_field_candidate_count + backend_candidate_count,
+        "on_field_candidate_count": on_field_candidate_count,
+        "backend_candidate_count": backend_candidate_count,
+        "steps": tuple(steps),
+    }
+
+
 def BuffLoadLoop(
     time_now: int,
     load_mission_dict: dict,
