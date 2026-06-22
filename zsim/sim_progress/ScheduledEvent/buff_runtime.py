@@ -28,11 +28,14 @@ class BuffRuntimeState:
     ) -> None:
         self._template_registry = template_registry
         self._pending_queue = PendingBuffQueue(pending_queue)
-        self._enemy_mirror = self._collapse_enemy_debuff_store(
+        self._collapse_enemy_debuff_store(
             active_store,
             enemy_mirror,
         )
         self._active_store = ActiveBuffStore(active_store)
+        self._enemy_mirror_owner = EnemyDebuffMirror(
+            self._active_store.active_buffs_for_compat("enemy")
+        )
 
     @staticmethod
     def _collapse_enemy_debuff_store(
@@ -71,8 +74,11 @@ class BuffRuntimeState:
     def active_store_for_compat(self) -> dict[str, list["Buff"]]:
         return self._active_store.as_compat_dict()
 
+    def enemy_mirror_owner(self) -> "EnemyDebuffMirror":
+        return self._enemy_mirror_owner
+
     def enemy_mirror_for_compat(self) -> list["Buff"]:
-        return self._enemy_mirror
+        return self._enemy_mirror_owner.as_compat_list()
 
 
 class PendingBuffQueue:
@@ -168,6 +174,44 @@ class ActiveBuffStore:
 
     def items(self):
         return self._stores.items()
+
+
+class EnemyDebuffMirror:
+    """Runtime-owned enemy debuff mirror tied to the enemy active store list."""
+
+    def __init__(self, mirror: list["Buff"]) -> None:
+        self._mirror = mirror
+
+    def find_by_index(self, buff_index: str) -> "Buff | None":
+        return next(
+            (
+                existing_buff
+                for existing_buff in self._mirror
+                if self._get_buff_index(existing_buff) == buff_index
+            ),
+            None,
+        )
+
+    def sync(self, buff: "Buff") -> None:
+        existing_buff = self.find_by_index(self._get_buff_index(buff))
+        if existing_buff is buff:
+            return
+        if existing_buff is not None:
+            self._mirror.remove(existing_buff)
+        if not any(mirrored_buff is buff for mirrored_buff in self._mirror):
+            self._mirror.append(buff)
+
+    def remove(self, buff: "Buff") -> None:
+        existing_buff = self.find_by_index(self._get_buff_index(buff))
+        if existing_buff is not None:
+            self._mirror.remove(existing_buff)
+
+    def as_compat_list(self) -> list["Buff"]:
+        return self._mirror
+
+    @staticmethod
+    def _get_buff_index(buff: "Buff") -> str:
+        return buff.ft.index
 
 
 class BuffRuntimeReadPort(ABC):
@@ -492,19 +536,10 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         )
 
     def sync_enemy_debuff_mirror(self, buff: "Buff") -> None:
-        mirror = self._runtime_state.enemy_mirror_for_compat()
-        existing_buff = self._find_enemy_debuff_mirror(buff)
-        if existing_buff is buff:
-            return
-        if existing_buff is not None:
-            mirror.remove(existing_buff)
-        if not any(mirrored_buff is buff for mirrored_buff in mirror):
-            mirror.append(buff)
+        self._runtime_state.enemy_mirror_owner().sync(buff)
 
     def remove_enemy_debuff_mirror(self, buff: "Buff") -> None:
-        existing_buff = self._find_enemy_debuff_mirror(buff)
-        if existing_buff is not None:
-            self._runtime_state.enemy_mirror_for_compat().remove(existing_buff)
+        self._runtime_state.enemy_mirror_owner().remove(buff)
 
     def load_pending_buffs(
         self,
@@ -619,14 +654,8 @@ class LegacyBuffRuntimeFacade(BuffRuntimeFacade):
         )
 
     def _find_enemy_debuff_mirror(self, buff: "Buff") -> "Buff | None":
-        buff_index = self._get_buff_index(buff)
-        return next(
-            (
-                existing_buff
-                for existing_buff in self._runtime_state.enemy_mirror_for_compat()
-                if self._get_buff_index(existing_buff) == buff_index
-            ),
-            None,
+        return self._runtime_state.enemy_mirror_owner().find_by_index(
+            self._get_buff_index(buff)
         )
 
     def _activate_pending_buff(self, beneficiary: str, buff: "Buff") -> None:
