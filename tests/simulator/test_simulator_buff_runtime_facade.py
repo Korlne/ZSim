@@ -21,9 +21,16 @@ from zsim.simulator.simulator_class import Simulator
 class _RuntimeProbe:
     def __init__(self, order: list[str]) -> None:
         self._order = order
+        self._pending_owner_getter: Any = None
         self.calls: list[tuple[int, Any]] = []
         self.load_ticks: list[int] = []
         self.activation_ticks: list[float] = []
+        self.pending_load_owners: list[PendingBuffQueue] = []
+        self.pending_activation_owners: list[PendingBuffQueue] = []
+        self.drained_pending_markers: list[Any] = []
+
+    def bind_pending_owner_getter(self, getter: Any) -> None:
+        self._pending_owner_getter = getter
 
     def update_time_related_effects(self, *, tick: int, enemy: Any) -> None:
         self.calls.append((tick, enemy))
@@ -43,14 +50,23 @@ class _RuntimeProbe:
         record_rebuild_count = getattr(sim_instance, "_record_buff_runtime_rebuild_count", None)
         if record_rebuild_count is not None:
             record_rebuild_count("buff_load_loop")
-        pending_queue = sim_instance.buff_runtime_state.pending_queue_for_compat()
+        pending_queue = sim_instance.buff_runtime_state.pending_queue_owner()
+        self.pending_load_owners.append(pending_queue)
+        if self._pending_owner_getter is None:
+            self.bind_pending_owner_getter(sim_instance.buff_runtime_state.pending_queue_owner)
         for character in [*character_name_box, "enemy"]:
-            pending_queue[character] = []
-        return pending_queue
+            pending_queue.clear(character)
+        pending_queue.enqueue(character_name_box[0] if character_name_box else "enemy", time_now)
+        return pending_queue.as_compat_dict()
 
     def activate_pending_buffs(self, *, timenow: float) -> dict[str, list[Any]]:
         self.activation_ticks.append(timenow)
         self._order.append(f"activate_pending:{timenow}")
+        if self._pending_owner_getter is not None:
+            pending_queue = self._pending_owner_getter()
+            self.pending_activation_owners.append(pending_queue)
+            for beneficiary in pending_queue.beneficiaries():
+                self.drained_pending_markers.extend(pending_queue.drain(beneficiary))
         return {}
 
 
@@ -152,6 +168,10 @@ def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
     assert runtime.calls == [(0, enemy), (1, enemy)]
     assert runtime.load_ticks == [0]
     assert runtime.activation_ticks == [0]
+    assert runtime.pending_load_owners == [sim.buff_runtime_state.pending_queue_owner()]
+    assert runtime.pending_activation_owners == [sim.buff_runtime_state.pending_queue_owner()]
+    assert runtime.pending_load_owners[0] is runtime.pending_activation_owners[0]
+    assert runtime.drained_pending_markers == [0]
     assert order == [
         "create_facade",
         "tick_sweep:0",
@@ -185,10 +205,15 @@ def test_main_loop_opt_in_preserves_runtime_api_order_and_pending_queue_identity
     sim.main_loop(stop_tick=1, use_api=True, use_indexed_buff_load_loop=True)
 
     assert sim.use_indexed_buff_load_loop is True
+    assert sim.buff_runtime_state.pending_queue_owner().as_compat_dict() is loading_buff_dict
     assert sim.buff_runtime_state.pending_queue_for_compat() is loading_buff_dict
     assert runtime.calls == [(0, enemy), (1, enemy)]
     assert runtime.load_ticks == [0]
     assert runtime.activation_ticks == [0]
+    assert runtime.pending_load_owners == [sim.buff_runtime_state.pending_queue_owner()]
+    assert runtime.pending_activation_owners == [sim.buff_runtime_state.pending_queue_owner()]
+    assert runtime.pending_load_owners[0] is runtime.pending_activation_owners[0]
+    assert runtime.drained_pending_markers == [0]
     assert order == [
         "create_facade",
         "tick_sweep:0",
@@ -2059,4 +2084,13 @@ def test_main_loop_records_opt_in_facade_and_buff_load_counts(
     assert runtime.calls == [(0, enemy), (1, enemy), (2, enemy)]
     assert runtime.load_ticks == [0, 1]
     assert runtime.activation_ticks == [0, 1]
+    assert runtime.pending_load_owners == [
+        sim.buff_runtime_state.pending_queue_owner(),
+        sim.buff_runtime_state.pending_queue_owner(),
+    ]
+    assert runtime.pending_activation_owners == [
+        sim.buff_runtime_state.pending_queue_owner(),
+        sim.buff_runtime_state.pending_queue_owner(),
+    ]
+    assert runtime.drained_pending_markers == [0, 1]
     assert loading_buff_dict == {"alpha": [], "enemy": []}
