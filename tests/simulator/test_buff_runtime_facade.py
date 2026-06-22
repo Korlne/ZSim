@@ -257,6 +257,108 @@ def test_buff_runtime_state_exposes_active_store_owner_with_compat_identity() ->
     assert active_owner.beneficiaries() == ("alpha", "enemy", "beta")
 
 
+def test_buff_runtime_read_port_reads_active_view_through_active_owner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    active_buff = _BuffProbe("active")
+    enemy_buff = _BuffProbe("enemy", is_debuff=True)
+    active_store: dict[str, list[Any]] = {
+        "alpha": [active_buff],
+        "enemy": [enemy_buff],
+    }
+    runtime_state = BuffRuntimeState(
+        template_registry={"alpha": {}, "enemy": {}},
+        pending_queue={"alpha": [], "enemy": []},
+        active_store=active_store,
+        enemy_mirror=active_store["enemy"],
+    )
+    active_owner = runtime_state.active_store_owner()
+    read_port = runtime_state.create_read_port()
+    calls: list[tuple[str, str | None]] = []
+    original_active_buffs_snapshot = active_owner.active_buffs_snapshot
+    original_active_buff_view_snapshot = active_owner.active_buff_view_snapshot
+
+    def recording_active_buffs_snapshot(beneficiary: str) -> tuple[Any, ...]:
+        calls.append(("single", beneficiary))
+        return original_active_buffs_snapshot(beneficiary)
+
+    def recording_active_buff_view_snapshot() -> Any:
+        calls.append(("view", None))
+        return original_active_buff_view_snapshot()
+
+    def fail_compat_access() -> dict[str, list[Any]]:
+        raise AssertionError("read port must read active view through ActiveBuffStore")
+
+    monkeypatch.setattr(
+        active_owner,
+        "active_buffs_snapshot",
+        recording_active_buffs_snapshot,
+    )
+    monkeypatch.setattr(
+        active_owner,
+        "active_buff_view_snapshot",
+        recording_active_buff_view_snapshot,
+    )
+    monkeypatch.setattr(runtime_state, "active_store_for_compat", fail_compat_access)
+
+    assert read_port.get_active_buffs("alpha") == (active_buff,)
+    assert read_port.get_active_buffs("missing") == ()
+    active_view = read_port.get_active_buff_view()
+    assert active_view["alpha"] == (active_buff,)
+    assert active_view["enemy"] == (enemy_buff,)
+    with pytest.raises(TypeError):
+        active_view["alpha"] = ()
+    assert calls == [
+        ("single", "alpha"),
+        ("single", "missing"),
+        ("view", None),
+    ]
+
+
+def test_buff_runtime_read_ports_do_not_retain_stale_active_store_between_states() -> None:
+    first_buff = _BuffProbe("first")
+    second_buff = _BuffProbe("second")
+    first_late_buff = _BuffProbe("first-late")
+    second_late_buff = _BuffProbe("second-late")
+    first_store: dict[str, list[Any]] = {"alpha": [first_buff], "enemy": []}
+    second_store: dict[str, list[Any]] = {"alpha": [second_buff], "enemy": []}
+
+    first_state = BuffRuntimeState(
+        template_registry={"alpha": {}, "enemy": {}},
+        pending_queue={"alpha": [], "enemy": []},
+        active_store=first_store,
+        enemy_mirror=first_store["enemy"],
+    )
+    second_state = BuffRuntimeState(
+        template_registry={"alpha": {}, "enemy": {}},
+        pending_queue={"alpha": [], "enemy": []},
+        active_store=second_store,
+        enemy_mirror=second_store["enemy"],
+    )
+    first_read_port = first_state.create_read_port()
+    second_read_port = second_state.create_read_port()
+
+    first_state.active_store_owner().append("alpha", first_late_buff)
+    second_state.active_store_owner().append("alpha", second_late_buff)
+
+    assert first_read_port.get_active_buffs("alpha") == (
+        first_buff,
+        first_late_buff,
+    )
+    assert second_read_port.get_active_buffs("alpha") == (
+        second_buff,
+        second_late_buff,
+    )
+    assert first_read_port.get_active_buff_view()["alpha"] == (
+        first_buff,
+        first_late_buff,
+    )
+    assert second_read_port.get_active_buff_view()["alpha"] == (
+        second_buff,
+        second_late_buff,
+    )
+
+
 def test_buff_runtime_state_exposes_enemy_mirror_owner_with_active_identity() -> None:
     active_debuff = _BuffProbe("debuff", is_debuff=True)
     replacement_debuff = _BuffProbe("debuff", is_debuff=True)

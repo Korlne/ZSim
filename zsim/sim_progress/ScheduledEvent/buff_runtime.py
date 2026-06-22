@@ -163,6 +163,17 @@ class ActiveBuffStore:
     def active_buffs_for_compat(self, beneficiary: str) -> list["Buff"]:
         return self._stores[beneficiary]
 
+    def active_buffs_snapshot(self, beneficiary: str) -> tuple["Buff", ...]:
+        return tuple(self._stores.get(beneficiary, []))
+
+    def active_buff_view_snapshot(self) -> Mapping[str, Sequence["Buff"]]:
+        return MappingProxyType(
+            {
+                beneficiary: tuple(buffs)
+                for beneficiary, buffs in self._stores.items()
+            }
+        )
+
     def as_compat_dict(self) -> dict[str, list["Buff"]]:
         return self._stores
 
@@ -241,15 +252,10 @@ class LegacyBuffRuntimeReadAdapter(BuffRuntimeReadPort):
         self._runtime_state = runtime_state
 
     def get_active_buffs(self, beneficiary: str) -> Sequence["Buff"]:
-        return tuple(self._runtime_state.active_store_for_compat().get(beneficiary, []))
+        return self._runtime_state.active_store_owner().active_buffs_snapshot(beneficiary)
 
     def get_active_buff_view(self) -> Mapping[str, Sequence["Buff"]]:
-        return MappingProxyType(
-            {
-                beneficiary: tuple(buffs)
-                for beneficiary, buffs in self._runtime_state.active_store_for_compat().items()
-            }
-        )
+        return self._runtime_state.active_store_owner().active_buff_view_snapshot()
 
     def get_exist_buff_snapshot(self, beneficiary: str) -> Mapping[str, "Buff"]:
         return MappingProxyType(

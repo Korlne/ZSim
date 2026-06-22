@@ -23,12 +23,15 @@ class _RuntimeProbe:
     def __init__(self, order: list[str]) -> None:
         self._order = order
         self._pending_owner_getter: Any = None
+        self._runtime_state: BuffRuntimeState | None = None
         self.calls: list[tuple[int, Any]] = []
         self.load_ticks: list[int] = []
         self.activation_ticks: list[float] = []
         self.pending_load_owners: list[PendingBuffQueue] = []
         self.pending_activation_owners: list[PendingBuffQueue] = []
+        self.active_activation_owners: list[ActiveBuffStore] = []
         self.drained_pending_markers: list[Any] = []
+        self.activated_active_markers: list[tuple[str, Any]] = []
 
     def bind_pending_owner_getter(self, getter: Any) -> None:
         self._pending_owner_getter = getter
@@ -51,6 +54,7 @@ class _RuntimeProbe:
         record_rebuild_count = getattr(sim_instance, "_record_buff_runtime_rebuild_count", None)
         if record_rebuild_count is not None:
             record_rebuild_count("buff_load_loop")
+        self._runtime_state = sim_instance.buff_runtime_state
         pending_queue = sim_instance.buff_runtime_state.pending_queue_owner()
         self.pending_load_owners.append(pending_queue)
         if self._pending_owner_getter is None:
@@ -66,8 +70,14 @@ class _RuntimeProbe:
         if self._pending_owner_getter is not None:
             pending_queue = self._pending_owner_getter()
             self.pending_activation_owners.append(pending_queue)
+            assert self._runtime_state is not None
+            active_owner = self._runtime_state.active_store_owner()
+            self.active_activation_owners.append(active_owner)
             for beneficiary in pending_queue.beneficiaries():
-                self.drained_pending_markers.extend(pending_queue.drain(beneficiary))
+                for marker in pending_queue.drain(beneficiary):
+                    self.drained_pending_markers.append(marker)
+                    active_owner.append(beneficiary, marker)
+                    self.activated_active_markers.append((beneficiary, marker))
         return {}
 
 
@@ -116,7 +126,11 @@ def _make_minimal_sim(
     return sim, exist_buff_dict, loading_buff_dict, dynamic_buff_dict, enemy
 
 
-def _patch_main_loop_leaf_calls(monkeypatch: pytest.MonkeyPatch, order: list[str]) -> None:
+def _patch_main_loop_leaf_calls(
+    monkeypatch: pytest.MonkeyPatch,
+    order: list[str],
+    scheduled_active_views: list[dict[str, list[Any]]] | None = None,
+) -> None:
     monkeypatch.setattr(
         simulator_class,
         "DamageEventJudge",
@@ -130,6 +144,14 @@ def _patch_main_loop_leaf_calls(monkeypatch: pytest.MonkeyPatch, order: list[str
 
     class FakeScheduledEvent:
         def __init__(self, *args: Any, **kwargs: Any) -> None:
+            if scheduled_active_views is not None:
+                dynamic_buff = args[0]
+                scheduled_active_views.append(
+                    {
+                        beneficiary: list(active_buffs)
+                        for beneficiary, active_buffs in dynamic_buff.items()
+                    }
+                )
             order.append("scheduled_init")
 
         def event_start(self) -> None:
@@ -149,13 +171,18 @@ def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     order: list[str] = []
+    scheduled_active_views: list[dict[str, list[Any]]] = []
     runtime = _RuntimeProbe(order)
 
     def fake_create_facade() -> _RuntimeProbe:
         order.append("create_facade")
         return runtime
 
-    _patch_main_loop_leaf_calls(monkeypatch, order)
+    _patch_main_loop_leaf_calls(
+        monkeypatch,
+        order,
+        scheduled_active_views=scheduled_active_views,
+    )
     sim, exist_buff_dict, loading_buff_dict, dynamic_buff_dict, enemy = _make_minimal_sim(order)
     monkeypatch.setattr(sim.buff_runtime_state, "create_facade", fake_create_facade)
 
@@ -174,7 +201,10 @@ def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
     assert runtime.pending_load_owners == [sim.buff_runtime_state.pending_queue_owner()]
     assert runtime.pending_activation_owners == [sim.buff_runtime_state.pending_queue_owner()]
     assert runtime.pending_load_owners[0] is runtime.pending_activation_owners[0]
+    assert runtime.active_activation_owners == [sim.buff_runtime_state.active_store_owner()]
     assert runtime.drained_pending_markers == [0]
+    assert runtime.activated_active_markers == [("alpha", 0)]
+    assert scheduled_active_views == [{"alpha": [0], "enemy": []}]
     assert order == [
         "create_facade",
         "tick_sweep:0",
