@@ -221,6 +221,11 @@ TRIAGE_NEXT_ACTION = (
     "compatibility, or block the story"
 )
 
+PENDING_QUEUE_RAW_WRITE_NEXT_ACTION = (
+    "route pending writes through PendingBuffQueue owner APIs, keep raw dict "
+    "mutation inside the documented owner/compat adapter, or block the story"
+)
+
 CALCULATOR_READ_NEXT_ACTION = (
     "migrate read-only usage to CalculatorBuffAttributeReader, retain as "
     "documented formula/compatibility snapshot, or block the story"
@@ -477,6 +482,33 @@ SCHEDULE_BUFF_SETTLE_RETAINED_BOUNDARY = (
     "legacy ScheduleBuffSettle command-adapter internals"
 )
 
+PENDING_QUEUE_RAW_WRITE_ALLOWED_CONTEXTS = {
+    (
+        "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+        "PendingBuffQueue.reset_for_beneficiaries",
+    ),
+    (
+        "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+        "PendingBuffQueue.enqueue",
+    ),
+    (
+        "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+        "PendingBuffQueue.__setitem__",
+    ),
+    (
+        "zsim/sim_progress/Buff/BuffLoad.py",
+        "_LegacyPendingQueueCompatAdapter.reset_for_beneficiaries",
+    ),
+    (
+        "zsim/sim_progress/Buff/BuffLoad.py",
+        "_LegacyPendingQueueCompatAdapter.enqueue",
+    ),
+    (
+        "zsim/sim_progress/Buff/BuffLoad.py",
+        "_LegacyPendingQueueCompatAdapter.__setitem__",
+    ),
+}
+
 SCHEDULE_BUFF_SETTLE_RETAINED_SIGNATURES = {
     (
         "ScheduleBuffSettle",
@@ -610,6 +642,22 @@ class Finding:
             f"{self.path}:{self.line}: matched expression: {self.matched_expression}; "
             f"classification suggestion: {self.classification_suggestion}; "
             f"next action: {self.next_action}"
+        )
+
+
+@dataclass(frozen=True)
+class PendingQueueRawWriteFinding:
+    path: str
+    line: int
+    kind: str
+    matched_expression: str
+    context: str
+
+    def message(self) -> str:
+        return (
+            f"{self.path}:{self.line}: matched expression: {self.matched_expression}; "
+            f"forbidden pending raw write: {self.kind}; "
+            f"next action: {PENDING_QUEUE_RAW_WRITE_NEXT_ACTION}"
         )
 
 
@@ -769,6 +817,126 @@ class RawContainerVisitor(ast.NodeVisitor):
         if "DYNAMIC" in container or "dynamic" in container:
             return "active store old-container passthrough"
         return "registry/template old-container passthrough"
+
+
+class PendingQueueRawWriteVisitor(ast.NodeVisitor):
+    def __init__(self, path: Path, source: str) -> None:
+        self.path = path
+        self.source = source
+        self.findings: list[PendingQueueRawWriteFinding] = []
+        self._class_stack: list[str] = []
+        self._function_stack: list[str] = []
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        self._class_stack.append(node.name)
+        self.generic_visit(node)
+        self._class_stack.pop()
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._function_stack.append(node.name)
+        try:
+            self.generic_visit(node)
+        finally:
+            self._function_stack.pop()
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._function_stack.append(node.name)
+        try:
+            self.generic_visit(node)
+        finally:
+            self._function_stack.pop()
+
+    def visit_Assign(self, node: ast.Assign) -> None:
+        for target in node.targets:
+            self._add_subscript_write_if_pending(target, "pending_queue_subscript_write")
+        self.generic_visit(node)
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+        self._add_subscript_write_if_pending(node.target, "pending_queue_subscript_write")
+        self.generic_visit(node)
+
+    def visit_AugAssign(self, node: ast.AugAssign) -> None:
+        self._add_subscript_write_if_pending(node.target, "pending_queue_subscript_write")
+        self.generic_visit(node)
+
+    def visit_Delete(self, node: ast.Delete) -> None:
+        for target in node.targets:
+            self._add_subscript_write_if_pending(target, "pending_queue_subscript_delete")
+        self.generic_visit(node)
+
+    def visit_Call(self, node: ast.Call) -> None:
+        if (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr == "append"
+            and isinstance(node.func.value, ast.Subscript)
+            and self._is_pending_queue_expr(node.func.value.value)
+        ):
+            self._add_finding(
+                line=node.lineno,
+                kind="pending_queue_raw_list_append",
+                expression=self._source_for(node.func.value),
+            )
+        self.generic_visit(node)
+
+    def _add_subscript_write_if_pending(self, node: ast.AST, kind: str) -> None:
+        if isinstance(node, ast.Subscript) and self._is_pending_queue_expr(node.value):
+            self._add_finding(
+                line=node.lineno,
+                kind=kind,
+                expression=self._source_for(node),
+            )
+
+    def _is_pending_queue_expr(self, node: ast.AST) -> bool:
+        if isinstance(node, ast.Name):
+            return self._is_pending_queue_name(node.id)
+        if isinstance(node, ast.Attribute):
+            if node.attr == "_queues":
+                return True
+            return self._is_pending_queue_name(node.attr)
+        return False
+
+    @staticmethod
+    def _is_pending_queue_name(name: str) -> bool:
+        if name in {
+            "LOADING_BUFF_DICT",
+            "_loading_buff_dict",
+            "loading_buff_dict",
+        }:
+            return True
+        lowered = name.lower()
+        return "pending" in lowered and (
+            "queue" in lowered or "owner" in lowered or "buff" in lowered
+        )
+
+    def _add_finding(self, *, line: int, kind: str, expression: str) -> None:
+        self.findings.append(
+            PendingQueueRawWriteFinding(
+                path=self._relative_path(),
+                line=line,
+                kind=kind,
+                matched_expression=self._normalize(expression),
+                context=self._context(),
+            )
+        )
+
+    def _relative_path(self) -> str:
+        return self.path.relative_to(PROJECT_ROOT).as_posix()
+
+    def _context(self) -> str:
+        parts = [*self._class_stack, *self._function_stack]
+        if not parts:
+            return "<module>"
+        return ".".join(parts)
+
+    def _source_for(self, node: ast.AST) -> str:
+        segment = ast.get_source_segment(self.source, node)
+        if segment is None:
+            return f"<{type(node).__name__}>"
+        return self._normalize(segment)
+
+    @staticmethod
+    def _normalize(expression: str) -> str:
+        return " ".join(expression.strip().split())
 
 
 class ScheduledEventRuntimeVisitor(RawContainerVisitor):
@@ -935,6 +1103,32 @@ def _collect_findings() -> list[Finding]:
         source = path.read_text(encoding="utf-8")
         findings.extend(_collect_findings_from_source(path, source))
     return findings
+
+
+def _collect_pending_queue_raw_write_findings_from_source(
+    path: Path, source: str
+) -> list[PendingQueueRawWriteFinding]:
+    tree = ast.parse(source, filename=str(path))
+    visitor = PendingQueueRawWriteVisitor(path, source)
+    visitor.visit(tree)
+    return visitor.findings
+
+
+def _collect_pending_queue_raw_write_findings() -> list[PendingQueueRawWriteFinding]:
+    findings: list[PendingQueueRawWriteFinding] = []
+    for path in SCANNED_PRODUCTION_FILES:
+        source = path.read_text(encoding="utf-8")
+        findings.extend(_collect_pending_queue_raw_write_findings_from_source(path, source))
+    return findings
+
+
+def _is_allowed_pending_queue_raw_write(
+    finding: PendingQueueRawWriteFinding,
+) -> bool:
+    return (
+        finding.path,
+        finding.context,
+    ) in PENDING_QUEUE_RAW_WRITE_ALLOWED_CONTEXTS
 
 
 def _collect_scheduled_runtime_findings_from_source(
@@ -1524,6 +1718,62 @@ def test_runtime_dependency_zero_scanner_classifies_reference_categories() -> No
     }
 
 
+def test_pending_queue_runtime_dependency_scanner_classifies_reference_categories() -> None:
+    scanner = RuntimeDependencyZeroScanner(PROJECT_ROOT)
+
+    production_findings = scanner.scan_source(
+        "zsim/api_src/_fixture.py",
+        "def leak(LOADING_BUFF_DICT):\n"
+        "    return LOADING_BUFF_DICT['enemy']\n",
+    )
+    migration_findings = scanner.scan_source(
+        "zsim/sim_progress/Buff/BuffLoad.py",
+        "def compat(LOADING_BUFF_DICT):\n"
+        "    return LOADING_BUFF_DICT\n",
+    )
+    test_findings = scanner.scan_source(
+        "tests/simulator/_fixture.py",
+        "def compat(LOADING_BUFF_DICT):\n"
+        "    return LOADING_BUFF_DICT\n",
+    )
+    docs_findings = scanner.scan_source(
+        "docs/_fixture.md",
+        "LOADING_BUFF_DICT is compatibility-only pending state.\n",
+    )
+    comment_findings = scanner.scan_source(
+        "zsim/api_src/_fixture.py",
+        "# LOADING_BUFF_DICT historical note only\n"
+        "def clean():\n"
+        "    return None\n",
+    )
+
+    assert {
+        finding.category
+        for finding in production_findings
+        if finding.family == "LOADING_BUFF_DICT"
+    } == {"production runtime"}
+    assert {
+        finding.category
+        for finding in migration_findings
+        if finding.family == "LOADING_BUFF_DICT"
+    } == {"migration-only"}
+    assert {
+        finding.category
+        for finding in test_findings
+        if finding.family == "LOADING_BUFF_DICT"
+    } == {"test-only"}
+    assert {
+        finding.category
+        for finding in docs_findings
+        if finding.family == "LOADING_BUFF_DICT"
+    } == {"docs-only"}
+    assert {
+        finding.category
+        for finding in comment_findings
+        if finding.family == "LOADING_BUFF_DICT"
+    } == {"comment"}
+
+
 def test_raw_old_container_passthroughs_stay_inside_retained_boundaries() -> None:
     findings = _collect_findings()
     disallowed = [finding for finding in findings if _allowance_for(finding) is None]
@@ -1550,6 +1800,78 @@ def test_raw_old_container_retained_boundary_counts_do_not_expand() -> None:
             for allowance, count in sorted(expanded.items())
         )
     )
+
+
+def test_pending_queue_raw_writes_stay_inside_owner_and_compat_adapter() -> None:
+    findings = _collect_pending_queue_raw_write_findings()
+    disallowed = [
+        finding
+        for finding in findings
+        if not _is_allowed_pending_queue_raw_write(finding)
+    ]
+
+    assert not disallowed, (
+        "Pending queue ownership guardrail found raw writes outside owner APIs:\n"
+        + "\n".join(f"- {finding.message()}" for finding in disallowed)
+    )
+    assert {
+        (finding.path, finding.context, finding.kind)
+        for finding in findings
+    } == {
+        (
+            "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+            "PendingBuffQueue.reset_for_beneficiaries",
+            "pending_queue_subscript_write",
+        ),
+        (
+            "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+            "PendingBuffQueue.enqueue",
+            "pending_queue_raw_list_append",
+        ),
+        (
+            "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
+            "PendingBuffQueue.__setitem__",
+            "pending_queue_subscript_write",
+        ),
+        (
+            "zsim/sim_progress/Buff/BuffLoad.py",
+            "_LegacyPendingQueueCompatAdapter.reset_for_beneficiaries",
+            "pending_queue_subscript_write",
+        ),
+        (
+            "zsim/sim_progress/Buff/BuffLoad.py",
+            "_LegacyPendingQueueCompatAdapter.enqueue",
+            "pending_queue_raw_list_append",
+        ),
+        (
+            "zsim/sim_progress/Buff/BuffLoad.py",
+            "_LegacyPendingQueueCompatAdapter.__setitem__",
+            "pending_queue_subscript_write",
+        ),
+    }
+
+
+def test_pending_queue_raw_write_guardrail_blocks_production_dict_and_list_writes() -> None:
+    source = (
+        "def raw_pending_writes(LOADING_BUFF_DICT, pending_buff_queue, buff):\n"
+        "    LOADING_BUFF_DICT['enemy'] = []\n"
+        "    pending_buff_queue['enemy'].append(buff)\n"
+    )
+    path = PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffAddStrategy.py"
+    findings = _collect_pending_queue_raw_write_findings_from_source(path, source)
+    disallowed = [
+        finding
+        for finding in findings
+        if not _is_allowed_pending_queue_raw_write(finding)
+    ]
+
+    assert [finding.kind for finding in disallowed] == [
+        "pending_queue_subscript_write",
+        "pending_queue_raw_list_append",
+    ]
+    assert "LOADING_BUFF_DICT['enemy']" in disallowed[0].matched_expression
+    assert "pending_buff_queue['enemy']" in disallowed[1].matched_expression
+    assert f"next action: {PENDING_QUEUE_RAW_WRITE_NEXT_ACTION}" in disallowed[1].message()
 
 
 def test_main_loop_keeps_buffload_pending_queue_behind_runtime_api() -> None:
