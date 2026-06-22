@@ -266,6 +266,75 @@ def test_main_loop_routes_tick_sweep_and_activation_through_buff_runtime_facade(
     ]
 
 
+def test_main_loop_scheduled_event_registry_reads_bind_to_run_scoped_owner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    order: list[str] = []
+    runtime = _RuntimeProbe(order)
+    runtime_template = object()
+    stale_template = object()
+    captured: dict[str, Any] = {}
+
+    def fake_create_facade() -> _RuntimeProbe:
+        order.append("create_facade")
+        return runtime
+
+    monkeypatch.setattr(
+        simulator_class,
+        "DamageEventJudge",
+        lambda *args, **kwargs: order.append("damage_judge"),
+    )
+    monkeypatch.setattr(
+        simulator_class,
+        "stop_report_threads",
+        lambda: order.append("stop_report_threads"),
+    )
+
+    class FakeScheduledEvent:
+        def __init__(self, *args: Any, **kwargs: Any) -> None:
+            runtime_state = kwargs["buff_runtime_state"]
+            read_port = runtime_state.create_read_port()
+            captured["raw_registry_arg"] = args[3]
+            captured["runtime_state"] = runtime_state
+            captured["runtime_snapshot"] = dict(
+                read_port.get_exist_buff_snapshot("alpha")
+            )
+            order.append("scheduled_init")
+
+        def event_start(self) -> None:
+            order.append("scheduled_start")
+
+    monkeypatch.setattr(simulator_class, "ScE", FakeScheduledEvent)
+    sim, exist_buff_dict, _, _, _ = _make_minimal_sim(order)
+    exist_buff_dict["alpha"]["runtime-template"] = runtime_template
+    stale_registry = {"alpha": {"stale-template": stale_template}, "enemy": {}}
+    sim.load_data.exist_buff_dict = stale_registry
+    monkeypatch.setattr(sim.buff_runtime_state, "create_facade", fake_create_facade)
+
+    sim.main_loop(stop_tick=1, use_api=True)
+
+    assert captured["raw_registry_arg"] is stale_registry
+    assert captured["runtime_state"] is sim.buff_runtime_state
+    assert captured["runtime_snapshot"] == {
+        "runtime-template": runtime_template
+    }
+    assert "stale-template" not in captured["runtime_snapshot"]
+    assert order == [
+        "create_facade",
+        "tick_sweep:0",
+        "preload:0",
+        "damage_judge",
+        "load_pending:0",
+        "activate_pending:0",
+        "scheduled_init",
+        "scheduled_start",
+        "reset_processed_event",
+        "tick_sweep:1",
+        "preload:1",
+        "stop_report_threads",
+    ]
+
+
 def test_main_loop_opt_in_preserves_runtime_api_order_and_pending_queue_identity(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

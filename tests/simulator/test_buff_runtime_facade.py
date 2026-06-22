@@ -394,6 +394,59 @@ def test_buff_runtime_read_ports_do_not_retain_stale_active_store_between_states
     )
 
 
+def test_buff_runtime_read_ports_do_not_retain_stale_template_registry_between_states() -> None:
+    first_buff = _BuffProbe("first-template")
+    second_buff = _BuffProbe("second-template")
+    first_late_buff = _BuffProbe("first-late-template")
+    second_late_buff = _BuffProbe("second-late-template")
+    first_registry: dict[str, dict[str, Any]] = {
+        "alpha": {"first-template": first_buff},
+        "enemy": {},
+    }
+    second_registry: dict[str, dict[str, Any]] = {
+        "alpha": {"second-template": second_buff},
+        "enemy": {},
+    }
+    first_state = BuffRuntimeState(
+        template_registry=first_registry,
+        pending_queue={"alpha": [], "enemy": []},
+        active_store={"alpha": [], "enemy": []},
+        enemy_mirror=[],
+    )
+    second_state = BuffRuntimeState(
+        template_registry=second_registry,
+        pending_queue={"alpha": [], "enemy": []},
+        active_store={"alpha": [], "enemy": []},
+        enemy_mirror=[],
+    )
+    first_read_port = first_state.create_read_port()
+    second_read_port = second_state.create_read_port()
+
+    first_registry["alpha"]["first-late-template"] = first_late_buff
+    second_registry["alpha"]["second-late-template"] = second_late_buff
+
+    assert dict(first_read_port.get_exist_buff_snapshot("alpha")) == {
+        "first-template": first_buff,
+        "first-late-template": first_late_buff,
+    }
+    assert dict(second_read_port.get_exist_buff_snapshot("alpha")) == {
+        "second-template": second_buff,
+        "second-late-template": second_late_buff,
+    }
+    assert dict(first_read_port.get_exist_buff_snapshot_view()["alpha"]) == {
+        "first-template": first_buff,
+        "first-late-template": first_late_buff,
+    }
+    assert dict(second_read_port.get_exist_buff_snapshot_view()["alpha"]) == {
+        "second-template": second_buff,
+        "second-late-template": second_late_buff,
+    }
+    with pytest.raises(TypeError):
+        cast(Any, first_read_port.get_exist_buff_snapshot("alpha"))[
+            "mutated"
+        ] = first_late_buff
+
+
 def test_buff_runtime_state_exposes_enemy_mirror_owner_with_active_identity() -> None:
     active_debuff = _BuffProbe("debuff", is_debuff=True)
     replacement_debuff = _BuffProbe("debuff", is_debuff=True)
