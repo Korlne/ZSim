@@ -349,6 +349,13 @@ def test_scheduled_event_context_requeue_uses_current_schedule_queue_after_rebin
     assert stale_event_list == []
 
 
+def test_event_context_requeue_uses_schedule_dispatch_port() -> None:
+    source = inspect.getsource(EventContext.requeue_event)
+
+    assert "create_schedule_dispatch_port" in source
+    assert ".event_list.append" not in source
+
+
 def test_skill_handler_damage_effect_continuation_uses_current_schedule_queue(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -53,17 +53,11 @@ CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS = {
         "self._event_queue.append(event)",
     ): "US-003",
     (
-        "zsim/sim_progress/ScheduledEvent/event_handlers/context.py",
-        46,
-        "event_context_requeue_append",
-        "self.data.event_list.append(event)",
-    ): "US-003",
-    (
         "zsim/sim_progress/Character/Yixuan/AdrenalineManagerClass.py",
         17,
         "local_event_group_append",
         "adrenaline_events.append(event(char_instance=char_instance))",
-    ): "US-007",
+    ): "US-003",
 }
 
 

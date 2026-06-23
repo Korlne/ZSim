@@ -9,6 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+
 from ..buff_runtime import BuffRuntimeReadPort
 from ..runtime_command import RuntimeCommandPort
 
@@ -43,7 +45,7 @@ class EventContext:
 
     def requeue_event(self, event: Any) -> None:
         """将未到执行时间的事件重新加入当前 Schedule 队列。"""
-        self.data.event_list.append(event)
+        create_schedule_dispatch_port(schedule_data=self.data).publish_scheduled(event)
 
     def get_tick(self) -> int:
         """获取当前时间刻"""
