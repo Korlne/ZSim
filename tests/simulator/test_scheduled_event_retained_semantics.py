@@ -33,6 +33,7 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
     create_schedule_dispatch_port,
 )
 from zsim.sim_progress.data_struct.planned_queue import (
+    PlannedEventQueue,
     ensure_event_list_migration_planned_event_queue,
 )
 from zsim.sim_progress.data_struct.SchedulePreload import SchedulePreload
@@ -102,18 +103,38 @@ class _PlannedQueueOwnerProbe:
         return bool(self.events)
 
 
+def _make_owner_shaped_schedule_data(
+    events: list[object] | None = None,
+    **attrs: object,
+) -> SimpleNamespace:
+    planned_events = [] if events is None else list(events)
+
+    def _get_events() -> list[object]:
+        return planned_events
+
+    def _set_events(events: list[object]) -> None:
+        nonlocal planned_events
+        planned_events = list(events)
+
+    return SimpleNamespace(
+        **attrs,
+        planned_event_queue=PlannedEventQueue(
+            get_events=_get_events,
+            set_events=_set_events,
+        ),
+    )
+
+
 def _make_scheduled_event_for_sim(sim_instance: Any, tick: int = 10) -> Any:
     dynamic_buff: dict[str, list[object]] = {"alpha": []}
     exist_buff_dict: dict[str, dict[str, object]] = {"alpha": {}}
     loading_buff: dict[str, list[object]] = {"alpha": []}
     enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[]))
-    schedule_data = SimpleNamespace(
+    schedule_data = _make_owner_shaped_schedule_data(
         enemy=enemy,
-        event_list=[],
         char_obj_list=[],
         change_process_state=lambda: None,
     )
-    ensure_event_list_migration_planned_event_queue(schedule_data)
     sim_instance.tick = tick
     sim_instance.schedule_data = schedule_data
     sim_instance.listener_manager = SimpleNamespace(broadcast_event=lambda **kwargs: None)
@@ -218,8 +239,7 @@ def test_scheduled_event_handler_registry_is_isolated_between_simulator_instance
 def test_retained_scheduler_handlers_requeue_future_events_without_executing(
     handler_cls: type[Any],
 ) -> None:
-    schedule_data = SimpleNamespace(event_list=[])
-    ensure_event_list_migration_planned_event_queue(schedule_data)
+    schedule_data = _make_owner_shaped_schedule_data()
     context = EventContext(
         data=cast(Any, schedule_data),
         tick=10,
@@ -233,7 +253,7 @@ def test_retained_scheduler_handlers_requeue_future_events_without_executing(
 
     handler_cls().handle(cast(Any, event), context)
 
-    assert schedule_data.event_list == [event]
+    assert schedule_data.planned_event_queue.snapshot() == [event]
     assert event.executed == []
 
 
@@ -302,7 +322,7 @@ def test_retained_scheduler_handlers_execute_due_events_without_requeue(
     handler_cls: type[Any],
     expected_call: tuple[str, tuple[Any, ...]],
 ) -> None:
-    schedule_data = SimpleNamespace(event_list=[])
+    schedule_data = _make_owner_shaped_schedule_data()
     context = EventContext(
         data=cast(Any, schedule_data),
         tick=10,
@@ -316,15 +336,14 @@ def test_retained_scheduler_handlers_execute_due_events_without_requeue(
 
     handler_cls().handle(cast(Any, event), context)
 
-    assert schedule_data.event_list == []
+    assert schedule_data.planned_event_queue.snapshot() == []
     assert event.executed == [expected_call]
 
 
 def test_scheduled_event_process_event_recurses_after_context_requeue() -> None:
     first_event = object()
     requeued_event = object()
-    schedule_data = SimpleNamespace(event_list=[first_event], processed_times=0)
-    ensure_event_list_migration_planned_event_queue(schedule_data)
+    schedule_data = _make_owner_shaped_schedule_data([first_event], processed_times=0)
     processed: list[object] = []
 
     scheduled_event = cast(
@@ -333,7 +352,9 @@ def test_scheduled_event_process_event_recurses_after_context_requeue() -> None:
     )
     scheduled_event.data = schedule_data
     scheduled_event.solve_buff = lambda: None
-    scheduled_event.select_processable_event = lambda: list(schedule_data.event_list)
+    scheduled_event.select_processable_event = (
+        lambda: schedule_data.planned_event_queue.snapshot()
+    )
     scheduled_event.check_all_event = lambda: False
 
     context = EventContext(
@@ -356,7 +377,7 @@ def test_scheduled_event_process_event_recurses_after_context_requeue() -> None:
     scheduled_event.process_event()
 
     assert processed == [first_event, requeued_event]
-    assert schedule_data.event_list == []
+    assert schedule_data.planned_event_queue.snapshot() == []
     assert schedule_data.processed_times == 2
 
 
@@ -366,7 +387,6 @@ def test_scheduled_event_process_event_uses_planned_queue_owner_lifecycle() -> N
     due_high_priority = _QueueLifecycleEventProbe("due-high", execute_tick=10, schedule_priority=10)
     queue_owner = _PlannedQueueOwnerProbe([future_event, due_low_priority, due_high_priority])
     schedule_data = SimpleNamespace(
-        event_list=[],
         planned_event_queue=queue_owner,
         processed_times=0,
     )
@@ -384,7 +404,6 @@ def test_scheduled_event_process_event_uses_planned_queue_owner_lifecycle() -> N
 
     assert processed == [due_low_priority, due_high_priority]
     assert queue_owner.events == [future_event]
-    assert schedule_data.event_list == []
     assert schedule_data.processed_times == 2
     assert ("replace", (future_event, due_low_priority, due_high_priority)) in queue_owner.calls
     assert ("remove", due_low_priority) in queue_owner.calls
@@ -405,7 +424,6 @@ def test_scheduled_event_solve_buff_reorders_through_planned_queue_owner(
         scheduled_event_module.ScheduledEvent.__new__(scheduled_event_module.ScheduledEvent),
     )
     scheduled_event.data = SimpleNamespace(
-        event_list=[],
         planned_event_queue=queue_owner,
     )
     monkeypatch.setattr(scheduled_event_module.Buff, "Buff", _FakeBuff)
@@ -580,9 +598,7 @@ def test_scheduled_event_start_preserves_sp_update_then_process_order(
 
 
 def test_schedule_dispatch_port_publish_scheduled_remains_queue_only_boundary() -> None:
-    event_list: list[object] = []
-    schedule_data = SimpleNamespace(event_list=event_list)
-    ensure_event_list_migration_planned_event_queue(schedule_data)
+    schedule_data = _make_owner_shaped_schedule_data()
     listener_calls: list[object] = []
 
     dispatch_port = create_schedule_dispatch_port(schedule_data=cast(Any, schedule_data))
@@ -591,5 +607,5 @@ def test_schedule_dispatch_port_publish_scheduled_remains_queue_only_boundary() 
 
     dispatch_port.publish_scheduled("queued-event")
 
-    assert event_list == ["queued-event"]
+    assert schedule_data.planned_event_queue.snapshot() == ["queued-event"]
     assert listener_calls == []
