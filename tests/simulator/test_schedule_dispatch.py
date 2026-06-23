@@ -119,7 +119,7 @@ def test_create_schedule_dispatch_port_uses_planned_event_queue_owner_for_schedu
     dispatch_port.publish_scheduled("owner-event")
 
     assert enqueued_events == ["owner-event"]
-    assert schedule_data.event_list == ["owner-event"]
+    assert schedule_data.planned_event_queue.snapshot() == ["owner-event"]
 
 
 def test_schedule_data_planned_event_queue_preserves_order_and_owner_operations():
@@ -129,7 +129,6 @@ def test_schedule_data_planned_event_queue_preserves_order_and_owner_operations(
     queue.enqueue("first")
     queue.enqueue_batch(["second", "third"])
 
-    assert schedule_data.event_list == ["first", "second", "third"]
     assert "_planned_events" in schedule_data.__dict__
     assert "event_list" not in schedule_data.__dict__
     assert queue.snapshot() == ["first", "second", "third"]
@@ -138,7 +137,6 @@ def test_schedule_data_planned_event_queue_preserves_order_and_owner_operations(
 
     queue.remove("second")
 
-    assert schedule_data.event_list == ["first", "third"]
     assert queue.snapshot() == ["first", "third"]
 
 
@@ -154,7 +152,12 @@ def test_schedule_data_owner_operations_do_not_use_event_list_property(
     def fail_setter(self: ScheduleData, events: list[object]) -> None:
         raise AssertionError("owner operations must not write event_list compatibility")
 
-    monkeypatch.setattr(ScheduleData, "event_list", property(fail_getter, fail_setter))
+    monkeypatch.setattr(
+        ScheduleData,
+        "event_list",
+        property(fail_getter, fail_setter),
+        raising=False,
+    )
 
     queue.enqueue("first")
     queue.enqueue_batch(["second", "third"])
@@ -170,24 +173,19 @@ def test_schedule_data_owner_operations_do_not_use_event_list_property(
     assert queue.snapshot() == []
 
 
-def test_schedule_data_event_list_is_compatibility_property_over_owner_storage():
-    initial_events = ["seed"]
+def test_schedule_data_does_not_expose_event_list_public_attribute():
     schedule_data = _make_schedule_data()
-    schedule_data.event_list = initial_events
     queue = schedule_data.planned_event_queue
 
-    assert schedule_data.__dict__["_planned_events"] is initial_events
     assert "event_list" not in schedule_data.__dict__
-    assert queue.compatibility_view is initial_events
+    assert "event_list" not in vars(ScheduleData)
+    assert not hasattr(schedule_data, "event_list")
 
-    replacement_events: list[object] = ["replacement"]
-    schedule_data.event_list = replacement_events
+    queue.replace(["replacement"])
     queue.enqueue("queued")
 
-    assert schedule_data.__dict__["_planned_events"] is replacement_events
-    assert queue.compatibility_view is replacement_events
-    assert initial_events == ["seed"]
-    assert replacement_events == ["replacement", "queued"]
+    assert schedule_data.__dict__["_planned_events"] == ["replacement", "queued"]
+    assert queue.snapshot() == ["replacement", "queued"]
 
 
 def test_schedule_data_constructor_rejects_event_list_seeding():
@@ -210,40 +208,37 @@ def test_schedule_data_owner_replace_seeds_planned_events_after_construction():
 
     schedule_data.planned_event_queue.replace(["replaced"])
 
-    assert schedule_data.event_list == ["replaced"]
     assert schedule_data.planned_event_queue.snapshot() == ["replaced"]
     assert initial_events == ["seed"]
 
 
-def test_schedule_data_planned_event_queue_replace_and_reset_preserve_raw_view_contract():
+def test_schedule_data_planned_event_queue_replace_and_reset_preserve_owner_contract():
     schedule_data = _make_schedule_data()
     queue = schedule_data.planned_event_queue
     queue.enqueue_batch(["other", "buff"])
-    original_event_list = schedule_data.event_list
+    original_snapshot = queue.snapshot()
 
     queue.replace(["buff", "other"])
 
-    assert original_event_list == ["other", "buff"]
-    assert schedule_data.event_list == ["buff", "other"]
+    assert original_snapshot == ["other", "buff"]
     assert queue.snapshot() == ["buff", "other"]
 
     schedule_data.reset_myself()
 
-    assert schedule_data.event_list == []
     assert queue.snapshot() == []
     assert not queue.has_events()
 
 
-def test_schedule_data_planned_event_queue_follows_rebound_event_list():
+def test_create_schedule_dispatch_port_for_schedule_data_uses_current_owner_storage():
     schedule_data = _make_schedule_data()
     queue = schedule_data.planned_event_queue
-    old_event_list = schedule_data.event_list
+    dispatch_port = create_schedule_dispatch_port(schedule_data=schedule_data)
 
-    schedule_data.event_list = []
-    queue.enqueue("current")
+    queue.replace(["stale"])
+    queue.replace([])
+    dispatch_port.publish_scheduled("current")
 
-    assert old_event_list == []
-    assert schedule_data.event_list == ["current"]
+    assert queue.snapshot() == ["current"]
 
 
 def test_create_schedule_dispatch_port_supports_sim_instance():
@@ -510,7 +505,7 @@ def test_damage_event_judge_dispatch_port_path_does_not_construct_legacy_adapter
         [],
     )
 
-    assert schedule_data.event_list == [mission]
+    assert schedule_data.planned_event_queue.snapshot() == [mission]
     assert mission.hitted_count == 1
 
 

@@ -298,22 +298,6 @@ class ScheduleData:
         self.processed_event = False
 
 
-def _get_schedule_data_event_list(self: ScheduleData) -> list[Any]:
-    """Compatibility view over planned-event owner storage."""
-    return self._planned_events
-
-
-def _set_schedule_data_event_list(self: ScheduleData, events: list[Any]) -> None:
-    self._planned_events = events
-
-
-setattr(
-    ScheduleData,
-    "event_list",
-    property(_get_schedule_data_event_list, _set_schedule_data_event_list),
-)
-
-
 @dataclass
 class GlobalStats:
     name_box: list[str]
