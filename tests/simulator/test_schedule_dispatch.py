@@ -17,6 +17,7 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduledEventEmitterProvider,
     create_schedule_dispatch_port,
 )
+from zsim.simulator.dataclasses import ScheduleData
 
 
 class _RecordingSchedulePublisher:
@@ -69,6 +70,11 @@ def _make_loading_mission(tag: str, hit_tick: int) -> LoadingMission:
     return mission
 
 
+def _make_schedule_data() -> ScheduleData:
+    enemy = SimpleNamespace(reset_myself=lambda: None)
+    return ScheduleData(enemy=cast(Any, enemy), char_obj_list=[])
+
+
 def test_legacy_event_list_schedule_dispatch_adapter_preserves_queue_order():
     event_list = []
     dispatch_port = LegacyEventListScheduleDispatchAdapter(event_list)
@@ -91,6 +97,55 @@ def test_create_schedule_dispatch_port_uses_schedule_data_without_exposing_event
     dispatch_port.publish_scheduled("scheduled-event")
 
     assert schedule_data.event_list == ["scheduled-event"]
+
+
+def test_schedule_data_planned_event_queue_preserves_order_and_compatibility_view():
+    schedule_data = _make_schedule_data()
+    queue = schedule_data.planned_event_queue
+
+    queue.enqueue("first")
+    queue.enqueue_batch(["second", "third"])
+
+    assert schedule_data.event_list == ["first", "second", "third"]
+    assert queue.compatibility_view is schedule_data.event_list
+    assert queue.snapshot() == ["first", "second", "third"]
+    assert list(queue) == ["first", "second", "third"]
+    assert queue.has_events()
+
+    queue.remove("second")
+
+    assert schedule_data.event_list == ["first", "third"]
+
+
+def test_schedule_data_planned_event_queue_replace_and_reset_preserve_raw_view_contract():
+    schedule_data = _make_schedule_data()
+    queue = schedule_data.planned_event_queue
+    queue.enqueue_batch(["other", "buff"])
+    original_event_list = schedule_data.event_list
+
+    queue.replace(["buff", "other"])
+
+    assert original_event_list == ["other", "buff"]
+    assert schedule_data.event_list == ["buff", "other"]
+    assert queue.compatibility_view is schedule_data.event_list
+
+    schedule_data.reset_myself()
+
+    assert schedule_data.event_list == []
+    assert queue.compatibility_view is schedule_data.event_list
+    assert not queue.has_events()
+
+
+def test_schedule_data_planned_event_queue_follows_rebound_event_list():
+    schedule_data = _make_schedule_data()
+    queue = schedule_data.planned_event_queue
+    old_event_list = schedule_data.event_list
+
+    schedule_data.event_list = []
+    queue.enqueue("current")
+
+    assert old_event_list == []
+    assert schedule_data.event_list == ["current"]
 
 
 def test_create_schedule_dispatch_port_supports_sim_instance():

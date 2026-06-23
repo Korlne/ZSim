@@ -7,6 +7,7 @@ from zsim.sim_progress.Buff import Buff
 from zsim.sim_progress.Buff.Buff0Manager import Buff0ManagerClass, change_name_box
 from zsim.sim_progress.Character import Character, character_factory
 from zsim.sim_progress.data_struct import ActionStack
+from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
 from zsim.sim_progress.Enemy import Enemy
 
 from .config_classes import SimulationConfig as SimCfg
@@ -252,6 +253,7 @@ class ScheduleData:
     enemy: Enemy
     char_obj_list: list[Character]
     event_list: list[Any] = field(default_factory=list)
+    planned_event_queue: PlannedEventQueue = field(init=False, repr=False)
     # judge_required_info_dict = {"skill_node": None}
     loading_buff: dict[str, list[Buff]] = field(default_factory=dict)
     dynamic_buff: dict[str, list[Buff]] = field(default_factory=dict)
@@ -263,10 +265,19 @@ class ScheduleData:
     processed_times: int = field(default=0)
     processe_state_update_tick: int = field(default=0)  # process_state的更新时间
 
+    def __post_init__(self) -> None:
+        self.planned_event_queue = PlannedEventQueue(
+            get_events=lambda: self.event_list,
+            set_events=self._replace_planned_events,
+        )
+
+    def _replace_planned_events(self, events: list[Any]) -> None:
+        self.event_list = events
+
     def reset_myself(self):
         """重置ScheduleData的动态数据！"""
         self.enemy.reset_myself()
-        self.event_list = []
+        self.planned_event_queue.reset()
         # self.judge_required_info_dict = {"skill_node": None}
         for char_name in self.loading_buff:
             self.loading_buff[char_name] = []

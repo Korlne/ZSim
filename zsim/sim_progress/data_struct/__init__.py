@@ -5,6 +5,7 @@ from .DecibelManager.DecibelManagerClass import Decibelmanager
 from .EnemyAttackEvent import EnemyAttackEventManager
 from .LinkedList import LinkedList
 from .PolarizedAssaultEventClass import PolarizedAssaultEvent
+from .planned_queue import PlannedEventQueue
 from .QuickAssistSystem import QuickAssistEvent, QuickAssistSystem
 from .SchedulePreload import SchedulePreload, schedule_preload_event_factory
 from .schedule_dispatch import (
@@ -36,4 +37,5 @@ __all__ = [
     "ScheduleRefreshData",
     "StunForcedTerminationEvent",
     "PolarizedAssaultEvent",
+    "PlannedEventQueue",
 ]
