@@ -142,6 +142,34 @@ def test_schedule_data_planned_event_queue_preserves_order_and_owner_operations(
     assert queue.snapshot() == ["first", "third"]
 
 
+def test_schedule_data_owner_operations_do_not_use_event_list_property(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    schedule_data = _make_schedule_data()
+    queue = schedule_data.planned_event_queue
+
+    def fail_getter(self: ScheduleData) -> list[object]:
+        raise AssertionError("owner operations must not read event_list compatibility")
+
+    def fail_setter(self: ScheduleData, events: list[object]) -> None:
+        raise AssertionError("owner operations must not write event_list compatibility")
+
+    monkeypatch.setattr(ScheduleData, "event_list", property(fail_getter, fail_setter))
+
+    queue.enqueue("first")
+    queue.enqueue_batch(["second", "third"])
+    assert queue.snapshot() == ["first", "second", "third"]
+
+    queue.remove("second")
+    assert queue.snapshot() == ["first", "third"]
+
+    queue.replace(["replacement"])
+    assert queue.snapshot() == ["replacement"]
+
+    queue.reset()
+    assert queue.snapshot() == []
+
+
 def test_schedule_data_event_list_is_compatibility_property_over_owner_storage():
     initial_events = ["seed"]
     schedule_data = _make_schedule_data()

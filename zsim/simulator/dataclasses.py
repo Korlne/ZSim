@@ -268,12 +268,12 @@ class ScheduleData:
 
     def __post_init__(self) -> None:
         self.planned_event_queue = PlannedEventQueue(
-            get_events=lambda: self.event_list,
+            get_events=lambda: self._planned_events,
             set_events=self._replace_planned_events,
         )
 
     def _replace_planned_events(self, events: list[Any]) -> None:
-        self.event_list = events
+        self._planned_events = events
 
     def reset_myself(self):
         """重置ScheduleData的动态数据！"""
