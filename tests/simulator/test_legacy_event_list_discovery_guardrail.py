@@ -11,6 +11,16 @@ PRODUCTION_ROOT = PROJECT_ROOT / "zsim" / "sim_progress"
 SIMULATOR_ROOT = PROJECT_ROOT / "zsim" / "simulator"
 PRODUCTION_SCAN_ROOTS = (PRODUCTION_ROOT, SIMULATOR_ROOT)
 SIMULATOR_CLASS_PATH = PROJECT_ROOT / "zsim" / "simulator" / "simulator_class.py"
+SCHEDULED_EVENT_PATH = PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent" / "__init__.py"
+RUNTIME_COMMAND_PATH = (
+    PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent" / "runtime_command.py"
+)
+LEGACY_EVENT_LIST_ADAPTER_NAME = "LegacyEventListScheduleDispatchAdapter"
+DEFAULT_PATH_LEGACY_ADAPTER_PROHIBITED_FILES = (
+    SIMULATOR_CLASS_PATH,
+    SCHEDULED_EVENT_PATH,
+    RUNTIME_COMMAND_PATH,
+)
 
 RAW_EVENT_APPEND_KINDS = {
     "compatibility_only_queue_append",
@@ -939,6 +949,37 @@ def _collect_main_loop_raw_planned_queue_findings_from_source(source: str) -> li
     return findings
 
 
+def _collect_legacy_event_list_adapter_dependency_findings_from_source(
+    path: Path, source: str
+) -> list[str]:
+    tree = ast.parse(source)
+    relative_path = path.relative_to(PROJECT_ROOT).as_posix()
+    findings: list[str] = []
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                if alias.name == LEGACY_EVENT_LIST_ADAPTER_NAME:
+                    findings.append(
+                        f"{relative_path}:{node.lineno}: imports "
+                        f"{LEGACY_EVENT_LIST_ADAPTER_NAME}"
+                    )
+        elif isinstance(node, ast.Call):
+            dotted = _dotted_name(node.func)
+            if dotted is None:
+                continue
+            if dotted == LEGACY_EVENT_LIST_ADAPTER_NAME or dotted.endswith(
+                f".{LEGACY_EVENT_LIST_ADAPTER_NAME}"
+            ):
+                expression = _source_for_main_loop_node(source, node)
+                findings.append(
+                    f"{relative_path}:{node.lineno}: constructs "
+                    f"{LEGACY_EVENT_LIST_ADAPTER_NAME}: {expression}"
+                )
+
+    return findings
+
+
 def _main_loop_damage_judge_uses_schedule_dispatch_port(source: str) -> bool:
     tree = ast.parse(source)
     main_loop = _find_simulator_main_loop(tree)
@@ -1067,6 +1108,79 @@ def test_main_loop_uses_dispatch_port_and_has_no_raw_planned_queue_handoff() -> 
 
     assert findings == []
     assert _main_loop_damage_judge_uses_schedule_dispatch_port(source)
+
+
+def test_default_paths_do_not_depend_on_legacy_event_list_adapter() -> None:
+    findings: list[str] = []
+    for path in DEFAULT_PATH_LEGACY_ADAPTER_PROHIBITED_FILES:
+        findings.extend(
+            _collect_legacy_event_list_adapter_dependency_findings_from_source(
+                path, path.read_text(encoding="utf-8")
+            )
+        )
+
+    assert findings == []
+
+
+def test_legacy_event_list_adapter_dependency_guardrail_blocks_default_path_regressions() -> None:
+    samples = [
+        (
+            SIMULATOR_CLASS_PATH,
+            (
+                "from zsim.sim_progress.data_struct.schedule_dispatch import "
+                "LegacyEventListScheduleDispatchAdapter\n"
+                "class Simulator:\n"
+                "    def main_loop(self):\n"
+                "        return LegacyEventListScheduleDispatchAdapter(\n"
+                "            self.schedule_data.event_list\n"
+                "        )\n"
+            ),
+        ),
+        (
+            SCHEDULED_EVENT_PATH,
+            (
+                "class ScheduledEvent:\n"
+                "    def process_event(self):\n"
+                "        return schedule_dispatch.LegacyEventListScheduleDispatchAdapter(\n"
+                "            self.data.event_list\n"
+                "        )\n"
+            ),
+        ),
+        (
+            RUNTIME_COMMAND_PATH,
+            (
+                "def schedule_followup(schedule_data):\n"
+                "    return LegacyEventListScheduleDispatchAdapter(\n"
+                "        schedule_data.event_list\n"
+                "    )\n"
+            ),
+        ),
+    ]
+
+    for path, source in samples:
+        findings = _collect_legacy_event_list_adapter_dependency_findings_from_source(
+            path, source
+        )
+
+        assert any(LEGACY_EVENT_LIST_ADAPTER_NAME in finding for finding in findings)
+
+
+def test_runtime_command_followup_scheduling_uses_owner_view_not_raw_adapter() -> None:
+    source = RUNTIME_COMMAND_PATH.read_text(encoding="utf-8")
+
+    assert LEGACY_EVENT_LIST_ADAPTER_NAME not in source
+    assert "ensure_planned_event_queue(schedule_data).compatibility_view" in source
+    assert "getattr(schedule_data, \"event_list\"" not in source
+    assert "getattr(schedule_data, 'event_list'" not in source
+
+
+def test_retained_scheduled_event_processing_uses_owner_queue_not_raw_adapter() -> None:
+    source = SCHEDULED_EVENT_PATH.read_text(encoding="utf-8")
+
+    assert LEGACY_EVENT_LIST_ADAPTER_NAME not in source
+    assert "return ensure_planned_event_queue(self.data)" in source
+    assert "self.data.event_list.append" not in source
+    assert "self.data.event_list.remove" not in source
 
 
 def test_main_loop_raw_planned_queue_guardrail_blocks_synthetic_regressions() -> None:

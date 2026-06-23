@@ -1,9 +1,12 @@
+import ast
 import inspect
+import sys
 from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
 
+import zsim.sim_progress.Load.LoadDamageEvent as load_damage_event_module
 import zsim.sim_progress.data_struct.schedule_dispatch as schedule_dispatch_module
 from zsim.sim_progress.Dot.BaseDot import Dot
 from zsim.sim_progress.Load.LoadDamageEvent import (
@@ -75,7 +78,7 @@ def _make_schedule_data() -> ScheduleData:
     return ScheduleData(enemy=cast(Any, enemy), char_obj_list=[])
 
 
-def test_legacy_event_list_schedule_dispatch_adapter_preserves_queue_order():
+def test_migration_legacy_event_list_schedule_dispatch_adapter_preserves_queue_order():
     event_list = []
     dispatch_port = LegacyEventListScheduleDispatchAdapter(event_list)
 
@@ -97,6 +100,21 @@ def test_create_schedule_dispatch_port_uses_schedule_data_without_exposing_event
     dispatch_port.publish_scheduled("scheduled-event")
 
     assert schedule_data.event_list == ["scheduled-event"]
+
+
+def test_create_schedule_dispatch_port_default_paths_use_owner_not_legacy_adapter():
+    schedule_data = _make_schedule_data()
+    sim_instance = SimpleNamespace(schedule_data=schedule_data)
+
+    for dispatch_port in (
+        create_schedule_dispatch_port(schedule_data=schedule_data),
+        create_schedule_dispatch_port(sim_instance=cast(Any, sim_instance)),
+    ):
+        assert not isinstance(dispatch_port, LegacyEventListScheduleDispatchAdapter)
+        assert type(dispatch_port).__name__ == "_QueueBackedScheduleDispatchPort"
+        queue_owner = dispatch_port.__dict__["_queue_owner"]
+        assert type(queue_owner).__name__ == "_ScheduleDataQueueOwner"
+        assert queue_owner.__dict__["_schedule_data"] is schedule_data
 
 
 def test_create_schedule_dispatch_port_uses_planned_event_queue_owner_for_schedule_data(
@@ -385,7 +403,7 @@ def test_scheduled_event_provider_retains_callable_factory_only() -> None:
     assert callable(provider.__dict__["_dispatch_port_factory"])
 
 
-def test_schedule_dispatch_port_public_api_does_not_expose_raw_queue_mutation():
+def test_migration_legacy_event_list_adapter_public_api_does_not_expose_raw_queue_mutation():
     adapter = LegacyEventListScheduleDispatchAdapter([])
     expected_public_api = {"publish_scheduled", "publish_scheduled_batch"}
     raw_queue_api = {
@@ -439,7 +457,39 @@ def test_legacy_event_list_adapter_is_documented_as_compatibility_only():
     doc = LegacyEventListScheduleDispatchAdapter.__doc__ or ""
 
     assert "Compatibility wrapper" in doc
+    assert "legacy callers" in doc
+    assert "New production code" in doc
     assert "create_schedule_dispatch_port" in doc
+
+
+def test_raw_list_adapter_constructor_tests_are_migration_or_compatibility_named():
+    source = inspect.getsource(sys.modules[__name__])
+    tree = ast.parse(source)
+    offenders: list[str] = []
+
+    for node in tree.body:
+        if not isinstance(node, ast.FunctionDef) or not node.name.startswith("test_"):
+            continue
+        constructs_raw_adapter = any(
+            isinstance(child, ast.Call)
+            and (
+                (
+                    isinstance(child.func, ast.Name)
+                    and child.func.id == "LegacyEventListScheduleDispatchAdapter"
+                )
+                or (
+                    isinstance(child.func, ast.Attribute)
+                    and child.func.attr == "LegacyEventListScheduleDispatchAdapter"
+                )
+            )
+            for child in ast.walk(node)
+        )
+        if constructs_raw_adapter and not any(
+            token in node.name for token in ("migration", "compatibility", "rollback")
+        ):
+            offenders.append(node.name)
+
+    assert offenders == []
 
 
 def test_damage_event_judge_publishes_loading_missions_in_current_order():
@@ -459,6 +509,37 @@ def test_damage_event_judge_publishes_loading_missions_in_current_order():
     assert publisher.events == [first_mission, second_mission]
     assert first_mission.hitted_count == 1
     assert second_mission.hitted_count == 1
+
+
+def test_damage_event_judge_dispatch_port_path_does_not_construct_legacy_adapter(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    mission = _make_loading_mission("1001_First", hit_tick=5)
+    enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[]))
+    schedule_data = _make_schedule_data()
+    dispatch_port = create_schedule_dispatch_port(schedule_data=schedule_data)
+
+    def fail_legacy_adapter(event_queue: object) -> None:
+        raise AssertionError(
+            f"default dispatch-port path constructed raw-list adapter for {event_queue!r}"
+        )
+
+    monkeypatch.setattr(
+        load_damage_event_module,
+        "LegacyEventListScheduleDispatchAdapter",
+        fail_legacy_adapter,
+    )
+
+    DamageEventJudge(
+        5,
+        {"first": mission},
+        cast(Any, enemy),
+        dispatch_port,
+        [],
+    )
+
+    assert schedule_data.event_list == [mission]
+    assert mission.hitted_count == 1
 
 
 def test_damage_event_judge_dispatch_port_follows_rebound_queue_order():
