@@ -9,7 +9,10 @@ __pycache__
 
 # 日志和配置文件
 logs
-scripts/ralph/context/
+scripts/ralph/context/*
+!scripts/ralph/context/.gitkeep
+!scripts/ralph/context/buff-refactor-ai-index.md
+!scripts/ralph/context/workflow-doc-map.json
 scripts/ralph/summary CN report/
 mypy.ini
 pytest.ini
