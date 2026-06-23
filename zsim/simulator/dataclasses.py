@@ -252,7 +252,8 @@ class LoadData:
 class ScheduleData:
     enemy: Enemy
     char_obj_list: list[Character]
-    event_list: list[Any] = field(default_factory=list)
+    _planned_events: list[Any] = field(default_factory=list, init=False, repr=False)
+    event_list: list[Any] = field(default_factory=list, repr=False)
     planned_event_queue: PlannedEventQueue = field(init=False, repr=False)
     # judge_required_info_dict = {"skill_node": None}
     loading_buff: dict[str, list[Buff]] = field(default_factory=dict)
@@ -296,6 +297,22 @@ class ScheduleData:
     def reset_processed_event(self):
         """重置processed_event"""
         self.processed_event = False
+
+
+def _get_schedule_data_event_list(self: ScheduleData) -> list[Any]:
+    """Compatibility view over planned-event owner storage."""
+    return self._planned_events
+
+
+def _set_schedule_data_event_list(self: ScheduleData, events: list[Any]) -> None:
+    self._planned_events = events
+
+
+setattr(
+    ScheduleData,
+    "event_list",
+    property(_get_schedule_data_event_list, _set_schedule_data_event_list),
+)
 
 
 @dataclass

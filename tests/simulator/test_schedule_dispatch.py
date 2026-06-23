@@ -127,6 +127,8 @@ def test_schedule_data_planned_event_queue_preserves_order_and_compatibility_vie
     queue.enqueue_batch(["second", "third"])
 
     assert schedule_data.event_list == ["first", "second", "third"]
+    assert "_planned_events" in schedule_data.__dict__
+    assert "event_list" not in schedule_data.__dict__
     assert queue.compatibility_view is schedule_data.event_list
     assert queue.snapshot() == ["first", "second", "third"]
     assert list(queue) == ["first", "second", "third"]
@@ -135,6 +137,44 @@ def test_schedule_data_planned_event_queue_preserves_order_and_compatibility_vie
     queue.remove("second")
 
     assert schedule_data.event_list == ["first", "third"]
+
+
+def test_schedule_data_event_list_is_compatibility_property_over_owner_storage():
+    initial_events = ["seed"]
+    schedule_data = _make_schedule_data()
+    schedule_data.event_list = initial_events
+    queue = schedule_data.planned_event_queue
+
+    assert schedule_data.__dict__["_planned_events"] is initial_events
+    assert "event_list" not in schedule_data.__dict__
+    assert queue.compatibility_view is initial_events
+
+    replacement_events: list[object] = ["replacement"]
+    schedule_data.event_list = replacement_events
+    queue.enqueue("queued")
+
+    assert schedule_data.__dict__["_planned_events"] is replacement_events
+    assert queue.compatibility_view is replacement_events
+    assert initial_events == ["seed"]
+    assert replacement_events == ["replacement", "queued"]
+
+
+def test_schedule_data_constructor_event_list_binds_owner_storage():
+    initial_events = ["seed"]
+    schedule_data = ScheduleData(
+        enemy=cast(Any, SimpleNamespace(reset_myself=lambda: None)),
+        char_obj_list=[],
+        event_list=initial_events,
+    )
+
+    assert schedule_data.event_list is initial_events
+    assert schedule_data.planned_event_queue.compatibility_view is initial_events
+
+    schedule_data.planned_event_queue.replace(["replaced"])
+
+    assert schedule_data.event_list == ["replaced"]
+    assert schedule_data.event_list is schedule_data.planned_event_queue.compatibility_view
+    assert initial_events == ["seed"]
 
 
 def test_schedule_data_planned_event_queue_replace_and_reset_preserve_raw_view_contract():
