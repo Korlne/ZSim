@@ -123,12 +123,6 @@ CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS = {
         "self.compatibility_view.clear()",
     ): "US-001",
     (
-        "zsim/sim_progress/data_struct/schedule_dispatch.py",
-        86,
-        "compatibility_only_queue_append",
-        "self._event_queue.append(event)",
-    ): "US-002",
-    (
         "zsim/sim_progress/Character/Yixuan/AdrenalineManagerClass.py",
         17,
         "local_event_group_append",
@@ -1084,7 +1078,6 @@ def test_current_root_raw_planned_queue_allowlist_is_owner_only_after_migration(
     expected_owner_story_by_kind = {
         "planned_queue_owner_internal_mutation": "US-001",
         "planned_queue_owner_internal_replacement": "US-001",
-        "compatibility_only_queue_append": "US-002",
         "local_event_group_append": "US-005",
     }
     allowed_kinds = OWNER_ONLY_RAW_EVENT_APPEND_KINDS | PLANNED_QUEUE_OWNER_INTERNAL_KINDS

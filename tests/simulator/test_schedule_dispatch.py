@@ -1,6 +1,4 @@
-import ast
 import inspect
-import sys
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -15,7 +13,6 @@ from zsim.sim_progress.Load.LoadDamageEvent import (
 )
 from zsim.sim_progress.Load.loading_mission import LoadingMission
 from zsim.sim_progress.data_struct.schedule_dispatch import (
-    LegacyEventListScheduleDispatchAdapter,
     ScheduleDispatchPort,
     ScheduledEventEmitterProvider,
     create_schedule_dispatch_port,
@@ -78,23 +75,12 @@ def _make_schedule_data() -> ScheduleData:
     return ScheduleData(enemy=cast(Any, enemy), char_obj_list=[])
 
 
-def test_migration_legacy_event_list_schedule_dispatch_adapter_preserves_queue_order():
-    event_list = []
-    dispatch_port = LegacyEventListScheduleDispatchAdapter(event_list)
-
-    dispatch_port.publish_scheduled("first")
-    dispatch_port.publish_scheduled_batch(["second", "third"])
-
-    assert event_list == ["first", "second", "third"]
-
-
 def test_create_schedule_dispatch_port_uses_schedule_data_without_exposing_event_list():
     schedule_data = SimpleNamespace(event_list=[])
 
     dispatch_port = create_schedule_dispatch_port(schedule_data=schedule_data)
 
     assert isinstance(dispatch_port, ScheduleDispatchPort)
-    assert not isinstance(dispatch_port, LegacyEventListScheduleDispatchAdapter)
     assert not hasattr(dispatch_port, "event_list")
 
     dispatch_port.publish_scheduled("scheduled-event")
@@ -110,7 +96,6 @@ def test_create_schedule_dispatch_port_default_paths_use_owner_not_legacy_adapte
         create_schedule_dispatch_port(schedule_data=schedule_data),
         create_schedule_dispatch_port(sim_instance=cast(Any, sim_instance)),
     ):
-        assert not isinstance(dispatch_port, LegacyEventListScheduleDispatchAdapter)
         assert type(dispatch_port).__name__ == "_QueueBackedScheduleDispatchPort"
         queue_owner = dispatch_port.__dict__["_queue_owner"]
         assert type(queue_owner).__name__ == "_ScheduleDataQueueOwner"
@@ -403,8 +388,9 @@ def test_scheduled_event_provider_retains_callable_factory_only() -> None:
     assert callable(provider.__dict__["_dispatch_port_factory"])
 
 
-def test_migration_legacy_event_list_adapter_public_api_does_not_expose_raw_queue_mutation():
-    adapter = LegacyEventListScheduleDispatchAdapter([])
+def test_legacy_event_list_adapter_is_not_public_schedule_dispatch_api():
+    import zsim.sim_progress.data_struct as data_struct_module
+
     expected_public_api = {"publish_scheduled", "publish_scheduled_batch"}
     raw_queue_api = {
         "append",
@@ -423,21 +409,20 @@ def test_migration_legacy_event_list_adapter_public_api_does_not_expose_raw_queu
         for name in dir(ScheduleDispatchPort)
         if not name.startswith("_") and callable(getattr(ScheduleDispatchPort, name))
     } == expected_public_api
-    assert {
-        name
-        for name in dir(adapter)
-        if not name.startswith("_") and callable(getattr(adapter, name))
-    } == expected_public_api
+    assert not hasattr(schedule_dispatch_module, "LegacyEventListScheduleDispatchAdapter")
+    assert "LegacyEventListScheduleDispatchAdapter" not in schedule_dispatch_module.__all__
+    assert not hasattr(data_struct_module, "LegacyEventListScheduleDispatchAdapter")
+    assert "LegacyEventListScheduleDispatchAdapter" not in data_struct_module.__all__
     for raw_name in raw_queue_api:
         assert not hasattr(ScheduleDispatchPort, raw_name)
-        assert not hasattr(adapter, raw_name)
 
 
 def test_schedule_dispatch_module_remains_queue_only_boundary():
     source = inspect.getsource(schedule_dispatch_module)
 
     assert "self._queue_owner.enqueue(event)" in source
-    assert source.count("self._event_queue.append(event)") == 1
+    assert "self._event_queue.append(event)" not in source
+    assert "_MutableScheduleQueueOwner" not in source
     assert "ensure_planned_event_queue(self._schedule_data).enqueue(event)" in source
     assert "_fallback_planned_queue" not in source
     assert "def _replace_events" not in source
@@ -451,45 +436,6 @@ def test_schedule_dispatch_module_remains_queue_only_boundary():
         "dot_runtime",
     ):
         assert forbidden_token not in source
-
-
-def test_legacy_event_list_adapter_is_documented_as_compatibility_only():
-    doc = LegacyEventListScheduleDispatchAdapter.__doc__ or ""
-
-    assert "Compatibility wrapper" in doc
-    assert "legacy callers" in doc
-    assert "New production code" in doc
-    assert "create_schedule_dispatch_port" in doc
-
-
-def test_raw_list_adapter_constructor_tests_are_migration_or_compatibility_named():
-    source = inspect.getsource(sys.modules[__name__])
-    tree = ast.parse(source)
-    offenders: list[str] = []
-
-    for node in tree.body:
-        if not isinstance(node, ast.FunctionDef) or not node.name.startswith("test_"):
-            continue
-        constructs_raw_adapter = any(
-            isinstance(child, ast.Call)
-            and (
-                (
-                    isinstance(child.func, ast.Name)
-                    and child.func.id == "LegacyEventListScheduleDispatchAdapter"
-                )
-                or (
-                    isinstance(child.func, ast.Attribute)
-                    and child.func.attr == "LegacyEventListScheduleDispatchAdapter"
-                )
-            )
-            for child in ast.walk(node)
-        )
-        if constructs_raw_adapter and not any(
-            token in node.name for token in ("migration", "compatibility", "rollback")
-        ):
-            offenders.append(node.name)
-
-    assert offenders == []
 
 
 def test_damage_event_judge_publishes_loading_missions_in_current_order():

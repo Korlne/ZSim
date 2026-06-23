@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, Iterable, MutableSequence
+from typing import TYPE_CHECKING, Any, Iterable
 
 from zsim.sim_progress.data_struct.planned_queue import ensure_planned_event_queue
 
@@ -77,15 +77,6 @@ class _ScheduleQueueOwner(ABC):
         """Append one scheduled event to the owned queue."""
 
 
-class _MutableScheduleQueueOwner(_ScheduleQueueOwner):
-    def __init__(self, event_queue: MutableSequence[Any]) -> None:
-        self._event_queue = event_queue
-
-    def enqueue(self, event: Any) -> None:
-        # Keep the raw append contained inside the queue owner.
-        self._event_queue.append(event)
-
-
 class _ScheduleDataQueueOwner(_ScheduleQueueOwner):
     def __init__(self, schedule_data: "ScheduleData") -> None:
         self._schedule_data = schedule_data
@@ -103,18 +94,6 @@ class _QueueBackedScheduleDispatchPort(ScheduleDispatchPort):
         self._queue_owner.enqueue(event)
 
 
-class LegacyEventListScheduleDispatchAdapter(_QueueBackedScheduleDispatchPort):
-    """Compatibility wrapper for legacy callers that still pass raw `event_list`.
-
-    New production code should use `create_schedule_dispatch_port(...)`, which
-    binds dispatch to `ScheduleData` and keeps queue mutation inside the queue
-    owner instead of depending on a raw list append contract.
-    """
-
-    def __init__(self, event_queue: MutableSequence[Any]) -> None:
-        super().__init__(_MutableScheduleQueueOwner(event_queue))
-
-
 def create_schedule_dispatch_port(
     *,
     sim_instance: "Simulator | None" = None,
@@ -129,7 +108,6 @@ def create_schedule_dispatch_port(
 
 
 __all__ = [
-    "LegacyEventListScheduleDispatchAdapter",
     "ScheduleDispatchPort",
     "ScheduledEventEmitter",
     "ScheduledEventEmitterProvider",

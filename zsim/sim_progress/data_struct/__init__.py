@@ -9,7 +9,6 @@ from .planned_queue import PlannedEventQueue
 from .QuickAssistSystem import QuickAssistEvent, QuickAssistSystem
 from .SchedulePreload import SchedulePreload, schedule_preload_event_factory
 from .schedule_dispatch import (
-    LegacyEventListScheduleDispatchAdapter,
     ScheduleDispatchPort,
     create_schedule_dispatch_port,
 )
@@ -29,7 +28,6 @@ __all__ = [
     "QuickAssistEvent",
     "SchedulePreload",
     "ScheduleDispatchPort",
-    "LegacyEventListScheduleDispatchAdapter",
     "create_schedule_dispatch_port",
     "schedule_preload_event_factory",
     "SingleHit",
