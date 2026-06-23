@@ -359,20 +359,28 @@ def test_event_context_requeue_uses_schedule_dispatch_port() -> None:
 def test_skill_handler_damage_effect_continuation_uses_current_schedule_queue(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    event_list: list[object] = []
+    stale_event_list: list[object] = []
+    current_event_list: list[object] = []
     dot_list: list[object] = [object()]
-    data = SimpleNamespace(event_list=event_list)
+    data = SimpleNamespace(event_list=stale_event_list)
     enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=dot_list))
     event = object()
-    call_order: list[tuple[str, object, object, object | None]] = []
+    call_order: list[tuple[str, object, object, object]] = []
 
-    def _process_hit(tick: int, received_dot_list: list[object], received_event_list: list[object]) -> None:
-        call_order.append(("hit", tick, received_dot_list, received_event_list))
-        received_event_list.append("hit-continuation")
+    def _process_hit(tick: int, received_dot_list: list[object], schedule_publisher: Any) -> None:
+        call_order.append(("hit", tick, received_dot_list, schedule_publisher))
+        data.event_list = current_event_list
+        schedule_publisher.publish_scheduled("hit-continuation")
 
-    def _process_freeze(*, timetick: int, enemy: object, event_list: list[object], event: object) -> bool:
-        call_order.append(("freeze", timetick, enemy, event_list))
-        event_list.append(event)
+    def _process_freeze(
+        *,
+        timetick: int,
+        enemy: object,
+        schedule_publisher: Any,
+        event: object,
+    ) -> bool:
+        call_order.append(("freeze", timetick, enemy, schedule_publisher))
+        schedule_publisher.publish_scheduled(event)
         return True
 
     monkeypatch.setattr(skill_module, "ProcessHitUpdateDots", _process_hit)
@@ -381,10 +389,20 @@ def test_skill_handler_damage_effect_continuation_uses_current_schedule_queue(
     SkillEventHandler()._update_damage_effects(10, cast(Any, enemy), cast(Any, data), cast(Any, event))
 
     assert call_order == [
-        ("hit", 10, dot_list, event_list),
-        ("freeze", 10, enemy, event_list),
+        ("hit", 10, dot_list, call_order[0][3]),
+        ("freeze", 10, enemy, call_order[1][3]),
     ]
-    assert event_list == ["hit-continuation", event]
+    assert all(isinstance(entry[3], ScheduleDispatchPort) for entry in call_order)
+    assert stale_event_list == []
+    assert current_event_list == ["hit-continuation", event]
+
+
+def test_skill_handler_damage_effects_use_schedule_dispatch_port() -> None:
+    source = inspect.getsource(SkillEventHandler._update_damage_effects)
+
+    assert "create_schedule_dispatch_port" in source
+    assert "schedule_publisher=schedule_dispatch_port" in source
+    assert "data.event_list" not in source
 
 
 def test_scheduled_event_start_preserves_sp_update_then_process_order(

@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Mapping, Sequence
 from zsim.sim_progress import Report
 from zsim.sim_progress.Character import Character
 from zsim.sim_progress.data_struct import SingleHit
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 from zsim.sim_progress.Load.LoadDamageEvent import (
     ProcessFreezLikeDots,
     ProcessHitUpdateDots,
@@ -258,5 +259,11 @@ class SkillEventHandler(BaseEventHandler):
         event: SkillNode | LoadingMission,
     ) -> None:
         """处理伤害后的附带效果更新"""
-        ProcessHitUpdateDots(tick, enemy.dynamic.dynamic_dot_list, data.event_list)
-        ProcessFreezLikeDots(timetick=tick, enemy=enemy, event_list=data.event_list, event=event)
+        schedule_dispatch_port = create_schedule_dispatch_port(schedule_data=data)
+        ProcessHitUpdateDots(tick, enemy.dynamic.dynamic_dot_list, schedule_dispatch_port)
+        ProcessFreezLikeDots(
+            timetick=tick,
+            enemy=enemy,
+            schedule_publisher=schedule_dispatch_port,
+            event=event,
+        )
