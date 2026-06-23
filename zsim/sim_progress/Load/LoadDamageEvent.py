@@ -1,16 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import MutableSequence
 from typing import Any, Protocol, cast
 
 from zsim.sim_progress.Preload import SkillNode
 
 # import Enemy
 from zsim.sim_progress.Report import report_to_log
-from zsim.sim_progress.data_struct.schedule_dispatch import (
-    LegacyEventListScheduleDispatchAdapter,
-)
-
 from .. import Dot
 from .loading_mission import LoadingMission
 
@@ -20,7 +15,7 @@ class ScheduledEventPublisher(Protocol):
         """Publish one planned event payload."""
 
 
-SchedulePublisher = ScheduledEventPublisher | MutableSequence[Any]
+SchedulePublisher = ScheduledEventPublisher
 
 
 def _as_schedule_publisher(
@@ -30,10 +25,9 @@ def _as_schedule_publisher(
         raise ValueError("schedule_publisher cannot be None")
     if hasattr(schedule_publisher, "publish_scheduled"):
         return cast(ScheduledEventPublisher, schedule_publisher)
-    if isinstance(schedule_publisher, MutableSequence):
-        return LegacyEventListScheduleDispatchAdapter(schedule_publisher)
     raise TypeError(
-        "schedule_publisher must provide publish_scheduled or be a mutable queue"
+        "schedule_publisher must provide publish_scheduled; raw event_list handoff "
+        "has been retired, pass create_schedule_dispatch_port(...) instead"
     )
 
 
@@ -43,8 +37,12 @@ def _legacy_schedule_publisher(
     *,
     allow_unexpected: bool = False,
 ) -> SchedulePublisher | None:
-    if schedule_publisher is None and "event_list" in kwargs:
-        schedule_publisher = cast(SchedulePublisher, kwargs.pop("event_list"))
+    if "event_list" in kwargs:
+        kwargs.pop("event_list")
+        raise TypeError(
+            "event_list= planned-queue handoff has been retired; pass "
+            "schedule_publisher=create_schedule_dispatch_port(...) instead"
+        )
     if kwargs and not allow_unexpected:
         unexpected = ", ".join(sorted(kwargs))
         raise TypeError(f"Unexpected keyword argument(s): {unexpected}")

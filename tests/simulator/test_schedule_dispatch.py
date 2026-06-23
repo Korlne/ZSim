@@ -512,23 +512,14 @@ def test_damage_event_judge_publishes_loading_missions_in_current_order():
 
 
 def test_damage_event_judge_dispatch_port_path_does_not_construct_legacy_adapter(
-    monkeypatch: pytest.MonkeyPatch,
 ):
     mission = _make_loading_mission("1001_First", hit_tick=5)
     enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[]))
     schedule_data = _make_schedule_data()
     dispatch_port = create_schedule_dispatch_port(schedule_data=schedule_data)
+    source = inspect.getsource(load_damage_event_module)
 
-    def fail_legacy_adapter(event_queue: object) -> None:
-        raise AssertionError(
-            f"default dispatch-port path constructed raw-list adapter for {event_queue!r}"
-        )
-
-    monkeypatch.setattr(
-        load_damage_event_module,
-        "LegacyEventListScheduleDispatchAdapter",
-        fail_legacy_adapter,
-    )
+    assert "LegacyEventListScheduleDispatchAdapter" not in source
 
     DamageEventJudge(
         5,
@@ -540,6 +531,42 @@ def test_damage_event_judge_dispatch_port_path_does_not_construct_legacy_adapter
 
     assert schedule_data.event_list == [mission]
     assert mission.hitted_count == 1
+
+
+def test_damage_event_judge_rejects_raw_event_list_schedule_publisher():
+    mission = _make_loading_mission("1001_First", hit_tick=5)
+    enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[]))
+    raw_event_list: list[object] = []
+
+    with pytest.raises(TypeError, match="raw event_list handoff has been retired"):
+        DamageEventJudge(
+            5,
+            {"first": mission},
+            cast(Any, enemy),
+            raw_event_list,
+            [],
+        )
+
+    assert raw_event_list == []
+    assert mission.hitted_count == 0
+
+
+def test_damage_event_judge_rejects_legacy_event_list_keyword():
+    mission = _make_loading_mission("1001_First", hit_tick=5)
+    enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[]))
+    raw_event_list: list[object] = []
+
+    with pytest.raises(TypeError, match="event_list= planned-queue handoff has been retired"):
+        DamageEventJudge(
+            5,
+            {"first": mission},
+            cast(Any, enemy),
+            char_obj_list=[],
+            event_list=raw_event_list,
+        )
+
+    assert raw_event_list == []
+    assert mission.hitted_count == 0
 
 
 def test_damage_event_judge_dispatch_port_follows_rebound_queue_order():
@@ -598,6 +625,17 @@ def test_process_time_update_dots_publishes_anomaly_then_skill_node_payloads():
     assert publisher.events == [anomaly_payload, skill_payload]
     assert anomaly_dot.dy.effect_times == 1
     assert skill_dot.dy.effect_times == 1
+
+
+def test_process_time_update_dots_rejects_raw_event_list_schedule_publisher():
+    payload = object()
+    dot = _ReadyDot(anomaly_data=None, skill_node_data=payload)
+    raw_event_list: list[object] = []
+
+    with pytest.raises(TypeError, match="raw event_list handoff has been retired"):
+        ProcessTimeUpdateDots(12, [dot], raw_event_list)
+
+    assert raw_event_list == []
 
 
 def test_create_schedule_dispatch_port_requires_context():

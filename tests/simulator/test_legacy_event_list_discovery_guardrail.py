@@ -15,11 +15,15 @@ SCHEDULED_EVENT_PATH = PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent"
 RUNTIME_COMMAND_PATH = (
     PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent" / "runtime_command.py"
 )
+LOAD_DAMAGE_EVENT_PATH = (
+    PROJECT_ROOT / "zsim" / "sim_progress" / "Load" / "LoadDamageEvent.py"
+)
 LEGACY_EVENT_LIST_ADAPTER_NAME = "LegacyEventListScheduleDispatchAdapter"
 DEFAULT_PATH_LEGACY_ADAPTER_PROHIBITED_FILES = (
     SIMULATOR_CLASS_PATH,
     SCHEDULED_EVENT_PATH,
     RUNTIME_COMMAND_PATH,
+    LOAD_DAMAGE_EVENT_PATH,
 )
 
 RAW_EVENT_APPEND_KINDS = {
@@ -1144,6 +1148,15 @@ def test_legacy_event_list_adapter_dependency_guardrail_blocks_default_path_regr
                 "        return schedule_dispatch.LegacyEventListScheduleDispatchAdapter(\n"
                 "            self.data.event_list\n"
                 "        )\n"
+            ),
+        ),
+        (
+            LOAD_DAMAGE_EVENT_PATH,
+            (
+                "from zsim.sim_progress.data_struct.schedule_dispatch import "
+                "LegacyEventListScheduleDispatchAdapter\n"
+                "def _as_schedule_publisher(event_list):\n"
+                "    return LegacyEventListScheduleDispatchAdapter(event_list)\n"
             ),
         ),
         (
