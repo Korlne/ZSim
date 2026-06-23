@@ -50,6 +50,9 @@ RAW_PLANNED_QUEUE_LIFECYCLE_KINDS = {
     "raw_schedule_data_event_list_lifecycle_assignment",
     "raw_schedule_data_event_list_lifecycle_mutation",
 }
+RAW_PLANNED_QUEUE_FALLBACK_KINDS = {
+    "raw_planned_queue_fallback_read",
+}
 PLANNED_QUEUE_OWNER_INTERNAL_KINDS = {
     "planned_queue_owner_internal_mutation",
     "planned_queue_owner_internal_replacement",
@@ -58,6 +61,7 @@ CURRENT_ROOT_EVENT_QUEUE_GUARDRAIL_KINDS = (
     RAW_EVENT_APPEND_KINDS
     | SCHEDULED_EVENT_RAW_QUEUE_LIFECYCLE_KINDS
     | RAW_PLANNED_QUEUE_LIFECYCLE_KINDS
+    | RAW_PLANNED_QUEUE_FALLBACK_KINDS
     | PLANNED_QUEUE_OWNER_INTERNAL_KINDS
 )
 
@@ -226,6 +230,25 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             self._add_finding(
                 line=node.lineno,
                 kind=raw_handoff_kind,
+                expression=self._source_for(node),
+            )
+        raw_fallback_kind = self._raw_planned_queue_fallback_call_kind(node)
+        if raw_fallback_kind is not None:
+            self._add_finding(
+                line=node.lineno,
+                kind=raw_fallback_kind,
+                expression=self._source_for(node),
+            )
+        self.generic_visit(node)
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        if (
+            self._raw_planned_queue_target_kind(node.body) is not None
+            and not self._is_allowed_planned_queue_compatibility_owner()
+        ):
+            self._add_finding(
+                line=node.lineno,
+                kind="raw_planned_queue_fallback_read",
                 expression=self._source_for(node),
             )
         self.generic_visit(node)
@@ -449,6 +472,36 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             return self._source_for(node)
         return None
 
+    def _raw_planned_queue_fallback_call_kind(self, node: ast.Call) -> str | None:
+        call_name = self._call_name(node.func)
+        if (
+            call_name == "getattr"
+            and len(node.args) >= 2
+            and _string_literal_value(node.args[1]) == "event_list"
+            and self._raw_planned_queue_owner_kind(node.args[0]) is not None
+            and not self._is_allowed_planned_queue_compatibility_owner()
+        ):
+            return "raw_planned_queue_fallback_read"
+        if (
+            call_name == "setattr"
+            and len(node.args) >= 2
+            and _string_literal_value(node.args[1]) == "event_list"
+            and self._raw_planned_queue_owner_kind(node.args[0]) is not None
+            and not self._is_allowed_planned_queue_compatibility_owner()
+        ):
+            return f"{self._raw_planned_queue_owner_kind(node.args[0])}_lifecycle_assignment"
+        return None
+
+    def _raw_planned_queue_owner_kind(self, owner: ast.AST) -> str | None:
+        dotted = self._dotted_name(owner)
+        if dotted in {"data", "self.data"}:
+            return "raw_data_event_list"
+        if dotted in {"schedule_data", "self.schedule_data", "_schedule_data", "self._schedule_data"}:
+            return "raw_schedule_data_event_list"
+        if dotted and dotted.endswith(".schedule_data"):
+            return "raw_schedule_data_event_list"
+        return None
+
     def _raw_planned_queue_target_kind(self, target: ast.AST) -> str | None:
         if isinstance(target, ast.Subscript):
             target = target.value
@@ -474,22 +527,17 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
 
     def _is_allowed_planned_queue_replacement_owner(self) -> bool:
         relative_path = self._relative_path()
-        if (
+        return (
             relative_path == "zsim/simulator/dataclasses.py"
             and self._class_stack[-1:] == ["ScheduleData"]
             and self._function_stack[-1:] == ["_replace_planned_events"]
-        ):
-            return True
-        if (
-            relative_path == "zsim/sim_progress/data_struct/schedule_dispatch.py"
-            and self._class_stack[-1:] == ["_ScheduleDataQueueOwner"]
-            and self._function_stack[-1:] == ["_replace_events"]
-        ):
-            return True
-        return (
-            relative_path == "zsim/sim_progress/ScheduledEvent/__init__.py"
-            and self._function_stack[-1:] == ["_replace_planned_events"]
         )
+
+    def _is_allowed_planned_queue_compatibility_owner(self) -> bool:
+        relative_path = self._relative_path()
+        if relative_path == "zsim/sim_progress/data_struct/planned_queue.py":
+            return self._function_stack[-1:] == ["ensure_planned_event_queue"]
+        return self._is_allowed_planned_queue_replacement_owner()
 
     def _is_schedule_data_event_list_field_declaration(self, target: ast.expr) -> bool:
         return (
@@ -640,6 +688,9 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             "raw_planned_queue_handoff": (
                 "raw planned queue handed to planned-event producer"
             ),
+            "raw_planned_queue_fallback_read": (
+                "raw planned queue compatibility fallback read outside owner"
+            ),
             "raw_schedule_data_event_list_lifecycle_assignment": (
                 "planned queue raw schedule_data.event_list list replacement"
             ),
@@ -703,6 +754,9 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             ),
             "raw_planned_queue_handoff": (
                 "pass ScheduleDispatchPort/EventInbox owner APIs instead of raw queue"
+            ),
+            "raw_planned_queue_fallback_read": (
+                "route fallback reads through ensure_planned_event_queue(...)"
             ),
             "raw_schedule_data_event_list_lifecycle_assignment": (
                 "replace through ScheduleData.planned_event_queue owner APIs"
@@ -782,6 +836,12 @@ def _dotted_name(node: ast.AST) -> str | None:
         if owner is None:
             return node.attr
         return f"{owner}.{node.attr}"
+    return None
+
+
+def _string_literal_value(node: ast.AST) -> str | None:
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
     return None
 
 
@@ -1256,6 +1316,69 @@ def test_scheduled_event_raw_queue_lifecycle_guardrail_blocks_regressions() -> N
         visitor.findings[2].next_action
         == "US-003 owns migration to the planned queue owner replace API"
     )
+
+
+def test_raw_planned_queue_fallback_guardrail_blocks_local_compatibility_helpers() -> None:
+    samples = [
+        (
+            PRODUCTION_ROOT / "data_struct" / "schedule_dispatch.py",
+            (
+                "class _ScheduleDataQueueOwner:\n"
+                "    def _planned_event_queue(self):\n"
+                "        return PlannedEventQueue(\n"
+                "            get_events=lambda: schedule_data.event_list,\n"
+                "            set_events=lambda events: setattr(schedule_data, 'event_list', events),\n"
+                "        )\n"
+            ),
+            [
+                "raw_planned_queue_fallback_read",
+                "raw_schedule_data_event_list_lifecycle_assignment",
+            ],
+        ),
+        (
+            PRODUCTION_ROOT / "ScheduledEvent" / "__init__.py",
+            (
+                "class ScheduledEvent:\n"
+                "    def _replace_planned_events(self, events):\n"
+                "        self.data.event_list = events\n"
+            ),
+            ["raw_data_event_list_lifecycle_assignment"],
+        ),
+        (
+            PRODUCTION_ROOT / "ScheduledEvent" / "runtime_command.py",
+            (
+                "def _planned_queue_compatibility_view(schedule_data):\n"
+                "    return getattr(schedule_data, 'event_list', [])\n"
+            ),
+            ["raw_planned_queue_fallback_read"],
+        ),
+    ]
+
+    allowed_keys = set(CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS)
+    for path, source, expected_kinds in samples:
+        visitor = LegacyEventListDiscoveryVisitor(path, source)
+        visitor.visit(ast.parse(source))
+
+        assert [finding.kind for finding in visitor.findings] == expected_kinds
+        assert not {
+            _raw_append_key(finding) for finding in visitor.findings
+        } & allowed_keys
+
+
+def test_planned_queue_owner_helper_is_the_only_raw_fallback_owner() -> None:
+    source = (
+        "def ensure_planned_event_queue(schedule_data):\n"
+        "    return PlannedEventQueue(\n"
+        "        get_events=lambda: schedule_data.event_list,\n"
+        "        set_events=lambda events: setattr(schedule_data, 'event_list', events),\n"
+        "    )\n"
+    )
+    path = PRODUCTION_ROOT / "data_struct" / "planned_queue.py"
+    visitor = LegacyEventListDiscoveryVisitor(path, source)
+
+    visitor.visit(ast.parse(source))
+
+    assert visitor.findings == []
 
 
 def test_guardrail_failure_message_includes_post_deletion_triage_fields() -> None:
