@@ -32,6 +32,9 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduleDispatchPort,
     create_schedule_dispatch_port,
 )
+from zsim.sim_progress.data_struct.planned_queue import (
+    ensure_event_list_migration_planned_event_queue,
+)
 from zsim.sim_progress.data_struct.SchedulePreload import SchedulePreload
 
 
@@ -110,6 +113,7 @@ def _make_scheduled_event_for_sim(sim_instance: Any, tick: int = 10) -> Any:
         char_obj_list=[],
         change_process_state=lambda: None,
     )
+    ensure_event_list_migration_planned_event_queue(schedule_data)
     sim_instance.tick = tick
     sim_instance.schedule_data = schedule_data
     sim_instance.listener_manager = SimpleNamespace(broadcast_event=lambda **kwargs: None)
@@ -215,6 +219,7 @@ def test_retained_scheduler_handlers_requeue_future_events_without_executing(
     handler_cls: type[Any],
 ) -> None:
     schedule_data = SimpleNamespace(event_list=[])
+    ensure_event_list_migration_planned_event_queue(schedule_data)
     context = EventContext(
         data=cast(Any, schedule_data),
         tick=10,
@@ -236,6 +241,7 @@ def test_retained_scheduler_handler_requeue_uses_rebound_schedule_queue() -> Non
     stale_event_list: list[object] = []
     current_event_list: list[object] = []
     schedule_data = SimpleNamespace(event_list=stale_event_list)
+    ensure_event_list_migration_planned_event_queue(schedule_data)
     context = EventContext(
         data=cast(Any, schedule_data),
         tick=10,
@@ -318,6 +324,7 @@ def test_scheduled_event_process_event_recurses_after_context_requeue() -> None:
     first_event = object()
     requeued_event = object()
     schedule_data = SimpleNamespace(event_list=[first_event], processed_times=0)
+    ensure_event_list_migration_planned_event_queue(schedule_data)
     processed: list[object] = []
 
     scheduled_event = cast(
@@ -431,6 +438,7 @@ def test_scheduled_event_context_requeue_uses_current_schedule_queue_after_rebin
     stale_event_list: list[object] = []
     current_event_list: list[object] = []
     schedule_data = SimpleNamespace(event_list=stale_event_list)
+    ensure_event_list_migration_planned_event_queue(schedule_data)
     scheduled_event = cast(
         Any,
         scheduled_event_module.ScheduledEvent.__new__(scheduled_event_module.ScheduledEvent),
@@ -466,6 +474,7 @@ def test_skill_handler_damage_effect_continuation_uses_current_schedule_queue(
     current_event_list: list[object] = []
     dot_list: list[object] = [object()]
     data = SimpleNamespace(event_list=stale_event_list)
+    ensure_event_list_migration_planned_event_queue(data)
     enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=dot_list))
     event = object()
     call_order: list[tuple[str, object, object, object]] = []
@@ -573,6 +582,7 @@ def test_scheduled_event_start_preserves_sp_update_then_process_order(
 def test_schedule_dispatch_port_publish_scheduled_remains_queue_only_boundary() -> None:
     event_list: list[object] = []
     schedule_data = SimpleNamespace(event_list=event_list)
+    ensure_event_list_migration_planned_event_queue(schedule_data)
     listener_calls: list[object] = []
 
     dispatch_port = create_schedule_dispatch_port(schedule_data=cast(Any, schedule_data))

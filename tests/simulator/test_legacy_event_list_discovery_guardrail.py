@@ -1884,6 +1884,24 @@ def test_planned_queue_owner_helper_is_the_only_raw_fallback_owner() -> None:
     ]
 
 
+def test_generic_planned_queue_resolution_does_not_install_event_list_owner() -> None:
+    path = PRODUCTION_ROOT / "data_struct" / "planned_queue.py"
+    source = path.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    ensure_function = next(
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.FunctionDef)
+        and node.name == "ensure_planned_event_queue"
+    )
+    ensure_source = ast.get_source_segment(source, ensure_function)
+
+    assert ensure_source is not None
+    assert "ensure_event_list_migration_planned_event_queue" not in ensure_source
+    assert "_EVENT_LIST_MIGRATION_OWNER_ATTR" in ensure_source
+    assert "raise AttributeError" in ensure_source
+
+
 def test_guardrail_failure_message_includes_post_deletion_triage_fields() -> None:
     source = "def publish(record, payload):\n    record.event_list.append(payload)\n"
     path = PRODUCTION_ROOT / "Buff" / "BuffXLogic" / "_synthetic_guardrail_fixture.py"

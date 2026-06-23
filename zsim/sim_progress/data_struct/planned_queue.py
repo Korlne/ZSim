@@ -57,12 +57,19 @@ class PlannedEventQueue:
 
 
 def ensure_planned_event_queue(schedule_data: Any) -> PlannedEventQueue:
-    """Return the planned queue owner for real or test-shaped schedule data."""
+    """Return an existing planned queue owner for real or opted-in migration data."""
     queue = getattr(schedule_data, "planned_event_queue", None)
     if queue is not None:
         return queue
 
-    return ensure_event_list_migration_planned_event_queue(schedule_data)
+    queue = getattr(schedule_data, _EVENT_LIST_MIGRATION_OWNER_ATTR, None)
+    if queue is not None:
+        return queue
+
+    raise AttributeError(
+        "schedule_data must expose planned_event_queue or explicit "
+        "event-list migration owner before planned queue access"
+    )
 
 
 def ensure_event_list_migration_planned_event_queue(schedule_data: Any) -> PlannedEventQueue:

@@ -12,6 +12,9 @@ from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
 from zsim.sim_progress.ScheduledEvent.event_handlers.handlers import skill as skill_module
 from zsim.sim_progress.ScheduledEvent.event_handlers.handlers.skill import SkillEventHandler
 from zsim.sim_progress.ScheduledEvent.runtime_command import create_runtime_command_port
+from zsim.sim_progress.data_struct.planned_queue import (
+    ensure_event_list_migration_planned_event_queue,
+)
 
 
 class _RuntimeViewProbe(BuffRuntimeReadPort):
@@ -237,6 +240,7 @@ def test_skill_handler_runtime_command_adapter_preserves_legacy_container_identi
         event_list=stale_event_list,
         dynamic_buff=legacy_dynamic_buff,
     )
+    ensure_event_list_migration_planned_event_queue(schedule_data)
     sim_instance = cast(
         Any,
         SimpleNamespace(

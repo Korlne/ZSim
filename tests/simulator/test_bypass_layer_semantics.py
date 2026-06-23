@@ -31,6 +31,9 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduledEventEmitterProvider,
     create_schedule_dispatch_port,
 )
+from zsim.sim_progress.data_struct.planned_queue import (
+    ensure_event_list_migration_planned_event_queue,
+)
 from zsim.sim_progress.Dot.BaseDot import Dot
 from zsim.sim_progress.ScheduledEvent import buff_runtime as buff_runtime_module
 from zsim.sim_progress.ScheduledEvent import runtime_command as runtime_command_module
@@ -223,6 +226,7 @@ def _install_buff_add_cross_layer_guards(
 def test_schedule_dispatch_publish_is_queue_only_not_broadcast_or_runtime_write() -> None:
     event_list: list[object] = []
     schedule_data = SimpleNamespace(event_list=event_list)
+    ensure_event_list_migration_planned_event_queue(schedule_data)
     listener_calls: list[object] = []
     runtime_calls: list[object] = []
 
@@ -266,6 +270,7 @@ def test_handler_requeue_uses_current_schedule_queue_not_dispatch_port(
     stale_event_list = _FailFastEventList()
     current_event_list: list[object] = []
     schedule_data = SimpleNamespace(event_list=stale_event_list)
+    ensure_event_list_migration_planned_event_queue(schedule_data)
     context = EventContext(
         data=cast(Any, schedule_data),
         tick=10,
@@ -371,6 +376,7 @@ def test_preparation_context_preload_commands_publish_only_scheduled_events() ->
             update_anomaly=lambda **kwargs: runtime_calls.append(kwargs)
         ),
     )
+    ensure_event_list_migration_planned_event_queue(sim_instance.schedule_data)
     preparation_context = build_preparation_context_from_sim_instance(
         cast(Any, sim_instance)
     )

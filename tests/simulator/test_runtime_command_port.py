@@ -332,6 +332,7 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
         char_obj_list=char_obj_list,
         dynamic_buff=dynamic_buff,
     )
+    ensure_event_list_migration_planned_event_queue(schedule_data)
     sim_instance = cast(
         Any,
         SimpleNamespace(
@@ -854,6 +855,7 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
         event_list=stale_event_list,
         char_obj_list=char_obj_list,
     )
+    ensure_event_list_migration_planned_event_queue(schedule_data)
     action_stack = SimpleNamespace()
     sim_instance = cast(
         Any,
@@ -1242,6 +1244,7 @@ def test_scheduled_event_runtime_port_factory_command_uses_rebound_schedule_queu
         char_obj_list=[],
         dynamic_buff=second_dynamic_buff,
     )
+    ensure_event_list_migration_planned_event_queue(second_data)
     second_sim = SimpleNamespace(
         schedule_data=second_data,
         listener_manager=SimpleNamespace(broadcast_event=lambda **kwargs: None),

@@ -19,6 +19,7 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
 )
 from zsim.sim_progress.data_struct.planned_queue import (
     ensure_event_list_migration_planned_event_queue,
+    ensure_planned_event_queue,
 )
 from zsim.simulator.dataclasses import ScheduleData
 
@@ -80,6 +81,7 @@ def _make_schedule_data() -> ScheduleData:
 
 def test_create_schedule_dispatch_port_uses_schedule_data_without_exposing_event_list():
     schedule_data = SimpleNamespace(event_list=[])
+    ensure_event_list_migration_planned_event_queue(schedule_data)
 
     dispatch_port = create_schedule_dispatch_port(schedule_data=schedule_data)
 
@@ -103,6 +105,20 @@ def test_event_list_migration_owner_helper_is_explicit_and_rebindable():
     assert ensure_event_list_migration_planned_event_queue(schedule_data) is queue
     assert old_event_list == ["old-event"]
     assert schedule_data.event_list == ["new-event"]
+
+
+def test_ensure_planned_event_queue_requires_existing_or_explicit_owner():
+    schedule_data = SimpleNamespace(event_list=[])
+
+    with pytest.raises(
+        AttributeError,
+        match="planned_event_queue or explicit event-list migration owner",
+    ):
+        ensure_planned_event_queue(schedule_data)
+
+    queue = ensure_event_list_migration_planned_event_queue(schedule_data)
+
+    assert ensure_planned_event_queue(schedule_data) is queue
 
 
 def test_create_schedule_dispatch_port_default_paths_use_owner_not_legacy_adapter():
@@ -259,7 +275,9 @@ def test_create_schedule_dispatch_port_for_schedule_data_uses_current_owner_stor
 
 
 def test_create_schedule_dispatch_port_supports_sim_instance():
-    sim_instance = SimpleNamespace(schedule_data=SimpleNamespace(event_list=[]))
+    schedule_data = SimpleNamespace(event_list=[])
+    ensure_event_list_migration_planned_event_queue(schedule_data)
+    sim_instance = SimpleNamespace(schedule_data=schedule_data)
 
     dispatch_port = create_schedule_dispatch_port(sim_instance=sim_instance)
     dispatch_port.publish_scheduled_batch(["alpha", "beta"])
@@ -269,6 +287,7 @@ def test_create_schedule_dispatch_port_supports_sim_instance():
 
 def test_create_schedule_dispatch_port_follows_rebound_schedule_data_event_list():
     schedule_data = SimpleNamespace(event_list=[])
+    ensure_event_list_migration_planned_event_queue(schedule_data)
     old_event_list = schedule_data.event_list
     dispatch_port = create_schedule_dispatch_port(schedule_data=schedule_data)
     dispatch_port.publish_scheduled("old-event")
@@ -412,6 +431,7 @@ def test_scheduled_event_provider_emit_follows_rebound_schedule_data_event_list(
     provider_factory: Any,
 ) -> None:
     schedule_data = SimpleNamespace(event_list=[])
+    ensure_event_list_migration_planned_event_queue(schedule_data)
     old_event_list = schedule_data.event_list
     provider = provider_factory(schedule_data)
     emitter = provider.create_emitter()
@@ -577,6 +597,7 @@ def test_damage_event_judge_dispatch_port_follows_rebound_queue_order():
         dynamic=SimpleNamespace(dynamic_dot_list=[anomaly_dot, skill_dot])
     )
     schedule_data = SimpleNamespace(event_list=[])
+    ensure_event_list_migration_planned_event_queue(schedule_data)
     old_event_list = schedule_data.event_list
     dispatch_port = create_schedule_dispatch_port(schedule_data=schedule_data)
 

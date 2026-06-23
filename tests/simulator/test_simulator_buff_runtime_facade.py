@@ -21,6 +21,9 @@ from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     LegacyBuffRuntimeReadAdapter,
     PendingBuffQueue,
 )
+from zsim.sim_progress.data_struct.planned_queue import (
+    ensure_event_list_migration_planned_event_queue,
+)
 from zsim.simulator import simulator_class
 from zsim.simulator.simulator_class import Simulator
 
@@ -140,6 +143,7 @@ def _make_minimal_sim(
         processed_state_this_tick=False,
         reset_processed_event=lambda: order.append("reset_processed_event"),
     )
+    ensure_event_list_migration_planned_event_queue(sim.schedule_data)
     sim.init_data = SimpleNamespace(name_box=["alpha"])
     sim.char_data = SimpleNamespace(char_obj_list=[])
     sim.preload = SimpleNamespace(
