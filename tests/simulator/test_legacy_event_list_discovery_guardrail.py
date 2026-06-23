@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import json
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -25,6 +26,14 @@ DEFAULT_PATH_LEGACY_ADAPTER_PROHIBITED_FILES = (
     RUNTIME_COMMAND_PATH,
     LOAD_DAMAGE_EVENT_PATH,
 )
+
+
+@dataclass(frozen=True)
+class CompatibilityAllowance:
+    owner: str
+    story: str
+    rationale: str
+
 
 RAW_EVENT_APPEND_KINDS = {
     "compatibility_only_queue_append",
@@ -73,6 +82,14 @@ PLANNED_QUEUE_OWNER_INTERNAL_KINDS = {
 }
 PLANNED_QUEUE_COMPATIBILITY_VIEW_KINDS = {
     "planned_queue_compatibility_view_read",
+}
+SCHEDULE_DATA_EVENT_LIST_COMPATIBILITY_KINDS = {
+    "schedule_data_event_list_constructor_field",
+    "schedule_data_event_list_owner_read",
+    "schedule_data_event_list_owner_rebind",
+    "schedule_data_event_list_property_getter",
+    "schedule_data_event_list_property_setter",
+    "schedule_data_event_list_property_install",
 }
 CURRENT_ROOT_EVENT_QUEUE_GUARDRAIL_KINDS = (
     RAW_EVENT_APPEND_KINDS
@@ -140,6 +157,69 @@ CURRENT_ROOT_ALLOWED_COMPATIBILITY_VIEW_READS = {
         "planned_queue_compatibility_view_read",
         "ensure_planned_event_queue(schedule_data).compatibility_view",
     ): "US-003",
+}
+
+CURRENT_ROOT_ALLOWED_SCHEDULE_DATA_EVENT_LIST_COMPATIBILITY = {
+    (
+        "zsim/simulator/dataclasses.py",
+        256,
+        "schedule_data_event_list_constructor_field",
+        "event_list: list[Any] = field(default_factory=list, repr=False)",
+    ): CompatibilityAllowance(
+        owner="ScheduleData constructor compatibility",
+        story="US-004",
+        rationale="Preserve ScheduleData(event_list=...) seeding until the raw compatibility property is deleted.",
+    ),
+    (
+        "zsim/simulator/dataclasses.py",
+        271,
+        "schedule_data_event_list_owner_read",
+        "lambda: self.event_list",
+    ): CompatibilityAllowance(
+        owner="ScheduleData.__post_init__ PlannedEventQueue get_events",
+        story="US-004",
+        rationale="Keep PlannedEventQueue owner reads following the currently rebound compatibility list.",
+    ),
+    (
+        "zsim/simulator/dataclasses.py",
+        276,
+        "schedule_data_event_list_owner_rebind",
+        "self.event_list = events",
+    ): CompatibilityAllowance(
+        owner="ScheduleData._replace_planned_events",
+        story="US-004",
+        rationale="Keep PlannedEventQueue replace/reset rebinding through the compatibility setter.",
+    ),
+    (
+        "zsim/simulator/dataclasses.py",
+        302,
+        "schedule_data_event_list_property_getter",
+        "def _get_schedule_data_event_list(self: ScheduleData) -> list[Any]:",
+    ): CompatibilityAllowance(
+        owner="_get_schedule_data_event_list",
+        story="US-004",
+        rationale="Expose private _planned_events storage through the temporary compatibility property.",
+    ),
+    (
+        "zsim/simulator/dataclasses.py",
+        307,
+        "schedule_data_event_list_property_setter",
+        "def _set_schedule_data_event_list(self: ScheduleData, events: list[Any]) -> None:",
+    ): CompatibilityAllowance(
+        owner="_set_schedule_data_event_list",
+        story="US-004",
+        rationale="Preserve assignment rebinding semantics while event_list remains a compatibility property.",
+    ),
+    (
+        "zsim/simulator/dataclasses.py",
+        314,
+        "schedule_data_event_list_property_install",
+        "property(_get_schedule_data_event_list, _set_schedule_data_event_list)",
+    ): CompatibilityAllowance(
+        owner="ScheduleData.event_list property install",
+        story="US-004",
+        rationale="Install the temporary property over private _planned_events storage.",
+    ),
 }
 
 
@@ -897,6 +977,212 @@ def _source_for_main_loop_node(source: str, node: ast.AST) -> str:
     return " ".join(segment.strip().split())
 
 
+def _source_line(source: str, line: int) -> str:
+    return " ".join(source.splitlines()[line - 1].strip().split())
+
+
+def _schedule_data_event_list_classification_for(kind: str) -> str:
+    return {
+        "schedule_data_event_list_constructor_field": (
+            "approved ScheduleData.event_list constructor compatibility field"
+        ),
+        "schedule_data_event_list_owner_read": (
+            "approved ScheduleData.event_list owner read for current queue rebinding"
+        ),
+        "schedule_data_event_list_owner_rebind": (
+            "approved ScheduleData.event_list owner rebind through compatibility setter"
+        ),
+        "schedule_data_event_list_property_getter": (
+            "approved ScheduleData.event_list compatibility property getter"
+        ),
+        "schedule_data_event_list_property_setter": (
+            "approved ScheduleData.event_list compatibility property setter"
+        ),
+        "schedule_data_event_list_property_install": (
+            "approved ScheduleData.event_list compatibility property installation"
+        ),
+    }[kind]
+
+
+def _schedule_data_event_list_next_action_for(kind: str) -> str:
+    return {
+        "schedule_data_event_list_constructor_field": (
+            "delete when ScheduleData no longer accepts event_list= seeding"
+        ),
+        "schedule_data_event_list_owner_read": (
+            "replace with non-raw owner storage before deleting the compatibility property"
+        ),
+        "schedule_data_event_list_owner_rebind": (
+            "replace with non-raw owner storage before deleting assignment rebinding"
+        ),
+        "schedule_data_event_list_property_getter": (
+            "delete with the ScheduleData.event_list compatibility property"
+        ),
+        "schedule_data_event_list_property_setter": (
+            "delete with the ScheduleData.event_list compatibility property"
+        ),
+        "schedule_data_event_list_property_install": (
+            "delete with the ScheduleData.event_list compatibility property"
+        ),
+    }[kind]
+
+
+class ScheduleDataEventListCompatibilityVisitor(ast.NodeVisitor):
+    def __init__(self, path: Path, source: str) -> None:
+        self.path = path
+        self.source = source
+        self.findings: list[Finding] = []
+        self._class_stack: list[str] = []
+        self._function_stack: list[str] = []
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        self._class_stack.append(node.name)
+        self.generic_visit(node)
+        self._class_stack.pop()
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        if self._is_schedule_data_path() and not self._class_stack:
+            if node.name == "_get_schedule_data_event_list":
+                self._add_finding(
+                    line=node.lineno,
+                    kind="schedule_data_event_list_property_getter",
+                    expression=_source_line(self.source, node.lineno),
+                )
+            elif node.name == "_set_schedule_data_event_list":
+                self._add_finding(
+                    line=node.lineno,
+                    kind="schedule_data_event_list_property_setter",
+                    expression=_source_line(self.source, node.lineno),
+                )
+        self._function_stack.append(node.name)
+        self.generic_visit(node)
+        self._function_stack.pop()
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._function_stack.append(node.name)
+        self.generic_visit(node)
+        self._function_stack.pop()
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+        if (
+            self._is_schedule_data_path()
+            and self._class_stack[-1:] == ["ScheduleData"]
+            and not self._function_stack
+            and isinstance(node.target, ast.Name)
+            and node.target.id == "event_list"
+        ):
+            self._add_finding(
+                line=node.lineno,
+                kind="schedule_data_event_list_constructor_field",
+                expression=_source_line(self.source, node.lineno),
+            )
+        self.generic_visit(node)
+
+    def visit_Assign(self, node: ast.Assign) -> None:
+        if (
+            self._is_schedule_data_path()
+            and self._class_stack[-1:] == ["ScheduleData"]
+            and self._function_stack[-1:] == ["_replace_planned_events"]
+        ):
+            for target in node.targets:
+                if _dotted_name(target) == "self.event_list":
+                    self._add_finding(
+                        line=node.lineno,
+                        kind="schedule_data_event_list_owner_rebind",
+                        expression=_source_line(self.source, node.lineno),
+                    )
+        self.generic_visit(node)
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        if (
+            self._is_schedule_data_path()
+            and self._class_stack[-1:] == ["ScheduleData"]
+            and self._function_stack[-1:] == ["__post_init__"]
+            and _dotted_name(node.body) == "self.event_list"
+        ):
+            self._add_finding(
+                line=node.lineno,
+                kind="schedule_data_event_list_owner_read",
+                expression=_source_for_main_loop_node(self.source, node),
+            )
+        self.generic_visit(node)
+
+    def visit_Call(self, node: ast.Call) -> None:
+        if (
+            self._is_schedule_data_path()
+            and _call_name(node.func) == "property"
+            and len(node.args) >= 2
+            and _dotted_name(node.args[0]) == "_get_schedule_data_event_list"
+            and _dotted_name(node.args[1]) == "_set_schedule_data_event_list"
+        ):
+            self._add_finding(
+                line=node.lineno,
+                kind="schedule_data_event_list_property_install",
+                expression=_source_for_main_loop_node(self.source, node),
+            )
+        self.generic_visit(node)
+
+    def _is_schedule_data_path(self) -> bool:
+        return self.path == SIMULATOR_ROOT / "dataclasses.py"
+
+    def _add_finding(self, *, line: int, kind: str, expression: str) -> None:
+        self.findings.append(
+            Finding(
+                path=self.path.relative_to(PROJECT_ROOT).as_posix(),
+                line=line,
+                kind=kind,
+                matched_expression=expression,
+                classification_suggestion=_schedule_data_event_list_classification_for(kind),
+                next_action=_schedule_data_event_list_next_action_for(kind),
+            )
+        )
+
+
+def _collect_schedule_data_event_list_compatibility_findings_from_source(
+    path: Path,
+    source: str,
+) -> list[Finding]:
+    visitor = ScheduleDataEventListCompatibilityVisitor(path, source)
+    visitor.visit(ast.parse(source, filename=str(path)))
+    return visitor.findings
+
+
+def _collect_schedule_data_event_list_compatibility_findings() -> list[Finding]:
+    path = SIMULATOR_ROOT / "dataclasses.py"
+    return _collect_schedule_data_event_list_compatibility_findings_from_source(
+        path,
+        path.read_text(encoding="utf-8"),
+    )
+
+
+def _event_list_deletion_readiness_counts() -> dict[str, object]:
+    compatibility_findings = _collect_schedule_data_event_list_compatibility_findings()
+    event_findings = _collect_findings()
+    raw_lifecycle_mutation_kinds = (
+        SCHEDULED_EVENT_RAW_QUEUE_LIFECYCLE_KINDS
+        | (RAW_PLANNED_QUEUE_LIFECYCLE_KINDS - {"raw_planned_queue_handoff"})
+    )
+    raw_lifecycle_mutations = [
+        finding
+        for finding in event_findings
+        if finding.kind in raw_lifecycle_mutation_kinds
+    ]
+    raw_producer_handoffs = [
+        finding for finding in event_findings if finding.kind == "raw_planned_queue_handoff"
+    ]
+
+    return {
+        "approved_schedule_data_event_list_compatibility": len(
+            compatibility_findings
+        ),
+        "approved_schedule_data_event_list_compatibility_by_kind": dict(
+            Counter(finding.kind for finding in compatibility_findings)
+        ),
+        "raw_planned_queue_lifecycle_mutation": len(raw_lifecycle_mutations),
+        "raw_planned_queue_producer_handoff": len(raw_producer_handoffs),
+    }
+
+
 def _looks_like_raw_planned_queue_name(name: str) -> bool:
     return (
         name in MAIN_LOOP_RAW_PLANNED_QUEUE_NAMES
@@ -1151,6 +1437,51 @@ def test_planned_queue_compatibility_view_reads_are_migration_only() -> None:
         "Current-root approved compatibility_view reads must name follow-up stories "
         f"in scripts/ralph/prd.json; missing: {missing_story_ids}"
     )
+
+
+def test_schedule_data_event_list_compatibility_allowance_is_exact_and_owned() -> None:
+    findings = _collect_schedule_data_event_list_compatibility_findings()
+    actual = {_raw_append_key(finding) for finding in findings}
+    expected = set(CURRENT_ROOT_ALLOWED_SCHEDULE_DATA_EVENT_LIST_COMPATIBILITY)
+
+    assert actual == expected, (
+        "ScheduleData.event_list compatibility allowance drifted:\n"
+        + "\n".join(f"- {finding.message()}" for finding in findings)
+    )
+
+    prd_story_ids = _active_prd_story_ids()
+    missing_story_ids = sorted(
+        {
+            allowance.story
+            for allowance in CURRENT_ROOT_ALLOWED_SCHEDULE_DATA_EVENT_LIST_COMPATIBILITY.values()
+            if allowance.story not in prd_story_ids
+        }
+    )
+    assert not missing_story_ids, (
+        "ScheduleData.event_list compatibility allowances must name active PRD "
+        f"stories; missing: {missing_story_ids}"
+    )
+    assert all(
+        allowance.owner and allowance.rationale
+        for allowance in CURRENT_ROOT_ALLOWED_SCHEDULE_DATA_EVENT_LIST_COMPATIBILITY.values()
+    )
+    assert {
+        allowance.story
+        for allowance in CURRENT_ROOT_ALLOWED_SCHEDULE_DATA_EVENT_LIST_COMPATIBILITY.values()
+    } == {"US-004"}
+
+
+def test_event_list_deletion_readiness_counts_categories_separately() -> None:
+    counts = _event_list_deletion_readiness_counts()
+
+    assert counts["approved_schedule_data_event_list_compatibility"] == len(
+        CURRENT_ROOT_ALLOWED_SCHEDULE_DATA_EVENT_LIST_COMPATIBILITY
+    )
+    assert counts["approved_schedule_data_event_list_compatibility_by_kind"] == {
+        kind: 1 for kind in SCHEDULE_DATA_EVENT_LIST_COMPATIBILITY_KINDS
+    }
+    assert counts["raw_planned_queue_lifecycle_mutation"] == 0
+    assert counts["raw_planned_queue_producer_handoff"] == 0
 
 
 def test_raw_planned_queue_lifecycle_has_no_current_findings_outside_owner_surfaces() -> None:
