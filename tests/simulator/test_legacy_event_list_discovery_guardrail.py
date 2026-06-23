@@ -120,25 +120,25 @@ MAIN_LOOP_PLANNED_PRODUCER_CALLS = {
 CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS = {
     (
         "zsim/sim_progress/data_struct/planned_queue.py",
-        28,
+        31,
         "planned_queue_owner_internal_mutation",
         "self._events().append(event)",
     ): "US-001",
     (
         "zsim/sim_progress/data_struct/planned_queue.py",
-        41,
+        44,
         "planned_queue_owner_internal_mutation",
         "self._events().remove(event)",
     ): "US-001",
     (
         "zsim/sim_progress/data_struct/planned_queue.py",
-        44,
+        47,
         "planned_queue_owner_internal_replacement",
         "self._set_events(list(events))",
     ): "US-001",
     (
         "zsim/sim_progress/data_struct/planned_queue.py",
-        47,
+        50,
         "planned_queue_owner_internal_mutation",
         "self._events().clear()",
     ): "US-001",
@@ -589,7 +589,9 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
     def _is_allowed_planned_queue_compatibility_owner(self) -> bool:
         relative_path = self._relative_path()
         if relative_path == "zsim/sim_progress/data_struct/planned_queue.py":
-            return self._function_stack[-1:] == ["ensure_planned_event_queue"]
+            return self._function_stack[-1:] == [
+                "ensure_event_list_migration_planned_event_queue"
+            ]
         return self._is_allowed_planned_queue_replacement_owner()
 
     def _is_schedule_data_event_list_field_declaration(self, target: ast.expr) -> bool:
@@ -1848,19 +1850,35 @@ def test_raw_planned_queue_fallback_guardrail_blocks_local_compatibility_helpers
 
 
 def test_planned_queue_owner_helper_is_the_only_raw_fallback_owner() -> None:
-    source = (
-        "def ensure_planned_event_queue(schedule_data):\n"
+    allowed_source = (
+        "def ensure_event_list_migration_planned_event_queue(schedule_data):\n"
         "    return PlannedEventQueue(\n"
         "        get_events=lambda: schedule_data.event_list,\n"
         "        set_events=lambda events: setattr(schedule_data, 'event_list', events),\n"
         "    )\n"
     )
     path = PRODUCTION_ROOT / "data_struct" / "planned_queue.py"
-    visitor = LegacyEventListDiscoveryVisitor(path, source)
+    allowed_visitor = LegacyEventListDiscoveryVisitor(path, allowed_source)
 
-    visitor.visit(ast.parse(source))
+    allowed_visitor.visit(ast.parse(allowed_source))
 
-    assert visitor.findings == []
+    assert allowed_visitor.findings == []
+
+    disallowed_source = (
+        "def ensure_planned_event_queue(schedule_data):\n"
+        "    return PlannedEventQueue(\n"
+        "        get_events=lambda: schedule_data.event_list,\n"
+        "        set_events=lambda events: setattr(schedule_data, 'event_list', events),\n"
+        "    )\n"
+    )
+    disallowed_visitor = LegacyEventListDiscoveryVisitor(path, disallowed_source)
+
+    disallowed_visitor.visit(ast.parse(disallowed_source))
+
+    assert [finding.kind for finding in disallowed_visitor.findings] == [
+        "raw_planned_queue_fallback_read",
+        "raw_schedule_data_event_list_lifecycle_assignment",
+    ]
 
 
 def test_guardrail_failure_message_includes_post_deletion_triage_fields() -> None:

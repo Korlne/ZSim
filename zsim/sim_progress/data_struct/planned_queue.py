@@ -5,6 +5,9 @@ from collections.abc import Iterator
 from typing import Any
 
 
+_EVENT_LIST_MIGRATION_OWNER_ATTR = "_planned_event_queue_event_list_migration_owner"
+
+
 class PlannedEventQueue:
     """Owns planned-event queue lifecycle with an explicit migration raw view."""
 
@@ -59,11 +62,16 @@ def ensure_planned_event_queue(schedule_data: Any) -> PlannedEventQueue:
     if queue is not None:
         return queue
 
-    fallback_queue = getattr(schedule_data, "_planned_event_queue_compat_owner", None)
+    return ensure_event_list_migration_planned_event_queue(schedule_data)
+
+
+def ensure_event_list_migration_planned_event_queue(schedule_data: Any) -> PlannedEventQueue:
+    """Install an event-list-backed owner for explicit migration/test data."""
+    fallback_queue = getattr(schedule_data, _EVENT_LIST_MIGRATION_OWNER_ATTR, None)
     if fallback_queue is None:
         fallback_queue = PlannedEventQueue(
             get_events=lambda: schedule_data.event_list,
             set_events=lambda events: setattr(schedule_data, "event_list", events),
         )
-        setattr(schedule_data, "_planned_event_queue_compat_owner", fallback_queue)
+        setattr(schedule_data, _EVENT_LIST_MIGRATION_OWNER_ATTR, fallback_queue)
     return fallback_queue
