@@ -99,6 +99,26 @@ def test_create_schedule_dispatch_port_uses_schedule_data_without_exposing_event
     assert schedule_data.event_list == ["scheduled-event"]
 
 
+def test_create_schedule_dispatch_port_uses_planned_event_queue_owner_for_schedule_data(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    schedule_data = _make_schedule_data()
+    enqueued_events: list[object] = []
+    original_enqueue = schedule_data.planned_event_queue.enqueue
+
+    def recording_enqueue(event: object) -> None:
+        enqueued_events.append(event)
+        original_enqueue(event)
+
+    monkeypatch.setattr(schedule_data.planned_event_queue, "enqueue", recording_enqueue)
+
+    dispatch_port = create_schedule_dispatch_port(schedule_data=schedule_data)
+    dispatch_port.publish_scheduled("owner-event")
+
+    assert enqueued_events == ["owner-event"]
+    assert schedule_data.event_list == ["owner-event"]
+
+
 def test_schedule_data_planned_event_queue_preserves_order_and_compatibility_view():
     schedule_data = _make_schedule_data()
     queue = schedule_data.planned_event_queue
@@ -359,7 +379,8 @@ def test_schedule_dispatch_module_remains_queue_only_boundary():
     source = inspect.getsource(schedule_dispatch_module)
 
     assert "self._queue_owner.enqueue(event)" in source
-    assert source.count("self._event_queue.append(event)") == 2
+    assert source.count("self._event_queue.append(event)") == 1
+    assert "self._planned_event_queue.enqueue(event)" in source
     for forbidden_token in (
         "listener_manager",
         "broadcast_event",

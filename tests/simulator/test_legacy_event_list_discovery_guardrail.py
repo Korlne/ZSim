@@ -47,22 +47,16 @@ MAIN_LOOP_PLANNED_PRODUCER_CALLS = {
 CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS = {
     (
         "zsim/sim_progress/data_struct/schedule_dispatch.py",
-        84,
+        86,
         "compatibility_only_queue_append",
         "self._event_queue.append(event)",
-    ): "US-003",
-    (
-        "zsim/sim_progress/data_struct/schedule_dispatch.py",
-        97,
-        "compatibility_only_queue_append",
-        "self._event_queue.append(event)",
-    ): "US-003",
+    ): "US-002",
     (
         "zsim/sim_progress/Character/Yixuan/AdrenalineManagerClass.py",
         17,
         "local_event_group_append",
         "adrenaline_events.append(event(char_instance=char_instance))",
-    ): "US-003",
+    ): "US-005",
 }
 
 
@@ -366,7 +360,7 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             "find_event_list_call": "delete old discovery or retain as documented fallback",
             "buff_record_event_list_access": "delete old discovery or retain as documented fallback",
             "compatibility_only_queue_append": (
-                "US-003 owns the schedule queue implementation boundary"
+                "US-002 owns the explicit legacy schedule queue compatibility boundary"
             ),
             "event_context_requeue_append": (
                 "keep requeue behind EventContext.requeue_event(...)"
@@ -629,10 +623,14 @@ def test_current_root_raw_planned_queue_allowlist_is_owner_only_after_migration(
         + "\n".join(f"- {finding.message()}" for finding in findings)
     )
 
+    expected_owner_story_by_kind = {
+        "compatibility_only_queue_append": "US-002",
+        "local_event_group_append": "US-005",
+    }
     for key, owner_story_id in CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS.items():
         _path, _line, kind, _matched_expression = key
         assert kind in OWNER_ONLY_RAW_EVENT_APPEND_KINDS
-        assert owner_story_id == "US-003"
+        assert owner_story_id == expected_owner_story_by_kind[kind]
 
 
 def test_main_loop_uses_dispatch_port_and_has_no_raw_planned_queue_handoff() -> None:
