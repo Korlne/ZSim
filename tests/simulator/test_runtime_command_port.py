@@ -47,6 +47,39 @@ class _ScheduleLogicProbe:
         self._calls.append(("xeffect", kwargs))
 
 
+class _PlannedQueueOwnerProbe:
+    def __init__(self, events: list[object] | None = None) -> None:
+        self.events = [] if events is None else events
+        self.compatibility_view_reads = 0
+        self.enqueue_calls: list[object] = []
+
+    @property
+    def compatibility_view(self) -> list[object]:
+        self.compatibility_view_reads += 1
+        return self.events
+
+    def enqueue(self, event: object) -> None:
+        self.enqueue_calls.append(event)
+        self.events.append(event)
+
+
+class _OwnerOnlyScheduleData:
+    def __init__(
+        self,
+        *,
+        planned_event_queue: _PlannedQueueOwnerProbe,
+        char_obj_list: list[object] | None = None,
+        dynamic_buff: dict[str, list[object]] | None = None,
+    ) -> None:
+        self.planned_event_queue = planned_event_queue
+        self.char_obj_list = [] if char_obj_list is None else char_obj_list
+        self.dynamic_buff = {} if dynamic_buff is None else dynamic_buff
+
+    @property
+    def event_list(self) -> list[object]:
+        raise AssertionError("raw event_list should not be accessed")
+
+
 def _make_schedule_buff(
     index: str,
     *,
@@ -194,6 +227,72 @@ def test_run_update_anomaly_defaults_to_current_path_until_migration_test_hook_i
     ]
 
 
+def test_run_update_anomaly_migration_hook_uses_planned_queue_compatibility_view(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    compatibility_calls: list[tuple[Any, Any, Any, Any, Any, dict[str, Any]]] = []
+
+    def fake_legacy_update_anomaly(
+        element_type: object,
+        enemy: object,
+        time_now: object,
+        event_list: object,
+        char_obj_list: object,
+        **kwargs: Any,
+    ) -> None:
+        compatibility_calls.append(
+            (element_type, enemy, time_now, event_list, char_obj_list, kwargs)
+        )
+
+    monkeypatch.setattr(
+        runtime_command_module,
+        runtime_command_module._MIGRATION_TEST_ANOMALY_HOOK_NAME,
+        fake_legacy_update_anomaly,
+        raising=False,
+    )
+
+    owner_events: list[object] = []
+    queue_owner = _PlannedQueueOwnerProbe(owner_events)
+    runtime_view = object()
+    schedule_data = _OwnerOnlyScheduleData(planned_event_queue=queue_owner)
+    runtime_context = SimpleNamespace(
+        sim_instance=SimpleNamespace(schedule_data=schedule_data),
+        buff_runtime_view=runtime_view,
+    )
+    enemy = object()
+    skill_node = object()
+    char_obj_list = [object()]
+    active_store: dict[str, list[object]] = {"enemy": []}
+
+    runtime_command_module.run_update_anomaly(
+        element_type=1,
+        enemy=enemy,
+        time_now=17,
+        char_obj_list=char_obj_list,
+        sim_instance=runtime_context.sim_instance,
+        skill_node=skill_node,
+        dynamic_buff_dict=active_store,
+        runtime_context=runtime_context,
+    )
+
+    assert queue_owner.compatibility_view_reads == 1
+    assert compatibility_calls == [
+        (
+            1,
+            enemy,
+            17,
+            owner_events,
+            char_obj_list,
+            {
+                "skill_node": skill_node,
+                "dynamic_buff_dict": active_store,
+                "sim_instance": runtime_context.sim_instance,
+                "buff_runtime_view": runtime_view,
+            },
+        )
+    ]
+
+
 def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_writes(
     monkeypatch: pytest.MonkeyPatch,
 ):
@@ -315,6 +414,70 @@ def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_
     assert captured["settle_sim_instance"] is sim_instance
     assert captured["settle_skill_node"] is skill_node
     assert captured["settle_anomaly_bar"] is None
+
+
+def test_default_runtime_command_context_dispatch_uses_planned_queue_owner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    dynamic_buff: dict[str, list[object]] = {"alpha": [], "enemy": []}
+    runtime_state = _runtime_state_for_test(
+        exist_buff_dict={"alpha": {}, "enemy": {}},
+        dynamic_buff=dynamic_buff,
+    )
+    queue_owner = _PlannedQueueOwnerProbe()
+    schedule_data = _OwnerOnlyScheduleData(
+        planned_event_queue=queue_owner,
+        char_obj_list=[],
+        dynamic_buff=dynamic_buff,
+    )
+    sim_instance = SimpleNamespace(
+        schedule_data=schedule_data,
+        listener_manager=SimpleNamespace(broadcast_event=lambda **kwargs: None),
+    )
+    captured: dict[str, Any] = {}
+
+    def _fake_update_anomaly(
+        *,
+        element_type,
+        enemy,
+        time_now,
+        char_obj_list,
+        sim_instance,
+        skill_node,
+        dynamic_buff_dict,
+        runtime_context,
+        **kwargs,
+    ) -> None:
+        captured["runtime_context"] = runtime_context
+        captured["dynamic_buff_dict"] = dynamic_buff_dict
+        captured["sim_instance"] = sim_instance
+
+    monkeypatch.setattr(runtime_command_module, "run_update_anomaly", _fake_update_anomaly)
+
+    port = create_runtime_command_port(
+        data=cast(Any, schedule_data),
+        action_stack=cast(Any, SimpleNamespace()),
+        sim_instance=cast(Any, sim_instance),
+        buff_runtime_state=runtime_state,
+        buff_runtime_view=runtime_state.create_read_port(),
+    )
+
+    assert isinstance(port, DefaultRuntimeCommandAdapter)
+    assert not isinstance(port, LegacyRuntimeCommandAdapter)
+
+    port.update_anomaly(
+        element_type=1,
+        enemy=cast(Any, SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[]))),
+        tick=10,
+        skill_node=cast(Any, SimpleNamespace(skill_tag="1001_TEST")),
+    )
+
+    assert captured["dynamic_buff_dict"] is dynamic_buff
+    assert captured["sim_instance"] is sim_instance
+    runtime_context = captured["runtime_context"]
+    runtime_context.dispatch_port.publish_scheduled("owner-event")
+    assert queue_owner.enqueue_calls == ["owner-event"]
+    assert queue_owner.events == ["owner-event"]
 
 
 def test_runtime_command_factory_uses_default_adapter_for_runtime_state() -> None:

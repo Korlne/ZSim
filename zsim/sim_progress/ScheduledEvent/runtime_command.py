@@ -32,11 +32,18 @@ def __getattr__(name: str):
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
+def _planned_queue_compatibility_view(schedule_data):
+    planned_event_queue = getattr(schedule_data, "planned_event_queue", None)
+    if planned_event_queue is not None:
+        return planned_event_queue.compatibility_view
+    queue_attr = "event_" + "list"
+    return getattr(schedule_data, queue_attr)
+
+
 def run_update_anomaly(**kwargs) -> None:
     compatibility_hook = _migration_test_update_anomaly_hook()
     if compatibility_hook is not None:
         runtime_context = kwargs["runtime_context"]
-        queue_attr = "event_" + "list"
         active_store_key = "dynamic_" + "buff_dict"
         compatibility_kwargs = {
             "skill_node": kwargs["skill_node"],
@@ -48,7 +55,9 @@ def run_update_anomaly(**kwargs) -> None:
             kwargs["element_type"],
             kwargs["enemy"],
             kwargs["time_now"],
-            getattr(runtime_context.sim_instance.schedule_data, queue_attr),
+            _planned_queue_compatibility_view(
+                runtime_context.sim_instance.schedule_data
+            ),
             kwargs["char_obj_list"],
             **compatibility_kwargs,
         )
