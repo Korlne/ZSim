@@ -26,6 +26,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _BUFF_TIMELINE_SAMPLE_LIMIT = 20
 _SESSION_ID_COUNTER = count(1)
 MULTI_TEAM_CONSISTENCY_SCHEMA = "zsim-buffload-opt-in-multi-team-consistency.v1"
+EXTERNAL_GOLDEN_PARITY_SCHEMA = "zsim-external-golden-parity.v1"
 RUNTIME_LABEL_CONTRACT = {
     "mode": "label-only-current-runtime",
     "description": (
@@ -561,6 +562,169 @@ def run_main_loop_consistency(
     )
 
 
+def _resolve_existing_directory(path: str | Path, label: str) -> Path:
+    resolved = Path(path).expanduser()
+    if not resolved.exists():
+        raise FileNotFoundError(f"{label} does not exist: {resolved}")
+    if not resolved.is_dir():
+        raise NotADirectoryError(f"{label} is not a directory: {resolved}")
+    return resolved.resolve()
+
+
+def _load_common_cfg_from_file(common_cfg_path: str | Path) -> CommonCfg:
+    path = Path(common_cfg_path).expanduser()
+    if not path.exists():
+        raise FileNotFoundError(f"common cfg file does not exist: {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(payload, dict) and isinstance(payload.get("common_config"), dict):
+        payload = payload["common_config"]
+    return CommonCfg.model_validate(payload)
+
+
+def _prepare_external_golden_common_cfg(
+    *,
+    team: str | None,
+    common_cfg: str | Path | None,
+    apl: str | None,
+) -> tuple[CommonCfg, dict[str, Any]]:
+    has_team = team is not None
+    has_common_cfg = common_cfg is not None
+    if has_team == has_common_cfg:
+        raise ValueError("provide exactly one run config input: --team or --common-cfg")
+
+    if team is not None:
+        prepared_cfg = _prepare_common_cfg(team, apl)
+        return prepared_cfg, {
+            "kind": "team",
+            "team": team,
+            "common_cfg_path": None,
+            "source_session_id": prepared_cfg.session_id,
+        }
+
+    assert common_cfg is not None
+    cfg_path = Path(common_cfg).expanduser()
+    prepared_cfg = _load_common_cfg_from_file(cfg_path)
+    if apl is not None:
+        prepared_cfg = prepared_cfg.model_copy(update={"apl_path": apl}, deep=True)
+    return prepared_cfg, {
+        "kind": "common_cfg",
+        "team": None,
+        "common_cfg_path": str(cfg_path.resolve()),
+        "source_session_id": prepared_cfg.session_id,
+    }
+
+
+def _external_golden_diff_placeholders() -> dict[str, dict[str, Any]]:
+    return {
+        "damage": {
+            "implemented": False,
+            "matches": None,
+            "status": "pending",
+            "next_story": "US-002",
+        },
+        "damage_attribution": {
+            "implemented": False,
+            "matches": None,
+            "status": "pending",
+            "next_story": "US-002",
+        },
+        "buff_timeline": {
+            "implemented": False,
+            "matches": None,
+            "status": "pending",
+            "next_story": "US-003",
+        },
+    }
+
+
+def _implemented_external_golden_diffs_match(domains: dict[str, dict[str, Any]]) -> bool:
+    implemented = [domain for domain in domains.values() if domain.get("implemented") is True]
+    return all(domain.get("matches") is True for domain in implemented)
+
+
+def build_external_golden_parity_report(
+    *,
+    golden_result_dir: Path,
+    candidate_session_id: str,
+    candidate_result_path: Path,
+    run_config_identity: dict[str, Any],
+    apl: str,
+    stop_tick: int,
+) -> dict[str, Any]:
+    diff_domains = _external_golden_diff_placeholders()
+    return {
+        "schema": EXTERNAL_GOLDEN_PARITY_SCHEMA,
+        "schema_version": 1,
+        "golden_result_dir": str(golden_result_dir),
+        "candidate": {
+            "session_id": candidate_session_id,
+            "result_path": str(candidate_result_path),
+        },
+        "run_config": {
+            "identity": run_config_identity,
+            "team": run_config_identity.get("team"),
+            "common_cfg": run_config_identity.get("common_cfg_path"),
+            "apl": apl,
+            "stop_tick": int(stop_tick),
+        },
+        "comparison": {
+            "mode": "external-golden-result-dir-vs-current-candidate",
+            "candidate_run_count": 1,
+            "golden_path": str(golden_result_dir),
+            "candidate_result_path": str(candidate_result_path),
+            "implemented_domains": [
+                name for name, domain in diff_domains.items() if domain.get("implemented") is True
+            ],
+        },
+        "diffs": {
+            "matches": _implemented_external_golden_diffs_match(diff_domains),
+            "domains": diff_domains,
+        },
+    }
+
+
+def run_external_golden_parity(
+    *,
+    golden_result_dir: str | Path,
+    team: str | None = None,
+    common_cfg: str | Path | None = None,
+    apl: str | None = None,
+    stop_tick: int,
+    output_path: str | Path | None = None,
+) -> dict[str, Any]:
+    os.chdir(PROJECT_ROOT)
+    golden_path = _resolve_existing_directory(golden_result_dir, "golden result directory")
+    base_cfg, run_config_identity = _prepare_external_golden_common_cfg(
+        team=team,
+        common_cfg=common_cfg,
+        apl=apl,
+    )
+    candidate_session_id = _build_session_id()
+    runtime_cfg = base_cfg.model_copy(update={"session_id": candidate_session_id}, deep=True)
+
+    with ProcessPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(
+            _run_single_runtime_process,
+            runtime_cfg.model_dump(mode="json"),
+            stop_tick,
+            False,
+        )
+        finished_session_id = future.result()
+
+    candidate_result_path = (Path(results_dir) / finished_session_id).resolve()
+    report = build_external_golden_parity_report(
+        golden_result_dir=golden_path,
+        candidate_session_id=finished_session_id,
+        candidate_result_path=candidate_result_path,
+        run_config_identity=run_config_identity,
+        apl=runtime_cfg.apl_path,
+        stop_tick=stop_tick,
+    )
+    if output_path is not None:
+        _write_json_artifact(output_path, report)
+    return report
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run a Buff main-loop consistency comparison")
     parser.add_argument("--team", default=None, help="Registered team name to simulate")
@@ -633,6 +797,41 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def build_external_golden_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Run one current Buff simulation and compare it with an external golden result directory"
+    )
+    parser.add_argument(
+        "--golden-result-dir",
+        required=True,
+        help="External golden result directory to compare against.",
+    )
+    run_config_group = parser.add_mutually_exclusive_group(required=True)
+    run_config_group.add_argument("--team", default=None, help="Registered team name to simulate.")
+    run_config_group.add_argument(
+        "--common-cfg",
+        default=None,
+        help="Path to a CommonCfg JSON file, or a SessionRun JSON file containing common_config.",
+    )
+    parser.add_argument(
+        "--apl",
+        default=None,
+        help="Optional APL path override for the selected team or common config.",
+    )
+    parser.add_argument(
+        "--stop-tick",
+        type=int,
+        default=config.stop_tick,
+        help="Stop tick for the single candidate run.",
+    )
+    parser.add_argument(
+        "--output-json",
+        required=True,
+        help="JSON artifact path for the external golden parity envelope.",
+    )
+    return parser
+
+
 def _format_multi_team_human_summary(summary: dict[str, Any]) -> str:
     lines = [
         f"schema: {summary['schema']}",
@@ -665,6 +864,25 @@ def _format_human_report(report: dict[str, Any]) -> str:
         + json.dumps(report["differences"]["buff_timeline"], ensure_ascii=False, sort_keys=True),
     ]
     return "\n".join(lines)
+
+
+def _format_external_golden_human_summary(report: dict[str, Any]) -> str:
+    domains = report["diffs"]["domains"]
+    return "\n".join(
+        [
+            f"schema: {report['schema']}",
+            f"golden_result_dir: {report['golden_result_dir']}",
+            f"candidate_session_id: {report['candidate']['session_id']}",
+            f"candidate_result_path: {report['candidate']['result_path']}",
+            f"run_config: {report['run_config']['identity']['kind']}",
+            f"apl: {report['run_config']['apl']}",
+            f"stop_tick: {report['run_config']['stop_tick']}",
+            "implemented_domains: " + ", ".join(report["comparison"]["implemented_domains"]),
+            "placeholder_domains: "
+            + ", ".join(name for name, domain in domains.items() if not domain["implemented"]),
+            f"matches: {report['diffs']['matches']}",
+        ]
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -708,15 +926,39 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
+def external_golden_main(argv: list[str] | None = None) -> int:
+    parser = build_external_golden_parser()
+    args = parser.parse_args(argv)
+    try:
+        report = run_external_golden_parity(
+            golden_result_dir=args.golden_result_dir,
+            team=args.team,
+            common_cfg=args.common_cfg,
+            apl=args.apl,
+            stop_tick=args.stop_tick,
+            output_path=args.output_json,
+        )
+    except (FileNotFoundError, NotADirectoryError, ValueError, json.JSONDecodeError) as exc:
+        parser.exit(2, f"{parser.prog}: error: {exc}\n")
+
+    print(_format_external_golden_human_summary(report))
+    return 0 if report["diffs"]["matches"] else 2
+
+
 __all__ = [
     "PROJECT_ROOT",
+    "EXTERNAL_GOLDEN_PARITY_SCHEMA",
     "MULTI_TEAM_CONSISTENCY_SCHEMA",
     "RUNTIME_LABEL_CONTRACT",
     "RuntimeSnapshot",
+    "build_external_golden_parity_report",
+    "build_external_golden_parser",
     "build_consistency_report",
     "build_multi_team_consistency_summary",
     "build_parser",
+    "external_golden_main",
     "main",
+    "run_external_golden_parity",
     "run_main_loop_consistency",
     "run_multi_team_main_loop_consistency",
 ]

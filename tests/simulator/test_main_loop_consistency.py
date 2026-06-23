@@ -177,6 +177,166 @@ def test_build_parser_accepts_required_cli_flags():
     assert "not old runtime selection" in help_text
 
 
+def test_external_golden_parser_accepts_required_cli_flags():
+    parser = mlc.build_external_golden_parser()
+
+    team_args = parser.parse_args(
+        [
+            "--golden-result-dir",
+            "tests/fixtures/external_golden_parity/minimal-golden",
+            "--team",
+            "team-a",
+            "--apl",
+            "./zsim/data/APLData/example.toml",
+            "--stop-tick",
+            "25",
+            "--output-json",
+            "scripts/ralph/artifacts/external-golden.json",
+        ]
+    )
+    common_cfg_args = parser.parse_args(
+        [
+            "--golden-result-dir",
+            "tests/fixtures/external_golden_parity/minimal-golden",
+            "--common-cfg",
+            "common-cfg.json",
+            "--output-json",
+            "scripts/ralph/artifacts/external-golden.json",
+        ]
+    )
+
+    assert team_args.golden_result_dir == "tests/fixtures/external_golden_parity/minimal-golden"
+    assert team_args.team == "team-a"
+    assert team_args.common_cfg is None
+    assert team_args.apl == "./zsim/data/APLData/example.toml"
+    assert team_args.stop_tick == 25
+    assert team_args.output_json == "scripts/ralph/artifacts/external-golden.json"
+    assert common_cfg_args.team is None
+    assert common_cfg_args.common_cfg == "common-cfg.json"
+    with pytest.raises(SystemExit) as missing_config:
+        parser.parse_args(
+            [
+                "--golden-result-dir",
+                "tests/fixtures/external_golden_parity/minimal-golden",
+                "--output-json",
+                "scripts/ralph/artifacts/external-golden.json",
+            ]
+        )
+    with pytest.raises(SystemExit) as ambiguous_config:
+        parser.parse_args(
+            [
+                "--golden-result-dir",
+                "tests/fixtures/external_golden_parity/minimal-golden",
+                "--team",
+                "team-a",
+                "--common-cfg",
+                "common-cfg.json",
+                "--output-json",
+                "scripts/ralph/artifacts/external-golden.json",
+            ]
+        )
+    assert missing_config.value.code == 2
+    assert ambiguous_config.value.code == 2
+
+
+def test_run_external_golden_parity_writes_placeholder_json(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    base_cfg = mlc.CommonCfg.model_validate(
+        {
+            "session_id": "base",
+            "char_config": [{"name": "a"}, {"name": "b"}, {"name": "c"}],
+            "enemy_config": {"index_id": 11412, "adjustment_id": 22412, "difficulty": 8.74},
+            "apl_path": "./default.toml",
+        }
+    )
+    submitted_payloads: list[tuple[dict[str, Any], int, bool]] = []
+
+    def fake_prepare_common_cfg(team: str, apl: str | None) -> mlc.CommonCfg:
+        assert team == "fake-team"
+        return base_cfg.model_copy(update={"apl_path": apl or base_cfg.apl_path}, deep=True)
+
+    class FakeFuture:
+        def __init__(self, session_id: str):
+            self._session_id = session_id
+
+        def result(self) -> str:
+            return self._session_id
+
+    class FakeExecutor:
+        def __init__(self, max_workers: int):
+            self.max_workers = max_workers
+
+        def __enter__(self) -> "FakeExecutor":
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> Literal[False]:
+            return False
+
+        def submit(
+            self,
+            func,
+            common_cfg_data,
+            stop_tick,
+            use_indexed_buff_load_loop=False,
+        ):
+            submitted_payloads.append((common_cfg_data, stop_tick, use_indexed_buff_load_loop))
+            return FakeFuture(common_cfg_data["session_id"])
+
+    monkeypatch.setattr(mlc, "_prepare_common_cfg", fake_prepare_common_cfg)
+    monkeypatch.setattr(mlc, "_build_session_id", lambda: "candidate-001")
+    monkeypatch.setattr(mlc, "ProcessPoolExecutor", FakeExecutor)
+    output_path = tmp_path / "external-golden.json"
+
+    report = mlc.run_external_golden_parity(
+        golden_result_dir=Path("tests/fixtures/external_golden_parity/minimal-golden"),
+        team="fake-team",
+        apl="./override.toml",
+        stop_tick=33,
+        output_path=output_path,
+    )
+
+    assert len(submitted_payloads) == 1
+    submitted_cfg, submitted_stop_tick, submitted_indexed_flag = submitted_payloads[0]
+    assert submitted_cfg["session_id"] == "candidate-001"
+    assert submitted_cfg["apl_path"] == "./override.toml"
+    assert submitted_stop_tick == 33
+    assert submitted_indexed_flag is False
+    assert report["schema"] == mlc.EXTERNAL_GOLDEN_PARITY_SCHEMA
+    assert report["golden_result_dir"].endswith(
+        "tests\\fixtures\\external_golden_parity\\minimal-golden"
+    ) or report["golden_result_dir"].endswith(
+        "tests/fixtures/external_golden_parity/minimal-golden"
+    )
+    assert report["candidate"]["session_id"] == "candidate-001"
+    assert report["candidate"]["result_path"].endswith("results\\candidate-001") or report[
+        "candidate"
+    ]["result_path"].endswith("results/candidate-001")
+    assert report["run_config"]["identity"]["kind"] == "team"
+    assert report["run_config"]["team"] == "fake-team"
+    assert report["run_config"]["common_cfg"] is None
+    assert report["run_config"]["apl"] == "./override.toml"
+    assert report["run_config"]["stop_tick"] == 33
+    assert report["comparison"]["candidate_run_count"] == 1
+    assert report["comparison"]["implemented_domains"] == []
+    assert report["diffs"]["matches"] is True
+    assert report["diffs"]["domains"]["damage"]["next_story"] == "US-002"
+    assert report["diffs"]["domains"]["buff_timeline"]["next_story"] == "US-003"
+
+    artifact = json.loads(output_path.read_text(encoding="utf-8"))
+    assert artifact == report
+
+
+def test_run_external_golden_parity_rejects_missing_golden_dir(tmp_path: Path):
+    with pytest.raises(FileNotFoundError, match="golden result directory does not exist"):
+        mlc.run_external_golden_parity(
+            golden_result_dir=tmp_path / "missing-golden",
+            team="fake-team",
+            stop_tick=1,
+        )
+
+
 def test_run_main_loop_consistency_uses_runtime_labels_and_cleanup(monkeypatch: pytest.MonkeyPatch):
     snapshots_by_session: dict[str, RuntimeSnapshot] = {
         "101": RuntimeSnapshot(
