@@ -8,6 +8,8 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PRODUCTION_ROOT = PROJECT_ROOT / "zsim" / "sim_progress"
+SIMULATOR_ROOT = PROJECT_ROOT / "zsim" / "simulator"
+PRODUCTION_SCAN_ROOTS = (PRODUCTION_ROOT, SIMULATOR_ROOT)
 SIMULATOR_CLASS_PATH = PROJECT_ROOT / "zsim" / "simulator" / "simulator_class.py"
 
 RAW_EVENT_APPEND_KINDS = {
@@ -39,6 +41,25 @@ SCHEDULED_EVENT_RAW_QUEUE_LIFECYCLE_KINDS = {
     "scheduled_event_raw_queue_assignment",
     "scheduled_event_raw_queue_mutation",
 }
+RAW_PLANNED_QUEUE_LIFECYCLE_KINDS = {
+    "raw_data_event_list_lifecycle_assignment",
+    "raw_data_event_list_lifecycle_mutation",
+    "raw_event_list_lifecycle_assignment",
+    "raw_event_list_lifecycle_mutation",
+    "raw_planned_queue_handoff",
+    "raw_schedule_data_event_list_lifecycle_assignment",
+    "raw_schedule_data_event_list_lifecycle_mutation",
+}
+PLANNED_QUEUE_OWNER_INTERNAL_KINDS = {
+    "planned_queue_owner_internal_mutation",
+    "planned_queue_owner_internal_replacement",
+}
+CURRENT_ROOT_EVENT_QUEUE_GUARDRAIL_KINDS = (
+    RAW_EVENT_APPEND_KINDS
+    | SCHEDULED_EVENT_RAW_QUEUE_LIFECYCLE_KINDS
+    | RAW_PLANNED_QUEUE_LIFECYCLE_KINDS
+    | PLANNED_QUEUE_OWNER_INTERNAL_KINDS
+)
 
 LOCAL_EVENT_GROUP_NAMES = {"adrenaline_events"}
 AMBIGUOUS_LOCAL_EVENT_GROUP_NAMES = {"local_event_group"}
@@ -59,6 +80,30 @@ MAIN_LOOP_PLANNED_PRODUCER_CALLS = {
 }
 
 CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS = {
+    (
+        "zsim/sim_progress/data_struct/planned_queue.py",
+        26,
+        "planned_queue_owner_internal_mutation",
+        "self.compatibility_view.append(event)",
+    ): "US-001",
+    (
+        "zsim/sim_progress/data_struct/planned_queue.py",
+        39,
+        "planned_queue_owner_internal_mutation",
+        "self.compatibility_view.remove(event)",
+    ): "US-001",
+    (
+        "zsim/sim_progress/data_struct/planned_queue.py",
+        42,
+        "planned_queue_owner_internal_replacement",
+        "self._set_events(list(events))",
+    ): "US-001",
+    (
+        "zsim/sim_progress/data_struct/planned_queue.py",
+        45,
+        "planned_queue_owner_internal_mutation",
+        "self.compatibility_view.clear()",
+    ): "US-001",
     (
         "zsim/sim_progress/data_struct/schedule_dispatch.py",
         86,
@@ -146,6 +191,13 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
                 kind="find_event_list_call",
                 expression=self._source_for(node),
             )
+        planned_queue_owner_kind = self._planned_queue_owner_internal_call_kind(node)
+        if planned_queue_owner_kind is not None:
+            self._add_finding(
+                line=node.lineno,
+                kind=planned_queue_owner_kind,
+                expression=self._source_for(node),
+            )
         raw_append_kind = self._raw_event_append_kind(node)
         if raw_append_kind is not None:
             self._add_finding(
@@ -160,19 +212,38 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
                 kind=scheduled_event_lifecycle_kind,
                 expression=self._source_for(node),
             )
+        raw_lifecycle_kind = None
+        if raw_append_kind is None and scheduled_event_lifecycle_kind is None:
+            raw_lifecycle_kind = self._raw_planned_queue_lifecycle_call_kind(node)
+        if raw_lifecycle_kind is not None:
+            self._add_finding(
+                line=node.lineno,
+                kind=raw_lifecycle_kind,
+                expression=self._source_for(node),
+            )
+        raw_handoff_kind = self._raw_planned_queue_handoff_kind(node)
+        if raw_handoff_kind is not None:
+            self._add_finding(
+                line=node.lineno,
+                kind=raw_handoff_kind,
+                expression=self._source_for(node),
+            )
         self.generic_visit(node)
 
     def visit_Assign(self, node: ast.Assign) -> None:
         for target in node.targets:
-            self._record_scheduled_event_raw_queue_assignment(node, target)
+            if not self._record_scheduled_event_raw_queue_assignment(node, target):
+                self._record_raw_planned_queue_lifecycle_assignment(node, target)
         self.generic_visit(node)
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
-        self._record_scheduled_event_raw_queue_assignment(node, node.target)
+        if not self._record_scheduled_event_raw_queue_assignment(node, node.target):
+            self._record_raw_planned_queue_lifecycle_assignment(node, node.target)
         self.generic_visit(node)
 
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
-        self._record_scheduled_event_raw_queue_assignment(node, node.target)
+        if not self._record_scheduled_event_raw_queue_assignment(node, node.target):
+            self._record_raw_planned_queue_lifecycle_assignment(node, node.target)
         self.generic_visit(node)
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
@@ -286,6 +357,20 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             return "raw_schedule_data_event_list_append"
         return None
 
+    def _planned_queue_owner_internal_call_kind(self, node: ast.Call) -> str | None:
+        if self._relative_path() != "zsim/sim_progress/data_struct/planned_queue.py":
+            return None
+        if not isinstance(node.func, ast.Attribute):
+            return None
+        if (
+            node.func.attr in {"append", "remove", "clear"}
+            and self._dotted_name(node.func.value) == "self.compatibility_view"
+        ):
+            return "planned_queue_owner_internal_mutation"
+        if self._dotted_name(node.func) == "self._set_events":
+            return "planned_queue_owner_internal_replacement"
+        return None
+
     def _scheduled_event_raw_queue_call_kind(self, node: ast.Call) -> str | None:
         if not isinstance(node.func, ast.Attribute):
             return None
@@ -299,13 +384,121 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
         self,
         node: ast.Assign | ast.AnnAssign | ast.AugAssign,
         target: ast.expr,
-    ) -> None:
+    ) -> bool:
         if self._scheduled_event_raw_queue_target(target):
             self._add_finding(
                 line=node.lineno,
                 kind="scheduled_event_raw_queue_assignment",
                 expression=self._source_for(node),
             )
+            return True
+        return False
+
+    def _raw_planned_queue_lifecycle_call_kind(self, node: ast.Call) -> str | None:
+        if not isinstance(node.func, ast.Attribute):
+            return None
+        if node.func.attr not in SCHEDULED_EVENT_RAW_QUEUE_LIFECYCLE_METHODS:
+            return None
+        target_kind = self._raw_planned_queue_target_kind(node.func.value)
+        if target_kind is None:
+            return None
+        return f"{target_kind}_lifecycle_mutation"
+
+    def _record_raw_planned_queue_lifecycle_assignment(
+        self,
+        node: ast.Assign | ast.AnnAssign | ast.AugAssign,
+        target: ast.expr,
+    ) -> None:
+        if self._is_schedule_data_event_list_field_declaration(target):
+            return
+        if self._is_allowed_planned_queue_replacement_owner():
+            return
+        target_kind = self._raw_planned_queue_target_kind(target)
+        if target_kind is None:
+            return
+        self._add_finding(
+            line=node.lineno,
+            kind=f"{target_kind}_lifecycle_assignment",
+            expression=self._source_for(node),
+        )
+
+    def _raw_planned_queue_handoff_kind(self, node: ast.Call) -> str | None:
+        call_name = self._call_name(node.func)
+        if call_name not in MAIN_LOOP_PLANNED_PRODUCER_CALLS:
+            return None
+        if any(self._raw_planned_queue_handoff_expression(arg) for arg in node.args):
+            return "raw_planned_queue_handoff"
+        if any(
+            self._raw_planned_queue_handoff_expression(keyword.value)
+            for keyword in node.keywords
+        ):
+            return "raw_planned_queue_handoff"
+        return None
+
+    def _raw_planned_queue_handoff_expression(self, node: ast.AST) -> str | None:
+        if self._raw_planned_queue_target_kind(node) is not None:
+            return self._source_for(node)
+        if isinstance(node, ast.Name) and _looks_like_raw_planned_queue_name(node.id):
+            return self._source_for(node)
+        if (
+            isinstance(node, ast.Call)
+            and self._call_name(node.func) == "list"
+            and node.args
+            and self._raw_planned_queue_handoff_expression(node.args[0]) is not None
+        ):
+            return self._source_for(node)
+        return None
+
+    def _raw_planned_queue_target_kind(self, target: ast.AST) -> str | None:
+        if isinstance(target, ast.Subscript):
+            target = target.value
+        if isinstance(target, ast.Name):
+            if target.id == "event_list":
+                return "raw_event_list"
+            return None
+        dotted = self._dotted_name(target)
+        if dotted is None:
+            return None
+        if dotted == "event_list":
+            return "raw_event_list"
+        if not dotted.endswith(".event_list"):
+            return None
+        owner = dotted.removesuffix(".event_list")
+        if owner in {"data", "self.data"}:
+            return "raw_data_event_list"
+        if owner in {"schedule_data", "self.schedule_data", "_schedule_data", "self._schedule_data"}:
+            return "raw_schedule_data_event_list"
+        if owner.endswith(".schedule_data"):
+            return "raw_schedule_data_event_list"
+        return None
+
+    def _is_allowed_planned_queue_replacement_owner(self) -> bool:
+        relative_path = self._relative_path()
+        if (
+            relative_path == "zsim/simulator/dataclasses.py"
+            and self._class_stack[-1:] == ["ScheduleData"]
+            and self._function_stack[-1:] == ["_replace_planned_events"]
+        ):
+            return True
+        if (
+            relative_path == "zsim/sim_progress/data_struct/schedule_dispatch.py"
+            and self._class_stack[-1:] == ["_ScheduleDataQueueOwner"]
+            and self._function_stack[-1:] == ["_replace_events"]
+        ):
+            return True
+        return (
+            relative_path == "zsim/sim_progress/ScheduledEvent/__init__.py"
+            and self._function_stack[-1:] == ["_replace_planned_events"]
+        )
+
+    def _is_schedule_data_event_list_field_declaration(self, target: ast.expr) -> bool:
+        return (
+            self._relative_path() == "zsim/simulator/dataclasses.py"
+            and self._class_stack[-1:] == ["ScheduleData"]
+            and not self._function_stack
+            and isinstance(target, ast.Name)
+            and target.id == "event_list"
+        )
 
     def _scheduled_event_raw_queue_target(self, target: ast.AST) -> bool:
         if self._relative_path() != "zsim/sim_progress/ScheduledEvent/__init__.py":
@@ -391,6 +584,14 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
         return None
 
     @staticmethod
+    def _call_name(func: ast.expr) -> str | None:
+        if isinstance(func, ast.Name):
+            return func.id
+        if isinstance(func, ast.Attribute):
+            return func.attr
+        return None
+
+    @staticmethod
     def _classification_for(kind: str) -> str:
         return {
             "find_event_list_import": "deleted legacy discovery import",
@@ -411,12 +612,39 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             "local_event_group_append": (
                 "local event group append; not ScheduleData.event_list"
             ),
+            "planned_queue_owner_internal_mutation": (
+                "planned queue owner internal compatibility-view lifecycle mutation"
+            ),
+            "planned_queue_owner_internal_replacement": (
+                "planned queue owner internal compatibility-view replacement"
+            ),
             "raw_data_event_list_append": (
                 "planned queue raw data.event_list.append write"
             ),
             "raw_event_list_append": "planned queue raw event_list.append write",
             "raw_schedule_data_event_list_append": (
                 "planned queue raw schedule_data.event_list.append write"
+            ),
+            "raw_data_event_list_lifecycle_assignment": (
+                "planned queue raw data.event_list list replacement"
+            ),
+            "raw_data_event_list_lifecycle_mutation": (
+                "planned queue raw data.event_list lifecycle mutation"
+            ),
+            "raw_event_list_lifecycle_assignment": (
+                "planned queue raw event_list list replacement"
+            ),
+            "raw_event_list_lifecycle_mutation": (
+                "planned queue raw event_list lifecycle mutation"
+            ),
+            "raw_planned_queue_handoff": (
+                "raw planned queue handed to planned-event producer"
+            ),
+            "raw_schedule_data_event_list_lifecycle_assignment": (
+                "planned queue raw schedule_data.event_list list replacement"
+            ),
+            "raw_schedule_data_event_list_lifecycle_mutation": (
+                "planned queue raw schedule_data.event_list lifecycle mutation"
             ),
             "record_event_list_append": "producer-level planned-event writer through record.event_list",
             "scheduled_event_raw_queue_assignment": (
@@ -448,12 +676,39 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             "local_event_group_append": (
                 "keep local event groups distinctly named and outside ScheduleData.event_list"
             ),
+            "planned_queue_owner_internal_mutation": (
+                "keep raw lifecycle mutation inside PlannedEventQueue owner APIs"
+            ),
+            "planned_queue_owner_internal_replacement": (
+                "keep raw replacement inside PlannedEventQueue owner APIs"
+            ),
             "raw_data_event_list_append": "publish planned payloads through ScheduleDispatchPort",
             "raw_event_list_append": (
                 "US-002 owns migration to ScheduleDispatchPort-backed publishing"
             ),
             "raw_schedule_data_event_list_append": (
                 "publish planned payloads through ScheduleDispatchPort"
+            ),
+            "raw_data_event_list_lifecycle_assignment": (
+                "replace through ScheduleData.planned_event_queue owner APIs"
+            ),
+            "raw_data_event_list_lifecycle_mutation": (
+                "mutate through ScheduleData.planned_event_queue owner APIs"
+            ),
+            "raw_event_list_lifecycle_assignment": (
+                "replace through ScheduleData.planned_event_queue owner APIs"
+            ),
+            "raw_event_list_lifecycle_mutation": (
+                "mutate through ScheduleData.planned_event_queue owner APIs"
+            ),
+            "raw_planned_queue_handoff": (
+                "pass ScheduleDispatchPort/EventInbox owner APIs instead of raw queue"
+            ),
+            "raw_schedule_data_event_list_lifecycle_assignment": (
+                "replace through ScheduleData.planned_event_queue owner APIs"
+            ),
+            "raw_schedule_data_event_list_lifecycle_mutation": (
+                "mutate through ScheduleData.planned_event_queue owner APIs"
             ),
             "record_event_list_append": "migrate to ScheduleDispatchPort or block deletion",
             "scheduled_event_raw_queue_assignment": (
@@ -468,7 +723,8 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
 def _production_python_files() -> list[Path]:
     return sorted(
         path
-        for path in PRODUCTION_ROOT.rglob("*.py")
+        for root in PRODUCTION_SCAN_ROOTS
+        for path in root.rglob("*.py")
         if "__pycache__" not in path.parts
     )
 
@@ -668,7 +924,11 @@ def test_raw_event_list_append_guardrail_has_only_owner_api_or_local_group_findi
         finding for finding in _collect_findings() if finding.kind in RAW_EVENT_APPEND_KINDS
     ]
     actual = {_raw_append_key(finding) for finding in findings}
-    expected = set(CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS)
+    expected = {
+        key
+        for key in CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS
+        if key[2] in RAW_EVENT_APPEND_KINDS
+    }
 
     assert actual == expected, (
         "Raw event-list append guardrail found unexpected production queue writes:\n"
@@ -691,12 +951,25 @@ def test_raw_event_list_append_guardrail_has_only_owner_api_or_local_group_findi
 
 def test_current_root_raw_planned_queue_allowlist_is_owner_only_after_migration() -> None:
     findings = [
-        finding for finding in _collect_findings() if finding.kind in RAW_EVENT_APPEND_KINDS
+        finding
+        for finding in _collect_findings()
+        if finding.kind in CURRENT_ROOT_EVENT_QUEUE_GUARDRAIL_KINDS
     ]
+    actual = {_raw_append_key(finding) for finding in findings}
+    expected = set(CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS)
 
-    assert {finding.kind for finding in findings} <= OWNER_ONLY_RAW_EVENT_APPEND_KINDS
-    assert not any(
-        finding.kind in POST_MIGRATION_BLOCKED_RAW_EVENT_APPEND_KINDS for finding in findings
+    assert actual == expected, (
+        "Current root still contains raw planned-queue producers outside queue-owner/local "
+        "event-group boundaries, or the allowlist has stale entries:\n"
+        + "\n".join(f"- {finding.message()}" for finding in findings)
+    )
+    assert not (
+        {finding.kind for finding in findings}
+        & (
+            POST_MIGRATION_BLOCKED_RAW_EVENT_APPEND_KINDS
+            | SCHEDULED_EVENT_RAW_QUEUE_LIFECYCLE_KINDS
+            | RAW_PLANNED_QUEUE_LIFECYCLE_KINDS
+        )
     ), (
         "Current root still contains raw planned-queue producers outside queue-owner/local "
         "event-group boundaries:\n"
@@ -704,20 +977,24 @@ def test_current_root_raw_planned_queue_allowlist_is_owner_only_after_migration(
     )
 
     expected_owner_story_by_kind = {
+        "planned_queue_owner_internal_mutation": "US-001",
+        "planned_queue_owner_internal_replacement": "US-001",
         "compatibility_only_queue_append": "US-002",
         "local_event_group_append": "US-005",
     }
+    allowed_kinds = OWNER_ONLY_RAW_EVENT_APPEND_KINDS | PLANNED_QUEUE_OWNER_INTERNAL_KINDS
     for key, owner_story_id in CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS.items():
         _path, _line, kind, _matched_expression = key
-        assert kind in OWNER_ONLY_RAW_EVENT_APPEND_KINDS
+        assert kind in allowed_kinds
         assert owner_story_id == expected_owner_story_by_kind[kind]
 
 
-def test_scheduled_event_raw_queue_lifecycle_has_no_current_findings() -> None:
+def test_raw_planned_queue_lifecycle_has_no_current_findings_outside_owner_surfaces() -> None:
     findings = [
         finding
         for finding in _collect_findings()
         if finding.kind in SCHEDULED_EVENT_RAW_QUEUE_LIFECYCLE_KINDS
+        or finding.kind in RAW_PLANNED_QUEUE_LIFECYCLE_KINDS
     ]
 
     _assert_no_disallowed(findings)
@@ -910,6 +1187,34 @@ def test_raw_planned_queue_writes_are_blocked_outside_owner_api_or_local_groups(
             PRODUCTION_ROOT / "Update" / "UpdateAnomaly.py",
             "def publish(schedule_data, event):\n    schedule_data.event_list.append(event)\n",
             "raw_schedule_data_event_list_append",
+        ),
+        (
+            PRODUCTION_ROOT / "Enemy" / "_synthetic_raw_queue_replace.py",
+            "def replace(schedule_data, events):\n    schedule_data.event_list = list(events)\n",
+            "raw_schedule_data_event_list_lifecycle_assignment",
+        ),
+        (
+            PRODUCTION_ROOT / "Load" / "_synthetic_raw_queue_reorder.py",
+            "def reorder(event_list, event):\n    event_list.insert(0, event)\n",
+            "raw_event_list_lifecycle_mutation",
+        ),
+        (
+            PRODUCTION_ROOT / "Update" / "_synthetic_raw_queue_clear.py",
+            "def clear(data):\n    data.event_list.clear()\n",
+            "raw_data_event_list_lifecycle_mutation",
+        ),
+        (
+            PRODUCTION_ROOT / "Enemy" / "_synthetic_raw_queue_pop.py",
+            "def take(schedule_data):\n    return schedule_data.event_list.pop()\n",
+            "raw_schedule_data_event_list_lifecycle_mutation",
+        ),
+        (
+            PRODUCTION_ROOT / "Load" / "_synthetic_raw_handoff.py",
+            (
+                "def publish(schedule_data, missions, enemy, chars):\n"
+                "    DamageEventJudge(0, missions, enemy, schedule_data.event_list, chars)\n"
+            ),
+            "raw_planned_queue_handoff",
         ),
     ]
 
