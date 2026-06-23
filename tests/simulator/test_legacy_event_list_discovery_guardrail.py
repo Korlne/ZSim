@@ -174,6 +174,15 @@ class Finding:
         )
 
 
+@dataclass(frozen=True)
+class MigrationSurface:
+    path: str
+    line: int
+    function: str
+    kind: str
+    matched_expression: str
+
+
 class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
     def __init__(self, path: Path, source: str) -> None:
         self.path = path
@@ -872,6 +881,117 @@ def _active_prd_story_ids() -> set[str]:
     return {story["id"] for story in prd["userStories"]}
 
 
+def _scope_name(class_stack: list[str], function_stack: list[str]) -> str:
+    if not function_stack:
+        return "<module>"
+    if class_stack:
+        return f"{'.'.join(class_stack)}.{function_stack[-1]}"
+    return function_stack[-1]
+
+
+class PlannedQueueMigrationSurfaceVisitor(ast.NodeVisitor):
+    def __init__(self, path: Path, source: str) -> None:
+        self.path = path
+        self.source = source
+        self.surfaces: list[MigrationSurface] = []
+        self._class_stack: list[str] = []
+        self._function_stack: list[str] = []
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        self._class_stack.append(node.name)
+        self.generic_visit(node)
+        self._class_stack.pop()
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._function_stack.append(node.name)
+        if node.name == "_raw_events_for_migration":
+            self._add_surface(
+                line=node.lineno,
+                kind="private_raw_migration_helper_definition",
+                expression=_source_line(self.source, node.lineno),
+            )
+        self.generic_visit(node)
+        self._function_stack.pop()
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._function_stack.append(node.name)
+        self.generic_visit(node)
+        self._function_stack.pop()
+
+    def visit_Call(self, node: ast.Call) -> None:
+        call_name = _call_name(node.func)
+        if call_name == "PlannedEventQueue" and self._is_event_list_backed_owner(
+            node
+        ):
+            self._add_surface(
+                line=node.lineno,
+                kind="event_list_migration_owner_construction",
+                expression=_source_for_main_loop_node(self.source, node),
+            )
+        elif call_name == "ensure_event_list_migration_planned_event_queue":
+            self._add_surface(
+                line=node.lineno,
+                kind="event_list_migration_owner_helper_call",
+                expression=_source_for_main_loop_node(self.source, node),
+            )
+        elif (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr == "_raw_events_for_migration"
+        ):
+            self._add_surface(
+                line=node.lineno,
+                kind="private_raw_migration_helper_call",
+                expression=_source_for_main_loop_node(self.source, node),
+            )
+        self.generic_visit(node)
+
+    def _is_event_list_backed_owner(self, node: ast.Call) -> bool:
+        keyword_values = {keyword.arg: keyword.value for keyword in node.keywords}
+        return self._lambda_reads_schedule_data_event_list(
+            keyword_values.get("get_events")
+        ) and self._lambda_sets_schedule_data_event_list(keyword_values.get("set_events"))
+
+    @staticmethod
+    def _lambda_reads_schedule_data_event_list(node: ast.AST | None) -> bool:
+        return isinstance(node, ast.Lambda) and _dotted_name(node.body) == (
+            "schedule_data.event_list"
+        )
+
+    @staticmethod
+    def _lambda_sets_schedule_data_event_list(node: ast.AST | None) -> bool:
+        if not isinstance(node, ast.Lambda):
+            return False
+        body = node.body
+        return (
+            isinstance(body, ast.Call)
+            and _call_name(body.func) == "setattr"
+            and len(body.args) >= 2
+            and _dotted_name(body.args[0]) == "schedule_data"
+            and _string_literal_value(body.args[1]) == "event_list"
+        )
+
+    def _add_surface(self, *, line: int, kind: str, expression: str) -> None:
+        self.surfaces.append(
+            MigrationSurface(
+                path=self.path.relative_to(PROJECT_ROOT).as_posix(),
+                line=line,
+                function=_scope_name(self._class_stack, self._function_stack),
+                kind=kind,
+                matched_expression=expression,
+            )
+        )
+
+
+def _collect_planned_queue_migration_surfaces() -> list[MigrationSurface]:
+    surfaces: list[MigrationSurface] = []
+    for path in _production_python_files():
+        source = path.read_text(encoding="utf-8")
+        visitor = PlannedQueueMigrationSurfaceVisitor(path, source)
+        visitor.visit(ast.parse(source, filename=str(path)))
+        surfaces.extend(visitor.surfaces)
+    return surfaces
+
+
 def _find_simulator_main_loop(tree: ast.Module) -> ast.FunctionDef:
     for node in tree.body:
         if isinstance(node, ast.ClassDef) and node.name == "Simulator":
@@ -1375,6 +1495,22 @@ def test_planned_queue_compatibility_view_reads_are_migration_only() -> None:
     )
 
 
+def test_production_public_planned_queue_compatibility_surfaces_are_zero() -> None:
+    compatibility_view_findings = [
+        finding
+        for finding in _collect_findings()
+        if finding.kind in PLANNED_QUEUE_COMPATIBILITY_VIEW_KINDS
+    ]
+    schedule_data_event_list_findings = (
+        _collect_schedule_data_event_list_compatibility_findings()
+    )
+
+    assert CURRENT_ROOT_ALLOWED_COMPATIBILITY_VIEW_READS == {}
+    assert CURRENT_ROOT_ALLOWED_SCHEDULE_DATA_EVENT_LIST_COMPATIBILITY == {}
+    assert compatibility_view_findings == []
+    assert schedule_data_event_list_findings == []
+
+
 def test_schedule_data_event_list_compatibility_allowance_is_exact_and_owned() -> None:
     findings = _collect_schedule_data_event_list_compatibility_findings()
     actual = {_raw_append_key(finding) for finding in findings}
@@ -1405,6 +1541,69 @@ def test_schedule_data_event_list_compatibility_allowance_is_exact_and_owned() -
         allowance.story
         for allowance in CURRENT_ROOT_ALLOWED_SCHEDULE_DATA_EVENT_LIST_COMPATIBILITY.values()
     } == set()
+
+
+def test_event_list_migration_owner_construction_is_exactly_helper_owned() -> None:
+    surfaces = [
+        surface
+        for surface in _collect_planned_queue_migration_surfaces()
+        if surface.kind
+        in {
+            "event_list_migration_owner_construction",
+            "event_list_migration_owner_helper_call",
+        }
+    ]
+    owner_constructions = [
+        surface
+        for surface in surfaces
+        if surface.kind == "event_list_migration_owner_construction"
+    ]
+    helper_calls = [
+        surface
+        for surface in surfaces
+        if surface.kind == "event_list_migration_owner_helper_call"
+    ]
+
+    assert [
+        (surface.path, surface.function, surface.kind)
+        for surface in owner_constructions
+    ] == [
+        (
+            "zsim/sim_progress/data_struct/planned_queue.py",
+            "ensure_event_list_migration_planned_event_queue",
+            "event_list_migration_owner_construction",
+        )
+    ]
+    assert helper_calls == []
+
+
+def test_private_raw_migration_helper_usage_is_exactly_owner_and_runtime_bridge() -> None:
+    surfaces = [
+        surface
+        for surface in _collect_planned_queue_migration_surfaces()
+        if surface.kind
+        in {
+            "private_raw_migration_helper_definition",
+            "private_raw_migration_helper_call",
+        }
+    ]
+
+    assert Counter(
+        (surface.path, surface.function, surface.kind) for surface in surfaces
+    ) == Counter(
+        {
+            (
+                "zsim/sim_progress/data_struct/planned_queue.py",
+                "PlannedEventQueue._raw_events_for_migration",
+                "private_raw_migration_helper_definition",
+            ): 1,
+            (
+                "zsim/sim_progress/ScheduledEvent/runtime_command.py",
+                "_planned_queue_raw_events_for_migration",
+                "private_raw_migration_helper_call",
+            ): 1,
+        }
+    )
 
 
 def test_event_list_deletion_readiness_counts_categories_separately() -> None:
