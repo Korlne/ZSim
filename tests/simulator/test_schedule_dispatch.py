@@ -58,6 +58,27 @@ class _ReadyDot(Dot):
         self.dy.effect_times = 0
 
 
+class _PlannedQueueOwnerProbe:
+    def __init__(self, events: list[object] | None = None) -> None:
+        self.events = [] if events is None else events
+        self.enqueue_calls: list[object] = []
+
+    def enqueue(self, event: object) -> None:
+        self.enqueue_calls.append(event)
+        self.events.append(event)
+
+    def snapshot(self) -> list[object]:
+        return list(self.events)
+
+
+def _owner_schedule_data(
+    queue: _PlannedQueueOwnerProbe | None = None,
+) -> SimpleNamespace:
+    return SimpleNamespace(
+        planned_event_queue=_PlannedQueueOwnerProbe() if queue is None else queue
+    )
+
+
 def _make_loading_mission(tag: str, hit_tick: int) -> LoadingMission:
     skill = SimpleNamespace(ticks=20, tick_list=[], heavy_attack=False)
     mission_node = SimpleNamespace(
@@ -80,8 +101,8 @@ def _make_schedule_data() -> ScheduleData:
 
 
 def test_create_schedule_dispatch_port_uses_schedule_data_without_exposing_event_list():
-    schedule_data = SimpleNamespace(event_list=[])
-    ensure_event_list_migration_planned_event_queue(schedule_data)
+    queue = _PlannedQueueOwnerProbe()
+    schedule_data = _owner_schedule_data(queue)
 
     dispatch_port = create_schedule_dispatch_port(schedule_data=schedule_data)
 
@@ -90,7 +111,7 @@ def test_create_schedule_dispatch_port_uses_schedule_data_without_exposing_event
 
     dispatch_port.publish_scheduled("scheduled-event")
 
-    assert schedule_data.event_list == ["scheduled-event"]
+    assert queue.snapshot() == ["scheduled-event"]
 
 
 def test_event_list_migration_owner_helper_is_explicit_and_rebindable():
@@ -108,7 +129,7 @@ def test_event_list_migration_owner_helper_is_explicit_and_rebindable():
 
 
 def test_ensure_planned_event_queue_requires_existing_or_explicit_owner():
-    schedule_data = SimpleNamespace(event_list=[])
+    schedule_data = SimpleNamespace()
 
     with pytest.raises(
         AttributeError,
@@ -116,7 +137,8 @@ def test_ensure_planned_event_queue_requires_existing_or_explicit_owner():
     ):
         ensure_planned_event_queue(schedule_data)
 
-    queue = ensure_event_list_migration_planned_event_queue(schedule_data)
+    queue = _PlannedQueueOwnerProbe()
+    schedule_data.planned_event_queue = queue
 
     assert ensure_planned_event_queue(schedule_data) is queue
 
@@ -275,34 +297,34 @@ def test_create_schedule_dispatch_port_for_schedule_data_uses_current_owner_stor
 
 
 def test_create_schedule_dispatch_port_supports_sim_instance():
-    schedule_data = SimpleNamespace(event_list=[])
-    ensure_event_list_migration_planned_event_queue(schedule_data)
+    queue = _PlannedQueueOwnerProbe()
+    schedule_data = _owner_schedule_data(queue)
     sim_instance = SimpleNamespace(schedule_data=schedule_data)
 
     dispatch_port = create_schedule_dispatch_port(sim_instance=sim_instance)
     dispatch_port.publish_scheduled_batch(["alpha", "beta"])
 
-    assert sim_instance.schedule_data.event_list == ["alpha", "beta"]
+    assert queue.snapshot() == ["alpha", "beta"]
 
 
-def test_create_schedule_dispatch_port_follows_rebound_schedule_data_event_list():
-    schedule_data = SimpleNamespace(event_list=[])
-    ensure_event_list_migration_planned_event_queue(schedule_data)
-    old_event_list = schedule_data.event_list
+def test_create_schedule_dispatch_port_follows_rebound_planned_event_queue_owner():
+    original_queue = _PlannedQueueOwnerProbe()
+    rebound_queue = _PlannedQueueOwnerProbe()
+    schedule_data = _owner_schedule_data(original_queue)
     dispatch_port = create_schedule_dispatch_port(schedule_data=schedule_data)
     dispatch_port.publish_scheduled("old-event")
 
-    schedule_data.event_list = []
+    schedule_data.planned_event_queue = rebound_queue
     dispatch_port.publish_scheduled("new-event")
 
-    assert old_event_list == ["old-event"]
-    assert schedule_data.event_list == ["new-event"]
+    assert original_queue.snapshot() == ["old-event"]
+    assert rebound_queue.snapshot() == ["new-event"]
 
 
 def test_scheduled_event_provider_from_sim_instance_creates_fresh_dispatch_port_each_emitter(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    sim_instance = SimpleNamespace(schedule_data=SimpleNamespace(event_list=[]))
+    sim_instance = SimpleNamespace(schedule_data=_owner_schedule_data())
     created_ports: list[_RecordingProviderDispatchPort] = []
 
     def create_recording_dispatch_port(
@@ -338,8 +360,8 @@ def test_scheduled_event_provider_from_sim_instance_creates_fresh_dispatch_port_
 def test_scheduled_event_provider_from_sim_instance_getter_uses_current_simulator_each_emitter(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    first_sim = SimpleNamespace(schedule_data=SimpleNamespace(event_list=[]))
-    second_sim = SimpleNamespace(schedule_data=SimpleNamespace(event_list=[]))
+    first_sim = SimpleNamespace(schedule_data=_owner_schedule_data())
+    second_sim = SimpleNamespace(schedule_data=_owner_schedule_data())
     current = {"sim_instance": first_sim}
     requested_sim_instances: list[object | None] = []
     created_ports: list[_RecordingProviderDispatchPort] = []
@@ -380,7 +402,7 @@ def test_scheduled_event_provider_from_sim_instance_getter_uses_current_simulato
 def test_scheduled_event_provider_from_schedule_data_creates_fresh_dispatch_port_each_emitter(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    schedule_data = SimpleNamespace(event_list=[])
+    schedule_data = _owner_schedule_data()
     created_ports: list[_RecordingProviderDispatchPort] = []
 
     def create_recording_dispatch_port(
@@ -427,24 +449,24 @@ def test_scheduled_event_provider_from_schedule_data_creates_fresh_dispatch_port
         ),
     ],
 )
-def test_scheduled_event_provider_emit_follows_rebound_schedule_data_event_list(
+def test_scheduled_event_provider_emit_follows_rebound_planned_event_queue_owner(
     provider_factory: Any,
 ) -> None:
-    schedule_data = SimpleNamespace(event_list=[])
-    ensure_event_list_migration_planned_event_queue(schedule_data)
-    old_event_list = schedule_data.event_list
+    original_queue = _PlannedQueueOwnerProbe()
+    rebound_queue = _PlannedQueueOwnerProbe()
+    schedule_data = _owner_schedule_data(original_queue)
     provider = provider_factory(schedule_data)
     emitter = provider.create_emitter()
 
-    schedule_data.event_list = []
+    schedule_data.planned_event_queue = rebound_queue
     emitter.emit_scheduled("rebound-event")
 
-    assert old_event_list == []
-    assert schedule_data.event_list == ["rebound-event"]
+    assert original_queue.snapshot() == []
+    assert rebound_queue.snapshot() == ["rebound-event"]
 
 
 def test_scheduled_event_provider_retains_callable_factory_only() -> None:
-    schedule_data = SimpleNamespace(event_list=[])
+    schedule_data = _owner_schedule_data()
     provider = ScheduledEventEmitterProvider.from_schedule_data(cast(Any, schedule_data))
     before_create = dict(provider.__dict__)
 
@@ -596,12 +618,12 @@ def test_damage_event_judge_dispatch_port_follows_rebound_queue_order():
     enemy = SimpleNamespace(
         dynamic=SimpleNamespace(dynamic_dot_list=[anomaly_dot, skill_dot])
     )
-    schedule_data = SimpleNamespace(event_list=[])
-    ensure_event_list_migration_planned_event_queue(schedule_data)
-    old_event_list = schedule_data.event_list
+    original_queue = _PlannedQueueOwnerProbe()
+    rebound_queue = _PlannedQueueOwnerProbe()
+    schedule_data = _owner_schedule_data(original_queue)
     dispatch_port = create_schedule_dispatch_port(schedule_data=schedule_data)
 
-    schedule_data.event_list = []
+    schedule_data.planned_event_queue = rebound_queue
     DamageEventJudge(
         5,
         {"first": first_mission, "second": second_mission},
@@ -610,8 +632,8 @@ def test_damage_event_judge_dispatch_port_follows_rebound_queue_order():
         [],
     )
 
-    assert old_event_list == []
-    assert schedule_data.event_list == [
+    assert original_queue.snapshot() == []
+    assert rebound_queue.snapshot() == [
         first_mission,
         second_mission,
         anomaly_payload,
