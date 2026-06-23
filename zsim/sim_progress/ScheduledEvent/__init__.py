@@ -13,7 +13,10 @@ from zsim.sim_progress.data_struct import (
     SchedulePreload,
     SPUpdateData,
 )
-from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
+from zsim.sim_progress.data_struct.planned_queue import (
+    PlannedEventQueue,
+    ensure_planned_event_queue,
+)
 from zsim.sim_progress.Load.loading_mission import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
 
@@ -136,7 +139,6 @@ class ScheduledEvent:
         self.exist_buff_dict = exist_buff_dict
         self.enemy = self.data.enemy
         self.buff_runtime_state = buff_runtime_state
-        self._fallback_planned_event_queue: PlannedEventQueue | None = None
         if self.buff_runtime_state is None:
             if not legacy_raw_container_compat:
                 raise ValueError(
@@ -211,20 +213,7 @@ class ScheduledEvent:
 
     @property
     def _planned_event_queue(self) -> PlannedEventQueue:
-        queue = getattr(self.data, "planned_event_queue", None)
-        if queue is not None:
-            return queue
-        fallback_queue = getattr(self, "_fallback_planned_event_queue", None)
-        if fallback_queue is None:
-            fallback_queue = PlannedEventQueue(
-                get_events=lambda: self.data.event_list,
-                set_events=self._replace_planned_events,
-            )
-            self._fallback_planned_event_queue = fallback_queue
-        return fallback_queue
-
-    def _replace_planned_events(self, events: list[Any]) -> None:
-        self.data.event_list = events
+        return ensure_planned_event_queue(self.data)
 
     def event_start(self):
         """Schedule主逻辑"""

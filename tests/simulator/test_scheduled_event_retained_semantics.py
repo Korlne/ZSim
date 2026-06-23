@@ -415,11 +415,14 @@ def test_scheduled_event_queue_lifecycle_avoids_raw_event_list_mutation() -> Non
     assert "self._planned_event_queue.snapshot()" in source
     assert "planned_queue.remove(event)" in source
     assert "self._planned_event_queue.replace(buff_events + other_events)" in source
+    assert "return ensure_planned_event_queue(self.data)" in source
     for forbidden_token in (
         "self.data.event_list.remove(",
         "self.data.event_list = buff_events + other_events",
         "for event in self.data.event_list",
         "for _event in self.data.event_list",
+        "_fallback_planned_event_queue",
+        "def _replace_planned_events",
     ):
         assert forbidden_token not in source
 

@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Iterable, MutableSequence
 
-from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
+from zsim.sim_progress.data_struct.planned_queue import ensure_planned_event_queue
 
 if TYPE_CHECKING:
     from zsim.simulator.dataclasses import ScheduleData
@@ -89,26 +89,10 @@ class _MutableScheduleQueueOwner(_ScheduleQueueOwner):
 class _ScheduleDataQueueOwner(_ScheduleQueueOwner):
     def __init__(self, schedule_data: "ScheduleData") -> None:
         self._schedule_data = schedule_data
-        self._fallback_planned_queue: PlannedEventQueue | None = None
-
-    @property
-    def _planned_event_queue(self) -> PlannedEventQueue:
-        queue = getattr(self._schedule_data, "planned_event_queue", None)
-        if queue is not None:
-            return queue
-        if self._fallback_planned_queue is None:
-            self._fallback_planned_queue = PlannedEventQueue(
-                get_events=lambda: self._schedule_data.event_list,
-                set_events=self._replace_events,
-            )
-        return self._fallback_planned_queue
-
-    def _replace_events(self, events: list[Any]) -> None:
-        self._schedule_data.event_list = events
 
     def enqueue(self, event: Any) -> None:
         # Resolve the queue at publish time so rebinding ScheduleData.event_list is safe.
-        self._planned_event_queue.enqueue(event)
+        ensure_planned_event_queue(self._schedule_data).enqueue(event)
 
 
 class _QueueBackedScheduleDispatchPort(ScheduleDispatchPort):

@@ -49,3 +49,19 @@ class PlannedEventQueue:
 
     def has_events(self) -> bool:
         return bool(self.compatibility_view)
+
+
+def ensure_planned_event_queue(schedule_data: Any) -> PlannedEventQueue:
+    """Return the planned queue owner for real or test-shaped schedule data."""
+    queue = getattr(schedule_data, "planned_event_queue", None)
+    if queue is not None:
+        return queue
+
+    fallback_queue = getattr(schedule_data, "_planned_event_queue_compat_owner", None)
+    if fallback_queue is None:
+        fallback_queue = PlannedEventQueue(
+            get_events=lambda: schedule_data.event_list,
+            set_events=lambda events: setattr(schedule_data, "event_list", events),
+        )
+        setattr(schedule_data, "_planned_event_queue_compat_owner", fallback_queue)
+    return fallback_queue

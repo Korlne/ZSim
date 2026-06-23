@@ -7,6 +7,7 @@ from zsim.sim_progress.Update.UpdateAnomaly import (
     create_anomaly_runtime_context,
     update_anomaly as _run_update_anomaly,
 )
+from zsim.sim_progress.data_struct.planned_queue import ensure_planned_event_queue
 
 _MISSING_COMPAT_HOOK = object()
 _MIGRATION_TEST_ANOMALY_HOOK_NAME = "legacy_" + "update_anomaly"
@@ -33,11 +34,7 @@ def __getattr__(name: str):
 
 
 def _planned_queue_compatibility_view(schedule_data):
-    planned_event_queue = getattr(schedule_data, "planned_event_queue", None)
-    if planned_event_queue is not None:
-        return planned_event_queue.compatibility_view
-    queue_attr = "event_" + "list"
-    return getattr(schedule_data, queue_attr)
+    return ensure_planned_event_queue(schedule_data).compatibility_view
 
 
 def run_update_anomaly(**kwargs) -> None:

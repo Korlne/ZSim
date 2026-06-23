@@ -380,7 +380,9 @@ def test_schedule_dispatch_module_remains_queue_only_boundary():
 
     assert "self._queue_owner.enqueue(event)" in source
     assert source.count("self._event_queue.append(event)") == 1
-    assert "self._planned_event_queue.enqueue(event)" in source
+    assert "ensure_planned_event_queue(self._schedule_data).enqueue(event)" in source
+    assert "_fallback_planned_queue" not in source
+    assert "def _replace_events" not in source
     for forbidden_token in (
         "listener_manager",
         "broadcast_event",

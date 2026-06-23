@@ -126,6 +126,12 @@ def test_runtime_command_update_anomaly_surface_keeps_layer_apis_private() -> No
     assert hook_name not in runtime_command_module.__all__
     assert hook_name not in vars(runtime_command_module)
     assert getattr(runtime_command_module, hook_name) is runtime_command_module._run_update_anomaly
+    module_source = inspect.getsource(runtime_command_module)
+    assert (
+        "return ensure_planned_event_queue(schedule_data).compatibility_view"
+        in module_source
+    )
+    assert 'getattr(schedule_data, "event_list"' not in module_source
 
     public_source = inspect.getsource(runtime_command_module.RuntimeCommandPort.update_anomaly)
     adapter_source = inspect.getsource(DefaultRuntimeCommandAdapter.update_anomaly)
