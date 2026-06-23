@@ -67,6 +67,9 @@ SCHEDULED_EVENT_RUNTIME_GUARDRAIL_FILES = (
 RUNTIME_COMMAND_LEGACY_ADAPTER_GUARDRAIL_FILES = tuple(
     sorted((PROJECT_ROOT / "zsim").rglob("*.py"))
 )
+RUNTIME_COMMAND_FACTORY_DIRECT_CALL_GUARDRAIL_FILES = tuple(
+    sorted((PROJECT_ROOT / "zsim").rglob("*.py"))
+)
 SCHEDULED_EVENT_RAW_CONSTRUCTOR_GUARDRAIL_FILES = tuple(
     sorted((PROJECT_ROOT / "zsim").rglob("*.py"))
 )
@@ -249,6 +252,12 @@ RUNTIME_COMMAND_LEGACY_ADAPTER_NEXT_ACTION = (
     "pass buff_runtime_state to create_runtime_command_port, or keep "
     "LegacyRuntimeCommandAdapter construction inside the explicit "
     "migration/test/rollback factory fallback"
+)
+
+RUNTIME_COMMAND_FACTORY_DIRECT_CALL_NEXT_ACTION = (
+    "route runtime command-port creation through ScheduledEventRuntimePortFactory, "
+    "or keep lower-level create_runtime_command_port calls inside explicit "
+    "migration/test/rollback coverage"
 )
 
 SCHEDULED_EVENT_RAW_CONSTRUCTOR_NEXT_ACTION = (
@@ -813,6 +822,23 @@ class RuntimeCommandLegacyAdapterFinding:
             f"{self.path}:{self.line}: matched expression: {self.matched_expression}; "
             f"classification suggestion: {self.classification_suggestion}; "
             f"next action: {RUNTIME_COMMAND_LEGACY_ADAPTER_NEXT_ACTION}"
+        )
+
+
+@dataclass(frozen=True)
+class RuntimeCommandFactoryDirectCallFinding:
+    path: str
+    line: int
+    kind: str
+    matched_expression: str
+    classification_suggestion: str
+    context: str
+
+    def message(self) -> str:
+        return (
+            f"{self.path}:{self.line}: matched expression: {self.matched_expression}; "
+            f"classification suggestion: {self.classification_suggestion}; "
+            f"next action: {RUNTIME_COMMAND_FACTORY_DIRECT_CALL_NEXT_ACTION}"
         )
 
 
@@ -1461,6 +1487,104 @@ class RuntimeCommandLegacyAdapterVisitor(ast.NodeVisitor):
         return " ".join(expression.strip().split())
 
 
+class RuntimeCommandFactoryDirectCallVisitor(ast.NodeVisitor):
+    def __init__(self, path: Path, source: str) -> None:
+        self.path = path
+        self.source = source
+        self.findings: list[RuntimeCommandFactoryDirectCallFinding] = []
+        self._class_stack: list[str] = []
+        self._function_stack: list[str] = []
+        self._factory_aliases = {"create_runtime_command_port"}
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        for alias in node.names:
+            imported_name = alias.name
+            local_name = alias.asname or alias.name
+            if imported_name == "create_runtime_command_port":
+                self._factory_aliases.add(local_name)
+        self.generic_visit(node)
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        self._class_stack.append(node.name)
+        try:
+            self.generic_visit(node)
+        finally:
+            self._class_stack.pop()
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._function_stack.append(node.name)
+        try:
+            self.generic_visit(node)
+        finally:
+            self._function_stack.pop()
+
+    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+        self._function_stack.append(node.name)
+        try:
+            self.generic_visit(node)
+        finally:
+            self._function_stack.pop()
+
+    def visit_Call(self, node: ast.Call) -> None:
+        call_name = self._call_name(node.func)
+        if call_name in self._factory_aliases:
+            self._add_finding(
+                line=node.lineno,
+                kind="runtime_command_factory_direct_call",
+                expression=self._source_for(node),
+                classification_suggestion=(
+                    "direct create_runtime_command_port call"
+                ),
+            )
+        self.generic_visit(node)
+
+    @staticmethod
+    def _call_name(func: ast.AST) -> str | None:
+        if isinstance(func, ast.Name):
+            return func.id
+        if isinstance(func, ast.Attribute):
+            return func.attr
+        return None
+
+    def _add_finding(
+        self,
+        *,
+        line: int,
+        kind: str,
+        expression: str,
+        classification_suggestion: str,
+    ) -> None:
+        self.findings.append(
+            RuntimeCommandFactoryDirectCallFinding(
+                path=self._relative_path(),
+                line=line,
+                kind=kind,
+                matched_expression=self._normalize(expression),
+                classification_suggestion=classification_suggestion,
+                context=self._context(),
+            )
+        )
+
+    def _relative_path(self) -> str:
+        return self.path.relative_to(PROJECT_ROOT).as_posix()
+
+    def _context(self) -> str:
+        parts = [*self._class_stack, *self._function_stack]
+        if not parts:
+            return "<module>"
+        return ".".join(parts)
+
+    def _source_for(self, node: ast.AST) -> str:
+        segment = ast.get_source_segment(self.source, node)
+        if segment is None:
+            return f"<{type(node).__name__}>"
+        return self._normalize(segment)
+
+    @staticmethod
+    def _normalize(expression: str) -> str:
+        return " ".join(expression.strip().split())
+
+
 class ScheduledEventRawConstructorVisitor(ast.NodeVisitor):
     def __init__(self, path: Path, source: str) -> None:
         self.path = path
@@ -1810,6 +1934,29 @@ def _collect_runtime_command_legacy_adapter_findings() -> list[
     return findings
 
 
+def _collect_runtime_command_factory_direct_call_findings_from_source(
+    path: Path, source: str
+) -> list[RuntimeCommandFactoryDirectCallFinding]:
+    tree = ast.parse(source, filename=str(path))
+    visitor = RuntimeCommandFactoryDirectCallVisitor(path, source)
+    visitor.visit(tree)
+    return visitor.findings
+
+
+def _collect_runtime_command_factory_direct_call_findings() -> list[
+    RuntimeCommandFactoryDirectCallFinding
+]:
+    findings: list[RuntimeCommandFactoryDirectCallFinding] = []
+    for path in RUNTIME_COMMAND_FACTORY_DIRECT_CALL_GUARDRAIL_FILES:
+        source = path.read_text(encoding="utf-8")
+        findings.extend(
+            _collect_runtime_command_factory_direct_call_findings_from_source(
+                path, source
+            )
+        )
+    return findings
+
+
 def _collect_scheduled_event_raw_constructor_findings_from_source(
     path: Path, source: str
 ) -> list[ScheduledEventRawConstructorFinding]:
@@ -1946,6 +2093,21 @@ def _runtime_command_legacy_adapter_allowance_for(
     return None
 
 
+def _runtime_command_factory_direct_call_allowance_for(
+    finding: RuntimeCommandFactoryDirectCallFinding,
+) -> str | None:
+    if finding.path.startswith("tests/"):
+        return "test-only runtime command-port helper coverage"
+    if finding.path.startswith("scripts/"):
+        return "migration/rollback runtime command-port helper coverage"
+    if (
+        finding.path == "zsim/sim_progress/ScheduledEvent/__init__.py"
+        and finding.context == "ScheduledEventRuntimePortFactory.create"
+    ):
+        return "ScheduledEventRuntimePortFactory production boundary"
+    return None
+
+
 def _scheduled_event_raw_constructor_allowance_for(
     finding: ScheduledEventRawConstructorFinding,
 ) -> str | None:
@@ -2012,6 +2174,17 @@ def _runtime_command_legacy_adapter_allowance_counts(
     return counts
 
 
+def _runtime_command_factory_direct_call_allowance_counts(
+    findings: list[RuntimeCommandFactoryDirectCallFinding],
+) -> Counter[str]:
+    counts: Counter[str] = Counter()
+    for finding in findings:
+        allowance = _runtime_command_factory_direct_call_allowance_for(finding)
+        if allowance is not None:
+            counts[allowance] += 1
+    return counts
+
+
 def _scheduled_event_raw_constructor_allowance_counts(
     findings: list[ScheduledEventRawConstructorFinding],
 ) -> Counter[str]:
@@ -2063,6 +2236,10 @@ EXPECTED_SCHEDULED_RUNTIME_REFERENCE_CEILINGS = {
 
 EXPECTED_RUNTIME_COMMAND_LEGACY_ADAPTER_CEILINGS = {
     "explicit legacy runtime command factory fallback": 1,
+}
+
+EXPECTED_RUNTIME_COMMAND_FACTORY_DIRECT_CALL_CEILINGS = {
+    "ScheduledEventRuntimePortFactory production boundary": 1,
 }
 
 EXPECTED_CALCULATOR_READ_RETAINED_SNAPSHOT_COUNTS = {
@@ -3669,6 +3846,130 @@ def test_runtime_command_legacy_adapter_guardrail_allows_current_factory_state()
     assert (
         _collect_runtime_command_legacy_adapter_findings_from_source(path, source)
         == []
+    )
+
+
+def test_runtime_command_factory_direct_calls_stay_behind_scheduled_event_factory() -> None:
+    findings = _collect_runtime_command_factory_direct_call_findings()
+    disallowed = [
+        finding
+        for finding in findings
+        if _runtime_command_factory_direct_call_allowance_for(finding) is None
+    ]
+    counts = _runtime_command_factory_direct_call_allowance_counts(findings)
+    expanded = {
+        allowance: count
+        for allowance, count in counts.items()
+        if count > EXPECTED_RUNTIME_COMMAND_FACTORY_DIRECT_CALL_CEILINGS[allowance]
+    }
+
+    assert not disallowed, (
+        "RuntimeCommand factory guardrail found direct production calls:\n"
+        + "\n".join(f"- {finding.message()}" for finding in disallowed)
+    )
+    assert counts == Counter({"ScheduledEventRuntimePortFactory production boundary": 1})
+    assert not expanded, (
+        "RuntimeCommand factory guardrail found widened production boundaries:\n"
+        + "\n".join(
+            f"- {allowance}: {count} > "
+            f"{EXPECTED_RUNTIME_COMMAND_FACTORY_DIRECT_CALL_CEILINGS[allowance]}"
+            for allowance, count in sorted(expanded.items())
+        )
+    )
+
+
+def test_runtime_command_factory_guardrail_blocks_direct_state_factory_call() -> None:
+    source = (
+        "from zsim.sim_progress.ScheduledEvent.runtime_command import "
+        "create_runtime_command_port as make_runtime_command_port\n"
+        "class NewHandler:\n"
+        "    def build(self, data, action_stack, sim_instance, buff_runtime_state):\n"
+        "        return make_runtime_command_port(\n"
+        "            data=data,\n"
+        "            action_stack=action_stack,\n"
+        "            sim_instance=sim_instance,\n"
+        "            buff_runtime_state=buff_runtime_state,\n"
+        "        )\n"
+    )
+    path = (
+        PROJECT_ROOT
+        / "zsim"
+        / "sim_progress"
+        / "ScheduledEvent"
+        / "event_handlers"
+        / "handlers"
+        / "_fixture.py"
+    )
+    findings = _collect_runtime_command_factory_direct_call_findings_from_source(
+        path, source
+    )
+    disallowed = [
+        finding
+        for finding in findings
+        if _runtime_command_factory_direct_call_allowance_for(finding) is None
+    ]
+
+    assert len(disallowed) == 1
+    message = disallowed[0].message()
+    assert (
+        "zsim/sim_progress/ScheduledEvent/event_handlers/handlers/_fixture.py:4"
+        in message
+    )
+    assert "matched expression: make_runtime_command_port(" in message
+    assert "classification suggestion: direct create_runtime_command_port call" in message
+    assert f"next action: {RUNTIME_COMMAND_FACTORY_DIRECT_CALL_NEXT_ACTION}" in message
+
+
+def test_runtime_command_factory_guardrail_allows_scheduled_event_factory_boundary() -> None:
+    source = (
+        "from zsim.sim_progress.ScheduledEvent.runtime_command import "
+        "create_runtime_command_port\n"
+        "class ScheduledEventRuntimePortFactory:\n"
+        "    def create(\n"
+        "        self, data, action_stack, sim_instance, buff_runtime_state, buff_runtime_view\n"
+        "    ):\n"
+        "        return create_runtime_command_port(\n"
+        "            data=data,\n"
+        "            action_stack=action_stack,\n"
+        "            sim_instance=sim_instance,\n"
+        "            buff_runtime_state=buff_runtime_state,\n"
+        "            buff_runtime_view=buff_runtime_view,\n"
+        "        )\n"
+    )
+    path = PROJECT_ROOT / "zsim" / "sim_progress" / "ScheduledEvent" / "__init__.py"
+    findings = _collect_runtime_command_factory_direct_call_findings_from_source(
+        path, source
+    )
+
+    assert len(findings) == 1
+    assert _runtime_command_factory_direct_call_allowance_for(findings[0]) == (
+        "ScheduledEventRuntimePortFactory production boundary"
+    )
+    assert _runtime_command_factory_direct_call_allowance_counts(findings) == Counter(
+        {"ScheduledEventRuntimePortFactory production boundary": 1}
+    )
+
+
+def test_runtime_command_factory_guardrail_classifies_test_helper_coverage() -> None:
+    source = (
+        "from zsim.sim_progress.ScheduledEvent.runtime_command import "
+        "create_runtime_command_port\n"
+        "def build_test_port(data, action_stack, sim_instance, exist_buff_dict):\n"
+        "    return create_runtime_command_port(\n"
+        "        data=data,\n"
+        "        action_stack=action_stack,\n"
+        "        sim_instance=sim_instance,\n"
+        "        exist_buff_dict=exist_buff_dict,\n"
+        "    )\n"
+    )
+    path = PROJECT_ROOT / "tests" / "simulator" / "test_runtime_command_port.py"
+    findings = _collect_runtime_command_factory_direct_call_findings_from_source(
+        path, source
+    )
+
+    assert len(findings) == 1
+    assert _runtime_command_factory_direct_call_allowance_for(findings[0]) == (
+        "test-only runtime command-port helper coverage"
     )
 
 
