@@ -817,7 +817,7 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
                 "pass ScheduleDispatchPort/EventInbox owner APIs instead of raw queue"
             ),
             "raw_planned_queue_fallback_read": (
-                "route fallback reads through ensure_planned_event_queue(...)"
+                "install an explicit migration owner before raw fallback reads"
             ),
             "raw_schedule_data_event_list_lifecycle_assignment": (
                 "replace through ScheduleData.planned_event_queue owner APIs"
@@ -1512,7 +1512,10 @@ def test_runtime_command_followup_scheduling_uses_owner_view_not_raw_adapter() -
 
     assert LEGACY_EVENT_LIST_ADAPTER_NAME not in source
     assert "_planned_queue_raw_events_for_migration" in source
-    assert "ensure_planned_event_queue(schedule_data)._raw_events_for_migration()" in source
+    assert "ensure_planned_event_queue" not in source
+    assert "_EVENT_LIST_MIGRATION_OWNER_ATTR" in source
+    assert "_planned_queue_owner_for_migration" in source
+    assert ")._raw_events_for_migration()" in source
     assert ".compatibility_view" not in source
     assert "getattr(schedule_data, \"event_list\"" not in source
     assert "getattr(schedule_data, 'event_list'" not in source

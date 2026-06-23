@@ -18,6 +18,9 @@ from zsim.sim_progress.ScheduledEvent.runtime_command import (
     LegacyRuntimeCommandAdapter,
     create_runtime_command_port,
 )
+from zsim.sim_progress.data_struct.planned_queue import (
+    ensure_event_list_migration_planned_event_queue,
+)
 
 
 def _runtime_state_for_test(
@@ -126,12 +129,13 @@ def test_runtime_command_update_anomaly_surface_keeps_layer_apis_private() -> No
     assert hook_name not in vars(runtime_command_module)
     assert getattr(runtime_command_module, hook_name) is runtime_command_module._run_update_anomaly
     module_source = inspect.getsource(runtime_command_module)
-    assert (
-        "return ensure_planned_event_queue(schedule_data)._raw_events_for_migration()"
-        in module_source
-    )
+    assert "ensure_planned_event_queue" not in module_source
+    assert "_planned_queue_owner_for_migration" in module_source
+    assert "._raw_events_for_migration()" in module_source
+    assert "_EVENT_LIST_MIGRATION_OWNER_ATTR" in module_source
     assert ".compatibility_view" not in module_source
     assert 'getattr(schedule_data, "event_list"' not in module_source
+    assert "getattr(schedule_data, 'event_list'" not in module_source
 
     public_source = inspect.getsource(runtime_command_module.RuntimeCommandPort.update_anomaly)
     adapter_source = inspect.getsource(DefaultRuntimeCommandAdapter.update_anomaly)
@@ -180,10 +184,9 @@ def test_run_update_anomaly_defaults_to_current_path_until_migration_test_hook_i
 
     schedule_queue: list[object] = []
     runtime_view = object()
+    schedule_data = SimpleNamespace(event_list=schedule_queue)
     runtime_context = SimpleNamespace(
-        sim_instance=SimpleNamespace(
-            schedule_data=SimpleNamespace(event_list=schedule_queue)
-        ),
+        sim_instance=SimpleNamespace(schedule_data=schedule_data),
         buff_runtime_view=runtime_view,
     )
     enemy = object()
@@ -213,6 +216,7 @@ def test_run_update_anomaly_defaults_to_current_path_until_migration_test_hook_i
         raising=False,
     )
 
+    ensure_event_list_migration_planned_event_queue(schedule_data)
     runtime_command_module.run_update_anomaly(**kwargs)
 
     assert default_calls == [kwargs]
@@ -231,6 +235,16 @@ def test_run_update_anomaly_defaults_to_current_path_until_migration_test_hook_i
             },
         )
     ]
+
+
+def test_run_update_anomaly_migration_hook_requires_existing_owner() -> None:
+    schedule_data = SimpleNamespace(event_list=[])
+
+    with pytest.raises(
+        AttributeError,
+        match="planned_event_queue or an explicit event-list migration owner",
+    ):
+        runtime_command_module._planned_queue_raw_events_for_migration(schedule_data)
 
 
 def test_run_update_anomaly_migration_hook_uses_private_raw_events_helper(

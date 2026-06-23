@@ -7,7 +7,9 @@ from zsim.sim_progress.Update.UpdateAnomaly import (
     create_anomaly_runtime_context,
     update_anomaly as _run_update_anomaly,
 )
-from zsim.sim_progress.data_struct.planned_queue import ensure_planned_event_queue
+from zsim.sim_progress.data_struct.planned_queue import (
+    _EVENT_LIST_MIGRATION_OWNER_ATTR,
+)
 
 _MISSING_COMPAT_HOOK = object()
 _MIGRATION_TEST_ANOMALY_HOOK_NAME = "legacy_" + "update_anomaly"
@@ -33,8 +35,23 @@ def __getattr__(name: str):
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
+def _planned_queue_owner_for_migration(schedule_data):
+    queue = getattr(schedule_data, "planned_event_queue", None)
+    if queue is not None:
+        return queue
+    queue = getattr(schedule_data, _EVENT_LIST_MIGRATION_OWNER_ATTR, None)
+    if queue is not None:
+        return queue
+    raise AttributeError(
+        "schedule_data must expose planned_event_queue or an explicit "
+        "event-list migration owner before anomaly migration"
+    )
+
+
 def _planned_queue_raw_events_for_migration(schedule_data):
-    return ensure_planned_event_queue(schedule_data)._raw_events_for_migration()
+    return _planned_queue_owner_for_migration(
+        schedule_data
+    )._raw_events_for_migration()
 
 
 def run_update_anomaly(**kwargs) -> None:
