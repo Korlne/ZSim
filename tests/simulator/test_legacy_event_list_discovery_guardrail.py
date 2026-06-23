@@ -120,25 +120,25 @@ MAIN_LOOP_PLANNED_PRODUCER_CALLS = {
 CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS = {
     (
         "zsim/sim_progress/data_struct/planned_queue.py",
-        29,
+        28,
         "planned_queue_owner_internal_mutation",
         "self._events().append(event)",
     ): "US-001",
     (
         "zsim/sim_progress/data_struct/planned_queue.py",
-        42,
+        41,
         "planned_queue_owner_internal_mutation",
         "self._events().remove(event)",
     ): "US-001",
     (
         "zsim/sim_progress/data_struct/planned_queue.py",
-        45,
+        44,
         "planned_queue_owner_internal_replacement",
         "self._set_events(list(events))",
     ): "US-001",
     (
         "zsim/sim_progress/data_struct/planned_queue.py",
-        48,
+        47,
         "planned_queue_owner_internal_mutation",
         "self._events().clear()",
     ): "US-001",
@@ -150,14 +150,7 @@ CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS = {
     ): "US-005",
 }
 
-CURRENT_ROOT_ALLOWED_COMPATIBILITY_VIEW_READS = {
-    (
-        "zsim/sim_progress/ScheduledEvent/runtime_command.py",
-        37,
-        "planned_queue_compatibility_view_read",
-        "ensure_planned_event_queue(schedule_data).compatibility_view",
-    ): "US-003",
-}
+CURRENT_ROOT_ALLOWED_COMPATIBILITY_VIEW_READS: dict[tuple[str, int, str, str], str] = {}
 
 CURRENT_ROOT_ALLOWED_SCHEDULE_DATA_EVENT_LIST_COMPATIBILITY: dict[
     tuple[str, int, str, str], CompatibilityAllowance
@@ -797,7 +790,7 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
                 "keep raw replacement inside PlannedEventQueue owner APIs"
             ),
             "planned_queue_compatibility_view_read": (
-                "keep compatibility_view reads inside approved migration/test hooks"
+                "delete compatibility_view reads or move them to an explicitly private migration helper"
             ),
             "raw_data_event_list_append": "publish planned payloads through ScheduleDispatchPort",
             "raw_event_list_append": (
@@ -1516,7 +1509,9 @@ def test_runtime_command_followup_scheduling_uses_owner_view_not_raw_adapter() -
     source = RUNTIME_COMMAND_PATH.read_text(encoding="utf-8")
 
     assert LEGACY_EVENT_LIST_ADAPTER_NAME not in source
-    assert "ensure_planned_event_queue(schedule_data).compatibility_view" in source
+    assert "_planned_queue_raw_events_for_migration" in source
+    assert "ensure_planned_event_queue(schedule_data)._raw_events_for_migration()" in source
+    assert ".compatibility_view" not in source
     assert "getattr(schedule_data, \"event_list\"" not in source
     assert "getattr(schedule_data, 'event_list'" not in source
 

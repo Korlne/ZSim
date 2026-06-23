@@ -33,8 +33,8 @@ def __getattr__(name: str):
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
-def _planned_queue_compatibility_view(schedule_data):
-    return ensure_planned_event_queue(schedule_data).compatibility_view
+def _planned_queue_raw_events_for_migration(schedule_data):
+    return ensure_planned_event_queue(schedule_data)._raw_events_for_migration()
 
 
 def run_update_anomaly(**kwargs) -> None:
@@ -52,7 +52,7 @@ def run_update_anomaly(**kwargs) -> None:
             kwargs["element_type"],
             kwargs["enemy"],
             kwargs["time_now"],
-            _planned_queue_compatibility_view(
+            _planned_queue_raw_events_for_migration(
                 runtime_context.sim_instance.schedule_data
             ),
             kwargs["char_obj_list"],

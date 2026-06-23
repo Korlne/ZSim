@@ -50,12 +50,11 @@ class _ScheduleLogicProbe:
 class _PlannedQueueOwnerProbe:
     def __init__(self, events: list[object] | None = None) -> None:
         self.events = [] if events is None else events
-        self.compatibility_view_reads = 0
+        self.raw_events_for_migration_reads = 0
         self.enqueue_calls: list[object] = []
 
-    @property
-    def compatibility_view(self) -> list[object]:
-        self.compatibility_view_reads += 1
+    def _raw_events_for_migration(self) -> list[object]:
+        self.raw_events_for_migration_reads += 1
         return self.events
 
     def enqueue(self, event: object) -> None:
@@ -128,9 +127,10 @@ def test_runtime_command_update_anomaly_surface_keeps_layer_apis_private() -> No
     assert getattr(runtime_command_module, hook_name) is runtime_command_module._run_update_anomaly
     module_source = inspect.getsource(runtime_command_module)
     assert (
-        "return ensure_planned_event_queue(schedule_data).compatibility_view"
+        "return ensure_planned_event_queue(schedule_data)._raw_events_for_migration()"
         in module_source
     )
+    assert ".compatibility_view" not in module_source
     assert 'getattr(schedule_data, "event_list"' not in module_source
 
     public_source = inspect.getsource(runtime_command_module.RuntimeCommandPort.update_anomaly)
@@ -233,7 +233,7 @@ def test_run_update_anomaly_defaults_to_current_path_until_migration_test_hook_i
     ]
 
 
-def test_run_update_anomaly_migration_hook_uses_planned_queue_compatibility_view(
+def test_run_update_anomaly_migration_hook_uses_private_raw_events_helper(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     compatibility_calls: list[tuple[Any, Any, Any, Any, Any, dict[str, Any]]] = []
@@ -281,7 +281,7 @@ def test_run_update_anomaly_migration_hook_uses_planned_queue_compatibility_view
         runtime_context=runtime_context,
     )
 
-    assert queue_owner.compatibility_view_reads == 1
+    assert queue_owner.raw_events_for_migration_reads == 1
     assert compatibility_calls == [
         (
             1,

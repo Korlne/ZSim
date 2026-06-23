@@ -6,7 +6,7 @@ from typing import Any
 
 
 class PlannedEventQueue:
-    """Owns planned-event queue lifecycle while preserving a raw compatibility view."""
+    """Owns planned-event queue lifecycle with an explicit migration raw view."""
 
     def __init__(
         self,
@@ -20,9 +20,8 @@ class PlannedEventQueue:
     def _events(self) -> MutableSequence[Any]:
         return self._get_events()
 
-    @property
-    def compatibility_view(self) -> MutableSequence[Any]:
-        """Return the current raw list view for migration/test compatibility."""
+    def _raw_events_for_migration(self) -> MutableSequence[Any]:
+        """Return the current raw list for explicit migration/test adapters."""
         return self._events()
 
     def enqueue(self, event: Any) -> None:
