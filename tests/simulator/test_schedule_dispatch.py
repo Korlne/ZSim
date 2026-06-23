@@ -190,15 +190,22 @@ def test_schedule_data_event_list_is_compatibility_property_over_owner_storage()
     assert replacement_events == ["replacement", "queued"]
 
 
-def test_schedule_data_constructor_event_list_binds_owner_storage():
+def test_schedule_data_constructor_rejects_event_list_seeding():
     initial_events = ["seed"]
-    schedule_data = ScheduleData(
-        enemy=cast(Any, SimpleNamespace(reset_myself=lambda: None)),
-        char_obj_list=[],
-        event_list=initial_events,
-    )
 
-    assert schedule_data.event_list is initial_events
+    with pytest.raises(TypeError, match="event_list"):
+        ScheduleData(
+            enemy=cast(Any, SimpleNamespace(reset_myself=lambda: None)),
+            char_obj_list=[],
+            event_list=initial_events,
+        )
+
+
+def test_schedule_data_owner_replace_seeds_planned_events_after_construction():
+    initial_events = ["seed"]
+    schedule_data = _make_schedule_data()
+    schedule_data.planned_event_queue.replace(initial_events)
+
     assert schedule_data.planned_event_queue.snapshot() == ["seed"]
 
     schedule_data.planned_event_queue.replace(["replaced"])

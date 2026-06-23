@@ -162,17 +162,7 @@ CURRENT_ROOT_ALLOWED_COMPATIBILITY_VIEW_READS = {
 CURRENT_ROOT_ALLOWED_SCHEDULE_DATA_EVENT_LIST_COMPATIBILITY = {
     (
         "zsim/simulator/dataclasses.py",
-        256,
-        "schedule_data_event_list_constructor_field",
-        "event_list: list[Any] = field(default_factory=list, repr=False)",
-    ): CompatibilityAllowance(
-        owner="ScheduleData constructor compatibility",
-        story="US-002",
-        rationale="Preserve ScheduleData(event_list=...) seeding until the raw compatibility property is deleted.",
-    ),
-    (
-        "zsim/simulator/dataclasses.py",
-        302,
+        301,
         "schedule_data_event_list_property_getter",
         "def _get_schedule_data_event_list(self: ScheduleData) -> list[Any]:",
     ): CompatibilityAllowance(
@@ -182,7 +172,7 @@ CURRENT_ROOT_ALLOWED_SCHEDULE_DATA_EVENT_LIST_COMPATIBILITY = {
     ),
     (
         "zsim/simulator/dataclasses.py",
-        307,
+        306,
         "schedule_data_event_list_property_setter",
         "def _set_schedule_data_event_list(self: ScheduleData, events: list[Any]) -> None:",
     ): CompatibilityAllowance(
@@ -192,7 +182,7 @@ CURRENT_ROOT_ALLOWED_SCHEDULE_DATA_EVENT_LIST_COMPATIBILITY = {
     ),
     (
         "zsim/simulator/dataclasses.py",
-        314,
+        313,
         "schedule_data_event_list_property_install",
         "property(_get_schedule_data_event_list, _set_schedule_data_event_list)",
     ): CompatibilityAllowance(
@@ -1448,7 +1438,7 @@ def test_schedule_data_event_list_compatibility_allowance_is_exact_and_owned() -
     assert {
         allowance.story
         for allowance in CURRENT_ROOT_ALLOWED_SCHEDULE_DATA_EVENT_LIST_COMPATIBILITY.values()
-    } == {"US-002", "US-003"}
+    } == {"US-003"}
 
 
 def test_event_list_deletion_readiness_counts_categories_separately() -> None:

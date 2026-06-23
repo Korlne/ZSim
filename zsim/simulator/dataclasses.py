@@ -253,7 +253,6 @@ class ScheduleData:
     enemy: Enemy
     char_obj_list: list[Character]
     _planned_events: list[Any] = field(default_factory=list, init=False, repr=False)
-    event_list: list[Any] = field(default_factory=list, repr=False)
     planned_event_queue: PlannedEventQueue = field(init=False, repr=False)
     # judge_required_info_dict = {"skill_node": None}
     loading_buff: dict[str, list[Buff]] = field(default_factory=dict)
