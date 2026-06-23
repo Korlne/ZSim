@@ -20,7 +20,7 @@ import polars as pl
 from zsim.define import config, results_dir
 from zsim.models.session.session_run import CommonCfg
 from zsim.simulator import Simulator
-from zsim.utils.process_buff_result import prepare_buff_data_and_cache
+from zsim.utils.process_buff_result import _prepare_buff_timeline_data, prepare_buff_data_and_cache
 from zsim.utils.process_dmg_result import (
     _normalize_damage_schema,
     prepare_dmg_data_and_cache,
@@ -61,6 +61,16 @@ class RuntimeSnapshot:
     total_damage: float
     event_counts: dict[str, Any]
     buff_timeline: dict[str, list[dict[str, Any]]]
+
+
+@dataclass(frozen=True)
+class BuffTimelineParityData:
+    present: bool
+    source_type: str
+    source_paths: list[Path]
+    timeline: dict[str, list[dict[str, Any]]]
+    summary: dict[str, Any]
+    records: list[dict[str, Any]]
 
 
 def _build_session_id() -> str:
@@ -881,6 +891,260 @@ def _build_external_damage_domain(
     }
 
 
+def _normalize_buff_timeline_value(value: Any) -> Any:
+    if value is None:
+        return None
+    try:
+        return _stable_json_scalar(float(value))
+    except (TypeError, ValueError):
+        return _stable_json_scalar(value)
+
+
+def _normalize_buff_timeline_entry(source: str, entry: Any) -> dict[str, Any]:
+    if not isinstance(entry, dict):
+        raise ValueError(f"buff timeline entry for '{source}' must be an object")
+
+    required_fields = ("Task", "Start", "Finish", "Value")
+    missing_fields = [field for field in required_fields if field not in entry]
+    if missing_fields:
+        raise ValueError(
+            f"buff timeline entry for '{source}' missing public fields: "
+            + ", ".join(missing_fields)
+        )
+
+    return {
+        "Task": str(entry["Task"]),
+        "Start": int(entry["Start"]),
+        "Finish": int(entry["Finish"]),
+        "Value": _normalize_buff_timeline_value(entry["Value"]),
+    }
+
+
+def _normalize_buff_timeline_payload(payload: Any) -> dict[str, list[dict[str, Any]]]:
+    if not isinstance(payload, dict):
+        raise ValueError("buff timeline payload must be an object keyed by source")
+
+    normalized: dict[str, list[dict[str, Any]]] = {}
+    for source in sorted(payload, key=lambda item: str(item)):
+        source_key = str(source)
+        entries = payload[source]
+        if entries is None:
+            entries = []
+        if not isinstance(entries, list):
+            raise ValueError(f"buff timeline entries for '{source_key}' must be a list")
+        normalized[source_key] = [
+            _normalize_buff_timeline_entry(source_key, entry) for entry in entries
+        ]
+    return normalized
+
+
+def _load_buff_timeline_csvs(csv_paths: list[Path]) -> dict[str, list[dict[str, Any]]]:
+    timeline: dict[str, list[dict[str, Any]]] = {}
+    for csv_path in csv_paths:
+        df = pl.read_csv(csv_path)
+        source = csv_path.stem
+        timeline[source] = _normalize_buff_timeline_payload(
+            {source: _prepare_buff_timeline_data(df)}
+        )[source]
+    return timeline
+
+
+def _buff_timeline_records(
+    timeline: dict[str, list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for source, entries in sorted(timeline.items()):
+        for entry in entries:
+            records.append(
+                {
+                    "source": source,
+                    "Task": str(entry["Task"]),
+                    "Start": int(entry["Start"]),
+                    "Finish": int(entry["Finish"]),
+                    "Value": _normalize_buff_timeline_value(entry["Value"]),
+                }
+            )
+    records.sort(
+        key=lambda item: (
+            item["source"],
+            item["Task"],
+            item["Start"],
+            item["Finish"],
+            str(item["Value"]),
+        )
+    )
+    return records
+
+
+def _buff_timeline_summary(
+    *,
+    present: bool,
+    source_type: str,
+    source_paths: list[Path],
+    timeline: dict[str, list[dict[str, Any]]],
+    records: list[dict[str, Any]],
+) -> dict[str, Any]:
+    return {
+        "present": present,
+        "source_type": source_type,
+        "source_paths": [str(path) for path in source_paths],
+        "source_count": len(timeline),
+        "entry_count": len(records),
+        "sources": sorted(timeline),
+        "public_fields": ["Task", "Start", "Finish", "Value"],
+    }
+
+
+def _load_external_buff_timeline_data(result_dir: Path) -> BuffTimelineParityData:
+    buff_log_dir = result_dir / "buff_log"
+    json_path = buff_log_dir / "buff_timeline_data.json"
+    csv_paths = sorted(buff_log_dir.glob("*.csv")) if buff_log_dir.exists() else []
+
+    if json_path.exists():
+        timeline = _normalize_buff_timeline_payload(
+            json.loads(json_path.read_text(encoding="utf-8"))
+        )
+        source_type = "json"
+        source_paths = [json_path]
+    elif csv_paths:
+        timeline = _load_buff_timeline_csvs(csv_paths)
+        source_type = "csv"
+        source_paths = csv_paths
+    else:
+        timeline = {}
+        source_type = "missing"
+        source_paths = []
+
+    records = _buff_timeline_records(timeline)
+    present = source_type != "missing"
+    summary = _buff_timeline_summary(
+        present=present,
+        source_type=source_type,
+        source_paths=source_paths,
+        timeline=timeline,
+        records=records,
+    )
+    return BuffTimelineParityData(
+        present=present,
+        source_type=source_type,
+        source_paths=source_paths,
+        timeline=timeline,
+        summary=summary,
+        records=records,
+    )
+
+
+def _buff_timeline_record_key(record: dict[str, Any]) -> tuple[str, str, int, int]:
+    return (
+        str(record["source"]),
+        str(record["Task"]),
+        int(record["Start"]),
+        int(record["Finish"]),
+    )
+
+
+def _buff_timeline_records_by_key(
+    records: list[dict[str, Any]],
+) -> dict[tuple[str, str, int, int], list[dict[str, Any]]]:
+    by_key: dict[tuple[str, str, int, int], list[dict[str, Any]]] = {}
+    for record in records:
+        by_key.setdefault(_buff_timeline_record_key(record), []).append(record)
+    return by_key
+
+
+def _expanded_counter_values(counter: Counter[Any]) -> list[Any]:
+    values: list[Any] = []
+    for value, count_value in sorted(counter.items(), key=lambda item: str(item[0])):
+        values.extend([value] * int(count_value))
+    return values
+
+
+def _buff_timeline_entry_differences(
+    golden_records: list[dict[str, Any]],
+    candidate_records: list[dict[str, Any]],
+) -> dict[str, Any]:
+    golden_by_key = _buff_timeline_records_by_key(golden_records)
+    candidate_by_key = _buff_timeline_records_by_key(candidate_records)
+    golden_keys = set(golden_by_key)
+    candidate_keys = set(candidate_by_key)
+
+    baseline_only = [
+        record
+        for key in sorted(golden_keys - candidate_keys)
+        for record in golden_by_key[key]
+    ]
+    candidate_only = [
+        record
+        for key in sorted(candidate_keys - golden_keys)
+        for record in candidate_by_key[key]
+    ]
+    changed: list[dict[str, Any]] = []
+    for key in sorted(golden_keys & candidate_keys):
+        golden_values = Counter(record["Value"] for record in golden_by_key[key])
+        candidate_values = Counter(record["Value"] for record in candidate_by_key[key])
+        if golden_values == candidate_values:
+            continue
+        changed.append(
+            {
+                "source": key[0],
+                "Task": key[1],
+                "Start": key[2],
+                "Finish": key[3],
+                "golden_values": _expanded_counter_values(golden_values),
+                "candidate_values": _expanded_counter_values(candidate_values),
+            }
+        )
+
+    return {
+        "baseline_only_count": len(baseline_only),
+        "golden_only_count": len(baseline_only),
+        "candidate_only_count": len(candidate_only),
+        "changed_entry_count": len(changed),
+        "sample_baseline_only": baseline_only[:_BUFF_TIMELINE_SAMPLE_LIMIT],
+        "sample_golden_only": baseline_only[:_BUFF_TIMELINE_SAMPLE_LIMIT],
+        "sample_candidate_only": candidate_only[:_BUFF_TIMELINE_SAMPLE_LIMIT],
+        "sample_changed": changed[:_BUFF_TIMELINE_SAMPLE_LIMIT],
+    }
+
+
+def _build_buff_timeline_domain(
+    *,
+    golden_result_dir: Path,
+    candidate_result_path: Path,
+) -> dict[str, Any]:
+    golden = _load_external_buff_timeline_data(golden_result_dir)
+    candidate = _load_external_buff_timeline_data(candidate_result_path)
+    entry_differences = _buff_timeline_entry_differences(golden.records, candidate.records)
+    presence_matches = golden.present == candidate.present
+    entries_match = (
+        entry_differences["baseline_only_count"] == 0
+        and entry_differences["candidate_only_count"] == 0
+        and entry_differences["changed_entry_count"] == 0
+    )
+    matches = presence_matches and entries_match
+    status = "not_provided"
+    if golden.present or candidate.present:
+        status = "match" if matches else "mismatch"
+
+    return {
+        "implemented": True,
+        "matches": matches,
+        "status": status,
+        "sample_limit": _BUFF_TIMELINE_SAMPLE_LIMIT,
+        "source_precedence": "buff_timeline_data.json when present, otherwise buff_log/*.csv",
+        "public_fields": ["Task", "Start", "Finish", "Value"],
+        "golden": golden.summary,
+        "candidate": candidate.summary,
+        "differences": {
+            "presence": {
+                "golden_buff_timeline": golden.present,
+                "candidate_buff_timeline": candidate.present,
+            },
+            **entry_differences,
+        },
+    }
+
+
 def _load_optional_json(path: Path) -> tuple[bool, Any]:
     if not path.exists():
         return False, None
@@ -1057,6 +1321,10 @@ def _external_golden_diff_domains(
         candidate_result_path=candidate_result_path,
     )
     domains["damage_attribution"] = _build_damage_attribution_domain(
+        golden_result_dir=golden_result_dir,
+        candidate_result_path=candidate_result_path,
+    )
+    domains["buff_timeline"] = _build_buff_timeline_domain(
         golden_result_dir=golden_result_dir,
         candidate_result_path=candidate_result_path,
     )

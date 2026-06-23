@@ -21,6 +21,8 @@ from zsim.utils.process_dmg_result import _normalize_damage_schema, sort_df_by_U
 from tests.teams import auto_register_teams
 
 _DAMAGE_GOLDEN_DIR = Path("tests/fixtures/external_golden_parity/damage-golden")
+_BUFF_CSV_GOLDEN_DIR = Path("tests/fixtures/external_golden_parity/buff-csv-golden")
+_BUFF_JSON_GOLDEN_DIR = Path("tests/fixtures/external_golden_parity/buff-json-golden")
 _MATCHING_DAMAGE_CSV = """tick,skill_tag,element_type,dmg_expect,dmg_crit,stun,buildup,is_anomaly,is_disorder,UUID
 1,alpha,0,10.0,11.0,1.0,0.5,false,false,uuid-1
 2,beta,4,20.0,22.0,2.0,1.5,true,false,uuid-2
@@ -30,21 +32,50 @@ _MATCHING_ATTRIBUTION = {
     "alpha": {"direct_damage": 10.0, "anomaly_damage": 0.0},
     "beta": {"direct_damage": 0.0, "anomaly_damage": 25.0},
 }
+_MATCHING_BUFF_TIMELINE_CSV = """time_tick,buff-a,buff-b
+1,0,
+2,2.0,1.5
+3,2.0,0
+"""
+_MISMATCH_BUFF_TIMELINE_CSV = """time_tick,buff-a,buff-c
+1,0,
+2,2.5,4.0
+3,2.5,4.0
+"""
+_MATCHING_BUFF_TIMELINE_JSON = {
+    "alpha": [
+        {"Task": "buff-a", "Start": 2, "Finish": 3, "Value": 2.0},
+        {"Task": "buff-b", "Start": 2, "Finish": 2, "Value": 1.5},
+    ]
+}
 
 
 def _write_result_dir(
     result_dir: Path,
     *,
-    damage_csv: str = _MATCHING_DAMAGE_CSV,
+    damage_csv: str | None = _MATCHING_DAMAGE_CSV,
     damage_attribution: dict[str, Any] | None = _MATCHING_ATTRIBUTION,
+    buff_timeline_json: dict[str, Any] | None = None,
+    buff_csvs: dict[str, str] | None = None,
 ) -> Path:
     result_dir.mkdir(parents=True, exist_ok=True)
-    (result_dir / "damage.csv").write_text(damage_csv, encoding="utf-8")
+    if damage_csv is not None:
+        (result_dir / "damage.csv").write_text(damage_csv, encoding="utf-8")
     if damage_attribution is not None:
         (result_dir / "damage_attribution.json").write_text(
             json.dumps(damage_attribution, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
+    if buff_timeline_json is not None or buff_csvs is not None:
+        buff_log_dir = result_dir / "buff_log"
+        buff_log_dir.mkdir(parents=True, exist_ok=True)
+        if buff_timeline_json is not None:
+            (buff_log_dir / "buff_timeline_data.json").write_text(
+                json.dumps(buff_timeline_json, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+        for source, csv_text in (buff_csvs or {}).items():
+            (buff_log_dir / f"{source}.csv").write_text(csv_text, encoding="utf-8")
     return result_dir
 
 
@@ -366,14 +397,19 @@ def test_run_external_golden_parity_writes_damage_domain_json(
     assert report["run_config"]["apl"] == "./override.toml"
     assert report["run_config"]["stop_tick"] == 33
     assert report["comparison"]["candidate_run_count"] == 1
-    assert report["comparison"]["implemented_domains"] == ["damage", "damage_attribution"]
+    assert report["comparison"]["implemented_domains"] == [
+        "damage",
+        "damage_attribution",
+        "buff_timeline",
+    ]
     assert report["diffs"]["matches"] is True
     assert report["diffs"]["domains"]["damage"]["implemented"] is True
     assert report["diffs"]["domains"]["damage"]["matches"] is True
     assert report["diffs"]["domains"]["damage"]["golden"]["present"] is False
     assert report["diffs"]["domains"]["damage"]["candidate"]["present"] is False
     assert report["diffs"]["domains"]["damage_attribution"]["status"] == "not_provided"
-    assert report["diffs"]["domains"]["buff_timeline"]["next_story"] == "US-003"
+    assert report["diffs"]["domains"]["buff_timeline"]["implemented"] is True
+    assert report["diffs"]["domains"]["buff_timeline"]["status"] == "not_provided"
 
     artifact = json.loads(output_path.read_text(encoding="utf-8"))
     assert artifact == report
@@ -391,7 +427,11 @@ def test_build_external_golden_parity_report_compares_matching_damage_fixture(
 
     damage = report["diffs"]["domains"]["damage"]
     attribution = report["diffs"]["domains"]["damage_attribution"]
-    assert report["comparison"]["implemented_domains"] == ["damage", "damage_attribution"]
+    assert report["comparison"]["implemented_domains"] == [
+        "damage",
+        "damage_attribution",
+        "buff_timeline",
+    ]
     assert report["diffs"]["matches"] is True
     assert damage["implemented"] is True
     assert damage["matches"] is True
@@ -533,6 +573,100 @@ def test_external_damage_attribution_reports_presence_mismatch(tmp_path: Path):
         "golden_damage_attribution": True,
         "candidate_damage_attribution": False,
     }
+
+
+def test_external_buff_timeline_compares_csv_golden_fixture(tmp_path: Path):
+    candidate_dir = _write_result_dir(
+        tmp_path / "candidate-result",
+        damage_csv=None,
+        damage_attribution=None,
+        buff_csvs={"alpha": _MATCHING_BUFF_TIMELINE_CSV},
+    )
+
+    report = _build_external_damage_report(
+        golden_result_dir=_BUFF_CSV_GOLDEN_DIR,
+        candidate_result_path=candidate_dir,
+    )
+
+    timeline = report["diffs"]["domains"]["buff_timeline"]
+    assert timeline["implemented"] is True
+    assert timeline["matches"] is True
+    assert timeline["status"] == "match"
+    assert timeline["public_fields"] == ["Task", "Start", "Finish", "Value"]
+    assert timeline["golden"]["source_type"] == "csv"
+    assert timeline["candidate"]["source_type"] == "csv"
+    assert timeline["golden"]["entry_count"] == 2
+    assert timeline["candidate"]["entry_count"] == 2
+    assert timeline["differences"]["baseline_only_count"] == 0
+    assert timeline["differences"]["candidate_only_count"] == 0
+    assert timeline["differences"]["changed_entry_count"] == 0
+    assert report["diffs"]["matches"] is True
+
+
+def test_external_buff_timeline_compares_json_golden_fixture_to_candidate_csv(
+    tmp_path: Path,
+):
+    candidate_dir = _write_result_dir(
+        tmp_path / "candidate-result",
+        damage_csv=None,
+        damage_attribution=None,
+        buff_csvs={"alpha": _MATCHING_BUFF_TIMELINE_CSV},
+    )
+
+    report = _build_external_damage_report(
+        golden_result_dir=_BUFF_JSON_GOLDEN_DIR,
+        candidate_result_path=candidate_dir,
+    )
+
+    timeline = report["diffs"]["domains"]["buff_timeline"]
+    assert timeline["matches"] is True
+    assert timeline["golden"]["source_type"] == "json"
+    assert timeline["candidate"]["source_type"] == "csv"
+    assert timeline["golden"]["public_fields"] == ["Task", "Start", "Finish", "Value"]
+    assert timeline["candidate"]["public_fields"] == ["Task", "Start", "Finish", "Value"]
+    assert timeline["differences"]["sample_baseline_only"] == []
+    assert timeline["differences"]["sample_candidate_only"] == []
+    assert timeline["differences"]["sample_changed"] == []
+
+
+def test_external_buff_timeline_reports_bounded_mismatch_samples(tmp_path: Path):
+    candidate_dir = _write_result_dir(
+        tmp_path / "candidate-result",
+        damage_csv=None,
+        damage_attribution=None,
+        buff_csvs={"alpha": _MISMATCH_BUFF_TIMELINE_CSV},
+    )
+
+    report = _build_external_damage_report(
+        golden_result_dir=_BUFF_CSV_GOLDEN_DIR,
+        candidate_result_path=candidate_dir,
+    )
+
+    timeline = report["diffs"]["domains"]["buff_timeline"]
+    differences = timeline["differences"]
+    assert report["diffs"]["matches"] is False
+    assert timeline["matches"] is False
+    assert timeline["status"] == "mismatch"
+    assert differences["baseline_only_count"] == 1
+    assert differences["golden_only_count"] == 1
+    assert differences["candidate_only_count"] == 1
+    assert differences["changed_entry_count"] == 1
+    assert differences["sample_baseline_only"] == [
+        {"source": "alpha", "Task": "buff-b", "Start": 2, "Finish": 2, "Value": 1.5}
+    ]
+    assert differences["sample_candidate_only"] == [
+        {"source": "alpha", "Task": "buff-c", "Start": 2, "Finish": 3, "Value": 4.0}
+    ]
+    assert differences["sample_changed"] == [
+        {
+            "source": "alpha",
+            "Task": "buff-a",
+            "Start": 2,
+            "Finish": 3,
+            "golden_values": [2.0],
+            "candidate_values": [2.5],
+        }
+    ]
 
 
 def test_run_external_golden_parity_rejects_missing_golden_dir(tmp_path: Path):
