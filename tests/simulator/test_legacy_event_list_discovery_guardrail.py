@@ -25,6 +25,20 @@ OWNER_ONLY_RAW_EVENT_APPEND_KINDS = {
     "local_event_group_append",
 }
 POST_MIGRATION_BLOCKED_RAW_EVENT_APPEND_KINDS = RAW_EVENT_APPEND_KINDS - OWNER_ONLY_RAW_EVENT_APPEND_KINDS
+SCHEDULED_EVENT_RAW_QUEUE_LIFECYCLE_METHODS = {
+    "append",
+    "clear",
+    "extend",
+    "insert",
+    "pop",
+    "remove",
+    "reverse",
+    "sort",
+}
+SCHEDULED_EVENT_RAW_QUEUE_LIFECYCLE_KINDS = {
+    "scheduled_event_raw_queue_assignment",
+    "scheduled_event_raw_queue_mutation",
+}
 
 LOCAL_EVENT_GROUP_NAMES = {"adrenaline_events"}
 AMBIGUOUS_LOCAL_EVENT_GROUP_NAMES = {"local_event_group"}
@@ -139,6 +153,26 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
                 kind=raw_append_kind,
                 expression=self._source_for(node),
             )
+        scheduled_event_lifecycle_kind = self._scheduled_event_raw_queue_call_kind(node)
+        if scheduled_event_lifecycle_kind is not None:
+            self._add_finding(
+                line=node.lineno,
+                kind=scheduled_event_lifecycle_kind,
+                expression=self._source_for(node),
+            )
+        self.generic_visit(node)
+
+    def visit_Assign(self, node: ast.Assign) -> None:
+        for target in node.targets:
+            self._record_scheduled_event_raw_queue_assignment(node, target)
+        self.generic_visit(node)
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+        self._record_scheduled_event_raw_queue_assignment(node, node.target)
+        self.generic_visit(node)
+
+    def visit_AugAssign(self, node: ast.AugAssign) -> None:
+        self._record_scheduled_event_raw_queue_assignment(node, node.target)
         self.generic_visit(node)
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
@@ -252,6 +286,40 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             return "raw_schedule_data_event_list_append"
         return None
 
+    def _scheduled_event_raw_queue_call_kind(self, node: ast.Call) -> str | None:
+        if not isinstance(node.func, ast.Attribute):
+            return None
+        if node.func.attr not in SCHEDULED_EVENT_RAW_QUEUE_LIFECYCLE_METHODS:
+            return None
+        if self._scheduled_event_raw_queue_target(node.func.value):
+            return "scheduled_event_raw_queue_mutation"
+        return None
+
+    def _record_scheduled_event_raw_queue_assignment(
+        self,
+        node: ast.Assign | ast.AnnAssign | ast.AugAssign,
+        target: ast.expr,
+    ) -> None:
+        if self._scheduled_event_raw_queue_target(target):
+            self._add_finding(
+                line=node.lineno,
+                kind="scheduled_event_raw_queue_assignment",
+                expression=self._source_for(node),
+            )
+
+    def _scheduled_event_raw_queue_target(self, target: ast.AST) -> bool:
+        if self._relative_path() != "zsim/sim_progress/ScheduledEvent/__init__.py":
+            return False
+        if self._function_stack[-1:] == ["_replace_planned_events"]:
+            return False
+        if isinstance(target, ast.Subscript):
+            target = target.value
+        return self._dotted_name(target) in {
+            "self.data.event_list",
+            "data.event_list",
+            "schedule_data.event_list",
+        }
+
     def _is_scheduled_event_handler_path(self) -> bool:
         return self._relative_path().startswith(
             "zsim/sim_progress/ScheduledEvent/event_handlers/handlers/"
@@ -351,6 +419,12 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
                 "planned queue raw schedule_data.event_list.append write"
             ),
             "record_event_list_append": "producer-level planned-event writer through record.event_list",
+            "scheduled_event_raw_queue_assignment": (
+                "ScheduledEvent direct raw planned queue assignment/reorder"
+            ),
+            "scheduled_event_raw_queue_mutation": (
+                "ScheduledEvent direct raw planned queue lifecycle mutation"
+            ),
         }[kind]
 
     @staticmethod
@@ -382,6 +456,12 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
                 "publish planned payloads through ScheduleDispatchPort"
             ),
             "record_event_list_append": "migrate to ScheduleDispatchPort or block deletion",
+            "scheduled_event_raw_queue_assignment": (
+                "US-003 owns migration to the planned queue owner replace API"
+            ),
+            "scheduled_event_raw_queue_mutation": (
+                "US-003 owns migration to the planned queue owner lifecycle API"
+            ),
         }[kind]
 
 
@@ -633,6 +713,16 @@ def test_current_root_raw_planned_queue_allowlist_is_owner_only_after_migration(
         assert owner_story_id == expected_owner_story_by_kind[kind]
 
 
+def test_scheduled_event_raw_queue_lifecycle_has_no_current_findings() -> None:
+    findings = [
+        finding
+        for finding in _collect_findings()
+        if finding.kind in SCHEDULED_EVENT_RAW_QUEUE_LIFECYCLE_KINDS
+    ]
+
+    _assert_no_disallowed(findings)
+
+
 def test_main_loop_uses_dispatch_port_and_has_no_raw_planned_queue_handoff() -> None:
     source = SIMULATOR_CLASS_PATH.read_text(encoding="utf-8")
 
@@ -832,6 +922,35 @@ def test_raw_planned_queue_writes_are_blocked_outside_owner_api_or_local_groups(
         finding = visitor.findings[0]
         assert finding.kind == expected_kind
         assert _raw_append_key(finding) not in allowed_keys
+
+
+def test_scheduled_event_raw_queue_lifecycle_guardrail_blocks_regressions() -> None:
+    source = (
+        "class ScheduledEvent:\n"
+        "    def process_event(self, event):\n"
+        "        self.data.event_list.remove(event)\n"
+        "        self.data.event_list.insert(0, event)\n"
+        "    def solve_buff(self, events):\n"
+        "        self.data.event_list = list(events)\n"
+    )
+    path = PRODUCTION_ROOT / "ScheduledEvent" / "__init__.py"
+    visitor = LegacyEventListDiscoveryVisitor(path, source)
+
+    visitor.visit(ast.parse(source))
+
+    assert [finding.kind for finding in visitor.findings] == [
+        "scheduled_event_raw_queue_mutation",
+        "scheduled_event_raw_queue_mutation",
+        "scheduled_event_raw_queue_assignment",
+    ]
+    assert (
+        visitor.findings[0].classification_suggestion
+        == "ScheduledEvent direct raw planned queue lifecycle mutation"
+    )
+    assert (
+        visitor.findings[2].next_action
+        == "US-003 owns migration to the planned queue owner replace API"
+    )
 
 
 def test_guardrail_failure_message_includes_post_deletion_triage_fields() -> None:

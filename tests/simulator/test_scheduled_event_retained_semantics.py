@@ -70,6 +70,35 @@ class _RetainedEventProbe:
         self.executed.append(("execute", ()))
 
 
+class _QueueLifecycleEventProbe:
+    def __init__(self, name: str, execute_tick: int, schedule_priority: int = 0) -> None:
+        self.name = name
+        self.execute_tick = execute_tick
+        self.schedule_priority = schedule_priority
+
+
+class _PlannedQueueOwnerProbe:
+    def __init__(self, events: list[object]) -> None:
+        self.events = list(events)
+        self.calls: list[tuple[str, object]] = []
+
+    def snapshot(self) -> list[object]:
+        self.calls.append(("snapshot", tuple(self.events)))
+        return list(self.events)
+
+    def replace(self, events: list[object]) -> None:
+        self.calls.append(("replace", tuple(events)))
+        self.events = list(events)
+
+    def remove(self, event: object) -> None:
+        self.calls.append(("remove", event))
+        self.events.remove(event)
+
+    def has_events(self) -> bool:
+        self.calls.append(("has_events", tuple(self.events)))
+        return bool(self.events)
+
+
 def _make_scheduled_event_for_sim(sim_instance: Any, tick: int = 10) -> Any:
     dynamic_buff: dict[str, list[object]] = {"alpha": []}
     exist_buff_dict: dict[str, dict[str, object]] = {"alpha": {}}
@@ -322,6 +351,77 @@ def test_scheduled_event_process_event_recurses_after_context_requeue() -> None:
     assert processed == [first_event, requeued_event]
     assert schedule_data.event_list == []
     assert schedule_data.processed_times == 2
+
+
+def test_scheduled_event_process_event_uses_planned_queue_owner_lifecycle() -> None:
+    future_event = _QueueLifecycleEventProbe("future", execute_tick=11, schedule_priority=0)
+    due_low_priority = _QueueLifecycleEventProbe("due-low", execute_tick=10, schedule_priority=0)
+    due_high_priority = _QueueLifecycleEventProbe("due-high", execute_tick=10, schedule_priority=10)
+    queue_owner = _PlannedQueueOwnerProbe([future_event, due_low_priority, due_high_priority])
+    schedule_data = SimpleNamespace(
+        event_list=[],
+        planned_event_queue=queue_owner,
+        processed_times=0,
+    )
+    processed: list[object] = []
+    scheduled_event = cast(
+        Any,
+        scheduled_event_module.ScheduledEvent.__new__(scheduled_event_module.ScheduledEvent),
+    )
+    scheduled_event.data = schedule_data
+    scheduled_event.tick = 10
+    scheduled_event.get_execute_tick = lambda event: event.execute_tick
+    scheduled_event._process_single_event = processed.append
+
+    scheduled_event.process_event()
+
+    assert processed == [due_low_priority, due_high_priority]
+    assert queue_owner.events == [future_event]
+    assert schedule_data.event_list == []
+    assert schedule_data.processed_times == 2
+    assert ("replace", (future_event, due_low_priority, due_high_priority)) in queue_owner.calls
+    assert ("remove", due_low_priority) in queue_owner.calls
+    assert ("remove", due_high_priority) in queue_owner.calls
+
+
+def test_scheduled_event_solve_buff_reorders_through_planned_queue_owner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _FakeBuff:
+        pass
+
+    non_buff_event = object()
+    buff_event = _FakeBuff()
+    queue_owner = _PlannedQueueOwnerProbe([non_buff_event, buff_event])
+    scheduled_event = cast(
+        Any,
+        scheduled_event_module.ScheduledEvent.__new__(scheduled_event_module.ScheduledEvent),
+    )
+    scheduled_event.data = SimpleNamespace(
+        event_list=[],
+        planned_event_queue=queue_owner,
+    )
+    monkeypatch.setattr(scheduled_event_module.Buff, "Buff", _FakeBuff)
+
+    scheduled_event.solve_buff()
+
+    assert queue_owner.events == [buff_event, non_buff_event]
+    assert ("replace", (buff_event, non_buff_event)) in queue_owner.calls
+
+
+def test_scheduled_event_queue_lifecycle_avoids_raw_event_list_mutation() -> None:
+    source = inspect.getsource(scheduled_event_module.ScheduledEvent)
+
+    assert "self._planned_event_queue.snapshot()" in source
+    assert "planned_queue.remove(event)" in source
+    assert "self._planned_event_queue.replace(buff_events + other_events)" in source
+    for forbidden_token in (
+        "self.data.event_list.remove(",
+        "self.data.event_list = buff_events + other_events",
+        "for event in self.data.event_list",
+        "for _event in self.data.event_list",
+    ):
+        assert forbidden_token not in source
 
 
 def test_scheduled_event_context_requeue_uses_current_schedule_queue_after_rebind() -> None:

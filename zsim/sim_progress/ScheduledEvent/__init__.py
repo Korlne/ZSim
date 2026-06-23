@@ -13,6 +13,7 @@ from zsim.sim_progress.data_struct import (
     SchedulePreload,
     SPUpdateData,
 )
+from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
 from zsim.sim_progress.Load.loading_mission import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
 
@@ -135,6 +136,7 @@ class ScheduledEvent:
         self.exist_buff_dict = exist_buff_dict
         self.enemy = self.data.enemy
         self.buff_runtime_state = buff_runtime_state
+        self._fallback_planned_event_queue: PlannedEventQueue | None = None
         if self.buff_runtime_state is None:
             if not legacy_raw_container_compat:
                 raise ValueError(
@@ -207,6 +209,23 @@ class ScheduledEvent:
             sim_instance=self.sim_instance,
         )
 
+    @property
+    def _planned_event_queue(self) -> PlannedEventQueue:
+        queue = getattr(self.data, "planned_event_queue", None)
+        if queue is not None:
+            return queue
+        fallback_queue = getattr(self, "_fallback_planned_event_queue", None)
+        if fallback_queue is None:
+            fallback_queue = PlannedEventQueue(
+                get_events=lambda: self.data.event_list,
+                set_events=self._replace_planned_events,
+            )
+            self._fallback_planned_event_queue = fallback_queue
+        return fallback_queue
+
+    def _replace_planned_events(self, events: list[Any]) -> None:
+        self.data.event_list = events
+
     def event_start(self):
         """Schedule主逻辑"""
         # 更新角色面板
@@ -229,7 +248,8 @@ class ScheduledEvent:
         使用事件处理器模式来处理各种类型的事件，替代原有的大型if-elif链。
         提高代码的可读性和可维护性。
         """
-        if not self.data.event_list:
+        planned_queue = self._planned_event_queue
+        if not planned_queue.has_events():
             return
 
         # 先处理优先级高的buff
@@ -243,13 +263,13 @@ class ScheduledEvent:
             try:
                 self._process_single_event(event)
                 # 事件处理完毕，从列表中移除
-                self.data.event_list.remove(event)
+                planned_queue.remove(event)
                 self.data.processed_times += 1
             except Exception as e:
                 raise RuntimeError(f"处理事件 {type(event)} 时发生错误: {e}") from e
 
         # 如果计算过程中又有新的事件生成，则继续循环
-        if self.data.event_list and not self.check_all_event():
+        if planned_queue.has_events() and not self.check_all_event():
             self.process_event()
 
     def _process_single_event(self, event: Any) -> None:
@@ -288,7 +308,7 @@ class ScheduledEvent:
 
     def check_all_event(self):
         """检查所有残留事件是否到期，只要有一个残留事件已经到期，直接返回False，激活递归。"""
-        for event in self.data.event_list:
+        for event in self._planned_event_queue.snapshot():
             # 获取事件类型对应的tick属性名
             execute_tick = self.get_execute_tick(event)
             if execute_tick is None:
@@ -392,17 +412,17 @@ class ScheduledEvent:
         # )
         buff_events = []
         other_events = []
-        for event in self.data.event_list[:]:
+        for event in self._planned_event_queue.snapshot():
             if isinstance(event, Buff.Buff):
                 buff_events.append(event)
             else:
                 other_events.append(event)
-        self.data.event_list = buff_events + other_events
+        self._planned_event_queue.replace(buff_events + other_events)
 
     def select_processable_event(self):
         """筛选当前可执行的事件，并且按照优先级排序，获取不到优先级的默认为0，"""
         _output_event_list = []
-        for _event in self.data.event_list:
+        for _event in self._planned_event_queue.snapshot():
             execute_tick = self.get_execute_tick(_event)
             if execute_tick is None or execute_tick <= self.tick:
                 """说明事件不存在execute_tick或已到期，需要被立刻执行。"""
