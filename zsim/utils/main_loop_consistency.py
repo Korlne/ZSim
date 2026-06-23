@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import math
 import os
 import shutil
 import sys
@@ -20,10 +21,24 @@ from zsim.define import config, results_dir
 from zsim.models.session.session_run import CommonCfg
 from zsim.simulator import Simulator
 from zsim.utils.process_buff_result import prepare_buff_data_and_cache
-from zsim.utils.process_dmg_result import prepare_dmg_data_and_cache, sort_df_by_UUID
+from zsim.utils.process_dmg_result import (
+    _normalize_damage_schema,
+    prepare_dmg_data_and_cache,
+    sort_df_by_UUID,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _BUFF_TIMELINE_SAMPLE_LIMIT = 20
+_DAMAGE_DIFF_SAMPLE_LIMIT = 5
+_DAMAGE_UUID_COMPARE_FIELDS = (
+    "dmg_expect_sum",
+    "stun_sum",
+    "buildup_sum",
+    "skill_tag",
+    "skill_cn_name",
+    "element_type",
+    "is_anomaly",
+)
 _SESSION_ID_COUNTER = count(1)
 MULTI_TEAM_CONSISTENCY_SCHEMA = "zsim-buffload-opt-in-multi-team-consistency.v1"
 EXTERNAL_GOLDEN_PARITY_SCHEMA = "zsim-external-golden-parity.v1"
@@ -155,11 +170,7 @@ def _load_damage_result_df(session_id: str) -> pl.DataFrame:
 
 
 def _normalize_consistency_damage_df(dmg_result_df: pl.DataFrame) -> pl.DataFrame:
-    if "is_anomaly" not in dmg_result_df.columns:
-        return dmg_result_df.with_columns(pl.lit(False).alias("is_anomaly"))
-    if dmg_result_df["is_anomaly"].is_null().all():
-        return dmg_result_df.with_columns(pl.lit(False).alias("is_anomaly"))
-    return dmg_result_df.with_columns(pl.col("is_anomaly").fill_null(False))
+    return _normalize_damage_schema(dmg_result_df)
 
 
 def _prepare_damage_data_for_consistency(session_id: str) -> tuple[pl.DataFrame, pl.DataFrame]:
@@ -614,6 +625,444 @@ def _prepare_external_golden_common_cfg(
     }
 
 
+@dataclass(frozen=True)
+class DamageParityData:
+    present: bool
+    path: Path
+    raw_df: pl.DataFrame | None
+    uuid_df: pl.DataFrame
+    summary: dict[str, Any]
+    uuid_records: list[dict[str, Any]]
+
+
+def _stable_json_scalar(value: Any) -> Any:
+    if hasattr(value, "item"):
+        try:
+            value = value.item()
+        except (AttributeError, ValueError):
+            pass
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return bool(value)
+    if isinstance(value, int):
+        return int(value)
+    if isinstance(value, float):
+        if math.isnan(value):
+            return None
+        return round(float(value), 6)
+    if isinstance(value, str):
+        return value
+    return str(value)
+
+
+def _normalize_json_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            str(key): _normalize_json_value(value[key])
+            for key in sorted(value, key=lambda item: str(item))
+        }
+    if isinstance(value, list):
+        return [_normalize_json_value(item) for item in value]
+    return _stable_json_scalar(value)
+
+
+def _count_truthy_values(df: pl.DataFrame, column: str) -> int:
+    if column not in df.columns or df.height == 0 or df[column].is_null().all():
+        return 0
+    if df[column].dtype == pl.Boolean:
+        return int(df[column].fill_null(False).sum())
+    return int(
+        df.select(
+            pl.col(column)
+            .cast(pl.Utf8)
+            .str.to_lowercase()
+            .is_in(["true", "1"])
+            .fill_null(False)
+            .sum()
+            .alias("truthy_count")
+        ).item()
+    )
+
+
+def _count_by_string_value(df: pl.DataFrame, column: str) -> dict[str, int]:
+    if column not in df.columns or df.height == 0:
+        return {}
+    grouped = (
+        df.filter(pl.col(column).is_not_null())
+        .with_columns(pl.col(column).cast(pl.Utf8).alias("__count_key"))
+        .group_by("__count_key")
+        .len()
+        .sort("__count_key")
+    )
+    return {
+        str(row["__count_key"]): int(row["len"])
+        for row in grouped.iter_rows(named=True)
+    }
+
+
+def _diff_count_maps(golden: dict[str, int], candidate: dict[str, int]) -> dict[str, int]:
+    diff: dict[str, int] = {}
+    for key in sorted(set(golden) | set(candidate)):
+        delta = int(candidate.get(key, 0)) - int(golden.get(key, 0))
+        if delta != 0:
+            diff[key] = delta
+    return diff
+
+
+def _load_damage_csv_from_result_dir(result_dir: Path) -> pl.DataFrame | None:
+    csv_path = result_dir / "damage.csv"
+    if not csv_path.exists():
+        return None
+    lf = pl.scan_csv(csv_path)
+    schema_names = lf.collect_schema().names()
+    lf = lf.rename({col: col.replace("\r", "").replace("\n", "").strip() for col in schema_names})
+    return _normalize_damage_schema(lf.collect())
+
+
+def _damage_summary(
+    *,
+    present: bool,
+    path: Path,
+    raw_df: pl.DataFrame | None,
+    uuid_df: pl.DataFrame,
+) -> dict[str, Any]:
+    total_damage = 0.0
+    if "dmg_expect_sum" in uuid_df.columns and uuid_df.height > 0:
+        total_damage = round(float(uuid_df["dmg_expect_sum"].fill_null(0).sum()), 4)
+
+    return {
+        "present": present,
+        "path": str(path),
+        "row_count": 0 if raw_df is None else int(raw_df.height),
+        "uuid_count": int(uuid_df.height),
+        "total_damage": total_damage,
+        "anomaly_total": _count_truthy_values(uuid_df, "is_anomaly"),
+        "disorder_total": 0 if raw_df is None else _count_truthy_values(raw_df, "is_disorder"),
+        "by_skill_tag": _count_by_string_value(uuid_df, "skill_tag"),
+        "by_skill_cn_name": _count_by_string_value(uuid_df, "skill_cn_name"),
+        "by_element_type": _count_by_string_value(uuid_df, "element_type"),
+    }
+
+
+def _damage_uuid_records(uuid_df: pl.DataFrame) -> list[dict[str, Any]]:
+    if uuid_df.height == 0 or "UUID" not in uuid_df.columns:
+        return []
+    records: list[dict[str, Any]] = []
+    for row in uuid_df.sort("UUID").iter_rows(named=True):
+        record = {"UUID": str(row["UUID"])}
+        for field in _DAMAGE_UUID_COMPARE_FIELDS:
+            record[field] = _stable_json_scalar(row.get(field))
+        records.append(record)
+    return records
+
+
+def _load_external_damage_data(result_dir: Path) -> DamageParityData:
+    csv_path = result_dir / "damage.csv"
+    raw_df = _load_damage_csv_from_result_dir(result_dir)
+    present = raw_df is not None
+    if raw_df is None or raw_df.height == 0:
+        uuid_df = pl.DataFrame()
+    else:
+        uuid_df = sort_df_by_UUID(raw_df)
+    summary = _damage_summary(
+        present=present,
+        path=csv_path,
+        raw_df=raw_df,
+        uuid_df=uuid_df,
+    )
+    return DamageParityData(
+        present=present,
+        path=csv_path,
+        raw_df=raw_df,
+        uuid_df=uuid_df,
+        summary=summary,
+        uuid_records=_damage_uuid_records(uuid_df),
+    )
+
+
+def _damage_uuid_differences(
+    golden_records: list[dict[str, Any]],
+    candidate_records: list[dict[str, Any]],
+) -> dict[str, Any]:
+    golden_by_uuid = {record["UUID"]: record for record in golden_records}
+    candidate_by_uuid = {record["UUID"]: record for record in candidate_records}
+    golden_only = [golden_by_uuid[key] for key in sorted(set(golden_by_uuid) - set(candidate_by_uuid))]
+    candidate_only = [
+        candidate_by_uuid[key] for key in sorted(set(candidate_by_uuid) - set(golden_by_uuid))
+    ]
+
+    changed: list[dict[str, Any]] = []
+    for uuid in sorted(set(golden_by_uuid) & set(candidate_by_uuid)):
+        field_differences: dict[str, dict[str, Any]] = {}
+        golden_record = golden_by_uuid[uuid]
+        candidate_record = candidate_by_uuid[uuid]
+        for field in _DAMAGE_UUID_COMPARE_FIELDS:
+            golden_value = golden_record.get(field)
+            candidate_value = candidate_record.get(field)
+            if golden_value != candidate_value:
+                field_differences[field] = {
+                    "golden": golden_value,
+                    "candidate": candidate_value,
+                }
+        if field_differences:
+            changed.append({"UUID": uuid, "fields": field_differences})
+
+    return {
+        "golden_only_count": len(golden_only),
+        "candidate_only_count": len(candidate_only),
+        "changed_count": len(changed),
+        "sample_golden_only": golden_only[:_DAMAGE_DIFF_SAMPLE_LIMIT],
+        "sample_candidate_only": candidate_only[:_DAMAGE_DIFF_SAMPLE_LIMIT],
+        "sample_changed": changed[:_DAMAGE_DIFF_SAMPLE_LIMIT],
+    }
+
+
+def _build_external_damage_domain(
+    *,
+    golden_result_dir: Path,
+    candidate_result_path: Path,
+) -> dict[str, Any]:
+    golden = _load_external_damage_data(golden_result_dir)
+    candidate = _load_external_damage_data(candidate_result_path)
+    scalar_differences = {
+        key: round(float(candidate.summary[key]) - float(golden.summary[key]), 4)
+        if key == "total_damage"
+        else int(candidate.summary[key]) - int(golden.summary[key])
+        for key in (
+            "total_damage",
+            "row_count",
+            "uuid_count",
+            "anomaly_total",
+            "disorder_total",
+        )
+    }
+    field_count_differences = {
+        "skill_tag": _diff_count_maps(
+            golden.summary["by_skill_tag"],
+            candidate.summary["by_skill_tag"],
+        ),
+        "skill_cn_name": _diff_count_maps(
+            golden.summary["by_skill_cn_name"],
+            candidate.summary["by_skill_cn_name"],
+        ),
+        "element_type": _diff_count_maps(
+            golden.summary["by_element_type"],
+            candidate.summary["by_element_type"],
+        ),
+    }
+    uuid_differences = _damage_uuid_differences(golden.uuid_records, candidate.uuid_records)
+    presence_matches = golden.present == candidate.present
+    scalar_matches = all(value == 0 for value in scalar_differences.values())
+    field_counts_match = not any(bool(value) for value in field_count_differences.values())
+    uuid_matches = (
+        uuid_differences["golden_only_count"] == 0
+        and uuid_differences["candidate_only_count"] == 0
+        and uuid_differences["changed_count"] == 0
+    )
+    matches = presence_matches and scalar_matches and field_counts_match and uuid_matches
+
+    return {
+        "implemented": True,
+        "matches": matches,
+        "status": "match" if matches else "mismatch",
+        "sample_limit": _DAMAGE_DIFF_SAMPLE_LIMIT,
+        "golden": golden.summary,
+        "candidate": candidate.summary,
+        "differences": {
+            "presence": {
+                "golden_damage_csv": golden.present,
+                "candidate_damage_csv": candidate.present,
+            },
+            **scalar_differences,
+            "field_counts": field_count_differences,
+            "uuid_aggregation": uuid_differences,
+        },
+    }
+
+
+def _load_optional_json(path: Path) -> tuple[bool, Any]:
+    if not path.exists():
+        return False, None
+    return True, json.loads(path.read_text(encoding="utf-8"))
+
+
+def _json_type_name(value: Any) -> str:
+    if isinstance(value, dict):
+        return "object"
+    if isinstance(value, list):
+        return "array"
+    if isinstance(value, bool):
+        return "boolean"
+    if isinstance(value, int | float) and not isinstance(value, bool):
+        return "number"
+    if value is None:
+        return "null"
+    return "string"
+
+
+def _flatten_json_types(value: Any, path: str = "$") -> dict[str, str]:
+    paths = {path: _json_type_name(value)}
+    if isinstance(value, dict):
+        for key in sorted(value, key=lambda item: str(item)):
+            paths.update(_flatten_json_types(value[key], f"{path}.{key}"))
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            paths.update(_flatten_json_types(item, f"{path}[{index}]"))
+    return paths
+
+
+def _flatten_json_leaf_values(value: Any, path: str = "$") -> dict[str, Any]:
+    if isinstance(value, dict):
+        leaves: dict[str, Any] = {}
+        for key in sorted(value, key=lambda item: str(item)):
+            leaves.update(_flatten_json_leaf_values(value[key], f"{path}.{key}"))
+        return leaves
+    if isinstance(value, list):
+        leaves = {}
+        for index, item in enumerate(value):
+            leaves.update(_flatten_json_leaf_values(item, f"{path}[{index}]"))
+        return leaves
+    return {path: _stable_json_scalar(value)}
+
+
+def _json_path_differences(golden_payload: Any, candidate_payload: Any) -> dict[str, Any]:
+    golden_types = _flatten_json_types(golden_payload)
+    candidate_types = _flatten_json_types(candidate_payload)
+    golden_values = _flatten_json_leaf_values(golden_payload)
+    candidate_values = _flatten_json_leaf_values(candidate_payload)
+    golden_paths = set(golden_types)
+    candidate_paths = set(candidate_types)
+    shared_type_paths = sorted(golden_paths & candidate_paths)
+    shared_value_paths = sorted(set(golden_values) & set(candidate_values))
+
+    changed_types = [
+        {
+            "path": path,
+            "golden": golden_types[path],
+            "candidate": candidate_types[path],
+        }
+        for path in shared_type_paths
+        if golden_types[path] != candidate_types[path]
+    ]
+    changed_values = [
+        {
+            "path": path,
+            "golden": golden_values[path],
+            "candidate": candidate_values[path],
+        }
+        for path in shared_value_paths
+        if golden_values[path] != candidate_values[path]
+    ]
+
+    return {
+        "golden_only_path_count": len(golden_paths - candidate_paths),
+        "candidate_only_path_count": len(candidate_paths - golden_paths),
+        "changed_type_count": len(changed_types),
+        "changed_value_count": len(changed_values),
+        "sample_golden_only_paths": sorted(golden_paths - candidate_paths)[:_DAMAGE_DIFF_SAMPLE_LIMIT],
+        "sample_candidate_only_paths": sorted(candidate_paths - golden_paths)[
+            :_DAMAGE_DIFF_SAMPLE_LIMIT
+        ],
+        "sample_changed_types": changed_types[:_DAMAGE_DIFF_SAMPLE_LIMIT],
+        "sample_changed_values": changed_values[:_DAMAGE_DIFF_SAMPLE_LIMIT],
+    }
+
+
+def _build_damage_attribution_domain(
+    *,
+    golden_result_dir: Path,
+    candidate_result_path: Path,
+) -> dict[str, Any]:
+    golden_path = golden_result_dir / "damage_attribution.json"
+    candidate_path = candidate_result_path / "damage_attribution.json"
+    golden_present, golden_payload = _load_optional_json(golden_path)
+    candidate_present, candidate_payload = _load_optional_json(candidate_path)
+    both_present = golden_present and candidate_present
+
+    structure_matches = True
+    values_match = True
+    differences = {
+        "presence": {
+            "golden_damage_attribution": golden_present,
+            "candidate_damage_attribution": candidate_present,
+        },
+        "structure": {
+            "compared": both_present,
+            "matches": True,
+            "golden_only_path_count": 0,
+            "candidate_only_path_count": 0,
+            "changed_type_count": 0,
+            "sample_golden_only_paths": [],
+            "sample_candidate_only_paths": [],
+            "sample_changed_types": [],
+        },
+        "values": {
+            "compared": both_present,
+            "matches": True,
+            "changed_value_count": 0,
+            "sample_changed_values": [],
+        },
+    }
+
+    if both_present:
+        path_differences = _json_path_differences(golden_payload, candidate_payload)
+        structure_matches = (
+            path_differences["golden_only_path_count"] == 0
+            and path_differences["candidate_only_path_count"] == 0
+            and path_differences["changed_type_count"] == 0
+        )
+        values_match = path_differences["changed_value_count"] == 0
+        differences["structure"] = {
+            "compared": True,
+            "matches": structure_matches,
+            "golden_only_path_count": path_differences["golden_only_path_count"],
+            "candidate_only_path_count": path_differences["candidate_only_path_count"],
+            "changed_type_count": path_differences["changed_type_count"],
+            "sample_golden_only_paths": path_differences["sample_golden_only_paths"],
+            "sample_candidate_only_paths": path_differences["sample_candidate_only_paths"],
+            "sample_changed_types": path_differences["sample_changed_types"],
+        }
+        differences["values"] = {
+            "compared": True,
+            "matches": values_match,
+            "changed_value_count": path_differences["changed_value_count"],
+            "sample_changed_values": path_differences["sample_changed_values"],
+        }
+
+    matches = golden_present == candidate_present and (not both_present or structure_matches and values_match)
+    status = "not_provided"
+    if golden_present or candidate_present:
+        status = "match" if matches else "mismatch"
+
+    return {
+        "implemented": True,
+        "matches": matches,
+        "status": status,
+        "sample_limit": _DAMAGE_DIFF_SAMPLE_LIMIT,
+        "golden": {"present": golden_present, "path": str(golden_path)},
+        "candidate": {"present": candidate_present, "path": str(candidate_path)},
+        "differences": differences,
+    }
+
+
+def _external_golden_diff_domains(
+    *,
+    golden_result_dir: Path,
+    candidate_result_path: Path,
+) -> dict[str, dict[str, Any]]:
+    domains = _external_golden_diff_placeholders()
+    domains["damage"] = _build_external_damage_domain(
+        golden_result_dir=golden_result_dir,
+        candidate_result_path=candidate_result_path,
+    )
+    domains["damage_attribution"] = _build_damage_attribution_domain(
+        golden_result_dir=golden_result_dir,
+        candidate_result_path=candidate_result_path,
+    )
+    return domains
+
+
 def _external_golden_diff_placeholders() -> dict[str, dict[str, Any]]:
     return {
         "damage": {
@@ -651,7 +1100,10 @@ def build_external_golden_parity_report(
     apl: str,
     stop_tick: int,
 ) -> dict[str, Any]:
-    diff_domains = _external_golden_diff_placeholders()
+    diff_domains = _external_golden_diff_domains(
+        golden_result_dir=golden_result_dir,
+        candidate_result_path=candidate_result_path,
+    )
     return {
         "schema": EXTERNAL_GOLDEN_PARITY_SCHEMA,
         "schema_version": 1,

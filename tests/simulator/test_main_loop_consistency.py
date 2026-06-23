@@ -20,6 +20,53 @@ from zsim.utils.process_dmg_result import _normalize_damage_schema, sort_df_by_U
 
 from tests.teams import auto_register_teams
 
+_DAMAGE_GOLDEN_DIR = Path("tests/fixtures/external_golden_parity/damage-golden")
+_MATCHING_DAMAGE_CSV = """tick,skill_tag,element_type,dmg_expect,dmg_crit,stun,buildup,is_anomaly,is_disorder,UUID
+1,alpha,0,10.0,11.0,1.0,0.5,false,false,uuid-1
+2,beta,4,20.0,22.0,2.0,1.5,true,false,uuid-2
+3,beta,4,5.0,6.0,0.5,0.2,true,true,uuid-2
+"""
+_MATCHING_ATTRIBUTION = {
+    "alpha": {"direct_damage": 10.0, "anomaly_damage": 0.0},
+    "beta": {"direct_damage": 0.0, "anomaly_damage": 25.0},
+}
+
+
+def _write_result_dir(
+    result_dir: Path,
+    *,
+    damage_csv: str = _MATCHING_DAMAGE_CSV,
+    damage_attribution: dict[str, Any] | None = _MATCHING_ATTRIBUTION,
+) -> Path:
+    result_dir.mkdir(parents=True, exist_ok=True)
+    (result_dir / "damage.csv").write_text(damage_csv, encoding="utf-8")
+    if damage_attribution is not None:
+        (result_dir / "damage_attribution.json").write_text(
+            json.dumps(damage_attribution, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+    return result_dir
+
+
+def _build_external_damage_report(
+    *,
+    golden_result_dir: Path,
+    candidate_result_path: Path,
+) -> dict[str, Any]:
+    return mlc.build_external_golden_parity_report(
+        golden_result_dir=golden_result_dir,
+        candidate_session_id="candidate-damage",
+        candidate_result_path=candidate_result_path,
+        run_config_identity={
+            "kind": "team",
+            "team": "fixture-team",
+            "common_cfg_path": None,
+            "source_session_id": "fixture-source",
+        },
+        apl="./fixture.toml",
+        stop_tick=9,
+    )
+
 
 def test_build_consistency_report_keeps_required_json_fields():
     legacy_snapshot = RuntimeSnapshot(
@@ -239,7 +286,7 @@ def test_external_golden_parser_accepts_required_cli_flags():
     assert ambiguous_config.value.code == 2
 
 
-def test_run_external_golden_parity_writes_placeholder_json(
+def test_run_external_golden_parity_writes_damage_domain_json(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ):
@@ -319,13 +366,173 @@ def test_run_external_golden_parity_writes_placeholder_json(
     assert report["run_config"]["apl"] == "./override.toml"
     assert report["run_config"]["stop_tick"] == 33
     assert report["comparison"]["candidate_run_count"] == 1
-    assert report["comparison"]["implemented_domains"] == []
+    assert report["comparison"]["implemented_domains"] == ["damage", "damage_attribution"]
     assert report["diffs"]["matches"] is True
-    assert report["diffs"]["domains"]["damage"]["next_story"] == "US-002"
+    assert report["diffs"]["domains"]["damage"]["implemented"] is True
+    assert report["diffs"]["domains"]["damage"]["matches"] is True
+    assert report["diffs"]["domains"]["damage"]["golden"]["present"] is False
+    assert report["diffs"]["domains"]["damage"]["candidate"]["present"] is False
+    assert report["diffs"]["domains"]["damage_attribution"]["status"] == "not_provided"
     assert report["diffs"]["domains"]["buff_timeline"]["next_story"] == "US-003"
 
     artifact = json.loads(output_path.read_text(encoding="utf-8"))
     assert artifact == report
+
+
+def test_build_external_golden_parity_report_compares_matching_damage_fixture(
+    tmp_path: Path,
+):
+    candidate_dir = _write_result_dir(tmp_path / "candidate-result")
+
+    report = _build_external_damage_report(
+        golden_result_dir=_DAMAGE_GOLDEN_DIR,
+        candidate_result_path=candidate_dir,
+    )
+
+    damage = report["diffs"]["domains"]["damage"]
+    attribution = report["diffs"]["domains"]["damage_attribution"]
+    assert report["comparison"]["implemented_domains"] == ["damage", "damage_attribution"]
+    assert report["diffs"]["matches"] is True
+    assert damage["implemented"] is True
+    assert damage["matches"] is True
+    assert damage["status"] == "match"
+    assert damage["golden"]["row_count"] == 3
+    assert damage["golden"]["uuid_count"] == 2
+    assert damage["golden"]["total_damage"] == 35.0
+    assert damage["golden"]["anomaly_total"] == 1
+    assert damage["golden"]["disorder_total"] == 1
+    assert damage["golden"]["by_skill_tag"] == {"alpha": 1, "beta": 1}
+    assert damage["golden"]["by_skill_cn_name"] == {"alpha": 1, "beta": 1}
+    assert damage["golden"]["by_element_type"] == {"0": 1, "4": 1}
+    assert damage["differences"]["total_damage"] == 0.0
+    assert damage["differences"]["row_count"] == 0
+    assert damage["differences"]["uuid_aggregation"]["changed_count"] == 0
+    assert damage["differences"]["field_counts"]["skill_tag"] == {}
+    assert attribution["implemented"] is True
+    assert attribution["matches"] is True
+    assert attribution["differences"]["structure"]["compared"] is True
+    assert attribution["differences"]["values"]["matches"] is True
+
+
+def test_build_external_golden_parity_report_reports_damage_mismatch_samples(
+    tmp_path: Path,
+):
+    mismatch_csv = """tick,skill_tag,element_type,dmg_expect,dmg_crit,stun,buildup,is_anomaly,is_disorder,UUID
+1,beta,4,20.0,22.0,2.0,1.5,true,false,uuid-2
+2,beta,4,6.0,6.0,0.5,0.2,true,true,uuid-2
+3,gamma,5,7.0,8.0,0.2,0.1,false,false,uuid-3
+"""
+    candidate_dir = _write_result_dir(
+        tmp_path / "candidate-result",
+        damage_csv=mismatch_csv,
+        damage_attribution={
+            "beta": {"direct_damage": 0.0, "anomaly_damage": 26.0},
+            "gamma": {"direct_damage": 7.0, "anomaly_damage": 0.0},
+        },
+    )
+
+    report = _build_external_damage_report(
+        golden_result_dir=_DAMAGE_GOLDEN_DIR,
+        candidate_result_path=candidate_dir,
+    )
+
+    damage = report["diffs"]["domains"]["damage"]
+    attribution = report["diffs"]["domains"]["damage_attribution"]
+    uuid_diff = damage["differences"]["uuid_aggregation"]
+    assert report["diffs"]["matches"] is False
+    assert damage["matches"] is False
+    assert damage["differences"]["total_damage"] == -2.0
+    assert damage["differences"]["field_counts"]["skill_tag"] == {"alpha": -1, "gamma": 1}
+    assert damage["differences"]["field_counts"]["element_type"] == {"0": -1, "5": 1}
+    assert uuid_diff["golden_only_count"] == 1
+    assert uuid_diff["candidate_only_count"] == 1
+    assert uuid_diff["changed_count"] == 1
+    assert uuid_diff["sample_golden_only"][0]["UUID"] == "uuid-1"
+    assert uuid_diff["sample_candidate_only"][0]["UUID"] == "uuid-3"
+    assert uuid_diff["sample_changed"] == [
+        {
+            "UUID": "uuid-2",
+            "fields": {
+                "dmg_expect_sum": {"golden": 25.0, "candidate": 26.0},
+            },
+        }
+    ]
+    assert attribution["matches"] is False
+    assert attribution["differences"]["structure"]["sample_golden_only_paths"] == [
+        "$.alpha",
+        "$.alpha.anomaly_damage",
+        "$.alpha.direct_damage",
+    ]
+    assert attribution["differences"]["structure"]["sample_candidate_only_paths"] == [
+        "$.gamma",
+        "$.gamma.anomaly_damage",
+        "$.gamma.direct_damage",
+    ]
+    assert attribution["differences"]["values"]["sample_changed_values"] == [
+        {"path": "$.beta.anomaly_damage", "golden": 25.0, "candidate": 26.0}
+    ]
+
+
+def test_external_damage_parity_normalizes_anomaly_schema_forms(tmp_path: Path):
+    missing_anomaly_csv = """tick,skill_tag,element_type,dmg_expect,dmg_crit,stun,buildup,is_disorder,UUID
+1,alpha,0,10.0,11.0,1.0,0.5,false,uuid-1
+"""
+    all_null_anomaly_csv = """tick,skill_tag,element_type,dmg_expect,dmg_crit,stun,buildup,is_anomaly,is_disorder,UUID
+1,alpha,0,10.0,11.0,1.0,0.5,,false,uuid-1
+"""
+    string_anomaly_csv = """tick,skill_tag,element_type,dmg_expect,dmg_crit,stun,buildup,is_anomaly,is_disorder,UUID
+1,alpha,0,10.0,11.0,1.0,0.5,FALSE,false,uuid-1
+"""
+    golden_dir = _write_result_dir(
+        tmp_path / "golden-missing-anomaly",
+        damage_csv=missing_anomaly_csv,
+        damage_attribution=None,
+    )
+    all_null_candidate_dir = _write_result_dir(
+        tmp_path / "candidate-all-null-anomaly",
+        damage_csv=all_null_anomaly_csv,
+        damage_attribution=None,
+    )
+    string_candidate_dir = _write_result_dir(
+        tmp_path / "candidate-string-anomaly",
+        damage_csv=string_anomaly_csv,
+        damage_attribution=None,
+    )
+
+    all_null_report = _build_external_damage_report(
+        golden_result_dir=golden_dir,
+        candidate_result_path=all_null_candidate_dir,
+    )
+    string_report = _build_external_damage_report(
+        golden_result_dir=golden_dir,
+        candidate_result_path=string_candidate_dir,
+    )
+
+    assert all_null_report["diffs"]["domains"]["damage"]["matches"] is True
+    assert string_report["diffs"]["domains"]["damage"]["matches"] is True
+    assert all_null_report["diffs"]["domains"]["damage"]["golden"]["anomaly_total"] == 0
+    assert string_report["diffs"]["domains"]["damage"]["candidate"]["anomaly_total"] == 0
+
+
+def test_external_damage_attribution_reports_presence_mismatch(tmp_path: Path):
+    candidate_dir = _write_result_dir(
+        tmp_path / "candidate-result",
+        damage_attribution=None,
+    )
+
+    report = _build_external_damage_report(
+        golden_result_dir=_DAMAGE_GOLDEN_DIR,
+        candidate_result_path=candidate_dir,
+    )
+
+    attribution = report["diffs"]["domains"]["damage_attribution"]
+    assert attribution["implemented"] is True
+    assert attribution["matches"] is False
+    assert attribution["status"] == "mismatch"
+    assert attribution["differences"]["presence"] == {
+        "golden_damage_attribution": True,
+        "candidate_damage_attribution": False,
+    }
 
 
 def test_run_external_golden_parity_rejects_missing_golden_dir(tmp_path: Path):
