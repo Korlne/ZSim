@@ -1577,7 +1577,7 @@ def test_event_list_migration_owner_construction_is_exactly_helper_owned() -> No
     assert helper_calls == []
 
 
-def test_private_raw_migration_helper_usage_is_exactly_owner_and_runtime_bridge() -> None:
+def test_private_raw_migration_helper_usage_is_exactly_owner_definition() -> None:
     surfaces = [
         surface
         for surface in _collect_planned_queue_migration_surfaces()
@@ -1596,11 +1596,6 @@ def test_private_raw_migration_helper_usage_is_exactly_owner_and_runtime_bridge(
                 "zsim/sim_progress/data_struct/planned_queue.py",
                 "PlannedEventQueue._raw_events_for_migration",
                 "private_raw_migration_helper_definition",
-            ): 1,
-            (
-                "zsim/sim_progress/ScheduledEvent/runtime_command.py",
-                "_planned_queue_raw_events_for_migration",
-                "private_raw_migration_helper_call",
             ): 1,
         }
     )
@@ -1710,11 +1705,13 @@ def test_runtime_command_followup_scheduling_uses_owner_view_not_raw_adapter() -
     source = RUNTIME_COMMAND_PATH.read_text(encoding="utf-8")
 
     assert LEGACY_EVENT_LIST_ADAPTER_NAME not in source
-    assert "_planned_queue_raw_events_for_migration" in source
+    assert "_planned_queue_raw_events_for_migration" not in source
     assert "ensure_planned_event_queue" not in source
-    assert "_EVENT_LIST_MIGRATION_OWNER_ATTR" in source
-    assert "_planned_queue_owner_for_migration" in source
-    assert ")._raw_events_for_migration()" in source
+    assert "_EVENT_LIST_MIGRATION_OWNER_ATTR" not in source
+    assert "_planned_queue_owner_for_migration" not in source
+    assert ")._raw_events_for_migration()" not in source
+    assert "_MigrationDispatchEventList" in source
+    assert "runtime_context.dispatch_port" in source
     assert ".compatibility_view" not in source
     assert "getattr(schedule_data, \"event_list\"" not in source
     assert "getattr(schedule_data, 'event_list'" not in source

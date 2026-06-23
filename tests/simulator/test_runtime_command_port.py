@@ -21,6 +21,7 @@ from zsim.sim_progress.ScheduledEvent.runtime_command import (
 from zsim.sim_progress.data_struct.planned_queue import (
     ensure_event_list_migration_planned_event_queue,
 )
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 
 
 def _runtime_state_for_test(
@@ -130,9 +131,12 @@ def test_runtime_command_update_anomaly_surface_keeps_layer_apis_private() -> No
     assert getattr(runtime_command_module, hook_name) is runtime_command_module._run_update_anomaly
     module_source = inspect.getsource(runtime_command_module)
     assert "ensure_planned_event_queue" not in module_source
-    assert "_planned_queue_owner_for_migration" in module_source
-    assert "._raw_events_for_migration()" in module_source
-    assert "_EVENT_LIST_MIGRATION_OWNER_ATTR" in module_source
+    assert "_planned_queue_owner_for_migration" not in module_source
+    assert "_planned_queue_raw_events_for_migration" not in module_source
+    assert "._raw_events_for_migration()" not in module_source
+    assert "_EVENT_LIST_MIGRATION_OWNER_ATTR" not in module_source
+    assert "_MigrationDispatchEventList" in module_source
+    assert "runtime_context.dispatch_port" in module_source
     assert ".compatibility_view" not in module_source
     assert 'getattr(schedule_data, "event_list"' not in module_source
     assert "getattr(schedule_data, 'event_list'" not in module_source
@@ -168,10 +172,11 @@ def test_run_update_anomaly_defaults_to_current_path_until_migration_test_hook_i
         element_type: object,
         enemy: object,
         time_now: object,
-        event_list: object,
+        event_list: Any,
         char_obj_list: object,
         **kwargs: Any,
     ) -> None:
+        event_list.append("scheduled")
         compatibility_calls.append(
             (element_type, enemy, time_now, event_list, char_obj_list, kwargs)
         )
@@ -217,37 +222,65 @@ def test_run_update_anomaly_defaults_to_current_path_until_migration_test_hook_i
     )
 
     ensure_event_list_migration_planned_event_queue(schedule_data)
+    runtime_context.dispatch_port = create_schedule_dispatch_port(
+        schedule_data=schedule_data
+    )
     runtime_command_module.run_update_anomaly(**kwargs)
 
     assert default_calls == [kwargs]
-    assert compatibility_calls == [
-        (
-            1,
-            enemy,
-            17,
-            schedule_queue,
-            char_obj_list,
-            {
-                "skill_node": skill_node,
-                "dynamic_buff_dict": active_store,
-                "sim_instance": runtime_context.sim_instance,
-                "buff_runtime_view": runtime_view,
-            },
-        )
-    ]
+    assert len(compatibility_calls) == 1
+    element_type, captured_enemy, tick, event_list, captured_chars, extra = (
+        compatibility_calls[0]
+    )
+    assert element_type == 1
+    assert captured_enemy is enemy
+    assert tick == 17
+    assert event_list is not schedule_queue
+    assert captured_chars is char_obj_list
+    assert extra == {
+        "skill_node": skill_node,
+        "dynamic_buff_dict": active_store,
+        "sim_instance": runtime_context.sim_instance,
+        "buff_runtime_view": runtime_view,
+    }
+    assert schedule_queue == ["scheduled"]
 
 
-def test_run_update_anomaly_migration_hook_requires_existing_owner() -> None:
-    schedule_data = SimpleNamespace(event_list=[])
+def test_run_update_anomaly_migration_hook_requires_dispatch_port(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_legacy_update_anomaly(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("hook should not run without a dispatch port")
+
+    monkeypatch.setattr(
+        runtime_command_module,
+        runtime_command_module._MIGRATION_TEST_ANOMALY_HOOK_NAME,
+        fake_legacy_update_anomaly,
+        raising=False,
+    )
 
     with pytest.raises(
         AttributeError,
-        match="planned_event_queue or an explicit event-list migration owner",
+        match="dispatch_port",
     ):
-        runtime_command_module._planned_queue_raw_events_for_migration(schedule_data)
+        runtime_command_module.run_update_anomaly(
+            element_type=1,
+            enemy=object(),
+            time_now=17,
+            char_obj_list=[],
+            sim_instance=SimpleNamespace(schedule_data=SimpleNamespace(event_list=[])),
+            skill_node=object(),
+            dynamic_buff_dict={"enemy": []},
+            runtime_context=SimpleNamespace(
+                sim_instance=SimpleNamespace(
+                    schedule_data=SimpleNamespace(event_list=[])
+                ),
+                buff_runtime_view=object(),
+            ),
+        )
 
 
-def test_run_update_anomaly_migration_hook_uses_private_raw_events_helper(
+def test_run_update_anomaly_migration_hook_uses_dispatch_port_adapter(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     compatibility_calls: list[tuple[Any, Any, Any, Any, Any, dict[str, Any]]] = []
@@ -256,10 +289,11 @@ def test_run_update_anomaly_migration_hook_uses_private_raw_events_helper(
         element_type: object,
         enemy: object,
         time_now: object,
-        event_list: object,
+        event_list: Any,
         char_obj_list: object,
         **kwargs: Any,
     ) -> None:
+        event_list.append("legacy-scheduled")
         compatibility_calls.append(
             (element_type, enemy, time_now, event_list, char_obj_list, kwargs)
         )
@@ -277,6 +311,9 @@ def test_run_update_anomaly_migration_hook_uses_private_raw_events_helper(
     schedule_data = _OwnerOnlyScheduleData(planned_event_queue=queue_owner)
     runtime_context = SimpleNamespace(
         sim_instance=SimpleNamespace(schedule_data=schedule_data),
+        dispatch_port=create_schedule_dispatch_port(
+            schedule_data=cast(Any, schedule_data)
+        ),
         buff_runtime_view=runtime_view,
     )
     enemy = object()
@@ -295,22 +332,24 @@ def test_run_update_anomaly_migration_hook_uses_private_raw_events_helper(
         runtime_context=runtime_context,
     )
 
-    assert queue_owner.raw_events_for_migration_reads == 1
-    assert compatibility_calls == [
-        (
-            1,
-            enemy,
-            17,
-            owner_events,
-            char_obj_list,
-            {
-                "skill_node": skill_node,
-                "dynamic_buff_dict": active_store,
-                "sim_instance": runtime_context.sim_instance,
-                "buff_runtime_view": runtime_view,
-            },
-        )
-    ]
+    assert queue_owner.raw_events_for_migration_reads == 0
+    assert queue_owner.enqueue_calls == ["legacy-scheduled"]
+    assert owner_events == ["legacy-scheduled"]
+    assert len(compatibility_calls) == 1
+    element_type, captured_enemy, tick, event_list, captured_chars, extra = (
+        compatibility_calls[0]
+    )
+    assert element_type == 1
+    assert captured_enemy is enemy
+    assert tick == 17
+    assert event_list is not owner_events
+    assert captured_chars is char_obj_list
+    assert extra == {
+        "skill_node": skill_node,
+        "dynamic_buff_dict": active_store,
+        "sim_instance": runtime_context.sim_instance,
+        "buff_runtime_view": runtime_view,
+    }
 
 
 def test_runtime_command_port_preserves_legacy_container_identity_for_same_tick_writes(
