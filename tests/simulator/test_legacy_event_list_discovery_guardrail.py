@@ -1214,6 +1214,7 @@ def _collect_schedule_data_event_list_compatibility_findings() -> list[Finding]:
 def _event_list_deletion_readiness_counts() -> dict[str, object]:
     compatibility_findings = _collect_schedule_data_event_list_compatibility_findings()
     event_findings = _collect_findings()
+    migration_surfaces = _collect_planned_queue_migration_surfaces()
     raw_lifecycle_mutation_kinds = (
         SCHEDULED_EVENT_RAW_QUEUE_LIFECYCLE_KINDS
         | (RAW_PLANNED_QUEUE_LIFECYCLE_KINDS - {"raw_planned_queue_handoff"})
@@ -1226,6 +1227,26 @@ def _event_list_deletion_readiness_counts() -> dict[str, object]:
     raw_producer_handoffs = [
         finding for finding in event_findings if finding.kind == "raw_planned_queue_handoff"
     ]
+    compatibility_view_reads = [
+        finding
+        for finding in event_findings
+        if finding.kind in PLANNED_QUEUE_COMPATIBILITY_VIEW_KINDS
+    ]
+    private_raw_migration_helper_calls = [
+        surface
+        for surface in migration_surfaces
+        if surface.kind == "private_raw_migration_helper_call"
+    ]
+    runtime_command_private_raw_migration_helper_calls = [
+        surface
+        for surface in private_raw_migration_helper_calls
+        if surface.path == RUNTIME_COMMAND_PATH.relative_to(PROJECT_ROOT).as_posix()
+    ]
+    event_list_migration_owner_helper_calls = [
+        surface
+        for surface in migration_surfaces
+        if surface.kind == "event_list_migration_owner_helper_call"
+    ]
 
     return {
         "approved_schedule_data_event_list_compatibility": len(
@@ -1236,6 +1257,16 @@ def _event_list_deletion_readiness_counts() -> dict[str, object]:
         ),
         "raw_planned_queue_lifecycle_mutation": len(raw_lifecycle_mutations),
         "raw_planned_queue_producer_handoff": len(raw_producer_handoffs),
+        "planned_queue_compatibility_view_read": len(compatibility_view_reads),
+        "private_raw_migration_helper_call": len(
+            private_raw_migration_helper_calls
+        ),
+        "runtime_command_private_raw_migration_helper_call": len(
+            runtime_command_private_raw_migration_helper_calls
+        ),
+        "event_list_migration_owner_helper_call": len(
+            event_list_migration_owner_helper_calls
+        ),
     }
 
 
@@ -1564,6 +1595,9 @@ def test_event_list_migration_owner_construction_is_exactly_helper_owned() -> No
         if surface.kind == "event_list_migration_owner_helper_call"
     ]
 
+    assert Counter(surface.kind for surface in surfaces) == Counter(
+        {"event_list_migration_owner_construction": 1}
+    )
     assert [
         (surface.path, surface.function, surface.kind)
         for surface in owner_constructions
@@ -1574,6 +1608,7 @@ def test_event_list_migration_owner_construction_is_exactly_helper_owned() -> No
             "event_list_migration_owner_construction",
         )
     ]
+    assert len(helper_calls) == 0
     assert helper_calls == []
 
 
@@ -1587,7 +1622,19 @@ def test_private_raw_migration_helper_usage_is_exactly_owner_definition() -> Non
             "private_raw_migration_helper_call",
         }
     ]
+    raw_helper_calls = [
+        surface
+        for surface in surfaces
+        if surface.kind == "private_raw_migration_helper_call"
+    ]
+    runtime_command_raw_helper_calls = [
+        surface
+        for surface in raw_helper_calls
+        if surface.path == RUNTIME_COMMAND_PATH.relative_to(PROJECT_ROOT).as_posix()
+    ]
 
+    assert len(runtime_command_raw_helper_calls) == 0
+    assert raw_helper_calls == []
     assert Counter(
         (surface.path, surface.function, surface.kind) for surface in surfaces
     ) == Counter(
@@ -1615,6 +1662,10 @@ def test_event_list_deletion_readiness_counts_categories_separately() -> None:
     )
     assert counts["raw_planned_queue_lifecycle_mutation"] == 0
     assert counts["raw_planned_queue_producer_handoff"] == 0
+    assert counts["planned_queue_compatibility_view_read"] == 0
+    assert counts["private_raw_migration_helper_call"] == 0
+    assert counts["runtime_command_private_raw_migration_helper_call"] == 0
+    assert counts["event_list_migration_owner_helper_call"] == 0
 
 
 def test_raw_planned_queue_lifecycle_has_no_current_findings_outside_owner_surfaces() -> None:
