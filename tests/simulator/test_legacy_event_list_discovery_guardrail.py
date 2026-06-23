@@ -20,6 +20,11 @@ RAW_EVENT_APPEND_KINDS = {
     "raw_event_list_append",
     "raw_schedule_data_event_list_append",
 }
+OWNER_ONLY_RAW_EVENT_APPEND_KINDS = {
+    "compatibility_only_queue_append",
+    "local_event_group_append",
+}
+POST_MIGRATION_BLOCKED_RAW_EVENT_APPEND_KINDS = RAW_EVENT_APPEND_KINDS - OWNER_ONLY_RAW_EVENT_APPEND_KINDS
 
 LOCAL_EVENT_GROUP_NAMES = {"adrenaline_events"}
 AMBIGUOUS_LOCAL_EVENT_GROUP_NAMES = {"local_event_group"}
@@ -608,6 +613,26 @@ def test_raw_event_list_append_guardrail_has_only_owner_api_or_local_group_findi
         "Current-root allowed event queue mutation entries must name follow-up stories "
         f"in scripts/ralph/prd.json; missing: {missing_story_ids}"
     )
+
+
+def test_current_root_raw_planned_queue_allowlist_is_owner_only_after_migration() -> None:
+    findings = [
+        finding for finding in _collect_findings() if finding.kind in RAW_EVENT_APPEND_KINDS
+    ]
+
+    assert {finding.kind for finding in findings} <= OWNER_ONLY_RAW_EVENT_APPEND_KINDS
+    assert not any(
+        finding.kind in POST_MIGRATION_BLOCKED_RAW_EVENT_APPEND_KINDS for finding in findings
+    ), (
+        "Current root still contains raw planned-queue producers outside queue-owner/local "
+        "event-group boundaries:\n"
+        + "\n".join(f"- {finding.message()}" for finding in findings)
+    )
+
+    for key, owner_story_id in CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS.items():
+        _path, _line, kind, _matched_expression = key
+        assert kind in OWNER_ONLY_RAW_EVENT_APPEND_KINDS
+        assert owner_story_id == "US-003"
 
 
 def test_main_loop_uses_dispatch_port_and_has_no_raw_planned_queue_handoff() -> None:
