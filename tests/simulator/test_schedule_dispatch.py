@@ -122,7 +122,7 @@ def test_create_schedule_dispatch_port_uses_planned_event_queue_owner_for_schedu
     assert schedule_data.event_list == ["owner-event"]
 
 
-def test_schedule_data_planned_event_queue_preserves_order_and_compatibility_view():
+def test_schedule_data_planned_event_queue_preserves_order_and_owner_operations():
     schedule_data = _make_schedule_data()
     queue = schedule_data.planned_event_queue
 
@@ -132,7 +132,6 @@ def test_schedule_data_planned_event_queue_preserves_order_and_compatibility_vie
     assert schedule_data.event_list == ["first", "second", "third"]
     assert "_planned_events" in schedule_data.__dict__
     assert "event_list" not in schedule_data.__dict__
-    assert queue.compatibility_view is schedule_data.event_list
     assert queue.snapshot() == ["first", "second", "third"]
     assert list(queue) == ["first", "second", "third"]
     assert queue.has_events()
@@ -140,6 +139,7 @@ def test_schedule_data_planned_event_queue_preserves_order_and_compatibility_vie
     queue.remove("second")
 
     assert schedule_data.event_list == ["first", "third"]
+    assert queue.snapshot() == ["first", "third"]
 
 
 def test_schedule_data_event_list_is_compatibility_property_over_owner_storage():
@@ -171,12 +171,12 @@ def test_schedule_data_constructor_event_list_binds_owner_storage():
     )
 
     assert schedule_data.event_list is initial_events
-    assert schedule_data.planned_event_queue.compatibility_view is initial_events
+    assert schedule_data.planned_event_queue.snapshot() == ["seed"]
 
     schedule_data.planned_event_queue.replace(["replaced"])
 
     assert schedule_data.event_list == ["replaced"]
-    assert schedule_data.event_list is schedule_data.planned_event_queue.compatibility_view
+    assert schedule_data.planned_event_queue.snapshot() == ["replaced"]
     assert initial_events == ["seed"]
 
 
@@ -190,12 +190,12 @@ def test_schedule_data_planned_event_queue_replace_and_reset_preserve_raw_view_c
 
     assert original_event_list == ["other", "buff"]
     assert schedule_data.event_list == ["buff", "other"]
-    assert queue.compatibility_view is schedule_data.event_list
+    assert queue.snapshot() == ["buff", "other"]
 
     schedule_data.reset_myself()
 
     assert schedule_data.event_list == []
-    assert queue.compatibility_view is schedule_data.event_list
+    assert queue.snapshot() == []
     assert not queue.has_events()
 
 

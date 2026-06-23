@@ -71,6 +71,9 @@ PLANNED_QUEUE_OWNER_INTERNAL_KINDS = {
     "planned_queue_owner_internal_mutation",
     "planned_queue_owner_internal_replacement",
 }
+PLANNED_QUEUE_COMPATIBILITY_VIEW_KINDS = {
+    "planned_queue_compatibility_view_read",
+}
 CURRENT_ROOT_EVENT_QUEUE_GUARDRAIL_KINDS = (
     RAW_EVENT_APPEND_KINDS
     | SCHEDULED_EVENT_RAW_QUEUE_LIFECYCLE_KINDS
@@ -100,27 +103,27 @@ MAIN_LOOP_PLANNED_PRODUCER_CALLS = {
 CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS = {
     (
         "zsim/sim_progress/data_struct/planned_queue.py",
-        26,
+        29,
         "planned_queue_owner_internal_mutation",
-        "self.compatibility_view.append(event)",
-    ): "US-001",
-    (
-        "zsim/sim_progress/data_struct/planned_queue.py",
-        39,
-        "planned_queue_owner_internal_mutation",
-        "self.compatibility_view.remove(event)",
+        "self._events().append(event)",
     ): "US-001",
     (
         "zsim/sim_progress/data_struct/planned_queue.py",
         42,
+        "planned_queue_owner_internal_mutation",
+        "self._events().remove(event)",
+    ): "US-001",
+    (
+        "zsim/sim_progress/data_struct/planned_queue.py",
+        45,
         "planned_queue_owner_internal_replacement",
         "self._set_events(list(events))",
     ): "US-001",
     (
         "zsim/sim_progress/data_struct/planned_queue.py",
-        45,
+        48,
         "planned_queue_owner_internal_mutation",
-        "self.compatibility_view.clear()",
+        "self._events().clear()",
     ): "US-001",
     (
         "zsim/sim_progress/Character/Yixuan/AdrenalineManagerClass.py",
@@ -128,6 +131,15 @@ CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS = {
         "local_event_group_append",
         "adrenaline_events.append(event(char_instance=char_instance))",
     ): "US-005",
+}
+
+CURRENT_ROOT_ALLOWED_COMPATIBILITY_VIEW_READS = {
+    (
+        "zsim/sim_progress/ScheduledEvent/runtime_command.py",
+        37,
+        "planned_queue_compatibility_view_read",
+        "ensure_planned_event_queue(schedule_data).compatibility_view",
+    ): "US-003",
 }
 
 
@@ -278,6 +290,13 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_Attribute(self, node: ast.Attribute) -> None:
+        compatibility_view_kind = self._planned_queue_compatibility_view_read_kind(node)
+        if compatibility_view_kind is not None:
+            self._add_finding(
+                line=node.lineno,
+                kind=compatibility_view_kind,
+                expression=self._attribute_context(node),
+            )
         if self._is_buff_record_event_list_access(node):
             self._add_finding(
                 line=node.lineno,
@@ -393,14 +412,26 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             return None
         if not isinstance(node.func, ast.Attribute):
             return None
+        call_target = node.func.value
         if (
             node.func.attr in {"append", "remove", "clear"}
-            and self._dotted_name(node.func.value) == "self.compatibility_view"
+            and isinstance(call_target, ast.Call)
+            and self._dotted_name(call_target.func) == "self._events"
         ):
             return "planned_queue_owner_internal_mutation"
         if self._dotted_name(node.func) == "self._set_events":
             return "planned_queue_owner_internal_replacement"
         return None
+
+    def _planned_queue_compatibility_view_read_kind(
+        self,
+        node: ast.Attribute,
+    ) -> str | None:
+        if node.attr != "compatibility_view":
+            return None
+        if not isinstance(node.ctx, ast.Load):
+            return None
+        return "planned_queue_compatibility_view_read"
 
     def _scheduled_event_raw_queue_call_kind(self, node: ast.Call) -> str | None:
         if not isinstance(node.func, ast.Attribute):
@@ -674,6 +705,9 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             "planned_queue_owner_internal_replacement": (
                 "planned queue owner internal compatibility-view replacement"
             ),
+            "planned_queue_compatibility_view_read": (
+                "PlannedEventQueue raw compatibility view read"
+            ),
             "raw_data_event_list_append": (
                 "planned queue raw data.event_list.append write"
             ),
@@ -740,6 +774,9 @@ class LegacyEventListDiscoveryVisitor(ast.NodeVisitor):
             ),
             "planned_queue_owner_internal_replacement": (
                 "keep raw replacement inside PlannedEventQueue owner APIs"
+            ),
+            "planned_queue_compatibility_view_read": (
+                "keep compatibility_view reads inside approved migration/test hooks"
             ),
             "raw_data_event_list_append": "publish planned payloads through ScheduleDispatchPort",
             "raw_event_list_append": (
@@ -1087,6 +1124,35 @@ def test_current_root_raw_planned_queue_allowlist_is_owner_only_after_migration(
         assert owner_story_id == expected_owner_story_by_kind[kind]
 
 
+def test_planned_queue_compatibility_view_reads_are_migration_only() -> None:
+    findings = [
+        finding
+        for finding in _collect_findings()
+        if finding.kind in PLANNED_QUEUE_COMPATIBILITY_VIEW_KINDS
+    ]
+    actual = {_raw_append_key(finding) for finding in findings}
+    expected = set(CURRENT_ROOT_ALLOWED_COMPATIBILITY_VIEW_READS)
+
+    assert actual == expected, (
+        "PlannedEventQueue.compatibility_view production reads must stay inside "
+        "approved migration hooks:\n"
+        + "\n".join(f"- {finding.message()}" for finding in findings)
+    )
+
+    prd_story_ids = _active_prd_story_ids()
+    missing_story_ids = sorted(
+        {
+            owner_story_id
+            for owner_story_id in CURRENT_ROOT_ALLOWED_COMPATIBILITY_VIEW_READS.values()
+            if owner_story_id not in prd_story_ids
+        }
+    )
+    assert not missing_story_ids, (
+        "Current-root approved compatibility_view reads must name follow-up stories "
+        f"in scripts/ralph/prd.json; missing: {missing_story_ids}"
+    )
+
+
 def test_raw_planned_queue_lifecycle_has_no_current_findings_outside_owner_surfaces() -> None:
     findings = [
         finding
@@ -1406,6 +1472,32 @@ def test_raw_planned_queue_writes_are_blocked_outside_owner_api_or_local_groups(
         assert len(visitor.findings) == 1
         finding = visitor.findings[0]
         assert finding.kind == expected_kind
+        assert _raw_append_key(finding) not in allowed_keys
+
+
+def test_planned_queue_compatibility_view_guardrail_blocks_production_regressions() -> None:
+    samples = [
+        (
+            PRODUCTION_ROOT / "Load" / "_synthetic_compatibility_view_publish.py",
+            "def publish(queue, event):\n    queue.compatibility_view.append(event)\n",
+            "queue.compatibility_view.append(event)",
+        ),
+        (
+            PRODUCTION_ROOT / "ScheduledEvent" / "_synthetic_compatibility_view_read.py",
+            "def read(queue):\n    return queue.compatibility_view\n",
+            "queue.compatibility_view",
+        ),
+    ]
+
+    allowed_keys = set(CURRENT_ROOT_ALLOWED_COMPATIBILITY_VIEW_READS)
+    for path, source, expected_expression in samples:
+        visitor = LegacyEventListDiscoveryVisitor(path, source)
+        visitor.visit(ast.parse(source))
+
+        assert len(visitor.findings) == 1
+        finding = visitor.findings[0]
+        assert finding.kind == "planned_queue_compatibility_view_read"
+        assert finding.matched_expression == expected_expression
         assert _raw_append_key(finding) not in allowed_keys
 
 

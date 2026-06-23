@@ -17,38 +17,41 @@ class PlannedEventQueue:
         self._get_events = get_events
         self._set_events = set_events
 
+    def _events(self) -> MutableSequence[Any]:
+        return self._get_events()
+
     @property
     def compatibility_view(self) -> MutableSequence[Any]:
         """Return the current raw list view for migration/test compatibility."""
-        return self._get_events()
+        return self._events()
 
     def enqueue(self, event: Any) -> None:
-        self.compatibility_view.append(event)
+        self._events().append(event)
 
     def enqueue_batch(self, events: Iterable[Any]) -> None:
         for event in events:
             self.enqueue(event)
 
     def snapshot(self) -> list[Any]:
-        return list(self.compatibility_view)
+        return list(self._events())
 
     def __iter__(self) -> Iterator[Any]:
         return iter(self.snapshot())
 
     def remove(self, event: Any) -> None:
-        self.compatibility_view.remove(event)
+        self._events().remove(event)
 
     def replace(self, events: Iterable[Any]) -> None:
         self._set_events(list(events))
 
     def clear(self) -> None:
-        self.compatibility_view.clear()
+        self._events().clear()
 
     def reset(self) -> None:
         self.replace([])
 
     def has_events(self) -> bool:
-        return bool(self.compatibility_view)
+        return bool(self._events())
 
 
 def ensure_planned_event_queue(schedule_data: Any) -> PlannedEventQueue:
