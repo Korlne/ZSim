@@ -4,6 +4,7 @@ import os
 import polars as pl
 
 from zsim.define import ANOMALY_MAPPING
+from zsim.models.session.session_result import normalize_damage_result_schema
 from zsim.sim_progress.Character.skill_class import lookup_name_or_cid
 
 from .constants import SKILL_TAG_MAPPING, results_dir
@@ -34,20 +35,7 @@ def _load_dmg_data(rid: int | str) -> pl.DataFrame | None:
 
 def _normalize_damage_schema(dmg_result_df: pl.DataFrame) -> pl.DataFrame:
     """补齐旧/新 damage.csv 之间的兼容列。"""
-    if "is_anomaly" not in dmg_result_df.columns or dmg_result_df["is_anomaly"].is_null().all():
-        return dmg_result_df.with_columns(pl.lit(False).alias("is_anomaly"))
-
-    if dmg_result_df["is_anomaly"].dtype == pl.Boolean:
-        return dmg_result_df.with_columns(pl.col("is_anomaly").fill_null(False))
-
-    return dmg_result_df.with_columns(
-        pl.col("is_anomaly")
-        .cast(pl.Utf8)
-        .str.to_lowercase()
-        .is_in(["true", "1"])
-        .fill_null(False)
-        .alias("is_anomaly")
-    )
+    return normalize_damage_result_schema(dmg_result_df)
 
 
 def prepare_line_chart_data(dmg_result_df: pl.DataFrame) -> dict[str, pl.DataFrame]:

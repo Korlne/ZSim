@@ -18,6 +18,12 @@ from typing import Any
 import polars as pl
 
 from zsim.define import config, results_dir
+from zsim.models.session.session_result import (
+    BUFF_TIMELINE_PUBLIC_FIELDS,
+    normalize_buff_timeline_entry as normalize_result_buff_timeline_entry,
+    normalize_buff_timeline_payload as normalize_result_buff_timeline_payload,
+    normalize_buff_timeline_value as normalize_result_buff_timeline_value,
+)
 from zsim.models.session.session_run import CommonCfg
 from zsim.simulator import Simulator
 from zsim.utils.process_buff_result import _prepare_buff_timeline_data, prepare_buff_data_and_cache
@@ -892,50 +898,15 @@ def _build_external_damage_domain(
 
 
 def _normalize_buff_timeline_value(value: Any) -> Any:
-    if value is None:
-        return None
-    try:
-        return _stable_json_scalar(float(value))
-    except (TypeError, ValueError):
-        return _stable_json_scalar(value)
+    return normalize_result_buff_timeline_value(value)
 
 
 def _normalize_buff_timeline_entry(source: str, entry: Any) -> dict[str, Any]:
-    if not isinstance(entry, dict):
-        raise ValueError(f"buff timeline entry for '{source}' must be an object")
-
-    required_fields = ("Task", "Start", "Finish", "Value")
-    missing_fields = [field for field in required_fields if field not in entry]
-    if missing_fields:
-        raise ValueError(
-            f"buff timeline entry for '{source}' missing public fields: "
-            + ", ".join(missing_fields)
-        )
-
-    return {
-        "Task": str(entry["Task"]),
-        "Start": int(entry["Start"]),
-        "Finish": int(entry["Finish"]),
-        "Value": _normalize_buff_timeline_value(entry["Value"]),
-    }
+    return normalize_result_buff_timeline_entry(source, entry)
 
 
 def _normalize_buff_timeline_payload(payload: Any) -> dict[str, list[dict[str, Any]]]:
-    if not isinstance(payload, dict):
-        raise ValueError("buff timeline payload must be an object keyed by source")
-
-    normalized: dict[str, list[dict[str, Any]]] = {}
-    for source in sorted(payload, key=lambda item: str(item)):
-        source_key = str(source)
-        entries = payload[source]
-        if entries is None:
-            entries = []
-        if not isinstance(entries, list):
-            raise ValueError(f"buff timeline entries for '{source_key}' must be a list")
-        normalized[source_key] = [
-            _normalize_buff_timeline_entry(source_key, entry) for entry in entries
-        ]
-    return normalized
+    return normalize_result_buff_timeline_payload(payload)
 
 
 def _load_buff_timeline_csvs(csv_paths: list[Path]) -> dict[str, list[dict[str, Any]]]:
@@ -991,7 +962,7 @@ def _buff_timeline_summary(
         "source_count": len(timeline),
         "entry_count": len(records),
         "sources": sorted(timeline),
-        "public_fields": ["Task", "Start", "Finish", "Value"],
+        "public_fields": list(BUFF_TIMELINE_PUBLIC_FIELDS),
     }
 
 
@@ -1132,7 +1103,7 @@ def _build_buff_timeline_domain(
         "status": status,
         "sample_limit": _BUFF_TIMELINE_SAMPLE_LIMIT,
         "source_precedence": "buff_timeline_data.json when present, otherwise buff_log/*.csv",
-        "public_fields": ["Task", "Start", "Finish", "Value"],
+        "public_fields": list(BUFF_TIMELINE_PUBLIC_FIELDS),
         "golden": golden.summary,
         "candidate": candidate.summary,
         "differences": {

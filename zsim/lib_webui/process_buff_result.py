@@ -10,6 +10,7 @@ import polars as pl
 import streamlit as st
 
 from zsim.define import results_dir
+from zsim.models.session.session_result import build_buff_timeline_entry
 
 from .constants import BUFF_EFFECT_MAPPING
 
@@ -72,12 +73,12 @@ def _prepare_buff_timeline_data(df: pl.DataFrame) -> list[dict[str, Any]]:
             # 过滤掉 Value 为 null 的行
             if row["Value"]:
                 timeline_data.append(
-                    {
-                        "Task": buff_name,
-                        "Start": int(row["Start"]),
-                        "Finish": int(row["Finish"]),
-                        "Value": row["Value"],
-                    }
+                    build_buff_timeline_entry(
+                        task=buff_name,
+                        start=row["Start"],
+                        finish=row["Finish"],
+                        value=row["Value"],
+                    )
                 )
 
     return timeline_data

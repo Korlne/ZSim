@@ -1,8 +1,132 @@
+import math
+from collections.abc import Mapping
 from typing import Any, Literal, Self, Union
 
-from pydantic import BaseModel, Field, RootModel
+import polars as pl
+from pydantic import BaseModel, ConfigDict, Field, RootModel
 
 # --- Payloads for different result types ---
+
+NORMAL_RESULT_OPTIONAL_SECTIONS = ("dmg_result", "buff_result")
+DAMAGE_RESULT_SECTIONS = (
+    "dmg_result_df",
+    "char_dmg_df",
+    "uuid_df",
+    "char_chart_data",
+)
+DAMAGE_UUID_AGGREGATE_FIELDS = (
+    "UUID",
+    "name",
+    "element_type",
+    "is_anomaly",
+    "cid",
+    "skill_tag",
+    "skill_cn_name",
+    "dmg_expect_sum",
+    "stun_sum",
+    "buildup_sum",
+)
+BUFF_TIMELINE_PUBLIC_FIELDS = ("Task", "Start", "Finish", "Value")
+
+
+def normalize_damage_result_schema(dmg_result_df: pl.DataFrame) -> pl.DataFrame:
+    """Normalize damage.csv schema variants used by utility, WebUI, and parity code."""
+    if "is_anomaly" not in dmg_result_df.columns or dmg_result_df["is_anomaly"].is_null().all():
+        return dmg_result_df.with_columns(pl.lit(False).alias("is_anomaly"))
+
+    if dmg_result_df["is_anomaly"].dtype == pl.Boolean:
+        return dmg_result_df.with_columns(pl.col("is_anomaly").fill_null(False))
+
+    return dmg_result_df.with_columns(
+        pl.col("is_anomaly")
+        .cast(pl.Utf8)
+        .str.to_lowercase()
+        .is_in(["true", "1"])
+        .fill_null(False)
+        .alias("is_anomaly")
+    )
+
+
+def normalize_result_contract_scalar(value: Any) -> Any:
+    if hasattr(value, "item"):
+        try:
+            value = value.item()
+        except (AttributeError, ValueError):
+            pass
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return bool(value)
+    if isinstance(value, int):
+        return int(value)
+    if isinstance(value, float):
+        if math.isnan(value):
+            return None
+        return round(float(value), 6)
+    if isinstance(value, str):
+        return value
+    return str(value)
+
+
+def normalize_buff_timeline_value(value: Any) -> Any:
+    if value is None:
+        return None
+    try:
+        return normalize_result_contract_scalar(float(value))
+    except (TypeError, ValueError):
+        return normalize_result_contract_scalar(value)
+
+
+def build_buff_timeline_entry(
+    *,
+    task: Any,
+    start: Any,
+    finish: Any,
+    value: Any,
+) -> dict[str, Any]:
+    return {
+        "Task": str(task),
+        "Start": int(start),
+        "Finish": int(finish),
+        "Value": value,
+    }
+
+
+def normalize_buff_timeline_entry(source: str, entry: Any) -> dict[str, Any]:
+    if not isinstance(entry, Mapping):
+        raise ValueError(f"buff timeline entry for '{source}' must be an object")
+
+    missing_fields = [field for field in BUFF_TIMELINE_PUBLIC_FIELDS if field not in entry]
+    if missing_fields:
+        raise ValueError(
+            f"buff timeline entry for '{source}' missing public fields: "
+            + ", ".join(missing_fields)
+        )
+
+    return build_buff_timeline_entry(
+        task=entry["Task"],
+        start=entry["Start"],
+        finish=entry["Finish"],
+        value=normalize_buff_timeline_value(entry["Value"]),
+    )
+
+
+def normalize_buff_timeline_payload(payload: Any) -> dict[str, list[dict[str, Any]]]:
+    if not isinstance(payload, Mapping):
+        raise ValueError("buff timeline payload must be an object keyed by source")
+
+    normalized: dict[str, list[dict[str, Any]]] = {}
+    for source in sorted(payload, key=lambda item: str(item)):
+        source_key = str(source)
+        entries = payload[source]
+        if entries is None:
+            entries = []
+        if not isinstance(entries, list):
+            raise ValueError(f"buff timeline entries for '{source_key}' must be a list")
+        normalized[source_key] = [
+            normalize_buff_timeline_entry(source_key, entry) for entry in entries
+        ]
+    return normalized
 
 
 # --- Normal Mode ---
@@ -18,6 +142,12 @@ class DmgResult(RootModel[dict[str, Any] | None]):
 
 
 class BuffTimelineBarValue(BaseModel):
+    model_config = ConfigDict(
+        validate_by_name=True,
+        validate_by_alias=True,
+        serialize_by_alias=True,
+    )
+
     task: str = Field(description="Buff name", alias="Task")
     start: int = Field(description="Start tick of the buff", alias="Start")
     finish: int = Field(description="End tick of the buff", alias="Finish")
