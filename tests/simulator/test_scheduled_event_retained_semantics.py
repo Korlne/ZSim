@@ -125,6 +125,16 @@ def _make_owner_shaped_schedule_data(
     )
 
 
+def _make_planned_event_queue(events: list[object]) -> PlannedEventQueue:
+    def _set_events(next_events: list[object]) -> None:
+        events[:] = list(next_events)
+
+    return PlannedEventQueue(
+        get_events=lambda: events,
+        set_events=_set_events,
+    )
+
+
 def _make_scheduled_event_for_sim(sim_instance: Any, tick: int = 10) -> Any:
     dynamic_buff: dict[str, list[object]] = {"alpha": []}
     exist_buff_dict: dict[str, dict[str, object]] = {"alpha": {}}
@@ -353,7 +363,7 @@ def test_scheduled_event_process_event_recurses_after_context_requeue() -> None:
     scheduled_event.data = schedule_data
     scheduled_event.solve_buff = lambda: None
     scheduled_event.select_processable_event = (
-        lambda: schedule_data.planned_event_queue.snapshot()
+        lambda planned_queue=None: schedule_data.planned_event_queue.snapshot()
     )
     scheduled_event.check_all_event = lambda: False
 
@@ -378,6 +388,55 @@ def test_scheduled_event_process_event_recurses_after_context_requeue() -> None:
 
     assert processed == [first_event, requeued_event]
     assert schedule_data.planned_event_queue.snapshot() == []
+    assert schedule_data.processed_times == 2
+
+
+def test_scheduled_event_process_event_recurses_after_rebound_context_requeue() -> None:
+    first_event = _QueueLifecycleEventProbe("first", execute_tick=10)
+    requeued_event = _QueueLifecycleEventProbe("requeued", execute_tick=10)
+    original_events: list[object] = [first_event]
+    rebound_events: list[object] = []
+    original_queue = _make_planned_event_queue(original_events)
+    rebound_queue = _make_planned_event_queue(rebound_events)
+    schedule_data = SimpleNamespace(
+        planned_event_queue=original_queue,
+        processed_times=0,
+    )
+    processed: list[object] = []
+
+    scheduled_event = cast(
+        Any,
+        scheduled_event_module.ScheduledEvent.__new__(scheduled_event_module.ScheduledEvent),
+    )
+    scheduled_event.data = schedule_data
+    scheduled_event.tick = 10
+    scheduled_event.get_execute_tick = lambda event: event.execute_tick
+    scheduled_event.solve_buff = lambda: None
+    scheduled_event.check_all_event = lambda: False
+
+    context = EventContext(
+        data=cast(Any, schedule_data),
+        tick=10,
+        enemy=cast(Any, SimpleNamespace()),
+        buff_runtime_view=_RuntimeViewStub(),
+        runtime_command_port=cast(Any, SimpleNamespace()),
+        action_stack=cast(Any, SimpleNamespace()),
+        sim_instance=cast(Any, SimpleNamespace()),
+    )
+
+    def _process_single_event(event: object) -> None:
+        processed.append(event)
+        if event is first_event:
+            schedule_data.planned_event_queue = rebound_queue
+            context.requeue_event(requeued_event)
+
+    scheduled_event._process_single_event = _process_single_event
+
+    scheduled_event.process_event()
+
+    assert processed == [first_event, requeued_event]
+    assert original_queue.snapshot() == []
+    assert rebound_queue.snapshot() == []
     assert schedule_data.processed_times == 2
 
 
@@ -438,7 +497,9 @@ def test_scheduled_event_queue_lifecycle_avoids_raw_event_list_mutation() -> Non
     source = inspect.getsource(scheduled_event_module.ScheduledEvent)
 
     assert "self._planned_event_queue.snapshot()" in source
+    assert "self.select_processable_event(planned_queue)" in source
     assert "planned_queue.remove(event)" in source
+    assert "self._planned_event_queue.has_events()" in source
     assert "self._planned_event_queue.replace(buff_events + other_events)" in source
     assert "return ensure_planned_event_queue(self.data)" in source
     for forbidden_token in (

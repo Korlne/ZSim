@@ -237,15 +237,15 @@ class ScheduledEvent:
         使用事件处理器模式来处理各种类型的事件，替代原有的大型if-elif链。
         提高代码的可读性和可维护性。
         """
-        planned_queue = self._planned_event_queue
-        if not planned_queue.has_events():
+        if not self._planned_event_queue.has_events():
             return
 
         # 先处理优先级高的buff
         self.solve_buff()
 
         # 筛选出可处理的事件，并按照优先级排序
-        processable_events = self.select_processable_event()
+        planned_queue = self._planned_event_queue
+        processable_events = self.select_processable_event(planned_queue)
 
         # 使用事件处理器处理事件
         for event in processable_events:
@@ -258,7 +258,7 @@ class ScheduledEvent:
                 raise RuntimeError(f"处理事件 {type(event)} 时发生错误: {e}") from e
 
         # 如果计算过程中又有新的事件生成，则继续循环
-        if planned_queue.has_events() and not self.check_all_event():
+        if self._planned_event_queue.has_events() and not self.check_all_event():
             self.process_event()
 
     def _process_single_event(self, event: Any) -> None:
@@ -408,10 +408,12 @@ class ScheduledEvent:
                 other_events.append(event)
         self._planned_event_queue.replace(buff_events + other_events)
 
-    def select_processable_event(self):
+    def select_processable_event(self, planned_queue: PlannedEventQueue | None = None) -> list[Any]:
         """筛选当前可执行的事件，并且按照优先级排序，获取不到优先级的默认为0，"""
-        _output_event_list = []
-        for _event in self._planned_event_queue.snapshot():
+        _output_event_list: list[Any] = []
+        if planned_queue is None:
+            planned_queue = self._planned_event_queue
+        for _event in planned_queue.snapshot():
             execute_tick = self.get_execute_tick(_event)
             if execute_tick is None or execute_tick <= self.tick:
                 """说明事件不存在execute_tick或已到期，需要被立刻执行。"""
