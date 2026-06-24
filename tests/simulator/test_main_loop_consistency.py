@@ -447,6 +447,97 @@ def test_run_external_golden_matrix_writes_pass_summary(
     assert artifact == summary
 
 
+def test_run_external_golden_matrix_exposes_formula_sensitive_signoff_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    candidate_dir = _write_result_dir(
+        tmp_path / "candidate-result",
+        damage_csv=None,
+        damage_attribution=None,
+        buff_csvs={"alpha": _MATCHING_BUFF_TIMELINE_CSV},
+    )
+    report = _build_external_damage_report(
+        golden_result_dir=_BUFF_CSV_GOLDEN_DIR,
+        candidate_result_path=candidate_dir,
+    )
+    metadata = {
+        "label": "formula-sensitive",
+        "prerequisite_for": ["calculator-formula-parity"],
+        "formula_parity_status": "protected-incomplete",
+        "user_golden_status": "none-registered-in-machine-state",
+    }
+    monkeypatch.setattr(mlc, "run_external_golden_parity", lambda **_: report)
+
+    summary = mlc.run_external_golden_matrix(
+        matrix_config={
+            "schema": "zsim-external-golden-matrix-config.v1",
+            "signoff_metadata": metadata,
+            "rows": [
+                _fixture_matrix_row(
+                    row_id="formula-sensitive-fixture",
+                    row_kind="fixture-formula-sensitive",
+                    signoff_label="formula-sensitive",
+                )
+            ],
+        },
+    )
+
+    assert summary["signoff_metadata"] == metadata
+    assert summary["matrix_source"]["signoff_metadata"] == metadata
+    assert summary["signoff_status"] == "provisional"
+    row = summary["rows"][0]
+    assert row["status"] == "pass"
+    assert row["signoff_label"] == "formula-sensitive"
+    assert row["expected_domains"] == ["buff_timeline"]
+    assert row["config_identity"]["team"] == "fixture-team"
+
+
+def test_run_external_golden_matrix_marks_missing_formula_sensitive_user_golden_provisional(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    captured_calls: list[dict[str, Any]] = []
+    monkeypatch.setattr(
+        mlc,
+        "run_external_golden_parity",
+        lambda **kwargs: captured_calls.append(kwargs),
+    )
+
+    summary = mlc.run_external_golden_matrix(
+        rows=[
+            _fixture_matrix_row(
+                row_id="formula-sensitive-user-golden-missing",
+                row_kind="user-golden-formula-sensitive",
+                golden_result_dir=str(tmp_path / "missing-user-golden"),
+                expected_domains=[
+                    "damage",
+                    "damage_attribution",
+                    "buff_timeline",
+                ],
+                signoff_label="formula-sensitive",
+                missing_input_policy="provisional",
+            )
+        ],
+    )
+
+    assert captured_calls == []
+    assert summary["counts"] == {"pass": 0, "fail": 0, "skip": 0, "blocked": 1}
+    assert summary["signoff_status"] == "provisional"
+    assert summary["all_required_rows_passed"] is False
+    assert summary["fixture_only_signoff"] is False
+    row = summary["rows"][0]
+    assert row["status"] == "blocked"
+    assert row["signoff_effect"] == "provisional"
+    assert row["reason_code"] == "missing-golden-result-dir"
+    assert row["signoff_label"] == "formula-sensitive"
+    assert row["expected_domains"] == [
+        "damage",
+        "damage_attribution",
+        "buff_timeline",
+    ]
+
+
 def test_run_external_golden_matrix_blocks_missing_golden_dir(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -474,6 +565,96 @@ def test_run_external_golden_matrix_blocks_missing_golden_dir(
     assert row["status"] == "blocked"
     assert row["reason_code"] == "missing-golden-result-dir"
     assert row["diff_domain_status"] == {}
+
+
+def test_run_external_golden_matrix_exposes_formula_sensitive_provisional_row(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    captured_calls: list[dict[str, Any]] = []
+    monkeypatch.setattr(
+        mlc,
+        "run_external_golden_parity",
+        lambda **kwargs: captured_calls.append(kwargs),
+    )
+
+    summary = mlc.run_external_golden_matrix(
+        rows=[
+            _fixture_matrix_row(
+                row_id="missing-formula-golden",
+                golden_result_dir=str(tmp_path / "missing-formula-golden"),
+                run_config={"team": "仪玄-耀嘉音-扳机试点队"},
+                apl="./zsim/data/APLData/仪玄-耀嘉音-扳机.toml",
+                stop_tick=120,
+                expected_domains=[
+                    "damage",
+                    "damage_attribution",
+                    "buff_timeline",
+                ],
+                signoff_label="formula-sensitive",
+                missing_input_policy="provisional",
+            )
+        ],
+    )
+
+    assert captured_calls == []
+    assert summary["counts"] == {"pass": 0, "fail": 0, "skip": 0, "blocked": 1}
+    assert summary["all_required_rows_passed"] is False
+    assert summary["signoff_status"] == "provisional"
+    assert summary["fixture_only_signoff"] is False
+    row = summary["rows"][0]
+    assert row["status"] == "blocked"
+    assert row["signoff_effect"] == "provisional"
+    assert row["reason_code"] == "missing-golden-result-dir"
+    assert row["signoff_label"] == "formula-sensitive"
+    assert row["config_identity"] == {
+        "kind": "team",
+        "team": "仪玄-耀嘉音-扳机试点队",
+        "common_cfg_path": None,
+    }
+    assert row["apl"] == "./zsim/data/APLData/仪玄-耀嘉音-扳机.toml"
+    assert row["stop_tick"] == 120
+    assert row["expected_domains"] == [
+        "damage",
+        "damage_attribution",
+        "buff_timeline",
+    ]
+    assert row["diff_domain_status"] == {}
+
+
+def test_external_golden_matrix_main_exits_zero_for_provisional_signoff(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    config_path = tmp_path / "formula-sensitive-matrix.json"
+    config_path.write_text('{"rows": []}\n', encoding="utf-8")
+    output_path = tmp_path / "matrix-output.json"
+
+    def fake_run_external_golden_matrix(**kwargs: Any) -> dict[str, Any]:
+        assert kwargs["matrix_config_path"] == str(config_path)
+        assert kwargs["output_path"] == str(output_path)
+        return {
+            "schema": mlc.EXTERNAL_GOLDEN_MATRIX_SCHEMA,
+            "row_schema": mlc.EXTERNAL_GOLDEN_MATRIX_ROW_SCHEMA,
+            "row_count": 1,
+            "counts": {"pass": 0, "fail": 0, "skip": 0, "blocked": 1},
+            "signoff_status": "provisional",
+            "rows": [{"row_id": "missing-formula-golden", "status": "blocked"}],
+        }
+
+    monkeypatch.setattr(mlc, "run_external_golden_matrix", fake_run_external_golden_matrix)
+
+    assert (
+        mlc.external_golden_matrix_main(
+            [
+                "--matrix-config",
+                str(config_path),
+                "--output-json",
+                str(output_path),
+            ]
+        )
+        == 0
+    )
 
 
 def test_run_external_golden_matrix_reports_bounded_row_failure_samples(

@@ -1456,6 +1456,13 @@ def _load_external_golden_matrix_config(matrix_config_path: str | Path) -> dict[
     return payload
 
 
+def _matrix_config_signoff_metadata(matrix_config: dict[str, Any]) -> dict[str, Any]:
+    metadata = matrix_config.get("signoff_metadata")
+    if isinstance(metadata, dict):
+        return dict(metadata)
+    return {}
+
+
 def _matrix_row_id(row: dict[str, Any], index: int) -> str:
     row_id = row.get("row_id")
     if isinstance(row_id, str) and row_id.strip():
@@ -1890,12 +1897,16 @@ def build_external_golden_matrix_summary(
 ) -> dict[str, Any]:
     counts = _external_golden_matrix_counts(rows)
     signoff_status = _external_golden_matrix_signoff_status(rows)
+    signoff_metadata = matrix_source.get("signoff_metadata")
     return {
         "schema": EXTERNAL_GOLDEN_MATRIX_SCHEMA,
         "schema_version": 1,
         "row_schema": EXTERNAL_GOLDEN_MATRIX_ROW_SCHEMA,
         "generated_at": generated_at or time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "matrix_source": matrix_source,
+        "signoff_metadata": dict(signoff_metadata)
+        if isinstance(signoff_metadata, dict)
+        else {},
         "row_count": len(rows),
         "counts": counts,
         "pass_count": counts["pass"],
@@ -1952,6 +1963,11 @@ def run_external_golden_matrix(
         }
     else:
         raise ValueError("matrix rows are required")
+
+    if matrix_config is not None:
+        signoff_metadata = _matrix_config_signoff_metadata(matrix_config)
+        if signoff_metadata:
+            source["signoff_metadata"] = signoff_metadata
 
     default_tolerance_policy = dict(_EXTERNAL_GOLDEN_MATRIX_DEFAULT_TOLERANCE_POLICY)
     if matrix_config is not None and isinstance(
@@ -2307,7 +2323,11 @@ def external_golden_matrix_main(argv: list[str] | None = None) -> int:
 
     print(_format_external_golden_matrix_human_summary(summary))
     counts = summary["counts"]
-    return 0 if counts["fail"] == 0 and counts["blocked"] == 0 else 2
+    if counts["fail"] == 0 and (
+        counts["blocked"] == 0 or summary.get("signoff_status") == "provisional"
+    ):
+        return 0
+    return 2
 
 
 __all__ = [
