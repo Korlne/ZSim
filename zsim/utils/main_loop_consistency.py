@@ -1481,6 +1481,7 @@ def _matrix_row_config_identity(row: dict[str, Any]) -> dict[str, Any]:
             "common_cfg_path": None,
         }
     if has_common_cfg and not has_team:
+        assert isinstance(common_cfg, str)
         return {
             "kind": "common_cfg",
             "team": None,

@@ -391,6 +391,49 @@ def test_scheduled_event_process_event_recurses_after_context_requeue() -> None:
     assert schedule_data.processed_times == 2
 
 
+def test_scheduled_event_process_event_drains_same_tick_requeue_after_current_batch() -> None:
+    first_event = _QueueLifecycleEventProbe("first", execute_tick=10)
+    second_event = _QueueLifecycleEventProbe("second", execute_tick=10)
+    requeued_event = _QueueLifecycleEventProbe("requeued", execute_tick=10, schedule_priority=-10)
+    schedule_data = _make_owner_shaped_schedule_data(
+        [first_event, second_event],
+        processed_times=0,
+    )
+    processed: list[object] = []
+
+    scheduled_event = cast(
+        Any,
+        scheduled_event_module.ScheduledEvent.__new__(scheduled_event_module.ScheduledEvent),
+    )
+    scheduled_event.data = schedule_data
+    scheduled_event.tick = 10
+    scheduled_event.get_execute_tick = lambda event: event.execute_tick
+    scheduled_event.solve_buff = lambda: None
+
+    context = EventContext(
+        data=cast(Any, schedule_data),
+        tick=10,
+        enemy=cast(Any, SimpleNamespace()),
+        buff_runtime_view=_RuntimeViewStub(),
+        runtime_command_port=cast(Any, SimpleNamespace()),
+        action_stack=cast(Any, SimpleNamespace()),
+        sim_instance=cast(Any, SimpleNamespace()),
+    )
+
+    def _process_single_event(event: object) -> None:
+        processed.append(event)
+        if event is first_event:
+            context.requeue_event(requeued_event)
+
+    scheduled_event._process_single_event = _process_single_event
+
+    scheduled_event.process_event()
+
+    assert processed == [first_event, second_event, requeued_event]
+    assert schedule_data.planned_event_queue.snapshot() == []
+    assert schedule_data.processed_times == 3
+
+
 def test_scheduled_event_process_event_recurses_after_rebound_context_requeue() -> None:
     first_event = _QueueLifecycleEventProbe("first", execute_tick=10)
     requeued_event = _QueueLifecycleEventProbe("requeued", execute_tick=10)
