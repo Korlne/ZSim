@@ -31,6 +31,21 @@ type NormalModeResult = {
   result: NormalResultPayload;
 };
 
+type MatrixSignoffRow = {
+  row_id?: string;
+  status?: string;
+  signoff_effect?: string;
+  data_analysis_contract?: unknown;
+};
+
+type MatrixSignoffSummary = {
+  schema?: string;
+  signoff_status?: string;
+  row_count?: number;
+  rows?: MatrixSignoffRow[];
+  data_analysis_contract?: unknown;
+};
+
 type SessionStatusPayload = {
   status: string;
   result: NormalModeResult[] | null;
@@ -38,6 +53,8 @@ type SessionStatusPayload = {
 
 type SessionReadPayload = {
   session_result?: NormalModeResult[] | null;
+  matrix_signoff?: MatrixSignoffSummary | null;
+  selected_matrix_row?: MatrixSignoffRow | null;
 };
 
 type SmokeContract = {
@@ -66,6 +83,8 @@ export type SessionSmokeSnapshot = {
   status?: string;
   resultMode?: string;
   dataAnalysisReady?: boolean;
+  matrixSignoffReady?: boolean;
+  matrixSignoffStatus?: string;
   error?: string;
 };
 
@@ -131,6 +150,17 @@ const hasDataAnalysisEntry = (result: NormalModeResult[] | null | undefined) => 
 
   return 'dmg_result' in normalResult.result || 'buff_result' in normalResult.result;
 };
+
+const findSelectedMatrixRow = (payload: SessionReadPayload) =>
+  payload.selected_matrix_row ?? payload.matrix_signoff?.rows?.[0] ?? null;
+
+const getMatrixSignoffStatus = (payload: SessionReadPayload) => {
+  const selectedRow = findSelectedMatrixRow(payload);
+  return payload.matrix_signoff?.signoff_status ?? selectedRow?.signoff_effect ?? selectedRow?.status;
+};
+
+const hasMatrixSignoffEntry = (payload: SessionReadPayload) =>
+  Boolean(payload.matrix_signoff || findSelectedMatrixRow(payload));
 
 export const useSessionSmoke = ({ onDataAnalysisReady }: UseSessionSmokeOptions = {}) => {
   const [snapshot, setSnapshot] = useState<SessionSmokeSnapshot>({ phase: 'idle' });
@@ -199,6 +229,8 @@ export const useSessionSmoke = ({ onDataAnalysisReady }: UseSessionSmokeOptions 
       );
       const result = readPayload.session_result ?? statusPayload.result;
       const dataAnalysisReady = hasDataAnalysisEntry(result);
+      const matrixSignoffReady = hasMatrixSignoffEntry(readPayload);
+      const matrixSignoffStatus = getMatrixSignoffStatus(readPayload);
 
       if (!dataAnalysisReady) {
         throw new Error('Normal result is missing the data-analysis payload');
@@ -210,6 +242,8 @@ export const useSessionSmoke = ({ onDataAnalysisReady }: UseSessionSmokeOptions 
         status: statusPayload.status,
         resultMode: findNormalResult(result)?.mode,
         dataAnalysisReady,
+        matrixSignoffReady,
+        matrixSignoffStatus,
       });
       onDataAnalysisReady?.();
     } catch (error) {

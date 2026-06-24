@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,12 +11,14 @@ from zsim.api_src.services.sim_controller.sim_controller import SimController
 from zsim.models.session.session_result import (
     BUFF_TIMELINE_PUBLIC_FIELDS,
     DAMAGE_RESULT_SECTIONS,
+    NORMAL_RESULT_OPTIONAL_SECTIONS,
     BuffResult,
     DmgResult,
     NormalModeResult,
     NormalResultPayload,
 )
 from zsim.simulator.simulator_class import Confirmation
+from zsim.utils import main_loop_consistency as mlc
 
 
 client = TestClient(app)
@@ -44,6 +47,53 @@ def _session_run_payload() -> dict[str, object]:
             "apl_path": "zsim/data/APLData/仪玄-耀嘉音-扳机.toml",
         },
     }
+
+
+def _matrix_smoke_summary() -> dict[str, object]:
+    diff_domain_status = {
+        "damage": {
+            "expected": True,
+            "implemented": True,
+            "status": "match",
+            "matches": True,
+        },
+        "buff_timeline": {
+            "expected": True,
+            "implemented": True,
+            "status": "match",
+            "matches": True,
+        },
+    }
+    selected_row = {
+        "schema": mlc.EXTERNAL_GOLDEN_MATRIX_ROW_SCHEMA,
+        "row_id": "electron-api-smoke-selected-row",
+        "status": "pass",
+        "signoff_effect": "provisional",
+        "reason_code": "fixture-contract-smoke",
+        "reason": "selected matrix row is compatible with the API smoke result contract",
+        "golden_result_dir": "tests/fixtures/external_golden_parity/buff-csv-golden",
+        "config_identity": {
+            "kind": "team",
+            "team": "fake-team",
+            "common_cfg_path": None,
+        },
+        "apl": "./fixture.toml",
+        "stop_tick": 1,
+        "expected_domains": ["damage", "buff_timeline"],
+        "tolerance_policy": {},
+        "signoff_label": "webui-api-smoke",
+        "missing_input_policy": "block",
+        "diff_domain_status": diff_domain_status,
+        "mismatch_samples": {},
+        "data_analysis_contract": mlc._external_golden_data_analysis_contract(
+            diff_domain_status
+        ),
+    }
+    return mlc.build_external_golden_matrix_summary(
+        rows=[selected_row],
+        matrix_source={"kind": "webui-api-smoke", "path": None, "schema": None},
+        generated_at="2026-06-24T00:00:00+0800",
+    )
 
 
 @pytest.mark.asyncio
@@ -132,7 +182,41 @@ async def test_electron_normal_full_simulation_smoke_contract(monkeypatch) -> No
 
         read_response = client.get(f"/api/sessions/{SMOKE_SESSION_ID}")
         assert read_response.status_code == 200
-        assert read_response.json()["session_result"] == result_payload
+        read_payload = read_response.json()
+        assert read_payload["session_result"] == result_payload
+
+        matrix_summary = _matrix_smoke_summary()
+        selected_matrix_row = matrix_summary["rows"][0]
+        selected_contract = selected_matrix_row["data_analysis_contract"]
+
+        assert matrix_summary["schema"] == mlc.EXTERNAL_GOLDEN_MATRIX_SCHEMA
+        assert selected_contract["normal_mode_sections"] == list(
+            NORMAL_RESULT_OPTIONAL_SECTIONS
+        )
+        assert set(selected_contract["normal_mode_sections"]) == set(
+            data_analysis_payload
+        )
+        assert tuple(
+            selected_contract["buff_timeline"]["public_fields"]
+        ) == BUFF_TIMELINE_PUBLIC_FIELDS
+        assert tuple(buff_entry) == tuple(
+            selected_contract["buff_timeline"]["public_fields"]
+        )
+
+        matrix_aware_payload = {
+            **read_payload,
+            "matrix_signoff": {
+                "schema": matrix_summary["schema"],
+                "signoff_status": matrix_summary["signoff_status"],
+                "row_count": matrix_summary["row_count"],
+            },
+            "selected_matrix_row": selected_matrix_row,
+        }
+        json.dumps(matrix_aware_payload)
+        assert matrix_aware_payload["session_result"] == result_payload
+        assert matrix_aware_payload["selected_matrix_row"]["row_id"] == (
+            "electron-api-smoke-selected-row"
+        )
     finally:
         await db.delete_session(SMOKE_SESSION_ID)
         controller._queue = asyncio.Queue()
