@@ -84,6 +84,22 @@
     "export": "导出会话",
     "import": "导入会话"
   },
+  "sessionSmoke": {
+    "status": "烟测",
+    "action": {
+      "create": "创建会话",
+      "running": "运行中"
+    },
+    "phase": {
+      "idle": "空闲",
+      "creating": "创建中",
+      "running": "运行中",
+      "polling": "轮询中",
+      "result-ready": "结果就绪",
+      "analysis-ready": "分析就绪",
+      "failed": "失败"
+    }
+  },
   "settings": {
     "title": "设置",
     "language": "语言",

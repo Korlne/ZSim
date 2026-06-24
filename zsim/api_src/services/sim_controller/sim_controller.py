@@ -219,11 +219,12 @@ class SimController:
                         stop_tick,
                     )
 
-                    result = await future  # noqa: F841
+                    result = await future
                     logger.info(f"测试模拟任务 {session_id} 完成")
 
                     # 更新会话状态
                     session.status = "completed"
+                    await self._attach_simulation_result(session, result, session_id)
                     await db.update_session(session)
                     completed_sessions.append(session_id)
 
@@ -385,23 +386,33 @@ class SimController:
             session.status = "completed"
 
             # 处理模拟结果确认信息
-            if isinstance(result, dict) and "run_turn_uuid" in result:
-                processed_result: (
-                    NormalModeResult | ParallelModeResult
-                ) = await self._process_simulation_result(result)
-                try:
-                    session.session_result = [processed_result]
-                except Exception as e:
-                    logger.error(
-                        f"TODO: 模拟任务 {session_id} 结果处理: {repr(e)}",
-                        exc_info=True,
-                    )
+            await self._attach_simulation_result(session, result, session_id)
 
         except Exception as e:
             logger.error(f"模拟任务 {session_id} 执行失败: {e}", exc_info=True)
             session.status = "failed"
 
         await db.update_session(session)
+
+    async def _attach_simulation_result(
+        self,
+        session: Session,
+        result: "Confirmation",
+        session_id: str,
+    ) -> None:
+        if getattr(result, "session_id", None) is None:
+            return
+
+        try:
+            processed_result: NormalModeResult | ParallelModeResult = (
+                await self._process_simulation_result(result)
+            )
+            session.session_result = [processed_result]
+        except Exception as e:
+            logger.error(
+                f"TODO: 模拟任务 {session_id} 结果处理: {repr(e)}",
+                exc_info=True,
+            )
 
     async def _process_simulation_result(
         self, confirmation: "Confirmation"

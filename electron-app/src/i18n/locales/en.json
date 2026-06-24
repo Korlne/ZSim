@@ -84,6 +84,22 @@
     "export": "Export Session",
     "import": "Import Session"
   },
+  "sessionSmoke": {
+    "status": "Smoke",
+    "action": {
+      "create": "Create Session",
+      "running": "Running"
+    },
+    "phase": {
+      "idle": "Idle",
+      "creating": "Creating",
+      "running": "Running",
+      "polling": "Polling",
+      "result-ready": "Result ready",
+      "analysis-ready": "Analysis ready",
+      "failed": "Failed"
+    }
+  },
   "settings": {
     "title": "Settings",
     "language": "Language",
