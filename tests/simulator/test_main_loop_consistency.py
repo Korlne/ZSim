@@ -8,6 +8,12 @@ from typing import Literal
 import polars as pl
 import pytest
 
+from zsim.models.session.session_result import (
+    BUFF_TIMELINE_PUBLIC_FIELDS,
+    DAMAGE_RESULT_SECTIONS,
+    DAMAGE_UUID_AGGREGATE_FIELDS,
+    NORMAL_RESULT_OPTIONAL_SECTIONS,
+)
 from zsim.utils import main_loop_consistency as mlc
 from zsim.utils.main_loop_consistency import (
     RuntimeSnapshot,
@@ -443,6 +449,22 @@ def test_run_external_golden_matrix_writes_pass_summary(
     }
     assert row["diff_domain_status"]["damage"]["expected"] is False
     assert row["mismatch_samples"] == {}
+    summary_contract = summary["data_analysis_contract"]
+    assert summary_contract["schema"] == mlc.EXTERNAL_GOLDEN_DATA_ANALYSIS_CONTRACT_SCHEMA
+    assert summary_contract["normal_mode_sections"] == list(NORMAL_RESULT_OPTIONAL_SECTIONS)
+    assert summary_contract["damage"]["result_sections"] == list(DAMAGE_RESULT_SECTIONS)
+    assert summary_contract["damage"]["uuid_aggregate_fields"] == list(
+        DAMAGE_UUID_AGGREGATE_FIELDS
+    )
+    assert summary_contract["buff_timeline"]["public_fields"] == list(
+        BUFF_TIMELINE_PUBLIC_FIELDS
+    )
+    row_contract = row["data_analysis_contract"]
+    assert row_contract["damage"]["domain_status"] == row["diff_domain_status"]["damage"]
+    assert row_contract["buff_timeline"]["domain_status"] == row["diff_domain_status"][
+        "buff_timeline"
+    ]
+    assert row_contract["parallel_mode"]["status"] == "unchanged"
     artifact = json.loads(output_path.read_text(encoding="utf-8"))
     assert artifact == summary
 
@@ -565,6 +587,10 @@ def test_run_external_golden_matrix_blocks_missing_golden_dir(
     assert row["status"] == "blocked"
     assert row["reason_code"] == "missing-golden-result-dir"
     assert row["diff_domain_status"] == {}
+    assert row["data_analysis_contract"]["buff_timeline"]["public_fields"] == list(
+        BUFF_TIMELINE_PUBLIC_FIELDS
+    )
+    assert row["data_analysis_contract"]["damage"]["domain_status"] == {}
 
 
 def test_run_external_golden_matrix_exposes_formula_sensitive_provisional_row(

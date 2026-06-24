@@ -20,6 +20,9 @@ import polars as pl
 from zsim.define import config, results_dir
 from zsim.models.session.session_result import (
     BUFF_TIMELINE_PUBLIC_FIELDS,
+    DAMAGE_RESULT_SECTIONS,
+    DAMAGE_UUID_AGGREGATE_FIELDS,
+    NORMAL_RESULT_OPTIONAL_SECTIONS,
     normalize_buff_timeline_entry as normalize_result_buff_timeline_entry,
     normalize_buff_timeline_payload as normalize_result_buff_timeline_payload,
     normalize_buff_timeline_value as normalize_result_buff_timeline_value,
@@ -50,6 +53,9 @@ MULTI_TEAM_CONSISTENCY_SCHEMA = "zsim-buffload-opt-in-multi-team-consistency.v1"
 EXTERNAL_GOLDEN_PARITY_SCHEMA = "zsim-external-golden-parity.v1"
 EXTERNAL_GOLDEN_MATRIX_SCHEMA = "zsim-external-golden-matrix.v1"
 EXTERNAL_GOLDEN_MATRIX_ROW_SCHEMA = "zsim-external-golden-matrix-row.v1"
+EXTERNAL_GOLDEN_DATA_ANALYSIS_CONTRACT_SCHEMA = (
+    "zsim-external-golden-data-analysis-contract.v1"
+)
 RUNTIME_LABEL_CONTRACT = {
     "mode": "label-only-current-runtime",
     "description": (
@@ -1547,6 +1553,7 @@ def _external_golden_matrix_blocked_row(
         "missing_input_policy": row.get("missing_input_policy"),
         "diff_domain_status": {},
         "mismatch_samples": {},
+        "data_analysis_contract": _external_golden_data_analysis_contract(),
     }
 
 
@@ -1789,6 +1796,58 @@ def _external_golden_mismatch_samples(report: dict[str, Any]) -> dict[str, Any]:
     return samples
 
 
+def _external_golden_data_analysis_contract(
+    diff_domain_status: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    domain_status = diff_domain_status or {}
+    return {
+        "schema": EXTERNAL_GOLDEN_DATA_ANALYSIS_CONTRACT_SCHEMA,
+        "normal_mode_sections": list(NORMAL_RESULT_OPTIONAL_SECTIONS),
+        "parallel_mode": {
+            "status": "unchanged",
+            "model": "ParallelModeResult",
+        },
+        "matrix_row_summary_fields": [
+            "row_id",
+            "status",
+            "signoff_effect",
+            "config_identity",
+            "expected_domains",
+            "diff_domain_status",
+            "mismatch_samples",
+            "data_analysis_contract",
+        ],
+        "damage": {
+            "domain_status": dict(domain_status.get("damage", {})),
+            "normalizer": "normalize_damage_result_schema",
+            "result_sections": list(DAMAGE_RESULT_SECTIONS),
+            "uuid_aggregate_fields": list(DAMAGE_UUID_AGGREGATE_FIELDS),
+            "summary_fields": [
+                "present",
+                "path",
+                "row_count",
+                "uuid_count",
+                "total_damage",
+                "anomaly_total",
+                "disorder_total",
+                "by_skill_tag",
+                "by_skill_cn_name",
+                "by_element_type",
+            ],
+        },
+        "damage_attribution": {
+            "domain_status": dict(domain_status.get("damage_attribution", {})),
+            "payload": "damage_attribution.json",
+            "comparison": "stable-json-paths",
+        },
+        "buff_timeline": {
+            "domain_status": dict(domain_status.get("buff_timeline", {})),
+            "payload_shape": "dict[source, list[entry]]",
+            "public_fields": list(BUFF_TIMELINE_PUBLIC_FIELDS),
+        },
+    }
+
+
 def _external_golden_matrix_completed_row(
     *,
     validated: dict[str, Any],
@@ -1845,6 +1904,7 @@ def _external_golden_matrix_completed_row(
         "missing_input_policy": validated["missing_input_policy"],
         "diff_domain_status": diff_domain_status,
         "mismatch_samples": _external_golden_mismatch_samples(report),
+        "data_analysis_contract": _external_golden_data_analysis_contract(diff_domain_status),
         "candidate": report.get("candidate", {}),
         "parity_report": {
             "schema": report.get("schema"),
@@ -1919,6 +1979,7 @@ def build_external_golden_matrix_summary(
         and counts["pass"] > 0
         and counts["blocked"] == 0
         and counts["fail"] == 0,
+        "data_analysis_contract": _external_golden_data_analysis_contract(),
         "rows": rows,
     }
 
@@ -2335,6 +2396,7 @@ __all__ = [
     "EXTERNAL_GOLDEN_PARITY_SCHEMA",
     "EXTERNAL_GOLDEN_MATRIX_SCHEMA",
     "EXTERNAL_GOLDEN_MATRIX_ROW_SCHEMA",
+    "EXTERNAL_GOLDEN_DATA_ANALYSIS_CONTRACT_SCHEMA",
     "MULTI_TEAM_CONSISTENCY_SCHEMA",
     "RUNTIME_LABEL_CONTRACT",
     "RuntimeSnapshot",

@@ -201,3 +201,78 @@ def test_parallel_result_contract_still_validates() -> None:
         "result": 100.0,
         "rate": None,
     }
+
+
+def test_matrix_summary_contract_is_serializable_for_data_analysis_consumers() -> None:
+    diff_domain_status = {
+        "damage": {
+            "expected": True,
+            "implemented": True,
+            "status": "match",
+            "matches": True,
+        },
+        "damage_attribution": {
+            "expected": False,
+            "implemented": True,
+            "status": "not_provided",
+            "matches": True,
+        },
+        "buff_timeline": {
+            "expected": True,
+            "implemented": True,
+            "status": "match",
+            "matches": True,
+        },
+    }
+    row = {
+        "schema": mlc.EXTERNAL_GOLDEN_MATRIX_ROW_SCHEMA,
+        "row_id": "contract-smoke",
+        "status": "pass",
+        "signoff_effect": "pass",
+        "reason_code": "passed",
+        "reason": "all expected external golden domains matched",
+        "golden_result_dir": "tests/fixtures/external_golden_parity/buff-csv-golden",
+        "config_identity": {
+            "kind": "team",
+            "team": "fake-team",
+            "common_cfg_path": None,
+        },
+        "apl": "./fixture.toml",
+        "stop_tick": 9,
+        "expected_domains": ["damage", "buff_timeline"],
+        "tolerance_policy": {},
+        "signoff_label": "data-analysis-contract",
+        "missing_input_policy": "block",
+        "diff_domain_status": diff_domain_status,
+        "mismatch_samples": {},
+        "data_analysis_contract": mlc._external_golden_data_analysis_contract(
+            diff_domain_status
+        ),
+    }
+
+    summary = mlc.build_external_golden_matrix_summary(
+        rows=[row],
+        matrix_source={"kind": "contract-smoke", "path": None, "schema": None},
+        generated_at="2026-06-24T00:00:00+0800",
+    )
+    dumped = json.loads(json.dumps(summary))
+
+    assert dumped["data_analysis_contract"]["normal_mode_sections"] == list(
+        NORMAL_RESULT_OPTIONAL_SECTIONS
+    )
+    row_contract = dumped["rows"][0]["data_analysis_contract"]
+    assert row_contract["damage"]["result_sections"] == list(DAMAGE_RESULT_SECTIONS)
+    assert row_contract["damage"]["uuid_aggregate_fields"] == list(
+        DAMAGE_UUID_AGGREGATE_FIELDS
+    )
+    assert row_contract["damage"]["domain_status"] == diff_domain_status["damage"]
+    assert row_contract["buff_timeline"]["public_fields"] == list(
+        BUFF_TIMELINE_PUBLIC_FIELDS
+    )
+    assert row_contract["buff_timeline"]["domain_status"] == diff_domain_status[
+        "buff_timeline"
+    ]
+    assert row_contract["parallel_mode"] == {
+        "status": "unchanged",
+        "model": "ParallelModeResult",
+    }
