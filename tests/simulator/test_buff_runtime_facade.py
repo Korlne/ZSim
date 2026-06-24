@@ -101,6 +101,52 @@ class _TrackingList(list[Any]):
         super().remove(value)
 
 
+class _ScheduleLogicProbe:
+    def __init__(self, *, judge_result: bool = True) -> None:
+        self._judge_result = judge_result
+        self.xjudge_calls: list[dict[str, object]] = []
+        self.xeffect_calls: list[dict[str, object]] = []
+
+    def xjudge(self, **kwargs: object) -> bool:
+        self.xjudge_calls.append(kwargs)
+        return self._judge_result
+
+    def xeffect(self, **kwargs: object) -> None:
+        self.xeffect_calls.append(kwargs)
+
+
+class _ScheduleBuffProbe(Buff):
+    def __init__(
+        self,
+        index: str,
+        *,
+        operator: str = "alpha",
+        add_buff_to: int = 1000,
+        schedule_judge: bool = True,
+        passively_updating: bool = False,
+        backend_acitve: bool = True,
+        simple_effect_logic: bool = True,
+        is_debuff: bool = False,
+        judge_result: bool = True,
+    ) -> None:
+        self.ft = SimpleNamespace(
+            index=index,
+            operator=operator,
+            add_buff_to=add_buff_to,
+            schedule_judge=schedule_judge,
+            passively_updating=passively_updating,
+            backend_acitve=backend_acitve,
+            simple_effect_logic=simple_effect_logic,
+            is_debuff=is_debuff,
+        )
+        self.dy = SimpleNamespace(active=True, startticks=1, endticks=2, count=1)
+        self.logic = _ScheduleLogicProbe(judge_result=judge_result)
+        self.simple_start_calls: list[tuple[int, dict[str, Any]]] = []
+
+    def simple_start(self, timenow: int, exist_buff_dict: dict[str, Any]) -> None:
+        self.simple_start_calls.append((timenow, exist_buff_dict))
+
+
 def _capture_update_reports(
     monkeypatch: pytest.MonkeyPatch,
 ) -> tuple[list[tuple[tuple[Any, ...], dict[str, Any]]], list[tuple[str, int]]]:
@@ -1023,6 +1069,175 @@ def test_update_buff_removes_enemy_debuff_mirror_through_facade(
     assert log_reports == [
         ("[Buff END]:3:enemy 的 debuff 结束，已从动态列表移除", 4),
     ]
+
+
+def test_runtime_command_settle_buffs_routes_schedule_slice_through_facade(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from zsim.sim_progress.ScheduledEvent.runtime_command import create_runtime_command_port
+
+    runtime_state = BuffRuntimeState(
+        template_registry={"alpha": {}, "enemy": {}},
+        pending_queue={"alpha": [], "enemy": []},
+        active_store={"alpha": [], "enemy": []},
+        enemy_mirror=[],
+    )
+    schedule_data = SimpleNamespace(dynamic_buff={"alpha": [], "enemy": []})
+    action_stack = object()
+    sim_instance = object()
+    enemy = object()
+    skill_node = object()
+    facade = SimpleNamespace()
+    calls: list[dict[str, Any]] = []
+
+    def fake_settle_schedule_buffs(**kwargs: Any) -> None:
+        calls.append(kwargs)
+
+    facade.settle_schedule_buffs = fake_settle_schedule_buffs
+    monkeypatch.setattr(runtime_state, "create_facade", lambda: facade)
+
+    command_port = create_runtime_command_port(
+        data=cast(Any, schedule_data),
+        action_stack=cast(Any, action_stack),
+        sim_instance=cast(Any, sim_instance),
+        buff_runtime_state=runtime_state,
+        buff_runtime_view=runtime_state.create_read_port(),
+    )
+
+    command_port.settle_buffs(
+        tick=12,
+        enemy=cast(Any, enemy),
+        skill_node=cast(Any, skill_node),
+    )
+
+    assert calls == [
+        {
+            "tick": 12,
+            "enemy": enemy,
+            "sim_instance": sim_instance,
+            "skill_node": skill_node,
+            "anomaly_bar": None,
+        }
+    ]
+
+
+def test_schedule_buff_settlement_uses_runtime_facade_owners(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from zsim.sim_progress.Buff import JudgeTools
+
+    source_buff = _ScheduleBuffProbe(
+        "schedule-buff",
+        operator="alpha",
+        add_buff_to=1001,
+    )
+    old_alpha_buff = _ScheduleBuffProbe("schedule-buff")
+    old_enemy_buff = _ScheduleBuffProbe("schedule-buff", is_debuff=True)
+    new_alpha_buff = _ScheduleBuffProbe("schedule-buff")
+    new_enemy_buff = _ScheduleBuffProbe("schedule-buff", is_debuff=True)
+    created_buffs = iter([new_alpha_buff, new_enemy_buff])
+    created_from: list[Any] = []
+    anomaly_bar = SimpleNamespace(activated_by=SimpleNamespace(char_name="alpha"))
+    sim_instance = SimpleNamespace()
+    enemy = SimpleNamespace()
+    template_registry: dict[str, dict[str, Any]] = {
+        "alpha": {"schedule-buff": source_buff},
+        "bravo": {},
+        "charlie": {},
+        "enemy": {},
+    }
+    active_store: dict[str, list[Any]] = {
+        "alpha": [old_alpha_buff],
+        "bravo": [],
+        "charlie": [],
+        "enemy": [old_enemy_buff],
+    }
+    runtime_state = BuffRuntimeState(
+        template_registry=template_registry,
+        pending_queue={"alpha": [], "bravo": [], "charlie": [], "enemy": []},
+        active_store=active_store,
+        enemy_mirror=active_store["enemy"],
+    )
+    template_owner = runtime_state.template_registry_owner()
+    active_owner = runtime_state.active_store_owner()
+    enemy_mirror_owner = runtime_state.enemy_mirror_owner()
+    facade = runtime_state.create_facade()
+    registry_calls: list[str] = []
+    active_calls: list[tuple[str, str, str]] = []
+    mirror_sync_calls: list[str] = []
+    original_for_owner = template_owner.for_owner
+    original_find_by_index = active_owner.find_by_index
+    original_remove = active_owner.remove
+    original_append = active_owner.append
+    original_sync = enemy_mirror_owner.sync
+
+    def fake_create_new_from_existing(existing_instance: Any) -> Any:
+        created_from.append(existing_instance)
+        return next(created_buffs)
+
+    def recording_for_owner(owner: str) -> dict[str, Any]:
+        registry_calls.append(owner)
+        return original_for_owner(owner)
+
+    def recording_find_by_index(beneficiary: str, buff_index: str) -> Any:
+        active_calls.append(("find", beneficiary, buff_index))
+        return original_find_by_index(beneficiary, buff_index)
+
+    def recording_remove(beneficiary: str, buff: Any) -> None:
+        active_calls.append(("remove", beneficiary, buff.ft.index))
+        original_remove(beneficiary, buff)
+
+    def recording_append(beneficiary: str, buff: Any) -> None:
+        active_calls.append(("append", beneficiary, buff.ft.index))
+        original_append(beneficiary, buff)
+
+    def recording_sync(buff: Any) -> None:
+        mirror_sync_calls.append(buff.ft.index)
+        original_sync(buff)
+
+    def fail_template_registry_for_compat() -> dict[str, dict[str, Any]]:
+        raise AssertionError("schedule settlement must use BuffTemplateRegistry owner")
+
+    monkeypatch.setattr(Buff, "create_new_from_existing", fake_create_new_from_existing)
+    monkeypatch.setattr(template_owner, "for_owner", recording_for_owner)
+    monkeypatch.setattr(active_owner, "find_by_index", recording_find_by_index)
+    monkeypatch.setattr(active_owner, "remove", recording_remove)
+    monkeypatch.setattr(active_owner, "append", recording_append)
+    monkeypatch.setattr(enemy_mirror_owner, "sync", recording_sync)
+    monkeypatch.setattr(
+        runtime_state,
+        "template_registry_for_compat",
+        fail_template_registry_for_compat,
+    )
+    monkeypatch.setattr(
+        JudgeTools,
+        "find_all_name_order_box",
+        lambda *, sim_instance: {"alpha": ["alpha", "bravo", "charlie", "enemy"]},
+    )
+
+    facade.settle_schedule_buffs(
+        tick=12,
+        enemy=cast(Any, enemy),
+        sim_instance=cast(Any, sim_instance),
+        anomaly_bar=cast(Any, anomaly_bar),
+    )
+
+    assert registry_calls == ["alpha", "bravo", "charlie"]
+    assert created_from == [source_buff, source_buff]
+    assert source_buff.logic.xjudge_calls == [{"anomaly_bar": anomaly_bar}]
+    assert new_alpha_buff.simple_start_calls == [(12, template_registry["alpha"])]
+    assert new_enemy_buff.simple_start_calls == [(12, template_registry["alpha"])]
+    assert active_calls == [
+        ("find", "alpha", "schedule-buff"),
+        ("remove", "alpha", "schedule-buff"),
+        ("append", "alpha", "schedule-buff"),
+        ("find", "enemy", "schedule-buff"),
+        ("remove", "enemy", "schedule-buff"),
+        ("append", "enemy", "schedule-buff"),
+    ]
+    assert mirror_sync_calls == ["schedule-buff"]
+    assert active_store["alpha"] == [new_alpha_buff]
+    assert active_store["enemy"] == [new_enemy_buff]
 
 
 def test_legacy_buff_runtime_facade_activates_pending_buffs_in_old_pop_order() -> None:
