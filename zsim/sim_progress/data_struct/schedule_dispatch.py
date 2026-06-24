@@ -82,7 +82,7 @@ class _ScheduleDataQueueOwner(_ScheduleQueueOwner):
         self._schedule_data = schedule_data
 
     def enqueue(self, event: Any) -> None:
-        # Resolve the queue at publish time so rebinding ScheduleData.event_list is safe.
+        # Resolve the owner at publish time so queue rebinding stays current.
         ensure_planned_event_queue(self._schedule_data).enqueue(event)
 
 

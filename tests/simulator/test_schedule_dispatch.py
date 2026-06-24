@@ -114,7 +114,7 @@ def test_create_schedule_dispatch_port_uses_schedule_data_without_exposing_event
     assert queue.snapshot() == ["scheduled-event"]
 
 
-def test_event_list_migration_owner_helper_is_explicit_and_rebindable():
+def test_event_list_migration_owner_helper_is_test_migration_only_and_rebindable():
     schedule_data = SimpleNamespace(event_list=[])
     queue = ensure_event_list_migration_planned_event_queue(schedule_data)
     old_event_list = schedule_data.event_list

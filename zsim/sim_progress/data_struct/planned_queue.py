@@ -9,7 +9,7 @@ _EVENT_LIST_MIGRATION_OWNER_ATTR = "_planned_event_queue_event_list_migration_ow
 
 
 class PlannedEventQueue:
-    """Owns planned-event queue lifecycle with an explicit migration raw view."""
+    """Owns planned-event queue lifecycle behind explicit owner APIs."""
 
     def __init__(
         self,
@@ -22,10 +22,6 @@ class PlannedEventQueue:
 
     def _events(self) -> MutableSequence[Any]:
         return self._get_events()
-
-    def _raw_events_for_migration(self) -> MutableSequence[Any]:
-        """Return the current raw list for explicit migration/test adapters."""
-        return self._events()
 
     def enqueue(self, event: Any) -> None:
         self._events().append(event)
@@ -73,7 +69,7 @@ def ensure_planned_event_queue(schedule_data: Any) -> PlannedEventQueue:
 
 
 def ensure_event_list_migration_planned_event_queue(schedule_data: Any) -> PlannedEventQueue:
-    """Install an event-list-backed owner for explicit migration/test data."""
+    """Install the single event-list-backed owner for migration/test data."""
     fallback_queue = getattr(schedule_data, _EVENT_LIST_MIGRATION_OWNER_ATTR, None)
     if fallback_queue is None:
         fallback_queue = PlannedEventQueue(

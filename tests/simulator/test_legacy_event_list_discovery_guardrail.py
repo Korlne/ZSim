@@ -120,25 +120,25 @@ MAIN_LOOP_PLANNED_PRODUCER_CALLS = {
 CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS = {
     (
         "zsim/sim_progress/data_struct/planned_queue.py",
-        31,
+        27,
         "planned_queue_owner_internal_mutation",
         "self._events().append(event)",
     ): "US-001",
     (
         "zsim/sim_progress/data_struct/planned_queue.py",
-        44,
+        40,
         "planned_queue_owner_internal_mutation",
         "self._events().remove(event)",
     ): "US-001",
     (
         "zsim/sim_progress/data_struct/planned_queue.py",
-        47,
+        43,
         "planned_queue_owner_internal_replacement",
         "self._set_events(list(events))",
     ): "US-001",
     (
         "zsim/sim_progress/data_struct/planned_queue.py",
-        50,
+        46,
         "planned_queue_owner_internal_mutation",
         "self._events().clear()",
     ): "US-001",
@@ -1574,7 +1574,7 @@ def test_schedule_data_event_list_compatibility_allowance_is_exact_and_owned() -
     } == set()
 
 
-def test_event_list_migration_owner_construction_is_exactly_helper_owned() -> None:
+def test_event_list_migration_owner_construction_is_single_migration_helper() -> None:
     surfaces = [
         surface
         for surface in _collect_planned_queue_migration_surfaces()
@@ -1610,9 +1610,13 @@ def test_event_list_migration_owner_construction_is_exactly_helper_owned() -> No
     ]
     assert len(helper_calls) == 0
     assert helper_calls == []
+    planned_queue_source = (
+        PRODUCTION_ROOT / "data_struct" / "planned_queue.py"
+    ).read_text(encoding="utf-8")
+    assert "single event-list-backed owner for migration/test data" in planned_queue_source
 
 
-def test_private_raw_migration_helper_usage_is_exactly_owner_definition() -> None:
+def test_private_raw_migration_helper_is_deleted() -> None:
     surfaces = [
         surface
         for surface in _collect_planned_queue_migration_surfaces()
@@ -1635,17 +1639,7 @@ def test_private_raw_migration_helper_usage_is_exactly_owner_definition() -> Non
 
     assert len(runtime_command_raw_helper_calls) == 0
     assert raw_helper_calls == []
-    assert Counter(
-        (surface.path, surface.function, surface.kind) for surface in surfaces
-    ) == Counter(
-        {
-            (
-                "zsim/sim_progress/data_struct/planned_queue.py",
-                "PlannedEventQueue._raw_events_for_migration",
-                "private_raw_migration_helper_definition",
-            ): 1,
-        }
-    )
+    assert surfaces == []
 
 
 def test_event_list_deletion_readiness_counts_categories_separately() -> None:
