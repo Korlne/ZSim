@@ -317,6 +317,201 @@ def test_external_golden_parser_accepts_required_cli_flags():
     assert ambiguous_config.value.code == 2
 
 
+def test_external_golden_matrix_parser_accepts_config_and_row_json():
+    parser = mlc.build_external_golden_matrix_parser()
+
+    config_args = parser.parse_args(
+        [
+            "--matrix-config",
+            "tests/fixtures/external_golden_parity/fixture-matrix.json",
+            "--output-json",
+            "scripts/ralph/artifacts/external-golden-matrix.json",
+        ]
+    )
+    row_args = parser.parse_args(
+        [
+            "--row-json",
+            '{"row_id":"row-a"}',
+            "--row-json",
+            '{"row_id":"row-b"}',
+            "--output-json",
+            "scripts/ralph/artifacts/external-golden-matrix.json",
+        ]
+    )
+
+    assert config_args.matrix_config == "tests/fixtures/external_golden_parity/fixture-matrix.json"
+    assert config_args.row_json is None
+    assert row_args.matrix_config is None
+    assert row_args.row_json == ['{"row_id":"row-a"}', '{"row_id":"row-b"}']
+    with pytest.raises(SystemExit) as missing_source:
+        parser.parse_args(
+            [
+                "--output-json",
+                "scripts/ralph/artifacts/external-golden-matrix.json",
+            ]
+        )
+    with pytest.raises(SystemExit) as ambiguous_source:
+        parser.parse_args(
+            [
+                "--matrix-config",
+                "matrix.json",
+                "--row-json",
+                '{"row_id":"row-a"}',
+                "--output-json",
+                "scripts/ralph/artifacts/external-golden-matrix.json",
+            ]
+        )
+    assert missing_source.value.code == 2
+    assert ambiguous_source.value.code == 2
+
+
+def _fixture_matrix_row(**overrides: Any) -> dict[str, Any]:
+    row = {
+        "row_id": "fixture-row",
+        "row_kind": "fixture",
+        "golden_result_dir": "tests/fixtures/external_golden_parity/buff-csv-golden",
+        "run_config": {"team": "fake-team"},
+        "apl": "./fixture.toml",
+        "stop_tick": 9,
+        "expected_domains": ["buff_timeline"],
+        "tolerance_policy": {
+            "damage_total_abs": 0.0,
+            "damage_row_abs": 0.0,
+            "damage_attribution_abs": 0.0,
+            "buff_timeline": "exact-normalized",
+        },
+        "signoff_label": "base-parity",
+        "missing_input_policy": "block",
+    }
+    row.update(overrides)
+    return row
+
+
+def test_run_external_golden_matrix_writes_pass_summary(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    candidate_dir = _write_result_dir(
+        tmp_path / "candidate-result",
+        damage_csv=None,
+        damage_attribution=None,
+        buff_csvs={"alpha": _MATCHING_BUFF_TIMELINE_CSV},
+    )
+    report = _build_external_damage_report(
+        golden_result_dir=_BUFF_CSV_GOLDEN_DIR,
+        candidate_result_path=candidate_dir,
+    )
+    captured_calls: list[dict[str, Any]] = []
+
+    def fake_run_external_golden_parity(**kwargs: Any) -> dict[str, Any]:
+        captured_calls.append(kwargs)
+        return report
+
+    monkeypatch.setattr(mlc, "run_external_golden_parity", fake_run_external_golden_parity)
+    output_path = tmp_path / "external-golden-matrix.json"
+
+    summary = mlc.run_external_golden_matrix(
+        rows=[_fixture_matrix_row()],
+        output_path=output_path,
+    )
+
+    assert len(captured_calls) == 1
+    captured_call = dict(captured_calls[0])
+    captured_call["golden_result_dir"] = captured_call["golden_result_dir"].replace("\\", "/")
+    assert captured_call == {
+        "golden_result_dir": "tests/fixtures/external_golden_parity/buff-csv-golden",
+        "team": "fake-team",
+        "common_cfg": None,
+        "apl": "./fixture.toml",
+        "stop_tick": 9,
+    }
+    assert summary["schema"] == mlc.EXTERNAL_GOLDEN_MATRIX_SCHEMA
+    assert summary["schema_version"] == 1
+    assert summary["row_schema"] == mlc.EXTERNAL_GOLDEN_MATRIX_ROW_SCHEMA
+    assert summary["row_count"] == 1
+    assert summary["counts"] == {"pass": 1, "fail": 0, "skip": 0, "blocked": 0}
+    assert summary["fixture_only_signoff"] is True
+    row = summary["rows"][0]
+    assert row["schema"] == mlc.EXTERNAL_GOLDEN_MATRIX_ROW_SCHEMA
+    assert row["status"] == "pass"
+    assert row["config_identity"]["kind"] == "team"
+    assert row["diff_domain_status"]["buff_timeline"] == {
+        "expected": True,
+        "implemented": True,
+        "status": "match",
+        "matches": True,
+    }
+    assert row["diff_domain_status"]["damage"]["expected"] is False
+    assert row["mismatch_samples"] == {}
+    artifact = json.loads(output_path.read_text(encoding="utf-8"))
+    assert artifact == summary
+
+
+def test_run_external_golden_matrix_blocks_missing_golden_dir(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    captured_calls: list[dict[str, Any]] = []
+    monkeypatch.setattr(
+        mlc,
+        "run_external_golden_parity",
+        lambda **kwargs: captured_calls.append(kwargs),
+    )
+
+    summary = mlc.run_external_golden_matrix(
+        rows=[
+            _fixture_matrix_row(
+                row_id="missing-golden",
+                golden_result_dir=str(tmp_path / "missing-golden"),
+            )
+        ],
+    )
+
+    assert captured_calls == []
+    assert summary["counts"] == {"pass": 0, "fail": 0, "skip": 0, "blocked": 1}
+    assert summary["signoff_status"] == "blocked"
+    row = summary["rows"][0]
+    assert row["status"] == "blocked"
+    assert row["reason_code"] == "missing-golden-result-dir"
+    assert row["diff_domain_status"] == {}
+
+
+def test_run_external_golden_matrix_reports_bounded_row_failure_samples(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    candidate_dir = _write_result_dir(
+        tmp_path / "candidate-result",
+        damage_csv=None,
+        damage_attribution=None,
+        buff_csvs={"alpha": _MISMATCH_BUFF_TIMELINE_CSV},
+    )
+    report = _build_external_damage_report(
+        golden_result_dir=_BUFF_CSV_GOLDEN_DIR,
+        candidate_result_path=candidate_dir,
+    )
+    monkeypatch.setattr(mlc, "run_external_golden_parity", lambda **_: report)
+
+    summary = mlc.run_external_golden_matrix(rows=[_fixture_matrix_row(row_id="mismatch")])
+
+    assert summary["counts"] == {"pass": 0, "fail": 1, "skip": 0, "blocked": 0}
+    assert summary["signoff_status"] == "failed"
+    row = summary["rows"][0]
+    assert row["status"] == "fail"
+    assert row["reason_code"] == "expected-domain-mismatch"
+    assert row["diff_domain_status"]["buff_timeline"]["matches"] is False
+    assert row["mismatch_samples"]["buff_timeline"]["sample_changed"] == [
+        {
+            "source": "alpha",
+            "Task": "buff-a",
+            "Start": 2,
+            "Finish": 3,
+            "golden_values": [2.0],
+            "candidate_values": [2.5],
+        }
+    ]
+
+
 def test_run_external_golden_parity_writes_damage_domain_json(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

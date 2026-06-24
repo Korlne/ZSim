@@ -48,6 +48,8 @@ _DAMAGE_UUID_COMPARE_FIELDS = (
 _SESSION_ID_COUNTER = count(1)
 MULTI_TEAM_CONSISTENCY_SCHEMA = "zsim-buffload-opt-in-multi-team-consistency.v1"
 EXTERNAL_GOLDEN_PARITY_SCHEMA = "zsim-external-golden-parity.v1"
+EXTERNAL_GOLDEN_MATRIX_SCHEMA = "zsim-external-golden-matrix.v1"
+EXTERNAL_GOLDEN_MATRIX_ROW_SCHEMA = "zsim-external-golden-matrix-row.v1"
 RUNTIME_LABEL_CONTRACT = {
     "mode": "label-only-current-runtime",
     "description": (
@@ -57,6 +59,31 @@ RUNTIME_LABEL_CONTRACT = {
     "compatibility_aliases": {
         "legacy_runtime": "report compatibility alias for baseline_runtime",
     },
+}
+_EXTERNAL_GOLDEN_MATRIX_ALLOWED_DOMAINS = (
+    "damage",
+    "damage_attribution",
+    "buff_timeline",
+)
+_EXTERNAL_GOLDEN_MATRIX_ALLOWED_MISSING_POLICIES = (
+    "block",
+    "skip",
+    "provisional",
+)
+_EXTERNAL_GOLDEN_MATRIX_ALLOWED_SIGNOFF_LABELS = (
+    "base-parity",
+    "raw-hook-guard",
+    "lifecycle-row",
+    "runtime-truth-source",
+    "formula-sensitive",
+    "data-analysis-contract",
+    "webui-api-smoke",
+)
+_EXTERNAL_GOLDEN_MATRIX_DEFAULT_TOLERANCE_POLICY = {
+    "damage_total_abs": 0.0,
+    "damage_row_abs": 0.0,
+    "damage_attribution_abs": 0.0,
+    "buff_timeline": "exact-normalized",
 }
 
 
@@ -1416,6 +1443,588 @@ def run_external_golden_parity(
     return report
 
 
+def _load_external_golden_matrix_config(matrix_config_path: str | Path) -> dict[str, Any]:
+    path = Path(matrix_config_path).expanduser()
+    if not path.exists():
+        raise FileNotFoundError(f"matrix config does not exist: {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("matrix config must be a JSON object")
+    rows = payload.get("rows")
+    if not isinstance(rows, list):
+        raise ValueError("matrix config must contain a rows list")
+    return payload
+
+
+def _matrix_row_id(row: dict[str, Any], index: int) -> str:
+    row_id = row.get("row_id")
+    if isinstance(row_id, str) and row_id.strip():
+        return row_id.strip()
+    return f"row-{index}"
+
+
+def _matrix_row_run_config(row: dict[str, Any]) -> dict[str, Any]:
+    run_config = row.get("run_config")
+    return run_config if isinstance(run_config, dict) else {}
+
+
+def _matrix_row_config_identity(row: dict[str, Any]) -> dict[str, Any]:
+    run_config = _matrix_row_run_config(row)
+    team = run_config.get("team")
+    common_cfg = run_config.get("common_cfg")
+    has_team = isinstance(team, str) and bool(team.strip())
+    has_common_cfg = isinstance(common_cfg, str) and bool(common_cfg.strip())
+    if has_team and not has_common_cfg:
+        return {
+            "kind": "team",
+            "team": team,
+            "common_cfg_path": None,
+        }
+    if has_common_cfg and not has_team:
+        return {
+            "kind": "common_cfg",
+            "team": None,
+            "common_cfg_path": str(Path(common_cfg).expanduser().resolve()),
+        }
+    return {
+        "kind": "invalid",
+        "team": team if isinstance(team, str) else None,
+        "common_cfg_path": common_cfg if isinstance(common_cfg, str) else None,
+    }
+
+
+def _matrix_row_tolerance_policy(
+    row: dict[str, Any],
+    default_tolerance_policy: dict[str, Any],
+) -> dict[str, Any]:
+    tolerance_policy = row.get("tolerance_policy")
+    if isinstance(tolerance_policy, dict):
+        return dict(tolerance_policy)
+    return dict(default_tolerance_policy)
+
+
+def _matrix_row_expected_domains(row: dict[str, Any]) -> list[str]:
+    expected_domains = row.get("expected_domains")
+    if not isinstance(expected_domains, list):
+        return []
+    return [str(domain) for domain in expected_domains]
+
+
+def _external_golden_matrix_blocked_row(
+    *,
+    row: dict[str, Any],
+    index: int,
+    reason: str,
+    reason_code: str,
+    default_tolerance_policy: dict[str, Any],
+    status: str = "blocked",
+    signoff_effect: str | None = None,
+) -> dict[str, Any]:
+    row_id = _matrix_row_id(row, index)
+    stop_tick = row.get("stop_tick")
+    return {
+        "schema": EXTERNAL_GOLDEN_MATRIX_ROW_SCHEMA,
+        "row_id": row_id,
+        "status": status,
+        "signoff_effect": signoff_effect or status,
+        "reason_code": reason_code,
+        "reason": reason,
+        "golden_result_dir": str(row.get("golden_result_dir", "")),
+        "config_identity": _matrix_row_config_identity(row),
+        "apl": row.get("apl"),
+        "stop_tick": stop_tick if isinstance(stop_tick, int) else None,
+        "expected_domains": _matrix_row_expected_domains(row),
+        "tolerance_policy": _matrix_row_tolerance_policy(row, default_tolerance_policy),
+        "signoff_label": row.get("signoff_label"),
+        "missing_input_policy": row.get("missing_input_policy"),
+        "diff_domain_status": {},
+        "mismatch_samples": {},
+    }
+
+
+def _validate_external_golden_matrix_row(
+    *,
+    row: Any,
+    index: int,
+    default_tolerance_policy: dict[str, Any],
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    if not isinstance(row, dict):
+        blocked = _external_golden_matrix_blocked_row(
+            row={},
+            index=index,
+            reason="matrix row must be an object",
+            reason_code="invalid-row-type",
+            default_tolerance_policy=default_tolerance_policy,
+        )
+        return None, blocked
+
+    missing_policy = row.get("missing_input_policy")
+    if missing_policy not in _EXTERNAL_GOLDEN_MATRIX_ALLOWED_MISSING_POLICIES:
+        blocked = _external_golden_matrix_blocked_row(
+            row=row,
+            index=index,
+            reason="missing_input_policy must be block, skip, or provisional",
+            reason_code="invalid-missing-input-policy",
+            default_tolerance_policy=default_tolerance_policy,
+        )
+        return None, blocked
+
+    if row.get("skip") is True:
+        skip_reason = row.get("skip_reason")
+        if not isinstance(skip_reason, str) or not skip_reason.strip():
+            blocked = _external_golden_matrix_blocked_row(
+                row=row,
+                index=index,
+                reason="skipped rows require skip_reason",
+                reason_code="missing-skip-reason",
+                default_tolerance_policy=default_tolerance_policy,
+            )
+            return None, blocked
+        skipped = _external_golden_matrix_blocked_row(
+            row=row,
+            index=index,
+            reason=skip_reason.strip(),
+            reason_code="explicit-skip",
+            default_tolerance_policy=default_tolerance_policy,
+            status="skip",
+            signoff_effect="skip",
+        )
+        return None, skipped
+
+    run_config = _matrix_row_run_config(row)
+    team = run_config.get("team")
+    common_cfg = run_config.get("common_cfg")
+    has_team = isinstance(team, str) and bool(team.strip())
+    has_common_cfg = isinstance(common_cfg, str) and bool(common_cfg.strip())
+    if has_team == has_common_cfg:
+        blocked = _external_golden_matrix_blocked_row(
+            row=row,
+            index=index,
+            reason="matrix row run_config must provide exactly one of team or common_cfg",
+            reason_code="ambiguous-run-config",
+            default_tolerance_policy=default_tolerance_policy,
+        )
+        return None, blocked
+
+    apl = row.get("apl")
+    if not isinstance(apl, str) or not apl.strip():
+        blocked = _external_golden_matrix_blocked_row(
+            row=row,
+            index=index,
+            reason="matrix row must provide an explicit apl",
+            reason_code="missing-apl",
+            default_tolerance_policy=default_tolerance_policy,
+        )
+        return None, blocked
+
+    stop_tick = row.get("stop_tick")
+    if not isinstance(stop_tick, int) or stop_tick <= 0:
+        blocked = _external_golden_matrix_blocked_row(
+            row=row,
+            index=index,
+            reason="matrix row stop_tick must be a positive integer",
+            reason_code="invalid-stop-tick",
+            default_tolerance_policy=default_tolerance_policy,
+        )
+        return None, blocked
+
+    expected_domains = _matrix_row_expected_domains(row)
+    invalid_domains = [
+        domain
+        for domain in expected_domains
+        if domain not in _EXTERNAL_GOLDEN_MATRIX_ALLOWED_DOMAINS
+    ]
+    if invalid_domains:
+        blocked = _external_golden_matrix_blocked_row(
+            row=row,
+            index=index,
+            reason="matrix row expected_domains contains unsupported domains: "
+            + ", ".join(invalid_domains),
+            reason_code="unsupported-expected-domain",
+            default_tolerance_policy=default_tolerance_policy,
+        )
+        return None, blocked
+
+    signoff_label = row.get("signoff_label")
+    if signoff_label not in _EXTERNAL_GOLDEN_MATRIX_ALLOWED_SIGNOFF_LABELS:
+        blocked = _external_golden_matrix_blocked_row(
+            row=row,
+            index=index,
+            reason="matrix row signoff_label is not recognized",
+            reason_code="invalid-signoff-label",
+            default_tolerance_policy=default_tolerance_policy,
+        )
+        return None, blocked
+
+    golden_result_dir = row.get("golden_result_dir")
+    if not isinstance(golden_result_dir, str) or not golden_result_dir.strip():
+        blocked = _external_golden_matrix_blocked_row(
+            row=row,
+            index=index,
+            reason="matrix row must provide golden_result_dir",
+            reason_code="missing-golden-result-dir",
+            default_tolerance_policy=default_tolerance_policy,
+        )
+        return None, blocked
+
+    golden_path = Path(golden_result_dir).expanduser()
+    if not golden_path.exists() or not golden_path.is_dir():
+        if missing_policy == "skip":
+            skip_reason = row.get("skip_reason")
+            if not isinstance(skip_reason, str) or not skip_reason.strip():
+                blocked = _external_golden_matrix_blocked_row(
+                    row=row,
+                    index=index,
+                    reason="skip policy for missing golden_result_dir requires skip_reason",
+                    reason_code="missing-skip-reason",
+                    default_tolerance_policy=default_tolerance_policy,
+                )
+                return None, blocked
+            skipped = _external_golden_matrix_blocked_row(
+                row=row,
+                index=index,
+                reason=skip_reason.strip(),
+                reason_code="missing-golden-result-dir",
+                default_tolerance_policy=default_tolerance_policy,
+                status="skip",
+                signoff_effect="skip",
+            )
+            return None, skipped
+        blocked = _external_golden_matrix_blocked_row(
+            row=row,
+            index=index,
+            reason=f"golden_result_dir is missing or not a directory: {golden_path}",
+            reason_code="missing-golden-result-dir",
+            default_tolerance_policy=default_tolerance_policy,
+            signoff_effect="provisional" if missing_policy == "provisional" else "blocked",
+        )
+        return None, blocked
+
+    validated = {
+        "row_id": _matrix_row_id(row, index),
+        "golden_result_dir": str(golden_path),
+        "team": team if has_team else None,
+        "common_cfg": common_cfg if has_common_cfg else None,
+        "apl": apl.strip(),
+        "stop_tick": stop_tick,
+        "expected_domains": expected_domains,
+        "tolerance_policy": _matrix_row_tolerance_policy(row, default_tolerance_policy),
+        "signoff_label": signoff_label,
+        "missing_input_policy": missing_policy,
+        "config_identity": _matrix_row_config_identity(row),
+        "row_kind": row.get("row_kind"),
+    }
+    return validated, None
+
+
+def _external_golden_domain_statuses(
+    report: dict[str, Any],
+    expected_domains: list[str],
+) -> dict[str, dict[str, Any]]:
+    expected = set(expected_domains)
+    domains = report.get("diffs", {}).get("domains", {})
+    statuses: dict[str, dict[str, Any]] = {}
+    for domain_name in _EXTERNAL_GOLDEN_MATRIX_ALLOWED_DOMAINS:
+        domain = domains.get(domain_name, {})
+        statuses[domain_name] = {
+            "expected": domain_name in expected,
+            "implemented": domain.get("implemented") is True,
+            "status": domain.get("status"),
+            "matches": domain.get("matches"),
+        }
+    return statuses
+
+
+def _external_golden_mismatch_samples(report: dict[str, Any]) -> dict[str, Any]:
+    domains = report.get("diffs", {}).get("domains", {})
+    samples: dict[str, Any] = {}
+
+    damage = domains.get("damage", {})
+    if damage.get("matches") is False:
+        damage_diff = damage.get("differences", {})
+        uuid_diff = damage_diff.get("uuid_aggregation", {})
+        samples["damage"] = {
+            "total_damage": damage_diff.get("total_damage"),
+            "row_count": damage_diff.get("row_count"),
+            "uuid_aggregation": {
+                "sample_golden_only": uuid_diff.get("sample_golden_only", []),
+                "sample_candidate_only": uuid_diff.get("sample_candidate_only", []),
+                "sample_changed": uuid_diff.get("sample_changed", []),
+            },
+            "field_counts": damage_diff.get("field_counts", {}),
+        }
+
+    attribution = domains.get("damage_attribution", {})
+    if attribution.get("matches") is False:
+        attribution_diff = attribution.get("differences", {})
+        structure = attribution_diff.get("structure", {})
+        values = attribution_diff.get("values", {})
+        samples["damage_attribution"] = {
+            "sample_golden_only_paths": structure.get("sample_golden_only_paths", []),
+            "sample_candidate_only_paths": structure.get("sample_candidate_only_paths", []),
+            "sample_changed_types": structure.get("sample_changed_types", []),
+            "sample_changed_values": values.get("sample_changed_values", []),
+        }
+
+    timeline = domains.get("buff_timeline", {})
+    if timeline.get("matches") is False:
+        timeline_diff = timeline.get("differences", {})
+        samples["buff_timeline"] = {
+            "sample_golden_only": timeline_diff.get(
+                "sample_golden_only",
+                timeline_diff.get("sample_baseline_only", []),
+            ),
+            "sample_candidate_only": timeline_diff.get("sample_candidate_only", []),
+            "sample_changed": timeline_diff.get("sample_changed", []),
+        }
+
+    return samples
+
+
+def _external_golden_matrix_completed_row(
+    *,
+    validated: dict[str, Any],
+    report: dict[str, Any],
+) -> dict[str, Any]:
+    diff_domain_status = _external_golden_domain_statuses(
+        report,
+        validated["expected_domains"],
+    )
+    unavailable_expected = [
+        name
+        for name, status in diff_domain_status.items()
+        if status["expected"]
+        and (not status["implemented"] or status["status"] == "not_provided")
+    ]
+    mismatched_expected = [
+        name
+        for name, status in diff_domain_status.items()
+        if status["expected"] and status["matches"] is False
+    ]
+
+    status = "pass"
+    reason_code = "passed"
+    reason = "all expected external golden domains matched"
+    signoff_effect = "pass"
+    if unavailable_expected:
+        status = "blocked"
+        signoff_effect = "blocked"
+        reason_code = "unavailable-expected-domain"
+        reason = "expected domains are unavailable: " + ", ".join(unavailable_expected)
+    elif mismatched_expected:
+        status = "fail"
+        signoff_effect = "fail"
+        reason_code = "expected-domain-mismatch"
+        reason = "expected domains mismatched: " + ", ".join(mismatched_expected)
+
+    return {
+        "schema": EXTERNAL_GOLDEN_MATRIX_ROW_SCHEMA,
+        "row_id": validated["row_id"],
+        "status": status,
+        "signoff_effect": signoff_effect,
+        "reason_code": reason_code,
+        "reason": reason,
+        "golden_result_dir": report.get("golden_result_dir", validated["golden_result_dir"]),
+        "config_identity": report.get("run_config", {}).get(
+            "identity",
+            validated["config_identity"],
+        ),
+        "apl": report.get("run_config", {}).get("apl", validated["apl"]),
+        "stop_tick": int(report.get("run_config", {}).get("stop_tick", validated["stop_tick"])),
+        "expected_domains": validated["expected_domains"],
+        "tolerance_policy": validated["tolerance_policy"],
+        "signoff_label": validated["signoff_label"],
+        "missing_input_policy": validated["missing_input_policy"],
+        "diff_domain_status": diff_domain_status,
+        "mismatch_samples": _external_golden_mismatch_samples(report),
+        "candidate": report.get("candidate", {}),
+        "parity_report": {
+            "schema": report.get("schema"),
+            "schema_version": report.get("schema_version"),
+            "matches": report.get("diffs", {}).get("matches"),
+            "implemented_domains": report.get("comparison", {}).get("implemented_domains", []),
+        },
+    }
+
+
+def _external_golden_matrix_counts(rows: list[dict[str, Any]]) -> dict[str, int]:
+    counts = Counter(row.get("status") for row in rows)
+    return {
+        "pass": int(counts.get("pass", 0)),
+        "fail": int(counts.get("fail", 0)),
+        "skip": int(counts.get("skip", 0)),
+        "blocked": int(counts.get("blocked", 0)),
+    }
+
+
+def _external_golden_matrix_signoff_status(rows: list[dict[str, Any]]) -> str:
+    if not rows:
+        return "blocked"
+    counts = _external_golden_matrix_counts(rows)
+    if counts["fail"]:
+        return "failed"
+    blocked_rows = [row for row in rows if row.get("status") == "blocked"]
+    if blocked_rows:
+        if all(row.get("signoff_effect") == "provisional" for row in blocked_rows):
+            return "provisional"
+        return "blocked"
+    passed_rows = [row for row in rows if row.get("status") == "pass"]
+    fixture_only = bool(passed_rows) and all(
+        str(row.get("golden_result_dir", "")).replace("\\", "/").find(
+            "tests/fixtures/external_golden_parity/"
+        )
+        >= 0
+        for row in passed_rows
+    )
+    if fixture_only:
+        return "provisional"
+    return "complete"
+
+
+def build_external_golden_matrix_summary(
+    *,
+    rows: list[dict[str, Any]],
+    matrix_source: dict[str, Any],
+    generated_at: str | None = None,
+) -> dict[str, Any]:
+    counts = _external_golden_matrix_counts(rows)
+    signoff_status = _external_golden_matrix_signoff_status(rows)
+    return {
+        "schema": EXTERNAL_GOLDEN_MATRIX_SCHEMA,
+        "schema_version": 1,
+        "row_schema": EXTERNAL_GOLDEN_MATRIX_ROW_SCHEMA,
+        "generated_at": generated_at or time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "matrix_source": matrix_source,
+        "row_count": len(rows),
+        "counts": counts,
+        "pass_count": counts["pass"],
+        "fail_count": counts["fail"],
+        "skip_count": counts["skip"],
+        "blocked_count": counts["blocked"],
+        "all_required_rows_passed": counts["fail"] == 0 and counts["blocked"] == 0,
+        "signoff_status": signoff_status,
+        "fixture_only_signoff": signoff_status == "provisional"
+        and counts["pass"] > 0
+        and counts["blocked"] == 0
+        and counts["fail"] == 0,
+        "rows": rows,
+    }
+
+
+def run_external_golden_matrix(
+    *,
+    matrix_config_path: str | Path | None = None,
+    matrix_config: dict[str, Any] | None = None,
+    rows: list[dict[str, Any]] | None = None,
+    output_path: str | Path | None = None,
+) -> dict[str, Any]:
+    if matrix_config_path is not None and (matrix_config is not None or rows is not None):
+        raise ValueError("provide matrix_config_path or in-memory rows/config, not both")
+    if matrix_config is not None and rows is not None:
+        raise ValueError("provide matrix_config or rows, not both")
+
+    source: dict[str, Any]
+    if matrix_config_path is not None:
+        config_path = Path(matrix_config_path).expanduser()
+        matrix_config = _load_external_golden_matrix_config(config_path)
+        matrix_rows = matrix_config.get("rows", [])
+        source = {
+            "kind": "matrix_config",
+            "path": str(config_path.resolve()),
+            "schema": matrix_config.get("schema"),
+        }
+    elif matrix_config is not None:
+        matrix_rows = matrix_config.get("rows", [])
+        if not isinstance(matrix_rows, list):
+            raise ValueError("matrix config must contain a rows list")
+        source = {
+            "kind": "matrix_config",
+            "path": None,
+            "schema": matrix_config.get("schema"),
+        }
+    elif rows is not None:
+        matrix_rows = rows
+        source = {
+            "kind": "row_json",
+            "path": None,
+            "schema": None,
+        }
+    else:
+        raise ValueError("matrix rows are required")
+
+    default_tolerance_policy = dict(_EXTERNAL_GOLDEN_MATRIX_DEFAULT_TOLERANCE_POLICY)
+    if matrix_config is not None and isinstance(
+        matrix_config.get("default_tolerance_policy"),
+        dict,
+    ):
+        default_tolerance_policy.update(matrix_config["default_tolerance_policy"])
+
+    row_results: list[dict[str, Any]] = []
+    seen_row_ids: set[str] = set()
+    for index, row in enumerate(matrix_rows, 1):
+        validated, blocked_or_skipped = _validate_external_golden_matrix_row(
+            row=row,
+            index=index,
+            default_tolerance_policy=default_tolerance_policy,
+        )
+        if blocked_or_skipped is not None:
+            row_results.append(blocked_or_skipped)
+            continue
+
+        assert validated is not None
+        if validated["row_id"] in seen_row_ids:
+            duplicate = _external_golden_matrix_blocked_row(
+                row=row,
+                index=index,
+                reason=f"duplicate row_id: {validated['row_id']}",
+                reason_code="duplicate-row-id",
+                default_tolerance_policy=default_tolerance_policy,
+            )
+            row_results.append(duplicate)
+            continue
+        seen_row_ids.add(validated["row_id"])
+
+        try:
+            report = run_external_golden_parity(
+                golden_result_dir=validated["golden_result_dir"],
+                team=validated["team"],
+                common_cfg=validated["common_cfg"],
+                apl=validated["apl"],
+                stop_tick=validated["stop_tick"],
+            )
+        except (FileNotFoundError, NotADirectoryError, ValueError, json.JSONDecodeError) as exc:
+            row_results.append(
+                _external_golden_matrix_blocked_row(
+                    row=row,
+                    index=index,
+                    reason=str(exc),
+                    reason_code="parity-row-blocked",
+                    default_tolerance_policy=default_tolerance_policy,
+                    signoff_effect=(
+                        "provisional"
+                        if validated["missing_input_policy"] == "provisional"
+                        else "blocked"
+                    ),
+                )
+            )
+            continue
+
+        row_results.append(
+            _external_golden_matrix_completed_row(
+                validated=validated,
+                report=report,
+            )
+        )
+
+    summary = build_external_golden_matrix_summary(
+        rows=row_results,
+        matrix_source=source,
+    )
+    if output_path is not None:
+        _write_json_artifact(output_path, summary)
+    return summary
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run a Buff main-loop consistency comparison")
     parser.add_argument("--team", default=None, help="Registered team name to simulate")
@@ -1523,6 +2132,30 @@ def build_external_golden_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def build_external_golden_matrix_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Run an explicit external golden matrix and write an aggregate JSON summary"
+    )
+    source_group = parser.add_mutually_exclusive_group(required=True)
+    source_group.add_argument(
+        "--matrix-config",
+        default=None,
+        help="JSON matrix config containing a rows list.",
+    )
+    source_group.add_argument(
+        "--row-json",
+        action="append",
+        default=None,
+        help="Single matrix row as a JSON object. Repeat for multiple explicit rows.",
+    )
+    parser.add_argument(
+        "--output-json",
+        required=True,
+        help="JSON artifact path for the external golden matrix aggregate.",
+    )
+    return parser
+
+
 def _format_multi_team_human_summary(summary: dict[str, Any]) -> str:
     lines = [
         f"schema: {summary['schema']}",
@@ -1572,6 +2205,26 @@ def _format_external_golden_human_summary(report: dict[str, Any]) -> str:
             "placeholder_domains: "
             + ", ".join(name for name, domain in domains.items() if not domain["implemented"]),
             f"matches: {report['diffs']['matches']}",
+        ]
+    )
+
+
+def _format_external_golden_matrix_human_summary(summary: dict[str, Any]) -> str:
+    counts = summary["counts"]
+    return "\n".join(
+        [
+            f"schema: {summary['schema']}",
+            f"row_schema: {summary['row_schema']}",
+            f"row_count: {summary['row_count']}",
+            f"pass_count: {counts['pass']}",
+            f"fail_count: {counts['fail']}",
+            f"skip_count: {counts['skip']}",
+            f"blocked_count: {counts['blocked']}",
+            f"signoff_status: {summary['signoff_status']}",
+            "rows: "
+            + ", ".join(
+                f"{row.get('row_id')}={row.get('status')}" for row in summary["rows"]
+            ),
         ]
     )
 
@@ -1636,19 +2289,45 @@ def external_golden_main(argv: list[str] | None = None) -> int:
     return 0 if report["diffs"]["matches"] else 2
 
 
+def external_golden_matrix_main(argv: list[str] | None = None) -> int:
+    parser = build_external_golden_matrix_parser()
+    args = parser.parse_args(argv)
+    try:
+        row_jsons = None
+        if args.row_json:
+            row_jsons = [json.loads(raw_row) for raw_row in args.row_json]
+        summary = run_external_golden_matrix(
+            matrix_config_path=args.matrix_config,
+            rows=row_jsons,
+            output_path=args.output_json,
+        )
+    except (FileNotFoundError, NotADirectoryError, ValueError, json.JSONDecodeError) as exc:
+        parser.exit(2, f"{parser.prog}: error: {exc}\n")
+
+    print(_format_external_golden_matrix_human_summary(summary))
+    counts = summary["counts"]
+    return 0 if counts["fail"] == 0 and counts["blocked"] == 0 else 2
+
+
 __all__ = [
     "PROJECT_ROOT",
     "EXTERNAL_GOLDEN_PARITY_SCHEMA",
+    "EXTERNAL_GOLDEN_MATRIX_SCHEMA",
+    "EXTERNAL_GOLDEN_MATRIX_ROW_SCHEMA",
     "MULTI_TEAM_CONSISTENCY_SCHEMA",
     "RUNTIME_LABEL_CONTRACT",
     "RuntimeSnapshot",
+    "build_external_golden_matrix_parser",
     "build_external_golden_parity_report",
     "build_external_golden_parser",
+    "build_external_golden_matrix_summary",
     "build_consistency_report",
     "build_multi_team_consistency_summary",
     "build_parser",
+    "external_golden_matrix_main",
     "external_golden_main",
     "main",
+    "run_external_golden_matrix",
     "run_external_golden_parity",
     "run_main_loop_consistency",
     "run_multi_team_main_loop_consistency",
