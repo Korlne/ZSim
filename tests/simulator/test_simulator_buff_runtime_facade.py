@@ -1209,6 +1209,43 @@ def test_buff_load_loop_records_count_only_when_opted_in() -> None:
     }
 
 
+def test_buff_load_loop_requires_pending_owner_when_runtime_state_exists() -> None:
+    loading_buff_dict: dict[str, list[Any]] = {"alpha": [object()]}
+    runtime_state = BuffRuntimeState(
+        template_registry={"alpha": {}},
+        pending_queue=loading_buff_dict,
+        active_store={"alpha": []},
+        enemy_mirror=[],
+    )
+    sim = SimpleNamespace(buff_runtime_state=runtime_state)
+
+    with pytest.raises(TypeError, match="BuffRuntimeFacade.load_pending_buffs"):
+        BuffLoadLoop(
+            time_now=0,
+            load_mission_dict={},
+            existbuff_dict={"alpha": {}},
+            character_name_box=["alpha"],
+            pending_buff_queue=loading_buff_dict,
+            all_name_order_box={},
+            sim_instance=sim,
+        )
+
+    assert loading_buff_dict["alpha"]
+
+    result = BuffLoadLoop(
+        time_now=0,
+        load_mission_dict={},
+        existbuff_dict={"alpha": {}},
+        character_name_box=["alpha"],
+        pending_buff_queue=runtime_state.pending_queue_owner(),
+        all_name_order_box={},
+        sim_instance=sim,
+    )
+
+    assert result is loading_buff_dict
+    assert loading_buff_dict == {"alpha": [], "enemy": []}
+
+
 def test_buff_load_loop_records_opt_in_scan_metric_shape(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -179,9 +179,19 @@ class _LegacyPendingQueueCompatAdapter:
 
 def _pending_queue_owner_for_migration_tests(
     pending_buff_queue: PendingQueueLike | dict[str, list[Buff]],
+    *,
+    sim_instance: "Simulator | None" = None,
 ) -> PendingQueueLike:
     if hasattr(pending_buff_queue, "reset_for_beneficiaries"):
         return pending_buff_queue
+    runtime_state = getattr(sim_instance, "buff_runtime_state", None)
+    if runtime_state is not None and hasattr(runtime_state, "pending_queue_owner"):
+        raise TypeError(
+            "BuffLoadLoop raw pending dict compatibility is migration/test-only once "
+            "sim_instance exposes buff_runtime_state; use "
+            "BuffRuntimeFacade.load_pending_buffs(...) or pass "
+            "BuffRuntimeState.pending_queue_owner()."
+        )
     return _LegacyPendingQueueCompatAdapter(pending_buff_queue)
 
 
@@ -476,7 +486,10 @@ def BuffLoadLoop(
     from zsim.sim_progress.Load import LoadingMission
 
     buff_registry_by_character = existbuff_dict
-    pending_queue_owner = _pending_queue_owner_for_migration_tests(pending_buff_queue)
+    pending_queue_owner = _pending_queue_owner_for_migration_tests(
+        pending_buff_queue,
+        sim_instance=sim_instance,
+    )
     record_rebuild_count = getattr(sim_instance, "_record_buff_runtime_rebuild_count", None)
     if record_rebuild_count is not None:
         record_rebuild_count("buff_load_loop")
