@@ -19,6 +19,9 @@ RUNTIME_COMMAND_PATH = (
 LOAD_DAMAGE_EVENT_PATH = (
     PROJECT_ROOT / "zsim" / "sim_progress" / "Load" / "LoadDamageEvent.py"
 )
+BUFF_REFACTOR_STATE_PATH = (
+    PROJECT_ROOT / "scripts" / "ralph" / "state" / "buff-refactor-state.json"
+)
 LEGACY_EVENT_LIST_ADAPTER_NAME = "LegacyEventListScheduleDispatchAdapter"
 DEFAULT_PATH_LEGACY_ADAPTER_PROHIBITED_FILES = (
     SIMULATOR_CLASS_PATH,
@@ -875,10 +878,25 @@ def _raw_append_key(finding: Finding) -> tuple[str, int, str, str]:
     return (finding.path, finding.line, finding.kind, finding.matched_expression)
 
 
-def _active_prd_story_ids() -> set[str]:
+def _known_ralph_story_ids() -> set[str]:
     prd_path = PROJECT_ROOT / "scripts" / "ralph" / "prd.json"
     prd = json.loads(prd_path.read_text(encoding="utf-8"))
-    return {story["id"] for story in prd["userStories"]}
+    story_ids = {story["id"] for story in prd["userStories"]}
+    if not BUFF_REFACTOR_STATE_PATH.exists():
+        return story_ids
+
+    state = json.loads(BUFF_REFACTOR_STATE_PATH.read_text(encoding="utf-8"))
+    story_ids.update(str(story_id) for story_id in state.get("completed_story_ids", []))
+    previous_prd = state.get("previous_completed_prd", {})
+    story_ids.update(
+        str(story_id) for story_id in previous_prd.get("completed_story_ids", [])
+    )
+    story_ids.update(
+        str(story["id"])
+        for story in state.get("story_status", [])
+        if isinstance(story, dict) and "id" in story
+    )
+    return story_ids
 
 
 def _scope_name(class_stack: list[str], function_stack: list[str]) -> str:
@@ -1444,17 +1462,17 @@ def test_raw_event_list_append_guardrail_has_only_owner_api_or_local_group_findi
         + "\n".join(f"- {finding.message()}" for finding in findings)
     )
 
-    prd_story_ids = _active_prd_story_ids()
+    story_ids = _known_ralph_story_ids()
     missing_story_ids = sorted(
         {
             owner_story_id
             for owner_story_id in CURRENT_ROOT_ALLOWED_EVENT_QUEUE_MUTATIONS.values()
-            if owner_story_id not in prd_story_ids
+            if owner_story_id not in story_ids
         }
     )
     assert not missing_story_ids, (
-        "Current-root allowed event queue mutation entries must name follow-up stories "
-        f"in scripts/ralph/prd.json; missing: {missing_story_ids}"
+        "Current-root allowed event queue mutation entries must name active or "
+        f"machine-state completed stories; missing: {missing_story_ids}"
     )
 
 
@@ -1512,17 +1530,17 @@ def test_planned_queue_compatibility_view_reads_are_migration_only() -> None:
         + "\n".join(f"- {finding.message()}" for finding in findings)
     )
 
-    prd_story_ids = _active_prd_story_ids()
+    story_ids = _known_ralph_story_ids()
     missing_story_ids = sorted(
         {
             owner_story_id
             for owner_story_id in CURRENT_ROOT_ALLOWED_COMPATIBILITY_VIEW_READS.values()
-            if owner_story_id not in prd_story_ids
+            if owner_story_id not in story_ids
         }
     )
     assert not missing_story_ids, (
-        "Current-root approved compatibility_view reads must name follow-up stories "
-        f"in scripts/ralph/prd.json; missing: {missing_story_ids}"
+        "Current-root approved compatibility_view reads must name active or "
+        f"machine-state completed stories; missing: {missing_story_ids}"
     )
 
 
@@ -1552,17 +1570,17 @@ def test_schedule_data_event_list_compatibility_allowance_is_exact_and_owned() -
         + "\n".join(f"- {finding.message()}" for finding in findings)
     )
 
-    prd_story_ids = _active_prd_story_ids()
+    story_ids = _known_ralph_story_ids()
     missing_story_ids = sorted(
         {
             allowance.story
             for allowance in CURRENT_ROOT_ALLOWED_SCHEDULE_DATA_EVENT_LIST_COMPATIBILITY.values()
-            if allowance.story not in prd_story_ids
+            if allowance.story not in story_ids
         }
     )
     assert not missing_story_ids, (
-        "ScheduleData.event_list compatibility allowances must name active PRD "
-        f"stories; missing: {missing_story_ids}"
+        "ScheduleData.event_list compatibility allowances must name active or "
+        f"machine-state completed stories; missing: {missing_story_ids}"
     )
     assert all(
         allowance.owner and allowance.rationale

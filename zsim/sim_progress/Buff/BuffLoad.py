@@ -72,6 +72,12 @@ class BuffJudgeCache(BuffInitCache):
         super().__init__()
 
 
+class BuffLoadLifecycleCache:
+    def __init__(self) -> None:
+        self.init_cache = BuffInitCache()
+        self.judge_cache = BuffJudgeCache()
+
+
 def process_buff(
     buff_0,
     sub_exist_buff_dict,
@@ -81,15 +87,26 @@ def process_buff(
     pending_buff_queue,
     exist_buff_dict: dict,
     sim_instance: "Simulator",
+    *,
+    load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
 ):
     """
     该函数是公用的buff逻辑处理函数，主要是通过BuffJudge来判断Buff是否应该触发。
     注意，此处的buff_0是operator的buff_0，哪怕buff是要加给别的角色，这里也是operator的buff_0
     """
+    if load_lifecycle_cache is None:
+        load_lifecycle_cache = BuffLoadLifecycleCache()
     all_match, judge_condition_dict, active_condition_dict = BuffInitialize(
-        buff_0.ft.index, sub_exist_buff_dict
+        buff_0.ft.index,
+        sub_exist_buff_dict,
+        cache=load_lifecycle_cache.init_cache,
     )
-    all_match = BuffJudge(buff_0, judge_condition_dict, mission)
+    all_match = BuffJudge(
+        buff_0,
+        judge_condition_dict,
+        mission,
+        cache=load_lifecycle_cache.judge_cache,
+    )
     if not all_match:
         return
     # if not buff_0.ft.is_debuff:
@@ -442,6 +459,7 @@ def _execute_buff_load_loop_candidate_step(
     all_name_order_box: dict,
     registry_by_character: dict,
     sim_instance: "Simulator",
+    load_lifecycle_cache: BuffLoadLifecycleCache,
 ) -> None:
     if processor == "on_field":
         process_on_field_buff(
@@ -452,6 +470,7 @@ def _execute_buff_load_loop_candidate_step(
             all_name_order_box,
             registry_by_character,
             sim_instance=sim_instance,
+            load_lifecycle_cache=load_lifecycle_cache,
         )
         return
     if processor == "backend":
@@ -463,6 +482,7 @@ def _execute_buff_load_loop_candidate_step(
             pending_buff_queue,
             registry_by_character,
             sim_instance=sim_instance,
+            load_lifecycle_cache=load_lifecycle_cache,
         )
         return
     raise ValueError(f"未知的BuffLoadLoop候选执行器：{processor}")
@@ -476,6 +496,8 @@ def BuffLoadLoop(
     pending_buff_queue: PendingQueueLike,
     all_name_order_box: dict,
     sim_instance: "Simulator",
+    *,
+    load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
 ):
     """
     这是buff修改三部曲的第二步,也是最核心的一个步骤，
@@ -490,6 +512,8 @@ def BuffLoadLoop(
         pending_buff_queue,
         sim_instance=sim_instance,
     )
+    if load_lifecycle_cache is None:
+        load_lifecycle_cache = BuffLoadLifecycleCache()
     record_rebuild_count = getattr(sim_instance, "_record_buff_runtime_rebuild_count", None)
     if record_rebuild_count is not None:
         record_rebuild_count("buff_load_loop")
@@ -536,6 +560,7 @@ def BuffLoadLoop(
                 all_name_order_box=all_name_order_box,
                 registry_by_character=buff_registry_by_character,
                 sim_instance=sim_instance,
+                load_lifecycle_cache=load_lifecycle_cache,
             )
     else:
         # 遍历load_mission_dict中的任务
@@ -566,6 +591,7 @@ def BuffLoadLoop(
                         all_name_order_box,
                         buff_registry_by_character,
                         sim_instance=sim_instance,
+                        load_lifecycle_cache=load_lifecycle_cache,
                     )
                 else:
                     process_backend_buff(
@@ -576,6 +602,7 @@ def BuffLoadLoop(
                         pending_queue_owner,
                         buff_registry_by_character,
                         sim_instance=sim_instance,
+                        load_lifecycle_cache=load_lifecycle_cache,
                     )
     if record_scan_metrics:
         if candidate_plan is None:
@@ -606,6 +633,8 @@ def process_on_field_buff(
     all_name_order_box: dict,
     exist_buff_dict: dict,
     sim_instance: "Simulator",
+    *,
+    load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
 ):
     """
     处理前台Buff的逻辑模块
@@ -637,6 +666,7 @@ def process_on_field_buff(
             pending_buff_queue,
             exist_buff_dict,
             sim_instance=sim_instance,
+            load_lifecycle_cache=load_lifecycle_cache,
         )
 
 
@@ -648,6 +678,8 @@ def process_backend_buff(
     pending_buff_queue: PendingQueueLike,
     exist_buff_dict: dict,
     sim_instance: "Simulator",
+    *,
+    load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
 ):
     """
     处理后台Buff的逻辑，
@@ -682,6 +714,7 @@ def process_backend_buff(
             pending_buff_queue,
             exist_buff_dict,
             sim_instance=sim_instance,
+            load_lifecycle_cache=load_lifecycle_cache,
         )
 
 
@@ -701,8 +734,10 @@ def buff_go_to(buff_0, all_name_box):
 
 
 def BuffInitialize(
-    buff_name: str, existbuff_dict: dict, *, cache=BuffInitCache()
+    buff_name: str, existbuff_dict: dict, *, cache: BuffInitCache | None = None
 ) -> tuple[bool, dict, dict]:
+    if cache is None:
+        cache = BuffInitCache()
     cache_key = (buff_name, tuple(existbuff_dict.items()))
     if cache_key in cache.cache:
         return cache.get(cache_key)
@@ -728,13 +763,15 @@ def BuffJudge(
     judge_condition_dict: dict,
     mission: "LoadingMission",
     *,
-    cache=BuffJudgeCache(),
+    cache: BuffJudgeCache | None = None,
 ) -> bool:
     """
     如果judge_condition_dict的全部内容是None，同时buff还是简单判断逻辑
     说明是环境或是战斗系统自带的debuff，则直接返回False，跳过判断。
     """
     # 以下为缓存逻辑
+    if cache is None:
+        cache = BuffJudgeCache()
     simple_logic: bool = buff_now.ft.simple_judge_logic
     all_simple = [
         buff_now.ft.simple_judge_logic,
@@ -750,7 +787,7 @@ def BuffJudge(
             return cache[cache_key]
     result: bool
 
-    def save_cache_and_return(result: bool, *, cache=cache):
+    def save_cache_and_return(result: bool):
         """由于本函数有多个return中断，所以写了个这玩意，把直接return换成return这个函数就行"""
         if all(all_simple):
             cache.add(cache_key, result)

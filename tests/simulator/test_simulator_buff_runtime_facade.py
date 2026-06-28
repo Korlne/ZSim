@@ -10,7 +10,7 @@ import zsim.sim_progress.ScheduledEvent as scheduled_event_module
 import zsim.sim_progress.Buff.BuffLoad as buff_load_module
 import zsim.main as zsim_main
 from zsim.sim_progress import Load as load_module
-from zsim.sim_progress.Buff.BuffLoad import BuffLoadLoop
+from zsim.sim_progress.Buff.BuffLoad import BuffLoadLifecycleCache, BuffLoadLoop
 from zsim.sim_progress.Buff.JudgeTools.FindMain import find_exist_buff_dict
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     ActiveBuffStore,
@@ -1261,6 +1261,8 @@ def test_buff_load_loop_records_opt_in_scan_metric_shape(
         all_name_order_box: dict[str, Any],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> None:
         pending_buff_queue["alpha"].append("alpha-pending")
 
@@ -1272,6 +1274,8 @@ def test_buff_load_loop_records_opt_in_scan_metric_shape(
         pending_buff_queue: dict[str, list[Any]],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> None:
         pending_buff_queue["bravo"].append("bravo-pending")
 
@@ -1432,6 +1436,8 @@ def test_buff_load_loop_opt_in_metrics_use_summary_without_detailed_plan(
         all_name_order_box: dict[str, Any],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> None:
         owner = registry_owner_by_id[id(sub_exist_buff_dict)]
         calls.append(("on_field", mission.name, owner, tuple(sub_exist_buff_dict)))
@@ -1445,6 +1451,8 @@ def test_buff_load_loop_opt_in_metrics_use_summary_without_detailed_plan(
         pending_buff_queue: dict[str, list[Any]],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> None:
         owner = registry_owner_by_id[id(sub_exist_buff_dict)]
         calls.append(("backend", mission.name, owner, tuple(sub_exist_buff_dict)))
@@ -1591,6 +1599,8 @@ def test_buff_load_loop_metrics_preserve_queue_order_and_zero_mismatch(
         all_name_order_box: dict[str, Any],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> None:
         owner = sim_instance._registry_owner_by_id[id(sub_exist_buff_dict)]
         sim_instance._observed_buff_load_calls.append(
@@ -1606,6 +1616,8 @@ def test_buff_load_loop_metrics_preserve_queue_order_and_zero_mismatch(
         pending_buff_queue: dict[str, list[Any]],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> None:
         owner = sim_instance._registry_owner_by_id[id(sub_exist_buff_dict)]
         sim_instance._observed_buff_load_calls.append(
@@ -1756,6 +1768,8 @@ def test_buff_load_loop_owner_backed_steps_enqueue_through_pending_owner(
         all_name_order_box: dict[str, Any],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> None:
         buff_load_module._enqueue_pending_buff(
             pending_buff_queue,
@@ -1771,6 +1785,8 @@ def test_buff_load_loop_owner_backed_steps_enqueue_through_pending_owner(
         pending_buff_queue: PendingBuffQueue,
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> None:
         buff_load_module._enqueue_pending_buff(
             pending_buff_queue,
@@ -1899,6 +1915,8 @@ def test_buff_load_loop_visits_mission_registries_in_character_order(
         all_name_order_box: dict[str, Any],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> None:
         calls.append(
             (
@@ -1917,6 +1935,8 @@ def test_buff_load_loop_visits_mission_registries_in_character_order(
         pending_buff_queue: dict[str, list[Any]],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> None:
         calls.append(
             (
@@ -2289,6 +2309,8 @@ def test_buff_load_loop_candidate_plan_matches_current_scan_order(
         all_name_order_box: dict[str, Any],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> None:
         calls.append(
             (
@@ -2307,6 +2329,8 @@ def test_buff_load_loop_candidate_plan_matches_current_scan_order(
         pending_buff_queue: dict[str, list[Any]],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> None:
         calls.append(
             (
@@ -2427,6 +2451,8 @@ def test_buff_load_loop_opt_in_candidate_iterator_matches_default_without_plan(
         all_name_order_box: dict[str, Any],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> None:
         owner = registry_owner_by_id[id(sub_exist_buff_dict)]
         sim_instance._observed_buff_load_calls.append(
@@ -2442,6 +2468,8 @@ def test_buff_load_loop_opt_in_candidate_iterator_matches_default_without_plan(
         pending_buff_queue: dict[str, list[Any]],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> None:
         owner = registry_owner_by_id[id(sub_exist_buff_dict)]
         sim_instance._observed_buff_load_calls.append(
@@ -2557,6 +2585,8 @@ def test_buff_load_loop_opt_in_candidate_iterator_is_not_cached_between_calls(
         all_name_order_box: dict[str, Any],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> None:
         keys = tuple(sub_exist_buff_dict)
         calls.append(keys)
@@ -2642,6 +2672,8 @@ def test_buff_load_processing_helpers_own_candidate_filters(
         pending_buff_queue: dict[str, list[Any]],
         exist_buff_dict: dict[str, dict[str, Any]],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> None:
         process_calls.append((mission.name, buff_0.ft.index, tuple(selected_characters)))
 
@@ -2803,11 +2835,14 @@ def test_buff_runtime_facade_load_pending_buffs_passes_pending_owner(
         pending_buff_queue: PendingBuffQueue,
         all_name_order_box: dict[str, Any],
         sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
     ) -> dict[str, list[Any]]:
         captured["time_now"] = time_now
         captured["existbuff_dict"] = existbuff_dict
         captured["pending_owner"] = pending_buff_queue
         captured["sim_instance"] = sim_instance
+        captured["load_lifecycle_cache"] = load_lifecycle_cache
         pending_buff_queue.reset_for_beneficiaries([*character_name_box, "enemy"])
         pending_buff_queue.enqueue("alpha", "pending-alpha")
         return cast(dict[str, list[Any]], pending_buff_queue.as_compat_dict())
@@ -2827,9 +2862,78 @@ def test_buff_runtime_facade_load_pending_buffs_passes_pending_owner(
         "existbuff_dict": exist_buff_dict,
         "pending_owner": runtime_state.pending_queue_owner(),
         "sim_instance": sim,
+        "load_lifecycle_cache": runtime_state.load_lifecycle_cache_owner(),
     }
     assert result is loading_buff_dict
     assert loading_buff_dict == {"alpha": ["pending-alpha"], "enemy": []}
+
+
+def test_buff_runtime_facade_load_pending_buffs_reuses_runtime_lifecycle_cache(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sim = cast(Any, Simulator())
+    first_pending: dict[str, list[Any]] = {"alpha": []}
+    second_pending: dict[str, list[Any]] = {"alpha": []}
+    first_runtime_state = BuffRuntimeState(
+        template_registry={"alpha": {}},
+        pending_queue=first_pending,
+        active_store={"alpha": []},
+        enemy_mirror=[],
+    )
+    second_runtime_state = BuffRuntimeState(
+        template_registry={"alpha": {}},
+        pending_queue=second_pending,
+        active_store={"alpha": []},
+        enemy_mirror=[],
+    )
+    captured_caches: list[BuffLoadLifecycleCache | None] = []
+
+    def fake_buff_load_loop(
+        time_now: int,
+        load_mission_dict: dict[str, Any],
+        existbuff_dict: dict[str, dict[str, Any]],
+        character_name_box: list[str],
+        pending_buff_queue: PendingBuffQueue,
+        all_name_order_box: dict[str, Any],
+        sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
+    ) -> dict[str, list[Any]]:
+        captured_caches.append(load_lifecycle_cache)
+        pending_buff_queue.reset_for_beneficiaries([*character_name_box, "enemy"])
+        return cast(dict[str, list[Any]], pending_buff_queue.as_compat_dict())
+
+    monkeypatch.setattr(buff_load_module, "BuffLoadLoop", fake_buff_load_loop)
+
+    first_runtime_state.create_facade().load_pending_buffs(
+        time_now=1,
+        load_mission_dict={},
+        character_name_box=["alpha"],
+        all_name_order_box={},
+        sim_instance=sim,
+    )
+    first_runtime_state.create_facade().load_pending_buffs(
+        time_now=2,
+        load_mission_dict={},
+        character_name_box=["alpha"],
+        all_name_order_box={},
+        sim_instance=sim,
+    )
+    second_runtime_state.create_facade().load_pending_buffs(
+        time_now=3,
+        load_mission_dict={},
+        character_name_box=["alpha"],
+        all_name_order_box={},
+        sim_instance=sim,
+    )
+
+    assert captured_caches == [
+        first_runtime_state.load_lifecycle_cache_owner(),
+        first_runtime_state.load_lifecycle_cache_owner(),
+        second_runtime_state.load_lifecycle_cache_owner(),
+    ]
+    assert captured_caches[0] is captured_caches[1]
+    assert captured_caches[0] is not captured_caches[2]
 
 
 def test_scheduled_event_records_opt_in_construction_and_runtime_port_counts(

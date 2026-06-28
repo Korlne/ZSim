@@ -8,6 +8,7 @@ from zsim.sim_progress.Report import report_to_log
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Buff import Buff
+    from zsim.sim_progress.Buff.BuffLoad import BuffLoadLifecycleCache
     from zsim.sim_progress.Enemy import Enemy
     from zsim.sim_progress.Load import LoadingMission
     from zsim.sim_progress.Preload import SkillNode
@@ -26,8 +27,11 @@ class BuffRuntimeState:
         active_store: dict[str, list["Buff"]],
         enemy_mirror: list["Buff"],
     ) -> None:
+        from zsim.sim_progress.Buff.BuffLoad import BuffLoadLifecycleCache
+
         self._template_registry = BuffTemplateRegistry(template_registry)
         self._pending_queue = PendingBuffQueue(pending_queue)
+        self._load_lifecycle_cache: BuffLoadLifecycleCache = BuffLoadLifecycleCache()
         self._collapse_enemy_debuff_store(
             active_store,
             enemy_mirror,
@@ -70,6 +74,9 @@ class BuffRuntimeState:
 
     def pending_queue_for_compat(self) -> dict[str, list["Buff"]]:
         return self._pending_queue.as_compat_dict()
+
+    def load_lifecycle_cache_owner(self) -> "BuffLoadLifecycleCache":
+        return self._load_lifecycle_cache
 
     def active_store_owner(self) -> "ActiveBuffStore":
         return self._active_store
@@ -595,6 +602,7 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
             self._runtime_state.pending_queue_owner(),
             all_name_order_box,
             sim_instance=sim_instance,
+            load_lifecycle_cache=self._runtime_state.load_lifecycle_cache_owner(),
         )
 
     def activate_pending_buffs(self, *, timenow: float) -> dict[str, list["Buff"]]:

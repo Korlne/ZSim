@@ -12,6 +12,7 @@ from zsim.sim_progress.Buff.BuffLoad import (
     BuffInitialize,
     BuffJudge,
     BuffJudgeCache,
+    BuffLoadLifecycleCache,
 )
 from zsim.sim_progress.Buff.buff_class import Buff
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
@@ -189,10 +190,8 @@ def _first_loaded_buff_name() -> str:
     raise AssertionError("No Buff index is shared by JUDGE_FILE and EXIST_FILE")
 
 
-def test_buff_initialize_default_cache_retains_registry_identity_without_invalidation() -> None:
-    default_cache = BuffInitialize.__kwdefaults__["cache"]
-    assert isinstance(default_cache, BuffInitCache)
-
+def test_buff_initialize_has_no_hidden_default_cache_and_explicit_cache_remains_compatible() -> None:
+    assert BuffInitialize.__kwdefaults__["cache"] is None
     cache = BuffInitCache()
     buff_name = _first_loaded_buff_name()
     registered_buff = _BuffProbe(buff_name)
@@ -208,6 +207,29 @@ def test_buff_initialize_default_cache_retains_registry_identity_without_invalid
     assert cache.get(cache_key) is result
 
 
+def test_buff_runtime_state_owns_run_scoped_load_lifecycle_cache() -> None:
+    runtime_state = BuffRuntimeState(
+        template_registry={},
+        pending_queue={},
+        active_store={},
+        enemy_mirror=[],
+    )
+    other_runtime_state = BuffRuntimeState(
+        template_registry={},
+        pending_queue={},
+        active_store={},
+        enemy_mirror=[],
+    )
+
+    lifecycle_cache = runtime_state.load_lifecycle_cache_owner()
+
+    assert isinstance(lifecycle_cache, BuffLoadLifecycleCache)
+    assert isinstance(lifecycle_cache.init_cache, BuffInitCache)
+    assert isinstance(lifecycle_cache.judge_cache, BuffJudgeCache)
+    assert runtime_state.load_lifecycle_cache_owner() is lifecycle_cache
+    assert other_runtime_state.load_lifecycle_cache_owner() is not lifecycle_cache
+
+
 def test_buff_init_cache_keeps_first_128_entries_after_overflow() -> None:
     cache = BuffInitCache()
     keys = [(f"buff-{index}", index) for index in range(129)]
@@ -221,10 +243,8 @@ def test_buff_init_cache_keeps_first_128_entries_after_overflow() -> None:
     assert keys[128] not in cache.cache
 
 
-def test_buff_judge_default_cache_is_identity_keyed_without_lifecycle_invalidation() -> None:
-    default_cache = BuffJudge.__kwdefaults__["cache"]
-    assert isinstance(default_cache, BuffJudgeCache)
-
+def test_buff_judge_has_no_hidden_default_cache_and_explicit_cache_remains_compatible() -> None:
+    assert BuffJudge.__kwdefaults__["cache"] is None
     cache = BuffJudgeCache()
     buff = _BuffProbe("identity-cache", alltime=True)
     mission = SimpleNamespace()
