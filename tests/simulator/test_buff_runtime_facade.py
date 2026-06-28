@@ -230,6 +230,32 @@ def test_buff_runtime_state_owns_run_scoped_load_lifecycle_cache() -> None:
     assert other_runtime_state.load_lifecycle_cache_owner() is not lifecycle_cache
 
 
+def test_buff_runtime_state_rebind_gets_fresh_load_lifecycle_cache_state() -> None:
+    first_runtime_state = BuffRuntimeState(
+        template_registry={},
+        pending_queue={},
+        active_store={},
+        enemy_mirror=[],
+    )
+    second_runtime_state = BuffRuntimeState(
+        template_registry={},
+        pending_queue={},
+        active_store={},
+        enemy_mirror=[],
+    )
+    first_cache = first_runtime_state.load_lifecycle_cache_owner()
+    second_cache = second_runtime_state.load_lifecycle_cache_owner()
+
+    first_cache.init_cache.add(("old-init",), ("old-result",))
+    first_cache.judge_cache.add(("old-judge",), True)
+
+    assert second_cache is not first_cache
+    assert second_cache.init_cache.cache == {}
+    assert second_cache.judge_cache.cache == {}
+    assert first_cache.init_cache.cache == {("old-init",): ("old-result",)}
+    assert first_cache.judge_cache.cache == {("old-judge",): True}
+
+
 def test_buff_init_cache_keeps_first_128_entries_after_overflow() -> None:
     cache = BuffInitCache()
     keys = [(f"buff-{index}", index) for index in range(129)]

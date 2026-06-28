@@ -2936,6 +2936,89 @@ def test_buff_runtime_facade_load_pending_buffs_reuses_runtime_lifecycle_cache(
     assert captured_caches[0] is not captured_caches[2]
 
 
+def test_main_loop_rebound_runtime_state_uses_fresh_load_lifecycle_cache(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    order: list[str] = []
+    sim, _, _, _, _ = _make_minimal_sim(order)
+    first_cache = sim.buff_runtime_state.load_lifecycle_cache_owner()
+    first_cache.init_cache.add(("old-init",), ("old-result",))
+    first_cache.judge_cache.add(("old-judge",), True)
+
+    rebound_registry: dict[str, dict[str, Any]] = {"alpha": {}, "enemy": {}}
+    rebound_pending: dict[str, list[Any]] = {"alpha": ["stale-pending"]}
+    rebound_active: dict[str, list[Any]] = {"alpha": [], "enemy": []}
+    rebound_enemy_mirror: list[Any] = []
+    rebound_runtime_state = BuffRuntimeState(
+        template_registry=rebound_registry,
+        pending_queue=rebound_pending,
+        active_store=rebound_active,
+        enemy_mirror=rebound_enemy_mirror,
+    )
+    captured: dict[str, Any] = {}
+
+    def fake_buff_load_loop(
+        time_now: int,
+        load_mission_dict: dict[str, Any],
+        existbuff_dict: dict[str, dict[str, Any]],
+        character_name_box: list[str],
+        pending_buff_queue: PendingBuffQueue,
+        all_name_order_box: dict[str, Any],
+        sim_instance: Any,
+        *,
+        load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
+    ) -> dict[str, list[Any]]:
+        captured["time_now"] = time_now
+        captured["existbuff_dict"] = existbuff_dict
+        captured["pending_owner"] = pending_buff_queue
+        captured["load_lifecycle_cache"] = load_lifecycle_cache
+        captured["sim_instance"] = sim_instance
+        pending_buff_queue.reset_for_beneficiaries([*character_name_box, "enemy"])
+        return cast(dict[str, list[Any]], pending_buff_queue.as_compat_dict())
+
+    def fake_update_time_related_effects(
+        self: DefaultBuffRuntimeFacade, *, tick: int, enemy: Any
+    ) -> dict[str, list[Any]]:
+        order.append(f"tick_sweep:{tick}")
+        return {}
+
+    def fake_activate_pending_buffs(
+        self: DefaultBuffRuntimeFacade, *, timenow: float
+    ) -> dict[str, list[Any]]:
+        order.append(f"activate_pending:{timenow}")
+        return {}
+
+    _patch_main_loop_leaf_calls(monkeypatch, order)
+    monkeypatch.setattr(
+        DefaultBuffRuntimeFacade,
+        "update_time_related_effects",
+        fake_update_time_related_effects,
+    )
+    monkeypatch.setattr(
+        DefaultBuffRuntimeFacade,
+        "activate_pending_buffs",
+        fake_activate_pending_buffs,
+    )
+    monkeypatch.setattr(buff_load_module, "BuffLoadLoop", fake_buff_load_loop)
+    sim.buff_runtime_state = rebound_runtime_state
+
+    sim.main_loop(stop_tick=1, use_api=True)
+
+    assert captured == {
+        "time_now": 0,
+        "existbuff_dict": rebound_registry,
+        "pending_owner": rebound_runtime_state.pending_queue_owner(),
+        "load_lifecycle_cache": rebound_runtime_state.load_lifecycle_cache_owner(),
+        "sim_instance": sim,
+    }
+    assert captured["load_lifecycle_cache"] is not first_cache
+    assert captured["load_lifecycle_cache"].init_cache.cache == {}
+    assert captured["load_lifecycle_cache"].judge_cache.cache == {}
+    assert first_cache.init_cache.cache == {("old-init",): ("old-result",)}
+    assert first_cache.judge_cache.cache == {("old-judge",): True}
+    assert rebound_pending == {"alpha": [], "enemy": []}
+
+
 def test_scheduled_event_records_opt_in_construction_and_runtime_port_counts(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
