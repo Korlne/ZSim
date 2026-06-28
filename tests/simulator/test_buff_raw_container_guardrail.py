@@ -1642,15 +1642,6 @@ class ScheduledEventRawConstructorVisitor(ast.NodeVisitor):
                     "raw-container ScheduledEvent constructor handoff"
                 ),
             )
-        elif self._uses_compat_marker(node):
-            self._add_finding(
-                line=node.lineno,
-                kind="scheduled_event_compat_constructor",
-                expression=self._source_for(node),
-                classification_suggestion=(
-                    "direct ScheduledEvent constructor compatibility"
-                ),
-            )
         else:
             self._add_finding(
                 line=node.lineno,
@@ -1668,13 +1659,6 @@ class ScheduledEventRawConstructorVisitor(ast.NodeVisitor):
         if isinstance(func, ast.Attribute) and func.attr in self._constructor_aliases:
             return func.attr
         return None
-
-    @staticmethod
-    def _uses_compat_marker(node: ast.Call) -> bool:
-        return any(
-            keyword.arg == "legacy_raw_container_compat"
-            for keyword in node.keywords
-        )
 
     def _uses_raw_container_handoff(self, node: ast.Call) -> bool:
         for argument in node.args:
@@ -2111,10 +2095,6 @@ def _runtime_command_factory_direct_call_allowance_for(
 def _scheduled_event_raw_constructor_allowance_for(
     finding: ScheduledEventRawConstructorFinding,
 ) -> str | None:
-    if finding.path.startswith("tests/"):
-        return "test-only ScheduledEvent constructor compatibility"
-    if finding.path.startswith("scripts/"):
-        return "migration/rollback ScheduledEvent constructor compatibility"
     return None
 
 
@@ -2676,7 +2656,6 @@ def test_runtime_dependency_zero_scanner_blocks_scheduled_event_implicit_fallbac
         "        tick,\n"
         "        exist_buff_dict,\n"
         "        action_stack,\n"
-        "        legacy_raw_container_compat=True,\n"
         "    )\n",
     )
 
@@ -3359,7 +3338,6 @@ def test_scheduled_event_raw_constructor_guardrail_blocks_production_raw_handoff
         "            self.load_data.exist_buff_dict,\n"
         "            self.load_data.action_stack,\n"
         "            loading_buff=self.load_data.LOADING_BUFF_DICT,\n"
-        "            legacy_raw_container_compat=True,\n"
         "            sim_instance=self,\n"
         "        )\n"
         "        return sce\n"
@@ -3419,7 +3397,7 @@ def test_scheduled_event_raw_constructor_guardrail_current_production_has_no_byp
     assert disallowed == []
 
 
-def test_scheduled_event_raw_constructor_guardrail_classifies_test_compatibility() -> None:
+def test_scheduled_event_raw_constructor_guardrail_blocks_test_raw_handoff() -> None:
     source = (
         "from zsim.sim_progress.ScheduledEvent import ScheduledEvent\n"
         "def build_test_event(\n"
@@ -3432,7 +3410,6 @@ def test_scheduled_event_raw_constructor_guardrail_classifies_test_compatibility
         "        exist_buff_dict,\n"
         "        action_stack,\n"
         "        loading_buff=loading_buff,\n"
-        "        legacy_raw_container_compat=True,\n"
         "    )\n"
     )
     path = PROJECT_ROOT / "tests" / "simulator" / "_scheduled_event_fixture.py"
@@ -3441,12 +3418,11 @@ def test_scheduled_event_raw_constructor_guardrail_classifies_test_compatibility
     )
 
     assert len(findings) == 1
-    assert _scheduled_event_raw_constructor_allowance_for(findings[0]) == (
-        "test-only ScheduledEvent constructor compatibility"
+    assert _scheduled_event_raw_constructor_allowance_for(findings[0]) is None
+    assert findings[0].classification_suggestion == (
+        "raw-container ScheduledEvent constructor handoff"
     )
-    assert _scheduled_event_raw_constructor_allowance_counts(findings) == Counter(
-        {"test-only ScheduledEvent constructor compatibility": 1}
-    )
+    assert _scheduled_event_raw_constructor_allowance_counts(findings) == Counter()
 
 
 def test_main_loop_keeps_runtime_api_order_before_scheduled_events() -> None:

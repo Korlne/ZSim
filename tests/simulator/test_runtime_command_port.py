@@ -904,6 +904,11 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
             listener_manager=SimpleNamespace(broadcast_event=lambda **kwargs: None),
         ),
     )
+    runtime_state = _runtime_state_for_test(
+        exist_buff_dict=exist_buff_dict,
+        dynamic_buff=dynamic_buff,
+        loading_buff=loading_buff,
+    )
     captured: dict[str, Any] = {}
 
     def _fake_update_anomaly(
@@ -941,7 +946,7 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
         exist_buff_dict,
         action_stack,
         loading_buff=loading_buff,
-        legacy_raw_container_compat=True,
+        buff_runtime_state=runtime_state,
         sim_instance=sim_instance,
     )
     schedule_data.event_list = current_event_list
@@ -993,7 +998,7 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
     assert stale_event_list == ["stale"]
 
 
-def test_scheduled_event_direct_constructor_requires_explicit_compat_marker() -> None:
+def test_scheduled_event_direct_constructor_requires_runtime_state() -> None:
     schedule_data = SimpleNamespace(
         enemy=SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[])),
         event_list=[],
@@ -1002,10 +1007,7 @@ def test_scheduled_event_direct_constructor_requires_explicit_compat_marker() ->
 
     with pytest.raises(
         ValueError,
-        match=(
-            "direct raw-container construction requires "
-            "legacy_raw_container_compat=True"
-        ),
+        match="construction requires buff_runtime_state",
     ):
         scheduled_event_module.ScheduledEvent(
             {"alpha": [], "enemy": []},

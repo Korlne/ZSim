@@ -7,7 +7,10 @@ from typing import Any, Sequence, cast
 import pytest
 
 import zsim.sim_progress.ScheduledEvent as scheduled_event_module
-from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
+from zsim.sim_progress.ScheduledEvent.buff_runtime import (
+    BuffRuntimeReadPort,
+    BuffRuntimeState,
+)
 from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
 from zsim.sim_progress.ScheduledEvent.event_handlers import (
     create_default_event_handler_factory,
@@ -148,6 +151,12 @@ def _make_scheduled_event_for_sim(sim_instance: Any, tick: int = 10) -> Any:
     sim_instance.tick = tick
     sim_instance.schedule_data = schedule_data
     sim_instance.listener_manager = SimpleNamespace(broadcast_event=lambda **kwargs: None)
+    runtime_state = BuffRuntimeState(
+        template_registry=exist_buff_dict,
+        pending_queue=loading_buff,
+        active_store=dynamic_buff,
+        enemy_mirror=[],
+    )
 
     return scheduled_event_module.ScheduledEvent(
         dynamic_buff,
@@ -156,7 +165,7 @@ def _make_scheduled_event_for_sim(sim_instance: Any, tick: int = 10) -> Any:
         exist_buff_dict,
         SimpleNamespace(),
         loading_buff=loading_buff,
-        legacy_raw_container_compat=True,
+        buff_runtime_state=runtime_state,
         sim_instance=cast(Any, sim_instance),
     )
 

@@ -879,6 +879,25 @@ def _raw_append_key(finding: Finding) -> tuple[str, int, str, str]:
 
 
 def _known_ralph_story_ids() -> set[str]:
+    def _collect_nested_story_ids(value: object) -> set[str]:
+        if isinstance(value, dict):
+            dict_story_ids = {
+                str(raw_story_id)
+                for key, raw_story_id in value.items()
+                if key in {"id", "story_id"}
+                and isinstance(raw_story_id, str)
+                and raw_story_id.startswith("US-")
+            }
+            for child in value.values():
+                dict_story_ids.update(_collect_nested_story_ids(child))
+            return dict_story_ids
+        if isinstance(value, list):
+            list_story_ids: set[str] = set()
+            for child in value:
+                list_story_ids.update(_collect_nested_story_ids(child))
+            return list_story_ids
+        return set()
+
     prd_path = PROJECT_ROOT / "scripts" / "ralph" / "prd.json"
     prd = json.loads(prd_path.read_text(encoding="utf-8"))
     story_ids = {story["id"] for story in prd["userStories"]}
@@ -886,6 +905,7 @@ def _known_ralph_story_ids() -> set[str]:
         return story_ids
 
     state = json.loads(BUFF_REFACTOR_STATE_PATH.read_text(encoding="utf-8"))
+    story_ids.update(_collect_nested_story_ids(state))
     story_ids.update(str(story_id) for story_id in state.get("completed_story_ids", []))
     previous_prd = state.get("previous_completed_prd", {})
     story_ids.update(
