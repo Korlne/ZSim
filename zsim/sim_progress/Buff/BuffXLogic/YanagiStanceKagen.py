@@ -1,4 +1,5 @@
-from .. import Buff, JudgeTools, check_preparation
+from .. import Buff, check_preparation
+from ..JudgeTools import build_preparation_context_from_buff
 
 
 class YanagiStanceKagenRecord:
@@ -19,13 +20,20 @@ class YanagiStanceKagen(Buff.BuffLogic):
         self.record = None
 
     def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+        preparation_context = build_preparation_context_from_buff(self.buff_instance)
+        return check_preparation(
+            buff_instance=self.buff_instance,
+            buff_0=self.buff_0,
+            preparation_context=preparation_context,
+            **kwargs,
+        )
 
     def check_record_module(self):
         if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["柳"][self.buff_instance.ft.index]
+            preparation_context = build_preparation_context_from_buff(self.buff_instance)
+            self.buff_0 = preparation_context.find_sub_exist_buff_dict("柳")[
+                self.buff_instance.ft.index
+            ]
         if self.buff_0.history.record is None:
             self.buff_0.history.record = YanagiStanceKagenRecord()
         self.record = self.buff_0.history.record
