@@ -142,7 +142,7 @@ class _RuntimeCommandAdapterBase(RuntimeCommandPort):
             char_obj_list=self._data.char_obj_list,
             sim_instance=self._sim_instance,
             skill_node=skill_node,
-            dynamic_buff_dict=self._active_store_for_compat(),
+            dynamic_buff_dict=self._dynamic_buff_dict_for_update_anomaly(),
             runtime_context=create_anomaly_runtime_context(
                 sim_instance=self._sim_instance,
                 enemy=enemy,
@@ -202,6 +202,9 @@ class _RuntimeCommandAdapterBase(RuntimeCommandPort):
             return self._buff_runtime_state.active_store_for_compat()
         return self._data.dynamic_buff
 
+    def _dynamic_buff_dict_for_update_anomaly(self) -> dict | None:
+        return self._active_store_for_compat()
+
 
 class DefaultRuntimeCommandAdapter(_RuntimeCommandAdapterBase):
     """Production runtime command adapter backed by run-scoped Buff runtime state."""
@@ -222,6 +225,9 @@ class DefaultRuntimeCommandAdapter(_RuntimeCommandAdapterBase):
             buff_runtime_state=buff_runtime_state,
             buff_runtime_view=buff_runtime_view,
         )
+
+    def _dynamic_buff_dict_for_update_anomaly(self) -> dict | None:
+        return None
 
 
 class LegacyRuntimeCommandAdapter(_RuntimeCommandAdapterBase):

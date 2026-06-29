@@ -156,6 +156,8 @@ def test_runtime_command_update_anomaly_surface_keeps_layer_apis_private() -> No
 
     assert "run_update_anomaly(" in adapter_source
     assert "create_anomaly_runtime_context" in adapter_source
+    assert "dynamic_buff_dict=self._active_store_for_compat()" not in adapter_source
+    assert "_dynamic_buff_dict_for_update_anomaly()" in adapter_source
     assert legacy_adapter_source == adapter_source
 
 
@@ -532,7 +534,7 @@ def test_default_runtime_command_context_dispatch_uses_planned_queue_owner(
         skill_node=cast(Any, SimpleNamespace(skill_tag="1001_TEST")),
     )
 
-    assert captured["dynamic_buff_dict"] is dynamic_buff
+    assert captured["dynamic_buff_dict"] is None
     assert captured["sim_instance"] is sim_instance
     runtime_context = captured["runtime_context"]
     runtime_context.dispatch_port.publish_scheduled("owner-event")
@@ -986,7 +988,7 @@ def test_scheduled_event_construction_creates_runtime_ports_from_retained_inputs
     assert captured["tick"] == 10
     assert captured["char_obj_list"] is char_obj_list
     assert captured["skill_node"] is skill_node
-    assert captured["dynamic_buff_dict"] is dynamic_buff
+    assert captured["dynamic_buff_dict"] is None
     assert captured["sim_instance"] is sim_instance
     runtime_context = captured["runtime_context"]
     assert runtime_context.sim_instance is sim_instance
@@ -1327,7 +1329,7 @@ def test_scheduled_event_runtime_port_factory_command_uses_rebound_schedule_queu
     )
 
     assert captured["sim_instance"] is second_sim
-    assert captured["dynamic_buff_dict"] is second_dynamic_buff
+    assert captured["dynamic_buff_dict"] is None
     runtime_context = captured["runtime_context"]
     assert runtime_context.sim_instance is second_sim
     runtime_context.dispatch_port.publish_scheduled("scheduled")

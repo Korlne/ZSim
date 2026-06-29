@@ -117,7 +117,7 @@ def _activate_anomaly_state(
     element_type: int,
     enemy,
     time_now: int,
-    dynamic_buff_dict: dict[str, list["Buff"]],
+    dynamic_buff_dict: dict[str, list["Buff"]] | None,
     skill_node: "SkillNode",
     buff_runtime_view: "BuffRuntimeReadPort | None",
 ) -> AnomalyBar:
@@ -311,7 +311,7 @@ def update_anomaly(
     char_obj_list: list,
     sim_instance: "Simulator",
     skill_node: "SkillNode",
-    dynamic_buff_dict: dict[str, list["Buff"]],
+    dynamic_buff_dict: dict[str, list["Buff"]] | None,
     runtime_context: AnomalyRuntimeContext | None = None,
     buff_runtime_view: "BuffRuntimeReadPort | None" = None,
     **kwargs,

@@ -26,6 +26,9 @@ from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
     PolarityDisorder,
 )
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
+from zsim.sim_progress.data_struct.planned_queue import (
+    ensure_event_list_migration_planned_event_queue,
+)
 
 
 _CallRecord = tuple[str, object]
@@ -190,12 +193,15 @@ def _build_sim_instance(
         if call_order is not None:
             call_order.append(("broadcast", kwargs["signal"]))
 
+    schedule_data = SimpleNamespace(
+        event_list=event_list,
+        change_process_state=lambda: None,
+    )
+    ensure_event_list_migration_planned_event_queue(schedule_data)
+
     return SimpleNamespace(
         tick=10,
-        schedule_data=SimpleNamespace(
-            event_list=event_list,
-            change_process_state=lambda: None,
-        ),
+        schedule_data=schedule_data,
         listener_manager=SimpleNamespace(broadcast_event=broadcast_event),
         decibel_manager=SimpleNamespace(update=lambda **kwargs: None),
         runtime_command_port=_ForbiddenRuntimeCommandPort(),

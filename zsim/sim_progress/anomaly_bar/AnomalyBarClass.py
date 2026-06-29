@@ -136,7 +136,7 @@ class AnomalyBar:
         self,
         timenow: int,
         skill_node: "SkillNode",
-        dynamic_buff_dict: dict[str, list["Buff"]],
+        dynamic_buff_dict: dict[str, list["Buff"]] | None,
         *,
         buff_runtime_view: "BuffRuntimeReadPort | None" = None,
     ):
