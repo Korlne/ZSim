@@ -40,30 +40,56 @@ def _skill_node(
     return node
 
 
-def _install_direct_judgetools(
+class _FakeElegantPreparationContext:
+    def __init__(
+        self,
+        *,
+        owner: str,
+        index: str,
+        buff_0: object,
+        calls: list[tuple[str, object]],
+    ) -> None:
+        self._owner = owner
+        self._index = index
+        self._buff_0 = buff_0
+        self._calls = calls
+
+    def find_equipper(self, item_name: str) -> str:
+        self._calls.append(("find_equipper", item_name))
+        return self._owner
+
+    def find_sub_exist_buff_dict(self, owner_name: str) -> dict[str, object]:
+        self._calls.append(("find_sub_exist_buff_dict", owner_name))
+        return {self._index: self._buff_0}
+
+
+def _install_preparation_context(
     monkeypatch: pytest.MonkeyPatch,
     *,
     harness: SimpleNamespace,
     owner: str,
     buff_0: SimpleNamespace,
-) -> list[tuple[str, object]]:
+) -> tuple[list[object], list[tuple[str, object]]]:
+    context_build_calls: list[object] = []
     calls: list[tuple[str, object]] = []
 
-    def fake_find_equipper(item_name: str, *, sim_instance: object) -> str:
-        calls.append(("find_equipper", item_name, sim_instance))
-        return owner
+    def fake_build_preparation_context_from_buff(
+        buff_instance: object,
+    ) -> _FakeElegantPreparationContext:
+        context_build_calls.append(buff_instance)
+        return _FakeElegantPreparationContext(
+            owner=owner,
+            index=harness.buff_instance.ft.index,
+            buff_0=buff_0,
+            calls=calls,
+        )
 
-    def fake_find_exist_buff_dict(*, sim_instance: object) -> dict[str, dict[str, object]]:
-        calls.append(("find_exist_buff_dict", sim_instance))
-        return {owner: {harness.buff_instance.ft.index: buff_0}}
-
-    monkeypatch.setattr(elegant_module.JudgeTools, "find_equipper", fake_find_equipper)
     monkeypatch.setattr(
-        elegant_module.JudgeTools,
-        "find_exist_buff_dict",
-        fake_find_exist_buff_dict,
+        elegant_module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context_from_buff,
     )
-    return calls
+    return context_build_calls, calls
 
 
 def _install_preparation(
@@ -79,11 +105,13 @@ def _install_preparation(
         *,
         buff_instance: object,
         buff_0: object,
+        preparation_context: object,
         **kwargs: object,
     ) -> None:
         assert buff_instance is harness.buff_instance
         assert buff_0 is buff_0_ref
-        preparation_calls.append(kwargs)
+        assert isinstance(preparation_context, _FakeElegantPreparationContext)
+        preparation_calls.append({"preparation_context": preparation_context, **kwargs})
         record = cast(Any, buff_0_ref.history.record)
         record.equipper = owner
         record.char = SimpleNamespace(NAME=owner)
@@ -93,13 +121,13 @@ def _install_preparation(
     return preparation_calls
 
 
-def test_elegant_vanity_check_record_module_preserves_direct_owner_template_and_record_identity(
+def test_elegant_vanity_check_record_module_preserves_owner_template_and_record_identity(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     harness = _logic_harness()
     owner = "仪玄"
     buff_0 = _buff_0()
-    calls = _install_direct_judgetools(
+    context_build_calls, context_calls = _install_preparation_context(
         monkeypatch,
         harness=harness,
         owner=owner,
@@ -108,9 +136,10 @@ def test_elegant_vanity_check_record_module_preserves_direct_owner_template_and_
 
     harness.logic.check_record_module()
 
-    assert calls == [
-        ("find_equipper", "玲珑妆匣", harness.sim_instance),
-        ("find_exist_buff_dict", harness.sim_instance),
+    assert context_build_calls == [harness.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "玲珑妆匣"),
+        ("find_sub_exist_buff_dict", owner),
     ]
     assert harness.logic.equipper == owner
     assert harness.logic.buff_0 is buff_0
@@ -121,9 +150,10 @@ def test_elegant_vanity_check_record_module_preserves_direct_owner_template_and_
     existing_record = harness.logic.record
     harness.logic.check_record_module()
 
-    assert calls == [
-        ("find_equipper", "玲珑妆匣", harness.sim_instance),
-        ("find_exist_buff_dict", harness.sim_instance),
+    assert context_build_calls == [harness.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "玲珑妆匣"),
+        ("find_sub_exist_buff_dict", owner),
     ]
     assert harness.logic.record is existing_record
     assert buff_0.history.record is existing_record
@@ -149,7 +179,7 @@ def test_elegant_vanity_special_judge_logic_pins_char_preload_and_sp_gates(
     harness = _logic_harness(tick=120)
     owner = "仪玄"
     buff_0 = _buff_0()
-    calls = _install_direct_judgetools(
+    context_build_calls, context_calls = _install_preparation_context(
         monkeypatch,
         harness=harness,
         owner=owner,
@@ -178,11 +208,17 @@ def test_elegant_vanity_special_judge_logic_pins_char_preload_and_sp_gates(
     result = harness.logic.special_judge_logic(skill_node=skill_node)
 
     assert result is expected
-    assert calls == [
-        ("find_equipper", "玲珑妆匣", harness.sim_instance),
-        ("find_exist_buff_dict", harness.sim_instance),
+    assert context_build_calls == [harness.buff_instance, harness.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "玲珑妆匣"),
+        ("find_sub_exist_buff_dict", owner),
     ]
-    assert preparation_calls == [{"equipper": "玲珑妆匣"}]
+    assert len(preparation_calls) == 1
+    assert isinstance(
+        preparation_calls[0]["preparation_context"],
+        _FakeElegantPreparationContext,
+    )
+    assert preparation_calls[0]["equipper"] == "玲珑妆匣"
     if char_name == owner:
         assert tick_calls == [harness.sim_instance]
     else:
@@ -203,7 +239,7 @@ def test_elegant_vanity_special_judge_logic_pins_uuid_dedupe_state(
     harness = _logic_harness(tick=120)
     owner = "仪玄"
     buff_0 = _buff_0()
-    _install_direct_judgetools(
+    _install_preparation_context(
         monkeypatch,
         harness=harness,
         owner=owner,
