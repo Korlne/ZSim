@@ -308,7 +308,6 @@ def test_legacy_buff_runtime_facade_preserves_old_container_identity() -> None:
     assert isinstance(facade, LegacyBuffRuntimeFacade)
     assert facade.get_registered_buff("alpha", "registered") is registered_buff
     assert facade.get_pending_queue_for_compat("alpha") is loading_buff_dict["alpha"]
-    assert facade.get_active_buffs_for_compat("alpha") is dynamic_buff_dict["alpha"]
     assert facade.get_enemy_debuff_mirror_for_compat() is enemy_debuff_mirror
     assert dynamic_buff_dict["enemy"] is enemy_debuff_mirror
 
@@ -354,7 +353,6 @@ def test_buff_runtime_state_exposes_active_store_owner_with_compat_identity() ->
     assert isinstance(active_owner, ActiveBuffStore)
     assert active_owner.as_compat_dict() is active_store
     assert runtime_state.active_store_for_compat() is active_store
-    assert active_owner.active_buffs_for_compat("alpha") is active_store["alpha"]
     assert active_owner.find_by_index("alpha", "active") is active_buff
 
     active_owner.append("alpha", replacement)
@@ -578,16 +576,16 @@ def test_buff_runtime_state_exposes_enemy_mirror_owner_with_active_identity() ->
     assert isinstance(mirror_owner, EnemyDebuffMirror)
     assert mirror_owner.as_compat_list() is enemy_debuff_mirror
     assert runtime_state.enemy_mirror_for_compat() is enemy_debuff_mirror
-    assert active_owner.active_buffs_for_compat("enemy") is enemy_debuff_mirror
+    assert active_owner.as_compat_dict()["enemy"] is enemy_debuff_mirror
     assert dynamic_buff_dict["enemy"] is enemy_debuff_mirror
     assert mirror_owner.find_by_index("debuff") is active_debuff
 
     mirror_owner.sync(replacement_debuff)
     assert enemy_debuff_mirror == [other_debuff, replacement_debuff]
-    assert active_owner.active_buffs_for_compat("enemy") == [
+    assert active_owner.active_buffs_snapshot("enemy") == (
         other_debuff,
         replacement_debuff,
-    ]
+    )
 
     mirror_owner.remove(replacement_debuff)
     assert enemy_debuff_mirror == [other_debuff]
@@ -622,29 +620,18 @@ def test_legacy_facade_active_helpers_route_through_active_store_owner(
         calls.append(("find", beneficiary, buff_index))
         return replacement
 
-    def fake_active_buffs_for_compat(beneficiary: str) -> list[Any]:
-        calls.append(("compat", beneficiary, None))
-        return active_store[beneficiary]
-
     monkeypatch.setattr(active_owner, "append", fake_append)
     monkeypatch.setattr(active_owner, "remove", fake_remove)
     monkeypatch.setattr(active_owner, "find_by_index", fake_find_by_index)
-    monkeypatch.setattr(
-        active_owner,
-        "active_buffs_for_compat",
-        fake_active_buffs_for_compat,
-    )
 
     facade.append_active_buff("alpha", replacement)
     facade.remove_active_buff("alpha", active_buff)
 
     assert facade.find_active_buff_by_index("alpha", "replacement") is replacement
-    assert facade.get_active_buffs_for_compat("alpha") == [replacement]
     assert calls == [
         ("append", "alpha", "replacement"),
         ("remove", "alpha", "active"),
         ("find", "alpha", "replacement"),
-        ("compat", "alpha", None),
     ]
 
 
@@ -725,7 +712,7 @@ def test_legacy_buff_runtime_facade_syncs_enemy_debuff_mirror_by_index(
 
     facade.sync_enemy_debuff_mirror(replacement_debuff)
     assert enemy_debuff_mirror == [other_debuff, replacement_debuff]
-    assert facade.get_active_buffs_for_compat("enemy") is enemy_debuff_mirror
+    assert mirror_owner.as_compat_list() is enemy_debuff_mirror
 
     facade.remove_enemy_debuff_mirror(replacement_debuff)
     assert enemy_debuff_mirror == [other_debuff]
@@ -1430,7 +1417,7 @@ def test_activation_drains_pending_and_writes_active_owner_on_same_runtime_state
 
     assert result is active_owner.as_compat_dict()
     assert pending_owner.as_compat_dict() == {"alpha": [], "enemy": []}
-    assert active_owner.active_buffs_for_compat("alpha") == [pending_buff]
+    assert active_owner.active_buffs_snapshot("alpha") == (pending_buff,)
 
 
 def test_legacy_buff_runtime_facade_skips_invalid_pending_buffs() -> None:

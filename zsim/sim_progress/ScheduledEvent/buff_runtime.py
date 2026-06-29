@@ -38,7 +38,7 @@ class BuffRuntimeState:
         )
         self._active_store = ActiveBuffStore(active_store)
         self._enemy_mirror_owner = EnemyDebuffMirror(
-            self._active_store.active_buffs_for_compat("enemy")
+            self._active_store.ensure_beneficiary("enemy")
         )
 
     @staticmethod
@@ -194,14 +194,11 @@ class ActiveBuffStore:
         return next(
             (
                 active_buff
-                for active_buff in self.active_buffs_for_compat(beneficiary)
+                for active_buff in self._stores[beneficiary]
                 if active_buff.ft.index == buff_index
             ),
             None,
         )
-
-    def active_buffs_for_compat(self, beneficiary: str) -> list["Buff"]:
-        return self._stores[beneficiary]
 
     def active_buffs_snapshot(self, beneficiary: str) -> tuple["Buff", ...]:
         return tuple(self._stores.get(beneficiary, []))
@@ -397,10 +394,6 @@ class BuffRuntimeFacade(ABC):
     @abstractmethod
     def get_pending_queue_for_compat(self, beneficiary: str) -> list["Buff"]:
         """过渡期兼容入口，返回指定受益者的旧待激活队列。"""
-
-    @abstractmethod
-    def get_active_buffs_for_compat(self, beneficiary: str) -> list["Buff"]:
-        """过渡期兼容入口，返回指定受益者的旧激活 Buff 列表。"""
 
     @abstractmethod
     def get_enemy_debuff_mirror_for_compat(self) -> list["Buff"]:
@@ -616,10 +609,6 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
         # 兼容旧容器身份；仅供迁移期局部桥接，不是新的主契约。
         return self._get_pending_queue(beneficiary)
 
-    def get_active_buffs_for_compat(self, beneficiary: str) -> list["Buff"]:
-        # 兼容旧容器身份；仅供迁移期局部桥接，不是新的主契约。
-        return self._get_active_buffs(beneficiary)
-
     def get_enemy_debuff_mirror_for_compat(self) -> list["Buff"]:
         # 兼容旧容器身份；仅供迁移期局部桥接，不是新的主契约。
         return self._runtime_state.enemy_mirror_for_compat()
@@ -690,11 +679,6 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
 
     def _get_pending_queue(self, beneficiary: str) -> list["Buff"]:
         return self._runtime_state.pending_queue_for_compat()[beneficiary]
-
-    def _get_active_buffs(self, beneficiary: str) -> list["Buff"]:
-        return self._runtime_state.active_store_owner().active_buffs_for_compat(
-            beneficiary
-        )
 
     def _find_enemy_debuff_mirror(self, buff: "Buff") -> "Buff | None":
         return self._runtime_state.enemy_mirror_owner().find_by_index(

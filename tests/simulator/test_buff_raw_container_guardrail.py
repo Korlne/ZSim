@@ -288,11 +288,6 @@ ACTIVE_STORE_COMPAT_DICT_METHODS = {
     "active_store_for_compat",
 }
 
-ACTIVE_STORE_COMPAT_LIST_METHODS = {
-    "active_buffs_for_compat",
-    "get_active_buffs_for_compat",
-}
-
 ENEMY_MIRROR_RAW_LIST_NAMES = {
     "_enemy_debuff_mirror",
     "_mirror",
@@ -1115,8 +1110,6 @@ class ActiveStoreRawWriteVisitor(ast.NodeVisitor):
     def _is_active_list_expr(self, node: ast.AST) -> bool:
         if isinstance(node, ast.Name):
             return any(node.id in aliases for aliases in self._active_list_alias_stack)
-        if isinstance(node, ast.Call):
-            return self._call_name(node.func) in ACTIVE_STORE_COMPAT_LIST_METHODS
         if isinstance(node, ast.Subscript):
             return self._is_active_store_expr(node.value)
         return False
@@ -2864,7 +2857,7 @@ def test_active_store_runtime_dependency_scanner_classifies_compat_references() 
     test_findings = scanner.scan_source(
         "tests/simulator/_fixture.py",
         "def compat(facade):\n"
-        "    return facade.get_active_buffs_for_compat('enemy')\n",
+        "    return facade.active_store_for_compat()\n",
     )
     docs_findings = scanner.scan_source(
         "docs/_fixture.md",
@@ -3076,7 +3069,6 @@ def test_active_store_raw_write_guardrail_blocks_production_writes() -> None:
         "    dynamic_buff['enemy'].remove(buff)\n"
         "    active_list = runtime_state.active_store_for_compat()['enemy']\n"
         "    active_list.append(buff)\n"
-        "    facade.get_active_buffs_for_compat('enemy').remove(buff)\n"
         "    mirror = runtime_state.enemy_mirror_for_compat()\n"
         "    mirror.remove(buff)\n"
         "    enemy.dynamic.dynamic_debuff_list.append(buff)\n"
@@ -3094,14 +3086,12 @@ def test_active_store_raw_write_guardrail_blocks_production_writes() -> None:
         "active_store_raw_list_append",
         "active_store_raw_list_remove",
         "active_store_compat_list_append",
-        "active_store_compat_list_remove",
         "enemy_mirror_raw_list_remove",
         "enemy_mirror_raw_list_append",
     ]
     message = "\n".join(finding.message() for finding in disallowed)
     assert "matched expression: DYNAMIC_BUFF_DICT['enemy']" in message
     assert "matched expression: active_list" in message
-    assert "matched expression: facade.get_active_buffs_for_compat('enemy')" in message
     assert "matched expression: enemy.dynamic.dynamic_debuff_list" in message
     assert "classification suggestion: active-store compatibility write" in message
     assert "classification suggestion: enemy debuff mirror raw write" in message
