@@ -22,39 +22,61 @@ def _make_moonlight_logic() -> SimpleNamespace:
     )
 
 
+class _FakeMoonlightPreparationContext:
+    def __init__(
+        self,
+        *,
+        owner: str,
+        index: str,
+        buff_0: object,
+        calls: list[tuple[str, object]],
+    ) -> None:
+        self._owner = owner
+        self._index = index
+        self._buff_0 = buff_0
+        self._calls = calls
+
+    def find_equipper(self, item_name: str) -> str:
+        self._calls.append(("find_equipper", item_name))
+        return self._owner
+
+    def find_sub_exist_buff_dict(self, owner_name: str) -> dict[str, object]:
+        self._calls.append(("find_sub_exist_buff_dict", owner_name))
+        return {self._index: self._buff_0}
+
+
 def test_moonlight_lullaby_check_record_module_preserves_owner_template_and_record_identity(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     harness = _make_moonlight_logic()
     owner = "莱卡恩"
-    find_equipper_calls: list[tuple[str, object]] = []
-    find_exist_calls: list[object] = []
+    context_build_calls: list[object] = []
+    context_calls: list[tuple[str, object]] = []
 
-    def fake_find_equipper(item_name: str, *, sim_instance: object) -> str:
-        find_equipper_calls.append((item_name, sim_instance))
-        return owner
-
-    def fake_find_exist_buff_dict(
-        *, sim_instance: object
-    ) -> dict[str, dict[str, object]]:
-        find_exist_calls.append(sim_instance)
-        return {owner: {harness.buff_instance.ft.index: harness.buff_0}}
+    def fake_build_preparation_context_from_buff(
+        buff_instance: object,
+    ) -> _FakeMoonlightPreparationContext:
+        context_build_calls.append(buff_instance)
+        return _FakeMoonlightPreparationContext(
+            owner=owner,
+            index=harness.buff_instance.ft.index,
+            buff_0=harness.buff_0,
+            calls=context_calls,
+        )
 
     monkeypatch.setattr(
-        moonlight_module.JudgeTools,
-        "find_equipper",
-        fake_find_equipper,
-    )
-    monkeypatch.setattr(
-        moonlight_module.JudgeTools,
-        "find_exist_buff_dict",
-        fake_find_exist_buff_dict,
+        moonlight_module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context_from_buff,
     )
 
     harness.logic.check_record_module()
 
-    assert find_equipper_calls == [("月光骑士颂", harness.sim_instance)]
-    assert find_exist_calls == [harness.sim_instance]
+    assert context_build_calls == [harness.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "月光骑士颂"),
+        ("find_sub_exist_buff_dict", owner),
+    ]
     assert harness.logic.equipper == owner
     assert harness.logic.buff_0 is harness.buff_0
     assert isinstance(
@@ -66,8 +88,11 @@ def test_moonlight_lullaby_check_record_module_preserves_owner_template_and_reco
     existing_record = harness.logic.record
     harness.logic.check_record_module()
 
-    assert find_equipper_calls == [("月光骑士颂", harness.sim_instance)]
-    assert find_exist_calls == [harness.sim_instance]
+    assert context_build_calls == [harness.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "月光骑士颂"),
+        ("find_sub_exist_buff_dict", owner),
+    ]
     assert harness.logic.buff_0 is harness.buff_0
     assert harness.logic.record is existing_record
     assert harness.buff_0.history.record is existing_record
@@ -78,36 +103,36 @@ def test_moonlight_lullaby_special_judge_logic_prepares_cached_template(
 ) -> None:
     harness = _make_moonlight_logic()
     owner = "莱卡恩"
+    context_build_calls: list[object] = []
+    context_calls: list[tuple[str, object]] = []
     preparation_calls: list[tuple[object, object, dict[str, object]]] = []
 
-    def fake_find_equipper(item_name: str, *, sim_instance: object) -> str:
-        assert item_name == "月光骑士颂"
-        assert sim_instance is harness.sim_instance
-        return owner
-
-    def fake_find_exist_buff_dict(
-        *, sim_instance: object
-    ) -> dict[str, dict[str, object]]:
-        assert sim_instance is harness.sim_instance
-        return {owner: {harness.buff_instance.ft.index: harness.buff_0}}
+    def fake_build_preparation_context_from_buff(
+        buff_instance: object,
+    ) -> _FakeMoonlightPreparationContext:
+        context_build_calls.append(buff_instance)
+        return _FakeMoonlightPreparationContext(
+            owner=owner,
+            index=harness.buff_instance.ft.index,
+            buff_0=harness.buff_0,
+            calls=context_calls,
+        )
 
     def fake_check_preparation(
         *,
         buff_instance: object,
         buff_0: object,
+        preparation_context: object,
         **kwargs: object,
     ) -> None:
-        preparation_calls.append((buff_instance, buff_0, dict(kwargs)))
+        preparation_calls.append(
+            (buff_instance, buff_0, {"preparation_context": preparation_context, **kwargs})
+        )
 
     monkeypatch.setattr(
-        moonlight_module.JudgeTools,
-        "find_equipper",
-        fake_find_equipper,
-    )
-    monkeypatch.setattr(
-        moonlight_module.JudgeTools,
-        "find_exist_buff_dict",
-        fake_find_exist_buff_dict,
+        moonlight_module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context_from_buff,
     )
     monkeypatch.setattr(
         moonlight_module,
@@ -117,13 +142,20 @@ def test_moonlight_lullaby_special_judge_logic_prepares_cached_template(
 
     harness.logic.special_judge_logic()
 
-    assert preparation_calls == [
-        (
-            harness.buff_instance,
-            harness.buff_0,
-            {"equipper": "月光骑士颂"},
-        )
+    assert context_build_calls == [harness.buff_instance, harness.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "月光骑士颂"),
+        ("find_sub_exist_buff_dict", owner),
     ]
+    assert len(preparation_calls) == 1
+    prepared_buff_instance, prepared_buff_0, prepared_kwargs = preparation_calls[0]
+    assert prepared_buff_instance is harness.buff_instance
+    assert prepared_buff_0 is harness.buff_0
+    assert isinstance(
+        prepared_kwargs["preparation_context"],
+        _FakeMoonlightPreparationContext,
+    )
+    assert prepared_kwargs["equipper"] == "月光骑士颂"
     assert harness.logic.equipper == owner
     assert harness.logic.buff_0 is harness.buff_0
     assert harness.logic.record is harness.buff_0.history.record
