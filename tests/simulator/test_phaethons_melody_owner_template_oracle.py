@@ -38,31 +38,56 @@ def _skill_node(
     return node
 
 
-def _install_direct_owner_template_lookup(
+class _FakePhaethonsPreparationContext:
+    def __init__(
+        self,
+        *,
+        owner: str,
+        index: str,
+        buff_0: object,
+        calls: list[tuple[str, object]],
+    ) -> None:
+        self._owner = owner
+        self._index = index
+        self._buff_0 = buff_0
+        self._calls = calls
+
+    def find_equipper(self, item_name: str) -> str:
+        self._calls.append(("find_equipper", item_name))
+        return self._owner
+
+    def find_sub_exist_buff_dict(self, owner_name: str) -> dict[str, object]:
+        self._calls.append(("find_sub_exist_buff_dict", owner_name))
+        return {self._index: self._buff_0}
+
+
+def _install_preparation_context(
     monkeypatch: pytest.MonkeyPatch,
     *,
     harness: SimpleNamespace,
     owner: str,
     buff_0: SimpleNamespace,
-) -> tuple[list[tuple[str, object]], list[object]]:
-    owner_calls: list[tuple[str, object]] = []
-    template_calls: list[object] = []
+) -> tuple[list[object], list[tuple[str, object]]]:
+    context_build_calls: list[object] = []
+    calls: list[tuple[str, object]] = []
 
-    def fake_find_equipper(item_name: str, *, sim_instance: object) -> str:
-        owner_calls.append((item_name, sim_instance))
-        return owner
+    def fake_build_preparation_context_from_buff(
+        buff_instance: object,
+    ) -> _FakePhaethonsPreparationContext:
+        context_build_calls.append(buff_instance)
+        return _FakePhaethonsPreparationContext(
+            owner=owner,
+            index=harness.buff_instance.ft.index,
+            buff_0=buff_0,
+            calls=calls,
+        )
 
-    def fake_find_exist_buff_dict(*, sim_instance: object) -> dict[str, dict[str, object]]:
-        template_calls.append(sim_instance)
-        return {owner: {harness.buff_instance.ft.index: buff_0}}
-
-    monkeypatch.setattr(phaethons_module.JudgeTools, "find_equipper", fake_find_equipper)
     monkeypatch.setattr(
-        phaethons_module.JudgeTools,
-        "find_exist_buff_dict",
-        fake_find_exist_buff_dict,
+        phaethons_module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context_from_buff,
     )
-    return owner_calls, template_calls
+    return context_build_calls, calls
 
 
 def _install_preparation(
@@ -78,10 +103,12 @@ def _install_preparation(
         *,
         buff_instance: object,
         buff_0: object,
+        preparation_context: object,
         **kwargs: object,
     ) -> None:
         assert buff_instance is harness.buff_instance
         assert buff_0 is buff_0_ref
+        assert isinstance(preparation_context, _FakePhaethonsPreparationContext)
         preparation_calls.append(dict(kwargs))
         record = cast(Any, buff_0_ref.history.record)
         record.equipper = owner
@@ -92,13 +119,13 @@ def _install_preparation(
     return preparation_calls
 
 
-def test_phaethons_check_record_module_preserves_direct_owner_template_and_record_identity(
+def test_phaethons_check_record_module_preserves_owner_template_and_record_identity(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     harness = _logic_harness()
     owner = "妮可"
     buff_0 = _buff_0()
-    owner_calls, template_calls = _install_direct_owner_template_lookup(
+    context_build_calls, context_calls = _install_preparation_context(
         monkeypatch,
         harness=harness,
         owner=owner,
@@ -107,8 +134,11 @@ def test_phaethons_check_record_module_preserves_direct_owner_template_and_recor
 
     harness.logic.check_record_module()
 
-    assert owner_calls == [("法厄同之歌", harness.sim_instance)]
-    assert template_calls == [harness.sim_instance]
+    assert context_build_calls == [harness.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "法厄同之歌"),
+        ("find_sub_exist_buff_dict", owner),
+    ]
     assert harness.logic.equipper == owner
     assert harness.logic.buff_0 is buff_0
     assert isinstance(buff_0.history.record, phaethons_module.PhaethonsMelodyRecord)
@@ -119,8 +149,11 @@ def test_phaethons_check_record_module_preserves_direct_owner_template_and_recor
     existing_record = harness.logic.record
     harness.logic.check_record_module()
 
-    assert owner_calls == [("法厄同之歌", harness.sim_instance)]
-    assert template_calls == [harness.sim_instance]
+    assert context_build_calls == [harness.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "法厄同之歌"),
+        ("find_sub_exist_buff_dict", owner),
+    ]
     assert harness.logic.record is existing_record
     assert buff_0.history.record is existing_record
 
@@ -131,7 +164,7 @@ def test_phaethons_special_judge_logic_pins_missing_and_type_gates(
     harness = _logic_harness()
     owner = "妮可"
     buff_0 = _buff_0()
-    _install_direct_owner_template_lookup(
+    context_build_calls, context_calls = _install_preparation_context(
         monkeypatch,
         harness=harness,
         owner=owner,
@@ -145,11 +178,21 @@ def test_phaethons_special_judge_logic_pins_missing_and_type_gates(
     )
 
     assert harness.logic.special_judge_logic() is False
+    assert context_build_calls == [harness.buff_instance, harness.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "法厄同之歌"),
+        ("find_sub_exist_buff_dict", owner),
+    ]
     assert preparation_calls == [{"equipper": "法厄同之歌"}]
 
     with pytest.raises(TypeError, match="不是SkillNode类"):
         harness.logic.special_judge_logic(skill_node=object())
 
+    assert context_build_calls == [
+        harness.buff_instance,
+        harness.buff_instance,
+        harness.buff_instance,
+    ]
     assert preparation_calls == [
         {"equipper": "法厄同之歌"},
         {"equipper": "法厄同之歌"},
@@ -178,7 +221,7 @@ def test_phaethons_special_judge_logic_pins_non_equipper_enhanced_e_and_preload_
     harness = _logic_harness(tick=120)
     owner = "妮可"
     buff_0 = _buff_0()
-    owner_calls, template_calls = _install_direct_owner_template_lookup(
+    context_build_calls, context_calls = _install_preparation_context(
         monkeypatch,
         harness=harness,
         owner=owner,
@@ -207,8 +250,11 @@ def test_phaethons_special_judge_logic_pins_non_equipper_enhanced_e_and_preload_
     result = harness.logic.special_judge_logic(skill_node=skill_node)
 
     assert result is expected
-    assert owner_calls == [("法厄同之歌", harness.sim_instance)]
-    assert template_calls == [harness.sim_instance]
+    assert context_build_calls == [harness.buff_instance, harness.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "法厄同之歌"),
+        ("find_sub_exist_buff_dict", owner),
+    ]
     assert preparation_calls == [{"equipper": "法厄同之歌"}]
     assert harness.logic.equipper == owner
     assert harness.logic.buff_0 is buff_0
