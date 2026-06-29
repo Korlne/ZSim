@@ -40,6 +40,27 @@ def _skill_node(
     return node
 
 
+class _FakeCordisPreparationContext:
+    def __init__(
+        self,
+        *,
+        owner: str,
+        templates: dict[str, object],
+        calls: list[tuple[str, object]],
+    ) -> None:
+        self._owner = owner
+        self._templates = templates
+        self._calls = calls
+
+    def find_equipper(self, item_name: str) -> str:
+        self._calls.append(("find_equipper", item_name))
+        return self._owner
+
+    def find_sub_exist_buff_dict(self, owner_name: str) -> dict[str, object]:
+        self._calls.append(("find_sub_exist_buff_dict", owner_name))
+        return self._templates
+
+
 def test_cordis_germina_shared_owner_keeps_distinct_templates_and_records(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -54,43 +75,44 @@ def test_cordis_germina_shared_owner_keeps_distinct_templates_and_records(
     )
     crit_buff_0 = _buff_0()
     ele_buff_0 = _buff_0()
-    find_equipper_calls: list[tuple[str, object]] = []
-    find_exist_calls: list[object] = []
+    context_build_calls: list[object] = []
+    context_calls: list[tuple[str, object]] = []
+    templates = {
+        crit.buff_instance.ft.index: crit_buff_0,
+        ele.buff_instance.ft.index: ele_buff_0,
+    }
 
-    def fake_find_equipper(item_name: str, *, sim_instance: object) -> str:
-        find_equipper_calls.append((item_name, sim_instance))
-        return owner
-
-    def fake_find_exist_buff_dict(
-        *, sim_instance: object
-    ) -> dict[str, dict[str, object]]:
-        find_exist_calls.append(sim_instance)
-        return {
-            owner: {
-                crit.buff_instance.ft.index: crit_buff_0,
-                ele.buff_instance.ft.index: ele_buff_0,
-            }
-        }
+    def fake_build_preparation_context_from_buff(
+        buff_instance: object,
+    ) -> _FakeCordisPreparationContext:
+        context_build_calls.append(buff_instance)
+        return _FakeCordisPreparationContext(
+            owner=owner,
+            templates=templates,
+            calls=context_calls,
+        )
 
     monkeypatch.setattr(
-        crit_module.JudgeTools,
-        "find_equipper",
-        fake_find_equipper,
+        crit_module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context_from_buff,
     )
     monkeypatch.setattr(
-        crit_module.JudgeTools,
-        "find_exist_buff_dict",
-        fake_find_exist_buff_dict,
+        ele_module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context_from_buff,
     )
 
     crit.logic.check_record_module()
     ele.logic.check_record_module()
 
-    assert find_equipper_calls == [
-        ("机巧心种", crit.sim_instance),
-        ("机巧心种", ele.sim_instance),
+    assert context_build_calls == [crit.buff_instance, ele.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "机巧心种"),
+        ("find_sub_exist_buff_dict", owner),
+        ("find_equipper", "机巧心种"),
+        ("find_sub_exist_buff_dict", owner),
     ]
-    assert find_exist_calls == [crit.sim_instance, ele.sim_instance]
     assert crit.logic.equipper == owner
     assert ele.logic.equipper == owner
     assert crit.logic.buff_0 is crit_buff_0
@@ -106,11 +128,13 @@ def test_cordis_germina_shared_owner_keeps_distinct_templates_and_records(
     crit.logic.check_record_module()
     ele.logic.check_record_module()
 
-    assert find_equipper_calls == [
-        ("机巧心种", crit.sim_instance),
-        ("机巧心种", ele.sim_instance),
+    assert context_build_calls == [crit.buff_instance, ele.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "机巧心种"),
+        ("find_sub_exist_buff_dict", owner),
+        ("find_equipper", "机巧心种"),
+        ("find_sub_exist_buff_dict", owner),
     ]
-    assert find_exist_calls == [crit.sim_instance, ele.sim_instance]
     assert crit.logic.record is crit_existing_record
     assert ele.logic.record is ele_existing_record
 
@@ -139,41 +163,39 @@ def test_cordis_germina_ele_dmg_skill_node_timing_oracle(
         tick=120,
     )
     ele_buff_0 = _buff_0()
+    context_build_calls: list[object] = []
+    context_calls: list[tuple[str, object]] = []
+    templates = {harness.buff_instance.ft.index: ele_buff_0}
     preparation_calls: list[dict[str, object]] = []
 
-    def fake_find_equipper(item_name: str, *, sim_instance: object) -> str:
-        assert item_name == "机巧心种"
-        assert sim_instance is harness.sim_instance
-        return owner
-
-    def fake_find_exist_buff_dict(
-        *, sim_instance: object
-    ) -> dict[str, dict[str, object]]:
-        assert sim_instance is harness.sim_instance
-        return {owner: {harness.buff_instance.ft.index: ele_buff_0}}
+    def fake_build_preparation_context_from_buff(
+        buff_instance: object,
+    ) -> _FakeCordisPreparationContext:
+        context_build_calls.append(buff_instance)
+        return _FakeCordisPreparationContext(
+            owner=owner,
+            templates=templates,
+            calls=context_calls,
+        )
 
     def fake_check_preparation(
         *,
         buff_instance: object,
         buff_0: object,
+        preparation_context: object,
         **kwargs: object,
     ) -> None:
         assert buff_instance is harness.buff_instance
         assert buff_0 is ele_buff_0
-        preparation_calls.append(dict(kwargs))
+        preparation_calls.append({"preparation_context": preparation_context, **kwargs})
         record = cast(Any, ele_buff_0.history.record)
         record.equipper = owner
         record.char = SimpleNamespace(NAME=owner)
 
     monkeypatch.setattr(
-        ele_module.JudgeTools,
-        "find_equipper",
-        fake_find_equipper,
-    )
-    monkeypatch.setattr(
-        ele_module.JudgeTools,
-        "find_exist_buff_dict",
-        fake_find_exist_buff_dict,
+        ele_module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context_from_buff,
     )
     monkeypatch.setattr(
         ele_module,
@@ -191,6 +213,16 @@ def test_cordis_germina_ele_dmg_skill_node_timing_oracle(
     )
 
     assert result is expected
-    assert preparation_calls == [{"equipper": "机巧心种"}]
+    assert context_build_calls == [harness.buff_instance, harness.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "机巧心种"),
+        ("find_sub_exist_buff_dict", owner),
+    ]
+    assert len(preparation_calls) == 1
+    assert isinstance(
+        preparation_calls[0]["preparation_context"],
+        _FakeCordisPreparationContext,
+    )
+    assert preparation_calls[0]["equipper"] == "机巧心种"
     assert harness.logic.buff_0 is ele_buff_0
     assert harness.logic.record is ele_buff_0.history.record
