@@ -374,6 +374,10 @@ FROZEN_EDGE_EQUIPMENT_TEMPLATE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/PolarMetalFreezeBonus.py",
 )
 
+BRANCH_BLADE_SONG_CRITDAMAGE_PREPARATION_TEMPLATE_FILES = (
+    "zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritDamageBonus.py",
+)
+
 RESOURCE_REFRESH_EQUIPMENT_TEMPLATE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/ElegantVanitySpRecover.py",
     "zsim/sim_progress/Buff/BuffXLogic/LunarNoviluna.py",
@@ -410,6 +414,7 @@ XLOGIC_ADAPTER_TRIGGER_REF_FILES = (
 XLOGIC_ADAPTER_TEMPLATE_FILES = (
     "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
     "zsim/sim_progress/Buff/BuffXLogic/AstralVoice.py",
+    *BRANCH_BLADE_SONG_CRITDAMAGE_PREPARATION_TEMPLATE_FILES,
     *FROZEN_EDGE_EQUIPMENT_TEMPLATE_FILES,
     *RESOURCE_REFRESH_EQUIPMENT_TEMPLATE_FILES,
     "zsim/sim_progress/Buff/BuffXLogic/RoaringRideBuffTrigger.py",
@@ -4096,6 +4101,42 @@ def test_prd001c_selected_xlogic_helpers_stay_on_preparation_context() -> None:
 
         assert "build_preparation_context_from_buff" in source
         assert "preparation_context.find_sub_exist_buff_dict(" in source
+        assert "JudgeTools.find_exist_buff_dict" not in source
+
+
+def test_branch_blade_song_critdamage_preparation_template_has_exact_guardrail_coverage() -> None:
+    expected_files = {
+        "zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritDamageBonus.py",
+    }
+    required_forbidden_kinds = frozenset(
+        {
+            XLOGIC_ADAPTER_BROAD_JUDGE_TOOLS_FIND,
+            XLOGIC_ADAPTER_LEGACY_GET_PREPARED,
+        }
+    )
+
+    assert set(BRANCH_BLADE_SONG_CRITDAMAGE_PREPARATION_TEMPLATE_FILES) == expected_files
+
+    for relative_path in BRANCH_BLADE_SONG_CRITDAMAGE_PREPARATION_TEMPLATE_FILES:
+        assert relative_path in XLOGIC_ADAPTER_TEMPLATE_FILES
+        assert required_forbidden_kinds <= XLOGIC_ADAPTER_MIGRATED_FILE_GUARDRAILS[
+            relative_path
+        ]
+
+        path = PROJECT_ROOT / relative_path
+        source = path.read_text(encoding="utf-8")
+        file_findings = _collect_xlogic_adapter_guardrail_findings_from_source(
+            path,
+            source,
+            required_forbidden_kinds,
+        )
+
+        assert not file_findings
+        assert "build_preparation_context_from_buff" in source
+        assert "preparation_context.find_equipper(" in source
+        assert "preparation_context.find_sub_exist_buff_dict(" in source
+        assert "create_calculator_runtime_read_context_from_sim_instance" in source
+        assert "JudgeTools.find_equipper" not in source
         assert "JudgeTools.find_exist_buff_dict" not in source
 
 
