@@ -393,8 +393,11 @@ COPIED_OUTPUT_MIGRATED_FILES = (
 
 COPIED_OUTPUT_RETAINED_NO_GO_FILES = APPROVED_COPIED_OUTPUT_STUN_HELPER_FILES
 
-DEFERRED_LIFECYCLE_MAIN_LOOP_FILES = {
+SCHEDULE_BUFF_SETTLE_CLOSED_LIFECYCLE_FILES = {
     "zsim/sim_progress/Buff/ScheduleBuffSettle.py",
+}
+
+DEFERRED_LIFECYCLE_MAIN_LOOP_FILES = {
     "zsim/sim_progress/ScheduledEvent/buff_runtime.py",
     "zsim/sim_progress/Update/UpdateAnomaly.py",
     "zsim/sim_progress/Update/Update_Buff.py",
@@ -1586,7 +1589,14 @@ def test_enemy_dynamic_read_guardrail_records_copied_output_zero_census_checkpoi
     assert disjoint_families["dot/debuff runtime-state"] == DOT_DEBUFF_RUNTIME_STATE_FILES
     assert disjoint_families["anomaly-map"] == ANOMALY_MAP_FUTURE_POOL_FILES
     assert disjoint_families["edge-detection"] == EDGE_DETECTION_FILES
-    assert disjoint_families["lifecycle/main-loop"] == DEFERRED_LIFECYCLE_MAIN_LOOP_FILES
+    assert (
+        disjoint_families["lifecycle/main-loop"]
+        - SCHEDULE_BUFF_SETTLE_CLOSED_LIFECYCLE_FILES
+        == DEFERRED_LIFECYCLE_MAIN_LOOP_FILES
+    )
+    assert SCHEDULE_BUFF_SETTLE_CLOSED_LIFECYCLE_FILES <= disjoint_families[
+        "lifecycle/main-loop"
+    ]
     assert COPIED_OUTPUT_ADJACENT_FILES.isdisjoint(
         set().union(*disjoint_families.values())
     )
@@ -1644,7 +1654,14 @@ def test_enemy_dynamic_read_guardrail_records_hugo_guardrail_checkpoint() -> Non
     assert disjoint_families["dot/debuff runtime-state"] == DOT_DEBUFF_RUNTIME_STATE_FILES
     assert disjoint_families["anomaly-map"] == ANOMALY_MAP_FUTURE_POOL_FILES
     assert disjoint_families["edge-detection"] == EDGE_DETECTION_FILES
-    assert disjoint_families["lifecycle/main-loop"] == DEFERRED_LIFECYCLE_MAIN_LOOP_FILES
+    assert (
+        disjoint_families["lifecycle/main-loop"]
+        - SCHEDULE_BUFF_SETTLE_CLOSED_LIFECYCLE_FILES
+        == DEFERRED_LIFECYCLE_MAIN_LOOP_FILES
+    )
+    assert SCHEDULE_BUFF_SETTLE_CLOSED_LIFECYCLE_FILES <= disjoint_families[
+        "lifecycle/main-loop"
+    ]
     assert APPROVED_COPIED_OUTPUT_STUN_FAMILY_HELPER_FILES.isdisjoint(
         set().union(*disjoint_families.values())
     )
