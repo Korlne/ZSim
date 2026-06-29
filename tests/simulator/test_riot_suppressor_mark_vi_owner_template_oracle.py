@@ -45,32 +45,52 @@ def _skill_node(
     return node
 
 
-def _install_direct_owner_template(
+def _install_preparation_context(
     monkeypatch: pytest.MonkeyPatch,
     *,
     harness: SimpleNamespace,
     owner: str,
     buff_0: SimpleNamespace,
-) -> tuple[list[tuple[str, object]], list[object]]:
-    owner_calls: list[tuple[str, object]] = []
-    find_exist_calls: list[object] = []
+) -> tuple[SimpleNamespace, list[object], list[tuple[str, object]]]:
+    build_calls: list[object] = []
+    context_calls: list[tuple[str, object]] = []
 
-    def fake_find_equipper(item_name: str, *, sim_instance: object) -> str:
-        owner_calls.append(("find_equipper", item_name))
-        assert sim_instance is harness.sim_instance
+    def fake_find_equipper(item_name: str) -> str:
+        context_calls.append(("find_equipper", item_name))
         return owner
 
-    def fake_find_exist_buff_dict(*, sim_instance: object) -> dict[str, dict[str, object]]:
-        find_exist_calls.append(sim_instance)
-        return {owner: {harness.buff_instance.ft.index: buff_0}}
+    def fake_find_sub_exist_buff_dict(owner_name: str) -> dict[str, object]:
+        context_calls.append(("find_sub_exist_buff_dict", owner_name))
+        assert owner_name == owner
+        return {harness.buff_instance.ft.index: buff_0}
 
-    monkeypatch.setattr(riot_module.JudgeTools, "find_equipper", fake_find_equipper)
-    monkeypatch.setattr(
-        riot_module.JudgeTools,
-        "find_exist_buff_dict",
-        fake_find_exist_buff_dict,
+    preparation_context = SimpleNamespace(
+        find_equipper=fake_find_equipper,
+        find_sub_exist_buff_dict=fake_find_sub_exist_buff_dict,
     )
-    return owner_calls, find_exist_calls
+
+    def fake_build_preparation_context(buff_instance: object) -> SimpleNamespace:
+        build_calls.append(buff_instance)
+        assert buff_instance is harness.buff_instance
+        return preparation_context
+
+    if hasattr(riot_module, "JudgeTools"):
+        monkeypatch.setattr(
+            riot_module.JudgeTools,
+            "find_equipper",
+            lambda *args, **kwargs: pytest.fail("Riot must use PreparationContext"),
+        )
+        monkeypatch.setattr(
+            riot_module.JudgeTools,
+            "find_exist_buff_dict",
+            lambda *args, **kwargs: pytest.fail("Riot must use PreparationContext"),
+        )
+    monkeypatch.setattr(
+        riot_module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context,
+    )
+    return preparation_context, build_calls, context_calls
 
 
 def _install_preparation(
@@ -79,6 +99,7 @@ def _install_preparation(
     harness: SimpleNamespace,
     owner: str,
     buff_0: SimpleNamespace,
+    preparation_context: SimpleNamespace,
     sub_exist_buff_dict: dict[str, object] | None = None,
 ) -> list[dict[str, object]]:
     preparation_calls: list[dict[str, object]] = []
@@ -87,10 +108,12 @@ def _install_preparation(
         *,
         buff_instance: object,
         buff_0: object,
+        preparation_context: object,
         **kwargs: object,
     ) -> None:
         assert buff_instance is harness.buff_instance
         assert buff_0 is buff_0_ref
+        assert preparation_context is preparation_context_ref
         preparation_calls.append(dict(kwargs))
         record = cast(Any, buff_0_ref.history.record)
         record.equipper = owner
@@ -99,6 +122,7 @@ def _install_preparation(
             record.sub_exist_buff_dict = sub_exist_buff_dict_ref
 
     buff_0_ref = buff_0
+    preparation_context_ref = preparation_context
     sub_exist_buff_dict_ref = (
         sub_exist_buff_dict
         if sub_exist_buff_dict is not None
@@ -128,7 +152,7 @@ def _prepared_logic(
 ) -> tuple[SimpleNamespace, SimpleNamespace, list[dict[str, object]]]:
     harness = _logic_harness(tick=tick)
     buff_0 = _buff_0(active=active)
-    _install_direct_owner_template(
+    preparation_context, _, _ = _install_preparation_context(
         monkeypatch,
         harness=harness,
         owner=owner,
@@ -139,6 +163,7 @@ def _prepared_logic(
         harness=harness,
         owner=owner,
         buff_0=buff_0,
+        preparation_context=preparation_context,
     )
     return harness, buff_0, preparation_calls
 
@@ -149,7 +174,7 @@ def test_riot_check_record_module_preserves_owner_template_and_record_identity(
     harness = _logic_harness()
     owner = "朱鸢"
     buff_0 = _buff_0()
-    owner_calls, find_exist_calls = _install_direct_owner_template(
+    _, build_calls, context_calls = _install_preparation_context(
         monkeypatch,
         harness=harness,
         owner=owner,
@@ -158,8 +183,11 @@ def test_riot_check_record_module_preserves_owner_template_and_record_identity(
 
     harness.logic.check_record_module()
 
-    assert owner_calls == [("find_equipper", "防暴者Ⅵ型")]
-    assert find_exist_calls == [harness.sim_instance]
+    assert build_calls == [harness.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "防暴者Ⅵ型"),
+        ("find_sub_exist_buff_dict", owner),
+    ]
     assert harness.logic.equipper == owner
     assert harness.logic.buff_0 is buff_0
     assert isinstance(buff_0.history.record, riot_module.RiotSuppressorMarkVIRecord)
@@ -174,8 +202,11 @@ def test_riot_check_record_module_preserves_owner_template_and_record_identity(
     existing_record = harness.logic.record
     harness.logic.check_record_module()
 
-    assert owner_calls == [("find_equipper", "防暴者Ⅵ型")]
-    assert find_exist_calls == [harness.sim_instance]
+    assert build_calls == [harness.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "防暴者Ⅵ型"),
+        ("find_sub_exist_buff_dict", owner),
+    ]
     assert harness.logic.record is existing_record
     assert buff_0.history.record is existing_record
 
@@ -293,7 +324,7 @@ def test_riot_special_effect_logic_pins_refresh_simple_start_and_signal_cleanup(
     buff_0 = _buff_0()
     sub_exist_buff_dict = {harness.buff_instance.ft.index: buff_0, "neighbor": object()}
     simple_start_calls: list[dict[str, object]] = []
-    _install_direct_owner_template(
+    preparation_context, _, _ = _install_preparation_context(
         monkeypatch,
         harness=harness,
         owner=owner,
@@ -304,6 +335,7 @@ def test_riot_special_effect_logic_pins_refresh_simple_start_and_signal_cleanup(
         harness=harness,
         owner=owner,
         buff_0=buff_0,
+        preparation_context=preparation_context,
         sub_exist_buff_dict=sub_exist_buff_dict,
     )
     tick_calls = _install_tick(monkeypatch, harness=harness)
