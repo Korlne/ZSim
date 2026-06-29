@@ -157,8 +157,26 @@ def test_runtime_command_update_anomaly_surface_keeps_layer_apis_private() -> No
     assert "run_update_anomaly(" in adapter_source
     assert "create_anomaly_runtime_context" in adapter_source
     assert "dynamic_buff_dict=self._active_store_for_compat()" not in adapter_source
-    assert "_dynamic_buff_dict_for_update_anomaly()" in adapter_source
+    assert "_dynamic_buff_dict_for_update_anomaly" not in module_source
+    assert "_legacy_active_store_for_update_anomaly()" in adapter_source
     assert legacy_adapter_source == adapter_source
+
+    base_helper = (
+        runtime_command_module._RuntimeCommandAdapterBase
+        ._legacy_active_store_for_update_anomaly
+    )
+    base_helper_source = inspect.getsource(
+        base_helper
+    )
+    default_helper_source = inspect.getsource(
+        DefaultRuntimeCommandAdapter._legacy_active_store_for_update_anomaly
+    )
+    legacy_helper = LegacyRuntimeCommandAdapter._legacy_active_store_for_update_anomaly
+    legacy_helper_source = inspect.getsource(legacy_helper)
+    assert default_helper_source == base_helper_source
+    assert "return None" in default_helper_source
+    assert "self._active_store_for_compat()" not in default_helper_source
+    assert "self._active_store_for_compat()" in legacy_helper_source
 
 
 def test_run_update_anomaly_defaults_to_current_path_until_migration_test_hook_is_patched(
