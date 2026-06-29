@@ -48,33 +48,52 @@ def _skill_node(
     return node
 
 
-def _install_judge_tools(
+def _install_preparation_context(
     monkeypatch: pytest.MonkeyPatch,
     *,
     harness: SimpleNamespace,
     owner: str,
     buff_0: SimpleNamespace,
-) -> tuple[list[tuple[str, object]], dict[str, dict[str, object]]]:
-    calls: list[tuple[str, object]] = []
-    exist_buff_dict = {owner: {harness.buff_instance.ft.index: buff_0}}
+) -> tuple[SimpleNamespace, list[object], list[tuple[str, object]]]:
+    build_calls: list[object] = []
+    context_calls: list[tuple[str, object]] = []
 
-    def fake_find_equipper(item_name: str, *, sim_instance: object) -> str:
-        calls.append(("find_equipper", item_name))
-        assert sim_instance is harness.sim_instance
+    def fake_find_equipper(item_name: str) -> str:
+        context_calls.append(("find_equipper", item_name))
         return owner
 
-    def fake_find_exist_buff_dict(*, sim_instance: object) -> dict[str, dict[str, object]]:
-        calls.append(("find_exist_buff_dict", sim_instance))
-        assert sim_instance is harness.sim_instance
-        return exist_buff_dict
+    def fake_find_sub_exist_buff_dict(owner_name: str) -> dict[str, object]:
+        context_calls.append(("find_sub_exist_buff_dict", owner_name))
+        assert owner_name == owner
+        return {harness.buff_instance.ft.index: buff_0}
 
-    monkeypatch.setattr(severed_module.JudgeTools, "find_equipper", fake_find_equipper)
-    monkeypatch.setattr(
-        severed_module.JudgeTools,
-        "find_exist_buff_dict",
-        fake_find_exist_buff_dict,
+    preparation_context = SimpleNamespace(
+        find_equipper=fake_find_equipper,
+        find_sub_exist_buff_dict=fake_find_sub_exist_buff_dict,
     )
-    return calls, exist_buff_dict
+
+    def fake_build_preparation_context(buff_instance: object) -> SimpleNamespace:
+        build_calls.append(buff_instance)
+        assert buff_instance is harness.buff_instance
+        return preparation_context
+
+    if hasattr(severed_module, "JudgeTools"):
+        monkeypatch.setattr(
+            severed_module.JudgeTools,
+            "find_equipper",
+            lambda *args, **kwargs: pytest.fail("Severed must use PreparationContext"),
+        )
+        monkeypatch.setattr(
+            severed_module.JudgeTools,
+            "find_exist_buff_dict",
+            lambda *args, **kwargs: pytest.fail("Severed must use PreparationContext"),
+        )
+    monkeypatch.setattr(
+        severed_module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context,
+    )
+    return preparation_context, build_calls, context_calls
 
 
 def _install_preparation(
@@ -83,6 +102,7 @@ def _install_preparation(
     harness: SimpleNamespace,
     owner: str,
     buff_0: SimpleNamespace,
+    preparation_context: SimpleNamespace,
     sub_exist_buff_dict: dict[str, object] | None = None,
 ) -> list[dict[str, object]]:
     preparation_calls: list[dict[str, object]] = []
@@ -91,10 +111,12 @@ def _install_preparation(
         *,
         buff_instance: object,
         buff_0: object,
+        preparation_context: object,
         **kwargs: object,
     ) -> None:
         assert buff_instance is harness.buff_instance
         assert buff_0 is buff_0_ref
+        assert preparation_context is preparation_context_ref
         preparation_calls.append(dict(kwargs))
         record = cast(Any, buff_0_ref.history.record)
         record.equipper = owner
@@ -103,6 +125,7 @@ def _install_preparation(
             record.sub_exist_buff_dict = sub_exist_buff_dict_ref
 
     buff_0_ref = buff_0
+    preparation_context_ref = preparation_context
     sub_exist_buff_dict_ref = (
         sub_exist_buff_dict
         if sub_exist_buff_dict is not None
@@ -131,23 +154,29 @@ def _prepared_logic(
 ) -> tuple[SimpleNamespace, SimpleNamespace, list[dict[str, object]]]:
     harness = _logic_harness(tick=tick)
     buff_0 = _buff_0()
-    _install_judge_tools(monkeypatch, harness=harness, owner=owner, buff_0=buff_0)
-    preparation_calls = _install_preparation(
+    preparation_context, _, _ = _install_preparation_context(
         monkeypatch,
         harness=harness,
         owner=owner,
         buff_0=buff_0,
     )
+    preparation_calls = _install_preparation(
+        monkeypatch,
+        harness=harness,
+        owner=owner,
+        buff_0=buff_0,
+        preparation_context=preparation_context,
+    )
     return harness, buff_0, preparation_calls
 
 
-def test_severed_check_record_module_pins_direct_owner_template_and_record_identity(
+def test_severed_check_record_module_pins_preparation_context_owner_template_and_record_identity(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     harness = _logic_harness()
     owner = "安比"
     buff_0 = _buff_0()
-    judge_calls, _ = _install_judge_tools(
+    _, build_calls, context_calls = _install_preparation_context(
         monkeypatch,
         harness=harness,
         owner=owner,
@@ -156,9 +185,10 @@ def test_severed_check_record_module_pins_direct_owner_template_and_record_ident
 
     harness.logic.check_record_module()
 
-    assert judge_calls == [
+    assert build_calls == [harness.buff_instance]
+    assert context_calls == [
         ("find_equipper", "牺牲洁纯"),
-        ("find_exist_buff_dict", harness.sim_instance),
+        ("find_sub_exist_buff_dict", owner),
     ]
     assert harness.logic.equipper == owner
     assert harness.logic.buff_0 is buff_0
@@ -180,9 +210,10 @@ def test_severed_check_record_module_pins_direct_owner_template_and_record_ident
     existing_record = harness.logic.record
     harness.logic.check_record_module()
 
-    assert judge_calls == [
+    assert build_calls == [harness.buff_instance]
+    assert context_calls == [
         ("find_equipper", "牺牲洁纯"),
-        ("find_exist_buff_dict", harness.sim_instance),
+        ("find_sub_exist_buff_dict", owner),
     ]
     assert harness.logic.record is existing_record
     assert buff_0.history.record is existing_record
@@ -289,12 +320,18 @@ def test_severed_special_start_logic_pins_unique_batching_boxes_and_update_order
     owner = "安比"
     buff_0 = _buff_0()
     sub_exist_buff_dict = {harness.buff_instance.ft.index: buff_0, "neighbor": object()}
-    _install_judge_tools(monkeypatch, harness=harness, owner=owner, buff_0=buff_0)
+    preparation_context, _, _ = _install_preparation_context(
+        monkeypatch,
+        harness=harness,
+        owner=owner,
+        buff_0=buff_0,
+    )
     preparation_calls = _install_preparation(
         monkeypatch,
         harness=harness,
         owner=owner,
         buff_0=buff_0,
+        preparation_context=preparation_context,
         sub_exist_buff_dict=sub_exist_buff_dict,
     )
     tick_calls = _install_tick(monkeypatch, harness=harness)
@@ -357,8 +394,19 @@ def test_severed_special_start_logic_pins_expired_mode_filter_and_count(
     harness = _logic_harness(tick=640, maxduration=120)
     owner = "安比"
     buff_0 = _buff_0()
-    _install_judge_tools(monkeypatch, harness=harness, owner=owner, buff_0=buff_0)
-    _install_preparation(monkeypatch, harness=harness, owner=owner, buff_0=buff_0)
+    preparation_context, _, _ = _install_preparation_context(
+        monkeypatch,
+        harness=harness,
+        owner=owner,
+        buff_0=buff_0,
+    )
+    _install_preparation(
+        monkeypatch,
+        harness=harness,
+        owner=owner,
+        buff_0=buff_0,
+        preparation_context=preparation_context,
+    )
     _install_tick(monkeypatch, harness=harness)
     harness.buff_instance.simple_start = lambda *args, **kwargs: None
     harness.buff_instance.update_to_buff_0 = lambda *args, **kwargs: None
