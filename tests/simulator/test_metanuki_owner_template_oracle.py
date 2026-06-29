@@ -40,35 +40,62 @@ def _skill_node(
     return node
 
 
-def test_metanuki_check_record_module_preserves_direct_owner_template_and_record_identity(
+class _FakeMetanukiPreparationContext:
+    def __init__(
+        self,
+        *,
+        owner: str,
+        index: str,
+        buff_0: object,
+        calls: list[tuple[str, object]],
+    ) -> None:
+        self._owner = owner
+        self._index = index
+        self._buff_0 = buff_0
+        self._calls = calls
+
+    def find_equipper(self, item_name: str) -> str:
+        self._calls.append(("find_equipper", item_name))
+        return self._owner
+
+    def find_sub_exist_buff_dict(self, owner_name: str) -> dict[str, object]:
+        self._calls.append(("find_sub_exist_buff_dict", owner_name))
+        return {self._index: self._buff_0}
+
+
+def test_metanuki_check_record_module_preserves_owner_template_and_record_identity(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     harness = _logic_harness()
     owner = "猫又"
     buff_0 = _buff_0()
-    find_equipper_calls: list[tuple[str, object]] = []
-    find_exist_calls: list[object] = []
-    exist_buff_dict = {owner: {harness.buff_instance.ft.index: buff_0}}
+    context_build_calls: list[object] = []
+    context_calls: list[tuple[str, object]] = []
 
-    def fake_find_equipper(item_name: str, *, sim_instance: object) -> str:
-        find_equipper_calls.append((item_name, sim_instance))
-        return owner
+    def fake_build_preparation_context_from_buff(
+        buff_instance: object,
+    ) -> _FakeMetanukiPreparationContext:
+        context_build_calls.append(buff_instance)
+        return _FakeMetanukiPreparationContext(
+            owner=owner,
+            index=harness.buff_instance.ft.index,
+            buff_0=buff_0,
+            calls=context_calls,
+        )
 
-    def fake_find_exist_buff_dict(*, sim_instance: object) -> dict[str, dict[str, object]]:
-        find_exist_calls.append(sim_instance)
-        return exist_buff_dict
-
-    monkeypatch.setattr(metanuki_module.JudgeTools, "find_equipper", fake_find_equipper)
     monkeypatch.setattr(
-        metanuki_module.JudgeTools,
-        "find_exist_buff_dict",
-        fake_find_exist_buff_dict,
+        metanuki_module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context_from_buff,
     )
 
     harness.logic.check_record_module()
 
-    assert find_equipper_calls == [("狸法七变化", harness.sim_instance)]
-    assert find_exist_calls == [harness.sim_instance]
+    assert context_build_calls == [harness.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "狸法七变化"),
+        ("find_sub_exist_buff_dict", owner),
+    ]
     assert harness.logic.equipper == owner
     assert harness.logic.buff_0 is buff_0
     assert isinstance(buff_0.history.record, metanuki_module.MetanukiMorphosisAPBonusRecord)
@@ -77,8 +104,11 @@ def test_metanuki_check_record_module_preserves_direct_owner_template_and_record
     existing_record = harness.logic.record
     harness.logic.check_record_module()
 
-    assert find_equipper_calls == [("狸法七变化", harness.sim_instance)]
-    assert find_exist_calls == [harness.sim_instance]
+    assert context_build_calls == [harness.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "狸法七变化"),
+        ("find_sub_exist_buff_dict", owner),
+    ]
     assert harness.logic.record is existing_record
     assert buff_0.history.record is existing_record
 
@@ -103,39 +133,42 @@ def test_metanuki_special_judge_logic_pins_aftershock_label_and_hit_timing(
     harness = _logic_harness(tick=120)
     owner = "猫又"
     buff_0 = _buff_0()
-    find_equipper_calls: list[tuple[str, object]] = []
-    find_exist_calls: list[object] = []
+    context_build_calls: list[object] = []
+    context_calls: list[tuple[str, object]] = []
     preparation_calls: list[dict[str, object]] = []
-    exist_buff_dict = {owner: {harness.buff_instance.ft.index: buff_0}}
 
-    def fake_find_equipper(item_name: str, *, sim_instance: object) -> str:
-        find_equipper_calls.append((item_name, sim_instance))
-        return owner
-
-    def fake_find_exist_buff_dict(*, sim_instance: object) -> dict[str, dict[str, object]]:
-        find_exist_calls.append(sim_instance)
-        return exist_buff_dict
+    def fake_build_preparation_context_from_buff(
+        buff_instance: object,
+    ) -> _FakeMetanukiPreparationContext:
+        context_build_calls.append(buff_instance)
+        return _FakeMetanukiPreparationContext(
+            owner=owner,
+            index=harness.buff_instance.ft.index,
+            buff_0=buff_0,
+            calls=context_calls,
+        )
 
     def fake_check_preparation(
         *,
         buff_instance: object,
         buff_0: object,
+        preparation_context: object,
         **kwargs: object,
     ) -> None:
         assert buff_instance is harness.buff_instance
         assert buff_0 is buff_0_ref
-        preparation_calls.append(kwargs)
+        assert isinstance(preparation_context, _FakeMetanukiPreparationContext)
+        preparation_calls.append({"preparation_context": preparation_context, **kwargs})
         record = cast(Any, buff_0_ref.history.record)
         record.equipper = owner
         record.char = SimpleNamespace(NAME=owner)
 
     buff_0_ref = buff_0
 
-    monkeypatch.setattr(metanuki_module.JudgeTools, "find_equipper", fake_find_equipper)
     monkeypatch.setattr(
-        metanuki_module.JudgeTools,
-        "find_exist_buff_dict",
-        fake_find_exist_buff_dict,
+        metanuki_module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context_from_buff,
     )
     monkeypatch.setattr(metanuki_module, "check_preparation", fake_check_preparation)
 
@@ -149,9 +182,17 @@ def test_metanuki_special_judge_logic_pins_aftershock_label_and_hit_timing(
     )
 
     assert result is expected
-    assert find_equipper_calls == [("狸法七变化", harness.sim_instance)]
-    assert find_exist_calls == [harness.sim_instance]
-    assert preparation_calls == [{"equipper": "狸法七变化"}]
+    assert context_build_calls == [harness.buff_instance, harness.buff_instance]
+    assert context_calls == [
+        ("find_equipper", "狸法七变化"),
+        ("find_sub_exist_buff_dict", owner),
+    ]
+    assert len(preparation_calls) == 1
+    assert isinstance(
+        preparation_calls[0]["preparation_context"],
+        _FakeMetanukiPreparationContext,
+    )
+    assert preparation_calls[0]["equipper"] == "狸法七变化"
     assert harness.logic.equipper == owner
     assert harness.logic.buff_0 is buff_0
     assert harness.logic.record is buff_0.history.record
