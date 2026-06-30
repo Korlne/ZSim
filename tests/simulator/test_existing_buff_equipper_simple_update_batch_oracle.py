@@ -106,20 +106,22 @@ def _install_equipper_lookup(
     equipper_calls: list[tuple[str, object]] = []
     existing_buff_calls: list[object] = []
 
-    def fake_find_equipper(item_name: str, *, sim_instance: object) -> str:
-        equipper_calls.append((item_name, sim_instance))
-        return equipper
+    class FakePreparationContext:
+        def __init__(self, sim_instance: object) -> None:
+            self.sim_instance = sim_instance
 
-    def fake_find_exist_buff_dict(*, sim_instance: object) -> dict[str, dict[str, object]]:
-        existing_buff_calls.append(sim_instance)
-        return lookup_registry
+        def find_equipper(self, item_name: str) -> str:
+            equipper_calls.append((item_name, self.sim_instance))
+            return equipper
 
-    monkeypatch.setattr(module.JudgeTools, "find_equipper", fake_find_equipper)
-    monkeypatch.setattr(
-        module.JudgeTools,
-        "find_exist_buff_dict",
-        fake_find_exist_buff_dict,
-    )
+        def find_sub_exist_buff_dict(self, owner_name: str) -> dict[str, object]:
+            existing_buff_calls.append(self.sim_instance)
+            return lookup_registry[owner_name]
+
+    def fake_context_builder(buff_instance: object) -> FakePreparationContext:
+        return FakePreparationContext(buff_instance.sim_instance)
+
+    monkeypatch.setattr(module, "build_preparation_context_from_buff", fake_context_builder)
     return equipper_calls, existing_buff_calls
 
 
@@ -159,7 +161,9 @@ def _install_preparation(
     ) -> None:
         assert buff_instance is harness
         assert buff_0 is buff_0_ref
-        preparation_calls.append(dict(kwargs))
+        observed_kwargs = dict(kwargs)
+        observed_kwargs.pop("preparation_context", None)
+        preparation_calls.append(observed_kwargs)
         record = buff_0_ref.history.record
         if kwargs.get("equipper") is not None:
             record.equipper = f"equipper:{kwargs['equipper']}"
@@ -192,8 +196,7 @@ def _find_equipper_literal(source: str) -> str:
     raise AssertionError("expected JudgeTools.find_equipper literal")
 
 
-def _equipper_simple_update_scan() -> dict[str, list[dict[str, str]]]:
-    selected: list[dict[str, str]] = []
+def _raw_equipper_simple_update_scan() -> list[dict[str, str]]:
     excluded: list[dict[str, str]] = []
     for path in sorted(BUFFXLOGIC_ROOT.glob("*.py")):
         source = path.read_text(encoding="utf-8") or ""
@@ -209,16 +212,25 @@ def _equipper_simple_update_scan() -> dict[str, list[dict[str, str]]]:
             continue
         rel_path = path.relative_to(PROJECT_ROOT).as_posix()
         row = {"file": rel_path, "item": _find_equipper_literal(source)}
-        if rel_path in SELECTED_FILES:
-            selected.append(row)
-        else:
+        if rel_path not in SELECTED_FILES:
             excluded.append(row)
-    return {"needs_focused_oracle": selected, "excluded_or_deferred": excluded}
+    return excluded
 
 
-def test_us001_checkpoint_matches_current_bounded_equipper_simple_update_census() -> None:
+def _assert_selected_file_uses_helper_path(row: dict[str, str]) -> None:
+    source = (PROJECT_ROOT / row["file"]).read_text(encoding="utf-8")
+
+    assert "prepare_with_context(" in source
+    assert "ensure_equipper_template_record(" in source
+    assert "build_preparation_context_from_buff" in source
+    assert f'item_name="{row["item"]}"' in source
+    assert "JudgeTools.find_equipper" not in source
+    assert "JudgeTools.find_exist_buff_dict" not in source
+
+
+def test_us001_checkpoint_and_current_migration_scope_match_equipper_batch() -> None:
     checkpoint = json.loads(CHECKPOINT_PATH.read_text(encoding="utf-8"))
-    scan = _equipper_simple_update_scan()
+    raw_excluded = _raw_equipper_simple_update_scan()
 
     assert checkpoint["schema"] == (
         "zsim-existing-buff-equipper-simple-update-batch-oracle.v1"
@@ -230,10 +242,9 @@ def test_us001_checkpoint_matches_current_bounded_equipper_simple_update_census(
     assert tuple(entry["file"] for entry in checkpoint["needs_focused_oracle"]) == (
         SELECTED_FILES
     )
-    assert tuple(entry["file"] for entry in scan["needs_focused_oracle"]) == SELECTED_FILES
-    assert tuple(entry["file"] for entry in scan["excluded_or_deferred"]) == (
-        EXCLUDED_OR_DEFERRED_FILES
-    )
+    for row in SELECTED_ROWS:
+        _assert_selected_file_uses_helper_path(row)
+    assert tuple(entry["file"] for entry in raw_excluded) == EXCLUDED_OR_DEFERRED_FILES
     assert checkpoint["scan_summary"]["selected_needs_focused_oracle_count"] == 2
     assert checkpoint["scan_summary"]["excluded_or_deferred_count"] == 4
     assert checkpoint["none_safe_to_implement_stop_evidence"] == []
