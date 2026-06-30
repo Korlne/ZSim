@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import ast
 import importlib
 import json
 from pathlib import Path
@@ -11,7 +10,6 @@ import pytest
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-BUFFXLOGIC_ROOT = PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffXLogic"
 CHECKPOINT_PATH = (
     PROJECT_ROOT
     / "scripts"
@@ -82,7 +80,7 @@ class _RecordingBuffInstance:
         self.update_to_buff_0_calls.append((args, dict(kwargs)))
 
 
-def _install_direct_equipper_lookup(
+def _install_equipper_lookup(
     monkeypatch: pytest.MonkeyPatch,
     *,
     module: Any,
@@ -96,16 +94,22 @@ def _install_direct_equipper_lookup(
     equipper_calls: list[tuple[str, object]] = []
     existing_buff_calls: list[object] = []
 
-    def fake_find_equipper(item_name: str, *, sim_instance: object) -> str:
-        equipper_calls.append((item_name, sim_instance))
-        return equipper
+    class FakePreparationContext:
+        def __init__(self, sim_instance: object) -> None:
+            self.sim_instance = sim_instance
 
-    def fake_find_exist_buff_dict(*, sim_instance: object) -> dict[str, dict[str, object]]:
-        existing_buff_calls.append(sim_instance)
-        return lookup_registry
+        def find_equipper(self, item_name: str) -> str:
+            equipper_calls.append((item_name, self.sim_instance))
+            return equipper
 
-    monkeypatch.setattr(module.JudgeTools, "find_equipper", fake_find_equipper)
-    monkeypatch.setattr(module.JudgeTools, "find_exist_buff_dict", fake_find_exist_buff_dict)
+        def find_sub_exist_buff_dict(self, owner_name: str) -> dict[str, object]:
+            existing_buff_calls.append(self.sim_instance)
+            return lookup_registry[owner_name]
+
+    def fake_context_builder(buff_instance: object) -> FakePreparationContext:
+        return FakePreparationContext(buff_instance.sim_instance)
+
+    monkeypatch.setattr(module, "build_preparation_context_from_buff", fake_context_builder)
     return equipper_calls, existing_buff_calls
 
 
@@ -128,7 +132,9 @@ def _install_preparation(
     ) -> None:
         assert buff_instance is harness
         assert buff_0 is buff_0_ref
-        preparation_calls.append(dict(kwargs))
+        observed_kwargs = dict(kwargs)
+        observed_kwargs.pop("preparation_context", None)
+        preparation_calls.append(observed_kwargs)
         record = buff_0_ref.history.record
         if kwargs.get("equipper") is not None:
             record.equipper = f"equipper:{kwargs['equipper']}"
@@ -159,46 +165,19 @@ def _skill_node(
     )
 
 
-def _find_equipper_literal(source: str) -> str:
-    tree = ast.parse(source)
-    for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
-        if not isinstance(node.func, ast.Attribute):
-            continue
-        if node.func.attr != "find_equipper" or not node.args:
-            continue
-        first_arg = node.args[0]
-        if isinstance(first_arg, ast.Constant) and isinstance(first_arg.value, str):
-            return first_arg.value
-    raise AssertionError("expected JudgeTools.find_equipper literal")
+def _assert_selected_file_uses_helper_path(row: dict[str, str]) -> None:
+    source = (PROJECT_ROOT / row["file"]).read_text(encoding="utf-8")
+
+    assert "prepare_with_context(" in source
+    assert "ensure_equipper_template_record(" in source
+    assert "build_preparation_context_from_buff" in source
+    assert f'item_name="{row["item"]}"' in source
+    assert "JudgeTools.find_equipper" not in source
+    assert "JudgeTools.find_exist_buff_dict" not in source
 
 
-def _raw_qingming_companion_scan() -> list[dict[str, str]]:
-    hits: list[dict[str, str]] = []
-    for path in sorted(BUFFXLOGIC_ROOT.glob("*.py")):
-        source = path.read_text(encoding="utf-8") or ""
-        if not all(
-            token in source
-            for token in (
-                "JudgeTools.find_equipper",
-                "JudgeTools.find_exist_buff_dict",
-                ITEM_NAME,
-                "update_signal",
-                "personal_node_stack",
-                "simple_start",
-                "update_to_buff_0",
-            )
-        ):
-            continue
-        rel_path = path.relative_to(PROJECT_ROOT).as_posix()
-        hits.append({"file": rel_path, "item": _find_equipper_literal(source)})
-    return hits
-
-
-def test_us001_checkpoint_matches_current_bounded_qingming_companion_census() -> None:
+def test_us001_checkpoint_and_current_migration_scope_match_qingming_pair() -> None:
     checkpoint = json.loads(CHECKPOINT_PATH.read_text(encoding="utf-8"))
-    raw_hits = _raw_qingming_companion_scan()
 
     assert checkpoint["schema"] == (
         "zsim-existing-buff-qingming-birdcage-companion-pair-oracle.v1"
@@ -210,7 +189,8 @@ def test_us001_checkpoint_matches_current_bounded_qingming_companion_census() ->
     assert tuple(entry["file"] for entry in checkpoint["needs_focused_oracle"]) == (
         SELECTED_FILES
     )
-    assert tuple(entry["file"] for entry in raw_hits) == SELECTED_FILES
+    for row in SELECTED_ROWS:
+        _assert_selected_file_uses_helper_path(row)
     assert tuple(entry["file"] for entry in checkpoint["excluded_or_deferred"][:2]) == (
         EXCLUDED_OR_DEFERRED_FILES
     )
@@ -230,7 +210,7 @@ def test_qingming_check_record_module_pins_lookup_index_and_record_identity(
     harness = _RecordingBuffInstance(index="qingming-template-index")
     logic = logic_cls(harness)
     template = _buff_0()
-    equipper_calls, existing_buff_calls = _install_direct_equipper_lookup(
+    equipper_calls, existing_buff_calls = _install_equipper_lookup(
         monkeypatch,
         module=module,
         item=row["item"],
@@ -272,7 +252,7 @@ def test_qingming_check_record_module_pins_missing_equipper_or_index_errors(
         if not registry
         else {f"equipper:{row['item']}": registry["EQUIPPER"]}
     )
-    _install_direct_equipper_lookup(
+    _install_equipper_lookup(
         monkeypatch,
         module=module,
         item=row["item"],
@@ -295,7 +275,7 @@ def test_qingming_judge_pins_preload_tick_personal_stack_gating_and_update_signa
     harness = _RecordingBuffInstance()
     logic = logic_cls(harness)
     buff_0 = _buff_0()
-    _install_direct_equipper_lookup(
+    _install_equipper_lookup(
         monkeypatch,
         module=module,
         item=row["item"],
@@ -355,7 +335,7 @@ def test_qingming_start_pins_update_signal_reset_simple_start_and_manual_update(
     harness = _RecordingBuffInstance()
     logic = logic_cls(harness)
     buff_0 = _buff_0()
-    _install_direct_equipper_lookup(
+    _install_equipper_lookup(
         monkeypatch,
         module=module,
         item=row["item"],
