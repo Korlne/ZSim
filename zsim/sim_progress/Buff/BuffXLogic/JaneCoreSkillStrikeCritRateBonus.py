@@ -2,12 +2,14 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
     get_calculator_buff_attribute_reader_service,
 )
 
-from .. import Buff, JudgeTools, check_preparation, find_tick
+from .. import Buff, check_preparation, find_tick
 from ..JudgeTools import (
     TriggerBuffRef,
+    build_preparation_context_from_buff,
     create_calculator_runtime_read_context_from_sim_instance,
     read_trigger_buff_state_active,
 )
+from ._preparation_helpers import ensure_owner_template_record, prepare_with_context
 
 _JANE_BITE_TRIGGER_REF = TriggerBuffRef.enemy("Buff-角色-简-核心被动-啮咬触发器")
 
@@ -33,16 +35,20 @@ class JaneCoreSkillStrikeCritRateBonus(Buff.BuffLogic):
         self.xexit = self.special_exit_logic
 
     def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+        return prepare_with_context(
+            self,
+            check_preparation_func=check_preparation,
+            context_builder=build_preparation_context_from_buff,
+            **kwargs,
+        )
 
     def check_record_module(self):
-        if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["简"][self.buff_instance.ft.index]
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = JaneCoreSkillStrikeCritRateBonusRecord()
-        self.record = self.buff_0.history.record
+        ensure_owner_template_record(
+            self,
+            owner_name="简",
+            record_factory=JaneCoreSkillStrikeCritRateBonusRecord,
+            context_builder=build_preparation_context_from_buff,
+        )
 
     def special_judge_logic(self, **kwargs):
         """强击暴击率的Debuff情况是和啮咬绑定的。"""

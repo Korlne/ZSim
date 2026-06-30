@@ -159,19 +159,43 @@ def _install_existing_buff_lookup(
         lookup_calls.append(sim_instance)
         return lookup_registry
 
-    monkeypatch.setattr(module.JudgeTools, "find_exist_buff_dict", fake_find_exist_buff_dict)
+    class _FakePreparationContext:
+        def find_sub_exist_buff_dict(self, owner_name: str) -> dict[str, object]:
+            assert module_context_buff is not None
+            return fake_find_exist_buff_dict(
+                sim_instance=module_context_buff.sim_instance
+            )[owner_name]
+
+    module_context_buff: object | None = None
+
+    def fake_build_preparation_context_from_buff(buff_instance: object) -> _FakePreparationContext:
+        nonlocal module_context_buff
+        module_context_buff = buff_instance
+        return _FakePreparationContext()
+
+    judge_tools = getattr(module, "JudgeTools", None)
+    if judge_tools is not None:
+        monkeypatch.setattr(judge_tools, "find_exist_buff_dict", fake_find_exist_buff_dict)
+    monkeypatch.setattr(
+        module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context_from_buff,
+        raising=False,
+    )
     return lookup_calls
 
 
 def _install_tick(monkeypatch: pytest.MonkeyPatch, module: Any) -> None:
     if hasattr(module, "find_tick"):
         monkeypatch.setattr(module, "find_tick", lambda *, sim_instance: sim_instance.tick)
-    monkeypatch.setattr(
-        module.JudgeTools,
-        "find_tick",
-        lambda *, sim_instance: sim_instance.tick,
-        raising=False,
-    )
+    judge_tools = getattr(module, "JudgeTools", None)
+    if judge_tools is not None:
+        monkeypatch.setattr(
+            judge_tools,
+            "find_tick",
+            lambda *, sim_instance: sim_instance.tick,
+            raising=False,
+        )
 
 
 class _CalculatorReader:
@@ -266,9 +290,15 @@ def _literal_simple_update_scan() -> dict[str, list[dict[str, str]]]:
     equipper_rows: list[dict[str, str]] = []
     for path in sorted(BUFFXLOGIC_ROOT.glob("*.py")):
         source = path.read_text(encoding="utf-8")
+        rel_path = path.relative_to(PROJECT_ROOT).as_posix()
         if (
             "JudgeTools.find_exist_buff_dict" not in source
-            or "simple_start" not in source
+            and "ensure_owner_template_record" not in source
+            and "ensure_equipper_template_record" not in source
+        ):
+            continue
+        if (
+            "simple_start" not in source
             or "update_to_buff_0" not in source
         ):
             continue
@@ -295,7 +325,21 @@ def _literal_simple_update_scan() -> dict[str, list[dict[str, str]]]:
                 for child in ast.walk(node.value.value)
             ):
                 owners.add(owner)
-        rel_path = path.relative_to(PROJECT_ROOT).as_posix()
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if not isinstance(node.func, ast.Name):
+                continue
+            if node.func.id == "ensure_owner_template_record" and rel_path in SELECTED_FILES:
+                for keyword in node.keywords:
+                    if (
+                        keyword.arg == "owner_name"
+                        and isinstance(keyword.value, ast.Constant)
+                        and isinstance(keyword.value.value, str)
+                    ):
+                        owners.add(keyword.value.value)
+            elif node.func.id == "ensure_equipper_template_record" and rel_path in SELECTED_FILES:
+                owners.add("self.equipper")
         for owner in sorted(owners):
             row = {"file": rel_path, "owner": owner}
             if owner == "self.equipper":
@@ -597,12 +641,14 @@ def test_literal_simple_update_representative_behavior_pins_simple_start_update_
         case.get("action_stack_current", "1251_SNA_1"),
         case.get("action_stack_previous", "1251_EX"),
     )
-    monkeypatch.setattr(
-        module.JudgeTools,
-        "find_stack",
-        lambda *, sim_instance: action_stack,
-        raising=False,
-    )
+    judge_tools = getattr(module, "JudgeTools", None)
+    if judge_tools is not None:
+        monkeypatch.setattr(
+            judge_tools,
+            "find_stack",
+            lambda *, sim_instance: action_stack,
+            raising=False,
+        )
     char = case.get("char", SimpleNamespace(statement=SimpleNamespace(ATK=1000), cinema=0))
     preparation_calls = _install_preparation(
         monkeypatch,
