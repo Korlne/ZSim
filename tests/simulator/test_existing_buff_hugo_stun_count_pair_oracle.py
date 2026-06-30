@@ -115,7 +115,10 @@ def _install_existing_buff_lookup(
     ) -> _FakePreparationContext:
         return _FakePreparationContext(buff_instance.sim_instance)
 
-    monkeypatch.setattr(module.JudgeTools, "find_exist_buff_dict", fake_find_exist_buff_dict)
+    if hasattr(module, "JudgeTools"):
+        monkeypatch.setattr(
+            module.JudgeTools, "find_exist_buff_dict", fake_find_exist_buff_dict
+        )
     monkeypatch.setattr(
         module,
         "build_preparation_context_from_buff",
@@ -156,21 +159,22 @@ def _install_preparation(
     return preparation_calls
 
 
-def _hugo_stun_count_scan() -> list[str]:
+def _hugo_stun_count_helper_scan() -> list[str]:
     rows: list[str] = []
     for path in sorted(BUFFXLOGIC_ROOT.glob("*.py")):
         source = path.read_text(encoding="utf-8")
         if (
-            '["雨果"]' in source
+            'owner_name="雨果"' in source
+            and "ensure_owner_template_record" in source
+            and "prepare_with_context" in source
             and "get_prepared(char_CID=1291, char_obj_list=1)" in source
             and "stun_char_count" in source
-            and "JudgeTools.find_exist_buff_dict" in source
         ):
             rows.append(path.relative_to(PROJECT_ROOT).as_posix())
     return rows
 
 
-def test_us001_checkpoint_matches_current_bounded_hugo_stun_count_census() -> None:
+def test_us001_checkpoint_rows_match_current_hugo_helper_migration() -> None:
     checkpoint = json.loads(CHECKPOINT_PATH.read_text(encoding="utf-8"))
 
     assert checkpoint["schema"] == "zsim-existing-buff-hugo-stun-count-pair-oracle.v1"
@@ -192,7 +196,7 @@ def test_us001_checkpoint_matches_current_bounded_hugo_stun_count_census() -> No
         "existing-buff-hugo-stun-count-pair-migration",
         "none-safe-to-implement",
     ]
-    scan = _hugo_stun_count_scan()
+    scan = _hugo_stun_count_helper_scan()
     assert len(scan) == len(SELECTED_FILES)
     assert set(scan) == set(SELECTED_FILES)
 
