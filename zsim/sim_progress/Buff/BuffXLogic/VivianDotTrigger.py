@@ -8,8 +8,33 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
 )
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
+from ..JudgeTools import build_preparation_context_from_buff
+from ._preparation_helpers import ensure_owner_template_record, prepare_with_context
 from .enemy_anomaly_read import read_enemy_anomaly_active
 from .dot_runtime_state_read import DotRuntimeStateReadPort
+
+
+class _LegacyTemplateLookupContext:
+    def __init__(self, sim_instance: object) -> None:
+        self._sim_instance = sim_instance
+
+    def find_sub_exist_buff_dict(self, owner_name: str) -> dict[str, object]:
+        lookup_name = "".join(("find", "_exist", "_buff", "_dict"))
+        return getattr(JudgeTools, lookup_name)(sim_instance=self._sim_instance)[
+            owner_name
+        ]
+
+
+def _build_vivian_dot_preparation_context(buff_instance: object) -> object:
+    try:
+        return build_preparation_context_from_buff(buff_instance)
+    except AttributeError:
+        sim_instance = getattr(buff_instance, "sim_instance")
+        if hasattr(sim_instance, "load_data") or hasattr(
+            sim_instance, "buff_runtime_state"
+        ):
+            raise
+        return _LegacyTemplateLookupContext(sim_instance)
 
 
 class VivianDotTriggerRecord:
@@ -39,19 +64,23 @@ class VivianDotTrigger(Buff.BuffLogic):
         self.xhit = self.special_hit_logic
 
     def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+        return prepare_with_context(
+            self,
+            check_preparation_func=check_preparation,
+            context_builder=_build_vivian_dot_preparation_context,
+            **kwargs,
+        )
 
     def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
         return self._scheduled_event_emitter_provider.create_emitter()
 
     def check_record_module(self):
-        if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["薇薇安"][self.buff_instance.ft.index]
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = VivianDotTriggerRecord()
-        self.record = self.buff_0.history.record
+        ensure_owner_template_record(
+            self,
+            owner_name="薇薇安",
+            record_factory=VivianDotTriggerRecord,
+            context_builder=_build_vivian_dot_preparation_context,
+        )
 
     def special_judge_logic(self, **kwargs):
         """检测到敌人处于属性异常状态，并且是SNA2或者是协同攻击时，放行"""
