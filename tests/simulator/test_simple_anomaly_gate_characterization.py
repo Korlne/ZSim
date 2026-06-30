@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import sys
 from dataclasses import dataclass
 from types import SimpleNamespace
@@ -113,13 +114,76 @@ class _SimpleGateFixture:
     exist_buff_dict: dict[str, dict[str, _BuffTemplate]]
 
 
+class _PreparationContextProbe:
+    def __init__(
+        self,
+        *,
+        exist_buff_dict: dict[str, dict[str, _BuffTemplate]],
+        equipper_name: str,
+        enemy: object | None,
+    ) -> None:
+        self._exist_buff_dict = exist_buff_dict
+        self._equipper_name = equipper_name
+        self._enemy = enemy
+
+    def find_sub_exist_buff_dict(self, owner_name: str) -> dict[str, _BuffTemplate]:
+        return self._exist_buff_dict[owner_name]
+
+    def find_equipper(self, item_name: str) -> str:
+        return self._equipper_name
+
+    def find_char_from_cid(self, cid: int) -> SimpleNamespace:
+        return SimpleNamespace(NAME=self._equipper_name, CID=cid)
+
+    def find_char_from_name(self, name: str) -> SimpleNamespace:
+        return SimpleNamespace(NAME=name)
+
+    def find_enemy(self) -> object:
+        assert self._enemy is not None
+        return self._enemy
+
+
 def _install_lookup_fakes(
     monkeypatch: pytest.MonkeyPatch,
     *,
+    logic_type: type[Any] | None = None,
     exist_buff_dict: dict[str, dict[str, _BuffTemplate]],
     equipper_name: str = "测试装备者",
     enemy: object | None = None,
 ) -> None:
+    if logic_type is not None:
+        module = importlib.import_module(logic_type.__module__)
+        if hasattr(module, "build_preparation_context_from_buff"):
+            preparation_context = _PreparationContextProbe(
+                exist_buff_dict=exist_buff_dict,
+                equipper_name=equipper_name,
+                enemy=enemy,
+            )
+            monkeypatch.setattr(
+                module,
+                "build_preparation_context_from_buff",
+                lambda buff_instance: preparation_context,
+            )
+
+            def fake_check_preparation(
+                *,
+                buff_instance: object,
+                buff_0: _BuffTemplate,
+                preparation_context: object | None = None,
+                **kwargs: object,
+            ) -> None:
+                record = buff_0.history.record
+                if "char_CID" in kwargs:
+                    record.char = SimpleNamespace(
+                        NAME=equipper_name,
+                        CID=kwargs["char_CID"],
+                    )
+                if "enemy" in kwargs:
+                    record.enemy = enemy
+                if "equipper" in kwargs:
+                    record.equipper = equipper_name
+
+            monkeypatch.setattr(module, "check_preparation", fake_check_preparation)
     monkeypatch.setattr(
         JudgeTools,
         "find_exist_buff_dict",
@@ -166,6 +230,7 @@ def _make_gate_fixture(
     enemy = SimpleNamespace(dynamic=enemy_dynamic)
     _install_lookup_fakes(
         monkeypatch,
+        logic_type=logic_type,
         exist_buff_dict=exist_buff_dict,
         equipper_name=owner_name,
         enemy=enemy,

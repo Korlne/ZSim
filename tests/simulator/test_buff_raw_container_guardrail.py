@@ -42,6 +42,34 @@ FROZEN_EDGE_EQUIPMENT_TEMPLATE_CHECKPOINT_PATH = (
     / "checkpoints"
     / "2026-06-21-US-004-frozen-edge-equipment-template-checkpoint.json"
 )
+PREPARATION_HELPERS_PATH = (
+    PROJECT_ROOT
+    / "zsim"
+    / "sim_progress"
+    / "Buff"
+    / "BuffXLogic"
+    / "_preparation_helpers.py"
+)
+
+
+def _assert_uses_preparation_template_helpers(
+    source: str,
+    *,
+    equipper_required: bool = True,
+) -> None:
+    helper_source = PREPARATION_HELPERS_PATH.read_text(encoding="utf-8")
+
+    assert "prepare_with_context(" in source
+    if equipper_required:
+        assert "ensure_equipper_template_record(" in source
+        assert "preparation_context.find_equipper(" in helper_source
+    else:
+        assert (
+            "ensure_equipper_template_record(" in source
+            or "ensure_owner_template_record(" in source
+        )
+    assert "preparation_context.find_sub_exist_buff_dict(" in helper_source
+    assert "check_preparation_func(" in helper_source
 
 SCANNED_PRODUCTION_FILES = (
     PROJECT_ROOT / "zsim" / "simulator" / "dataclasses.py",
@@ -3972,7 +4000,10 @@ def test_trigger_ref_tuple_family_has_exact_xlogic_guardrail_coverage() -> None:
         assert not file_findings
         assert "TriggerBuffRef." in source
         assert "build_preparation_context_from_buff" in source
-        assert "preparation_context.find_sub_exist_buff_dict(" in source
+        _assert_uses_preparation_template_helpers(
+            source,
+            equipper_required=False,
+        )
         assert "JudgeTools.find_equipper" not in source
         assert "JudgeTools.find_exist_buff_dict" not in source
 
@@ -4084,8 +4115,7 @@ def test_frozen_edge_equipment_template_family_has_exact_guardrail_coverage() ->
 
         assert not file_findings
         assert "build_preparation_context_from_buff" in source
-        assert "preparation_context.find_equipper(" in source
-        assert "preparation_context.find_sub_exist_buff_dict(" in source
+        _assert_uses_preparation_template_helpers(source)
         assert "JudgeTools.find_tick" in source
 
 
@@ -4100,7 +4130,7 @@ def test_prd001c_selected_xlogic_helpers_stay_on_preparation_context() -> None:
         source = path.read_text(encoding="utf-8")
 
         assert "build_preparation_context_from_buff" in source
-        assert "preparation_context.find_sub_exist_buff_dict(" in source
+        _assert_uses_preparation_template_helpers(source)
         assert "JudgeTools.find_exist_buff_dict" not in source
 
 
@@ -4133,8 +4163,7 @@ def test_branch_blade_song_critdamage_preparation_template_has_exact_guardrail_c
 
         assert not file_findings
         assert "build_preparation_context_from_buff" in source
-        assert "preparation_context.find_equipper(" in source
-        assert "preparation_context.find_sub_exist_buff_dict(" in source
+        _assert_uses_preparation_template_helpers(source)
         assert "create_calculator_runtime_read_context_from_sim_instance" in source
         assert "JudgeTools.find_equipper" not in source
         assert "JudgeTools.find_exist_buff_dict" not in source
@@ -4172,8 +4201,7 @@ def test_resource_refresh_equipment_template_family_has_exact_guardrail_coverage
 
         assert not file_findings
         assert "build_preparation_context_from_buff" in source
-        assert "preparation_context.find_equipper(" in source
-        assert "preparation_context.find_sub_exist_buff_dict(" in source
+        _assert_uses_preparation_template_helpers(source)
         assert "JudgeTools.find_equipper" not in source
         assert "JudgeTools.find_exist_buff_dict" not in source
 

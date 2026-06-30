@@ -173,6 +173,30 @@ class _BranchPreparationContextProbe:
         return {self.index: self.buff_0}
 
 
+class _OwnerPreparationContextProbe:
+    def __init__(
+        self,
+        *,
+        owner: str,
+        index: str,
+        buff_0: _BuffTemplate,
+        equipper: str | None = None,
+    ) -> None:
+        self.owner = owner
+        self.index = index
+        self.buff_0 = buff_0
+        self.equipper = equipper if equipper is not None else owner
+        self.lookup_calls: list[object] = []
+
+    def find_sub_exist_buff_dict(self, owner_name: str | None) -> dict[str, object]:
+        self.lookup_calls.append(owner_name)
+        assert owner_name == self.owner
+        return {self.index: self.buff_0}
+
+    def find_equipper(self, item_name: str) -> str:
+        return self.equipper
+
+
 class _CurrentBuffProbe:
     def __init__(self, *, index: str, tick: int) -> None:
         runtime_command_port = _FailFastRuntimeCommandPort()
@@ -253,20 +277,37 @@ def _install_owner_lookup(
     buff_0: _BuffTemplate,
     equipper: str | None = None,
 ) -> list[object]:
-    lookup_calls: list[object] = []
+    preparation_context = _OwnerPreparationContextProbe(
+        owner=owner,
+        index=index,
+        buff_0=buff_0,
+        equipper=equipper,
+    )
 
     def fake_find_exist_buff_dict(*, sim_instance: object) -> dict[str, dict[str, object]]:
-        lookup_calls.append(sim_instance)
+        preparation_context.lookup_calls.append(sim_instance)
         return {owner: {index: buff_0}}
 
-    monkeypatch.setattr(module.JudgeTools, "find_exist_buff_dict", fake_find_exist_buff_dict)
-    if equipper is not None:
+    if hasattr(module, "build_preparation_context_from_buff"):
+        monkeypatch.setattr(
+            module,
+            "build_preparation_context_from_buff",
+            lambda buff_instance: preparation_context,
+        )
+    if hasattr(module, "JudgeTools"):
         monkeypatch.setattr(
             module.JudgeTools,
-            "find_equipper",
-            lambda equipper_name, sim_instance=None: equipper,
+            "find_exist_buff_dict",
+            fake_find_exist_buff_dict,
         )
-    return lookup_calls
+    if equipper is not None:
+        if hasattr(module, "JudgeTools"):
+            monkeypatch.setattr(
+                module.JudgeTools,
+                "find_equipper",
+                lambda equipper_name, sim_instance=None: equipper,
+            )
+    return preparation_context.lookup_calls
 
 
 def _make_branch_fixture(
@@ -976,7 +1017,7 @@ def test_miyabi_frostburn_special_exit_logic_characterization(
         detect_events.append(("result", result, record.last_frostbite))
         return result
 
-    monkeypatch.setattr(frostburn_module.JudgeTools, "detect_edge", fake_detect_edge)
+    monkeypatch.setattr(frostburn_module, "detect_edge", fake_detect_edge)
 
     assert fixture.logic.special_exit_logic() is expected_exit
 

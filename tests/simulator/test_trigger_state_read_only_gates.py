@@ -666,6 +666,13 @@ def _make_jane_fixture(
         }
     }
     current_buff.sim_instance.load_data.exist_buff_dict = exist_buff_dict
+    _install_preparation_context_data(
+        current_buff,
+        equipper_name="简",
+        item_name="简",
+        char_name="简",
+        char_cid=1261,
+    )
     _install_lookup_fakes(
         monkeypatch,
         exist_buff_dict=exist_buff_dict,

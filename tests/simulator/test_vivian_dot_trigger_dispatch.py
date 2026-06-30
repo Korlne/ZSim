@@ -10,6 +10,7 @@ import zsim.define as define_module
 sys.modules.setdefault("define", define_module)
 
 import zsim.sim_progress.Buff.BuffXLogic.VivianDotTrigger as vivian_module
+import zsim.sim_progress.Buff.BuffXLogic.VivianCinema1Debuff as vivian_cinema1_module
 
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.VivianCinema1Debuff import (
@@ -87,6 +88,14 @@ class _PresenceDot:
     def __init__(self, *, active: bool) -> None:
         self.ft = SimpleNamespace(index="ViviansProphecy")
         self.dy = SimpleNamespace(active=active)
+
+
+class _PreparationContextProbe:
+    def __init__(self, registry):
+        self._registry = registry
+
+    def find_sub_exist_buff_dict(self, owner_name: str):
+        return self._registry[owner_name]
 
 
 class _CountingAnomalyDynamic:
@@ -512,6 +521,13 @@ def test_vivian_cinema1_debuff_record_uses_existing_buff_template(
         assert sim_instance is buff_instance.sim_instance
         return {"薇薇安": {buff_instance.ft.index: buff_0}}
 
+    monkeypatch.setattr(
+        vivian_cinema1_module,
+        "build_preparation_context_from_buff",
+        lambda current_buff: _PreparationContextProbe(fake_find_exist_buff_dict(
+            sim_instance=current_buff.sim_instance
+        )),
+    )
     monkeypatch.setattr(JudgeTools, "find_exist_buff_dict", fake_find_exist_buff_dict)
 
     logic = VivianCinema1Debuff(buff_instance)
