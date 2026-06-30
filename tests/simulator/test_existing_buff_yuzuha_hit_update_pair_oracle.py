@@ -108,7 +108,28 @@ def _install_existing_buff_lookup(
         lookup_calls.append(sim_instance)
         return lookup_registry
 
-    monkeypatch.setattr(module.JudgeTools, "find_exist_buff_dict", fake_find_exist_buff_dict)
+    class _FakePreparationContext:
+        def __init__(self, sim_instance: object) -> None:
+            self.sim_instance = sim_instance
+
+        def find_sub_exist_buff_dict(self, owner_name: str) -> dict[str, object]:
+            return fake_find_exist_buff_dict(sim_instance=self.sim_instance)[owner_name]
+
+    def fake_build_preparation_context_from_buff(
+        buff_instance: object,
+    ) -> _FakePreparationContext:
+        return _FakePreparationContext(buff_instance.sim_instance)
+
+    if hasattr(module, "JudgeTools"):
+        monkeypatch.setattr(
+            module.JudgeTools, "find_exist_buff_dict", fake_find_exist_buff_dict
+        )
+    monkeypatch.setattr(
+        module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context_from_buff,
+        raising=False,
+    )
     return lookup_calls
 
 
@@ -134,7 +155,9 @@ def _install_preparation(
     ) -> None:
         assert buff_instance is harness
         assert buff_0 is expected_buff_0
-        preparation_calls.append(dict(kwargs))
+        observed_kwargs = dict(kwargs)
+        observed_kwargs.pop("preparation_context", None)
+        preparation_calls.append(observed_kwargs)
         if raises is not None:
             raise raises
         record = expected_buff_0.history.record
@@ -196,9 +219,11 @@ def _install_anomaly_reader(
 def _hit_update_scan() -> list[str]:
     rows: list[str] = []
     base_terms = (
-        "JudgeTools.find_exist_buff_dict",
-        '"柚叶"',
-        "self.buff_instance.ft.index",
+        "ensure_owner_template_record(",
+        'owner_name="柚叶"',
+        "record_factory=",
+        "prepare_with_context(",
+        "build_preparation_context_from_buff",
         "get_prepared(char_CID=1411, sub_exist_buff_dict=1",
         "simple_start(",
         "no_count=1",
