@@ -9,7 +9,8 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduledEventEmitterProvider,
 )
 
-from .. import Buff, JudgeTools, check_preparation
+from .. import Buff, check_preparation
+from ..JudgeTools import build_preparation_context_from_buff
 
 
 class AlicePolarizedAssaultTriggerRecord:
@@ -41,16 +42,23 @@ class AlicePolarizedAssaultTrigger(Buff.BuffLogic):
         self.record: Any = None
 
     def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+        preparation_context = build_preparation_context_from_buff(self.buff_instance)
+        return check_preparation(
+            buff_instance=self.buff_instance,
+            buff_0=self.buff_0,
+            preparation_context=preparation_context,
+            **kwargs,
+        )
 
     def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
         return self._scheduled_event_emitter_provider.create_emitter()
 
     def check_record_module(self):
         if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["爱丽丝"][self.buff_instance.ft.index]
+            preparation_context = build_preparation_context_from_buff(self.buff_instance)
+            self.buff_0 = preparation_context.find_sub_exist_buff_dict("爱丽丝")[
+                self.buff_instance.ft.index
+            ]
         if self.buff_0.history.record is None:
             self.buff_0.history.record = AlicePolarizedAssaultTriggerRecord()
         self.record = self.buff_0.history.record

@@ -71,23 +71,47 @@ def _skill_node(
     return node
 
 
-def _install_direct_lookup(
+class _RecordingPreparationContext:
+    def __init__(
+        self,
+        *,
+        registry: dict[str, dict[str, object]],
+    ) -> None:
+        self._registry = registry
+        self.find_sub_exist_buff_dict_calls: list[str] = []
+
+    def find_sub_exist_buff_dict(self, owner_name: str) -> dict[str, object]:
+        self.find_sub_exist_buff_dict_calls.append(owner_name)
+        return self._registry[owner_name]
+
+
+def _install_preparation_context_lookup(
     monkeypatch: pytest.MonkeyPatch,
     *,
     module: Any,
     harness: SimpleNamespace,
     buff_0: SimpleNamespace,
     registry: dict[str, dict[str, object]] | None = None,
-) -> list[object]:
-    lookup_calls: list[object] = []
+) -> _RecordingPreparationContext:
     lookup_registry = registry if registry is not None else {"爱丽丝": {harness.buff_instance.ft.index: buff_0}}
+    preparation_context = _RecordingPreparationContext(registry=lookup_registry)
 
-    def fake_find_exist_buff_dict(*, sim_instance: object) -> dict[str, dict[str, object]]:
-        lookup_calls.append(sim_instance)
-        return lookup_registry
+    def fake_build_preparation_context_from_buff(buff_instance: object) -> _RecordingPreparationContext:
+        assert buff_instance is harness.buff_instance
+        return preparation_context
 
-    monkeypatch.setattr(module.JudgeTools, "find_exist_buff_dict", fake_find_exist_buff_dict)
-    return lookup_calls
+    monkeypatch.setattr(
+        module,
+        "build_preparation_context_from_buff",
+        fake_build_preparation_context_from_buff,
+    )
+    if hasattr(module, "JudgeTools"):
+        monkeypatch.setattr(
+            module.JudgeTools,
+            "find_exist_buff_dict",
+            lambda **_: pytest.fail("direct JudgeTools.find_exist_buff_dict lookup was called"),
+        )
+    return preparation_context
 
 
 def _install_preparation(
@@ -97,6 +121,7 @@ def _install_preparation(
     harness: SimpleNamespace,
     buff_0: SimpleNamespace,
     char: object,
+    preparation_context: _RecordingPreparationContext,
 ) -> list[dict[str, object]]:
     preparation_calls: list[dict[str, object]] = []
 
@@ -104,15 +129,18 @@ def _install_preparation(
         *,
         buff_instance: object,
         buff_0: object,
+        preparation_context: object | None = None,
         **kwargs: object,
     ) -> None:
         assert buff_instance is harness.buff_instance
         assert buff_0 is buff_0_ref
+        assert preparation_context is preparation_context_ref
         preparation_calls.append(dict(kwargs))
         cast(Any, buff_0_ref.history.record).char = char_ref
 
     buff_0_ref = buff_0
     char_ref = char
+    preparation_context_ref = preparation_context
     monkeypatch.setattr(module, "check_preparation", fake_check_preparation)
     return preparation_calls
 
@@ -125,7 +153,7 @@ def _prepared_logic(
     char: object,
     tick: int = 300,
     scheduled_event_emitter_provider: ScheduledEventEmitterProvider | None = None,
-) -> tuple[SimpleNamespace, SimpleNamespace, list[object], list[dict[str, object]]]:
+) -> tuple[SimpleNamespace, SimpleNamespace, list[str], list[dict[str, object]]]:
     harness = _logic_harness(
         module,
         logic_cls,
@@ -133,7 +161,7 @@ def _prepared_logic(
         scheduled_event_emitter_provider=scheduled_event_emitter_provider,
     )
     buff_0 = _buff_0()
-    lookup_calls = _install_direct_lookup(
+    preparation_context = _install_preparation_context_lookup(
         monkeypatch,
         module=module,
         harness=harness,
@@ -145,8 +173,14 @@ def _prepared_logic(
         harness=harness,
         buff_0=buff_0,
         char=char,
+        preparation_context=preparation_context,
     )
-    return harness, buff_0, lookup_calls, preparation_calls
+    return (
+        harness,
+        buff_0,
+        preparation_context.find_sub_exist_buff_dict_calls,
+        preparation_calls,
+    )
 
 
 class _FakeAlice:
@@ -217,7 +251,7 @@ class _FakeAnomalyBar:
         ),
     ],
 )
-def test_alice_trigger_family_check_record_module_pins_direct_owner_template_and_record_identity(
+def test_alice_trigger_family_check_record_module_pins_preparation_context_owner_template_and_record_identity(
     monkeypatch: pytest.MonkeyPatch,
     module: Any,
     logic_cls: type[Any],
@@ -225,7 +259,7 @@ def test_alice_trigger_family_check_record_module_pins_direct_owner_template_and
 ) -> None:
     harness = _logic_harness(module, logic_cls, index="alice-template-index")
     buff_0 = _buff_0()
-    lookup_calls = _install_direct_lookup(
+    preparation_context = _install_preparation_context_lookup(
         monkeypatch,
         module=module,
         harness=harness,
@@ -234,7 +268,7 @@ def test_alice_trigger_family_check_record_module_pins_direct_owner_template_and
 
     harness.logic.check_record_module()
 
-    assert lookup_calls == [harness.sim_instance]
+    assert preparation_context.find_sub_exist_buff_dict_calls == ["爱丽丝"]
     assert harness.logic.buff_0 is buff_0
     assert isinstance(buff_0.history.record, record_cls)
     assert harness.logic.record is buff_0.history.record
@@ -250,7 +284,7 @@ def test_alice_trigger_family_check_record_module_pins_direct_owner_template_and
     existing_record = harness.logic.record
     harness.logic.check_record_module()
 
-    assert lookup_calls == [harness.sim_instance]
+    assert preparation_context.find_sub_exist_buff_dict_calls == ["爱丽丝"]
     assert harness.logic.record is existing_record
     assert buff_0.history.record is existing_record
 
@@ -264,14 +298,14 @@ def test_alice_trigger_family_check_record_module_pins_direct_owner_template_and
         (polarized_module, polarized_module.AlicePolarizedAssaultTrigger, {"爱丽丝": {}}),
     ],
 )
-def test_alice_trigger_family_check_record_module_pins_missing_owner_or_index_errors(
+def test_alice_trigger_family_check_record_module_pins_preparation_context_missing_owner_or_index_errors(
     monkeypatch: pytest.MonkeyPatch,
     module: Any,
     logic_cls: type[Any],
     registry: dict[str, dict[str, object]],
 ) -> None:
     harness = _logic_harness(module, logic_cls, index="missing-template-index")
-    _install_direct_lookup(
+    _install_preparation_context_lookup(
         monkeypatch,
         module=module,
         harness=harness,
@@ -300,7 +334,7 @@ def test_alice_cinema6_special_judge_logic_pins_char_preparation_and_missing_typ
     with pytest.raises(AssertionError, match="skill_node"):
         harness.logic.special_judge_logic(skill_node=object())
 
-    assert lookup_calls == [harness.sim_instance]
+    assert lookup_calls == ["爱丽丝"]
     assert preparation_calls == [
         {"char_CID": 1401},
         {"char_CID": 1401},
@@ -348,7 +382,7 @@ def test_alice_cinema6_special_judge_logic_pins_owner_victory_hit_and_cooldown_g
     )
 
     assert result is expected
-    assert lookup_calls == [harness.sim_instance]
+    assert lookup_calls == ["爱丽丝"]
     assert preparation_calls == [{"char_CID": 1401}]
 
 
@@ -406,7 +440,7 @@ def test_alice_polarized_special_judge_logic_pins_missing_type_and_allowed_tag_g
         skill_node=_skill_node(skill_tag="1401_BAD", tick_list=[300])
     ) is False
 
-    assert lookup_calls == [harness.sim_instance]
+    assert lookup_calls == ["爱丽丝"]
     assert preparation_calls == [
         {"char_CID": 1401},
         {"char_CID": 1401},
@@ -494,7 +528,7 @@ def test_alice_polarized_special_effect_logic_pins_scheduled_event_emission_and_
 
     harness.logic.special_effect_logic()
 
-    assert lookup_calls == [harness.sim_instance]
+    assert lookup_calls == ["爱丽丝"]
     assert preparation_calls == [{"char_CID": 1401}]
     assert len(dispatch_port.events) == 1
     event = dispatch_port.events[0]
