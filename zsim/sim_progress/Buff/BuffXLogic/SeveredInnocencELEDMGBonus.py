@@ -1,9 +1,10 @@
-from .. import Buff, JudgeTools, check_preparation
+from .. import Buff, check_preparation
 from ..JudgeTools import (
     TriggerBuffRef,
     build_preparation_context_from_buff,
     read_trigger_buff_state,
 )
+from ._preparation_helpers import ensure_equipper_template_record, prepare_with_context
 
 
 class SeveredInnocencELEDMGBonusRecord:
@@ -28,30 +29,20 @@ class SeveredInnocencELEDMGBonus(Buff.BuffLogic):
         self.xexit = self.special_exit_logic
 
     def get_prepared(self, **kwargs):
-        preparation_context = build_preparation_context_from_buff(self.buff_instance)
-        return check_preparation(
-            buff_instance=self.buff_instance,
-            buff_0=self.buff_0,
-            preparation_context=preparation_context,
+        return prepare_with_context(
+            self,
+            check_preparation_func=check_preparation,
+            context_builder=build_preparation_context_from_buff,
             **kwargs,
         )
 
     def check_record_module(self):
-        preparation_context = None
-        if self.equipper is None:
-            preparation_context = build_preparation_context_from_buff(self.buff_instance)
-            self.equipper = preparation_context.find_equipper("牺牲洁纯")
-        if self.buff_0 is None:
-            if preparation_context is None:
-                preparation_context = build_preparation_context_from_buff(
-                    self.buff_instance
-                )
-            self.buff_0 = preparation_context.find_sub_exist_buff_dict(self.equipper)[
-                self.buff_instance.ft.index
-            ]
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = SeveredInnocencELEDMGBonusRecord()
-        self.record = self.buff_0.history.record
+        ensure_equipper_template_record(
+            self,
+            item_name="牺牲洁纯",
+            record_factory=SeveredInnocencELEDMGBonusRecord,
+            context_builder=build_preparation_context_from_buff,
+        )
 
     def special_judge_logic(self, **kwargs):
         """查装备者身上的触发暴伤的Buff是否为3层"""

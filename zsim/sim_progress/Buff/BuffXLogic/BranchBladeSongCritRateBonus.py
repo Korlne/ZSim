@@ -1,5 +1,6 @@
 from .. import Buff, JudgeTools, check_preparation
 from ..JudgeTools import build_preparation_context_from_buff
+from ._preparation_helpers import ensure_equipper_template_record, prepare_with_context
 from .enemy_edge_state_read import read_enemy_frozen_edge_state
 
 
@@ -28,30 +29,20 @@ class BranchBladeSongCritRateBonus(Buff.BuffLogic):
         self.record = None
 
     def get_prepared(self, **kwargs):
-        preparation_context = build_preparation_context_from_buff(self.buff_instance)
-        return check_preparation(
-            buff_instance=self.buff_instance,
-            buff_0=self.buff_0,
-            preparation_context=preparation_context,
+        return prepare_with_context(
+            self,
+            check_preparation_func=check_preparation,
+            context_builder=build_preparation_context_from_buff,
             **kwargs,
         )
 
     def check_record_module(self):
-        preparation_context = None
-        if self.equipper is None:
-            preparation_context = build_preparation_context_from_buff(self.buff_instance)
-            self.equipper = preparation_context.find_equipper("折枝剑歌")
-        if self.buff_0 is None:
-            if preparation_context is None:
-                preparation_context = build_preparation_context_from_buff(
-                    self.buff_instance
-                )
-            self.buff_0 = preparation_context.find_sub_exist_buff_dict(self.equipper)[
-                self.buff_instance.ft.index
-            ]
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = BranchBladeSongCritRateBonusRecord()
-        self.record = self.buff_0.history.record
+        ensure_equipper_template_record(
+            self,
+            item_name="折枝剑歌",
+            record_factory=BranchBladeSongCritRateBonusRecord,
+            context_builder=build_preparation_context_from_buff,
+        )
 
     def special_judge_logic(self, **kwargs):
         self.check_record_module()

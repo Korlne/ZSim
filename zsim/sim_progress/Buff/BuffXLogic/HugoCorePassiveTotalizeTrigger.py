@@ -8,6 +8,8 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
 )
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
+from ..JudgeTools import build_preparation_context_from_buff
+from ._preparation_helpers import ensure_owner_template_record, prepare_with_context
 from .enemy_state_read import read_enemy_stun_active, read_enemy_stun_rest_tick
 
 
@@ -63,19 +65,23 @@ class HugoCorePassiveTotalizeTrigger(Buff.BuffLogic):
         self.xhit = self.special_hit_logic
 
     def get_prepared(self, **kwargs):
-        return check_preparation(buff_instance=self.buff_instance, buff_0=self.buff_0, **kwargs)
+        return prepare_with_context(
+            self,
+            check_preparation_func=check_preparation,
+            context_builder=build_preparation_context_from_buff,
+            **kwargs,
+        )
 
     def _scheduled_event_emitter(self) -> ScheduledEventEmitter:
         return self._scheduled_event_emitter_provider.create_emitter()
 
     def check_record_module(self):
-        if self.buff_0 is None:
-            self.buff_0 = JudgeTools.find_exist_buff_dict(
-                sim_instance=self.buff_instance.sim_instance
-            )["雨果"][self.buff_instance.ft.index]
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = HugoCorePassiveTotalizeTriggerRecord()
-        self.record = self.buff_0.history.record
+        ensure_owner_template_record(
+            self,
+            owner_name="雨果",
+            record_factory=HugoCorePassiveTotalizeTriggerRecord,
+            context_builder=build_preparation_context_from_buff,
+        )
 
     def special_judge_logic(self, **kwargs):
         """敌人处于失衡状态时，强化E、大招触发"""

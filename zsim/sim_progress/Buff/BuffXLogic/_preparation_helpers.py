@@ -33,7 +33,7 @@ def ensure_owner_template_record(
         logic.buff_0 = preparation_context.find_sub_exist_buff_dict(owner_name)[
             logic.buff_instance.ft.index
         ]
-    if logic.buff_0.history.record is None:
+    if not hasattr(logic.buff_0.history, "record") or logic.buff_0.history.record is None:
         logic.buff_0.history.record = record_factory()
     logic.record = logic.buff_0.history.record
     return logic.record
@@ -56,7 +56,7 @@ def ensure_equipper_template_record(
         logic.buff_0 = preparation_context.find_sub_exist_buff_dict(logic.equipper)[
             logic.buff_instance.ft.index
         ]
-    if logic.buff_0.history.record is None:
+    if not hasattr(logic.buff_0.history, "record") or logic.buff_0.history.record is None:
         logic.buff_0.history.record = record_factory()
     logic.record = logic.buff_0.history.record
     return logic.record

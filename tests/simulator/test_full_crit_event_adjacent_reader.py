@@ -952,10 +952,15 @@ def test_miyabi_icefire_check_record_module_preserves_old_buff_and_record_identi
     logic = MiyabiCoreSkill_IceFire(active_buff)
     buff_0 = SimpleNamespace(history=SimpleNamespace(record=None))
 
+    class _PreparationContext:
+        def find_sub_exist_buff_dict(self, owner_name: str) -> dict[str, object]:
+            assert owner_name == "雅"
+            return {active_buff.ft.index: buff_0}
+
     monkeypatch.setattr(
-        JudgeTools,
-        "find_exist_buff_dict",
-        lambda *, sim_instance: {"雅": {active_buff.ft.index: buff_0}},
+        miyabi_module,
+        "build_preparation_context_from_buff",
+        lambda buff_instance: _PreparationContext(),
     )
 
     logic.check_record_module()

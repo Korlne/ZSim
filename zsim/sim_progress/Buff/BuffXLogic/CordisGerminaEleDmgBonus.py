@@ -1,5 +1,6 @@
 from .. import Buff, check_preparation
 from ..JudgeTools import build_preparation_context_from_buff
+from ._preparation_helpers import ensure_equipper_template_record, prepare_with_context
 from ._buff_record_base_class import BuffRecordBaseClass as Brbc
 
 
@@ -19,30 +20,20 @@ class CordisGerminaEleDmgBonus(Buff.BuffLogic):
         self.record: CordisGerminaEleDmgBonusRecord | None = None
 
     def get_prepared(self, **kwargs):
-        preparation_context = build_preparation_context_from_buff(self.buff_instance)
-        return check_preparation(
-            buff_instance=self.buff_instance,
-            buff_0=self.buff_0,
-            preparation_context=preparation_context,
+        return prepare_with_context(
+            self,
+            check_preparation_func=check_preparation,
+            context_builder=build_preparation_context_from_buff,
             **kwargs,
         )
 
     def check_record_module(self):
-        preparation_context = None
-        if self.equipper is None:
-            preparation_context = build_preparation_context_from_buff(self.buff_instance)
-            self.equipper = preparation_context.find_equipper("机巧心种")
-        if self.buff_0 is None:
-            if preparation_context is None:
-                preparation_context = build_preparation_context_from_buff(
-                    self.buff_instance
-                )
-            self.buff_0 = preparation_context.find_sub_exist_buff_dict(self.equipper)[
-                self.buff_instance.ft.index
-            ]
-        if self.buff_0.history.record is None:
-            self.buff_0.history.record = CordisGerminaEleDmgBonusRecord()
-        self.record = self.buff_0.history.record
+        ensure_equipper_template_record(
+            self,
+            item_name="机巧心种",
+            record_factory=CordisGerminaEleDmgBonusRecord,
+            context_builder=build_preparation_context_from_buff,
+        )
 
     def special_judge_logic(self, **kwargs):
         """机巧心种的电属性增伤Buff触发器，由于在后台也需要监听，所以这里需要用脚本进行判断"""
