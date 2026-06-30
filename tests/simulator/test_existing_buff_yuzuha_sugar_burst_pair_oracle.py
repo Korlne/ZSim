@@ -169,7 +169,10 @@ def _install_preparation(
 def _yuzuha_sugar_burst_scan() -> list[str]:
     rows: list[str] = []
     required_terms = (
-        '["柚叶"][self.buff_instance.ft.index]',
+        "ensure_owner_template_record(",
+        'owner_name="柚叶"',
+        "prepare_with_context(",
+        "build_preparation_context_from_buff",
         "get_prepared(char_CID=1411)",
         "get_prepared(char_CID=1411, na_skill_level=1, sub_exist_buff_dict=1)",
         "skill_node.preload_tick != self.buff_instance.sim_instance.tick",
