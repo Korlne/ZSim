@@ -7,6 +7,10 @@ from pydantic import BaseModel
 
 from zsim.define import config
 from zsim.sim_progress.Character.skill_class import Skill
+from zsim.sim_progress.Character.wakeup import (
+    CharacterResourceThresholds,
+    CharacterResourceWakeupSource,
+)
 from zsim.sim_progress.data_struct import ActionStack, Decibelmanager, ListenerManger
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 from zsim.sim_progress.Enemy import Enemy
@@ -22,12 +26,12 @@ from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     BuffRuntimeState,
 )
 from zsim.sim_progress.SimulationEngine import (
+    FixedTickWakeupSource,
     PlannedEventQueueWakeupSource,
     SimulationClock,
     StopTickWakeupSource,
     WakeupSource,
 )
-from zsim.sim_progress.Character.wakeup import CharacterResourceWakeupSource
 from zsim.simulator.dataclasses import (
     CharacterData,
     GlobalStats,
@@ -78,6 +82,33 @@ class LoadMissionWakeupSource:
         if not candidates:
             return None
         return min(candidates)
+
+
+@dataclass(frozen=True, slots=True)
+class EnemySpecialStateWakeupSource:
+    enemy: Enemy
+    name: str = "enemy-special-state"
+
+    def next_wakeup_tick(self, current_tick: int) -> int | None:
+        manager = getattr(self.enemy, "special_state_manager", None)
+        observers = getattr(manager, "observers", None)
+        if not isinstance(observers, dict):
+            return None
+        candidates: list[int] = []
+        seen_state_ids: set[int] = set()
+        for states in observers.values():
+            for state in states:
+                state_id = id(state)
+                if state_id in seen_state_ids:
+                    continue
+                seen_state_ids.add(state_id)
+                next_wakeup_tick = getattr(state, "next_wakeup_tick", None)
+                if not callable(next_wakeup_tick):
+                    continue
+                tick = next_wakeup_tick(current_tick)
+                if tick is not None and tick > current_tick:
+                    candidates.append(int(tick))
+        return min(candidates) if candidates else None
 
 
 class Confirmation(BaseModel):
@@ -295,8 +326,12 @@ class Simulator:
             PlannedEventQueueWakeupSource(self.schedule_data.planned_event_queue),
             LoadMissionWakeupSource(self.load_data.load_mission_dict),
             PreloadWakeupSource(self.preload),
-            CharacterResourceWakeupSource(self.char_data.char_obj_list),
+            CharacterResourceWakeupSource(
+                self.char_data.char_obj_list,
+                thresholds_by_cid=self._apl_resource_thresholds_by_cid(),
+            ),
             EnemyStunWakeupSource(self.schedule_data.enemy),
+            EnemySpecialStateWakeupSource(self.schedule_data.enemy),
         ]
         if buff_runtime is not None:
             sources.append(
@@ -305,9 +340,60 @@ class Simulator:
                     enemy=self.schedule_data.enemy,
                 )
             )
+        if getattr(self.schedule_data, "processed_state_this_tick", False):
+            sources.append(
+                FixedTickWakeupSource(
+                    name="processed-event-followup",
+                    tick=self.tick + 1,
+                )
+            )
         if stop_tick is not None:
             sources.append(StopTickWakeupSource(stop_tick))
         return sources
+
+    def _apl_resource_thresholds_by_cid(self) -> dict[int, CharacterResourceThresholds]:
+        try:
+            apl = self.preload.strategy.apl_engine.apl
+            apl_operator = apl.apl_operator
+            if apl_operator is None:
+                apl_operator = getattr(apl, "operator", None)
+            apl_unit_inventory = apl_operator.apl_unit_inventory
+        except AttributeError:
+            return {}
+
+        thresholds: dict[int, dict[str, set[float]]] = {}
+        for apl_unit in apl_unit_inventory.values():
+            condition_units = list(getattr(apl_unit, "sub_conditions_unit_list", ()))
+            condition_units.extend(getattr(apl_unit, "builtin_percond_list", ()))
+            for condition in condition_units:
+                stat = getattr(condition, "check_stat", None)
+                if stat not in {"energy", "special_resource", "adrenaline", "decibel"}:
+                    continue
+                try:
+                    cid = int(getattr(condition, "check_target"))
+                    value = float(getattr(condition, "check_value"))
+                except (TypeError, ValueError):
+                    continue
+                by_stat = thresholds.setdefault(
+                    cid,
+                    {
+                        "energy": set(),
+                        "special_resource": set(),
+                        "adrenaline": set(),
+                        "decibel": set(),
+                    },
+                )
+                by_stat[stat].add(value)
+
+        return {
+            cid: CharacterResourceThresholds(
+                energy=tuple(sorted(by_stat["energy"])),
+                special_resource=tuple(sorted(by_stat["special_resource"])),
+                adrenaline=tuple(sorted(by_stat["adrenaline"])),
+                decibel=tuple(sorted(by_stat["decibel"])),
+            )
+            for cid, by_stat in thresholds.items()
+        }
 
     def _settle_skipped_time_derived_state(self, *, elapsed_ticks: int) -> None:
         if elapsed_ticks <= 0:
@@ -379,6 +465,7 @@ class Simulator:
             "preload-action",
             "character-resource",
             "enemy-stun",
+            "enemy-special-state",
         }
         return any(source_name in behavior_sources for source_name in due_source_names)
 

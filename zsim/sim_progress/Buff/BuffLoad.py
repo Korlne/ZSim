@@ -161,6 +161,19 @@ class BuffLoadLifecycleCache:
         self.simple_judge_condition_cache = SimpleJudgeConditionCache()
 
 
+def _buff_judge_mission_cache_key(mission: "LoadingMission") -> tuple:
+    mission_node = mission.mission_node
+    skill = mission_node.skill
+    tick_list = tuple(getattr(skill, "tick_list", ()) or ())
+    return (
+        mission.mission_tag,
+        mission.preload_tick,
+        mission.mission_start_tick,
+        mission.mission_end_tick,
+        tick_list,
+    )
+
+
 class BuffLoadCandidateIndex:
     """Conservative run-scoped index for BuffLoadLoop candidates."""
 
@@ -1485,7 +1498,11 @@ def BuffJudge(
         cache = BuffJudgeCache()
     static_info = cache.static_info(buff_now, judge_condition_dict)
     if static_info.all_simple:
-        cache_key = (id(buff_now), id(judge_condition_dict), id(mission))
+        cache_key = (
+            id(buff_now),
+            id(judge_condition_dict),
+            _buff_judge_mission_cache_key(mission),
+        )
         if cache_key in cache.cache:
             return cache[cache_key]
     result: bool

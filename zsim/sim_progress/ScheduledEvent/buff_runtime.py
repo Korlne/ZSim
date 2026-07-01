@@ -420,6 +420,7 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
 
     def __init__(self, *, runtime_state: BuffRuntimeState) -> None:
         self._runtime_state = runtime_state
+        self._post_activation_report_tick: int | None = None
 
     def get_registered_buff(self, beneficiary: str, buff_index: str) -> "Buff | None":
         return self._runtime_state.template_registry_owner().get_registered_buff(
@@ -599,9 +600,13 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
 
     def activate_pending_buffs(self, *, timenow: float) -> dict[str, list["Buff"]]:
         pending_queue = self._runtime_state.pending_queue_owner()
+        activated = False
         for beneficiary in pending_queue.beneficiaries():
             for buff in pending_queue.drain(beneficiary):
                 self._activate_pending_buff(beneficiary, buff)
+                activated = True
+        if activated:
+            self._post_activation_report_tick = int(timenow) + 1
         return self._runtime_state.active_store_owner().mutable_stores()
 
     def update_time_related_effects(
@@ -624,6 +629,16 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
         from zsim.sim_progress.Update import Update_Buff
 
         candidates: list[int] = []
+        if (
+            self._post_activation_report_tick is not None
+            and self._post_activation_report_tick > current_tick
+        ):
+            candidates.append(self._post_activation_report_tick)
+        elif (
+            self._post_activation_report_tick is not None
+            and self._post_activation_report_tick <= current_tick
+        ):
+            self._post_activation_report_tick = None
         active_store = self._runtime_state.active_store_owner()
         for _, active_buffs in active_store.items():
             for buff in active_buffs:

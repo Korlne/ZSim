@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 from zsim.define import ALICE_REPORT
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
+from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import NewAnomaly
 
 from .BaseListenerClass import BaseListener
 from ..schedule_dispatch import ScheduledEventEmitter, ScheduledEventEmitterProvider
@@ -76,6 +77,7 @@ class AliceDotTriggerListener(BaseListener):
                 enemy.dynamic.dynamic_dot_list.remove(dots)
                 break
 
+        dot.anomaly_data = NewAnomaly(dot.anomaly_data, sim_instance=self.sim_instance)
         enemy.dynamic.dynamic_dot_list.append(dot)
         self._scheduled_event_emitter().emit_scheduled(dot.anomaly_data)
         if ALICE_REPORT:

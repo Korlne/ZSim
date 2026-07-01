@@ -8,6 +8,7 @@ import pytest
 
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 from zsim.sim_progress.Update import UpdateAnomaly as update_anomaly_module
+from zsim.sim_progress.data_struct import PolarizedAssaultEventClass as polarized_module
 from zsim.sim_progress.data_struct.PolarizedAssaultEventClass import PolarizedAssaultEvent
 from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduleDispatchPort,
@@ -67,6 +68,7 @@ def test_polarized_assault_event_publishes_follow_ups_via_dispatch_port_in_order
 ):
     call_order: list[tuple[str, object]] = []
     dispatch_port = _RecordingDispatchPort(call_order)
+    polarized_output = SimpleNamespace(marker="polarized-output")
     disorder = SimpleNamespace(marker="disorder", element_type=3)
 
     def broadcast_event(*, event, signal, **kwargs):
@@ -114,6 +116,12 @@ def test_polarized_assault_event_publishes_follow_ups_via_dispatch_port_in_order
         assert kwargs["element_type"] == 0
         call_order.append(("anomaly_effect_active", kwargs["new_anomaly"].marker))
 
+    def fake_new_anomaly(anomaly_bar, *, active_by, sim_instance):
+        assert anomaly_bar is event.anomaly_bar
+        assert active_by is event.skill_node
+        assert sim_instance is event.sim_instance
+        return polarized_output
+
     def fake_spawn_output(anomaly_bar, mode_number, sim_instance, **kwargs):
         assert mode_number == 1
         assert kwargs["skill_node"] is event.skill_node
@@ -123,15 +131,16 @@ def test_polarized_assault_event_publishes_follow_ups_via_dispatch_port_in_order
 
     monkeypatch.setattr(update_anomaly_module, "anomaly_effect_active", fake_anomaly_effect_active)
     monkeypatch.setattr(update_anomaly_module, "spawn_output", fake_spawn_output)
+    monkeypatch.setattr(polarized_module, "NewAnomaly", fake_new_anomaly)
 
     event.execute()
 
-    assert dispatch_port.events == [event.anomaly_bar, disorder]
+    assert dispatch_port.events == [polarized_output, disorder]
     assert sim_instance.schedule_data.event_list == []
     assert active_anomaly.settled is False
     assert call_order == [
         ("broadcast", LBS.POLARIZED_ASSAULT_SPAWN),
-        ("publish", "polarized-assault"),
+        ("publish", "polarized-output"),
         ("anomaly_effect_active", "polarized-assault"),
         ("spawn_output", "active-anomaly"),
         ("broadcast", LBS.DISORDER_SPAWN),

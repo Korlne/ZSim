@@ -4498,6 +4498,33 @@ def test_anomaly_formula_fixture_copies_snapshot_inputs_for_copied_output(
     assert next_fixture.anomaly_bar.current_ndarray[0, 0] == pytest.approx(100.0)
 
 
+def test_disorder_copied_output_preserves_formula_owner_and_trigger_identity() -> None:
+    fixture = _make_settled_anomaly_formula_fixture()
+    trigger = SimpleNamespace(
+        skill_tag="trigger-disorder",
+        skill=SimpleNamespace(char_obj=_make_character(name="当前触发角色")),
+    )
+
+    disorder = Disorder(
+        fixture.anomaly_bar,
+        active_by=cast(Any, trigger),
+        sim_instance=cast(Any, fixture.sim_instance),
+    )
+    polarity = PolarityDisorder(
+        fixture.anomaly_bar,
+        1.6,
+        active_by=cast(Any, trigger),
+        sim_instance=cast(Any, fixture.sim_instance),
+    )
+
+    for copied in (disorder, polarity):
+        assert copied.activated_by is not trigger
+        assert copied.activated_by.skill is fixture.activation.skill
+        assert copied.activate_by is trigger
+        assert copied.source_uuid == fixture.anomaly_bar.UUID
+        assert copied.UUID != fixture.anomaly_bar.UUID
+
+
 @pytest.mark.parametrize(
     "case",
     _COPIED_OUTPUT_PAYLOAD_CASES,
@@ -4523,8 +4550,15 @@ def test_copied_payload_constructors_preserve_formula_inputs_and_payload_fields(
         assert type(copied) is Disorder
         assert copied.is_disorder is True
     assert copied.sim_instance is runtime_sim
-    assert copied.activated_by is fixture.activation
-    assert copied.activate_by is fixture.activation
+    assert copied.source_uuid == source_bar.UUID
+    assert copied.UUID != source_bar.UUID
+    if case.copied_kind == "new_anomaly":
+        assert copied.activated_by is fixture.activation
+        assert copied.activate_by is fixture.activation
+    else:
+        assert copied.activated_by is not fixture.activation
+        assert copied.activated_by.skill is fixture.activation.skill
+        assert copied.activate_by is fixture.activation
     assert copied.settled is True
 
     formula_inputs = {

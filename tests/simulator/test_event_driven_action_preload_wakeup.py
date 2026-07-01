@@ -20,14 +20,18 @@ def _node(
     swap_cancel_ticks: int = 0,
     ticks: int = 100,
     active_generation: bool = True,
+    labels: list[str] | None = None,
+    tick_list: list[float] | None = None,
 ) -> SimpleNamespace:
     return SimpleNamespace(
         preload_tick=preload_tick,
         end_tick=end_tick,
         active_generation=active_generation,
+        tick_list=tick_list or [],
         skill=SimpleNamespace(
             swap_cancel_ticks=swap_cancel_ticks,
             ticks=ticks,
+            labels=labels,
         ),
     )
 
@@ -49,6 +53,23 @@ def test_preload_wakeup_uses_pending_confirm_as_next_tick() -> None:
     assert source.next_wakeup_tick(20) == 21
 
 
+def test_preload_wakeup_uses_pending_external_due_tick() -> None:
+    node = _node(
+        preload_tick=10,
+        end_tick=100,
+        active_generation=False,
+        labels=["additional_damage"],
+    )
+    preload_data = SimpleNamespace(
+        preload_action_list_before_confirm=[("skill", True, 0, 44)],
+        personal_node_stack={1371: _Stack([node])},
+        current_node_stack=_Stack([node]),
+    )
+    source = PreloadWakeupSource(SimpleNamespace(preload_data=preload_data))
+
+    assert source.next_wakeup_tick(20) == 44
+
+
 def test_preload_wakeup_uses_next_action_end_tick() -> None:
     source = PreloadWakeupSource(
         _preload(
@@ -56,6 +77,7 @@ def test_preload_wakeup_uses_next_action_end_tick() -> None:
                 preload_tick=10,
                 end_tick=50,
                 active_generation=False,
+                labels=["additional_damage"],
             )
         )
     )
@@ -77,6 +99,20 @@ def test_preload_wakeup_uses_next_action_start_tick() -> None:
     assert source.next_wakeup_tick(20) == 30
 
 
+def test_preload_wakeup_uses_next_skill_hit_tick() -> None:
+    source = PreloadWakeupSource(
+        _preload(
+            _node(
+                preload_tick=10,
+                end_tick=100,
+                tick_list=[20.25, 45.0],
+            )
+        )
+    )
+
+    assert source.next_wakeup_tick(20) == 21
+
+
 def test_preload_wakeup_uses_swap_cancel_release_tick() -> None:
     source = PreloadWakeupSource(
         _preload(
@@ -90,6 +126,37 @@ def test_preload_wakeup_uses_swap_cancel_release_tick() -> None:
     )
 
     assert source.next_wakeup_tick(12) == 21
+
+
+def test_preload_wakeup_uses_inactive_generation_swap_cancel_release_tick() -> None:
+    source = PreloadWakeupSource(
+        _preload(
+            _node(
+                preload_tick=3544,
+                end_tick=3589,
+                ticks=45,
+                active_generation=False,
+            )
+        )
+    )
+
+    assert source.next_wakeup_tick(3545) == 3558
+
+
+def test_preload_wakeup_uses_character_change_cd_release_tick() -> None:
+    source = PreloadWakeupSource(
+        _preload(
+            _node(
+                preload_tick=3544,
+                end_tick=3589,
+                ticks=45,
+                active_generation=False,
+                labels=["additional_damage"],
+            )
+        )
+    )
+
+    assert source.next_wakeup_tick(3640) == 3649
 
 
 def test_preload_wakeup_bootstraps_empty_action_state() -> None:

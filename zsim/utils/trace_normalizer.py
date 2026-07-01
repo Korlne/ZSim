@@ -10,8 +10,12 @@ from typing import Iterable, Sequence
 
 _PRELOAD_RE = re.compile(r"\[PRELOAD\]:In tick:\s*(?P<tick>\d+),\s*(?P<label>.+?) has been preloaded")
 _SKILL_LOAD_RE = re.compile(r"\[Skill LOAD\]:(?P<tick>\d+):(?P<label>.+?)开始并拆分子任务")
+_SKILL_END_RE = re.compile(r"\[Skill LOAD\]:(?P<tick>\d+):(?P<label>.+?)已经结束")
 _BUFF_END_RE = re.compile(r"\[Buff END\]:(?P<tick>\d+):(?P<label>.+?)结束")
 _DOT_END_RE = re.compile(r"\[Dot END\]:(?P<tick>\d+):(?P<label>.+?)结束")
+_ANOMALY_RE = re.compile(
+    r"\[(?:Anomaly|ANOMALY|Disorder|DISORDER)\]:(?P<tick>\d+):(?P<label>.+)"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,9 +24,10 @@ class TraceEvent:
     domain: str
     kind: str
     label: str
+    action_domain: str | None = None
 
-    def key(self) -> tuple[int, str, str, str]:
-        return self.tick, self.domain, self.kind, self.label
+    def key(self) -> tuple[int, str, str, str, str | None]:
+        return self.tick, self.domain, self.kind, self.label, self.action_domain
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,19 +55,20 @@ class TraceDiff:
         }
 
 
-def normalize_trace_text(text: str) -> list[TraceEvent]:
+def normalize_trace_text(text: str, *, preserve_order: bool = False) -> list[TraceEvent]:
     events: list[TraceEvent] = []
     for line in text.splitlines():
         event = _normalize_line(line)
         if event is not None:
             events.append(event)
-    events.sort(key=TraceEvent.key)
+    if not preserve_order:
+        events.sort(key=TraceEvent.key)
     return events
 
 
-def normalize_trace_file(path: str | Path) -> list[TraceEvent]:
+def normalize_trace_file(path: str | Path, *, preserve_order: bool = False) -> list[TraceEvent]:
     trace_path = Path(path)
-    return normalize_trace_text(trace_path.read_text(encoding="utf-8"))
+    return normalize_trace_text(trace_path.read_text(encoding="utf-8"), preserve_order=preserve_order)
 
 
 def diff_traces(
@@ -83,6 +89,9 @@ def diff_traces(
 def build_trace_summary(events: Sequence[TraceEvent]) -> dict[str, object]:
     by_domain = Counter(event.domain for event in events)
     by_kind = Counter(event.kind for event in events)
+    by_action_domain = Counter(
+        event.action_domain for event in events if event.action_domain is not None
+    )
     ticks = [event.tick for event in events]
     return {
         "event_count": len(events),
@@ -90,6 +99,7 @@ def build_trace_summary(events: Sequence[TraceEvent]) -> dict[str, object]:
         "tick_max": max(ticks) if ticks else None,
         "by_domain": dict(sorted(by_domain.items())),
         "by_kind": dict(sorted(by_kind.items())),
+        "by_action_domain": dict(sorted(by_action_domain.items())),
     }
 
 
@@ -129,17 +139,21 @@ def _normalize_line(line: str) -> TraceEvent | None:
     for regex, domain, kind in (
         (_PRELOAD_RE, "preload", "preloaded"),
         (_SKILL_LOAD_RE, "load", "skill-load"),
+        (_SKILL_END_RE, "load", "skill-end"),
         (_BUFF_END_RE, "buff", "end"),
         (_DOT_END_RE, "dot", "end"),
+        (_ANOMALY_RE, "anomaly", "transition"),
     ):
         match = regex.search(line)
         if match is None:
             continue
+        label = _normalize_label(match.group("label"))
         return TraceEvent(
             tick=int(match.group("tick")),
             domain=domain,
             kind=kind,
-            label=_normalize_label(match.group("label")),
+            label=label,
+            action_domain=_classify_action_domain(label),
         )
     return None
 
@@ -148,10 +162,36 @@ def _normalize_label(label: str) -> str:
     return " ".join(label.strip().split())
 
 
-def _expand_diff_counter(counter: Counter[tuple[int, str, str, str]]) -> list[TraceEvent]:
+def _classify_action_domain(label: str) -> str | None:
+    lowered = label.lower()
+    if "qte" in lowered:
+        return "qte"
+    if "parry" in lowered or "招架" in label or "弹刀" in label:
+        return "parry"
+    if "dodge" in lowered or "闪避" in label:
+        return "dodge"
+    if "bh_aid" in lowered or "quick_assist" in lowered or "支援" in label:
+        return "assist"
+    if "swap" in lowered or "切换" in label:
+        return "swap"
+    if "damage" in lowered or "伤害" in label or "hit" in lowered:
+        return "damage"
+    return None
+
+
+def _expand_diff_counter(counter: Counter[tuple[int, str, str, str, str | None]]) -> list[TraceEvent]:
     events: list[TraceEvent] = []
-    for (tick, domain, kind, label), count in sorted(counter.items()):
-        events.extend(TraceEvent(tick=tick, domain=domain, kind=kind, label=label) for _ in range(count))
+    for (tick, domain, kind, label, action_domain), count in sorted(counter.items()):
+        events.extend(
+            TraceEvent(
+                tick=tick,
+                domain=domain,
+                kind=kind,
+                label=label,
+                action_domain=action_domain,
+            )
+            for _ in range(count)
+        )
     return events
 
 

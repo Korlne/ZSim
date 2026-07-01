@@ -110,6 +110,27 @@ def test_report_dmg_result_debug_false_enqueues_nothing(monkeypatch) -> None:
     assert result_queue.empty()
 
 
+def test_report_dmg_result_preserves_legacy_disorder_skill_tag(monkeypatch) -> None:
+    _drain_queue(result_queue)
+    monkeypatch.setattr(result_handler, "DEBUG", True)
+
+    Report.report_dmg_result(
+        tick=1,
+        element_type=3,
+        is_anomaly=True,
+        is_disorder=True,
+        UUID="uuid-1",
+    )
+
+    record = result_queue.get_nowait()
+    try:
+        assert record["skill_tag"] == "感电紊乱"
+        assert record["UUID"] == "uuid-1"
+        assert "dmg_crit" in record
+    finally:
+        result_queue.task_done()
+
+
 def test_stop_report_threads_drains_async_writers_and_allows_restart(
     tmp_path: Path, monkeypatch
 ) -> None:

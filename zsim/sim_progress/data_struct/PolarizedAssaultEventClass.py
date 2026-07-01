@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from zsim.define import ALICE_REPORT
 from zsim.define import ELEMENT_TYPE_MAPPING as ETM
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
+from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import NewAnomaly
 from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduledEventEmitter,
     ScheduledEventEmitterProvider,
@@ -78,7 +79,12 @@ class PolarizedAssaultEvent:
             event=self.anomaly_bar, signal=LBS.POLARIZED_ASSAULT_SPAWN
         )
         # if self.anomaly_bar.settled:
-        emitter.emit_scheduled(self.anomaly_bar)
+        polarized_assault_anomaly = NewAnomaly(
+            self.anomaly_bar,
+            active_by=self.skill_node,
+            sim_instance=self.sim_instance,
+        )
+        emitter.emit_scheduled(polarized_assault_anomaly)
         if ALICE_REPORT:
             self.sim_instance.schedule_data.change_process_state()
             print(

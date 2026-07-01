@@ -24,8 +24,10 @@ class _CopiedAnomalyBase(AnomalyBar):
         if not isinstance(anomaly_bar, AnomalyBar):
             raise TypeError(f"{anomaly_bar} 不是 AnomalyBar 类型")
 
+        source_uuid = anomaly_bar.UUID
         copied_payload = self._copy_source_payload(anomaly_bar)
         self._install_copied_payload(copied_payload)
+        self.source_uuid = source_uuid
         self._apply_explicit_overrides(active_by=active_by, sim_instance=sim_instance)
 
     @staticmethod
@@ -44,15 +46,19 @@ class _CopiedAnomalyBase(AnomalyBar):
         if sim_instance is not None:
             self.sim_instance = sim_instance
         if active_by is not None:
-            self.activated_by = self._normalize_active_by(active_by)
+            self._set_active_by(active_by)
 
     @property
     def activate_by(self) -> Any:
-        return self.activated_by
+        return getattr(self, "_activate_by", self.activated_by)
 
     @activate_by.setter
     def activate_by(self, value: Any) -> None:
-        self.activated_by = value
+        self._activate_by = self._normalize_active_by(value)
+
+    def _set_active_by(self, active_by: "SkillNode | str") -> None:
+        self.activated_by = self._normalize_formula_owner(active_by)
+        self._activate_by = self._normalize_active_by(active_by)
 
     def _normalize_active_by(self, active_by: "SkillNode | str") -> Any:
         if hasattr(active_by, "skill"):
@@ -60,15 +66,21 @@ class _CopiedAnomalyBase(AnomalyBar):
         if not isinstance(active_by, str):
             return active_by
         if not active_by.isdigit():
-            return self.activated_by
+            return active_by
         char_obj = self.sim_instance.char_data.find_char_obj(CID=int(active_by))
         if char_obj is None:
-            return self.activated_by
+            return active_by
         return SimpleNamespace(
             char_name=char_obj.NAME,
             skill_tag=active_by,
             skill=SimpleNamespace(char_obj=char_obj),
         )
+
+    def _normalize_formula_owner(self, active_by: "SkillNode | str") -> Any:
+        normalized = self._normalize_active_by(active_by)
+        if hasattr(normalized, "skill"):
+            return normalized
+        return self.activated_by
 
 
 class NewAnomaly(_CopiedAnomalyBase):
@@ -87,6 +99,9 @@ class Disorder(_CopiedAnomalyBase):
     ) -> None:
         super().__init__(anomaly_bar, active_by=active_by, sim_instance=sim_instance)
         self.is_disorder = True
+
+    def _set_active_by(self, active_by: "SkillNode | str") -> None:
+        self._activate_by = self._normalize_active_by(active_by)
 
 
 class PolarityDisorder(Disorder):

@@ -9,6 +9,9 @@ from zsim.sim_progress.Character.wakeup import (
 )
 from zsim.sim_progress.Character.Yixuan import Yixuan
 from zsim.sim_progress.Character.Yixuan.AdrenalineEventClass import AuricArray
+from zsim.sim_progress.data_struct.enemy_special_state_manager.special_classes import (
+    SweetScare,
+)
 from zsim.sim_progress.data_struct import SPUpdateData
 
 
@@ -37,7 +40,7 @@ def test_character_resource_wakeup_uses_next_integer_energy_boundary() -> None:
     char.sp_limit = 100
     char.statement = SimpleNamespace(sp_regen=30.0)
 
-    assert char.next_resource_wakeup_tick(10) == 11
+    assert char.next_resource_wakeup_tick(10) == 12
 
 
 def test_character_resource_wakeup_uses_apl_energy_threshold() -> None:
@@ -51,7 +54,37 @@ def test_character_resource_wakeup_uses_apl_energy_threshold() -> None:
             10,
             thresholds=CharacterResourceThresholds(energy=(60.0,)),
         )
-        == 49
+        == 50
+    )
+
+
+def test_character_resource_wakeup_uses_next_preload_visible_threshold_tick() -> None:
+    char = Character.__new__(Character)
+    char.sp = 59.595
+    char.sp_limit = 120
+    char.statement = SimpleNamespace(sp_regen=1.2)
+
+    assert (
+        char.next_resource_wakeup_tick(
+            637,
+            thresholds=CharacterResourceThresholds(energy=(60.0,)),
+        )
+        == 659
+    )
+
+
+def test_character_resource_wakeup_keeps_recently_crossed_threshold_visible() -> None:
+    char = Character.__new__(Character)
+    char.sp = 60.015
+    char.sp_limit = 120
+    char.statement = SimpleNamespace(sp_regen=1.2)
+
+    assert (
+        char.next_resource_wakeup_tick(
+            3658,
+            thresholds=CharacterResourceThresholds(energy=(60.0,)),
+        )
+        == 3659
     )
 
 
@@ -146,7 +179,7 @@ def test_yixuan_active_adrenaline_event_uses_threshold_wakeup() -> None:
             10,
             thresholds=CharacterResourceThresholds(special_resource=(20.0,)),
         )
-        == 77
+        == 78
     )
 
 
@@ -181,3 +214,14 @@ def test_character_resource_wakeup_source_passes_matching_cid_thresholds() -> No
 
     assert source.next_wakeup_tick(10) == 17
     assert seen["thresholds"] == CharacterResourceThresholds(special_resource=(60.0,))
+
+
+def test_sweet_scare_wakeup_uses_next_sugarburst_tick() -> None:
+    state = SweetScare.__new__(SweetScare)
+    state.active = True
+    state.last_update_tick = 100
+    state.max_duration = 2400
+    state.sugarburst_sparkless_update_tick = 284
+    state.sugarburst_sparkless_cd = 60
+
+    assert state.next_wakeup_tick(300) == 344

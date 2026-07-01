@@ -1,7 +1,7 @@
 from copy import deepcopy
 from typing import Any
 
-from define import ALICE_REPORT
+from zsim.define import ALICE_REPORT
 
 from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.data_struct.schedule_dispatch import (

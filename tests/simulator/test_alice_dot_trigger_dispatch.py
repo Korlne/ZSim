@@ -7,6 +7,9 @@ import pytest
 
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 from zsim.sim_progress.Dot.BaseDot import Dot
+from zsim.sim_progress.data_struct.BattleEventListener import (
+    AliceDotTriggerListener as alice_dot_module,
+)
 from zsim.sim_progress.data_struct.BattleEventListener.AliceDotTriggerListener import (
     AliceDotTriggerListener,
 )
@@ -154,6 +157,7 @@ def test_alice_dot_trigger_listener_publishes_dot_anomaly_via_dispatch_port(
         call_order=call_order,
     )
     received_bar: dict[str, _FakeAnomalyBar] = {}
+    wrapped_bar = SimpleNamespace(tag="wrapped")
 
     def fake_spawn_normal_dot(*, dot_index, sim_instance, bar: _FakeAnomalyBar):
         assert dot_index == "AliceCoreSkillAssaultDot"
@@ -166,13 +170,21 @@ def test_alice_dot_trigger_listener_publishes_dot_anomaly_via_dispatch_port(
         fake_spawn_normal_dot,
     )
 
+    def fake_new_anomaly(anomaly_data, *, sim_instance):
+        assert anomaly_data is published_bar
+        assert sim_instance is listener.sim_instance
+        return wrapped_bar
+
+    monkeypatch.setattr(alice_dot_module, "NewAnomaly", fake_new_anomaly)
+
     listener.listening_event(event=None, signal=LBS.ASSAULT_STATE_ON)
 
     assert listener.char is not None
     assert previous_dot.ended_at == sim_instance.tick
     assert replacement_dot.started_at == sim_instance.tick
     assert enemy.dynamic.dynamic_dot_list == [replacement_dot]
-    assert dispatch_port.events == [published_bar]
+    assert replacement_dot.anomaly_data is wrapped_bar
+    assert dispatch_port.events == [wrapped_bar]
     assert call_order == [
         "start_new_dot",
         "end_old_dot",

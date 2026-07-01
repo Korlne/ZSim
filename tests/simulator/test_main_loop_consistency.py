@@ -194,6 +194,46 @@ def test_buff_timeline_processing_keeps_public_cache_record_keys():
     ]
 
 
+def test_buff_timeline_processing_infers_sparse_finish_from_next_change_tick():
+    timeline = _prepare_buff_timeline_data(
+        pl.DataFrame(
+            {
+                "time_tick": [10, 20, 31, 50],
+                "buff-a": [1.0, 1.0, 0.0, 0.0],
+            }
+        )
+    )
+
+    assert timeline == [{"Task": "buff-a", "Start": 10, "Finish": 30, "Value": 1.0}]
+
+
+def test_buff_timeline_processing_keeps_legacy_integer_display_counts():
+    timeline = _prepare_buff_timeline_data(
+        pl.DataFrame(
+            {
+                "time_tick": [1, 2, 3],
+                "Buff-角色-扳机-额外能力-追加攻击失衡值提升": [0.0, 63.9, 0.0],
+                "Buff-角色-雅-核心被动-冰焰": [0.0, 77.8, 0.0],
+            }
+        )
+    )
+
+    assert timeline == [
+        {
+            "Task": "Buff-角色-扳机-额外能力-追加攻击失衡值提升",
+            "Start": 2,
+            "Finish": 2,
+            "Value": 63.0,
+        },
+        {
+            "Task": "Buff-角色-雅-核心被动-冰焰",
+            "Start": 2,
+            "Finish": 2,
+            "Value": 77.0,
+        },
+    ]
+
+
 def test_build_parser_accepts_required_cli_flags():
     parser = build_parser()
 
@@ -1599,6 +1639,28 @@ def test_damage_schema_normalizes_string_anomaly_column():
     assert normalized_df["is_anomaly"].dtype == pl.Boolean
     assert normalized_df["is_anomaly"].to_list() == [False, False]
     assert uuid_df["is_anomaly"].to_list() == [False, False]
+
+
+def test_damage_schema_normalizes_legacy_disorder_labels():
+    raw_damage_df = pl.DataFrame(
+        {
+            "tick": [13, 14, 15],
+            "skill_tag": ["感电紊乱", "极性紊乱", "感电"],
+            "element_type": [3, 3, 3],
+            "dmg_expect": [10.0, 20.0, 30.0],
+            "dmg_crit": [10.0, 20.0, 30.0],
+            "stun": [1.0, 2.0, 3.0],
+            "buildup": [0.0, 0.0, 0.0],
+            "is_anomaly": ["true", "true", "true"],
+            "is_disorder": [None, "false", "0"],
+            "UUID": ["uuid-1", "uuid-2", "uuid-3"],
+        }
+    )
+
+    normalized_df = _normalize_damage_schema(raw_damage_df)
+
+    assert normalized_df["is_disorder"].dtype == pl.Boolean
+    assert normalized_df["is_disorder"].to_list() == [True, True, False]
 
 
 def test_yixuan_astra_trigger_team_is_registered_for_phase5_route():

@@ -1,9 +1,11 @@
 from types import SimpleNamespace
 from typing import cast
+import importlib
 
 import pytest
 
 from zsim.sim_progress.Buff import JudgeTools
+from zsim.sim_progress.Preload.PreloadEngine.ConfirmEngine import ConfirmEngine
 from zsim.sim_progress.data_struct.SchedulePreload import (
     SchedulePreload,
     schedule_preload_event_factory,
@@ -66,6 +68,71 @@ def test_schedule_preload_event_factory_preserves_queue_order_without_raw_event_
     assert all(event.preload_data is preload_data for event in event_list)
     assert all(event.sim_instance is sim_instance for event in event_list)
     assert sim_instance.schedule_data.event_list == []
+
+
+def test_schedule_preload_execute_queues_legacy_confirm_tuple() -> None:
+    preload_data = SimpleNamespace(preload_action_list_before_confirm=[])
+    preload_data.external_add_skill = (
+        lambda external_tuple: preload_data.preload_action_list_before_confirm.append(
+            external_tuple
+        )
+    )
+    event = SchedulePreload(
+        123,
+        "alpha",
+        preload_data=preload_data,
+        apl_priority=7,
+        active_generation=True,
+    )
+
+    event.execute_myself()
+
+    assert preload_data.preload_action_list_before_confirm == [("alpha", True, 7)]
+
+
+def test_confirm_engine_uses_current_confirm_tick_for_external_tuple(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[dict[str, object]] = []
+    confirm_engine_module = importlib.import_module(
+        "zsim.sim_progress.Preload.PreloadEngine.ConfirmEngine"
+    )
+
+    def fake_spawn_node(
+        skill_tag,
+        tick,
+        skills,
+        *,
+        active_generation=False,
+        apl_priority=0,
+        apl_unit=None,
+    ):
+        calls.append(
+            {
+                "skill_tag": skill_tag,
+                "tick": tick,
+                "active_generation": active_generation,
+                "apl_priority": apl_priority,
+                "apl_unit": apl_unit,
+            }
+        )
+        return SimpleNamespace(skill_tag=skill_tag)
+
+    monkeypatch.setattr(confirm_engine_module, "spawn_node", fake_spawn_node)
+    engine = ConfirmEngine(SimpleNamespace(skills=[]))
+
+    node = engine.spawn_node_from_tag(350, ("alpha", True, 7, 123))
+
+    assert node.skill_tag == "alpha"
+    assert calls == [
+        {
+            "skill_tag": "alpha",
+            "tick": 350,
+            "active_generation": True,
+            "apl_priority": 7,
+            "apl_unit": None,
+        }
+    ]
 
 
 @pytest.mark.parametrize(

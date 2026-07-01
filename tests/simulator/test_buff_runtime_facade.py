@@ -135,6 +135,31 @@ def test_facade_activates_pending_buffs_through_runtime_owners() -> None:
     assert runtime_state.pending_queue_owner().count() == 0
 
 
+def test_facade_wakes_one_tick_after_pending_activation_for_reporting(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pending_buff = _BuffProbe("pending", endticks=100)
+    runtime_state = _runtime_state_for_test(
+        registry={"alpha": {}},
+        pending={"alpha": [pending_buff]},
+        active={"alpha": []},
+    )
+    facade = DefaultBuffRuntimeFacade(runtime_state=runtime_state)
+
+    from zsim.sim_progress.Update import Update_Buff
+
+    monkeypatch.setattr(Update_Buff, "next_dot_or_anomaly_wakeup_tick", lambda *_: None)
+
+    facade.activate_pending_buffs(timenow=10)
+
+    assert facade.next_time_related_wakeup_tick(
+        current_tick=10, enemy=SimpleNamespace()
+    ) == 11
+    assert facade.next_time_related_wakeup_tick(
+        current_tick=11, enemy=SimpleNamespace()
+    ) == 101
+
+
 def test_facade_sweep_active_buffs_uses_template_owner_for_expiry(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

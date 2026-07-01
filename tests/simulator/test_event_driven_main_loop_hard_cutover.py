@@ -12,7 +12,11 @@ from zsim.sim_progress.SimulationEngine import (
 )
 from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
 from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
-from zsim.simulator.simulator_class import LoadMissionWakeupSource, Simulator
+from zsim.simulator.simulator_class import (
+    EnemySpecialStateWakeupSource,
+    LoadMissionWakeupSource,
+    Simulator,
+)
 
 
 class _DueEvent:
@@ -160,8 +164,116 @@ def test_default_main_loop_wakeup_sources_do_not_include_legacy_conservative_sou
         "preload-action",
         "character-resource",
         "enemy-stun",
+        "enemy-special-state",
         "stop-tick",
     ]
+
+
+def test_main_loop_wakeup_sources_include_processed_event_followup() -> None:
+    sim = cast(Any, Simulator())
+    events: list[Any] = []
+    sim.tick = 4095
+    sim.schedule_data = SimpleNamespace(
+        enemy=SimpleNamespace(dynamic=SimpleNamespace(stun=False)),
+        planned_event_queue=PlannedEventQueue(
+            get_events=lambda: events,
+            set_events=lambda new_events: events.__setitem__(slice(None), new_events),
+        ),
+        processed_state_this_tick=True,
+    )
+    sim.preload = SimpleNamespace(
+        preload_data=SimpleNamespace(
+            preload_action_list_before_confirm=[],
+            personal_node_stack={},
+            current_node_stack=[],
+        )
+    )
+    sim.char_data = SimpleNamespace(char_obj_list=[])
+    sim.load_data = SimpleNamespace(load_mission_dict={})
+
+    source = next(
+        source
+        for source in sim._main_loop_wakeup_sources(10000, buff_runtime=None)
+        if source.name == "processed-event-followup"
+    )
+
+    assert source.next_wakeup_tick(4095) == 4096
+
+
+def test_main_loop_wakeup_sources_pass_apl_resource_thresholds() -> None:
+    sim = cast(Any, Simulator())
+    seen: dict[str, Any] = {}
+
+    def next_resource_wakeup_tick(
+        current_tick: int,
+        *,
+        thresholds: Any = None,
+    ) -> int:
+        seen["thresholds"] = thresholds
+        return current_tick + 1
+
+    char = SimpleNamespace(CID=1361, next_resource_wakeup_tick=next_resource_wakeup_tick)
+    apl_condition = SimpleNamespace(
+        check_target="1361",
+        check_stat="energy",
+        check_value=60,
+    )
+    apl_unit = SimpleNamespace(
+        sub_conditions_unit_list=[apl_condition],
+        builtin_percond_list=[],
+    )
+    sim.preload = SimpleNamespace(
+        preload_data=SimpleNamespace(
+            preload_action_list_before_confirm=[],
+            personal_node_stack={},
+            current_node_stack=[],
+        ),
+        strategy=SimpleNamespace(
+            apl_engine=SimpleNamespace(
+                apl=SimpleNamespace(
+                    apl_operator=SimpleNamespace(apl_unit_inventory={1: apl_unit})
+                )
+            )
+        ),
+    )
+    sim.char_data = SimpleNamespace(char_obj_list=[char])
+    sim.load_data = SimpleNamespace(load_mission_dict={})
+    sim.schedule_data = SimpleNamespace(
+        enemy=SimpleNamespace(
+            dynamic=SimpleNamespace(stun=False),
+            special_state_manager=SimpleNamespace(observers={}),
+        ),
+        planned_event_queue=PlannedEventQueue(
+            get_events=lambda: [],
+            set_events=lambda new_events: None,
+        ),
+    )
+
+    source = next(
+        source
+        for source in sim._main_loop_wakeup_sources(100, buff_runtime=None)
+        if source.name == "character-resource"
+    )
+
+    assert source.next_wakeup_tick(10) == 11
+    assert seen["thresholds"].energy == (60.0,)
+
+
+def test_enemy_special_state_wakeup_source_uses_registered_state_tick() -> None:
+    state = SimpleNamespace(next_wakeup_tick=lambda current_tick: current_tick + 12)
+    duplicate_state = state
+    enemy = SimpleNamespace(
+        special_state_manager=SimpleNamespace(
+            observers={
+                "before": [state],
+                "character": [duplicate_state],
+            }
+        )
+    )
+
+    source = EnemySpecialStateWakeupSource(enemy)
+
+    assert source.next_wakeup_tick(20) == 32
 
 
 def test_load_mission_wakeup_source_uses_next_mission_hit_tick() -> None:

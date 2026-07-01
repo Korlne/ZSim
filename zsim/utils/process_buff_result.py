@@ -54,15 +54,21 @@ def _prepare_buff_timeline_data(df: pl.DataFrame) -> list[dict[str, Any]]:
         )
 
         # 按段聚合，找到起始tick、结束tick和对应的值
-        grouped = buff_df.group_by("group_id").agg(
+        grouped = buff_df.group_by("group_id", maintain_order=True).agg(
             pl.first("time_tick").alias("Start"),
             pl.last("time_tick").alias("last_valid_tick"),
             pl.first(buff_name).alias("Value"),
         )
 
-        # 计算结束 tick (Finish)
-        # 使用当前段的最后一个有效tick作为结束点
-        grouped = grouped.with_columns(pl.col("last_valid_tick").alias("Finish"))
+        grouped = grouped.with_columns(pl.col("Start").shift(-1).alias("next_start"))
+
+        # 事件驱动日志可能是稀疏采样；非零段应持续到下一次状态变化前一 tick。
+        grouped = grouped.with_columns(
+            pl.when((pl.col("Value") != 0) & pl.col("next_start").is_not_null())
+            .then(pl.col("next_start") - 1)
+            .otherwise(pl.col("last_valid_tick"))
+            .alias("Finish")
+        )
 
         # 转换结果为字典列表
         for row in grouped.select(["Start", "Finish", "Value"]).iter_rows(named=True):

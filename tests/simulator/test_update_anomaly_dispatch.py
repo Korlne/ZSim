@@ -431,6 +431,12 @@ def test_spawn_output_disorder_modes_broadcast_listener_payload_without_publish(
         element_type=3,
         settled=True,
     )
+    source_owner = _build_skill_node(
+        element_type=3,
+        char_name="source-owner",
+        skill_tag="1001_SOURCE",
+    )
+    source_bar.activated_by = source_owner
     skill_node = _build_skill_node(element_type=3)
 
     output = spawn_output(
@@ -444,7 +450,9 @@ def test_spawn_output_disorder_modes_broadcast_listener_payload_without_publish(
     assert type(output) is expected_type
     assert output is not source_bar
     assert output.sim_instance is sim_instance
-    assert output.activated_by is skill_node
+    assert output.activated_by is not source_owner
+    assert output.activated_by.skill is source_owner.skill
+    assert output.activated_by.skill_tag == source_owner.skill_tag
     assert output.activate_by is skill_node
     assert output.is_disorder is True
     assert output.settled is True
@@ -673,6 +681,12 @@ def test_update_anomaly_preserves_disorder_branch_order_state_and_optional_new_p
     previous_bar.max_duration = 315
     previous_bar.last_active = 5
     previous_bar.accompany_dot = "OldShock"
+    previous_owner = _build_skill_node(
+        element_type=3,
+        char_name="previous-owner",
+        skill_tag="1001_PREVIOUS",
+    )
+    previous_bar.activated_by = previous_owner
     enemy.anomaly_bars_dict[element_type] = current_bar
     enemy.anomaly_bars_dict[3] = previous_bar
     enemy.dynamic.active_anomaly_bar_dict[3] = previous_bar
@@ -786,7 +800,9 @@ def test_update_anomaly_preserves_disorder_branch_order_state_and_optional_new_p
     )
 
     assert disorder.element_type == 3
-    assert disorder.activated_by is skill_node
+    assert disorder.activated_by is not previous_owner
+    assert disorder.activated_by.skill is previous_owner.skill
+    assert disorder.activated_by.skill_tag == previous_owner.skill_tag
     assert disorder.activate_by is skill_node
     assert disorder.is_disorder is True
     assert disorder.settled is True

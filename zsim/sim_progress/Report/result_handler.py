@@ -1,10 +1,11 @@
 import asyncio
 import csv
+import math
 import os
 import queue
 from typing import Any
 
-from zsim.define import DEBUG
+from zsim.define import ANOMALY_MAPPING, DEBUG
 
 result_queue: queue.Queue[dict[str, Any]] = queue.Queue()
 
@@ -54,7 +55,22 @@ class DamageRecordBuffer:
 def report_dmg_result(**kwargs: Any) -> None:
     if not DEBUG:
         return
-    result_queue.put(dict(kwargs))
+    record = dict(kwargs)
+    skill_tag = record.get("skill_tag")
+    is_anomaly = bool(record.get("is_anomaly", False))
+    is_disorder = bool(record.get("is_disorder", False))
+
+    if is_anomaly and skill_tag is None:
+        skill_tag = ANOMALY_MAPPING.get(record.get("element_type"), skill_tag)
+    assert skill_tag is not None, "技能标签不能为空！"
+    if is_disorder and "紊乱" not in str(skill_tag):
+        skill_tag = f"{skill_tag}紊乱"
+
+    record["skill_tag"] = skill_tag
+    record["UUID"] = str(record.get("UUID", ""))
+    if record.get("dmg_crit") is None:
+        record["dmg_crit"] = math.nan
+    result_queue.put(record)
 
 
 def _write_damage_csv(

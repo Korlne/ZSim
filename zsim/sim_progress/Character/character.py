@@ -825,6 +825,7 @@ class Character:
         if current_value >= limit or per_tick_regen <= 0:
             return None
         numeric_thresholds: list[float] = []
+        recently_crossed_thresholds: list[float] = []
         for threshold in thresholds or ():
             try:
                 threshold_value = float(threshold)
@@ -832,6 +833,13 @@ class Character:
                 continue
             if current_value < threshold_value <= limit:
                 numeric_thresholds.append(threshold_value)
+            elif (
+                threshold_value <= current_value
+                and current_value - per_tick_regen < threshold_value
+            ):
+                recently_crossed_thresholds.append(threshold_value)
+        if recently_crossed_thresholds:
+            return current_tick + 1
         if numeric_thresholds:
             next_value = min(numeric_thresholds)
         else:
@@ -839,7 +847,7 @@ class Character:
             if next_value <= current_value:
                 next_value = min(limit, current_value + 1.0)
         ticks_until_change = math.ceil((next_value - current_value) / per_tick_regen)
-        return current_tick + max(1, ticks_until_change)
+        return current_tick + max(1, ticks_until_change) + 1
 
     def update_single_node_sp(self, node):
         """处理单个skill_node的回能"""

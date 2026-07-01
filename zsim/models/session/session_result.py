@@ -27,23 +27,48 @@ DAMAGE_UUID_AGGREGATE_FIELDS = (
     "buildup_sum",
 )
 BUFF_TIMELINE_PUBLIC_FIELDS = ("Task", "Start", "Finish", "Value")
+LEGACY_INTEGER_BUFF_TIMELINE_VALUE_TASKS = frozenset(
+    {
+        "Buff-角色-扳机-额外能力-追加攻击失衡值提升",
+        "Buff-角色-雅-核心被动-冰焰",
+    }
+)
 
 
 def normalize_damage_result_schema(dmg_result_df: pl.DataFrame) -> pl.DataFrame:
     """Normalize damage.csv schema variants used by utility, WebUI, and parity code."""
-    if "is_anomaly" not in dmg_result_df.columns or dmg_result_df["is_anomaly"].is_null().all():
-        return dmg_result_df.with_columns(pl.lit(False).alias("is_anomaly"))
+    normalized = _normalize_bool_result_column(dmg_result_df, "is_anomaly")
+    normalized = _normalize_bool_result_column(normalized, "is_disorder")
+    if "skill_tag" not in normalized.columns:
+        return normalized
+    return normalized.with_columns(
+        (
+            pl.col("is_disorder")
+            | pl.col("skill_tag")
+            .cast(pl.Utf8)
+            .str.contains("紊乱")
+            .fill_null(False)
+        ).alias("is_disorder")
+    )
 
-    if dmg_result_df["is_anomaly"].dtype == pl.Boolean:
-        return dmg_result_df.with_columns(pl.col("is_anomaly").fill_null(False))
+
+def _normalize_bool_result_column(
+    dmg_result_df: pl.DataFrame,
+    column: str,
+) -> pl.DataFrame:
+    if column not in dmg_result_df.columns or dmg_result_df[column].is_null().all():
+        return dmg_result_df.with_columns(pl.lit(False).alias(column))
+
+    if dmg_result_df[column].dtype == pl.Boolean:
+        return dmg_result_df.with_columns(pl.col(column).fill_null(False))
 
     return dmg_result_df.with_columns(
-        pl.col("is_anomaly")
+        pl.col(column)
         .cast(pl.Utf8)
         .str.to_lowercase()
         .is_in(["true", "1"])
         .fill_null(False)
-        .alias("is_anomaly")
+        .alias(column)
     )
 
 
@@ -77,6 +102,15 @@ def normalize_buff_timeline_value(value: Any) -> Any:
         return normalize_result_contract_scalar(value)
 
 
+def normalize_buff_timeline_display_value(task: Any, value: Any) -> Any:
+    normalized = normalize_buff_timeline_value(value)
+    if str(task) in LEGACY_INTEGER_BUFF_TIMELINE_VALUE_TASKS and isinstance(
+        normalized, (int, float)
+    ):
+        return float(math.floor(float(normalized)))
+    return normalized
+
+
 def build_buff_timeline_entry(
     *,
     task: Any,
@@ -88,7 +122,7 @@ def build_buff_timeline_entry(
         "Task": str(task),
         "Start": int(start),
         "Finish": int(finish),
-        "Value": value,
+        "Value": normalize_buff_timeline_display_value(task, value),
     }
 
 

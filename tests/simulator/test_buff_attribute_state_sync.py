@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import floor
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Sequence, cast
@@ -2100,6 +2099,27 @@ def test_trigger_personal_crit_rate_read_precedes_simple_start_order(
         buff_0=case.buff_0,
         expected_count=case.expected_old_count,
     )
+    assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
+    assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
+
+
+def test_trigger_personal_crit_rate_preserves_fractional_count(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    case = _make_trigger_personal_crit_rate_state_sync_case(
+        monkeypatch,
+        static_crit_rate=0.826,
+    )
+
+    case.logic.special_hit_logic()
+
+    assert case.expected_old_count == pytest.approx(63.9)
+    assert case.calls == [
+        ("attribute_read",),
+        ("simple_start", 920, True, case.initial_count, case.buff_0),
+        ("dy.count", case.expected_old_count),
+        ("update_to_buff_0", case.buff_0, case.expected_old_count),
+    ]
     assert case.active_buff.dy.count == pytest.approx(case.expected_old_count)
     assert case.buff_0.dy.count == pytest.approx(case.expected_old_count)
 
