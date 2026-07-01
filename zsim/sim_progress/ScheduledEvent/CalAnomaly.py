@@ -16,6 +16,18 @@ from zsim.sim_progress.Character.character import Character
 from zsim.sim_progress.Character.Yanagi import Yanagi
 from zsim.sim_progress.Enemy import Enemy
 from zsim.sim_progress.Report import report_to_log
+from zsim.sim_progress.calculation.formulas.anomaly import (
+    anomaly_damage as anomaly_damage_formulas,
+)
+from zsim.sim_progress.calculation.formulas.anomaly import disorder as disorder_formulas
+from zsim.sim_progress.calculation.formulas.anomaly import (
+    polarity_disorder as polarity_disorder_formulas,
+)
+from zsim.sim_progress.calculation.inputs.anomaly import (
+    AnomalyDamageMultipliers,
+    AnomalyDamageSnapshot,
+)
+from zsim.sim_progress.calculation.results.common import MultiplierVector
 
 from .Calculator import Calculator as Cal
 from .Calculator import MultiplierData as MulData
@@ -41,26 +53,29 @@ def _assemble_final_multiplier_vector(
 ) -> np.ndarray:
     """组装异常最终伤害乘区，顺序必须与旧公式保持一致。"""
     # self.dmg_sp 以 array 形式储存，顺序为：基础伤害区、增伤区、异常精通区、等级、异常增伤区、异常暴击区、穿透率、穿透值、抗性穿透、冲击力、失衡值增幅
-    base_dmg = dmg_sp[0, 0]
-    dmg_bonus = dmg_sp[0, 1]
-    am_mul = dmg_sp[0, 2]
-    anomaly_bonus = dmg_sp[0, 4]
+    snapshot = AnomalyDamageSnapshot(
+        base_damage=float(dmg_sp[0, 0]),
+        damage_bonus=float(dmg_sp[0, 1]),
+        anomaly_mastery_multiplier=float(dmg_sp[0, 2]),
+        anomaly_damage_bonus=float(dmg_sp[0, 4]),
+        snapshot_impact=float(snapshot_impact),
+        snapshot_stun_bonus=float(snapshot_stun_bonus),
+    )
+    multipliers = AnomalyDamageMultipliers(
+        level_multiplier=float(k_level),
+        active_crit_multiplier=float(active_crit),
+        defense_multiplier=float(def_mul),
+        resistance_multiplier=float(res_mul),
+        vulnerability_multiplier=float(vulnerability_mul),
+        stun_vulnerability_multiplier=float(stun_vulnerability),
+        special_multiplier=float(special_mul),
+    )
+    vector = anomaly_damage_formulas.assemble_anomaly_damage_multiplier_vector(
+        snapshot,
+        multipliers,
+    )
     return np.array(
-        [
-            base_dmg,
-            dmg_bonus,
-            am_mul,
-            k_level,
-            anomaly_bonus,
-            active_crit,
-            def_mul,
-            res_mul,
-            vulnerability_mul,
-            snapshot_impact,
-            snapshot_stun_bonus,
-            stun_vulnerability,
-            special_mul,
-        ],
+        vector.values,
         dtype=np.float64,
     )
 
@@ -73,10 +88,11 @@ def _calculate_anomaly_damage_expectation(
     scaling_factor: float | np.float64,
 ) -> np.float64:
     """计算异常伤害期望，保留旧公式中的冲击力与失衡值增幅抵消。"""
-    return np.float64(
-        np.prod(final_multipliers)
-        / (snapshot_impact * snapshot_stun_bonus)
-        * scaling_factor
+    return anomaly_damage_formulas.calculate_anomaly_damage_expectation(
+        final_multipliers,
+        snapshot_impact=float(snapshot_impact),
+        snapshot_stun_bonus=float(snapshot_stun_bonus),
+        scaling_factor=float(scaling_factor),
     )
 
 
@@ -92,41 +108,18 @@ def _calculate_disorder_base_damage(
 
     紊乱基础伤害 = (各属性异常剩余倍率 + 各属性紊乱基础倍率) * (1 + 紊乱基础倍率增幅)
     """
-    t_s = np.float64(remaining_tick / 60)
-    disorder_base_ratio_increase = (
-        disorder_basic_mul_map[element_type] + disorder_basic_mul_map["all"]
+    return disorder_formulas.calculate_disorder_base_damage(
+        element_type=element_type,
+        base_multiplier=float(base_mul),
+        remaining_tick=float(remaining_tick),
+        disorder_basic_multiplier_map=disorder_basic_mul_map,
     )
-    match element_type:
-        case 0:  # 强击紊乱
-            _atk = base_mul / 7.13
-            _ratio = np.floor(t_s) * 0.075 + 4.5 + disorder_base_ratio_increase
-        case 1:  # 灼烧紊乱
-            _atk = base_mul / 0.5
-            _ratio = np.floor(t_s / 0.5) * 0.5 + 4.5 + disorder_base_ratio_increase
-        case 2:  # 霜寒紊乱
-            _atk = base_mul / 5
-            _ratio = np.floor(t_s) * 0.075 + 4.5 + disorder_base_ratio_increase
-        case 3:  # 感电紊乱
-            _atk = base_mul / 1.25
-            _ratio = np.floor(t_s) * 1.25 + 4.5 + disorder_base_ratio_increase
-        case 4:  # 侵蚀紊乱
-            _atk = base_mul / 0.625
-            _ratio = np.floor(t_s / 0.5) * 0.625 + 4.5 + disorder_base_ratio_increase
-        case 5:  # 烈霜紊乱
-            _atk = base_mul / 5
-            _ratio = np.floor(t_s) * 0.75 + 6 + disorder_base_ratio_increase
-        case 6:  # 玄墨侵蚀紊乱
-            _atk = base_mul / 0.625
-            _ratio = np.floor(t_s / 0.5) * 0.625 + 4.5 + disorder_base_ratio_increase
-        case _:
-            raise AssertionError(f"Invalid Element Type {element_type}")
-    return np.float64(_atk * _ratio)
 
 
 def _calculate_disorder_extra_multiplier(
     ano_extra_bonus: Mapping[ElementType | Literal["all", -1], float],
 ) -> np.float64:
-    return np.float64(1 + ano_extra_bonus[-1])
+    return disorder_formulas.calculate_disorder_extra_multiplier(ano_extra_bonus)
 
 
 def _calculate_disorder_stun_multiplier(
@@ -137,19 +130,12 @@ def _calculate_disorder_stun_multiplier(
     received_stun_increase: float | np.float64,
     v_char_level: int,
 ) -> np.float64:
-    stun_ratio = 2
-    k_level_for_stun = 1 + v_char_level * 0.0075
-    return np.float64(
-        np.prod(
-            [
-                impact,
-                stun_ratio,
-                stun_res,
-                snapshot_stun_bonus,
-                received_stun_increase,
-                k_level_for_stun,
-            ]
-        )
+    return disorder_formulas.calculate_disorder_stun_multiplier(
+        impact=float(impact),
+        snapshot_stun_bonus=float(snapshot_stun_bonus),
+        stun_resistance_multiplier=float(stun_res),
+        received_stun_increase_multiplier=float(received_stun_increase),
+        virtual_character_level=v_char_level,
     )
 
 
@@ -161,9 +147,11 @@ def _calculate_polarity_disorder_base_damage(
     additional_dmg_ap_ratio: float | np.float64,
 ) -> np.float64:
     """计算极性紊乱最终基础伤害，保留柳异常精通追加项。"""
-    return np.float64(
-        (base_disorder_damage * polarity_disorder_ratio)
-        + (yanagi_ap * additional_dmg_ap_ratio)
+    return polarity_disorder_formulas.calculate_polarity_disorder_base_damage(
+        base_disorder_damage=float(base_disorder_damage),
+        yanagi_ap=float(yanagi_ap),
+        polarity_disorder_ratio=float(polarity_disorder_ratio),
+        additional_dmg_ap_ratio=float(additional_dmg_ap_ratio),
     )
 
 
@@ -173,7 +161,11 @@ def _apply_abloom_anomaly_damage_ratio(
     anomaly_dmg_ratio: float | np.float64,
 ) -> np.ndarray:
     """应用紊乱绽放异常伤害倍率，并保留原乘区向量对象。"""
-    final_multipliers[0] *= anomaly_dmg_ratio
+    adjusted_vector = anomaly_damage_formulas.apply_anomaly_damage_ratio(
+        MultiplierVector(final_multipliers),
+        anomaly_damage_ratio=float(anomaly_dmg_ratio),
+    )
+    final_multipliers[:] = np.array(adjusted_vector.values, dtype=np.float64)
     return final_multipliers
 
 
