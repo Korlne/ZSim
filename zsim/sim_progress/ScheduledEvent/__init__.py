@@ -20,8 +20,9 @@ from zsim.sim_progress.data_struct.planned_queue import (
 from zsim.sim_progress.Load.loading_mission import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
 
-from .buff_runtime import BuffRuntimeState, create_buff_runtime_read_port
+from .buff_runtime import BuffRuntimeState
 from .event_handlers import EventContext, create_default_event_handler_factory
+from .event_handlers.handlers.factory import EventHandlerFactory
 from .runtime_command import create_runtime_command_port
 
 if TYPE_CHECKING:
@@ -97,10 +98,8 @@ class ScheduledEvent:
     ) -> "ScheduledEvent":
         """Production constructor boundary backed by the run-scoped Buff runtime."""
         return cls(
-            buff_runtime_state.active_store_for_compat(),
             schedule_data,
             tick,
-            buff_runtime_state.template_registry_for_compat(),
             action_stack,
             buff_runtime_state=buff_runtime_state,
             sim_instance=sim_instance,
@@ -108,41 +107,27 @@ class ScheduledEvent:
 
     def __init__(
         self,
-        dynamic_buff: dict,
         data,
         tick: int,
-        exist_buff_dict: dict,
         action_stack: ActionStack,
         *,
-        loading_buff: dict | None = None,
-        buff_runtime_state: BuffRuntimeState | None = None,
+        buff_runtime_state: BuffRuntimeState,
         sim_instance: Simulator,
     ):
         self.data: "ScheduleData" = data
-        self.data.dynamic_buff = dynamic_buff
+        self.data.dynamic_buff = buff_runtime_state.active_store_owner().mutable_stores()
         self.data.processed_times = 0
         # self.judge_required_info_dict = data.judge_required_info_dict
         self.action_stack = action_stack
-
-        if loading_buff is None:
-            loading_buff = {}
-        elif not isinstance(loading_buff, dict):
-            raise ValueError(f"loading_buff参数必须为字典，但你输入了{loading_buff}")
 
         if not isinstance(tick, int):
             raise ValueError(f"tick参数必须为整数，但你输入了{tick}")
 
         # 更新Data
         self.tick = tick
-        self.data.loading_buff = loading_buff
-        self.exist_buff_dict = exist_buff_dict
+        self.data.loading_buff = buff_runtime_state.pending_queue_owner().mutable_queues()
         self.enemy = self.data.enemy
         self.buff_runtime_state = buff_runtime_state
-        if self.buff_runtime_state is None:
-            raise ValueError(
-                "ScheduledEvent construction requires buff_runtime_state; "
-                "production code must use ScheduledEvent.from_runtime_state(...)."
-            )
         self.sim_instance: Simulator = sim_instance
         self._record_buff_runtime_rebuild_count("scheduled_event")
         runtime_ports = self._create_runtime_ports()
@@ -155,14 +140,33 @@ class ScheduledEvent:
             SchedulePreload: "execute_tick",
             PolarizedAssaultEvent: "execute_tick",
         }
-        self._event_handler_factory = create_default_event_handler_factory()
+        self._event_handler_factory = self._get_event_handler_factory()
         # 确保事件处理器已注册
         self._ensure_handlers_registered()
+
+    def _get_event_handler_factory(self) -> EventHandlerFactory:
+        factory = getattr(self.sim_instance, "_scheduled_event_handler_factory", None)
+        if isinstance(factory, EventHandlerFactory):
+            return factory
+        factory = create_default_event_handler_factory()
+        try:
+            setattr(self.sim_instance, "_scheduled_event_handler_factory", factory)
+        except Exception:
+            pass
+        return factory
 
     def _ensure_handlers_registered(self) -> None:
         """确保所有事件处理器已注册"""
         if not self._event_handler_factory.list_handlers():
             self._event_handler_factory = create_default_event_handler_factory()
+            try:
+                setattr(
+                    self.sim_instance,
+                    "_scheduled_event_handler_factory",
+                    self._event_handler_factory,
+                )
+            except Exception:
+                pass
             logging.info("事件处理器注册完成")
         else:
             logging.debug("事件处理器已经注册")

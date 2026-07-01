@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from typing import TYPE_CHECKING
 
 import polars as pl
@@ -779,10 +780,66 @@ class Character:
     def update_sp_overtime(self, args, kwargs):
         """处理当前tick的自然回能"""
         sp_regen_data: list[SPUpdateData] = _sp_update_data_filter(*args, **kwargs)
+        elapsed_ticks = self.event_driven_elapsed_ticks()
         for mul in sp_regen_data:
             if mul.char_name == self.NAME:
-                sp_change_2 = mul.get_sp_regen() / 60  # 每秒回能转化为每帧回能
+                # Event-driven advancement batches skipped integer ticks here.
+                sp_change_2 = mul.get_sp_regen() / 60 * elapsed_ticks
                 self.update_sp(sp_change_2)
+
+    def event_driven_elapsed_ticks(self) -> int:
+        sim_instance = getattr(self, "sim_instance", None)
+        elapsed_ticks = getattr(sim_instance, "_event_driven_elapsed_ticks", 1)
+        try:
+            return max(0, int(elapsed_ticks))
+        except (TypeError, ValueError):
+            return 1
+
+    def next_resource_wakeup_tick(
+        self,
+        current_tick: int,
+        *,
+        thresholds: object | None = None,
+    ) -> int | None:
+        if self.sp >= self.sp_limit:
+            return None
+        per_tick_regen = self.statement.sp_regen / 60
+        energy_thresholds = getattr(thresholds, "energy", ())
+        return self._next_linear_resource_wakeup_tick(
+            current_tick=current_tick,
+            current_value=float(self.sp),
+            limit=float(self.sp_limit),
+            per_tick_regen=float(per_tick_regen),
+            thresholds=energy_thresholds,
+        )
+
+    @staticmethod
+    def _next_linear_resource_wakeup_tick(
+        *,
+        current_tick: int,
+        current_value: float,
+        limit: float,
+        per_tick_regen: float,
+        thresholds: object = (),
+    ) -> int | None:
+        if current_value >= limit or per_tick_regen <= 0:
+            return None
+        numeric_thresholds: list[float] = []
+        for threshold in thresholds or ():
+            try:
+                threshold_value = float(threshold)
+            except (TypeError, ValueError):
+                continue
+            if current_value < threshold_value <= limit:
+                numeric_thresholds.append(threshold_value)
+        if numeric_thresholds:
+            next_value = min(numeric_thresholds)
+        else:
+            next_value = min(limit, math.floor(current_value) + 1.0)
+            if next_value <= current_value:
+                next_value = min(limit, current_value + 1.0)
+        ticks_until_change = math.ceil((next_value - current_value) / per_tick_regen)
+        return current_tick + max(1, ticks_until_change)
 
     def update_single_node_sp(self, node):
         """处理单个skill_node的回能"""

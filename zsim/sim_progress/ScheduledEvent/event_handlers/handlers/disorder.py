@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from zsim.define import ANOMALY_MAPPING
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 from zsim.sim_progress import Report
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import Disorder
@@ -47,6 +48,7 @@ class DisorderEventHandler(BaseEventHandler):
         Report.report_dmg_result(
             tick=tick,
             element_type=event.element_type,
+            skill_tag=ANOMALY_MAPPING[event.element_type],
             dmg_expect=round(damage_disorder, 2),
             dmg_crit=round(damage_disorder, 2),
             is_anomaly=True,

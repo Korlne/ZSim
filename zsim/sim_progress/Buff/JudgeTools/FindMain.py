@@ -19,35 +19,9 @@ def find_char_list(sim_instance: "Simulator" = None):
     return char_list
 
 
-def find_dynamic_buff_list(sim_instance: "Simulator" = None):
-    dynamic_buff_list = sim_instance.global_stats.DYNAMIC_BUFF_DICT
-    return dynamic_buff_list
-
-
 def find_tick(sim_instance: "Simulator" = None):
     tick = sim_instance.tick
     return tick
-
-
-def find_exist_buff_dict(sim_instance: "Simulator" = None):
-    runtime_registry = _runtime_template_registry_for_compat(sim_instance)
-    if runtime_registry is not None:
-        return runtime_registry
-    return _legacy_exist_buff_dict_for_compat(sim_instance)
-
-
-def _runtime_template_registry_for_compat(sim_instance: "Simulator" = None):
-    runtime_state = getattr(sim_instance, "buff_runtime_state", None)
-    if runtime_state is None:
-        return None
-    template_registry_owner = getattr(runtime_state, "template_registry_owner", None)
-    if template_registry_owner is None:
-        return None
-    return template_registry_owner().as_compat_dict()
-
-
-def _legacy_exist_buff_dict_for_compat(sim_instance: "Simulator" = None):
-    return sim_instance.load_data.exist_buff_dict
 
 
 def find_stack(sim_instance: "Simulator" = None):

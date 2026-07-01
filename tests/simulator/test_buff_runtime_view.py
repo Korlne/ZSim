@@ -4,8 +4,8 @@ import pytest
 
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     BuffRuntimeReadPort,
+    BuffRuntimeState,
     DefaultBuffRuntimeReadAdapter,
-    LegacyBuffRuntimeReadAdapter,
     create_buff_runtime_read_port,
 )
 from zsim.sim_progress.ScheduledEvent.event_handlers.base import BaseEventHandler
@@ -88,13 +88,15 @@ def test_create_buff_runtime_read_port_exposes_read_only_views_for_active_and_sn
         "enemy": {"enemy-buff": enemy_buff},
     }
 
-    runtime_view = create_buff_runtime_read_port(
-        dynamic_buff=dynamic_buff,
-        exist_buff_dict=exist_buff_dict,
+    runtime_state = BuffRuntimeState(
+        template_registry=exist_buff_dict,
+        pending_queue={},
+        active_store=dynamic_buff,
+        enemy_mirror=dynamic_buff["enemy"],
     )
+    runtime_view = create_buff_runtime_read_port(runtime_state=runtime_state)
 
     assert isinstance(runtime_view, DefaultBuffRuntimeReadAdapter)
-    assert not isinstance(runtime_view, LegacyBuffRuntimeReadAdapter)
     assert tuple(runtime_view.get_active_buffs("alpha")) == (alpha_buff,)
     assert tuple(runtime_view.get_active_buff_view()["enemy"]) == (enemy_buff,)
     assert dict(runtime_view.get_exist_buff_snapshot("alpha")) == {"alpha-buff": alpha_buff}

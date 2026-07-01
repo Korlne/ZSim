@@ -131,7 +131,7 @@ class DevConfig(BaseModel):
 
 
 class BuffRuntimeConfig(BaseModel):
-    mode: str = "legacy"
+    mode: str = "owner_only"
 
 
 class Config(BaseSettings):

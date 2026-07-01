@@ -53,7 +53,7 @@ logger = logging.getLogger(__name__)
 def _run_default_runtime_simulator(
     common_cfg: CommonCfg, sim_cfg: SimCfg | None, stop_tick: int
 ) -> "Confirmation":
-    simulator = Simulator()
+    simulator = Simulator(use_indexed_buff_load_loop=True)
     return simulator.api_run_simulator(common_cfg, sim_cfg, stop_tick)
 
 

@@ -59,12 +59,9 @@ EXTERNAL_GOLDEN_DATA_ANALYSIS_CONTRACT_SCHEMA = (
 RUNTIME_LABEL_CONTRACT = {
     "mode": "label-only-current-runtime",
     "description": (
-        "baseline_runtime and candidate_runtime are report labels only; "
+        "baseline_runtime and new_buff_runtime are report labels only; "
         "both executions use the Simulator default Buff runtime."
     ),
-    "compatibility_aliases": {
-        "legacy_runtime": "report compatibility alias for baseline_runtime",
-    },
 }
 _EXTERNAL_GOLDEN_MATRIX_ALLOWED_DOMAINS = (
     "damage",
@@ -119,14 +116,14 @@ def _build_session_id() -> str:
 
 def _runtime_selection_contract(
     *,
-    candidate_use_indexed_buff_load_loop: bool = False,
+    new_buff_use_indexed_buff_load_loop: bool = False,
 ) -> dict[str, Any]:
-    if not candidate_use_indexed_buff_load_loop:
+    if not new_buff_use_indexed_buff_load_loop:
         return dict(RUNTIME_LABEL_CONTRACT)
     return {
         **RUNTIME_LABEL_CONTRACT,
-        "mode": "candidate-explicit-opt-in-indexed-buff-load-loop",
-        "candidate_use_indexed_buff_load_loop": True,
+        "mode": "new-buff-explicit-opt-in-indexed-buff-load-loop",
+        "new_buff_use_indexed_buff_load_loop": True,
         "default_off": True,
         "default_indexed_execution": "blocked",
     }
@@ -135,13 +132,10 @@ def _runtime_selection_contract(
 def _resolve_baseline_runtime_label(
     *,
     baseline_runtime: str | None,
-    legacy_runtime: str | None,
     default: str,
 ) -> str:
     if baseline_runtime is not None:
         return baseline_runtime
-    if legacy_runtime is not None:
-        return legacy_runtime
     return default
 
 
@@ -258,20 +252,22 @@ def _load_runtime_snapshot(runtime_label: str, session_id: str) -> RuntimeSnapsh
 
 
 def _event_count_differences(
-    legacy_counts: dict[str, Any],
-    candidate_counts: dict[str, Any],
+    baseline_counts: dict[str, Any],
+    new_buff_counts: dict[str, Any],
 ) -> dict[str, Any]:
     def diff_scalar(key: str) -> int:
-        return int(candidate_counts.get(key, 0)) - int(legacy_counts.get(key, 0))
+        return int(new_buff_counts.get(key, 0)) - int(baseline_counts.get(key, 0))
 
     def diff_map(key: str) -> dict[str, int]:
-        legacy_map = legacy_counts.get(key, {})
-        candidate_map = candidate_counts.get(key, {})
-        keys = sorted(set(legacy_map) | set(candidate_map))
+        baseline_map = baseline_counts.get(key, {})
+        new_buff_map = new_buff_counts.get(key, {})
+        keys = sorted(set(baseline_map) | set(new_buff_map))
         return {
-            item_key: int(candidate_map.get(item_key, 0)) - int(legacy_map.get(item_key, 0))
+            item_key: int(new_buff_map.get(item_key, 0))
+            - int(baseline_map.get(item_key, 0))
             for item_key in keys
-            if int(candidate_map.get(item_key, 0)) != int(legacy_map.get(item_key, 0))
+            if int(new_buff_map.get(item_key, 0))
+            != int(baseline_map.get(item_key, 0))
         }
 
     return {
@@ -312,13 +308,13 @@ def _flatten_buff_timeline(
 
 
 def _summarize_buff_timeline_differences(
-    legacy_timeline: dict[str, list[dict[str, Any]]],
-    candidate_timeline: dict[str, list[dict[str, Any]]],
+    baseline_timeline: dict[str, list[dict[str, Any]]],
+    new_buff_timeline: dict[str, list[dict[str, Any]]],
 ) -> dict[str, Any]:
-    legacy_flat = _flatten_buff_timeline(legacy_timeline)
-    candidate_flat = _flatten_buff_timeline(candidate_timeline)
-    legacy_counter = Counter(tuple(item.items()) for item in legacy_flat)
-    candidate_counter = Counter(tuple(item.items()) for item in candidate_flat)
+    baseline_flat = _flatten_buff_timeline(baseline_timeline)
+    new_buff_flat = _flatten_buff_timeline(new_buff_timeline)
+    baseline_counter = Counter(tuple(item.items()) for item in baseline_flat)
+    new_buff_counter = Counter(tuple(item.items()) for item in new_buff_flat)
 
     def expand(counter: Counter[tuple[tuple[str, Any], ...]]) -> list[dict[str, Any]]:
         items: list[dict[str, Any]] = []
@@ -328,14 +324,14 @@ def _summarize_buff_timeline_differences(
                 items.append(item)
         return items
 
-    legacy_only = expand(legacy_counter - candidate_counter)
-    candidate_only = expand(candidate_counter - legacy_counter)
+    baseline_only = expand(baseline_counter - new_buff_counter)
+    new_buff_only = expand(new_buff_counter - baseline_counter)
 
     return {
-        "legacy_only_count": len(legacy_only),
-        "candidate_only_count": len(candidate_only),
-        "sample_legacy_only": legacy_only[:_BUFF_TIMELINE_SAMPLE_LIMIT],
-        "sample_candidate_only": candidate_only[:_BUFF_TIMELINE_SAMPLE_LIMIT],
+        "baseline_only_count": len(baseline_only),
+        "new_buff_only_count": len(new_buff_only),
+        "sample_baseline_only": baseline_only[:_BUFF_TIMELINE_SAMPLE_LIMIT],
+        "sample_new_buff_only": new_buff_only[:_BUFF_TIMELINE_SAMPLE_LIMIT],
     }
 
 
@@ -344,56 +340,48 @@ def build_consistency_report(
     team: str,
     apl: str,
     stop_tick: int,
-    legacy_snapshot: RuntimeSnapshot,
-    candidate_snapshot: RuntimeSnapshot,
-    candidate_use_indexed_buff_load_loop: bool = False,
+    baseline_snapshot: RuntimeSnapshot,
+    new_buff_snapshot: RuntimeSnapshot,
+    new_buff_use_indexed_buff_load_loop: bool = False,
 ) -> dict[str, Any]:
     event_count_differences = _event_count_differences(
-        legacy_snapshot.event_counts, candidate_snapshot.event_counts
+        baseline_snapshot.event_counts, new_buff_snapshot.event_counts
     )
     buff_timeline_differences = _summarize_buff_timeline_differences(
-        legacy_snapshot.buff_timeline,
-        candidate_snapshot.buff_timeline,
+        baseline_snapshot.buff_timeline,
+        new_buff_snapshot.buff_timeline,
     )
-    total_damage_delta = round(candidate_snapshot.total_damage - legacy_snapshot.total_damage, 4)
+    total_damage_delta = round(new_buff_snapshot.total_damage - baseline_snapshot.total_damage, 4)
 
     has_event_differences = any(bool(value) for value in event_count_differences.values())
-    baseline_label = legacy_snapshot.runtime_label
+    baseline_label = baseline_snapshot.runtime_label
 
     return {
         "team": team,
         "apl": apl,
         "stop_tick": stop_tick,
         "baseline_runtime": baseline_label,
-        "legacy_runtime": baseline_label,
-        "candidate_runtime": candidate_snapshot.runtime_label,
+        "new_buff_runtime": new_buff_snapshot.runtime_label,
         "runtime_selection": _runtime_selection_contract(
-            candidate_use_indexed_buff_load_loop=candidate_use_indexed_buff_load_loop,
+            new_buff_use_indexed_buff_load_loop=new_buff_use_indexed_buff_load_loop,
         ),
         "total_damage": {
-            "baseline": legacy_snapshot.total_damage,
-            "legacy": legacy_snapshot.total_damage,
-            "candidate": candidate_snapshot.total_damage,
+            "baseline": baseline_snapshot.total_damage,
+            "new_buff": new_buff_snapshot.total_damage,
         },
         "event_counts": {
-            "baseline": legacy_snapshot.event_counts,
-            "legacy": legacy_snapshot.event_counts,
-            "candidate": candidate_snapshot.event_counts,
+            "baseline": baseline_snapshot.event_counts,
+            "new_buff": new_buff_snapshot.event_counts,
         },
         "buff_timeline": {
-            "baseline": legacy_snapshot.buff_timeline,
-            "legacy": legacy_snapshot.buff_timeline,
-            "candidate": candidate_snapshot.buff_timeline,
-        },
-        "report_compatibility": {
-            "legacy_runtime": "alias for baseline_runtime",
-            "legacy": "alias bucket for baseline",
+            "baseline": baseline_snapshot.buff_timeline,
+            "new_buff": new_buff_snapshot.buff_timeline,
         },
         "differences": {
             "matches": total_damage_delta == 0
             and not has_event_differences
-            and buff_timeline_differences["legacy_only_count"] == 0
-            and buff_timeline_differences["candidate_only_count"] == 0,
+            and buff_timeline_differences["baseline_only_count"] == 0
+            and buff_timeline_differences["new_buff_only_count"] == 0,
             "total_damage": total_damage_delta,
             "event_counts": event_count_differences,
             "buff_timeline": buff_timeline_differences,
@@ -407,8 +395,8 @@ def _event_count_differences_match(event_count_differences: dict[str, Any]) -> b
 
 def _buff_timeline_differences_match(buff_timeline_differences: dict[str, Any]) -> bool:
     return (
-        int(buff_timeline_differences.get("legacy_only_count", 0)) == 0
-        and int(buff_timeline_differences.get("candidate_only_count", 0)) == 0
+        int(buff_timeline_differences.get("baseline_only_count", 0)) == 0
+        and int(buff_timeline_differences.get("new_buff_only_count", 0)) == 0
     )
 
 
@@ -417,7 +405,7 @@ def _team_consistency_summary(report: dict[str, Any]) -> dict[str, Any]:
     event_count_differences = differences["event_counts"]
     buff_timeline_differences = differences["buff_timeline"]
     runtime_selection = dict(report.get("runtime_selection", {}))
-    candidate_opt_in = bool(runtime_selection.get("candidate_use_indexed_buff_load_loop", False))
+    new_buff_opt_in = bool(runtime_selection.get("new_buff_use_indexed_buff_load_loop", False))
     matches = bool(differences["matches"])
 
     return {
@@ -425,20 +413,17 @@ def _team_consistency_summary(report: dict[str, Any]) -> dict[str, Any]:
         "apl": report["apl"],
         "stop_tick": int(report["stop_tick"]),
         "runtime_labels": {
-            "default_path": report.get("baseline_runtime", report["legacy_runtime"]),
-            "opt_in_indexed_path": report["candidate_runtime"],
+            "baseline": report["baseline_runtime"],
+            "new_buff": report["new_buff_runtime"],
         },
         "runtime_selection": runtime_selection,
-        "candidate_use_indexed_buff_load_loop": candidate_opt_in,
+        "new_buff_use_indexed_buff_load_loop": new_buff_opt_in,
         "opt_in_flag_status": (
-            "candidate_explicit_opt_in" if candidate_opt_in else "default_off_label_only"
+            "new_buff_explicit_opt_in" if new_buff_opt_in else "default_off_label_only"
         ),
         "damage_parity": {
-            "default_path": report["total_damage"].get(
-                "baseline",
-                report["total_damage"]["legacy"],
-            ),
-            "opt_in_indexed_path": report["total_damage"]["candidate"],
+            "baseline": report["total_damage"]["baseline"],
+            "new_buff": report["total_damage"]["new_buff"],
             "delta": differences["total_damage"],
             "matches": differences["total_damage"] == 0,
         },
@@ -448,10 +433,10 @@ def _team_consistency_summary(report: dict[str, Any]) -> dict[str, Any]:
         },
         "buff_timeline_parity": {
             "matches": _buff_timeline_differences_match(buff_timeline_differences),
-            "legacy_only_count": buff_timeline_differences["legacy_only_count"],
-            "candidate_only_count": buff_timeline_differences["candidate_only_count"],
-            "sample_legacy_only": buff_timeline_differences["sample_legacy_only"],
-            "sample_candidate_only": buff_timeline_differences["sample_candidate_only"],
+            "baseline_only_count": buff_timeline_differences["baseline_only_count"],
+            "new_buff_only_count": buff_timeline_differences["new_buff_only_count"],
+            "sample_baseline_only": buff_timeline_differences["sample_baseline_only"],
+            "sample_new_buff_only": buff_timeline_differences["sample_new_buff_only"],
         },
         "mismatch_count": 0 if matches else 1,
         "matches": matches,
@@ -484,13 +469,13 @@ def build_multi_team_consistency_summary(
         "required_minimum_stop_tick": 120,
         "minimum_stop_tick_met": all(stop_tick >= 120 for stop_tick in stop_ticks),
         "runtime_paths": {
-            "default_path": "default current BuffLoadLoop execution",
-            "opt_in_indexed_path": "candidate explicit opt-in indexed BuffLoadLoop execution",
+            "baseline": "baseline current BuffLoadLoop execution",
+            "new_buff": "new Buff explicit opt-in indexed BuffLoadLoop execution",
         },
-        "candidate_use_indexed_buff_load_loop": all(
+        "new_buff_use_indexed_buff_load_loop": all(
             bool(
                 report.get("runtime_selection", {}).get(
-                    "candidate_use_indexed_buff_load_loop", False
+                    "new_buff_use_indexed_buff_load_loop", False
                 )
             )
             for report in reports
@@ -524,10 +509,9 @@ def run_multi_team_main_loop_consistency(
     stop_tick: int,
     stop_ticks: list[int] | None = None,
     baseline_runtime: str | None = None,
-    candidate_runtime: str = "opt-in-indexed-path",
-    legacy_runtime: str | None = None,
+    new_buff_runtime: str = "opt-in-indexed-path",
     cleanup: bool = True,
-    candidate_use_indexed_buff_load_loop: bool = True,
+    new_buff_use_indexed_buff_load_loop: bool = True,
     output_path: str | Path | None = None,
 ) -> dict[str, Any]:
     if not teams:
@@ -537,7 +521,6 @@ def run_multi_team_main_loop_consistency(
         raise ValueError("at least one stop tick is required")
     baseline_label = _resolve_baseline_runtime_label(
         baseline_runtime=baseline_runtime,
-        legacy_runtime=legacy_runtime,
         default="default-current-path",
     )
 
@@ -547,9 +530,9 @@ def run_multi_team_main_loop_consistency(
             apl=None,
             stop_tick=matrix_stop_tick,
             baseline_runtime=baseline_label,
-            candidate_runtime=candidate_runtime,
+            new_buff_runtime=new_buff_runtime,
             cleanup=cleanup,
-            candidate_use_indexed_buff_load_loop=candidate_use_indexed_buff_load_loop,
+            new_buff_use_indexed_buff_load_loop=new_buff_use_indexed_buff_load_loop,
         )
         for team in teams
         for matrix_stop_tick in matrix_stop_ticks
@@ -572,10 +555,9 @@ def run_main_loop_consistency(
     apl: str | None,
     stop_tick: int,
     baseline_runtime: str | None = None,
-    candidate_runtime: str = "candidate-current",
-    legacy_runtime: str | None = None,
+    new_buff_runtime: str = "new-buff-current",
     cleanup: bool = True,
-    candidate_use_indexed_buff_load_loop: bool = False,
+    new_buff_use_indexed_buff_load_loop: bool = False,
 ) -> dict[str, Any]:
     os.chdir(PROJECT_ROOT)
     base_cfg = _prepare_common_cfg(team, apl)
@@ -583,13 +565,12 @@ def run_main_loop_consistency(
     snapshots: list[RuntimeSnapshot] = []
     baseline_label = _resolve_baseline_runtime_label(
         baseline_runtime=baseline_runtime,
-        legacy_runtime=legacy_runtime,
         default="default-current",
     )
 
-    runtime_flags = (False, candidate_use_indexed_buff_load_loop)
+    runtime_flags = (False, new_buff_use_indexed_buff_load_loop)
     for runtime_label, use_indexed_buff_load_loop in zip(
-        (baseline_label, candidate_runtime),
+        (baseline_label, new_buff_runtime),
         runtime_flags,
         strict=True,
     ):
@@ -616,9 +597,9 @@ def run_main_loop_consistency(
         team=team,
         apl=apl_path,
         stop_tick=stop_tick,
-        legacy_snapshot=snapshots[0],
-        candidate_snapshot=snapshots[1],
-        candidate_use_indexed_buff_load_loop=candidate_use_indexed_buff_load_loop,
+        baseline_snapshot=snapshots[0],
+        new_buff_snapshot=snapshots[1],
+        new_buff_use_indexed_buff_load_loop=new_buff_use_indexed_buff_load_loop,
     )
 
 
@@ -867,6 +848,44 @@ def _damage_uuid_differences(
     }
 
 
+def _damage_stable_record(record: dict[str, Any]) -> dict[str, Any]:
+    return {field: record.get(field) for field in _DAMAGE_UUID_COMPARE_FIELDS}
+
+
+def _damage_stable_record_differences(
+    golden_records: list[dict[str, Any]],
+    candidate_records: list[dict[str, Any]],
+) -> dict[str, Any]:
+    golden_stable_records = [_damage_stable_record(record) for record in golden_records]
+    candidate_stable_records = [_damage_stable_record(record) for record in candidate_records]
+    golden_counter = Counter(
+        json.dumps(record, ensure_ascii=False, sort_keys=True) for record in golden_stable_records
+    )
+    candidate_counter = Counter(
+        json.dumps(record, ensure_ascii=False, sort_keys=True)
+        for record in candidate_stable_records
+    )
+    golden_only: list[dict[str, Any]] = []
+    candidate_only: list[dict[str, Any]] = []
+    for encoded_record, count_value in sorted(
+        (golden_counter - candidate_counter).items(),
+        key=lambda item: item[0],
+    ):
+        golden_only.extend([json.loads(encoded_record)] * int(count_value))
+    for encoded_record, count_value in sorted(
+        (candidate_counter - golden_counter).items(),
+        key=lambda item: item[0],
+    ):
+        candidate_only.extend([json.loads(encoded_record)] * int(count_value))
+
+    return {
+        "golden_only_count": len(golden_only),
+        "candidate_only_count": len(candidate_only),
+        "sample_golden_only": golden_only[:_DAMAGE_DIFF_SAMPLE_LIMIT],
+        "sample_candidate_only": candidate_only[:_DAMAGE_DIFF_SAMPLE_LIMIT],
+    }
+
+
 def _build_external_damage_domain(
     *,
     golden_result_dir: Path,
@@ -901,15 +920,23 @@ def _build_external_damage_domain(
         ),
     }
     uuid_differences = _damage_uuid_differences(golden.uuid_records, candidate.uuid_records)
+    stable_record_differences = _damage_stable_record_differences(
+        golden.uuid_records,
+        candidate.uuid_records,
+    )
     presence_matches = golden.present == candidate.present
     scalar_matches = all(value == 0 for value in scalar_differences.values())
     field_counts_match = not any(bool(value) for value in field_count_differences.values())
-    uuid_matches = (
+    stable_records_match = (
+        stable_record_differences["golden_only_count"] == 0
+        and stable_record_differences["candidate_only_count"] == 0
+    )
+    uuid_identity_matches = (
         uuid_differences["golden_only_count"] == 0
         and uuid_differences["candidate_only_count"] == 0
         and uuid_differences["changed_count"] == 0
     )
-    matches = presence_matches and scalar_matches and field_counts_match and uuid_matches
+    matches = presence_matches and scalar_matches and field_counts_match and stable_records_match
 
     return {
         "implemented": True,
@@ -925,6 +952,8 @@ def _build_external_damage_domain(
             },
             **scalar_differences,
             "field_counts": field_count_differences,
+            "stable_record_aggregation": stable_record_differences,
+            "uuid_identity_matches": uuid_identity_matches,
             "uuid_aggregation": uuid_differences,
         },
     }
@@ -1435,6 +1464,7 @@ def run_external_golden_parity(
         )
         finished_session_id = future.result()
 
+    prepare_dmg_data_and_cache(finished_session_id)
     candidate_result_path = (Path(results_dir) / finished_session_id).resolve()
     report = build_external_golden_parity_report(
         golden_result_dir=golden_path,
@@ -1758,9 +1788,14 @@ def _external_golden_mismatch_samples(report: dict[str, Any]) -> dict[str, Any]:
     if damage.get("matches") is False:
         damage_diff = damage.get("differences", {})
         uuid_diff = damage_diff.get("uuid_aggregation", {})
+        stable_diff = damage_diff.get("stable_record_aggregation", {})
         samples["damage"] = {
             "total_damage": damage_diff.get("total_damage"),
             "row_count": damage_diff.get("row_count"),
+            "stable_record_aggregation": {
+                "sample_golden_only": stable_diff.get("sample_golden_only", []),
+                "sample_candidate_only": stable_diff.get("sample_candidate_only", []),
+            },
             "uuid_aggregation": {
                 "sample_golden_only": uuid_diff.get("sample_golden_only", []),
                 "sample_candidate_only": uuid_diff.get("sample_candidate_only", []),
@@ -1945,6 +1980,8 @@ def _external_golden_matrix_signoff_status(rows: list[dict[str, Any]]) -> str:
         for row in passed_rows
     )
     if fixture_only:
+        if all(row.get("signoff_label") == "runtime-truth-source" for row in passed_rows):
+            return "complete"
         return "provisional"
     return "complete"
 
@@ -2140,13 +2177,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="First/default current run label to record in the report; this does not select a runtime.",
     )
     parser.add_argument(
-        "--legacy-runtime",
-        dest="baseline_runtime",
-        help="Compatibility alias for --baseline-runtime; report label only, not old runtime selection.",
-    )
-    parser.add_argument(
-        "--candidate-runtime",
-        default="candidate-current",
+        "--new-buff-runtime",
+        default="new-buff-current",
         help="Second run label to record in the report; this does not select a runtime.",
     )
     parser.add_argument(
@@ -2155,10 +2187,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Keep raw results/<session_id> artifacts after the report is generated.",
     )
     parser.add_argument(
-        "--candidate-use-indexed-buff-load-loop",
+        "--new-buff-use-indexed-buff-load-loop",
         action="store_true",
         help=(
-            "Explicitly request indexed BuffLoadLoop for the candidate run only; "
+            "Explicitly request indexed BuffLoadLoop for the new Buff run only; "
             "omitting this keeps both runs on the default current path."
         ),
     )
@@ -2240,7 +2272,7 @@ def _format_multi_team_human_summary(summary: dict[str, Any]) -> str:
         "teams: " + ", ".join(summary["teams"]),
         f"stop_ticks: {summary['stop_ticks']}",
         f"matrix_row_count: {summary['matrix_row_count']}",
-        f"runtime_selection: indexed_opt_in={summary['candidate_use_indexed_buff_load_loop']}",
+        f"runtime_selection: indexed_opt_in={summary['new_buff_use_indexed_buff_load_loop']}",
         f"all_match: {summary['all_match']}",
         f"mismatch_count: {summary['mismatch_count']}",
     ]
@@ -2257,7 +2289,7 @@ def _format_human_report(report: dict[str, Any]) -> str:
         (
             "total_damage: "
             f"{report['baseline_runtime']}={report['total_damage']['baseline']}, "
-            f"{report['candidate_runtime']}={report['total_damage']['candidate']}"
+            f"{report['new_buff_runtime']}={report['total_damage']['new_buff']}"
         ),
         f"matches: {report['differences']['matches']}",
         "event_count_differences: "
@@ -2316,9 +2348,9 @@ def main(argv: list[str] | None = None) -> int:
             stop_tick=args.stop_tick,
             stop_ticks=args.stop_ticks,
             baseline_runtime=args.baseline_runtime,
-            candidate_runtime=args.candidate_runtime,
+            new_buff_runtime=args.new_buff_runtime,
             cleanup=not args.keep_artifacts,
-            candidate_use_indexed_buff_load_loop=args.candidate_use_indexed_buff_load_loop,
+            new_buff_use_indexed_buff_load_loop=args.new_buff_use_indexed_buff_load_loop,
             output_path=args.summary_json,
         )
         if args.json:
@@ -2335,9 +2367,9 @@ def main(argv: list[str] | None = None) -> int:
         apl=args.apl,
         stop_tick=args.stop_tick,
         baseline_runtime=args.baseline_runtime,
-        candidate_runtime=args.candidate_runtime,
+        new_buff_runtime=args.new_buff_runtime,
         cleanup=not args.keep_artifacts,
-        candidate_use_indexed_buff_load_loop=args.candidate_use_indexed_buff_load_loop,
+        new_buff_use_indexed_buff_load_loop=args.new_buff_use_indexed_buff_load_loop,
     )
     if args.summary_json:
         _write_json_artifact(args.summary_json, report)

@@ -367,13 +367,12 @@ class TestSimulator:
         assert controller1 is controller2
 
     @pytest.mark.asyncio
-    async def test_sim_controller_no_flag_uses_default_buff_runtime_path(self, monkeypatch):
-        """SimController should not require a runtime opt-in for the default Buff runtime."""
+    async def test_sim_controller_default_uses_indexed_buff_load_loop(self, monkeypatch):
+        """SimController should use the indexed BuffLoadLoop default for API runs."""
         from zsim.api_src.services.sim_controller import sim_controller as controller_module
         from zsim.sim_progress.ScheduledEvent.buff_runtime import (
             BuffRuntimeState,
             DefaultBuffRuntimeFacade,
-            LegacyBuffRuntimeFacade,
         )
 
         captured = {}
@@ -421,13 +420,34 @@ class TestSimulator:
             controller._executor = None
 
         assert result is confirmation
-        assert captured["constructor_kwargs"] == {}
-        assert captured["use_indexed_buff_load_loop"] is False
+        assert captured["constructor_kwargs"] == {"use_indexed_buff_load_loop": True}
+        assert captured["use_indexed_buff_load_loop"] is True
         assert captured["api_args"] == (common_cfg, None, 120)
         assert captured["api_use_indexed_buff_load_loop"] is None
-        assert isinstance(captured["facade"], DefaultBuffRuntimeFacade)
-        assert not isinstance(captured["facade"], LegacyBuffRuntimeFacade)
+        assert type(captured["facade"]) is DefaultBuffRuntimeFacade
         assert captured["rebuild_counts"] == {"default_buff_runtime_facade": 1}
+
+    def test_webui_default_uses_indexed_buff_load_loop(self, monkeypatch):
+        """WebUI worker simulator should use the indexed BuffLoadLoop default."""
+        from zsim.lib_webui import multiprocess_wrapper
+        import zsim.simulator as simulator_package
+
+        captured = {}
+
+        class ProbeSimulator:
+            def __init__(self, *args, **kwargs):
+                captured["constructor_kwargs"] = kwargs
+                self.use_indexed_buff_load_loop = kwargs.get(
+                    "use_indexed_buff_load_loop",
+                    False,
+                )
+
+        monkeypatch.setattr(simulator_package, "Simulator", ProbeSimulator)
+
+        simulator = multiprocess_wrapper._create_webui_default_runtime_simulator()
+
+        assert captured["constructor_kwargs"] == {"use_indexed_buff_load_loop": True}
+        assert simulator.use_indexed_buff_load_loop is True
 
     # 队列基础的异步测试
     @pytest.mark.asyncio

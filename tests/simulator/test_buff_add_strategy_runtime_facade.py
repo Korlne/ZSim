@@ -141,7 +141,7 @@ def _install_recording_runtime_facade(monkeypatch: Any) -> list[tuple[str, str, 
 
     calls: list[tuple[str, str, object]] = []
 
-    class _RecordingLegacyBuffRuntimeFacade(buff_runtime.LegacyBuffRuntimeFacade):
+    class _RecordingDefaultBuffRuntimeFacade(buff_runtime.DefaultBuffRuntimeFacade):
         def find_active_buff_by_index(
             self, beneficiary: str, buff_index: str
         ) -> Buff | None:
@@ -163,7 +163,7 @@ def _install_recording_runtime_facade(monkeypatch: Any) -> list[tuple[str, str, 
     monkeypatch.setattr(
         buff_runtime.BuffRuntimeState,
         "create_facade",
-        lambda self: _RecordingLegacyBuffRuntimeFacade(runtime_state=self),
+        lambda self: _RecordingDefaultBuffRuntimeFacade(runtime_state=self),
     )
     return calls
 
@@ -250,7 +250,7 @@ def test_buff_add_strategy_forced_add_template_lookup_uses_runtime_owner(
     def fail_compat_access() -> dict[str, dict[str, Buff]]:
         raise AssertionError("forced add must not read the compatibility registry")
 
-    class _OwnerOnlyForcedAddFacade(buff_runtime.LegacyBuffRuntimeFacade):
+    class _OwnerOnlyForcedAddFacade(buff_runtime.DefaultBuffRuntimeFacade):
         def create_forced_add_buff(
             self,
             beneficiary: str,
@@ -269,6 +269,7 @@ def test_buff_add_strategy_forced_add_template_lookup_uses_runtime_owner(
         sim_instance.buff_runtime_state,
         "template_registry_for_compat",
         fail_compat_access,
+        raising=False,
     )
     monkeypatch.setattr(
         buff_runtime.BuffRuntimeState,

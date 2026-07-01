@@ -134,7 +134,7 @@ def test_build_preparation_context_uses_runtime_template_registry_owner() -> Non
         context.find_sub_exist_buff_dict("fallback-owner")
 
 
-def test_build_preparation_context_falls_back_for_runtime_state_without_registry_owner() -> None:
+def test_build_preparation_context_does_not_fallback_without_registry_owner() -> None:
     fallback_buff = _buff_template("Fallback-Buff-Template")
     fallback_registry = {"fallback-owner": {"fallback-buff": fallback_buff}}
     sim_instance = _build_preparation_sim_instance(
@@ -145,10 +145,10 @@ def test_build_preparation_context_falls_back_for_runtime_state_without_registry
 
     context = build_preparation_context_from_sim_instance(sim_instance)
 
-    assert context.find_sub_exist_buff_dict("fallback-owner") is fallback_registry[
-        "fallback-owner"
-    ]
-    assert context.find_trigger_buff("fallback-owner", "Template") is fallback_buff
+    with pytest.raises(KeyError):
+        context.find_sub_exist_buff_dict("fallback-owner")
+    with pytest.raises(KeyError):
+        context.find_trigger_buff("fallback-owner", "Template")
 
 
 def test_build_preparation_context_keeps_template_registry_run_scoped() -> None:
@@ -183,6 +183,50 @@ def test_build_preparation_context_keeps_template_registry_run_scoped() -> None:
     )
     assert "second-only" not in first_context.find_sub_exist_buff_dict("same-owner")
     assert "second-only" in second_context.find_sub_exist_buff_dict("same-owner")
+
+
+def test_build_preparation_context_reuses_context_within_same_runtime_state() -> None:
+    runtime_buff = _buff_template("Runtime-Buff-Template")
+    runtime_registry = {"runtime-owner": {"runtime-buff": runtime_buff}}
+    sim_instance = _build_preparation_sim_instance(
+        runtime_registry=runtime_registry,
+        fallback_registry={"fallback": {}},
+    )
+
+    first_context = build_preparation_context_from_sim_instance(sim_instance)
+    second_context = build_preparation_context_from_sim_instance(sim_instance)
+
+    assert second_context is first_context
+    runtime_late_buff = _buff_template("Runtime-Buff-Late")
+    runtime_registry["runtime-owner"]["runtime-late-buff"] = runtime_late_buff
+    assert (
+        second_context.find_sub_exist_buff_dict("runtime-owner")["runtime-late-buff"]
+        is runtime_late_buff
+    )
+
+
+def test_build_preparation_context_invalidates_cache_when_runtime_state_changes() -> None:
+    first_buff = _buff_template("Runtime-One-Template")
+    second_buff = _buff_template("Runtime-Two-Template")
+    first_registry = {"same-owner": {"same-key": first_buff}}
+    second_registry = {"same-owner": {"same-key": second_buff}}
+    sim_instance = _build_preparation_sim_instance(
+        runtime_registry=first_registry,
+        fallback_registry={"fallback": {}},
+    )
+
+    first_context = build_preparation_context_from_sim_instance(sim_instance)
+    sim_instance.buff_runtime_state = BuffRuntimeState(
+        template_registry=second_registry,
+        pending_queue={},
+        active_store={},
+        enemy_mirror=[],
+    )
+    second_context = build_preparation_context_from_sim_instance(sim_instance)
+
+    assert second_context is not first_context
+    assert first_context.find_trigger_buff("same-owner", "One-Template") is first_buff
+    assert second_context.find_trigger_buff("same-owner", "Two-Template") is second_buff
 
 
 def _build_yixuan_trigger_harness(

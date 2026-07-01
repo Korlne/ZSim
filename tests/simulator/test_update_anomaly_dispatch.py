@@ -26,9 +26,7 @@ from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
     PolarityDisorder,
 )
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
-from zsim.sim_progress.data_struct.planned_queue import (
-    ensure_event_list_migration_planned_event_queue,
-)
+from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
 
 
 _CallRecord = tuple[str, object]
@@ -197,7 +195,10 @@ def _build_sim_instance(
         event_list=event_list,
         change_process_state=lambda: None,
     )
-    ensure_event_list_migration_planned_event_queue(schedule_data)
+    schedule_data.planned_event_queue = PlannedEventQueue(
+        get_events=lambda: schedule_data.event_list,
+        set_events=lambda events: setattr(schedule_data, "event_list", events),
+    )
 
     return SimpleNamespace(
         tick=10,
@@ -1266,18 +1267,18 @@ def test_anomaly_effect_active_debuff_branch_uses_existing_buff_add_path(
 def test_anomaly_effect_active_does_not_introduce_runtime_write_ports():
     from zsim.sim_progress.ScheduledEvent.buff_runtime import (
         BuffRuntimeReadPort,
-        LegacyBuffRuntimeFacade,
+        DefaultBuffRuntimeFacade,
     )
     from zsim.sim_progress.ScheduledEvent.runtime_command import (
-        LegacyRuntimeCommandAdapter,
+        DefaultRuntimeCommandAdapter,
         RuntimeCommandPort,
     )
 
     anomaly_source = inspect.getsource(update_anomaly_module.anomaly_effect_active)
     remove_source = inspect.getsource(update_anomaly_module.remove_dots_cause_disorder)
     buff_add_source = inspect.getsource(buff_add_strategy_module)
-    legacy_facade_source = inspect.getsource(LegacyBuffRuntimeFacade)
-    runtime_update_source = inspect.getsource(LegacyRuntimeCommandAdapter.update_anomaly)
+    facade_source = inspect.getsource(DefaultBuffRuntimeFacade)
+    runtime_update_source = inspect.getsource(DefaultRuntimeCommandAdapter.update_anomaly)
 
     anomaly_forbidden_terms = {
         "ScheduleDispatchPort",
@@ -1348,12 +1349,12 @@ def test_anomaly_effect_active_does_not_introduce_runtime_write_ports():
     assert "create_forced_add_buff" in buff_add_source
     assert "find_registered_buff_source" in buff_add_source
 
-    assert RuntimeCommandPort is not LegacyRuntimeCommandAdapter
+    assert RuntimeCommandPort is not DefaultRuntimeCommandAdapter
     assert "publish_scheduled" not in inspect.getsource(RuntimeCommandPort)
     assert "broadcast_event" not in inspect.getsource(RuntimeCommandPort)
-    assert "publish_scheduled" not in inspect.getsource(LegacyRuntimeCommandAdapter)
-    assert "broadcast_event" not in inspect.getsource(LegacyRuntimeCommandAdapter)
-    assert "publish_scheduled" not in legacy_facade_source
+    assert "publish_scheduled" not in inspect.getsource(DefaultRuntimeCommandAdapter)
+    assert "broadcast_event" not in inspect.getsource(DefaultRuntimeCommandAdapter)
+    assert "publish_scheduled" not in facade_source
     assert "event_list" not in runtime_update_source
     assert "legacy_update_anomaly" not in runtime_update_source
     assert "runtime_context" in runtime_update_source
@@ -1368,7 +1369,7 @@ def test_anomaly_effect_active_does_not_introduce_runtime_write_ports():
     }
     assert write_method_names.isdisjoint(BuffRuntimeReadPort.__dict__)
     for method_name in write_method_names:
-        assert hasattr(LegacyBuffRuntimeFacade, method_name)
+        assert hasattr(DefaultBuffRuntimeFacade, method_name)
 
 
 def test_copied_output_constructors_keep_publish_dot_and_debuff_layers_external():

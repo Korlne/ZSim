@@ -10,6 +10,10 @@ if TYPE_CHECKING:
     from zsim.simulator.simulator_class import Simulator
 
 
+_PREPARATION_CONTEXT_CACHE_ATTR = "_zsim_preparation_context_cache"
+_PREPARATION_CONTEXT_CACHE_VERSION = 1
+
+
 @dataclass(frozen=True)
 class CharacterLookup:
     characters: Sequence[Any]
@@ -299,21 +303,71 @@ def _create_template_registry_read_port_from_sim_instance(
     if runtime_state is not None:
         template_registry_owner = getattr(runtime_state, "template_registry_owner", None)
         if template_registry_owner is not None:
+            registry_owner = template_registry_owner()
+            registry_getter = getattr(registry_owner, "mutable_registry", None)
+            if registry_getter is None:
+                registry_getter = getattr(registry_owner, "as_compat_dict")
             return BuffTemplateRegistryReadPort(
-                templates_by_owner=template_registry_owner().as_compat_dict()
+                templates_by_owner=registry_getter()
             )
-    return BuffTemplateRegistryReadPort(
-        templates_by_owner=sim_instance.load_data.exist_buff_dict
+    return BuffTemplateRegistryReadPort(templates_by_owner={})
+
+
+def _preparation_context_cache_key(
+    sim_instance: "Simulator",
+) -> tuple[int, int, int, int, int, int, int, int]:
+    runtime_state = getattr(sim_instance, "buff_runtime_state", None)
+    if runtime_state is not None:
+        template_registry_identity = id(runtime_state)
+    else:
+        template_registry_identity = id(None)
+    return (
+        _PREPARATION_CONTEXT_CACHE_VERSION,
+        id(runtime_state),
+        template_registry_identity,
+        id(sim_instance.char_data.char_obj_list),
+        id(sim_instance.init_data.Judge_list_set),
+        id(sim_instance.schedule_data.enemy),
+        id(sim_instance.load_data.action_stack),
+        id(sim_instance.preload.preload_data),
     )
+
+
+def _read_cached_preparation_context(
+    sim_instance: "Simulator",
+    cache_key: tuple[int, int, int, int, int, int, int, int],
+) -> PreparationContext | None:
+    cache_entry = getattr(sim_instance, _PREPARATION_CONTEXT_CACHE_ATTR, None)
+    if not isinstance(cache_entry, tuple) or len(cache_entry) != 2:
+        return None
+    cached_key, cached_context = cache_entry
+    if cached_key != cache_key or not isinstance(cached_context, PreparationContext):
+        return None
+    return cached_context
+
+
+def _store_cached_preparation_context(
+    sim_instance: "Simulator",
+    cache_key: tuple[int, int, int, int, int, int, int, int],
+    context: PreparationContext,
+) -> None:
+    try:
+        setattr(sim_instance, _PREPARATION_CONTEXT_CACHE_ATTR, (cache_key, context))
+    except (AttributeError, TypeError):
+        pass
 
 
 def build_preparation_context_from_sim_instance(
     sim_instance: "Simulator",
 ) -> PreparationContext:
+    cache_key = _preparation_context_cache_key(sim_instance)
+    cached_context = _read_cached_preparation_context(sim_instance, cache_key)
+    if cached_context is not None:
+        return cached_context
     template_registry = _create_template_registry_read_port_from_sim_instance(
         sim_instance
     )
-    return PreparationContext(
+    context = PreparationContext(
         character_lookup=CharacterLookup(sim_instance.char_data.char_obj_list),
         equipment_owner_lookup=EquipmentOwnerLookup(sim_instance.init_data.Judge_list_set),
         template_registry=template_registry,
@@ -330,6 +384,8 @@ def build_preparation_context_from_sim_instance(
         ),
         char_obj_list=sim_instance.char_data.char_obj_list,
     )
+    _store_cached_preparation_context(sim_instance, cache_key, context)
+    return context
 
 
 def build_preparation_context_from_buff(buff_instance: "Buff") -> PreparationContext:

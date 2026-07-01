@@ -120,13 +120,14 @@ def _sorted_hotspots(hotspots: dict[str, float]) -> list[dict[str, float | str]]
 
 
 def _hotspot_comparisons(
-    legacy_hotspots: dict[str, float],
-    candidate_hotspots: dict[str, float],
+    baseline_hotspots: dict[str, float],
+    new_buff_hotspots: dict[str, float],
 ) -> dict[str, float]:
-    hotspot_names = sorted(set(legacy_hotspots) | set(candidate_hotspots))
+    hotspot_names = sorted(set(baseline_hotspots) | set(new_buff_hotspots))
     return {
         hotspot_name: round(
-            candidate_hotspots.get(hotspot_name, 0.0) - legacy_hotspots.get(hotspot_name, 0.0),
+            new_buff_hotspots.get(hotspot_name, 0.0)
+            - baseline_hotspots.get(hotspot_name, 0.0),
             4,
         )
         for hotspot_name in hotspot_names
@@ -137,22 +138,20 @@ def _rebuild_count_buckets(
     buff_runtime_rebuild_counts: dict[str, dict[str, int]] | None,
 ) -> dict[str, dict[str, int]]:
     source = buff_runtime_rebuild_counts or {}
-    baseline_counts = dict(source.get("baseline", source.get("legacy", {})))
     return {
-        "baseline": baseline_counts,
-        "legacy": baseline_counts,
-        "candidate": dict(source.get("candidate", {})),
+        "baseline": dict(source.get("baseline", {})),
+        "new_buff": dict(source.get("new_buff", {})),
     }
 
 
 def _rebuild_count_comparisons(
-    legacy_counts: dict[str, int],
-    candidate_counts: dict[str, int],
+    baseline_counts: dict[str, int],
+    new_buff_counts: dict[str, int],
 ) -> dict[str, int]:
-    counter_names = sorted(set(legacy_counts) | set(candidate_counts))
+    counter_names = sorted(set(baseline_counts) | set(new_buff_counts))
     return {
-        counter_name: int(candidate_counts.get(counter_name, 0))
-        - int(legacy_counts.get(counter_name, 0))
+        counter_name: int(new_buff_counts.get(counter_name, 0))
+        - int(baseline_counts.get(counter_name, 0))
         for counter_name in counter_names
     }
 
@@ -161,22 +160,20 @@ def _scan_metric_buckets(
     buff_load_loop_scan_metrics: dict[str, dict[str, int]] | None,
 ) -> dict[str, dict[str, int]]:
     source = buff_load_loop_scan_metrics or {}
-    baseline_metrics = dict(source.get("baseline", source.get("legacy", {})))
     return {
-        "baseline": baseline_metrics,
-        "legacy": baseline_metrics,
-        "candidate": dict(source.get("candidate", {})),
+        "baseline": dict(source.get("baseline", {})),
+        "new_buff": dict(source.get("new_buff", {})),
     }
 
 
 def _scan_metric_comparisons(
-    legacy_metrics: dict[str, int],
-    candidate_metrics: dict[str, int],
+    baseline_metrics: dict[str, int],
+    new_buff_metrics: dict[str, int],
 ) -> dict[str, int]:
-    metric_names = sorted(set(legacy_metrics) | set(candidate_metrics))
+    metric_names = sorted(set(baseline_metrics) | set(new_buff_metrics))
     return {
-        metric_name: int(candidate_metrics.get(metric_name, 0))
-        - int(legacy_metrics.get(metric_name, 0))
+        metric_name: int(new_buff_metrics.get(metric_name, 0))
+        - int(baseline_metrics.get(metric_name, 0))
         for metric_name in metric_names
     }
 
@@ -210,21 +207,17 @@ def _simulator_runtime_ms(report: dict[str, Any], bucket: str) -> float:
 
 def _report_rebuild_count_buckets(report: dict[str, Any]) -> dict[str, dict[str, int]]:
     buckets = report.get("buff_runtime_rebuild_counts") or {}
-    baseline_counts = dict(buckets.get("baseline", buckets.get("legacy", {})))
     return {
-        "baseline": baseline_counts,
-        "legacy": baseline_counts,
-        "candidate": dict(buckets.get("candidate", {})),
+        "baseline": dict(buckets.get("baseline", {})),
+        "new_buff": dict(buckets.get("new_buff", {})),
     }
 
 
 def _report_scan_metric_buckets(report: dict[str, Any]) -> dict[str, dict[str, int]]:
     buckets = report.get("buff_load_loop_scan_metrics") or {}
-    baseline_metrics = dict(buckets.get("baseline", buckets.get("legacy", {})))
     return {
-        "baseline": baseline_metrics,
-        "legacy": baseline_metrics,
-        "candidate": dict(buckets.get("candidate", {})),
+        "baseline": dict(buckets.get("baseline", {})),
+        "new_buff": dict(buckets.get("new_buff", {})),
     }
 
 
@@ -296,29 +289,25 @@ def _aggregate_scan_metric_prefix(
 
 
 def _build_runtime_relative_delta(
-    legacy_summary: dict[str, Any],
-    candidate_summary: dict[str, Any],
+    baseline_summary: dict[str, Any],
+    new_buff_summary: dict[str, Any],
 ) -> dict[str, Any]:
-    legacy_median = float(legacy_summary["median"])
-    candidate_median = float(candidate_summary["median"])
-    if legacy_median == 0:
+    baseline_median = float(baseline_summary["median"])
+    new_buff_median = float(new_buff_summary["median"])
+    if baseline_median == 0:
         ratio = None
         relative_delta = None
         percent = None
     else:
-        relative_delta = round((candidate_median - legacy_median) / legacy_median, 6)
-        ratio = round(candidate_median / legacy_median, 6)
+        relative_delta = round((new_buff_median - baseline_median) / baseline_median, 6)
+        ratio = round(new_buff_median / baseline_median, 6)
         percent = round(relative_delta * 100, 4)
     return {
         "basis": "simulator_runtime_ms.median",
-        "candidate_minus_legacy_median_ms": round(candidate_median - legacy_median, 4),
-        "candidate_minus_baseline_median_ms": round(candidate_median - legacy_median, 4),
-        "candidate_vs_baseline_median_ratio": ratio,
-        "candidate_vs_baseline_median_relative_delta": relative_delta,
-        "candidate_vs_baseline_median_percent": percent,
-        "candidate_vs_legacy_median_ratio": ratio,
-        "candidate_vs_legacy_median_relative_delta": relative_delta,
-        "candidate_vs_legacy_median_percent": percent,
+        "new_buff_minus_baseline_median_ms": round(new_buff_median - baseline_median, 4),
+        "new_buff_vs_baseline_median_ratio": ratio,
+        "new_buff_vs_baseline_median_relative_delta": relative_delta,
+        "new_buff_vs_baseline_median_percent": percent,
     }
 
 
@@ -354,8 +343,8 @@ def _build_threshold_verdict(
     reasons: list[str] = []
     candidate_plan_mismatch_count = mismatch_counts["candidate_plan_mismatch_count"]
     mismatch_max = max(
-        float(candidate_plan_mismatch_count["legacy"]["max"]),
-        float(candidate_plan_mismatch_count["candidate"]["max"]),
+        float(candidate_plan_mismatch_count["baseline"]["max"]),
+        float(candidate_plan_mismatch_count["new_buff"]["max"]),
     )
     if mismatch_max > 0:
         return {
@@ -372,7 +361,7 @@ def _build_threshold_verdict(
         }
 
     aggregate = candidate_plan_metrics.get("aggregate", {})
-    if not aggregate.get("legacy") or not aggregate.get("candidate"):
+    if not aggregate.get("baseline") or not aggregate.get("new_buff"):
         return {
             "status": "blocked",
             "reasons": ["candidate-plan metrics are missing from one or both runtime buckets"],
@@ -388,13 +377,12 @@ def _build_threshold_verdict(
         }
 
     median_relative_delta = relative_delta.get(
-        "candidate_vs_baseline_median_relative_delta",
-        relative_delta["candidate_vs_legacy_median_relative_delta"],
+        "new_buff_vs_baseline_median_relative_delta",
     )
     if median_relative_delta is None:
         return {
             "status": "blocked",
-            "reasons": ["legacy median simulator runtime is zero"],
+            "reasons": ["baseline median simulator runtime is zero"],
         }
 
     if median_relative_delta <= BENCHMARK_ELIGIBLE_MEDIAN_RELATIVE_DELTA:
@@ -423,9 +411,11 @@ def build_repeat_runtime_benchmark_summary(
         raise ValueError("repeat benchmark summary requires at least one report")
 
     first_report = reports[0]
-    legacy_simulator_runtime_ms = [_simulator_runtime_ms(report, "legacy") for report in reports]
-    candidate_simulator_runtime_ms = [
-        _simulator_runtime_ms(report, "candidate") for report in reports
+    baseline_simulator_runtime_ms = [
+        _simulator_runtime_ms(report, "baseline") for report in reports
+    ]
+    new_buff_simulator_runtime_ms = [
+        _simulator_runtime_ms(report, "new_buff") for report in reports
     ]
     rebuild_count_samples = (
         [_report_rebuild_count_buckets(report) for report in reports]
@@ -439,13 +429,12 @@ def build_repeat_runtime_benchmark_summary(
     )
     runtime_selection = dict(first_report.get("runtime_selection", RUNTIME_LABEL_CONTRACT))
     simulator_runtime_summary = {
-        "baseline": _summary_with_samples(legacy_simulator_runtime_ms),
-        "legacy": _summary_with_samples(legacy_simulator_runtime_ms),
-        "candidate": _summary_with_samples(candidate_simulator_runtime_ms),
+        "baseline": _summary_with_samples(baseline_simulator_runtime_ms),
+        "new_buff": _summary_with_samples(new_buff_simulator_runtime_ms),
     }
     relative_delta = _build_runtime_relative_delta(
         simulator_runtime_summary["baseline"],
-        simulator_runtime_summary["candidate"],
+        simulator_runtime_summary["new_buff"],
     )
     candidate_plan_metrics = {
         "included": include_rebuild_counts,
@@ -455,13 +444,8 @@ def build_repeat_runtime_benchmark_summary(
                 if include_rebuild_counts
                 else {}
             ),
-            "legacy": (
-                _aggregate_scan_metric_prefix(scan_metric_samples, "legacy", "candidate_plan")
-                if include_rebuild_counts
-                else {}
-            ),
-            "candidate": (
-                _aggregate_scan_metric_prefix(scan_metric_samples, "candidate", "candidate_plan")
+            "new_buff": (
+                _aggregate_scan_metric_prefix(scan_metric_samples, "new_buff", "candidate_plan")
                 if include_rebuild_counts
                 else {}
             ),
@@ -479,19 +463,10 @@ def build_repeat_runtime_benchmark_summary(
                 if include_rebuild_counts
                 else _summary_with_samples([])
             ),
-            "legacy": (
+            "new_buff": (
                 _aggregate_scan_metric_value(
                     scan_metric_samples,
-                    "legacy",
-                    "candidate_plan_mismatch_count",
-                )
-                if include_rebuild_counts
-                else _summary_with_samples([])
-            ),
-            "candidate": (
-                _aggregate_scan_metric_value(
-                    scan_metric_samples,
-                    "candidate",
+                    "new_buff",
                     "candidate_plan_mismatch_count",
                 )
                 if include_rebuild_counts
@@ -506,9 +481,8 @@ def build_repeat_runtime_benchmark_summary(
             "sample_index": index,
             "total_runtime_ms": dict(report["total_runtime_ms"]),
             "simulator_runtime_ms": {
-                "baseline": legacy_simulator_runtime_ms[index - 1],
-                "legacy": legacy_simulator_runtime_ms[index - 1],
-                "candidate": candidate_simulator_runtime_ms[index - 1],
+                "baseline": baseline_simulator_runtime_ms[index - 1],
+                "new_buff": new_buff_simulator_runtime_ms[index - 1],
             },
             "rebuild_count_buckets": (
                 rebuild_count_samples[index - 1] if include_rebuild_counts else None
@@ -526,14 +500,13 @@ def build_repeat_runtime_benchmark_summary(
         "sample_count": len(reports),
         "repeat_samples": len(reports),
         "runtime_labels": {
-            "baseline": first_report.get("baseline_runtime", first_report["legacy_runtime"]),
-            "legacy": first_report["legacy_runtime"],
-            "candidate": first_report["candidate_runtime"],
+            "baseline": first_report["baseline_runtime"],
+            "new_buff": first_report["new_buff_runtime"],
         },
         "runtime_selection": runtime_selection,
         "opt_in_flag_status": {
-            "candidate_use_indexed_buff_load_loop": bool(
-                runtime_selection.get("candidate_use_indexed_buff_load_loop", False)
+            "new_buff_use_indexed_buff_load_loop": bool(
+                runtime_selection.get("new_buff_use_indexed_buff_load_loop", False)
             ),
             "default_off": bool(runtime_selection.get("default_off", True)),
             "default_indexed_execution": runtime_selection.get(
@@ -548,8 +521,7 @@ def build_repeat_runtime_benchmark_summary(
             "samples": rebuild_count_samples,
             "aggregate": {
                 "baseline": _aggregate_rebuild_count_bucket(rebuild_count_samples, "baseline"),
-                "legacy": _aggregate_rebuild_count_bucket(rebuild_count_samples, "legacy"),
-                "candidate": _aggregate_rebuild_count_bucket(rebuild_count_samples, "candidate"),
+                "new_buff": _aggregate_rebuild_count_bucket(rebuild_count_samples, "new_buff"),
             },
         },
         "future_threshold_use": {
@@ -589,8 +561,7 @@ def build_repeat_runtime_benchmark_summary(
             "samples": scan_metric_samples,
             "aggregate": {
                 "baseline": _aggregate_scan_metric_bucket(scan_metric_samples, "baseline"),
-                "legacy": _aggregate_scan_metric_bucket(scan_metric_samples, "legacy"),
-                "candidate": _aggregate_scan_metric_bucket(scan_metric_samples, "candidate"),
+                "new_buff": _aggregate_scan_metric_bucket(scan_metric_samples, "new_buff"),
             },
         }
     return summary
@@ -601,65 +572,56 @@ def build_runtime_benchmark_report(
     team: str,
     apl: str,
     stop_tick: int,
-    legacy_snapshot: RuntimeBenchmarkSnapshot,
-    candidate_snapshot: RuntimeBenchmarkSnapshot,
+    baseline_snapshot: RuntimeBenchmarkSnapshot,
+    new_buff_snapshot: RuntimeBenchmarkSnapshot,
     include_rebuild_counts: bool = False,
-    candidate_use_indexed_buff_load_loop: bool = False,
+    new_buff_use_indexed_buff_load_loop: bool = False,
     buff_runtime_rebuild_counts: dict[str, dict[str, int]] | None = None,
     buff_load_loop_scan_metrics: dict[str, dict[str, int]] | None = None,
 ) -> dict[str, Any]:
     total_runtime_delta = round(
-        candidate_snapshot.total_runtime_ms - legacy_snapshot.total_runtime_ms,
+        new_buff_snapshot.total_runtime_ms - baseline_snapshot.total_runtime_ms,
         4,
     )
     faster_runtime = "tie"
-    if legacy_snapshot.total_runtime_ms < candidate_snapshot.total_runtime_ms:
-        faster_runtime = legacy_snapshot.runtime_label
-    elif candidate_snapshot.total_runtime_ms < legacy_snapshot.total_runtime_ms:
-        faster_runtime = candidate_snapshot.runtime_label
+    if baseline_snapshot.total_runtime_ms < new_buff_snapshot.total_runtime_ms:
+        faster_runtime = baseline_snapshot.runtime_label
+    elif new_buff_snapshot.total_runtime_ms < baseline_snapshot.total_runtime_ms:
+        faster_runtime = new_buff_snapshot.runtime_label
 
     speedup_ratio = 1.0
-    if legacy_snapshot.total_runtime_ms != 0:
+    if baseline_snapshot.total_runtime_ms != 0:
         speedup_ratio = round(
-            candidate_snapshot.total_runtime_ms / legacy_snapshot.total_runtime_ms,
+            new_buff_snapshot.total_runtime_ms / baseline_snapshot.total_runtime_ms,
             4,
         )
 
     comparisons: dict[str, Any] = {
         "total_runtime_ms": total_runtime_delta,
         "hotspots": _hotspot_comparisons(
-            legacy_snapshot.hotspots,
-            candidate_snapshot.hotspots,
+            baseline_snapshot.hotspots,
+            new_buff_snapshot.hotspots,
         ),
         "faster_runtime": faster_runtime,
-        "candidate_vs_baseline_ratio": speedup_ratio,
-        "candidate_vs_legacy_ratio": speedup_ratio,
+        "new_buff_vs_baseline_ratio": speedup_ratio,
     }
-    baseline_label = legacy_snapshot.runtime_label
+    baseline_label = baseline_snapshot.runtime_label
     report: dict[str, Any] = {
         "team": team,
         "apl": apl,
         "stop_tick": stop_tick,
         "baseline_runtime": baseline_label,
-        "legacy_runtime": baseline_label,
-        "candidate_runtime": candidate_snapshot.runtime_label,
+        "new_buff_runtime": new_buff_snapshot.runtime_label,
         "runtime_selection": _runtime_selection_contract(
-            candidate_use_indexed_buff_load_loop=candidate_use_indexed_buff_load_loop,
+            new_buff_use_indexed_buff_load_loop=new_buff_use_indexed_buff_load_loop,
         ),
         "total_runtime_ms": {
-            "baseline": legacy_snapshot.total_runtime_ms,
-            "legacy": legacy_snapshot.total_runtime_ms,
-            "candidate": candidate_snapshot.total_runtime_ms,
+            "baseline": baseline_snapshot.total_runtime_ms,
+            "new_buff": new_buff_snapshot.total_runtime_ms,
         },
         "hotspots": {
-            "baseline": _sorted_hotspots(legacy_snapshot.hotspots),
-            "legacy": _sorted_hotspots(legacy_snapshot.hotspots),
-            "candidate": _sorted_hotspots(candidate_snapshot.hotspots),
-        },
-        "report_compatibility": {
-            "legacy_runtime": "alias for baseline_runtime",
-            "legacy": "alias bucket for baseline",
-            "candidate_vs_legacy_ratio": "alias for candidate_vs_baseline_ratio",
+            "baseline": _sorted_hotspots(baseline_snapshot.hotspots),
+            "new_buff": _sorted_hotspots(new_buff_snapshot.hotspots),
         },
         "comparisons": comparisons,
     }
@@ -667,28 +629,26 @@ def build_runtime_benchmark_report(
         count_source = buff_runtime_rebuild_counts
         if count_source is None:
             count_source = {
-                "baseline": legacy_snapshot.rebuild_counts or {},
-                "legacy": legacy_snapshot.rebuild_counts or {},
-                "candidate": candidate_snapshot.rebuild_counts or {},
+                "baseline": baseline_snapshot.rebuild_counts or {},
+                "new_buff": new_buff_snapshot.rebuild_counts or {},
             }
         rebuild_counts = _rebuild_count_buckets(count_source)
         report["buff_runtime_rebuild_counts"] = rebuild_counts
         comparisons["buff_runtime_rebuild_counts"] = _rebuild_count_comparisons(
-            rebuild_counts["legacy"],
-            rebuild_counts["candidate"],
+            rebuild_counts["baseline"],
+            rebuild_counts["new_buff"],
         )
         scan_source = buff_load_loop_scan_metrics
         if scan_source is None:
             scan_source = {
-                "baseline": legacy_snapshot.buff_load_loop_scan_metrics or {},
-                "legacy": legacy_snapshot.buff_load_loop_scan_metrics or {},
-                "candidate": candidate_snapshot.buff_load_loop_scan_metrics or {},
+                "baseline": baseline_snapshot.buff_load_loop_scan_metrics or {},
+                "new_buff": new_buff_snapshot.buff_load_loop_scan_metrics or {},
             }
         scan_metrics = _scan_metric_buckets(scan_source)
         report["buff_load_loop_scan_metrics"] = scan_metrics
         comparisons["buff_load_loop_scan_metrics"] = _scan_metric_comparisons(
-            scan_metrics["legacy"],
-            scan_metrics["candidate"],
+            scan_metrics["baseline"],
+            scan_metrics["new_buff"],
         )
     return report
 
@@ -699,11 +659,10 @@ def run_runtime_benchmark(
     apl: str | None,
     stop_tick: int,
     baseline_runtime: str | None = None,
-    candidate_runtime: str = "candidate-current",
-    legacy_runtime: str | None = None,
+    new_buff_runtime: str = "new-buff-current",
     cleanup: bool = True,
     include_rebuild_counts: bool = False,
-    candidate_use_indexed_buff_load_loop: bool = False,
+    new_buff_use_indexed_buff_load_loop: bool = False,
 ) -> dict[str, Any]:
     os.chdir(PROJECT_ROOT)
     base_cfg = _prepare_common_cfg(team, apl)
@@ -711,13 +670,12 @@ def run_runtime_benchmark(
     snapshots: list[RuntimeBenchmarkSnapshot] = []
     baseline_label = _resolve_baseline_runtime_label(
         baseline_runtime=baseline_runtime,
-        legacy_runtime=legacy_runtime,
         default="default-current",
     )
 
-    runtime_flags = (False, candidate_use_indexed_buff_load_loop)
+    runtime_flags = (False, new_buff_use_indexed_buff_load_loop)
     for runtime_label, use_indexed_buff_load_loop in zip(
-        (baseline_label, candidate_runtime),
+        (baseline_label, new_buff_runtime),
         runtime_flags,
         strict=True,
     ):
@@ -758,10 +716,10 @@ def run_runtime_benchmark(
         team=team,
         apl=apl_path,
         stop_tick=stop_tick,
-        legacy_snapshot=snapshots[0],
-        candidate_snapshot=snapshots[1],
+        baseline_snapshot=snapshots[0],
+        new_buff_snapshot=snapshots[1],
         include_rebuild_counts=include_rebuild_counts,
-        candidate_use_indexed_buff_load_loop=candidate_use_indexed_buff_load_loop,
+        new_buff_use_indexed_buff_load_loop=new_buff_use_indexed_buff_load_loop,
     )
 
 
@@ -772,11 +730,10 @@ def run_repeated_runtime_benchmark(
     stop_tick: int,
     repeat_samples: int,
     baseline_runtime: str | None = None,
-    candidate_runtime: str = "candidate-current",
-    legacy_runtime: str | None = None,
+    new_buff_runtime: str = "new-buff-current",
     cleanup: bool = True,
     include_rebuild_counts: bool = False,
-    candidate_use_indexed_buff_load_loop: bool = False,
+    new_buff_use_indexed_buff_load_loop: bool = False,
 ) -> dict[str, Any]:
     if repeat_samples < 1:
         raise ValueError("repeat_samples must be at least 1")
@@ -786,11 +743,10 @@ def run_repeated_runtime_benchmark(
             apl=apl,
             stop_tick=stop_tick,
             baseline_runtime=baseline_runtime,
-            legacy_runtime=legacy_runtime,
-            candidate_runtime=candidate_runtime,
+            new_buff_runtime=new_buff_runtime,
             cleanup=cleanup,
             include_rebuild_counts=include_rebuild_counts,
-            candidate_use_indexed_buff_load_loop=candidate_use_indexed_buff_load_loop,
+            new_buff_use_indexed_buff_load_loop=new_buff_use_indexed_buff_load_loop,
         )
         for _ in range(repeat_samples)
     ]
@@ -841,13 +797,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="First/default current run label to record in the report; this does not select a runtime.",
     )
     parser.add_argument(
-        "--legacy-runtime",
-        dest="baseline_runtime",
-        help="Compatibility alias for --baseline-runtime; report label only, not old runtime selection.",
-    )
-    parser.add_argument(
-        "--candidate-runtime",
-        default="candidate-current",
+        "--new-buff-runtime",
+        default="new-buff-current",
         help="Second run label to record in the report; this does not select a runtime.",
     )
     parser.add_argument(
@@ -879,10 +830,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Include Buff runtime rebuild count and BuffLoadLoop scan metric buckets in the report.",
     )
     parser.add_argument(
-        "--candidate-use-indexed-buff-load-loop",
+        "--new-buff-use-indexed-buff-load-loop",
         action="store_true",
         help=(
-            "Explicitly request indexed BuffLoadLoop for the candidate run only; "
+            "Explicitly request indexed BuffLoadLoop for the new Buff run only; "
             "omitting this keeps both runs on the default current path."
         ),
     )
@@ -899,7 +850,7 @@ def _format_human_report(report: dict[str, Any]) -> str:
         (
             "total_runtime_ms: "
             f"{report['baseline_runtime']}={report['total_runtime_ms']['baseline']}, "
-            f"{report['candidate_runtime']}={report['total_runtime_ms']['candidate']}"
+            f"{report['new_buff_runtime']}={report['total_runtime_ms']['new_buff']}"
         ),
         f"faster_runtime: {report['comparisons']['faster_runtime']}",
         "hotspot_deltas: "
@@ -952,8 +903,8 @@ def _format_repeat_summary(summary: dict[str, Any]) -> str:
             "simulator_runtime_ms: "
             f"{labels['baseline']} median={runtimes['baseline']['median']} "
             f"min={runtimes['baseline']['min']} max={runtimes['baseline']['max']}; "
-            f"{labels['candidate']} median={runtimes['candidate']['median']} "
-            f"min={runtimes['candidate']['min']} max={runtimes['candidate']['max']}"
+            f"{labels['new_buff']} median={runtimes['new_buff']['median']} "
+            f"min={runtimes['new_buff']['min']} max={runtimes['new_buff']['max']}"
         ),
     ]
     rebuild_counts = summary.get("rebuild_count_buckets", {})
@@ -990,11 +941,11 @@ def main(argv: list[str] | None = None) -> int:
             apl=args.apl,
             stop_tick=args.stop_tick,
             baseline_runtime=args.baseline_runtime,
-            candidate_runtime=args.candidate_runtime,
+            new_buff_runtime=args.new_buff_runtime,
             repeat_samples=args.repeat_samples,
             cleanup=not args.keep_artifacts,
             include_rebuild_counts=args.include_rebuild_counts,
-            candidate_use_indexed_buff_load_loop=args.candidate_use_indexed_buff_load_loop,
+            new_buff_use_indexed_buff_load_loop=args.new_buff_use_indexed_buff_load_loop,
         )
         if args.summary_json:
             write_repeat_runtime_benchmark_summary(args.summary_json, summary)
@@ -1009,10 +960,10 @@ def main(argv: list[str] | None = None) -> int:
         apl=args.apl,
         stop_tick=args.stop_tick,
         baseline_runtime=args.baseline_runtime,
-        candidate_runtime=args.candidate_runtime,
+        new_buff_runtime=args.new_buff_runtime,
         cleanup=not args.keep_artifacts,
         include_rebuild_counts=args.include_rebuild_counts,
-        candidate_use_indexed_buff_load_loop=args.candidate_use_indexed_buff_load_loop,
+        new_buff_use_indexed_buff_load_loop=args.new_buff_use_indexed_buff_load_loop,
     )
     if args.json:
         print(json.dumps(report, ensure_ascii=False, sort_keys=True, indent=2))

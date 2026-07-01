@@ -1,11 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, MutableSequence
-from collections.abc import Iterator
+from collections.abc import Callable, Iterable, Iterator, MutableSequence
 from typing import Any
-
-
-_EVENT_LIST_MIGRATION_OWNER_ATTR = "_planned_event_queue_event_list_migration_owner"
 
 
 class PlannedEventQueue:
@@ -33,6 +29,36 @@ class PlannedEventQueue:
     def snapshot(self) -> list[Any]:
         return list(self._events())
 
+    def next_due_tick(
+        self,
+        *,
+        after_tick: int,
+        execute_tick_resolver: Callable[[Any], int | None] | None = None,
+    ) -> int | None:
+        """Return the next event due tick after after_tick, preserving owner access."""
+        next_tick: int | None = None
+        for event in self._events():
+            execute_tick = (
+                execute_tick_resolver(event)
+                if execute_tick_resolver is not None
+                else self._default_execute_tick(event)
+            )
+            if execute_tick is None:
+                return after_tick + 1
+            if execute_tick <= after_tick:
+                return after_tick + 1
+            if next_tick is None or execute_tick < next_tick:
+                next_tick = execute_tick
+        return next_tick
+
+    @staticmethod
+    def _default_execute_tick(event: Any) -> int | None:
+        for attr_name in ("execute_tick", "preload_tick"):
+            execute_tick = getattr(event, attr_name, None)
+            if execute_tick is not None:
+                return int(execute_tick)
+        return None
+
     def __iter__(self) -> Iterator[Any]:
         return iter(self.snapshot())
 
@@ -53,28 +79,9 @@ class PlannedEventQueue:
 
 
 def ensure_planned_event_queue(schedule_data: Any) -> PlannedEventQueue:
-    """Return an existing planned queue owner for real or opted-in migration data."""
+    """Return the planned queue owner exposed by ScheduleData."""
     queue = getattr(schedule_data, "planned_event_queue", None)
     if queue is not None:
         return queue
 
-    queue = getattr(schedule_data, _EVENT_LIST_MIGRATION_OWNER_ATTR, None)
-    if queue is not None:
-        return queue
-
-    raise AttributeError(
-        "schedule_data must expose planned_event_queue or explicit "
-        "event-list migration owner before planned queue access"
-    )
-
-
-def ensure_event_list_migration_planned_event_queue(schedule_data: Any) -> PlannedEventQueue:
-    """Install the single event-list-backed owner for migration/test data."""
-    fallback_queue = getattr(schedule_data, _EVENT_LIST_MIGRATION_OWNER_ATTR, None)
-    if fallback_queue is None:
-        fallback_queue = PlannedEventQueue(
-            get_events=lambda: schedule_data.event_list,
-            set_events=lambda events: setattr(schedule_data, "event_list", events),
-        )
-        setattr(schedule_data, _EVENT_LIST_MIGRATION_OWNER_ATTR, fallback_queue)
-    return fallback_queue
+    raise AttributeError("schedule_data must expose planned_event_queue")

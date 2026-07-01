@@ -22,6 +22,7 @@ from zsim.sim_progress.Buff.BuffXLogic.AliceAdditionalAbilityApBonus import (
     AliceAdditionalAbilityApBonusRecord,
 )
 from zsim.sim_progress.Buff.BuffXLogic._buff_record_base_class import BuffRecordBaseClass
+from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -237,6 +238,12 @@ def _make_preparation_context_fixture() -> SimpleNamespace:
         global_stats=SimpleNamespace(DYNAMIC_BUFF_DICT=active_buff_view),
         preload=SimpleNamespace(preload_data=preload_data),
     )
+    sim_instance.buff_runtime_state = BuffRuntimeState(
+        template_registry=sim_instance.load_data.exist_buff_dict,
+        pending_queue={character.NAME: []},
+        active_store=active_buff_view,
+        enemy_mirror=[],
+    )
     return SimpleNamespace(
         character=character,
         enemy=enemy,
@@ -268,6 +275,12 @@ def _make_alice_preparation_fixture() -> SimpleNamespace:
         global_stats=SimpleNamespace(DYNAMIC_BUFF_DICT=active_buff_view),
         preload=SimpleNamespace(preload_data=preload_data),
     )
+    sim_instance.buff_runtime_state = BuffRuntimeState(
+        template_registry=exist_buff_dict,
+        pending_queue={character.NAME: []},
+        active_store=active_buff_view,
+        enemy_mirror=[],
+    )
     return SimpleNamespace(
         character=character,
         enemy=enemy,
@@ -293,7 +306,6 @@ def _patch_legacy_preparation_helpers_to_fail(monkeypatch: pytest.MonkeyPatch) -
         "find_equipper",
         "find_char_from_CID",
         "find_char_from_name",
-        "find_exist_buff_dict",
         "find_enemy",
         "find_stack",
     ):
@@ -373,28 +385,19 @@ def test_check_preparation_context_hydrates_char_enemy_and_action_stack(
     assert record.action_stack is fixture.action_stack
 
 
-def test_check_preparation_without_context_keeps_legacy_lookup_path(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_check_preparation_without_context_is_deleted() -> None:
     record = BuffRecordBaseClass()
     buff_0 = SimpleNamespace(history=SimpleNamespace(record=record))
     buff_instance = SimpleNamespace(sim_instance=object())
-    legacy_character = SimpleNamespace(NAME="旧路径安比", CID=1011)
 
-    def fake_find_char_from_name(NAME: str, sim_instance: object) -> object:
-        assert NAME == legacy_character.NAME
-        assert sim_instance is buff_instance.sim_instance
-        return legacy_character
+    with pytest.raises(ValueError, match="PreparationContext"):
+        judge_tools.check_preparation(
+            buff_0=buff_0,
+            buff_instance=buff_instance,
+            char_NAME="安比",
+        )
 
-    monkeypatch.setattr(judge_tools, "find_char_from_name", fake_find_char_from_name)
-
-    judge_tools.check_preparation(
-        buff_0=buff_0,
-        buff_instance=buff_instance,
-        char_NAME=legacy_character.NAME,
-    )
-
-    assert record.char is legacy_character
+    assert record.char is None
 
 
 def test_woodpecker_na_get_prepared_uses_preparation_context_for_core_reads(

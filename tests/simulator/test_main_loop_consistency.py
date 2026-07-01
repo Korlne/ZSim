@@ -106,7 +106,7 @@ def _build_external_damage_report(
 
 
 def test_build_consistency_report_keeps_required_json_fields():
-    legacy_snapshot = RuntimeSnapshot(
+    baseline_snapshot = RuntimeSnapshot(
         runtime_label="default-current",
         session_id="1",
         total_damage=123.4,
@@ -124,8 +124,8 @@ def test_build_consistency_report_keeps_required_json_fields():
             ]
         },
     )
-    candidate_snapshot = RuntimeSnapshot(
-        runtime_label="candidate",
+    new_buff_snapshot = RuntimeSnapshot(
+        runtime_label="new-buff",
         session_id="2",
         total_damage=130.0,
         event_counts={
@@ -148,28 +148,28 @@ def test_build_consistency_report_keeps_required_json_fields():
         team="team-a",
         apl="./zsim/data/APLData/example.toml",
         stop_tick=120,
-        legacy_snapshot=legacy_snapshot,
-        candidate_snapshot=candidate_snapshot,
+        baseline_snapshot=baseline_snapshot,
+        new_buff_snapshot=new_buff_snapshot,
     )
 
     assert report["team"] == "team-a"
     assert report["apl"] == "./zsim/data/APLData/example.toml"
     assert report["runtime_selection"]["mode"] == "label-only-current-runtime"
     assert report["baseline_runtime"] == "default-current"
-    assert report["legacy_runtime"] == "default-current"
-    assert report["report_compatibility"]["legacy_runtime"] == "alias for baseline_runtime"
+    assert report["new_buff_runtime"] == "new-buff"
+    assert "legacy_runtime" not in report
+    assert "candidate_runtime" not in report
+    assert "report_compatibility" not in report
     assert report["total_damage"] == {
         "baseline": 123.4,
-        "legacy": 123.4,
-        "candidate": 130.0,
+        "new_buff": 130.0,
     }
     assert report["event_counts"]["baseline"]["by_skill_tag"] == {"alpha": 1, "beta": 1}
-    assert report["event_counts"]["legacy"]["by_skill_tag"] == {"alpha": 1, "beta": 1}
-    assert report["buff_timeline"]["candidate"]["alpha"][1]["Task"] == "buff-b"
+    assert report["buff_timeline"]["new_buff"]["alpha"][1]["Task"] == "buff-b"
     assert report["differences"]["total_damage"] == 6.6
     assert report["differences"]["event_counts"]["total"] == 1
     assert report["differences"]["event_counts"]["disorder_total"] == 1
-    assert report["differences"]["buff_timeline"]["candidate_only_count"] == 1
+    assert report["differences"]["buff_timeline"]["new_buff_only_count"] == 1
     assert report["differences"]["matches"] is False
 
 
@@ -205,26 +205,16 @@ def test_build_parser_accepts_required_cli_flags():
             "./zsim/data/APLData/example.toml",
             "--baseline-runtime",
             "default-a",
-            "--candidate-runtime",
-            "candidate-b",
+            "--new-buff-runtime",
+            "new-buff-b",
             "--json",
-        ]
-    )
-    compat_args = parser.parse_args(
-        [
-            "--team",
-            "team-a",
-            "--legacy-runtime",
-            "legacy-a",
-            "--candidate-runtime",
-            "candidate-b",
         ]
     )
     flagged_args = parser.parse_args(
         [
             "--team",
             "team-a",
-            "--candidate-use-indexed-buff-load-loop",
+            "--new-buff-use-indexed-buff-load-loop",
         ]
     )
     multi_team_args = parser.parse_args(
@@ -238,27 +228,33 @@ def test_build_parser_accepts_required_cli_flags():
             "600",
             "--summary-json",
             "scripts/ralph/benchmarks/summary.json",
-            "--candidate-use-indexed-buff-load-loop",
+            "--new-buff-use-indexed-buff-load-loop",
         ]
     )
+    with pytest.raises(SystemExit):
+        parser.parse_args(["--team", "team-a", "--legacy-runtime", "legacy-a"])
+    with pytest.raises(SystemExit):
+        parser.parse_args(["--team", "team-a", "--candidate-runtime", "candidate-b"])
 
     assert args.team == "team-a"
     assert args.apl == "./zsim/data/APLData/example.toml"
     assert args.baseline_runtime == "default-a"
-    assert args.candidate_runtime == "candidate-b"
+    assert args.new_buff_runtime == "new-buff-b"
     assert args.json is True
-    assert compat_args.baseline_runtime == "legacy-a"
     assert not hasattr(args, "legacy_runtime")
-    assert args.candidate_use_indexed_buff_load_loop is False
-    assert flagged_args.candidate_use_indexed_buff_load_loop is True
+    assert not hasattr(args, "candidate_runtime")
+    assert args.new_buff_use_indexed_buff_load_loop is False
+    assert flagged_args.new_buff_use_indexed_buff_load_loop is True
     assert multi_team_args.teams == ["team-a", "team-b", "team-c"]
     assert multi_team_args.stop_ticks == [120, 600]
     assert multi_team_args.summary_json == "scripts/ralph/benchmarks/summary.json"
-    assert multi_team_args.candidate_use_indexed_buff_load_loop is True
+    assert multi_team_args.new_buff_use_indexed_buff_load_loop is True
     help_text = parser.format_help()
     assert "--baseline-runtime" in help_text
-    assert "Compatibility alias for --baseline-runtime" in help_text
-    assert "not old runtime selection" in help_text
+    assert "--new-buff-runtime" in help_text
+    assert "--legacy-runtime" not in help_text
+    assert "--candidate-runtime" not in help_text
+    assert "Compatibility alias" not in help_text
 
 
 def test_external_golden_parser_accepts_required_cli_flags():
@@ -1097,7 +1093,7 @@ def test_run_main_loop_consistency_uses_runtime_labels_and_cleanup(monkeypatch: 
             buff_timeline={},
         ),
         "102": RuntimeSnapshot(
-            runtime_label="candidate-label",
+            runtime_label="new-buff-label",
             session_id="102",
             total_damage=101.0,
             event_counts={
@@ -1177,7 +1173,7 @@ def test_run_main_loop_consistency_uses_runtime_labels_and_cleanup(monkeypatch: 
         apl="./override.toml",
         stop_tick=77,
         baseline_runtime="default-label",
-        candidate_runtime="candidate-label",
+        new_buff_runtime="new-buff-label",
         cleanup=True,
     )
 
@@ -1186,8 +1182,7 @@ def test_run_main_loop_consistency_uses_runtime_labels_and_cleanup(monkeypatch: 
     assert all(stop_tick == 77 for _, stop_tick, _ in submitted_payloads)
     assert [flag for _, _, flag in submitted_payloads] == [False, False]
     assert report["baseline_runtime"] == "default-label"
-    assert report["legacy_runtime"] == "default-label"
-    assert report["candidate_runtime"] == "candidate-label"
+    assert report["new_buff_runtime"] == "new-buff-label"
     assert report["runtime_selection"]["mode"] == "label-only-current-runtime"
     assert report["apl"] == "./override.toml"
     assert cleaned_sessions == ["101", "102"]
@@ -1212,7 +1207,7 @@ def test_run_main_loop_consistency_candidate_opt_in_only_flags_candidate(
             buff_timeline={},
         ),
         "202": RuntimeSnapshot(
-            runtime_label="candidate-label",
+            runtime_label="new-buff-label",
             session_id="202",
             total_damage=100.0,
             event_counts={
@@ -1279,19 +1274,19 @@ def test_run_main_loop_consistency_candidate_opt_in_only_flags_candidate(
         apl=None,
         stop_tick=77,
         baseline_runtime="default-label",
-        candidate_runtime="candidate-label",
-        candidate_use_indexed_buff_load_loop=True,
+        new_buff_runtime="new-buff-label",
+        new_buff_use_indexed_buff_load_loop=True,
     )
 
     assert submitted_flags == [False, True]
-    assert report["runtime_selection"]["mode"] == "candidate-explicit-opt-in-indexed-buff-load-loop"
+    assert report["runtime_selection"]["mode"] == "new-buff-explicit-opt-in-indexed-buff-load-loop"
     assert report["runtime_selection"]["default_off"] is True
 
 
 def _matching_opt_in_report(team: str, stop_tick: int = 120) -> dict[str, Any]:
-    legacy_snapshot = RuntimeSnapshot(
+    baseline_snapshot = RuntimeSnapshot(
         runtime_label="default-current-path",
-        session_id=f"{team}-legacy",
+        session_id=f"{team}-baseline",
         total_damage=123.4,
         event_counts={
             "total": 2,
@@ -1305,27 +1300,27 @@ def _matching_opt_in_report(team: str, stop_tick: int = 120) -> dict[str, Any]:
             "alpha": [{"Task": "buff-a", "Start": 1, "Finish": 2, "Value": 1.0}]
         },
     )
-    candidate_snapshot = RuntimeSnapshot(
+    new_buff_snapshot = RuntimeSnapshot(
         runtime_label="opt-in-indexed-path",
-        session_id=f"{team}-candidate",
+        session_id=f"{team}-new-buff",
         total_damage=123.4,
-        event_counts=dict(legacy_snapshot.event_counts),
-        buff_timeline=dict(legacy_snapshot.buff_timeline),
+        event_counts=dict(baseline_snapshot.event_counts),
+        buff_timeline=dict(baseline_snapshot.buff_timeline),
     )
     return build_consistency_report(
         team=team,
         apl=f"./{team}.toml",
         stop_tick=stop_tick,
-        legacy_snapshot=legacy_snapshot,
-        candidate_snapshot=candidate_snapshot,
-        candidate_use_indexed_buff_load_loop=True,
+        baseline_snapshot=baseline_snapshot,
+        new_buff_snapshot=new_buff_snapshot,
+        new_buff_use_indexed_buff_load_loop=True,
     )
 
 
 def _matching_default_report(team: str, stop_tick: int = 120) -> dict[str, Any]:
-    legacy_snapshot = RuntimeSnapshot(
+    baseline_snapshot = RuntimeSnapshot(
         runtime_label="default-current-path",
-        session_id=f"{team}-legacy",
+        session_id=f"{team}-baseline",
         total_damage=123.4,
         event_counts={
             "total": 2,
@@ -1339,19 +1334,19 @@ def _matching_default_report(team: str, stop_tick: int = 120) -> dict[str, Any]:
             "alpha": [{"Task": "buff-a", "Start": 1, "Finish": 2, "Value": 1.0}]
         },
     )
-    candidate_snapshot = RuntimeSnapshot(
-        runtime_label="candidate-current-path",
-        session_id=f"{team}-candidate",
+    new_buff_snapshot = RuntimeSnapshot(
+        runtime_label="new-buff-current-path",
+        session_id=f"{team}-new-buff",
         total_damage=123.4,
-        event_counts=dict(legacy_snapshot.event_counts),
-        buff_timeline=dict(legacy_snapshot.buff_timeline),
+        event_counts=dict(baseline_snapshot.event_counts),
+        buff_timeline=dict(baseline_snapshot.buff_timeline),
     )
     return build_consistency_report(
         team=team,
         apl=f"./{team}.toml",
         stop_tick=stop_tick,
-        legacy_snapshot=legacy_snapshot,
-        candidate_snapshot=candidate_snapshot,
+        baseline_snapshot=baseline_snapshot,
+        new_buff_snapshot=new_buff_snapshot,
     )
 
 
@@ -1374,18 +1369,18 @@ def test_build_multi_team_consistency_summary_records_parity_fields():
     assert summary["stop_tick_count"] == 1
     assert summary["matrix_row_count"] == 3
     assert summary["minimum_stop_tick_met"] is True
-    assert summary["candidate_use_indexed_buff_load_loop"] is True
+    assert summary["new_buff_use_indexed_buff_load_loop"] is True
     assert summary["default_indexed_execution"] == "blocked"
     assert summary["all_match"] is True
     assert summary["mismatch_count"] == 0
     assert summary["matrix_results"] == summary["team_results"]
     first_result = summary["team_results"][0]
     assert first_result["runtime_labels"] == {
-        "default_path": "default-current-path",
-        "opt_in_indexed_path": "opt-in-indexed-path",
+        "baseline": "default-current-path",
+        "new_buff": "opt-in-indexed-path",
     }
-    assert first_result["candidate_use_indexed_buff_load_loop"] is True
-    assert first_result["opt_in_flag_status"] == "candidate_explicit_opt_in"
+    assert first_result["new_buff_use_indexed_buff_load_loop"] is True
+    assert first_result["opt_in_flag_status"] == "new_buff_explicit_opt_in"
     assert first_result["damage_parity"]["matches"] is True
     assert first_result["event_count_parity"]["matches"] is True
     assert first_result["buff_timeline_parity"]["matches"] is True
@@ -1412,7 +1407,7 @@ def test_build_multi_team_consistency_summary_records_stop_tick_matrix_fields():
     assert summary["matrix_row_count"] == 4
     assert summary["mismatch_count"] == 0
     matrix_keys = [
-        (row["team"], row["stop_tick"], row["candidate_use_indexed_buff_load_loop"])
+        (row["team"], row["stop_tick"], row["new_buff_use_indexed_buff_load_loop"])
         for row in summary["matrix_results"]
     ]
     assert matrix_keys == [
@@ -1424,10 +1419,10 @@ def test_build_multi_team_consistency_summary_records_stop_tick_matrix_fields():
 
     stop_600_result = summary["matrix_results"][1]
     assert stop_600_result["runtime_labels"] == {
-        "default_path": "default-current-path",
-        "opt_in_indexed_path": "opt-in-indexed-path",
+        "baseline": "default-current-path",
+        "new_buff": "opt-in-indexed-path",
     }
-    assert stop_600_result["opt_in_flag_status"] == "candidate_explicit_opt_in"
+    assert stop_600_result["opt_in_flag_status"] == "new_buff_explicit_opt_in"
     assert stop_600_result["damage_parity"]["matches"] is True
     assert stop_600_result["event_count_parity"]["matches"] is True
     assert stop_600_result["buff_timeline_parity"]["matches"] is True
@@ -1451,13 +1446,13 @@ def test_run_multi_team_main_loop_consistency_writes_summary_json(
         teams=["team-a", "team-b", "team-c"],
         stop_tick=120,
         cleanup=True,
-        candidate_use_indexed_buff_load_loop=True,
+        new_buff_use_indexed_buff_load_loop=True,
         output_path=output_path,
     )
 
     assert [call["team"] for call in captured_calls] == ["team-a", "team-b", "team-c"]
     assert [call["stop_tick"] for call in captured_calls] == [120, 120, 120]
-    assert [call["candidate_use_indexed_buff_load_loop"] for call in captured_calls] == [
+    assert [call["new_buff_use_indexed_buff_load_loop"] for call in captured_calls] == [
         True,
         True,
         True,
@@ -1467,7 +1462,7 @@ def test_run_multi_team_main_loop_consistency_writes_summary_json(
         "default-current-path",
         "default-current-path",
     ]
-    assert [call["candidate_runtime"] for call in captured_calls] == [
+    assert [call["new_buff_runtime"] for call in captured_calls] == [
         "opt-in-indexed-path",
         "opt-in-indexed-path",
         "opt-in-indexed-path",
@@ -1477,7 +1472,7 @@ def test_run_multi_team_main_loop_consistency_writes_summary_json(
 
     artifact = json.loads(output_path.read_text(encoding="utf-8"))
     assert artifact["teams"] == ["team-a", "team-b", "team-c"]
-    assert artifact["candidate_use_indexed_buff_load_loop"] is True
+    assert artifact["new_buff_use_indexed_buff_load_loop"] is True
     assert artifact["matrix_row_count"] == 3
     assert artifact["team_results"][0]["damage_parity"]["delta"] == 0.0
 
@@ -1498,7 +1493,7 @@ def test_run_multi_team_main_loop_consistency_accepts_stop_tick_matrix(
         stop_tick=120,
         stop_ticks=[120, 600],
         cleanup=True,
-        candidate_use_indexed_buff_load_loop=True,
+        new_buff_use_indexed_buff_load_loop=True,
     )
 
     assert [(call["team"], call["stop_tick"]) for call in captured_calls] == [
@@ -1510,7 +1505,7 @@ def test_run_multi_team_main_loop_consistency_accepts_stop_tick_matrix(
     assert summary["teams"] == ["team-a", "team-b"]
     assert summary["stop_ticks"] == [120, 600]
     assert summary["matrix_row_count"] == 4
-    assert summary["candidate_use_indexed_buff_load_loop"] is True
+    assert summary["new_buff_use_indexed_buff_load_loop"] is True
 
 
 def test_run_multi_team_main_loop_consistency_defaults_candidate_flag_off(
@@ -1529,18 +1524,18 @@ def test_run_multi_team_main_loop_consistency_defaults_candidate_flag_off(
         stop_tick=120,
         stop_ticks=[120, 600],
         cleanup=True,
-        candidate_use_indexed_buff_load_loop=False,
+        new_buff_use_indexed_buff_load_loop=False,
     )
 
     assert [(call["team"], call["stop_tick"]) for call in captured_calls] == [
         ("team-a", 120),
         ("team-a", 600),
     ]
-    assert [call["candidate_use_indexed_buff_load_loop"] for call in captured_calls] == [
+    assert [call["new_buff_use_indexed_buff_load_loop"] for call in captured_calls] == [
         False,
         False,
     ]
-    assert summary["candidate_use_indexed_buff_load_loop"] is False
+    assert summary["new_buff_use_indexed_buff_load_loop"] is False
     assert summary["default_indexed_execution"] == "blocked"
     assert [
         row["opt_in_flag_status"] for row in summary["matrix_results"]
@@ -1628,20 +1623,19 @@ def test_script_entrypoint_runs_with_json_output(
             "apl": "./fake.toml",
             "stop_tick": 20,
             "baseline_runtime": "default-current",
-            "legacy_runtime": "default-current",
-            "candidate_runtime": "candidate",
-            "total_damage": {"baseline": 1.0, "legacy": 1.0, "candidate": 1.0},
-            "event_counts": {"baseline": {}, "legacy": {}, "candidate": {}},
-            "buff_timeline": {"baseline": {}, "legacy": {}, "candidate": {}},
+            "new_buff_runtime": "new-buff",
+            "total_damage": {"baseline": 1.0, "new_buff": 1.0},
+            "event_counts": {"baseline": {}, "new_buff": {}},
+            "buff_timeline": {"baseline": {}, "new_buff": {}},
             "differences": {
                 "matches": True,
                 "total_damage": 0.0,
                 "event_counts": {},
                 "buff_timeline": {
-                    "legacy_only_count": 0,
-                    "candidate_only_count": 0,
-                    "sample_legacy_only": [],
-                    "sample_candidate_only": [],
+                    "baseline_only_count": 0,
+                    "new_buff_only_count": 0,
+                    "sample_baseline_only": [],
+                    "sample_new_buff_only": [],
                 },
             },
         }

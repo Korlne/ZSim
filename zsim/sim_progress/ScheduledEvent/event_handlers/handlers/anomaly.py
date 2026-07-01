@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from zsim.define import ANOMALY_MAPPING
 from zsim.sim_progress import Report
 from zsim.sim_progress.anomaly_bar import AnomalyBar as AnB
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
@@ -52,7 +53,7 @@ class AnomalyEventHandler(BaseEventHandler):
 
         Report.report_dmg_result(
             tick=tick,
-            skill_tag=event.rename_tag if event.rename else None,
+            skill_tag=event.rename_tag if event.rename else ANOMALY_MAPPING[event.element_type],
             element_type=event.element_type,
             dmg_expect=round(damage_anomaly, 2),
             is_anomaly=True,

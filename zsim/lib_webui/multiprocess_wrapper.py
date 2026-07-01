@@ -10,10 +10,10 @@ if TYPE_CHECKING:
 
 
 def _create_webui_default_runtime_simulator() -> "Simulator":
-    """Create the WebUI worker simulator on the no-flag default runtime path."""
+    """Create the WebUI worker simulator on the indexed default runtime path."""
     from zsim.simulator import Simulator  # 真正启动模拟再导入，以优化启动速度
 
-    return Simulator()
+    return Simulator(use_indexed_buff_load_loop=True)
 
 
 def run_single_simulation(stop_tick: int) -> str:

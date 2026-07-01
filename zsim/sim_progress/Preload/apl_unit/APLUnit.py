@@ -44,19 +44,22 @@ class APLUnit(ABC):
             )
             result_box.append(result)
             return result
-        else:
-            left_result = self.evaluate_condition_ast(
-                node.left, found_char_dict, game_state, sim_instance, tick, result_box
-            )
-            right_result = self.evaluate_condition_ast(
+        left_result = self.evaluate_condition_ast(
+            node.left, found_char_dict, game_state, sim_instance, tick, result_box
+        )
+        if node.operator == "and":
+            if not left_result:
+                return False
+            return self.evaluate_condition_ast(
                 node.right, found_char_dict, game_state, sim_instance, tick, result_box
             )
-            if node.operator == "and":
-                return left_result and right_result
-            elif node.operator == "or":
-                return left_result or right_result
-            else:
-                raise ValueError(f"未知逻辑运算符: {node.operator}")
+        if node.operator == "or":
+            if left_result:
+                return True
+            return self.evaluate_condition_ast(
+                node.right, found_char_dict, game_state, sim_instance, tick, result_box
+            )
+        raise ValueError(f"未知逻辑运算符: {node.operator}")
 
 
 def spawn_sub_condition(

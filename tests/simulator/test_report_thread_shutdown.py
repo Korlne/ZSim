@@ -1,8 +1,10 @@
 import queue
+from csv import DictReader
 from pathlib import Path
 
 import zsim.sim_progress.Report as Report
 from zsim.sim_progress.Report.log_handler import log_queue
+import zsim.sim_progress.Report.result_handler as result_handler
 from zsim.sim_progress.Report.result_handler import result_queue
 
 
@@ -23,10 +25,96 @@ def _assert_report_loop_stopped() -> None:
     assert loop_thread is None or not loop_thread.is_alive()
 
 
+def test_damage_record_buffer_preserves_base_order_and_appends_extras(
+    tmp_path: Path,
+) -> None:
+    csv_path = tmp_path / "damage.csv"
+    buffer = result_handler.DamageRecordBuffer()
+
+    buffer.add(
+        {
+            "tick": 1,
+            "skill_tag": "alpha",
+            "first_extra": "a",
+            "UUID": "uuid-1",
+        }
+    )
+    buffer.add(
+        {
+            "tick": 2,
+            "skill_tag": "beta",
+            "second_extra": "b",
+            "first_extra": "c",
+        }
+    )
+
+    buffer.flush(str(csv_path))
+
+    with csv_path.open(newline="", encoding="utf-8-sig") as file:
+        reader = DictReader(file)
+        assert reader.fieldnames == [
+            *result_handler._BASE_FIELDNAMES,
+            "first_extra",
+            "second_extra",
+        ]
+
+
+def test_report_dmg_result_flushes_damage_csv_once_on_stop(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(result_handler, "DEBUG", True)
+    _drain_queue(log_queue)
+    _drain_queue(result_queue)
+    Report._stop_async_tasks()
+
+    writes: list[tuple[str, list[dict], list[str]]] = []
+    original_write_damage_csv = result_handler._write_damage_csv
+
+    def spy_write_damage_csv(
+        report_file_path: str, records: list[dict], fieldnames: list[str]
+    ) -> None:
+        writes.append((report_file_path, list(records), list(fieldnames)))
+        original_write_damage_csv(report_file_path, records, fieldnames)
+
+    monkeypatch.setattr(result_handler, "_write_damage_csv", spy_write_damage_csv)
+
+    try:
+        Report.start_report_threads(None, session_id="session-buffer")
+        Report.report_dmg_result(tick=1, skill_tag="alpha", UUID="uuid-1")
+        Report.report_dmg_result(tick=2, skill_tag="beta", UUID="uuid-2")
+
+        result_queue.join()
+
+        csv_path = tmp_path / "results" / "session-buffer" / "damage.csv"
+        assert writes == []
+        assert not csv_path.exists()
+
+        Report.stop_report_threads()
+
+        assert len(writes) == 1
+        assert [record["tick"] for record in writes[0][1]] == [1, 2]
+        assert csv_path.exists()
+    finally:
+        Report._stop_async_tasks()
+        _drain_queue(log_queue)
+        _drain_queue(result_queue)
+
+
+def test_report_dmg_result_debug_false_enqueues_nothing(monkeypatch) -> None:
+    _drain_queue(result_queue)
+    monkeypatch.setattr(result_handler, "DEBUG", False)
+
+    Report.report_dmg_result(tick=1, skill_tag="alpha", UUID="uuid-1")
+
+    assert result_queue.empty()
+
+
 def test_stop_report_threads_drains_async_writers_and_allows_restart(
     tmp_path: Path, monkeypatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(result_handler, "DEBUG", True)
     _drain_queue(log_queue)
     _drain_queue(result_queue)
     Report._stop_async_tasks()
@@ -34,7 +122,7 @@ def test_stop_report_threads_drains_async_writers_and_allows_restart(
     try:
         Report.start_report_threads(None, session_id="session-a")
         log_queue.put("first log line")
-        result_queue.put({"tick": 1, "skill_tag": "alpha", "UUID": "uuid-1"})
+        Report.report_dmg_result(tick=1, skill_tag="alpha", UUID="uuid-1")
 
         Report.stop_report_threads()
 
@@ -50,6 +138,7 @@ def test_stop_report_threads_drains_async_writers_and_allows_restart(
 
         session_b_log = (tmp_path / "logs" / "session-b.log").read_text(encoding="utf-8").strip()
         assert session_b_log == "second log line"
+        assert not (tmp_path / "results" / "session-b" / "damage.csv").exists()
         _assert_report_loop_stopped()
     finally:
         Report._stop_async_tasks()

@@ -187,7 +187,8 @@ _HANDLER_REPORT_PARITY_CASES: tuple[dict[str, Any], ...] = (
         "anomaly_dmg_ratio": 2.25,
         "uuid": "disorder-report-uuid",
         "damage": 23.456,
-        "report_has_skill_tag": False,
+        "report_has_skill_tag": True,
+        "report_skill_tag": "感电",
         "report_has_is_disorder": True,
         "report_stun": 6.79,
         "broadcast_signal": LBS.DISORDER_SETTLED,
@@ -931,6 +932,7 @@ def test_disorder_handler_reports_payload_and_listener_fields(
         {
             "tick": 10,
             "element_type": 3,
+            "skill_tag": "感电",
             "dmg_expect": 23.46,
             "dmg_crit": 23.46,
             "is_anomaly": True,
@@ -941,7 +943,6 @@ def test_disorder_handler_reports_payload_and_listener_fields(
             "UUID": "disorder-report-uuid",
         }
     ]
-    assert "skill_tag" not in reports[0]
     assert broadcasts[0] == {"event": event, "signal": LBS.DISORDER_SETTLED}
     assert broadcasts[1]["stun"] == pytest.approx(6.789)
     assert captured["calculator_event"] is event

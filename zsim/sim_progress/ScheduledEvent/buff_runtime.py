@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Mapping, Sequence
 
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class BuffRuntimeState:
-    """Run-scoped Buff runtime owner for retained legacy container identities."""
+    """Run-scoped Buff runtime owner."""
 
     def __init__(
         self,
@@ -66,14 +67,8 @@ class BuffRuntimeState:
     def template_registry_owner(self) -> "BuffTemplateRegistry":
         return self._template_registry
 
-    def template_registry_for_compat(self) -> dict[str, dict[str, "Buff"]]:
-        return self._template_registry.as_compat_dict()
-
     def pending_queue_owner(self) -> "PendingBuffQueue":
         return self._pending_queue
-
-    def pending_queue_for_compat(self) -> dict[str, list["Buff"]]:
-        return self._pending_queue.as_compat_dict()
 
     def load_lifecycle_cache_owner(self) -> "BuffLoadLifecycleCache":
         return self._load_lifecycle_cache
@@ -81,18 +76,12 @@ class BuffRuntimeState:
     def active_store_owner(self) -> "ActiveBuffStore":
         return self._active_store
 
-    def active_store_for_compat(self) -> dict[str, list["Buff"]]:
-        return self._active_store.as_compat_dict()
-
     def enemy_mirror_owner(self) -> "EnemyDebuffMirror":
         return self._enemy_mirror_owner
 
-    def enemy_mirror_for_compat(self) -> list["Buff"]:
-        return self._enemy_mirror_owner.as_compat_list()
-
 
 class BuffTemplateRegistry:
-    """Runtime-owned template registry with retained dict compatibility."""
+    """Runtime-owned template registry."""
 
     def __init__(self, registry: dict[str, dict[str, "Buff"]]) -> None:
         self._registry = registry
@@ -114,7 +103,7 @@ class BuffTemplateRegistry:
             }
         )
 
-    def as_compat_dict(self) -> dict[str, dict[str, "Buff"]]:
+    def mutable_registry(self) -> dict[str, dict[str, "Buff"]]:
         return self._registry
 
     def items(self):
@@ -122,7 +111,7 @@ class BuffTemplateRegistry:
 
 
 class PendingBuffQueue:
-    """Runtime-owned pending Buff queue with retained dict compatibility."""
+    """Runtime-owned pending Buff queue."""
 
     def __init__(self, queues: dict[str, list["Buff"]]) -> None:
         self._queues = queues
@@ -135,14 +124,14 @@ class PendingBuffQueue:
         self._queues[beneficiary].append(buff)
 
     def drain(self, beneficiary: str) -> list["Buff"]:
-        queue = self.queue_for_compat(beneficiary)
+        queue = self.queue_for_runtime(beneficiary)
         drained: list["Buff"] = []
         while queue:
             drained.append(queue.pop())
         return drained
 
     def clear(self, beneficiary: str) -> None:
-        self.queue_for_compat(beneficiary).clear()
+        self.queue_for_runtime(beneficiary).clear()
 
     def count(self) -> int:
         return sum(len(queue) for queue in self._queues.values())
@@ -150,10 +139,10 @@ class PendingBuffQueue:
     def beneficiaries(self) -> tuple[str, ...]:
         return tuple(self._queues)
 
-    def queue_for_compat(self, beneficiary: str) -> list["Buff"]:
+    def queue_for_runtime(self, beneficiary: str) -> list["Buff"]:
         return self._queues.setdefault(beneficiary, [])
 
-    def as_compat_dict(self) -> dict[str, list["Buff"]]:
+    def mutable_queues(self) -> dict[str, list["Buff"]]:
         return self._queues
 
     def __getitem__(self, beneficiary: str) -> list["Buff"]:
@@ -176,7 +165,7 @@ class PendingBuffQueue:
 
 
 class ActiveBuffStore:
-    """Runtime-owned active Buff store with retained dict/list compatibility."""
+    """Runtime-owned active Buff store."""
 
     def __init__(self, stores: dict[str, list["Buff"]]) -> None:
         self._stores = stores
@@ -211,7 +200,7 @@ class ActiveBuffStore:
             }
         )
 
-    def as_compat_dict(self) -> dict[str, list["Buff"]]:
+    def mutable_stores(self) -> dict[str, list["Buff"]]:
         return self._stores
 
     def count(self) -> int:
@@ -254,7 +243,7 @@ class EnemyDebuffMirror:
         if existing_buff is not None:
             self._mirror.remove(existing_buff)
 
-    def as_compat_list(self) -> list["Buff"]:
+    def mutable_mirror(self) -> list["Buff"]:
         return self._mirror
 
     @staticmethod
@@ -299,10 +288,6 @@ class DefaultBuffRuntimeReadAdapter(BuffRuntimeReadPort):
 
     def get_exist_buff_snapshot_view(self) -> Mapping[str, Mapping[str, "Buff"]]:
         return self._runtime_state.template_registry_owner().registry_snapshot()
-
-
-class LegacyBuffRuntimeReadAdapter(DefaultBuffRuntimeReadAdapter):
-    """显式 migration/test/rollback 兼容只读适配器。"""
 
 
 class BuffRuntimeFacade(ABC):
@@ -392,18 +377,19 @@ class BuffRuntimeFacade(ABC):
         """把本 tick 待激活 Buff 提升到旧 active 容器。"""
 
     @abstractmethod
-    def get_pending_queue_for_compat(self, beneficiary: str) -> list["Buff"]:
-        """过渡期兼容入口，返回指定受益者的旧待激活队列。"""
-
-    @abstractmethod
-    def get_enemy_debuff_mirror_for_compat(self) -> list["Buff"]:
-        """过渡期兼容入口，返回旧 enemy debuff 镜像列表。"""
-
-    @abstractmethod
     def update_time_related_effects(
         self, *, tick: int, enemy: "Enemy"
     ) -> dict[str, list["Buff"]]:
         """执行本 tick 的时间相关 Buff runtime 扫描。"""
+
+    @abstractmethod
+    def next_time_related_wakeup_tick(
+        self,
+        *,
+        current_tick: int,
+        enemy: "Enemy",
+    ) -> int | None:
+        """读取下一次时间相关 Buff/Dot/异常状态可能变化的 tick。"""
 
     @abstractmethod
     def settle_schedule_buffs(
@@ -420,6 +406,17 @@ class BuffRuntimeFacade(ABC):
 
 class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
     """默认 Buff runtime 门面，包装 run-scoped runtime state owner。"""
+
+    _EVENT_SETTLED_COMPLEX_EXIT_BUFFS = frozenset(
+        {
+            "Buff-角色-仪玄-4画-静心",
+            "Buff-武器-精1索魂影眸-冲击力",
+            "Buff-武器-精2索魂影眸-冲击力",
+            "Buff-武器-精3索魂影眸-冲击力",
+            "Buff-武器-精4索魂影眸-冲击力",
+            "Buff-武器-精5索魂影眸-冲击力",
+        }
+    )
 
     def __init__(self, *, runtime_state: BuffRuntimeState) -> None:
         self._runtime_state = runtime_state
@@ -451,7 +448,9 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
     ) -> "Buff":
         from copy import deepcopy
 
-        source_registry = self._runtime_state.template_registry_for_compat()[beneficiary]
+        source_registry = self._runtime_state.template_registry_owner().for_owner(
+            beneficiary
+        )
         source_buff = source_registry[buff_index]
         buff_new = deepcopy(source_buff)
         buff_new.ft.operator = source_buff.ft.operator
@@ -489,9 +488,9 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
         self._runtime_state.active_store_owner().remove(beneficiary, buff)
 
     def end_active_buff(self, beneficiary: str, buff: "Buff", *, tick: int) -> None:
-        sub_exist_buff_dict = self._runtime_state.template_registry_for_compat()[
+        sub_exist_buff_dict = self._runtime_state.template_registry_owner().for_owner(
             beneficiary
-        ]
+        )
         buff.end(tick, sub_exist_buff_dict)
         self.remove_active_buff(beneficiary, buff)
         report_to_log(
@@ -562,7 +561,7 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
             for buff in buffs_to_remove:
                 self.end_active_buff(beneficiary, buff, tick=tick)
 
-        return active_store.as_compat_dict()
+        return active_store.mutable_stores()
 
     def find_active_buff_by_index(self, beneficiary: str, buff_index: str) -> "Buff | None":
         return self._runtime_state.active_store_owner().find_by_index(
@@ -590,7 +589,7 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
         return BuffLoadLoop(
             time_now,
             load_mission_dict,
-            self._runtime_state.template_registry_for_compat(),
+            self._runtime_state.template_registry_owner(),
             character_name_box,
             self._runtime_state.pending_queue_owner(),
             all_name_order_box,
@@ -603,15 +602,7 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
         for beneficiary in pending_queue.beneficiaries():
             for buff in pending_queue.drain(beneficiary):
                 self._activate_pending_buff(beneficiary, buff)
-        return self._runtime_state.active_store_owner().as_compat_dict()
-
-    def get_pending_queue_for_compat(self, beneficiary: str) -> list["Buff"]:
-        # 兼容旧容器身份；仅供迁移期局部桥接，不是新的主契约。
-        return self._get_pending_queue(beneficiary)
-
-    def get_enemy_debuff_mirror_for_compat(self) -> list["Buff"]:
-        # 兼容旧容器身份；仅供迁移期局部桥接，不是新的主契约。
-        return self._runtime_state.enemy_mirror_for_compat()
+        return self._runtime_state.active_store_owner().mutable_stores()
 
     def update_time_related_effects(
         self, *, tick: int, enemy: "Enemy"
@@ -623,6 +614,105 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
             enemy=enemy,
             runtime_facade=self,
         )
+
+    def next_time_related_wakeup_tick(
+        self,
+        *,
+        current_tick: int,
+        enemy: "Enemy",
+    ) -> int | None:
+        from zsim.sim_progress.Update import Update_Buff
+
+        candidates: list[int] = []
+        active_store = self._runtime_state.active_store_owner()
+        for _, active_buffs in active_store.items():
+            for buff in active_buffs:
+                wakeup_tick = self._next_active_buff_lifecycle_tick(
+                    buff,
+                    current_tick=current_tick,
+                )
+                if wakeup_tick is not None:
+                    candidates.append(wakeup_tick)
+        dot_or_anomaly_tick = Update_Buff.next_dot_or_anomaly_wakeup_tick(
+            enemy,
+            current_tick,
+        )
+        if dot_or_anomaly_tick is not None:
+            candidates.append(dot_or_anomaly_tick)
+        future_candidates = [tick for tick in candidates if tick > current_tick]
+        if not future_candidates:
+            return None
+        return min(future_candidates)
+
+    @staticmethod
+    def _next_active_buff_lifecycle_tick(
+        buff: "Buff",
+        *,
+        current_tick: int,
+    ) -> int | None:
+        if not buff.ft.simple_exit_logic:
+            event_settled_wakeup = (
+                DefaultBuffRuntimeFacade._event_settled_complex_exit_wakeup_tick(
+                    buff,
+                    current_tick=current_tick,
+                )
+            )
+            if event_settled_wakeup is not None:
+                return event_settled_wakeup
+            if DefaultBuffRuntimeFacade._is_event_settled_complex_exit(buff):
+                return None
+            return current_tick + 1
+        if buff.ft.alltime:
+            return None
+        if buff.ft.individual_settled:
+            stack_items = list(buff.dy.built_in_buff_box)
+            if not stack_items:
+                return current_tick + 1
+            candidates = []
+            for stack_item in stack_items:
+                end_tick = int(stack_item[1])
+                candidates.append(
+                    end_tick + 1 if end_tick >= current_tick else current_tick + 1
+                )
+            return min(candidates)
+        end_tick = int(buff.dy.endticks)
+        return end_tick + 1 if end_tick >= current_tick else current_tick + 1
+
+    @staticmethod
+    def _is_event_settled_complex_exit(buff: "Buff") -> bool:
+        index = getattr(buff.ft, "index", None)
+        if index not in DefaultBuffRuntimeFacade._EVENT_SETTLED_COMPLEX_EXIT_BUFFS:
+            return False
+        return True
+
+    @staticmethod
+    def _event_settled_complex_exit_wakeup_tick(
+        buff: "Buff",
+        *,
+        current_tick: int,
+    ) -> int | None:
+        index = getattr(buff.ft, "index", None)
+        if index == "Buff-角色-耀佳音-咏叹华彩":
+            record = getattr(getattr(buff, "logic", None), "record", None)
+            char = getattr(record, "char", None)
+            if char is None:
+                return current_tick + 1
+            return None if getattr(char, "idyllic_cadenza", False) else current_tick + 1
+        if index == "Buff-角色-仪玄-4画-静心":
+            record = getattr(getattr(buff, "logic", None), "record", None)
+            if record is None:
+                return current_tick + 1
+            return None if getattr(record, "c4_counter", 0) > 0 else current_tick + 1
+        if index in {
+            "Buff-武器-精1索魂影眸-冲击力",
+            "Buff-武器-精2索魂影眸-冲击力",
+            "Buff-武器-精3索魂影眸-冲击力",
+            "Buff-武器-精4索魂影眸-冲击力",
+            "Buff-武器-精5索魂影眸-冲击力",
+        }:
+            # 当前 xexit 实现不会基于时间自然退出；触发器层数变化由命中事件驱动。
+            return None
+        return None
 
     def settle_schedule_buffs(
         self,
@@ -678,7 +768,7 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
             )
 
     def _get_pending_queue(self, beneficiary: str) -> list["Buff"]:
-        return self._runtime_state.pending_queue_for_compat()[beneficiary]
+        return self._runtime_state.pending_queue_owner().queue_for_runtime(beneficiary)
 
     def _find_enemy_debuff_mirror(self, buff: "Buff") -> "Buff | None":
         return self._runtime_state.enemy_mirror_owner().find_by_index(
@@ -877,42 +967,29 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
 
 def create_buff_runtime_read_port(
     *,
-    runtime_state: BuffRuntimeState | None = None,
-    dynamic_buff: dict[str, list["Buff"]] | None = None,
-    exist_buff_dict: dict[str, dict[str, "Buff"]] | None = None,
+    runtime_state: BuffRuntimeState,
 ) -> BuffRuntimeReadPort:
-    """创建 Buff runtime 只读入口，但不把 raw 容器当作主契约继续扩散。"""
-    if runtime_state is None:
-        if dynamic_buff is None or exist_buff_dict is None:
-            raise ValueError("runtime_state or legacy read containers are required")
-        runtime_state = BuffRuntimeState(
-            template_registry=exist_buff_dict,
-            pending_queue={},
-            active_store=dynamic_buff,
-            enemy_mirror=[],
-        )
+    """创建 Buff runtime 只读入口。"""
     return runtime_state.create_read_port()
 
 
-def create_legacy_buff_runtime_facade(
-    *,
-    exist_buff_dict: dict[str, dict[str, "Buff"]],
-    loading_buff_dict: dict[str, list["Buff"]],
-    dynamic_buff_dict: dict[str, list["Buff"]],
-    enemy_debuff_mirror: list["Buff"],
-) -> BuffRuntimeFacade:
-    """创建显式 legacy 兼容门面，不复制或替换旧容器身份。"""
-    runtime_state = BuffRuntimeState(
-        template_registry=exist_buff_dict,
-        pending_queue=loading_buff_dict,
-        active_store=dynamic_buff_dict,
-        enemy_mirror=enemy_debuff_mirror,
-    )
-    return LegacyBuffRuntimeFacade(runtime_state=runtime_state)
+@dataclass(frozen=True, slots=True)
+class BuffTimeRelatedWakeupSource:
+    """Wakeup source backed by the run-scoped Buff runtime facade."""
 
+    runtime_facade: object
+    enemy: "Enemy"
+    name: str = "buff-time-related"
 
-class LegacyBuffRuntimeFacade(DefaultBuffRuntimeFacade):
-    """显式 migration/test/rollback 兼容门面。"""
+    def next_wakeup_tick(self, current_tick: int) -> int | None:
+        next_time_related = getattr(
+            self.runtime_facade,
+            "next_time_related_wakeup_tick",
+            None,
+        )
+        if not callable(next_time_related):
+            return None
+        return next_time_related(current_tick=current_tick, enemy=self.enemy)
 
 
 __all__ = [
@@ -921,10 +998,8 @@ __all__ = [
     "BuffRuntimeState",
     "ActiveBuffStore",
     "PendingBuffQueue",
+    "BuffTimeRelatedWakeupSource",
     "DefaultBuffRuntimeFacade",
     "DefaultBuffRuntimeReadAdapter",
-    "LegacyBuffRuntimeReadAdapter",
-    "LegacyBuffRuntimeFacade",
     "create_buff_runtime_read_port",
-    "create_legacy_buff_runtime_facade",
 ]

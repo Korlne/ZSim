@@ -17,9 +17,7 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduleDispatchPort,
     ScheduledEventEmitterProvider,
 )
-from zsim.sim_progress.data_struct.planned_queue import (
-    ensure_event_list_migration_planned_event_queue,
-)
+from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
 
 breaking_module = import_module("zsim.sim_progress.Enemy.EnemyUniqueMechanic.BreakingLegManager")
 BreakingLegManager = breaking_module.BreakingLegManager
@@ -30,6 +28,13 @@ SingleLeg = breaking_module.SingleLeg
 class _FailFastEventList(list):
     def append(self, item):
         raise AssertionError("BreakingEvent should publish refresh data via dispatch port")
+
+
+def _attach_planned_queue(schedule_data: SimpleNamespace) -> None:
+    schedule_data.planned_event_queue = PlannedEventQueue(
+        get_events=lambda: schedule_data.event_list,
+        set_events=lambda events: setattr(schedule_data, "event_list", events),
+    )
 
 
 class _RecordingDispatchPort:
@@ -167,7 +172,7 @@ def test_breaking_leg_manager_injects_rebound_safe_emitter_provider(
     old_event_list: list[object] = []
     new_event_list: list[object] = []
     schedule_data = SimpleNamespace(event_list=old_event_list)
-    ensure_event_list_migration_planned_event_queue(schedule_data)
+    _attach_planned_queue(schedule_data)
     sim_instance = SimpleNamespace(schedule_data=schedule_data)
     enemy = _FakeEnemy(sim_instance, call_order)
     manager = BreakingLegManager(enemy)

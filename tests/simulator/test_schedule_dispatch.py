@@ -18,7 +18,6 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
     create_schedule_dispatch_port,
 )
 from zsim.sim_progress.data_struct.planned_queue import (
-    ensure_event_list_migration_planned_event_queue,
     ensure_planned_event_queue,
 )
 from zsim.simulator.dataclasses import ScheduleData
@@ -114,26 +113,12 @@ def test_create_schedule_dispatch_port_uses_schedule_data_without_exposing_event
     assert queue.snapshot() == ["scheduled-event"]
 
 
-def test_event_list_migration_owner_helper_is_test_migration_only_and_rebindable():
-    schedule_data = SimpleNamespace(event_list=[])
-    queue = ensure_event_list_migration_planned_event_queue(schedule_data)
-    old_event_list = schedule_data.event_list
-
-    queue.enqueue("old-event")
-    schedule_data.event_list = []
-    queue.enqueue("new-event")
-
-    assert ensure_event_list_migration_planned_event_queue(schedule_data) is queue
-    assert old_event_list == ["old-event"]
-    assert schedule_data.event_list == ["new-event"]
-
-
-def test_ensure_planned_event_queue_requires_existing_or_explicit_owner():
+def test_ensure_planned_event_queue_requires_existing_owner():
     schedule_data = SimpleNamespace()
 
     with pytest.raises(
         AttributeError,
-        match="planned_event_queue or explicit event-list migration owner",
+        match="planned_event_queue",
     ):
         ensure_planned_event_queue(schedule_data)
 

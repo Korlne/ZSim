@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, TypeAlias, TypedDict, cast
 
 import numpy as np
@@ -17,10 +18,13 @@ from .buff_class import Buff
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Load import LoadingMission
-    from zsim.sim_progress.ScheduledEvent.buff_runtime import PendingBuffQueue
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import (
+        BuffTemplateRegistry,
+        PendingBuffQueue,
+    )
     from zsim.simulator.simulator_class import Simulator
 
-    PendingQueueLike: TypeAlias = "PendingBuffQueue | _LegacyPendingQueueCompatAdapter"
+    PendingQueueLike: TypeAlias = "PendingBuffQueue"
 else:
     PendingQueueLike = object
 
@@ -42,6 +46,49 @@ class BuffLoadLoopCandidatePlanDetail(BuffLoadLoopCandidatePlanSummary):
 class BuffLoadLoopRegistryLengthSnapshot(TypedDict):
     character_registry_lengths: tuple[tuple[str, int], ...]
     registered_candidate_count: int
+
+
+@dataclass(frozen=True)
+class _StaticJudgeCondition:
+    skill_attribute: str
+    allowed_values: tuple[int | float | str, ...]
+
+
+@dataclass(frozen=True)
+class _BuffLoadCandidateEntry:
+    key: str
+    buff: object
+    judge_mode: str
+    judge_conditions: tuple[_StaticJudgeCondition, ...] = ()
+    prefilter_mode: str | None = None
+
+
+@dataclass(frozen=True)
+class _ProcessorCandidateEntries:
+    entries: tuple[_BuffLoadCandidateEntry, ...]
+    statically_skipped_count: int
+    full_scan_candidate_count: int
+
+
+@dataclass(frozen=True)
+class _BuffJudgeStaticInfo:
+    simple_logic: bool
+    all_simple: bool
+    alltime: bool
+    blank_simple_judge: bool
+
+
+@dataclass(frozen=True)
+class BuffLoadCandidateSelection:
+    processor: str
+    owner: str
+    registry: dict
+    mission: "LoadingMission"
+    candidate_keys: tuple[str, ...]
+    full_scan_candidate_count: int
+    selected_candidate_count: int
+    skipped_candidate_count: int
+    fallback_candidate_count: int
 
 
 EXIST_FILE = pd.read_csv(EXIST_FILE_PATH, index_col="BuffName")
@@ -71,11 +118,498 @@ class BuffJudgeCache(BuffInitCache):
     def __init__(self):
         super().__init__()
 
+    def static_info(
+        self,
+        buff_now: Buff,
+        judge_condition_dict: dict,
+    ) -> _BuffJudgeStaticInfo:
+        cache_key = ("static_info", id(buff_now), id(judge_condition_dict))
+        cached_info = self.cache.get(cache_key)
+        if cached_info is not None:
+            return cached_info
+        simple_logic = bool(buff_now.ft.simple_judge_logic)
+        all_simple = (
+            simple_logic
+            and bool(buff_now.ft.simple_start_logic)
+            and bool(buff_now.ft.simple_hit_logic)
+            and bool(buff_now.ft.simple_end_logic)
+            and bool(buff_now.ft.simple_effect_logic)
+            and bool(buff_now.ft.simple_exit_logic)
+        )
+        blank_simple_judge = simple_logic and not any(
+            value is not None for value in judge_condition_dict.values()
+        )
+        static_info = _BuffJudgeStaticInfo(
+            simple_logic=simple_logic,
+            all_simple=all_simple,
+            alltime=bool(buff_now.ft.alltime),
+            blank_simple_judge=blank_simple_judge,
+        )
+        self.cache[cache_key] = static_info
+        return static_info
+
+
+class SimpleJudgeConditionCache(BuffInitCache):
+    def __init__(self):
+        super().__init__()
+
 
 class BuffLoadLifecycleCache:
     def __init__(self) -> None:
         self.init_cache = BuffInitCache()
         self.judge_cache = BuffJudgeCache()
+        self.simple_judge_condition_cache = SimpleJudgeConditionCache()
+
+
+class BuffLoadCandidateIndex:
+    """Conservative run-scoped index for BuffLoadLoop candidates."""
+
+    def __init__(
+        self,
+        buff_registry_by_character: dict,
+        character_name_box: Sequence[str],
+    ) -> None:
+        self._registry_by_character = buff_registry_by_character
+        self._character_name_box = tuple(character_name_box)
+        self._registry_root_id = id(buff_registry_by_character)
+        self._registry_identity_snapshot = self._registry_identity(
+            buff_registry_by_character,
+            self._character_name_box,
+        )
+        self._registry_fingerprint = self.registry_fingerprint(
+            buff_registry_by_character,
+            self._character_name_box,
+        )
+        self._registries_by_owner: dict[str, dict] = {
+            owner: buff_registry_by_character[owner]
+            for owner in self._character_name_box
+        }
+        self._entries_by_owner: dict[str, tuple[_BuffLoadCandidateEntry, ...]] = {
+            owner: tuple(
+                _BuffLoadCandidateEntry(
+                    key=buff_key,
+                    buff=buff,
+                    judge_mode=judge_mode,
+                    judge_conditions=judge_conditions,
+                    prefilter_mode=self._classify_prefilter(buff),
+                )
+                for buff_key, buff in registry.items()
+                for judge_mode, judge_conditions in [
+                    self._classify_static_judge(buff)
+                ]
+            )
+            for owner, registry in self._registries_by_owner.items()
+        }
+        self._processor_entries_by_owner: dict[
+            tuple[str, str],
+            _ProcessorCandidateEntries,
+        ] = {
+            (owner, processor): self._build_processor_entries(
+                entries,
+                processor,
+            )
+            for owner, entries in self._entries_by_owner.items()
+            for processor in ("on_field", "backend")
+        }
+        self._selection_cache: dict[
+            tuple[str, str, tuple[tuple[str, object], ...]],
+            tuple[tuple[str, ...], int, int],
+        ] = {}
+
+    @staticmethod
+    def registry_fingerprint(
+        buff_registry_by_character: dict,
+        character_name_box: Sequence[str],
+    ) -> tuple[tuple[str, int, tuple[tuple[str, int], ...]], ...]:
+        return tuple(
+            (
+                owner,
+                id(buff_registry_by_character[owner]),
+                tuple(
+                    (buff_key, id(buff))
+                    for buff_key, buff in buff_registry_by_character[owner].items()
+                ),
+            )
+            for owner in character_name_box
+        )
+
+    @staticmethod
+    def _registry_identity(
+        buff_registry_by_character: dict,
+        character_name_box: Sequence[str],
+    ) -> tuple[tuple[str, int, int], ...]:
+        return tuple(
+            (
+                owner,
+                id(buff_registry_by_character.get(owner)),
+                len(buff_registry_by_character.get(owner, {})),
+            )
+            for owner in character_name_box
+        )
+
+    def matches_registry(
+        self,
+        buff_registry_by_character: dict,
+        character_name_box: Sequence[str],
+    ) -> bool:
+        character_name_tuple = tuple(character_name_box)
+        if character_name_tuple != self._character_name_box:
+            return False
+        if (
+            id(buff_registry_by_character) == self._registry_root_id
+            and self._registry_identity_snapshot
+            == self._registry_identity(
+                buff_registry_by_character,
+                character_name_tuple,
+            )
+        ):
+            return True
+        return self._registry_fingerprint == self.registry_fingerprint(
+            buff_registry_by_character,
+            character_name_tuple,
+        )
+
+    def iter_candidate_steps(
+        self,
+        load_mission_dict: dict,
+    ) -> Iterator[BuffLoadCandidateSelection]:
+        for mission in load_mission_dict.values():
+            actor_name = mission.mission_character
+            if actor_name not in self._registry_by_character:
+                raise ValueError("当前角色的Buff源并未创建！")
+
+            for owner in self._character_name_box:
+                processor = "on_field" if owner == actor_name else "backend"
+                yield self.select_candidates(
+                    processor=processor,
+                    owner=owner,
+                    mission=mission,
+                )
+
+    def select_candidates(
+        self,
+        *,
+        processor: str,
+        owner: str,
+        mission: "LoadingMission",
+    ) -> BuffLoadCandidateSelection:
+        registry = self._registries_by_owner[owner]
+        processor_entries = self._processor_entries_by_owner[(owner, processor)]
+        entries = processor_entries.entries
+        static_signature = self._mission_static_signature(entries, mission)
+        cache_key = (owner, processor, static_signature)
+        cached_selection = self._selection_cache.get(cache_key)
+        if cached_selection is not None:
+            candidate_keys, skipped_candidate_count, fallback_candidate_count = (
+                cached_selection
+            )
+            return BuffLoadCandidateSelection(
+                processor=processor,
+                owner=owner,
+                registry=registry,
+                mission=mission,
+                candidate_keys=candidate_keys,
+                full_scan_candidate_count=processor_entries.full_scan_candidate_count,
+                selected_candidate_count=len(candidate_keys),
+                skipped_candidate_count=skipped_candidate_count,
+                fallback_candidate_count=fallback_candidate_count,
+            )
+
+        candidate_keys: list[str] = []
+        skipped_candidate_count = processor_entries.statically_skipped_count
+        fallback_candidate_count = 0
+
+        for entry in entries:
+            selected, fallback = self._entry_matches_mission(entry, mission)
+            if not selected:
+                skipped_candidate_count += 1
+                continue
+
+            candidate_keys.append(entry.key)
+            if fallback:
+                fallback_candidate_count += 1
+
+        candidate_keys_tuple = tuple(candidate_keys)
+        selection = BuffLoadCandidateSelection(
+            processor=processor,
+            owner=owner,
+            registry=registry,
+            mission=mission,
+            candidate_keys=candidate_keys_tuple,
+            full_scan_candidate_count=processor_entries.full_scan_candidate_count,
+            selected_candidate_count=len(candidate_keys),
+            skipped_candidate_count=skipped_candidate_count,
+            fallback_candidate_count=fallback_candidate_count,
+        )
+        self._selection_cache[cache_key] = (
+            candidate_keys_tuple,
+            skipped_candidate_count,
+            fallback_candidate_count,
+        )
+        return selection
+
+    @staticmethod
+    def _mission_static_signature(
+        entries: tuple[_BuffLoadCandidateEntry, ...],
+        mission: "LoadingMission",
+    ) -> tuple[tuple[str, object], ...]:
+        condition_attrs = sorted(
+            {
+                condition.skill_attribute
+                for entry in entries
+                for condition in entry.judge_conditions
+            }
+        )
+        skill_now = mission.mission_node.skill
+        signature = [
+            (skill_attribute, getattr(skill_now, skill_attribute, "<missing>"))
+            for skill_attribute in condition_attrs
+        ]
+        if any(entry.prefilter_mode is not None for entry in entries):
+            skill_node = mission.mission_node
+            signature.extend(
+                [
+                    ("skill_tag", getattr(skill_node, "skill_tag", "<missing>")),
+                    ("mission_tag", getattr(mission, "mission_tag", "<missing>")),
+                    ("element_type", getattr(skill_node, "element_type", "<missing>")),
+                    (
+                        "trigger_buff_level",
+                        getattr(
+                            getattr(skill_node, "skill", None),
+                            "trigger_buff_level",
+                            "<missing>",
+                        ),
+                    ),
+                    ("labels", _skill_label_keys(getattr(skill_node, "skill", None))),
+                ]
+            )
+        return tuple(signature)
+
+    @classmethod
+    def _build_processor_entries(
+        cls,
+        entries: tuple[_BuffLoadCandidateEntry, ...],
+        processor: str,
+    ) -> _ProcessorCandidateEntries:
+        selected_entries = tuple(
+            entry
+            for entry in entries
+            if not cls._processor_statically_skips(entry.buff, processor)
+        )
+        return _ProcessorCandidateEntries(
+            entries=selected_entries,
+            statically_skipped_count=len(entries) - len(selected_entries),
+            full_scan_candidate_count=len(entries),
+        )
+
+    def _classify_static_judge(
+        self,
+        buff: object,
+    ) -> tuple[str, tuple[_StaticJudgeCondition, ...]]:
+        if not isinstance(buff, Buff):
+            return "fallback", ()
+
+        feature = buff.ft
+        if bool(getattr(feature, "alltime", False)):
+            return "always_true", ()
+        if not bool(getattr(feature, "simple_judge_logic", False)):
+            return "fallback", ()
+
+        buff_index = getattr(feature, "index", None)
+        if not isinstance(buff_index, str) or buff_index not in JUDGE_FILE.index:
+            return "fallback", ()
+        try:
+            judge_condition_dict = dict(JUDGE_FILE.loc[buff_index])
+        except Exception:
+            return "fallback", ()
+
+        all_judge_conditions_blank = all(
+            self._is_blank_judge_condition(value)
+            for value in judge_condition_dict.values()
+        )
+        conditions: list[_StaticJudgeCondition] = []
+        for condition, skill_attribute in BUFF_LOADING_CONDITION_TRANSLATION_DICT.items():
+            if condition not in judge_condition_dict:
+                return "fallback", ()
+            csv_judge_condition = judge_condition_dict[condition]
+            if self._is_blank_judge_condition(csv_judge_condition):
+                continue
+            try:
+                allowed_values = tuple(process_string(csv_judge_condition))
+            except Exception:
+                return "fallback", ()
+            conditions.append(
+                _StaticJudgeCondition(
+                    skill_attribute=skill_attribute,
+                    allowed_values=allowed_values,
+                )
+            )
+
+        if not conditions:
+            if all_judge_conditions_blank:
+                return "always_false", ()
+            return "always_true", ()
+        return "simple", tuple(conditions)
+
+    @staticmethod
+    def _is_blank_judge_condition(value: object) -> bool:
+        if value is None:
+            return True
+        try:
+            return bool(pd.isna(value))
+        except (TypeError, ValueError):
+            return False
+
+    @staticmethod
+    def _processor_statically_skips(buff: object, processor: str) -> bool:
+        if not isinstance(buff, Buff):
+            return False
+
+        feature = buff.ft
+        if bool(feature.schedule_judge):
+            return True
+        if bool(feature.passively_updating):
+            return True
+        if processor == "backend" and not bool(feature.backend_acitve):
+            return True
+        return False
+
+    @staticmethod
+    def _entry_matches_mission(
+        entry: _BuffLoadCandidateEntry,
+        mission: "LoadingMission",
+    ) -> tuple[bool, bool]:
+        if entry.prefilter_mode is not None and not _prefilter_matches_mission(
+            entry.prefilter_mode,
+            mission,
+        ):
+            return False, False
+        if entry.judge_mode == "fallback":
+            return True, True
+        if entry.judge_mode == "always_true":
+            return True, False
+        if entry.judge_mode == "always_false":
+            return False, False
+        if entry.judge_mode != "simple":
+            return True, True
+
+        skill_now = mission.mission_node.skill
+        for condition in entry.judge_conditions:
+            try:
+                skill_value = getattr(skill_now, condition.skill_attribute)
+            except AttributeError:
+                return True, True
+            if skill_value not in condition.allowed_values:
+                return False, False
+        return True, False
+
+    @staticmethod
+    def _classify_prefilter(buff: object) -> str | None:
+        if not isinstance(buff, Buff):
+            return None
+        buff_index = getattr(buff.ft, "index", None)
+        if not isinstance(buff_index, str):
+            return None
+        if "扳机-核心被动-失衡易伤" in buff_index:
+            return "trigger_core_aftershock"
+        if "扳机-1画-失衡易伤提升" in buff_index:
+            return "trigger_aftershock_label"
+        if "扳机-协同攻击-触发器" in buff_index:
+            return "trigger_aftershock_source"
+        if "耀佳音-震音管理器-触发器" in buff_index:
+            return "astra_chord_manager"
+        if "索魂影眸-减防" in buff_index:
+            return "electric_aftershock"
+        if "索魂影眸-魂锁" in buff_index:
+            return "electric_aftershock"
+        if "如影相随-四件套" in buff_index:
+            return "shadow_harmony"
+        if "仪玄-1画-落雷触发器" in buff_index:
+            return "yixuan_c1_teammate"
+        if "仪玄-4画-静心" in buff_index:
+            return "yixuan_c4_tranquility"
+        if "仪玄-额外能力-对失衡敌人增伤" in buff_index:
+            return "yixuan_ex_b"
+        if "仪玄-2画-失衡时间提升" in buff_index:
+            return "yixuan_q"
+        return None
+
+
+def _skill_label_keys(skill: object) -> tuple[str, ...]:
+    labels = getattr(skill, "labels", None)
+    if not labels:
+        return ()
+    try:
+        return tuple(sorted(labels.keys()))
+    except AttributeError:
+        return tuple(sorted(labels))
+
+
+def _skill_has_label(skill: object, label: str) -> bool:
+    labels = getattr(skill, "labels", None)
+    return bool(labels) and label in labels
+
+
+def _prefilter_matches_mission(
+    prefilter_mode: str,
+    mission: "LoadingMission",
+) -> bool:
+    skill_node = mission.mission_node
+    skill = skill_node.skill
+    skill_tag = getattr(skill_node, "skill_tag", "")
+    mission_tag = getattr(mission, "mission_tag", "")
+    element_type = getattr(skill_node, "element_type", None)
+    trigger_buff_level = getattr(skill, "trigger_buff_level", None)
+
+    if prefilter_mode == "trigger_core_aftershock":
+        return "1361" in skill_tag and _skill_has_label(skill, "aftershock_attack")
+    if prefilter_mode == "trigger_aftershock_label":
+        return "1361" in skill_tag and _skill_has_label(skill, "aftershock_attack")
+    if prefilter_mode == "trigger_aftershock_source":
+        return "1361" not in mission_tag
+    if prefilter_mode == "astra_chord_manager":
+        return trigger_buff_level in (5, 7, 8)
+    if prefilter_mode == "electric_aftershock":
+        return element_type == 3 and _skill_has_label(skill, "aftershock_attack")
+    if prefilter_mode == "shadow_harmony":
+        if _skill_has_label(skill, "aftershock_attack"):
+            return True
+        return not getattr(skill, "labels", None) and trigger_buff_level == 3
+    if prefilter_mode == "yixuan_c1_teammate":
+        return getattr(skill_node, "char_name", None) != "仪玄"
+    if prefilter_mode == "yixuan_c4_tranquility":
+        return (
+            getattr(skill_node, "char_name", None) == "仪玄"
+            and (trigger_buff_level == 6 or skill_tag == "1371_E_EX_B_3")
+        )
+    if prefilter_mode == "yixuan_ex_b":
+        return "1371_E_EX_B_" in skill_tag
+    if prefilter_mode == "yixuan_q":
+        return skill_tag == "1371_Q"
+    return True
+
+
+def _get_buff_load_candidate_index(
+    sim_instance: "Simulator",
+    buff_registry_by_character: dict,
+    character_name_box: Sequence[str],
+) -> BuffLoadCandidateIndex:
+    existing_index = getattr(sim_instance, "_buff_load_candidate_index", None)
+    if isinstance(existing_index, BuffLoadCandidateIndex) and existing_index.matches_registry(
+        buff_registry_by_character,
+        character_name_box,
+    ):
+        return existing_index
+
+    candidate_index = BuffLoadCandidateIndex(
+        buff_registry_by_character,
+        character_name_box,
+    )
+    try:
+        setattr(sim_instance, "_buff_load_candidate_index", candidate_index)
+    except Exception:
+        pass
+    return candidate_index
 
 
 def process_buff(
@@ -85,7 +619,7 @@ def process_buff(
     time_now,
     selected_characters,
     pending_buff_queue,
-    exist_buff_dict: dict,
+    registry_by_character: dict,
     sim_instance: "Simulator",
     *,
     load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
@@ -96,6 +630,16 @@ def process_buff(
     """
     if load_lifecycle_cache is None:
         load_lifecycle_cache = BuffLoadLifecycleCache()
+    due_sub_missions = None
+    if buff_0.ft.simple_effect_logic:
+        due_sub_missions = [
+            sub_mission
+            for sub_mission_start_tick, sub_mission in mission.mission_dict.items()
+            if time_now - 1 < sub_mission_start_tick <= time_now
+        ]
+        if not due_sub_missions:
+            # 简单效果只会在 start/hit/end 子任务命中 tick 改变状态；空 tick 不需要进入 BuffJudge。
+            return
     all_match, judge_condition_dict, active_condition_dict = BuffInitialize(
         buff_0.ft.index,
         sub_exist_buff_dict,
@@ -106,6 +650,7 @@ def process_buff(
         judge_condition_dict,
         mission,
         cache=load_lifecycle_cache.judge_cache,
+        simple_condition_cache=load_lifecycle_cache.simple_judge_condition_cache,
     )
     if not all_match:
         return
@@ -118,37 +663,39 @@ def process_buff(
     for char in selected_characters:
         # if buff_0.ft.simple_judge_logic:
         if buff_0.ft.simple_effect_logic:
-            for sub_mission_start_tick, sub_mission in mission.mission_dict.items():
-                if time_now - 1 < sub_mission_start_tick <= time_now:
+            assert due_sub_missions is not None
+            for sub_mission in due_sub_missions:
+                """
+                筛选出正在发生的子任务，如果子任务正在发生就直接执行update，把子任务的str传进buff.update()函数
+                并且触发对应的分支（start、hit、end），完成符合buff属性的时间、层数更新。
+                """
+                buff_new = Buff(
+                    active_condition_dict,
+                    judge_condition_dict,
+                    sim_instance=sim_instance,
+                )
+                buff_new.update(
+                    char,
+                    time_now,
+                    mission.mission_node.skill.ticks,
+                    sub_exist_buff_dict,
+                    sub_mission,
+                )
+                buff_new.ft.operator = buff_0.ft.operator
+                buff_new.ft.passively_updating = buff_0.ft.passively_updating
+                buff_new.ft.beneficiary = buff_0.ft.beneficiary
+                if buff_new.dy.is_changed:
+                    _enqueue_pending_buff(pending_buff_queue, char, buff_new)
                     """
-                    筛选出正在发生的子任务，如果子任务正在发生就直接执行update，把子任务的str传进buff.update()函数
-                    并且触发对应的分支（start、hit、end），完成符合buff属性的时间、层数更新。
+                    这里要注意：process_buff函数中传入的buff_0，只会来自于角色，
+                    所以，如果有上个Enemy的debuff，那么角色自身作为触发源头，正常更新以外，
+                    需要向Enemy的buff_0同步广播。否则，record就无法记录enemy身上Buff的正常层数。
                     """
-                    buff_new = Buff(
-                        active_condition_dict,
-                        judge_condition_dict,
-                        sim_instance=sim_instance,
-                    )
-                    buff_new.update(
-                        char,
-                        time_now,
-                        mission.mission_node.skill.ticks,
-                        sub_exist_buff_dict,
-                        sub_mission,
-                    )
-                    buff_new.ft.operator = buff_0.ft.operator
-                    buff_new.ft.passively_updating = buff_0.ft.passively_updating
-                    buff_new.ft.beneficiary = buff_0.ft.beneficiary
-                    if buff_new.dy.is_changed:
-                        _enqueue_pending_buff(pending_buff_queue, char, buff_new)
-                        """
-                        这里要注意：process_buff函数中传入的buff_0，只会来自于角色，
-                        所以，如果有上个Enemy的debuff，那么角色自身作为触发源头，正常更新以外，
-                        需要向Enemy的buff_0同步广播。否则，record就无法记录enemy身上Buff的正常层数。
-                        """
-                        if char == "enemy":
-                            enemy_buff_0 = exist_buff_dict["enemy"][buff_0.ft.index]
-                            buff_new.update_to_buff_0(enemy_buff_0)
+                if char == "enemy":
+                        enemy_buff_0 = registry_by_character["enemy"][
+                            buff_0.ft.index
+                        ]
+                        buff_new.update_to_buff_0(enemy_buff_0)
         else:
             """
             这个分支主要是为了处理复杂的effect类的buff的
@@ -164,52 +711,8 @@ def process_buff(
                 buff_new.ft.beneficiary = buff_0.ft.beneficiary
                 _enqueue_pending_buff(pending_buff_queue, char, buff_new)
                 if char == "enemy":
-                    enemy_buff_0 = exist_buff_dict["enemy"][buff_0.ft.index]
+                    enemy_buff_0 = registry_by_character["enemy"][buff_0.ft.index]
                     buff_new.update_to_buff_0(enemy_buff_0)
-
-
-class _LegacyPendingQueueCompatAdapter:
-    """Migration/test-only adapter for raw pending dict callers."""
-
-    def __init__(self, queues: dict[str, list[Buff]]) -> None:
-        self._queues = queues
-
-    def reset_for_beneficiaries(self, beneficiaries: list[str]) -> None:
-        for beneficiary in beneficiaries:
-            self._queues[beneficiary] = []
-
-    def enqueue(self, beneficiary: str, buff: Buff) -> None:
-        self._queues[beneficiary].append(buff)
-
-    def count(self) -> int:
-        return sum(len(queue) for queue in self._queues.values())
-
-    def as_compat_dict(self) -> dict[str, list[Buff]]:
-        return self._queues
-
-    def __getitem__(self, beneficiary: str) -> list[Buff]:
-        return self._queues[beneficiary]
-
-    def __setitem__(self, beneficiary: str, queue: list[Buff]) -> None:
-        self._queues[beneficiary] = queue
-
-
-def _pending_queue_owner_for_migration_tests(
-    pending_buff_queue: PendingQueueLike | dict[str, list[Buff]],
-    *,
-    sim_instance: "Simulator | None" = None,
-) -> PendingQueueLike:
-    if hasattr(pending_buff_queue, "reset_for_beneficiaries"):
-        return pending_buff_queue
-    runtime_state = getattr(sim_instance, "buff_runtime_state", None)
-    if runtime_state is not None and hasattr(runtime_state, "pending_queue_owner"):
-        raise TypeError(
-            "BuffLoadLoop raw pending dict compatibility is migration/test-only once "
-            "sim_instance exposes buff_runtime_state; use "
-            "BuffRuntimeFacade.load_pending_buffs(...) or pass "
-            "BuffRuntimeState.pending_queue_owner()."
-        )
-    return _LegacyPendingQueueCompatAdapter(pending_buff_queue)
 
 
 def _reset_pending_queues(
@@ -232,7 +735,7 @@ def _count_pending_buffs(pending_queue_owner: PendingQueueLike) -> int:
 
 
 def _pending_queue_result(pending_queue_owner: PendingQueueLike) -> dict[str, list[Buff]]:
-    return pending_queue_owner.as_compat_dict()
+    return pending_queue_owner.mutable_queues()
 
 
 def _record_buff_load_loop_scan_metrics(
@@ -244,6 +747,15 @@ def _record_buff_load_loop_scan_metrics(
     trigger_candidate_count: int,
     on_field_candidate_count: int,
     backend_candidate_count: int,
+    full_scan_candidate_count: int,
+    full_scan_on_field_candidate_count: int,
+    full_scan_backend_candidate_count: int,
+    skipped_candidate_count: int,
+    skipped_on_field_candidate_count: int,
+    skipped_backend_candidate_count: int,
+    fallback_candidate_count: int,
+    fallback_on_field_candidate_count: int,
+    fallback_backend_candidate_count: int,
     pending_queue_count: int,
     candidate_plan: BuffLoadLoopCandidatePlanSummary | None = None,
 ) -> None:
@@ -259,6 +771,18 @@ def _record_buff_load_loop_scan_metrics(
         "trigger_candidate_count": 0,
         "on_field_candidate_count": 0,
         "backend_candidate_count": 0,
+        "full_scan_candidate_count": 0,
+        "full_scan_on_field_candidate_count": 0,
+        "full_scan_backend_candidate_count": 0,
+        "selected_candidate_count": 0,
+        "selected_on_field_candidate_count": 0,
+        "selected_backend_candidate_count": 0,
+        "skipped_candidate_count": 0,
+        "skipped_on_field_candidate_count": 0,
+        "skipped_backend_candidate_count": 0,
+        "fallback_candidate_count": 0,
+        "fallback_on_field_candidate_count": 0,
+        "fallback_backend_candidate_count": 0,
         "pending_queue_count": 0,
         "candidate_plan_count": 0,
         "candidate_plan_on_field_candidate_count": 0,
@@ -292,11 +816,19 @@ def _record_buff_load_loop_scan_metrics(
         candidate_plan_character_count = candidate_plan["character_count"]
         candidate_plan_mismatch_count = sum(
             [
-                candidate_plan_count != trigger_candidate_count,
-                candidate_plan_on_field_candidate_count != on_field_candidate_count,
-                candidate_plan_backend_candidate_count != backend_candidate_count,
+                candidate_plan_count != full_scan_candidate_count,
+                candidate_plan_on_field_candidate_count
+                != full_scan_on_field_candidate_count,
+                candidate_plan_backend_candidate_count
+                != full_scan_backend_candidate_count,
                 candidate_plan_mission_count != mission_count,
                 candidate_plan_character_count != character_count,
+                full_scan_candidate_count
+                != trigger_candidate_count + skipped_candidate_count,
+                full_scan_on_field_candidate_count
+                != on_field_candidate_count + skipped_on_field_candidate_count,
+                full_scan_backend_candidate_count
+                != backend_candidate_count + skipped_backend_candidate_count,
             ]
         )
 
@@ -307,6 +839,18 @@ def _record_buff_load_loop_scan_metrics(
     metrics["trigger_candidate_count"] += trigger_candidate_count
     metrics["on_field_candidate_count"] += on_field_candidate_count
     metrics["backend_candidate_count"] += backend_candidate_count
+    metrics["full_scan_candidate_count"] += full_scan_candidate_count
+    metrics["full_scan_on_field_candidate_count"] += full_scan_on_field_candidate_count
+    metrics["full_scan_backend_candidate_count"] += full_scan_backend_candidate_count
+    metrics["selected_candidate_count"] += trigger_candidate_count
+    metrics["selected_on_field_candidate_count"] += on_field_candidate_count
+    metrics["selected_backend_candidate_count"] += backend_candidate_count
+    metrics["skipped_candidate_count"] += skipped_candidate_count
+    metrics["skipped_on_field_candidate_count"] += skipped_on_field_candidate_count
+    metrics["skipped_backend_candidate_count"] += skipped_backend_candidate_count
+    metrics["fallback_candidate_count"] += fallback_candidate_count
+    metrics["fallback_on_field_candidate_count"] += fallback_on_field_candidate_count
+    metrics["fallback_backend_candidate_count"] += fallback_backend_candidate_count
     metrics["pending_queue_count"] += pending_queue_count
     metrics["candidate_plan_count"] += candidate_plan_count
     metrics["candidate_plan_on_field_candidate_count"] += (
@@ -449,6 +993,81 @@ def _iter_buff_load_loop_candidate_steps(
             yield processor, registry, mission
 
 
+def _process_on_field_buff_candidates(
+    candidate_keys: Sequence[str],
+    sub_exist_buff_dict: dict,
+    mission: "LoadingMission",
+    time_now: int,
+    pending_buff_queue: PendingQueueLike,
+    all_name_order_box: dict,
+    registry_by_character: dict,
+    sim_instance: "Simulator",
+    *,
+    load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
+) -> None:
+    for buff_key in candidate_keys:
+        buff_0 = sub_exist_buff_dict[buff_key]
+        if not isinstance(buff_0, Buff):
+            raise TypeError(f"当前{buff_key}不是Buff类！")
+        if buff_0.ft.schedule_judge:
+            continue
+        if buff_0.ft.passively_updating:
+            continue
+
+        main_char = buff_0.ft.operator
+        all_name_box = all_name_order_box[main_char]
+        selected_characters = buff_go_to(buff_0, all_name_box)
+        process_buff(
+            buff_0,
+            sub_exist_buff_dict,
+            mission,
+            time_now,
+            selected_characters,
+            pending_buff_queue,
+            registry_by_character,
+            sim_instance=sim_instance,
+            load_lifecycle_cache=load_lifecycle_cache,
+        )
+
+
+def _process_backend_buff_candidates(
+    candidate_keys: Sequence[str],
+    sub_exist_buff_dict: dict,
+    all_name_order_box: dict,
+    mission: "LoadingMission",
+    time_now: int,
+    pending_buff_queue: PendingQueueLike,
+    registry_by_character: dict,
+    sim_instance: "Simulator",
+    *,
+    load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
+) -> None:
+    for other_buff_key in candidate_keys:
+        other_buff_0 = sub_exist_buff_dict[other_buff_key]
+        if not isinstance(other_buff_0, Buff):
+            raise TypeError(f"当前{other_buff_key}不是Buff类！")
+        if other_buff_0.ft.schedule_judge:
+            continue
+        if not other_buff_0.ft.backend_acitve:
+            continue
+        if other_buff_0.ft.passively_updating:
+            continue
+        main_char = other_buff_0.ft.operator
+        name_order_box = all_name_order_box[main_char]
+        selected_characters_back = buff_go_to(other_buff_0, name_order_box)
+        process_buff(
+            other_buff_0,
+            sub_exist_buff_dict,
+            mission,
+            time_now,
+            selected_characters_back,
+            pending_buff_queue,
+            registry_by_character,
+            sim_instance=sim_instance,
+            load_lifecycle_cache=load_lifecycle_cache,
+        )
+
+
 def _execute_buff_load_loop_candidate_step(
     *,
     processor: str,
@@ -460,30 +1079,57 @@ def _execute_buff_load_loop_candidate_step(
     registry_by_character: dict,
     sim_instance: "Simulator",
     load_lifecycle_cache: BuffLoadLifecycleCache,
+    candidate_keys: Sequence[str] | None = None,
 ) -> None:
     if processor == "on_field":
-        process_on_field_buff(
-            registry,
-            mission,
-            time_now,
-            pending_buff_queue,
-            all_name_order_box,
-            registry_by_character,
-            sim_instance=sim_instance,
-            load_lifecycle_cache=load_lifecycle_cache,
-        )
+        if candidate_keys is None:
+            process_on_field_buff(
+                registry,
+                mission,
+                time_now,
+                pending_buff_queue,
+                all_name_order_box,
+                registry_by_character,
+                sim_instance=sim_instance,
+                load_lifecycle_cache=load_lifecycle_cache,
+            )
+        else:
+            _process_on_field_buff_candidates(
+                candidate_keys,
+                registry,
+                mission,
+                time_now,
+                pending_buff_queue,
+                all_name_order_box,
+                registry_by_character,
+                sim_instance=sim_instance,
+                load_lifecycle_cache=load_lifecycle_cache,
+            )
         return
     if processor == "backend":
-        process_backend_buff(
-            registry,
-            all_name_order_box,
-            mission,
-            time_now,
-            pending_buff_queue,
-            registry_by_character,
-            sim_instance=sim_instance,
-            load_lifecycle_cache=load_lifecycle_cache,
-        )
+        if candidate_keys is None:
+            process_backend_buff(
+                registry,
+                all_name_order_box,
+                mission,
+                time_now,
+                pending_buff_queue,
+                registry_by_character,
+                sim_instance=sim_instance,
+                load_lifecycle_cache=load_lifecycle_cache,
+            )
+        else:
+            _process_backend_buff_candidates(
+                candidate_keys,
+                registry,
+                all_name_order_box,
+                mission,
+                time_now,
+                pending_buff_queue,
+                registry_by_character,
+                sim_instance=sim_instance,
+                load_lifecycle_cache=load_lifecycle_cache,
+            )
         return
     raise ValueError(f"未知的BuffLoadLoop候选执行器：{processor}")
 
@@ -491,7 +1137,7 @@ def _execute_buff_load_loop_candidate_step(
 def BuffLoadLoop(
     time_now: int,
     load_mission_dict: dict,
-    existbuff_dict: dict,
+    template_registry: "BuffTemplateRegistry",
     character_name_box: list,
     pending_buff_queue: PendingQueueLike,
     all_name_order_box: dict,
@@ -507,11 +1153,13 @@ def BuffLoadLoop(
     """
     from zsim.sim_progress.Load import LoadingMission
 
-    buff_registry_by_character = existbuff_dict
-    pending_queue_owner = _pending_queue_owner_for_migration_tests(
-        pending_buff_queue,
-        sim_instance=sim_instance,
-    )
+    buff_registry_by_character = template_registry.mutable_registry()
+    pending_queue_owner = pending_buff_queue
+    if not hasattr(pending_queue_owner, "reset_for_beneficiaries"):
+        raise TypeError(
+            "BuffLoadLoop requires BuffRuntimeState.pending_queue_owner(); "
+            "raw pending dictionaries are no longer accepted."
+        )
     if load_lifecycle_cache is None:
         load_lifecycle_cache = BuffLoadLifecycleCache()
     record_rebuild_count = getattr(sim_instance, "_record_buff_runtime_rebuild_count", None)
@@ -523,6 +1171,15 @@ def BuffLoadLoop(
     trigger_candidate_count = 0
     on_field_candidate_count = 0
     backend_candidate_count = 0
+    full_scan_candidate_count = 0
+    full_scan_on_field_candidate_count = 0
+    full_scan_backend_candidate_count = 0
+    skipped_candidate_count = 0
+    skipped_on_field_candidate_count = 0
+    skipped_backend_candidate_count = 0
+    fallback_candidate_count = 0
+    fallback_on_field_candidate_count = 0
+    fallback_backend_candidate_count = 0
     if record_scan_metrics:
         registered_buff_count = sum(
             len(buff_registry_by_character.get(character, {}))
@@ -543,25 +1200,51 @@ def BuffLoadLoop(
                 buff_registry_by_character,
                 character_name_box,
             )
-            trigger_candidate_count = int(candidate_plan["candidate_count"])
-            on_field_candidate_count = int(candidate_plan["on_field_candidate_count"])
-            backend_candidate_count = int(candidate_plan["backend_candidate_count"])
-        for processor, registry, mission in _iter_buff_load_loop_candidate_steps(
-            load_mission_dict,
+        candidate_index = _get_buff_load_candidate_index(
+            sim_instance,
             buff_registry_by_character,
             character_name_box,
-        ):
-            _execute_buff_load_loop_candidate_step(
-                processor=processor,
-                registry=registry,
-                mission=mission,
-                time_now=time_now,
-                pending_buff_queue=pending_queue_owner,
-                all_name_order_box=all_name_order_box,
-                registry_by_character=buff_registry_by_character,
-                sim_instance=sim_instance,
-                load_lifecycle_cache=load_lifecycle_cache,
-            )
+        )
+        for selection in candidate_index.iter_candidate_steps(load_mission_dict):
+            processor = selection.processor
+            full_scan_candidate_count += selection.full_scan_candidate_count
+            skipped_candidate_count += selection.skipped_candidate_count
+            fallback_candidate_count += selection.fallback_candidate_count
+            trigger_candidate_count += selection.selected_candidate_count
+            if processor == "on_field":
+                full_scan_on_field_candidate_count += selection.full_scan_candidate_count
+                skipped_on_field_candidate_count += selection.skipped_candidate_count
+                fallback_on_field_candidate_count += selection.fallback_candidate_count
+                on_field_candidate_count += selection.selected_candidate_count
+            else:
+                full_scan_backend_candidate_count += selection.full_scan_candidate_count
+                skipped_backend_candidate_count += selection.skipped_candidate_count
+                fallback_backend_candidate_count += selection.fallback_candidate_count
+                backend_candidate_count += selection.selected_candidate_count
+            if processor == "on_field":
+                _process_on_field_buff_candidates(
+                    selection.candidate_keys,
+                    selection.registry,
+                    selection.mission,
+                    time_now,
+                    pending_queue_owner,
+                    all_name_order_box,
+                    buff_registry_by_character,
+                    sim_instance=sim_instance,
+                    load_lifecycle_cache=load_lifecycle_cache,
+                )
+            else:
+                _process_backend_buff_candidates(
+                    selection.candidate_keys,
+                    selection.registry,
+                    all_name_order_box,
+                    selection.mission,
+                    time_now,
+                    pending_queue_owner,
+                    buff_registry_by_character,
+                    sim_instance=sim_instance,
+                    load_lifecycle_cache=load_lifecycle_cache,
+                )
     else:
         # 遍历load_mission_dict中的任务
         for mission in load_mission_dict.values():
@@ -571,17 +1254,20 @@ def BuffLoadLoop(
             if actor_name not in buff_registry_by_character:
                 raise ValueError("当前角色的Buff源并未创建！")
             # 提取当前角色的 Buff 列表
-            # sub_exist_debuff_dict = existbuff_dict['enemy']
+            # Enemy templates are handled through the runtime-owned registry.
 
             for char_name in character_name_box:
                 registry = buff_registry_by_character[char_name]
                 candidate_count = len(registry)
                 if record_scan_metrics:
                     trigger_candidate_count += candidate_count
+                    full_scan_candidate_count += candidate_count
                     if char_name == actor_name:
                         on_field_candidate_count += candidate_count
+                        full_scan_on_field_candidate_count += candidate_count
                     else:
                         backend_candidate_count += candidate_count
+                        full_scan_backend_candidate_count += candidate_count
                 if char_name == actor_name:
                     process_on_field_buff(
                         registry,
@@ -619,6 +1305,15 @@ def BuffLoadLoop(
             trigger_candidate_count=trigger_candidate_count,
             on_field_candidate_count=on_field_candidate_count,
             backend_candidate_count=backend_candidate_count,
+            full_scan_candidate_count=full_scan_candidate_count,
+            full_scan_on_field_candidate_count=full_scan_on_field_candidate_count,
+            full_scan_backend_candidate_count=full_scan_backend_candidate_count,
+            skipped_candidate_count=skipped_candidate_count,
+            skipped_on_field_candidate_count=skipped_on_field_candidate_count,
+            skipped_backend_candidate_count=skipped_backend_candidate_count,
+            fallback_candidate_count=fallback_candidate_count,
+            fallback_on_field_candidate_count=fallback_on_field_candidate_count,
+            fallback_backend_candidate_count=fallback_backend_candidate_count,
             pending_queue_count=_count_pending_buffs(pending_queue_owner),
             candidate_plan=candidate_plan,
         )
@@ -631,7 +1326,7 @@ def process_on_field_buff(
     time_now: int,
     pending_buff_queue: PendingQueueLike,
     all_name_order_box: dict,
-    exist_buff_dict: dict,
+    registry_by_character: dict,
     sim_instance: "Simulator",
     *,
     load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
@@ -664,7 +1359,7 @@ def process_on_field_buff(
             time_now,
             selected_characters,
             pending_buff_queue,
-            exist_buff_dict,
+            registry_by_character,
             sim_instance=sim_instance,
             load_lifecycle_cache=load_lifecycle_cache,
         )
@@ -676,7 +1371,7 @@ def process_backend_buff(
     mission: "LoadingMission",
     time_now: int,
     pending_buff_queue: PendingQueueLike,
-    exist_buff_dict: dict,
+    registry_by_character: dict,
     sim_instance: "Simulator",
     *,
     load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
@@ -712,7 +1407,7 @@ def process_backend_buff(
             time_now,
             selected_characters_back,
             pending_buff_queue,
-            exist_buff_dict,
+            registry_by_character,
             sim_instance=sim_instance,
             load_lifecycle_cache=load_lifecycle_cache,
         )
@@ -726,24 +1421,39 @@ def buff_go_to(buff_0, all_name_box):
     比如这个buff的add_buff_to字段的内容是1100（加给自己和下一位），那么新的这个selected_characters就会输出[艾莲，莱卡恩]
     如果字段内容是1010（加给自己和上一位），那么新的selected_characters就会输出[艾莲，苍角]
     """
+    cache_key = (id(all_name_box), getattr(buff_0.ft, "add_buff_to", None))
+    cache = getattr(buff_0, "_zsim_buff_go_to_cache", None)
+    if not isinstance(cache, dict):
+        cache = {}
+        try:
+            setattr(buff_0, "_zsim_buff_go_to_cache", cache)
+        except (AttributeError, TypeError):
+            cache = None
+    cached_selected_characters = (
+        cache.get(cache_key) if cache is not None else None
+    )
+    if cached_selected_characters is not None:
+        return cached_selected_characters
     adding_code = str(int(buff_0.ft.add_buff_to)).zfill(4)
     selected_characters = [
         all_name_box[i] for i in range(len(all_name_box)) if adding_code[i] == "1"
     ]
+    if cache is not None:
+        cache[cache_key] = selected_characters
     return selected_characters
 
 
 def BuffInitialize(
-    buff_name: str, existbuff_dict: dict, *, cache: BuffInitCache | None = None
+    buff_name: str, template_registry: dict, *, cache: BuffInitCache | None = None
 ) -> tuple[bool, dict, dict]:
     if cache is None:
         cache = BuffInitCache()
-    cache_key = (buff_name, tuple(existbuff_dict.items()))
+    cache_key = (id(template_registry), buff_name)
     if cache_key in cache.cache:
         return cache.get(cache_key)
     # 对单个buff进行初始化，抛出一个触发状态参数，两个参数序列。
     all_match = False
-    buff_now = existbuff_dict[buff_name]
+    buff_now = template_registry[buff_name]
     if not isinstance(buff_now, Buff):
         raise ValueError(f"当前正在检索的Buff：{buff_name}并不是Buff类！")
     if buff_name not in JUDGE_FILE.index:
@@ -764,6 +1474,7 @@ def BuffJudge(
     mission: "LoadingMission",
     *,
     cache: BuffJudgeCache | None = None,
+    simple_condition_cache: SimpleJudgeConditionCache | None = None,
 ) -> bool:
     """
     如果judge_condition_dict的全部内容是None，同时buff还是简单判断逻辑
@@ -772,36 +1483,25 @@ def BuffJudge(
     # 以下为缓存逻辑
     if cache is None:
         cache = BuffJudgeCache()
-    simple_logic: bool = buff_now.ft.simple_judge_logic
-    all_simple = [
-        buff_now.ft.simple_judge_logic,
-        buff_now.ft.simple_start_logic,
-        buff_now.ft.simple_hit_logic,
-        buff_now.ft.simple_end_logic,
-        buff_now.ft.simple_effect_logic,
-        buff_now.ft.simple_exit_logic,
-    ]
-    if all(all_simple):
-        cache_key = hash((id(buff_now), tuple(judge_condition_dict.items()), id(mission)))
+    static_info = cache.static_info(buff_now, judge_condition_dict)
+    if static_info.all_simple:
+        cache_key = (id(buff_now), id(judge_condition_dict), id(mission))
         if cache_key in cache.cache:
             return cache[cache_key]
     result: bool
 
     def save_cache_and_return(result: bool):
         """由于本函数有多个return中断，所以写了个这玩意，把直接return换成return这个函数就行"""
-        if all(all_simple):
+        if static_info.all_simple:
             cache.add(cache_key, result)
         return result
 
     # ——————缓存逻辑结束————————
 
-    if buff_now.ft.alltime:
+    if static_info.alltime:
         result = True
         return save_cache_and_return(result)
-    if (
-        not any(value if value is None else True for value in judge_condition_dict.values())
-        and buff_now.ft.simple_judge_logic
-    ):
+    if static_info.blank_simple_judge:
         # EXPLAIN：全部数据都是None并且是简单判断逻辑
         #   这通常意味着Buff的判断不在Load阶段，而是通过某种方式在其他阶段暴力添加。
         #   但是部分alltime的buff也会进入这一分支，所以需要在判断alltime之后再进行全空判断。
@@ -813,8 +1513,12 @@ def BuffJudge(
     skill_now = mission.mission_node.skill
     if not isinstance(skill_now, Skill.InitSkill):
         raise TypeError(f"{skill_now}并非Skill类！")
-    if simple_logic:
-        all_match = simple_string_judge(judge_condition_dict, skill_now)
+    if static_info.simple_logic:
+        all_match = simple_string_judge(
+            judge_condition_dict,
+            skill_now,
+            cache=simple_condition_cache,
+        )
     else:
         try:
             assert buff_now.logic.xjudge is not None, f"{buff_now.ft.index} 的 xjudge 不能为空"
@@ -827,27 +1531,46 @@ def BuffJudge(
     return save_cache_and_return(result)
 
 
-def simple_string_judge(judge_condition_dict: dict, skill_now) -> bool:
-    all_match = True
-    """
-        先假定all_match是True，一会儿循环过程中一旦有不符合的项，就改成False。
-        只有全部通过才能继续维持All_match的值。
-        """
-    for condition, judge_condition in BUFF_LOADING_CONDITION_TRANSLATION_DICT.items():
-        """
-        由于SkillNode中的属性名和judge_condition_dict中的键值名不同，
-        所以需要BUFF_LOADING_CONDITION_TRANSLATION_DICT进行翻译。
-        """
-        csv_judge_condition = judge_condition_dict[condition]
+def _simple_judge_conditions(
+    judge_condition_dict: dict,
+    *,
+    cache: SimpleJudgeConditionCache | None = None,
+) -> tuple[_StaticJudgeCondition, ...]:
+    if cache is None:
+        cache = SimpleJudgeConditionCache()
+    cache_key = id(judge_condition_dict)
+    cached_conditions = cache.get(cache_key)
+    if cached_conditions is not None:
+        return cached_conditions
 
+    conditions: list[_StaticJudgeCondition] = []
+    for condition, judge_condition in BUFF_LOADING_CONDITION_TRANSLATION_DICT.items():
+        csv_judge_condition = judge_condition_dict[condition]
         if csv_judge_condition is not None:
-            """
-            如果键值下面是None则直接跳过。
-            """
-            final_condition = process_string(csv_judge_condition)
-            if getattr(skill_now, judge_condition) not in final_condition:
-                all_match = False
-    return all_match
+            conditions.append(
+                _StaticJudgeCondition(
+                    skill_attribute=judge_condition,
+                    allowed_values=tuple(process_string(csv_judge_condition)),
+                )
+            )
+    result = tuple(conditions)
+    cache.add(cache_key, result)
+    return result
+
+
+def simple_string_judge(
+    judge_condition_dict: dict,
+    skill_now,
+    *,
+    cache: SimpleJudgeConditionCache | None = None,
+) -> bool:
+    for condition in _simple_judge_conditions(
+        judge_condition_dict,
+        cache=cache,
+    ):
+        if getattr(skill_now, condition.skill_attribute) not in condition.allowed_values:
+            return False
+    return True
 
 
 def process_string(source: str) -> list[int | float | str]:
@@ -861,9 +1584,9 @@ def process_string(source: str) -> list[int | float | str]:
     if isinstance(source, str):
         if "|" in source:
             split_list = source.split("|")
-            return [eval(item) if item.isdigit() else item for item in split_list]
+            return [int(item) if item.isdigit() else item for item in split_list]
         else:
-            return [eval(source) if source.isdigit() else source]
+            return [int(source) if source.isdigit() else source]
     else:
         return [source]
 

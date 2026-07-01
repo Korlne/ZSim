@@ -7,9 +7,7 @@ from .FindEquipper import find_equipper
 from .FindMain import (
     find_all_name_order_box,  # noqa: F401
     find_char_list,
-    find_dynamic_buff_list,
     find_enemy,
-    find_exist_buff_dict,
     find_init_data,  # noqa: F401,
     find_preload_data,
     find_stack,
@@ -53,18 +51,22 @@ def check_preparation(
         preparation_context, PreparationContext
     ):
         raise TypeError("preparation_context必须是PreparationContext实例")
+    if "event_list" in kwargs:
+        raise ValueError(
+            "check_preparation(..., event_list=...) 的旧 event_list 参数已删除；"
+            "计划事件发布请使用 ScheduleDispatchPort。"
+        )
+    if preparation_context is None:
+        raise ValueError(
+            "check_preparation requires PreparationContext; old sim_instance "
+            "fallback discovery has been removed."
+        )
 
     # 先决条件检查
     assert buff_0 is not None, "buff_0不能为空"
     if buff_0.history.record is None:
         raise ValueError("buff_0的record模块尚未初始化！！！")
     record = buff_0.history.record
-
-    if "event_list" in kwargs:
-        raise ValueError(
-            "check_preparation(..., event_list=...) 的旧 event_list 参数已删除；"
-            "计划事件发布请使用 ScheduleDispatchPort。"
-        )
 
     # 参数获取
     enemy = kwargs.get("enemy")
@@ -96,67 +98,33 @@ def check_preparation(
     # 函数主体部分
     if equipper:
         if record.equipper is None:
-            if preparation_context is None:
-                record.equipper = find_equipper(equipper, sim_instance=buff_instance.sim_instance)
-            else:
-                record.equipper = preparation_context.find_equipper(equipper)
+            record.equipper = preparation_context.find_equipper(equipper)
         if record.char is None:
             assert record.equipper is not None, "equipper不能为空"
-            if preparation_context is None:
-                record.char = find_char_from_name(
-                    NAME=record.equipper, sim_instance=buff_instance.sim_instance
-                )
-            else:
-                record.char = preparation_context.find_char_from_name(record.equipper)
+            record.char = preparation_context.find_char_from_name(record.equipper)
     if char_CID:
         if record.char is None:
-            if preparation_context is None:
-                record.char = find_char_from_CID(
-                    char_CID, sim_instance=buff_instance.sim_instance
-                )
-            else:
-                record.char = preparation_context.find_char_from_cid(char_CID)
+            record.char = preparation_context.find_char_from_cid(char_CID)
     if char_NAME:
         if record.char is None:
-            if preparation_context is None:
-                record.char = find_char_from_name(
-                    char_NAME, sim_instance=buff_instance.sim_instance
-                )
-            else:
-                record.char = preparation_context.find_char_from_name(char_NAME)
+            record.char = preparation_context.find_char_from_name(char_NAME)
 
     if sub_exist_buff_dict:
         if record.char is None:
             raise ValueError("在buff_0.history.record 中并未读取到对应的char")
         if record.sub_exist_buff_dict is None:
-            if preparation_context is None:
-                record.sub_exist_buff_dict = find_exist_buff_dict(
-                    sim_instance=buff_instance.sim_instance
-                )[record.char.NAME]
-            else:
-                record.sub_exist_buff_dict = preparation_context.find_sub_exist_buff_dict(
-                    record.char.NAME
-                )
+            record.sub_exist_buff_dict = preparation_context.find_sub_exist_buff_dict(
+                record.char.NAME
+            )
     if enemy:
         if record.enemy is None:
-            if preparation_context is None:
-                record.enemy = find_enemy(sim_instance=buff_instance.sim_instance)
-            else:
-                record.enemy = preparation_context.enemy
+            record.enemy = preparation_context.enemy
     if dynamic_buff_list:
         if record.dynamic_buff_list is None:
-            if preparation_context is None:
-                record.dynamic_buff_list = find_dynamic_buff_list(
-                    sim_instance=buff_instance.sim_instance
-                )
-            else:
-                record.dynamic_buff_list = preparation_context.active_buff_view
+            record.dynamic_buff_list = preparation_context.active_buff_view
     if action_stack:
         if record.action_stack is None:
-            if preparation_context is None:
-                record.action_stack = find_stack(sim_instance=buff_instance.sim_instance)
-            else:
-                record.action_stack = preparation_context.action_stack
+            record.action_stack = preparation_context.action_stack
     if trigger_buff_ref:
         trigger_buff_0_handler(
             record,
@@ -166,16 +134,10 @@ def check_preparation(
         )
     if preload_data:
         if record.preload_data is None:
-            if preparation_context is None:
-                record.preload_data = find_preload_data(sim_instance=buff_instance.sim_instance)
-            else:
-                record.preload_data = preparation_context.preload_data
+            record.preload_data = preparation_context.preload_data
     if char_obj_list:
         if record.char_obj_list is None:
-            if preparation_context is None:
-                record.char_obj_list = find_char_list(sim_instance=buff_instance.sim_instance)
-            else:
-                record.char_obj_list = preparation_context.char_obj_list
+            record.char_obj_list = preparation_context.char_obj_list
     if na_skill_level:
         if record.char is None:
             raise ValueError("在buff_0.history.record 中并未读取到对应的char")
@@ -197,6 +159,11 @@ def trigger_buff_0_handler(
         所以，应该直接找到活跃的Buff源——也就是Buff 的Operator的源头。
     """
     trigger_buff_ref = TriggerBuffRef.coerce(trigger_buff_0)
+    if preparation_context is None:
+        raise ValueError(
+            "trigger_buff_0 preparation requires PreparationContext; old Buff "
+            "template discovery has been removed."
+        )
     if record.trigger_buff_0 is None:
         operator = trigger_buff_ref.operator
         if trigger_buff_ref.operator_kind == TriggerBuffRef.EQUIPPER:
@@ -214,14 +181,6 @@ def trigger_buff_0_handler(
             operator = record.char.NAME
 
         resolved_trigger_ref = trigger_buff_ref.with_resolved_owner(operator)
-        if preparation_context is not None:
-            record.trigger_buff_0 = preparation_context.find_trigger_buff_ref(
-                resolved_trigger_ref
-            )
-        else:
-            template_registry = BuffTemplateRegistryReadPort(
-                find_exist_buff_dict(sim_instance=buff_instance.sim_instance)
-            )
-            record.trigger_buff_0 = TriggerBuffLookup(
-                template_registry
-            ).find_by_ref(resolved_trigger_ref)
+        record.trigger_buff_0 = preparation_context.find_trigger_buff_ref(
+            resolved_trigger_ref
+        )

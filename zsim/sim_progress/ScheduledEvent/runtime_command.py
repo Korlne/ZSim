@@ -8,63 +8,8 @@ from zsim.sim_progress.Update.UpdateAnomaly import (
     update_anomaly as _run_update_anomaly,
 )
 
-_MISSING_COMPAT_HOOK = object()
-_MIGRATION_TEST_ANOMALY_HOOK_NAME = "legacy_" + "update_anomaly"
-
-
-def _migration_test_update_anomaly_hook():
-    """Return a patched legacy hook for migration/test compatibility only."""
-    compatibility_hook = globals().get(
-        _MIGRATION_TEST_ANOMALY_HOOK_NAME,
-        _MISSING_COMPAT_HOOK,
-    )
-    if (
-        compatibility_hook is _MISSING_COMPAT_HOOK
-        or compatibility_hook is _run_update_anomaly
-    ):
-        return None
-    return compatibility_hook
-
-
-def __getattr__(name: str):
-    if name == _MIGRATION_TEST_ANOMALY_HOOK_NAME:
-        return _run_update_anomaly
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-class _MigrationDispatchEventList:
-    """List-shaped append adapter for patched legacy anomaly tests."""
-
-    def __init__(self, dispatch_port) -> None:
-        self._dispatch_port = dispatch_port
-
-    def append(self, event) -> None:
-        self._dispatch_port.publish_scheduled(event)
-
-    def extend(self, events) -> None:
-        self._dispatch_port.publish_scheduled_batch(events)
-
 
 def run_update_anomaly(**kwargs) -> None:
-    compatibility_hook = _migration_test_update_anomaly_hook()
-    if compatibility_hook is not None:
-        runtime_context = kwargs["runtime_context"]
-        active_store_key = "dynamic_" + "buff_dict"
-        compatibility_kwargs = {
-            "skill_node": kwargs["skill_node"],
-            active_store_key: kwargs[active_store_key],
-            "sim_instance": kwargs["sim_instance"],
-            "buff_runtime_view": runtime_context.buff_runtime_view,
-        }
-        compatibility_hook(
-            kwargs["element_type"],
-            kwargs["enemy"],
-            kwargs["time_now"],
-            _MigrationDispatchEventList(runtime_context.dispatch_port),
-            kwargs["char_obj_list"],
-            **compatibility_kwargs,
-        )
-        return
     _run_update_anomaly(**kwargs)
 
 
@@ -114,14 +59,10 @@ class _RuntimeCommandAdapterBase(RuntimeCommandPort):
         data: "ScheduleData",
         action_stack: "ActionStack",
         sim_instance: "Simulator",
-        exist_buff_dict: dict | None = None,
-        buff_runtime_state: "BuffRuntimeState | None" = None,
+        buff_runtime_state: "BuffRuntimeState",
         buff_runtime_view: "BuffRuntimeReadPort | None" = None,
     ) -> None:
-        if buff_runtime_state is None and exist_buff_dict is None:
-            raise ValueError("buff_runtime_state or legacy exist_buff_dict is required")
         self._data = data
-        self._exist_buff_dict = exist_buff_dict
         self._buff_runtime_state = buff_runtime_state
         self._action_stack = action_stack
         self._sim_instance = sim_instance
@@ -142,7 +83,7 @@ class _RuntimeCommandAdapterBase(RuntimeCommandPort):
             char_obj_list=self._data.char_obj_list,
             sim_instance=self._sim_instance,
             skill_node=skill_node,
-            dynamic_buff_dict=self._legacy_active_store_for_update_anomaly(),
+            dynamic_buff_dict=None,
             runtime_context=create_anomaly_runtime_context(
                 sim_instance=self._sim_instance,
                 enemy=enemy,
@@ -171,15 +112,6 @@ class _RuntimeCommandAdapterBase(RuntimeCommandPort):
         return self._runtime_state_for_settle(enemy).create_facade()
 
     def _runtime_state_for_settle(self, enemy: "Enemy") -> "BuffRuntimeState":
-        if self._buff_runtime_state is None:
-            from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
-
-            self._buff_runtime_state = BuffRuntimeState(
-                template_registry=self._template_registry_for_compat(),
-                pending_queue=getattr(self._data, "loading_buff", {}),
-                active_store=self._active_store_for_compat(),
-                enemy_mirror=self._enemy_debuff_mirror_for_settle(enemy),
-            )
         return self._buff_runtime_state
 
     @staticmethod
@@ -189,21 +121,6 @@ class _RuntimeCommandAdapterBase(RuntimeCommandPort):
         if enemy_mirror is None:
             return []
         return enemy_mirror
-
-    def _template_registry_for_compat(self) -> dict:
-        if self._buff_runtime_state is not None:
-            return self._buff_runtime_state.template_registry_for_compat()
-        if self._exist_buff_dict is None:
-            raise RuntimeError("legacy exist_buff_dict compatibility data is missing")
-        return self._exist_buff_dict
-
-    def _active_store_for_compat(self) -> dict:
-        if self._buff_runtime_state is not None:
-            return self._buff_runtime_state.active_store_for_compat()
-        return self._data.dynamic_buff
-
-    def _legacy_active_store_for_update_anomaly(self) -> dict | None:
-        return None
 
 
 class DefaultRuntimeCommandAdapter(_RuntimeCommandAdapterBase):
@@ -227,36 +144,19 @@ class DefaultRuntimeCommandAdapter(_RuntimeCommandAdapterBase):
         )
 
 
-class LegacyRuntimeCommandAdapter(_RuntimeCommandAdapterBase):
-    """Explicit legacy runtime command compatibility adapter."""
-
-    def _legacy_active_store_for_update_anomaly(self) -> dict | None:
-        return self._active_store_for_compat()
-
-
 def create_runtime_command_port(
     *,
     data: "ScheduleData",
     action_stack: "ActionStack",
     sim_instance: "Simulator",
-    exist_buff_dict: dict | None = None,
-    buff_runtime_state: "BuffRuntimeState | None" = None,
+    buff_runtime_state: "BuffRuntimeState",
     buff_runtime_view: "BuffRuntimeReadPort | None" = None,
 ) -> RuntimeCommandPort:
     """创建同 tick runtime 写侧命令入口。"""
-    if buff_runtime_state is not None:
-        return DefaultRuntimeCommandAdapter(
-            data=data,
-            action_stack=action_stack,
-            sim_instance=sim_instance,
-            buff_runtime_state=buff_runtime_state,
-            buff_runtime_view=buff_runtime_view,
-        )
-    return LegacyRuntimeCommandAdapter(
+    return DefaultRuntimeCommandAdapter(
         data=data,
         action_stack=action_stack,
         sim_instance=sim_instance,
-        exist_buff_dict=exist_buff_dict,
         buff_runtime_state=buff_runtime_state,
         buff_runtime_view=buff_runtime_view,
     )
@@ -265,6 +165,5 @@ def create_runtime_command_port(
 __all__ = [
     "RuntimeCommandPort",
     "DefaultRuntimeCommandAdapter",
-    "LegacyRuntimeCommandAdapter",
     "create_runtime_command_port",
 ]

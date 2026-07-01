@@ -1,5 +1,6 @@
-import gc
+import math
 import time
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
@@ -11,13 +12,22 @@ from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_disp
 from zsim.sim_progress.Enemy import Enemy
 from zsim.sim_progress.Load import DamageEventJudge, SkillEventSplit
 from zsim.sim_progress.Preload import PreloadClass
+from zsim.sim_progress.Preload.wakeup import PreloadWakeupSource
 from zsim.sim_progress.RandomNumberGenerator import RNG
 from zsim.sim_progress.Report import start_report_threads, stop_report_threads
 from zsim.sim_progress.ScheduledEvent import ScheduledEvent as ScE
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
+    BuffTimeRelatedWakeupSource,
     BuffRuntimeFacade,
     BuffRuntimeState,
 )
+from zsim.sim_progress.SimulationEngine import (
+    PlannedEventQueueWakeupSource,
+    SimulationClock,
+    StopTickWakeupSource,
+    WakeupSource,
+)
+from zsim.sim_progress.Character.wakeup import CharacterResourceWakeupSource
 from zsim.simulator.dataclasses import (
     CharacterData,
     GlobalStats,
@@ -26,9 +36,48 @@ from zsim.simulator.dataclasses import (
     ScheduleData,
     SimCfg,
 )
+from zsim.sim_progress.data_struct import SPUpdateData
 
 if TYPE_CHECKING:
     from zsim.models.session.session_run import CommonCfg
+
+
+@dataclass(frozen=True, slots=True)
+class EnemyStunWakeupSource:
+    enemy: Enemy
+    name: str = "enemy-stun"
+
+    def next_wakeup_tick(self, current_tick: int) -> int | None:
+        enemy_dynamic = getattr(self.enemy, "dynamic", None)
+        if getattr(enemy_dynamic, "stun", False):
+            return current_tick + 1
+        return None
+
+
+@dataclass(frozen=True, slots=True)
+class LoadMissionWakeupSource:
+    load_mission_dict: dict
+    name: str = "load-mission"
+
+    def next_wakeup_tick(self, current_tick: int) -> int | None:
+        candidates: list[int] = []
+        for mission in self.load_mission_dict.values():
+            mission_dict = getattr(mission, "mission_dict", None)
+            if isinstance(mission_dict, dict):
+                for mission_tick in mission_dict:
+                    wakeup_tick = math.ceil(float(mission_tick))
+                    if wakeup_tick > current_tick:
+                        candidates.append(wakeup_tick)
+                    elif mission_tick > current_tick - 1:
+                        candidates.append(current_tick + 1)
+            mission_end_tick = getattr(mission, "mission_end_tick", None)
+            if mission_end_tick is not None:
+                cleanup_tick = int(mission_end_tick) + 1
+                if cleanup_tick > current_tick:
+                    candidates.append(cleanup_tick)
+        if not candidates:
+            return None
+        return min(candidates)
 
 
 class Confirmation(BaseModel):
@@ -236,6 +285,103 @@ class Simulator:
         self._record_buff_runtime_rebuild_count("default_buff_runtime_facade")
         return self.buff_runtime_state.create_facade()
 
+    def _main_loop_wakeup_sources(
+        self,
+        stop_tick: int | None,
+        *,
+        buff_runtime: BuffRuntimeFacade | None = None,
+    ) -> list[WakeupSource]:
+        sources: list[WakeupSource] = [
+            PlannedEventQueueWakeupSource(self.schedule_data.planned_event_queue),
+            LoadMissionWakeupSource(self.load_data.load_mission_dict),
+            PreloadWakeupSource(self.preload),
+            CharacterResourceWakeupSource(self.char_data.char_obj_list),
+            EnemyStunWakeupSource(self.schedule_data.enemy),
+        ]
+        if buff_runtime is not None:
+            sources.append(
+                BuffTimeRelatedWakeupSource(
+                    runtime_facade=buff_runtime,
+                    enemy=self.schedule_data.enemy,
+                )
+            )
+        if stop_tick is not None:
+            sources.append(StopTickWakeupSource(stop_tick))
+        return sources
+
+    def _settle_skipped_time_derived_state(self, *, elapsed_ticks: int) -> None:
+        if elapsed_ticks <= 0:
+            return
+        previous_elapsed_ticks = getattr(self, "_event_driven_elapsed_ticks", 1)
+        previous_skipped_refresh = getattr(self, "_event_driven_skipped_refresh", False)
+        self._event_driven_elapsed_ticks = elapsed_ticks
+        self._event_driven_skipped_refresh = True
+        buff_runtime_view = self.buff_runtime_state.create_read_port()
+        for char in self.char_data.char_obj_list:
+            sp_update_data = SPUpdateData(
+                char_obj=char,
+                runtime_view=buff_runtime_view,
+                sim_instance=self,
+            )
+            char.update_sp_and_decibel(sp_update_data)
+            if hasattr(char, "refresh_myself"):
+                char.refresh_myself()
+        self._event_driven_elapsed_ticks = previous_elapsed_ticks
+        self._event_driven_skipped_refresh = previous_skipped_refresh
+
+    def _settle_current_tick_time_derived_state(self) -> None:
+        previous_elapsed_ticks = getattr(self, "_event_driven_elapsed_ticks", 1)
+        previous_skipped_refresh = getattr(self, "_event_driven_skipped_refresh", False)
+        self._event_driven_elapsed_ticks = 1
+        self._event_driven_skipped_refresh = False
+        buff_runtime_view = self.buff_runtime_state.create_read_port()
+        for char in self.char_data.char_obj_list:
+            sp_update_data = SPUpdateData(
+                char_obj=char,
+                runtime_view=buff_runtime_view,
+                sim_instance=self,
+            )
+            char.update_sp_and_decibel(sp_update_data)
+            if hasattr(char, "refresh_myself"):
+                char.refresh_myself()
+        self._event_driven_elapsed_ticks = previous_elapsed_ticks
+        self._event_driven_skipped_refresh = previous_skipped_refresh
+
+    def _next_main_loop_wakeup(
+        self,
+        *,
+        current_tick: int,
+        stop_tick: int | None,
+        buff_runtime: BuffRuntimeFacade,
+        simulation_clock: SimulationClock,
+    ) -> tuple[int, tuple[str, ...]]:
+        wakeup_sources = self._main_loop_wakeup_sources(
+            stop_tick,
+            buff_runtime=buff_runtime,
+        )
+        next_tick = simulation_clock.next_wakeup_tick(
+            current_tick=current_tick,
+            wakeup_sources=wakeup_sources,
+        )
+        due_sources = tuple(
+            source.name
+            for source in wakeup_sources
+            if source.next_wakeup_tick(current_tick) == next_tick
+        )
+        return next_tick, due_sources
+
+    @staticmethod
+    def _requires_behavior_pipeline(due_source_names: tuple[str, ...]) -> bool:
+        behavior_sources = {
+            "initial",
+            "planned-event-queue",
+            "load-mission",
+            "preload-action",
+            "character-resource",
+            "enemy-stun",
+        }
+        return any(source_name in behavior_sources for source_name in due_source_names)
+
     def main_loop(
         self,
         stop_tick: int = 10800,
@@ -252,7 +398,18 @@ class Simulator:
         if not use_api:
             self.cli_init_simulator(sim_cfg)
         buff_runtime = self._create_buff_runtime_facade()
+        simulation_clock = SimulationClock()
+        last_processed_tick: int | None = None
         while True:
+            skipped_elapsed_ticks = (
+                0
+                if last_processed_tick is None
+                else max(self.tick - last_processed_tick - 1, 0)
+            )
+            self._settle_skipped_time_derived_state(
+                elapsed_ticks=skipped_elapsed_ticks,
+            )
+            self._event_driven_elapsed_ticks = 1
             # Tick Update
             # report_to_log(f"[Update] Tick step to {tick}")
             buff_runtime.update_time_related_effects(
@@ -329,10 +486,15 @@ class Simulator:
                     end="",
                 )
                 print("---------------------------------------------")
-            self.tick += 1
+            last_processed_tick = self.tick
+            self.tick = simulation_clock.next_wakeup_tick(
+                current_tick=self.tick,
+                wakeup_sources=self._main_loop_wakeup_sources(
+                    stop_tick,
+                    buff_runtime=buff_runtime,
+                ),
+            )
             self.schedule_data.reset_processed_event()
-            if self.tick % 500 == 0 and self.tick != 0:
-                gc.collect()
         stop_report_threads()
 
     def __deepcopy__(self, memo):

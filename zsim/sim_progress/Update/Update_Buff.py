@@ -39,6 +39,34 @@ def update_buff(
     return runtime_facade.sweep_active_buffs(tick=timetick)
 
 
+def next_dot_or_anomaly_wakeup_tick(enemy: Enemy, current_tick: int) -> int | None:
+    """读取 Dot/异常状态下一次可能发生生命周期变化的 tick。"""
+    candidates: list[int] = []
+    for dot in enemy.dynamic.dynamic_dot_list:
+        if not isinstance(dot, BaseDot.Dot):
+            raise TypeError(f"Enemy的dot列表中的{dot}不是Dot类！")
+        if dot.ft.complex_exit_logic:
+            candidates.append(current_tick + 1)
+            continue
+        end_tick = int(dot.dy.end_ticks)
+        candidates.append(end_tick if end_tick > current_tick else current_tick + 1)
+
+    for bar in enemy.anomaly_bars_dict.values():
+        if not getattr(bar, "active", False):
+            continue
+        max_duration = getattr(bar, "max_duration", None)
+        if max_duration is None:
+            candidates.append(current_tick + 1)
+            continue
+        expire_tick = int(bar.last_active + max_duration + 1)
+        candidates.append(expire_tick if expire_tick > current_tick else current_tick + 1)
+
+    future_candidates = [tick for tick in candidates if tick > current_tick]
+    if not future_candidates:
+        return None
+    return min(future_candidates)
+
+
 def CheckBuff(_, charname):
     """
     检查buff的参数情况。
