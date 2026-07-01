@@ -13,6 +13,58 @@ from zsim.sim_progress.data_struct import cal_buff_total_bonus
 from zsim.sim_progress.Enemy import Enemy
 from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.Report import report_to_log
+from zsim.sim_progress.calculation.identities import (
+    AURIC_INK_DAMAGE,
+    ELECTRIC_DAMAGE,
+    ETHER_DAMAGE,
+    FIRE_DAMAGE,
+    FROST_DAMAGE,
+    ICE_DAMAGE,
+    PHYSICAL_DAMAGE,
+)
+from zsim.sim_progress.calculation.inputs.common import DamageIdentityProfile
+from zsim.sim_progress.calculation.inputs.regular import (
+    AffinityValueMap,
+    DamageVulnerabilityInput,
+    DefenseMultiplierInput,
+    RegularBaseAttributeInput,
+    RegularCritInput,
+    RegularDamageBonusInput,
+    RegularDamageMultipliers,
+    ResistanceMultiplierInput,
+    SpecialMultiplierInput,
+    StunVulnerabilityInput,
+    multiplier_affinity_from_regular_element_type,
+)
+from zsim.sim_progress.calculation.formulas.regular.damage import (
+    assemble_regular_damage_multiplier_array,
+    calculate_base_damage,
+    calculate_crit_expectation,
+    calculate_full_crit_damage,
+    calculate_full_crit_rate,
+    calculate_non_sheer_base_attribute,
+    calculate_personal_crit_damage,
+    calculate_personal_crit_rate,
+    calculate_regular_damage_bonus,
+    calculate_regular_damage_product,
+    calculate_sheer_base_attribute,
+)
+from zsim.sim_progress.calculation.multipliers.defense import (
+    calculate_attacker_level_coefficient,
+    calculate_pen_ratio,
+    calculate_recipient_defense,
+)
+from zsim.sim_progress.calculation.multipliers.resistance import (
+    calculate_resistance_multiplier,
+)
+from zsim.sim_progress.calculation.multipliers.special import (
+    calculate_sheer_damage_bonus,
+    calculate_special_multiplier,
+)
+from zsim.sim_progress.calculation.multipliers.vulnerability import (
+    calculate_damage_vulnerability,
+    calculate_stun_vulnerability,
+)
 
 from .constants import EventConstants
 
@@ -378,30 +430,213 @@ def _calculate_anomaly_proficiency(
     )
 
 
+def _regular_damage_identity_profile(element_type: ElementType) -> DamageIdentityProfile:
+    try:
+        affinity = multiplier_affinity_from_regular_element_type(int(element_type))
+    except ValueError as err:
+        raise ValueError(
+            f"Invalid element type: {element_type}, must be a integer in 0~6"
+        ) from err
+
+    damage_identity_by_element = {
+        0: PHYSICAL_DAMAGE,
+        1: FIRE_DAMAGE,
+        2: ICE_DAMAGE,
+        3: ELECTRIC_DAMAGE,
+        4: ETHER_DAMAGE,
+        5: FROST_DAMAGE,
+        6: AURIC_INK_DAMAGE,
+    }
+    return DamageIdentityProfile(
+        damage_identity=damage_identity_by_element[int(element_type)],
+        multiplier_affinity=affinity,
+    )
+
+
+def _regular_static_damage_bonus_map(static_statement: Any) -> AffinityValueMap:
+    return AffinityValueMap(
+        {
+            multiplier_affinity_from_regular_element_type(0): static_statement.phy_dmg_bonus,
+            multiplier_affinity_from_regular_element_type(1): static_statement.fire_dmg_bonus,
+            multiplier_affinity_from_regular_element_type(2): static_statement.ice_dmg_bonus,
+            multiplier_affinity_from_regular_element_type(3): static_statement.electric_dmg_bonus,
+            multiplier_affinity_from_regular_element_type(4): static_statement.ether_dmg_bonus,
+        }
+    )
+
+
+def _regular_dynamic_damage_bonus_map(dynamic_statement: Any) -> AffinityValueMap:
+    return AffinityValueMap(
+        {
+            multiplier_affinity_from_regular_element_type(0): dynamic_statement.phy_dmg_bonus,
+            multiplier_affinity_from_regular_element_type(1): dynamic_statement.fire_dmg_bonus,
+            multiplier_affinity_from_regular_element_type(2): dynamic_statement.ice_dmg_bonus,
+            multiplier_affinity_from_regular_element_type(3): dynamic_statement.electric_dmg_bonus,
+            multiplier_affinity_from_regular_element_type(4): dynamic_statement.ether_dmg_bonus,
+        }
+    )
+
+
+def _regular_trigger_damage_bonuses(dynamic_statement: Any) -> tuple[float, ...]:
+    return (
+        dynamic_statement.normal_attack_dmg_bonus,
+        dynamic_statement.special_skill_dmg_bonus,
+        dynamic_statement.ex_special_skill_dmg_bonus,
+        dynamic_statement.dash_attack_dmg_bonus,
+        dynamic_statement.counter_attack_dmg_bonus,
+        dynamic_statement.qte_dmg_bonus,
+        dynamic_statement.ultimate_dmg_bonus,
+        dynamic_statement.quick_aid_dmg_bonus,
+        dynamic_statement.defensive_aid_dmg_bonus,
+        dynamic_statement.assault_aid_dmg_bonus,
+    )
+
+
+def _is_aftershock_attack(judge_node: SkillNode) -> bool:
+    return (
+        judge_node.skill.labels is not None
+        and judge_node.skill.labels.get("aftershock_attack") == 1
+    )
+
+
+def _regular_crit_input(
+    static_statement: Any,
+    dynamic_statement: Any,
+    *,
+    aftershock_attack: bool = False,
+) -> RegularCritInput:
+    return RegularCritInput(
+        static_crit_rate=static_statement.crit_rate,
+        dynamic_crit_rate=dynamic_statement.crit_rate,
+        field_crit_rate=dynamic_statement.field_crit_rate,
+        crit_rate_received_increase=dynamic_statement.crit_rate_received_increase,
+        static_crit_damage=static_statement.crit_damage,
+        dynamic_crit_damage=dynamic_statement.crit_dmg,
+        field_crit_damage=dynamic_statement.field_crit_dmg,
+        received_crit_damage_bonus=dynamic_statement.received_crit_dmg_bonus,
+        aftershock_attack=aftershock_attack,
+        aftershock_attack_crit_damage_bonus=dynamic_statement.aftershock_attack_crit_dmg_bonus,
+    )
+
+
+def _regular_base_attribute_input(data: RetainedFormulaSnapshot) -> RegularBaseAttributeInput:
+    assert isinstance(data.judge_node, SkillNode), "非法的调用，没有获取到skill node"
+    diff_multiplier = data.judge_node.skill.diff_multiplier
+    if diff_multiplier not in [0, 1, 2, 3, 4]:
+        raise AssertionError(INVALID_ELEMENT_ERROR)
+    sheer_attack_conversion_rates: tuple[tuple[int, float], ...] = ()
+    if diff_multiplier == 4:
+        char_instance = getattr(data, "char_instance", None)
+        assert char_instance is not None
+        if not hasattr(char_instance, "sheer_attack_conversion_rate"):
+            raise AttributeError(
+                f"{char_instance.NAME}作为命破属性代理人，必须拥有贯穿力转化字典！"
+            )
+        assert char_instance.sheer_attack_conversion_rate is not None
+        for key in char_instance.sheer_attack_conversion_rate:
+            if key not in [0, 1, 2, 3]:
+                raise ValueError(f"无法解析的贯穿力转化率key：{key}")
+        if data.dynamic.field_sheer_atk_percentage != 0:
+            raise ValueError(
+                "警告！检测到非0的“局内贯穿力%Buff”，该效果目前还无法处理，请注意检查buff_effect"
+            )
+        sheer_attack_conversion_rates = tuple(
+            char_instance.sheer_attack_conversion_rate.items()
+        )
+
+    return RegularBaseAttributeInput(
+        damage_ratio=data.judge_node.skill.damage_ratio,
+        hit_times=data.judge_node.hit_times,
+        diff_multiplier=diff_multiplier,
+        attack=data.static.atk,
+        field_attack_percentage=data.dynamic.field_atk_percentage,
+        flat_attack=data.dynamic.atk,
+        hp=data.static.hp,
+        field_hp_percentage=data.dynamic.field_hp_percentage,
+        flat_hp=data.dynamic.hp,
+        defense=data.static.defense,
+        field_defense_percentage=data.dynamic.field_def_percentage,
+        flat_defense=data.dynamic.defense,
+        anomaly_proficiency=data.static.ap,
+        field_anomaly_proficiency=data.dynamic.field_anomaly_proficiency,
+        flat_anomaly_proficiency=data.dynamic.anomaly_proficiency,
+        extra_damage_ratio=data.dynamic.extra_damage_ratio,
+        base_damage_increase_percentage=data.dynamic.base_dmg_increase_percentage,
+        base_damage_increase=data.dynamic.base_dmg_increase,
+        sheer_attack_conversion_rates=sheer_attack_conversion_rates,
+        field_sheer_attack_percentage=data.dynamic.field_sheer_atk_percentage,
+        flat_sheer_attack=data.dynamic.sheer_atk,
+    )
+
+
+def _regular_target_resistance_map(enemy_obj: Any) -> AffinityValueMap:
+    return AffinityValueMap(
+        {
+            multiplier_affinity_from_regular_element_type(0): enemy_obj.PHY_damage_resistance,
+            multiplier_affinity_from_regular_element_type(1): enemy_obj.FIRE_damage_resistance,
+            multiplier_affinity_from_regular_element_type(2): enemy_obj.ICE_damage_resistance,
+            multiplier_affinity_from_regular_element_type(3): enemy_obj.ELECTRIC_damage_resistance,
+            multiplier_affinity_from_regular_element_type(4): enemy_obj.ETHER_damage_resistance,
+        }
+    )
+
+
+def _regular_resistance_decrease_map(dynamic_statement: Any) -> AffinityValueMap:
+    return AffinityValueMap(
+        {
+            multiplier_affinity_from_regular_element_type(0): dynamic_statement.physical_dmg_res_decrease,
+            multiplier_affinity_from_regular_element_type(1): dynamic_statement.fire_dmg_res_decrease,
+            multiplier_affinity_from_regular_element_type(2): dynamic_statement.ice_dmg_res_decrease,
+            multiplier_affinity_from_regular_element_type(3): dynamic_statement.electric_dmg_res_decrease,
+            multiplier_affinity_from_regular_element_type(4): dynamic_statement.ether_dmg_res_decrease,
+        }
+    )
+
+
+def _regular_resistance_penetration_map(dynamic_statement: Any) -> AffinityValueMap:
+    return AffinityValueMap(
+        {
+            multiplier_affinity_from_regular_element_type(0): dynamic_statement.physical_res_pen_increase,
+            multiplier_affinity_from_regular_element_type(1): dynamic_statement.fire_res_pen_increase,
+            multiplier_affinity_from_regular_element_type(2): dynamic_statement.ice_res_pen_increase,
+            multiplier_affinity_from_regular_element_type(3): dynamic_statement.electric_res_pen_increase,
+            multiplier_affinity_from_regular_element_type(4): dynamic_statement.ether_res_pen_increase,
+        }
+    )
+
+
+def _regular_damage_vulnerability_map(dynamic_statement: Any) -> AffinityValueMap:
+    return AffinityValueMap(
+        {
+            multiplier_affinity_from_regular_element_type(0): dynamic_statement.physical_vulnerability,
+            multiplier_affinity_from_regular_element_type(1): dynamic_statement.fire_vulnerability,
+            multiplier_affinity_from_regular_element_type(2): dynamic_statement.ice_vulnerability,
+            multiplier_affinity_from_regular_element_type(3): dynamic_statement.electric_vulnerability,
+            multiplier_affinity_from_regular_element_type(4): dynamic_statement.ether_vulnerability,
+        }
+    )
+
+
 def _calculate_non_sheer_base_attribute(
     base_attr: int, static_statement: Any, dynamic_statement: Any
 ) -> float:
-    if base_attr == 0:
-        return (
-            static_statement.atk * (1 + dynamic_statement.field_atk_percentage)
-            + dynamic_statement.atk
-        )
-    if base_attr == 1:
-        return (
-            static_statement.hp * (1 + dynamic_statement.field_hp_percentage)
-            + dynamic_statement.hp
-        )
-    if base_attr == 2:
-        return (
-            static_statement.defense * (1 + dynamic_statement.field_def_percentage)
-            + dynamic_statement.defense
-        )
-    if base_attr == 3:
-        return (
-            static_statement.ap * (1 + dynamic_statement.field_anomaly_proficiency)
-            + dynamic_statement.anomaly_proficiency
-        )
-    raise AssertionError(INVALID_ELEMENT_ERROR)
+    if base_attr not in [0, 1, 2, 3]:
+        raise AssertionError(INVALID_ELEMENT_ERROR)
+    return calculate_non_sheer_base_attribute(
+        base_attr,
+        attack=static_statement.atk,
+        field_attack_percentage=dynamic_statement.field_atk_percentage,
+        flat_attack=dynamic_statement.atk,
+        hp=static_statement.hp,
+        field_hp_percentage=dynamic_statement.field_hp_percentage,
+        flat_hp=dynamic_statement.hp,
+        defense=static_statement.defense,
+        field_defense_percentage=dynamic_statement.field_def_percentage,
+        flat_defense=dynamic_statement.defense,
+        anomaly_proficiency=static_statement.ap,
+        field_anomaly_proficiency=dynamic_statement.field_anomaly_proficiency,
+        flat_anomaly_proficiency=dynamic_statement.anomaly_proficiency,
+    )
 
 
 def _calculate_sheer_base_attribute(
@@ -413,30 +648,32 @@ def _calculate_sheer_base_attribute(
         raise AttributeError(
             f"{character_obj.NAME}作为命破属性代理人，必须拥有贯穿力转化字典！"
         )
-    base_sheer_atk = 0
     assert character_obj.sheer_attack_conversion_rate is not None
     for key, value in character_obj.sheer_attack_conversion_rate.items():
         if key not in [0, 1, 2, 3]:
             raise ValueError(f"无法解析的贯穿力转化率key：{key}")
-        if value <= 0:
-            continue
-        base_sheer_atk += base_attribute_reader(key) * value
-    else:
-        if dynamic_statement.field_sheer_atk_percentage != 0:
-            raise ValueError(
-                "警告！检测到非0的“局内贯穿力%Buff”，该效果目前还无法处理，请注意检查buff_effect"
-            )
-        current_sheer_atk = base_sheer_atk + dynamic_statement.sheer_atk
-        attr = current_sheer_atk
-    return attr
+    if dynamic_statement.field_sheer_atk_percentage != 0:
+        raise ValueError(
+            "警告！检测到非0的“局内贯穿力%Buff”，该效果目前还无法处理，请注意检查buff_effect"
+        )
+    return calculate_sheer_base_attribute(
+        tuple(character_obj.sheer_attack_conversion_rate.items()),
+        base_attribute_reader=base_attribute_reader,
+        field_sheer_attack_percentage=dynamic_statement.field_sheer_atk_percentage,
+        flat_sheer_attack=dynamic_statement.sheer_atk,
+    )
 
 
 def _calculate_base_damage(
     damage_ratio: float, attr: float, dynamic_statement: Any
 ) -> float:
-    return ((damage_ratio + dynamic_statement.extra_damage_ratio) * attr) * (
-        1 + dynamic_statement.base_dmg_increase_percentage
-    ) + dynamic_statement.base_dmg_increase
+    return calculate_base_damage(
+        damage_ratio,
+        attr,
+        extra_damage_ratio=dynamic_statement.extra_damage_ratio,
+        base_damage_increase_percentage=dynamic_statement.base_dmg_increase_percentage,
+        base_damage_increase=dynamic_statement.base_dmg_increase,
+    )
 
 
 def _calculate_impact(static_statement: Any, dynamic_statement: Any) -> float:
@@ -447,131 +684,53 @@ def _calculate_impact(static_statement: Any, dynamic_statement: Any) -> float:
 
 
 def _calculate_full_crit_rate(static_statement: Any, dynamic_statement: Any) -> float:
-    return (
-        static_statement.crit_rate
-        + dynamic_statement.crit_rate
-        + dynamic_statement.field_crit_rate
-        + dynamic_statement.crit_rate_received_increase
+    return calculate_full_crit_rate(
+        _regular_crit_input(static_statement, dynamic_statement)
     )
 
 
 def _calculate_personal_crit_rate(static_statement: Any, dynamic_statement: Any) -> float:
-    return (
-        static_statement.crit_rate
-        + dynamic_statement.crit_rate
-        + dynamic_statement.field_crit_rate
+    return calculate_personal_crit_rate(
+        _regular_crit_input(static_statement, dynamic_statement)
     )
 
 
 def _calculate_personal_crit_damage(static_statement: Any, dynamic_statement: Any) -> float:
-    return (
-        static_statement.crit_damage
-        + dynamic_statement.crit_dmg
-        + dynamic_statement.field_crit_dmg
+    return calculate_personal_crit_damage(
+        _regular_crit_input(static_statement, dynamic_statement)
     )
 
 
 def _calculate_full_crit_damage(
     static_statement: Any, dynamic_statement: Any, judge_node: SkillNode
 ) -> float:
-    if (
-        judge_node.skill.labels is not None
-        and judge_node.skill.labels.get("aftershock_attack") == 1
-    ):
-        label_crit_dmg_bonus = dynamic_statement.aftershock_attack_crit_dmg_bonus
-    else:
-        label_crit_dmg_bonus = 0
-
-    buff_crit_dmg_bonus = (
-        dynamic_statement.crit_dmg
-        + dynamic_statement.field_crit_dmg
-        + label_crit_dmg_bonus
+    return calculate_full_crit_damage(
+        _regular_crit_input(
+            static_statement,
+            dynamic_statement,
+            aftershock_attack=_is_aftershock_attack(judge_node),
+        )
     )
-
-    crit_dmg = (
-        static_statement.crit_damage
-        + buff_crit_dmg_bonus
-        + dynamic_statement.received_crit_dmg_bonus
-    )
-    return min(5, crit_dmg)
 
 
 def _calculate_crit_expectation(crit_rate: float, crit_damage: float) -> float:
-    return 1 + min(1, crit_rate) * crit_damage
+    return calculate_crit_expectation(crit_rate, crit_damage)
 
 
 def _calculate_damage_bonus(
     static_statement: Any, dynamic_statement: Any, judge_node: SkillNode
 ) -> float:
-    element_type = judge_node.element_type
-    # 获取属性伤害加成，初始化为1.0
-    if element_type == 0:
-        element_dmg_bonus = (
-            static_statement.phy_dmg_bonus + dynamic_statement.phy_dmg_bonus
+    return calculate_regular_damage_bonus(
+        RegularDamageBonusInput(
+            identity=_regular_damage_identity_profile(judge_node.element_type),
+            static_damage_bonuses=_regular_static_damage_bonus_map(static_statement),
+            dynamic_damage_bonuses=_regular_dynamic_damage_bonus_map(dynamic_statement),
+            trigger_buff_level=judge_node.skill.trigger_buff_level,
+            trigger_damage_bonuses=_regular_trigger_damage_bonuses(dynamic_statement),
+            all_damage_bonus=dynamic_statement.all_dmg_bonus,
+            aftershock_attack=_is_aftershock_attack(judge_node),
+            aftershock_attack_damage_bonus=dynamic_statement.aftershock_attack_dmg_bonus,
         )
-    elif element_type == 1:
-        element_dmg_bonus = (
-            static_statement.fire_dmg_bonus + dynamic_statement.fire_dmg_bonus
-        )
-    elif element_type == 3:
-        element_dmg_bonus = (
-            static_statement.electric_dmg_bonus + dynamic_statement.electric_dmg_bonus
-        )
-    elif element_type == 2 or element_type == 5:
-        element_dmg_bonus = (
-            static_statement.ice_dmg_bonus + dynamic_statement.ice_dmg_bonus
-        )
-    elif element_type in [4, 6]:
-        element_dmg_bonus = (
-            static_statement.ether_dmg_bonus + dynamic_statement.ether_dmg_bonus
-        )
-    else:
-        raise ValueError(
-            f"Invalid element type: {element_type}, must be a integer in 0~6"
-        )
-
-    # 获取指定Tag增伤
-    trigger_buff_level = judge_node.skill.trigger_buff_level
-    if trigger_buff_level == 0:
-        trigger_dmg_bonus = dynamic_statement.normal_attack_dmg_bonus
-    elif trigger_buff_level == 1:
-        trigger_dmg_bonus = dynamic_statement.special_skill_dmg_bonus
-    elif trigger_buff_level == 2:
-        trigger_dmg_bonus = dynamic_statement.ex_special_skill_dmg_bonus
-    elif trigger_buff_level == 3:
-        trigger_dmg_bonus = dynamic_statement.dash_attack_dmg_bonus
-    elif trigger_buff_level == 4:
-        trigger_dmg_bonus = dynamic_statement.counter_attack_dmg_bonus
-    elif trigger_buff_level == 5:
-        trigger_dmg_bonus = dynamic_statement.qte_dmg_bonus
-    elif trigger_buff_level == 6:
-        trigger_dmg_bonus = dynamic_statement.ultimate_dmg_bonus
-    elif trigger_buff_level == 7:
-        trigger_dmg_bonus = dynamic_statement.quick_aid_dmg_bonus
-    elif trigger_buff_level == 8:
-        trigger_dmg_bonus = dynamic_statement.defensive_aid_dmg_bonus
-    elif trigger_buff_level == 9:
-        trigger_dmg_bonus = dynamic_statement.assault_aid_dmg_bonus
-    elif trigger_buff_level == 10:
-        trigger_dmg_bonus = 0
-    else:
-        raise AssertionError("Invalid trigger_level")
-
-    # 获取指定label增伤
-    if (
-        judge_node.skill.labels is not None
-        and judge_node.skill.labels.get("aftershock_attack") == 1
-    ):
-        label_dmg_bonus = dynamic_statement.aftershock_attack_dmg_bonus
-    else:
-        label_dmg_bonus = 0
-
-    return (
-        1
-        + element_dmg_bonus
-        + trigger_dmg_bonus
-        + label_dmg_bonus
-        + dynamic_statement.all_dmg_bonus
     )
 
 
@@ -581,7 +740,11 @@ def _calculate_pen_ratio(
     *,
     addon_pen_ratio: float = 0.0,
 ) -> float:
-    return static_statement.pen_ratio + dynamic_statement.pen_ratio + addon_pen_ratio
+    return calculate_pen_ratio(
+        static_statement.pen_ratio,
+        dynamic_statement.pen_ratio,
+        addon_pen_ratio=addon_pen_ratio,
+    )
 
 
 def _calculate_recipient_defense(
@@ -593,15 +756,16 @@ def _calculate_recipient_defense(
     addon_pen_ratio: float = 0.0,
     addon_pen_numeric: float = 0.0,
 ) -> float:
-    # 受击方防御
-    recipient_def = (
-        enemy_obj.max_DEF * (1 - dynamic_statement.percentage_def_reduction)
-        - dynamic_statement.def_reduction
+    return calculate_recipient_defense(
+        enemy_obj.max_DEF,
+        dynamic_statement.percentage_def_reduction,
+        dynamic_statement.def_reduction,
+        static_statement.pen_numeric,
+        dynamic_statement.pen_numeric,
+        pen_ratio,
+        addon_pen_ratio=addon_pen_ratio,
+        addon_pen_numeric=addon_pen_numeric,
     )
-    # 穿透值
-    pen_numeric = static_statement.pen_numeric + dynamic_statement.pen_numeric + addon_pen_numeric
-    # 受击方有效防御
-    return max(0.0, recipient_def * (1 - pen_ratio - addon_pen_ratio) - pen_numeric)
 
 
 def _calculate_attacker_level_coefficient(attacker_level: int) -> int:
@@ -613,18 +777,7 @@ def _calculate_attacker_level_coefficient(attacker_level: int) -> int:
         report_to_log(f"角色等级{attacker_level}过高，将被设置为60")
         attacker_level = 60
     # 攻击方等级系数
-    # fmt: off
-    values: list[int] = [
-        0, 50, 54, 58, 62, 66, 71, 76, 82, 88, 94,
-        100, 107, 114, 121, 129, 137, 145, 153, 162,
-        172, 181, 191, 201, 211, 222, 233, 245, 258,
-        268, 281, 293, 306, 319, 333, 347, 362, 377,
-        393, 409, 421, 436, 452, 469, 485, 502, 519,
-        537, 556, 573, 592, 612, 629, 649, 669, 689,
-        709, 730, 751, 772, 794,
-    ]
-    # fmt: on
-    return values[attacker_level]
+    return calculate_attacker_level_coefficient(attacker_level)
 
 
 def _calculate_defense_multiplier(
@@ -636,7 +789,18 @@ def _calculate_defense_multiplier(
 ) -> float:
     if base_attr == 4:
         return 1.0
-    k_attacker = _calculate_attacker_level_coefficient(attacker_level)
+    input_snapshot = DefenseMultiplierInput(
+        max_defense=enemy_obj.max_DEF,
+        percentage_defense_reduction=dynamic_statement.percentage_def_reduction,
+        flat_defense_reduction=dynamic_statement.def_reduction,
+        static_pen_ratio=static_statement.pen_ratio,
+        dynamic_pen_ratio=dynamic_statement.pen_ratio,
+        static_pen_numeric=static_statement.pen_numeric,
+        dynamic_pen_numeric=dynamic_statement.pen_numeric,
+        base_attribute=base_attr,
+        attacker_level=attacker_level,
+    )
+    k_attacker = _calculate_attacker_level_coefficient(input_snapshot.attacker_level)
     pen_ratio = _calculate_pen_ratio(static_statement, dynamic_statement)
     effective_def = _calculate_recipient_defense(
         enemy_obj,
@@ -654,89 +818,74 @@ def _calculate_resistance_multiplier(
     *,
     snapshot_res_pen: float = 0,
 ) -> float:
-    # 获取抗性区，初始化为0
-    if element_type == 0:
-        element_res = (
-            enemy_obj.PHY_damage_resistance
-            - dynamic_statement.physical_dmg_res_decrease
-            - dynamic_statement.physical_res_pen_increase
+    try:
+        affinity = multiplier_affinity_from_regular_element_type(int(element_type))
+    except ValueError as err:
+        raise AssertionError(INVALID_ELEMENT_ERROR) from err
+    return calculate_resistance_multiplier(
+        ResistanceMultiplierInput(
+            affinity=affinity,
+            target_resistances=_regular_target_resistance_map(enemy_obj),
+            damage_resistance_decreases=_regular_resistance_decrease_map(
+                dynamic_statement
+            ),
+            resistance_penetrations=_regular_resistance_penetration_map(
+                dynamic_statement
+            ),
+            all_damage_resistance_decrease=dynamic_statement.all_dmg_res_decrease,
+            all_resistance_penetration=dynamic_statement.all_res_pen_increase,
+            snapshot_resistance_penetration=snapshot_res_pen,
         )
-    elif element_type == 1:
-        element_res = (
-            enemy_obj.FIRE_damage_resistance
-            - dynamic_statement.fire_dmg_res_decrease
-            - dynamic_statement.fire_res_pen_increase
-        )
-    elif element_type == 2 or element_type == 5:
-        element_res = (
-            enemy_obj.ICE_damage_resistance
-            - dynamic_statement.ice_dmg_res_decrease
-            - dynamic_statement.ice_res_pen_increase
-        )
-    elif element_type == 3:
-        element_res = (
-            enemy_obj.ELECTRIC_damage_resistance
-            - dynamic_statement.electric_dmg_res_decrease
-            - dynamic_statement.electric_res_pen_increase
-        )
-    elif element_type in [4, 6]:
-        element_res = (
-            enemy_obj.ETHER_damage_resistance
-            - dynamic_statement.ether_dmg_res_decrease
-            - dynamic_statement.ether_res_pen_increase
-        )
-    else:
-        raise AssertionError(INVALID_ELEMENT_ERROR)
-    return (
-        1
-        - element_res
-        + dynamic_statement.all_dmg_res_decrease
-        + dynamic_statement.all_res_pen_increase
-        + snapshot_res_pen
     )
 
 
 def _calculate_damage_vulnerability(
     dynamic_statement: Any, element_type: ElementType
 ) -> float:
-    if element_type == 0:
-        element_vulnerability = dynamic_statement.physical_vulnerability
-    elif element_type == 1:
-        element_vulnerability = dynamic_statement.fire_vulnerability
-    elif element_type == 2 or element_type == 5:
-        element_vulnerability = dynamic_statement.ice_vulnerability
-    elif element_type == 3:
-        element_vulnerability = dynamic_statement.electric_vulnerability
-    elif element_type in [4, 6]:
-        element_vulnerability = dynamic_statement.ether_vulnerability
-    else:
-        raise AssertionError(INVALID_ELEMENT_ERROR)
-    return 1 + element_vulnerability + dynamic_statement.all_vulnerability
+    try:
+        affinity = multiplier_affinity_from_regular_element_type(int(element_type))
+    except ValueError as err:
+        raise AssertionError(INVALID_ELEMENT_ERROR) from err
+    return calculate_damage_vulnerability(
+        DamageVulnerabilityInput(
+            affinity=affinity,
+            damage_vulnerabilities=_regular_damage_vulnerability_map(dynamic_statement),
+            all_vulnerability=dynamic_statement.all_vulnerability,
+        )
+    )
 
 
 def _calculate_stun_vulnerability(enemy_obj: Any, dynamic_statement: Any) -> float:
-    stun_status: bool = enemy_obj.dynamic.stun
-    if stun_status:
-        return (
-            1
-            + enemy_obj.stun_DMG_take_ratio
-            + dynamic_statement.stun_vulnerability_increase
-            + dynamic_statement.stun_vulnerability_increase_all_time
+    return calculate_stun_vulnerability(
+        StunVulnerabilityInput(
+            is_stunned=enemy_obj.dynamic.stun,
+            stun_damage_taken_ratio=enemy_obj.stun_DMG_take_ratio,
+            stun_vulnerability_increase=dynamic_statement.stun_vulnerability_increase,
+            stun_vulnerability_increase_all_time=dynamic_statement.stun_vulnerability_increase_all_time,
         )
-    return 1 + dynamic_statement.stun_vulnerability_increase_all_time
+    )
 
 
 def _calculate_special_multiplier(dynamic_statement: Any) -> float:
-    return 1 + dynamic_statement.special_multiplier_zone
+    return calculate_special_multiplier(
+        SpecialMultiplierInput(
+            special_multiplier_zone=dynamic_statement.special_multiplier_zone,
+            diff_multiplier=0,
+            sheer_damage_bonus=0.0,
+        )
+    )
 
 
 def _calculate_sheer_damage_bonus(
     judge_node: SkillNode, dynamic_statement: Any
 ) -> float:
-    if judge_node.skill.diff_multiplier != 4:
-        return 1.0
-    else:
-        return 1 + dynamic_statement.sheer_dmg_bonus
+    return calculate_sheer_damage_bonus(
+        SpecialMultiplierInput(
+            special_multiplier_zone=0.0,
+            diff_multiplier=judge_node.skill.diff_multiplier,
+            sheer_damage_bonus=dynamic_statement.sheer_dmg_bonus,
+        )
+    )
 
 
 def _build_stun_multiplier_array(
@@ -1393,57 +1542,38 @@ class Calculator:
                 "贯穿伤害区": self.sheer_dmg_bonus,
             }
 
-        def get_array_expect(self) -> np.ndarray:
-            array_expect: np.ndarray = np.array(
-                [
-                    self.base_dmg,
-                    self.dmg_bonus,
-                    self.crit_expect,
-                    self.defense_mul,
-                    self.res_mul,
-                    self.dmg_vulnerability,
-                    self.stun_vulnerability,
-                    self.special_multiplier_zone,
-                    self.sheer_dmg_bonus,
-                ],
-                dtype=np.float64,
+        def _as_domain_multipliers(self) -> RegularDamageMultipliers:
+            return RegularDamageMultipliers(
+                base_damage=self.base_dmg,
+                damage_bonus=self.dmg_bonus,
+                crit_rate=self.crit_rate,
+                crit_damage=self.crit_dmg,
+                crit_expectation=self.crit_expect,
+                defense_multiplier=self.defense_mul,
+                resistance_multiplier=self.res_mul,
+                damage_vulnerability_multiplier=self.dmg_vulnerability,
+                stun_vulnerability_multiplier=self.stun_vulnerability,
+                special_multiplier=self.special_multiplier_zone,
+                sheer_damage_bonus=self.sheer_dmg_bonus,
             )
-            return array_expect
+
+        def get_array_expect(self) -> np.ndarray:
+            return assemble_regular_damage_multiplier_array(
+                self._as_domain_multipliers(),
+                mode="expect",
+            )
 
         def get_array_crit(self) -> np.ndarray:
-            when_crit_mul = 1 + self.crit_dmg
-            array_crit: np.ndarray = np.array(
-                [
-                    self.base_dmg,
-                    self.dmg_bonus,
-                    when_crit_mul,
-                    self.defense_mul,
-                    self.res_mul,
-                    self.dmg_vulnerability,
-                    self.stun_vulnerability,
-                    self.special_multiplier_zone,
-                    self.sheer_dmg_bonus,
-                ],
-                dtype=np.float64,
+            return assemble_regular_damage_multiplier_array(
+                self._as_domain_multipliers(),
+                mode="crit",
             )
-            return array_crit
 
         def get_array_not_crit(self) -> np.ndarray:
-            array_no_crit: np.ndarray = np.array(
-                [
-                    self.base_dmg,
-                    self.dmg_bonus,
-                    1,
-                    self.defense_mul,
-                    self.res_mul,
-                    self.dmg_vulnerability,
-                    self.stun_vulnerability,
-                    self.special_multiplier_zone,
-                    self.sheer_dmg_bonus,
-                ],
-                dtype=np.float64,
+            return assemble_regular_damage_multiplier_array(
+                self._as_domain_multipliers(),
+                mode="not_crit",
             )
-            return array_no_crit
 
         def cal_base_dmg(self, data: MultiplierData) -> float:
             """
@@ -1455,11 +1585,9 @@ class Calculator:
             实时的伤害计算请关注战斗中实际的攻击力数值。
             """
             assert isinstance(data.judge_node, SkillNode), "非法的调用，没有获取到skill node"
-            # 伤害倍率 = 技能伤害倍率 / 攻击次数
+            _regular_base_attribute_input(data)
             dmg_ratio = data.judge_node.skill.damage_ratio / data.judge_node.hit_times
-            # 获取伤害对应属性
             base_attr = data.judge_node.skill.diff_multiplier
-            # 属性为攻击力
             attr = self.cal_base_attr(base_attr, data)
             base_dmg = _calculate_base_damage(dmg_ratio, attr, data.dynamic)
             # if data.judge_node.char_name == "雅":
@@ -1952,7 +2080,10 @@ class Calculator:
     def cal_dmg_expect(self) -> np.float64:
         """计算伤害期望"""
         multipliers: np.ndarray = self.regular_multipliers.get_array_expect()
-        dmg_expect = np.prod(multipliers)
+        dmg_expect = calculate_regular_damage_product(
+            self.regular_multipliers._as_domain_multipliers(),
+            mode="expect",
+        )
         self.check_skill_node_mul(multipliers)
         return np.float64(dmg_expect)
 
@@ -1984,14 +2115,18 @@ class Calculator:
 
     def cal_dmg_crit(self) -> np.float64:
         """计算暴击伤害"""
-        multipliers: np.ndarray = self.regular_multipliers.get_array_crit()
-        dmg_crit = np.prod(multipliers)
+        dmg_crit = calculate_regular_damage_product(
+            self.regular_multipliers._as_domain_multipliers(),
+            mode="crit",
+        )
         return np.float64(dmg_crit)
 
     def cal_dmg_not_crit(self) -> np.float64:
         """计算非暴击伤害"""
-        multipliers: np.ndarray = self.regular_multipliers.get_array_not_crit()
-        dmg_not_crit = np.prod(multipliers)
+        dmg_not_crit = calculate_regular_damage_product(
+            self.regular_multipliers._as_domain_multipliers(),
+            mode="not_crit",
+        )
         return np.float64(dmg_not_crit)
 
     def cal_snapshot(self) -> tuple[int, np.float64, np.ndarray]:
