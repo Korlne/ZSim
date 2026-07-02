@@ -1,0 +1,36 @@
+{
+  "gaps": [
+    {
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+      "owner_kind": "cinema",
+      "owner_name": "柚叶",
+      "source_buff_index": "Buff-角色-柚叶-影画2触发器",
+      "status": "requires_future_building_block",
+      "next_waves": [
+        "enemy-state-edge-triggers",
+        "additional-attack-side-effects",
+        "runtime-command-scheduled-producers"
+      ],
+      "expected_unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read",
+        "character_manager_side_effect"
+      ],
+      "reason": "This trigger combines enemy stun reads, QTE mutation, schedule process-state notification, cooldown memory, and skill-node signal state; it needs explicit controlled blocks, not an arbitrary code node."
+    },
+    {
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AliceCinema6Trigger.py",
+      "owner_kind": "cinema",
+      "owner_name": "Alice",
+      "source_buff_index": "Buff-角色-爱丽丝-影画6",
+      "status": "requires_future_building_block",
+      "next_waves": [
+        "additional-attack-side-effects"
+      ],
+      "expected_unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "reason": "The current production XLogic includes additional attack behavior and must wait for a controlled side-effect adapter instead of being represented by a script block."
+    }
+  ]
+}

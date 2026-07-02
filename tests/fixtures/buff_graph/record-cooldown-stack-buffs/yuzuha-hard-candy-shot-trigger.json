@@ -1,0 +1,49 @@
+{
+  "case_id": "yuzuha-hard-candy-shot-trigger",
+  "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaHardCandyShotTrigger.py",
+  "owner_kind": "character",
+  "owner_name": "柚叶",
+  "source_buff_index": "Buff-角色-柚叶-硬糖射击触发器",
+  "prepared_context": {
+    "tick": 360,
+    "owner_name": "柚叶",
+    "event": {
+      "kind": "skill_hit",
+      "skill_tag": "unknown"
+    },
+    "state": {}
+  },
+  "expected_node_block_ids": [
+    "trigger.skill_hit",
+    "condition.character_identity",
+    "read.current_tick",
+    "state.cooldown_gate",
+    "state.last_active_tick",
+    "effect.start_buff"
+  ],
+  "expected_final_output": {
+    "command": {
+      "type": "start_buff",
+      "buff_index": "YuzuhaHardCandyShotTrigger",
+      "count": 1,
+      "duration_ticks": null
+    }
+  },
+  "expected_trace_kind_checkpoint": [
+    ["graph_started", ""],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["effect_requested", "effect_requested"],
+    ["graph_finished", "graph_finished"]
+  ]
+}
