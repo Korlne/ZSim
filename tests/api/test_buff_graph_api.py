@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 from fastapi.testclient import TestClient
 
 from zsim.api import app
@@ -132,6 +135,50 @@ def test_buff_graph_api_runs_low_risk_candidate_harness_when_metadata_is_present
     assert fetched.json()["data"]["runtime_status"] == "legacy_python"
 
 
+def test_buff_graph_api_runs_pure_low_risk_candidate_harness_wave_case(monkeypatch):
+    service = BuffGraphService()
+    monkeypatch.setattr(buff_graph_routes, "buff_graph_service", service)
+    client = TestClient(app)
+    case = _read_json(
+        Path(
+            "tests/fixtures/buff_graph/runtime-candidate-harness/pure-low-risk/"
+            "rainforest-gourmet-atk-bonus-candidate.json"
+        )
+    )
+    wrapper = _read_json(Path(case["source_generated_spec"]))
+    spec = wrapper["spec"]
+    spec["parity_metadata"] = {
+        "candidate_harness": {
+            "enabled": True,
+            "case_id": case["case_id"],
+            "legacy_oracle": case["legacy_oracle"],
+            "tick": case["tick"],
+            "prepared_context": case["prepared_context"],
+            "expected_final_output": case["expected_final_output"],
+            "expected_trace_kind_checkpoint": case["expected_trace_kind_checkpoint"],
+        }
+    }
+
+    created = client.post("/api/buff-graphs", json={"spec": spec})
+    parity = client.post("/api/buff-graphs/rainforest-gourmet-atk-bonus/parity")
+    fetched = client.get("/api/buff-graphs/rainforest-gourmet-atk-bonus")
+
+    assert created.status_code == 200
+    assert parity.status_code == 200
+    payload = parity.json()["data"]
+    assert payload["status"] == "candidate_harness_passed"
+    assert payload["candidate_harness_id"] == "rainforest-gourmet-atk-bonus-candidate"
+    assert payload["candidate_runtime_status"] == "visual_graph_candidate"
+    assert payload["candidate_parity_passed"] is True
+    assert payload["full_parity_verified"] is False
+    assert payload["evidence"]["legacy_oracle"] == (
+        "generated_spec_fixture_pending_legacy_python_oracle"
+    )
+    assert payload["evidence"]["output_passed"] is True
+    assert payload["evidence"]["trace_checkpoint_passed"] is True
+    assert fetched.json()["data"]["runtime_status"] == "legacy_python"
+
+
 def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monkeypatch):
     service = BuffGraphService()
     monkeypatch.setattr(buff_graph_routes, "buff_graph_service", service)
@@ -196,6 +243,11 @@ def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monke
     assert matrix_payload["full_simulation_matrix"] is True
     assert matrix_payload["full_parity_verified"] is False
     assert "all-runnable-apl-config-matrix" in matrix_payload["matrix_scope"]
+    wave_evidence = matrix_payload["candidate_wave_evidence"]
+    assert [item["wave_id"] for item in wave_evidence] == ["pure-and-low-risk-stateless"]
+    assert wave_evidence[0]["candidate_parity_passed"] is True
+    assert wave_evidence[0]["full_parity_verified"] is False
+    assert "rainforest-gourmet-atk-bonus-candidate" in wave_evidence[0]["case_ids"]
 
     assert matrix_run.status_code == 200
     run_payload = matrix_run.json()["data"]
@@ -208,6 +260,7 @@ def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monke
         "ui-driven-full-simulation-matrix"
     )
     assert run_payload["full_parity_verified"] is False
+    assert run_payload["candidate_wave_evidence"] == wave_evidence
 
 
 def _graph_payload() -> dict:
@@ -267,3 +320,7 @@ def _graph_payload() -> dict:
         "last_parity_baseline": None,
         "last_verified_at": None,
     }
+
+
+def _read_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))

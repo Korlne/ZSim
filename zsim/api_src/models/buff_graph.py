@@ -196,4 +196,5 @@ class BuffGraphMatrixPayload(BaseModel):
     ui_driven: bool = True
     full_simulation_matrix: bool = True
     full_parity_verified: bool = False
+    candidate_wave_evidence: list[dict[str, Any]] = Field(default_factory=list)
     matrix_scope: list[str] = Field(default_factory=list)
