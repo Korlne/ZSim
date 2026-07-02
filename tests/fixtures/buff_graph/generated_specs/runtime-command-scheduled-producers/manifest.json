@@ -1,0 +1,164 @@
+{
+  "schema": "zsim-buffgraph-generated-spec-manifest.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "runtime-command-scheduled-producers",
+  "runtime_status": "legacy_python",
+  "status": "blocked_by_missing_controlled_blocks",
+  "status_note": "No executable BuffGraphSpec was generated for this wave because runtime-command and scheduled-producer behavior requires explicit controlled, port-backed effect adapters. Legacy Python XLogic remains the runtime default and parity oracle.",
+  "generated_specs": [],
+  "unsupported_patterns": [
+    "runtime_command_or_scheduled_producer"
+  ],
+  "optional_cross_wave_unsupported_patterns": [
+    "enemy_anomaly_or_dot_read",
+    "character_manager_side_effect"
+  ],
+  "required_future_block_ids": [
+    "condition.hit_frame",
+    "condition.operating_character",
+    "condition.skill_owner",
+    "condition.skill_owner_not_self",
+    "condition.skill_tag_in",
+    "condition.skill_trigger_level",
+    "effect.emit_scheduled_event",
+    "effect.issue_allowed_runtime_command",
+    "effect.publish_resource_refresh",
+    "effect.spawn_planned_skill_node",
+    "effect.start_buff",
+    "effect.update_character_resource",
+    "read.current_action",
+    "read.enemy_anomaly_state",
+    "read.refinement",
+    "state.cooldown_gate",
+    "state.last_observed_skill"
+  ],
+  "unsupported_cases": [
+    {
+      "case_id": "seed-additional-ability-resource-refresh",
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
+      "owner_kind": "character",
+      "owner_name": "席德",
+      "source_buff_index": "Buff-角色-席德-额外能力-正兵回能触发器",
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "optional_unsupported_pattern_ids": [],
+      "required_future_block_ids": [
+        "condition.operating_character",
+        "condition.skill_owner",
+        "condition.hit_frame",
+        "state.cooldown_gate",
+        "effect.publish_resource_refresh",
+        "effect.issue_allowed_runtime_command"
+      ],
+      "producer_contract_ids": [
+        "resource_refresh_command_port_publish_refresh"
+      ],
+      "reason": "Legacy logic publishes a resource refresh through ResourceRefreshCommandPort after owner, hit-frame, and cooldown gates."
+    },
+    {
+      "case_id": "slice-of-time-extra-resources",
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SliceofTimeExtraResources.py",
+      "owner_kind": "w_engine",
+      "owner_name": "时光切片",
+      "source_buff_index": "Buff-WEngine-时光切片-额外资源",
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "optional_unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "condition.skill_trigger_level",
+        "state.cooldown_gate",
+        "read.current_action",
+        "effect.start_buff",
+        "effect.publish_resource_refresh",
+        "effect.issue_allowed_runtime_command"
+      ],
+      "producer_contract_ids": [
+        "visible_buff_start",
+        "energy_decibel_refresh_command"
+      ],
+      "reason": "Legacy logic starts a visible Buff, computes energy and decibel values from refinement and trigger level, then publishes a scheduled refresh command."
+    },
+    {
+      "case_id": "elegant-vanity-sp-recover",
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/ElegantVanitySpRecover.py",
+      "owner_kind": "w_engine",
+      "owner_name": "玲珑妆匣",
+      "source_buff_index": "Buff-WEngine-玲珑妆匣-回能",
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "optional_unsupported_pattern_ids": [],
+      "required_future_block_ids": [
+        "read.refinement",
+        "effect.start_buff",
+        "effect.publish_resource_refresh",
+        "effect.issue_allowed_runtime_command"
+      ],
+      "producer_contract_ids": [
+        "visible_buff_start",
+        "energy_refresh_command"
+      ],
+      "reason": "Legacy logic starts the Buff and publishes an energy refresh command based on W-Engine refinement."
+    },
+    {
+      "case_id": "yixuan-cinema-1-lightning-event",
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YixuanCinema1Trigger.py",
+      "owner_kind": "cinema",
+      "owner_name": "仪玄",
+      "source_buff_index": "Buff-角色-仪玄-1画-落雷计划事件",
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "optional_unsupported_pattern_ids": [],
+      "required_future_block_ids": [
+        "condition.skill_owner_not_self",
+        "condition.hit_frame",
+        "effect.spawn_planned_skill_node",
+        "effect.emit_scheduled_event",
+        "effect.issue_allowed_runtime_command",
+        "effect.update_character_resource",
+        "effect.start_buff"
+      ],
+      "producer_contract_ids": [
+        "spawn_lightning_skill_node",
+        "emit_scheduled_skill_node",
+        "same_tick_adrenaline_update"
+      ],
+      "reason": "Legacy logic spawns a lightning SkillNode/LoadingMission, emits it through ScheduledEventEmitter, updates adrenaline, and starts the Buff."
+    },
+    {
+      "case_id": "alice-polarized-assault-event",
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AlicePolarizedAssaultTrigger.py",
+      "owner_kind": "character",
+      "owner_name": "爱丽丝",
+      "source_buff_index": "Buff-角色-爱丽丝-极性强击触发器",
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "optional_unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "condition.skill_tag_in",
+        "condition.hit_frame",
+        "read.enemy_anomaly_state",
+        "state.last_observed_skill",
+        "effect.emit_scheduled_event",
+        "effect.issue_allowed_runtime_command"
+      ],
+      "producer_contract_ids": [
+        "build_polarized_assault_event",
+        "emit_scheduled_event",
+        "clear_trigger_origin"
+      ],
+      "reason": "Legacy logic builds a PolarizedAssaultEvent from copied enemy anomaly state and emits it through the scheduled-event port."
+    }
+  ],
+  "producer_contract_sources": [
+    "tests/fixtures/buff_graph/runtime-command-scheduled-producers/producer-contracts.json"
+  ]
+}
