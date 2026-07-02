@@ -1,0 +1,372 @@
+{
+  "schema": "zsim-buffgraph-generated-spec.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "runtime-command-scheduled-producers",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+  "runtime_status_note": "legacy_python remains default; generated spec is candidate evidence only.",
+  "spec": {
+    "schema_version": "buff-graph-spec.v1",
+    "node_library_version": "buff-graph-node-library.v1",
+    "adapter_contract_version": "buff-graph-adapter-contract.v1",
+    "graph_id": "hugo-core-passive-totalize-trigger",
+    "display_name": "HugoCorePassiveTotalizeTrigger",
+    "owner_kind": "unknown",
+    "owner_name": "HugoCorePassiveTotalizeTrigger",
+    "source_buff_index": null,
+    "created_from_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+    "runtime_status": "legacy_python",
+    "nodes": [
+      {
+        "node_id": "effect-issue-runtime-command",
+        "family": "effect",
+        "block_id": "effect.issue_runtime_command",
+        "adapter_id": "effect.issue_runtime_command.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer",
+            "enemy_anomaly_or_dot_read"
+          ],
+          "command_type": "legacy_runtime_intent",
+          "command_name": "hugo-core-passive-totalize-trigger",
+          "payload": {
+            "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py"
+          }
+        },
+        "display_name": "Issue Runtime Command Intent"
+      },
+      {
+        "node_id": "effect-emit-scheduled-event",
+        "family": "effect",
+        "block_id": "effect.emit_scheduled_event",
+        "adapter_id": "effect.emit_scheduled_event.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer",
+            "enemy_anomaly_or_dot_read"
+          ],
+          "event_type": "legacy_scheduled_event_intent",
+          "scheduled_tick": 0,
+          "payload": {
+            "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py"
+          }
+        },
+        "display_name": "Emit Scheduled Event Intent"
+      },
+      {
+        "node_id": "condition-tick-window",
+        "family": "condition",
+        "block_id": "condition.tick_window",
+        "adapter_id": "condition.tick_window.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer",
+            "enemy_anomaly_or_dot_read"
+          ],
+          "start_tick": 0,
+          "end_tick": 999999
+        },
+        "display_name": "Tick Window"
+      },
+      {
+        "node_id": "read-skill-node",
+        "family": "read",
+        "block_id": "read.skill_node",
+        "adapter_id": "read.skill_node.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer",
+            "enemy_anomaly_or_dot_read"
+          ],
+          "skill_key": "legacy_source_review_required",
+          "tag_key": "skill_tag"
+        },
+        "display_name": "Skill Node"
+      },
+      {
+        "node_id": "state-scheduled-signal",
+        "family": "state",
+        "block_id": "state.scheduled_signal",
+        "adapter_id": "state.scheduled_signal.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer",
+            "enemy_anomaly_or_dot_read"
+          ],
+          "signal_key": "hugo-core-passive-totalize-trigger",
+          "scheduled_tick": 0
+        },
+        "display_name": "Scheduled Signal"
+      },
+      {
+        "node_id": "read-enemy-context",
+        "family": "read",
+        "block_id": "read.enemy_context",
+        "adapter_id": "read.enemy_context.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer",
+            "enemy_anomaly_or_dot_read"
+          ]
+        },
+        "display_name": "Enemy Context"
+      },
+      {
+        "node_id": "read-enemy-anomaly-state",
+        "family": "read",
+        "block_id": "read.enemy_anomaly_state",
+        "adapter_id": "read.enemy_anomaly_state.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer",
+            "enemy_anomaly_or_dot_read"
+          ],
+          "anomaly_key": "legacy_source_review_required",
+          "element": "legacy_source_review_required"
+        },
+        "display_name": "Enemy Anomaly State"
+      },
+      {
+        "node_id": "read-enemy-anomaly-bar",
+        "family": "read",
+        "block_id": "read.enemy_anomaly_bar",
+        "adapter_id": "read.enemy_anomaly_bar.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer",
+            "enemy_anomaly_or_dot_read"
+          ],
+          "anomaly_key": "legacy_source_review_required",
+          "element": "legacy_source_review_required"
+        },
+        "display_name": "Enemy Anomaly Bar"
+      },
+      {
+        "node_id": "condition-enemy-state",
+        "family": "condition",
+        "block_id": "condition.enemy_state",
+        "adapter_id": "condition.enemy_state.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer",
+            "enemy_anomaly_or_dot_read"
+          ],
+          "expected_state": "legacy_source_review_required",
+          "active": true,
+          "anomaly_key": "legacy_source_review_required"
+        },
+        "display_name": "Enemy State"
+      },
+      {
+        "node_id": "state-last-observed-enemy-state",
+        "family": "state",
+        "block_id": "state.last_observed_enemy_state",
+        "adapter_id": "state.last_observed_enemy_state.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer",
+            "enemy_anomaly_or_dot_read"
+          ],
+          "state_key": "hugo-core-passive-totalize-trigger"
+        },
+        "display_name": "Last Observed Enemy State"
+      },
+      {
+        "node_id": "read-prepared-owner",
+        "family": "read",
+        "block_id": "read.prepared_owner",
+        "adapter_id": "read.prepared_owner.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer",
+            "enemy_anomaly_or_dot_read"
+          ]
+        },
+        "display_name": "Prepared Owner"
+      },
+      {
+        "node_id": "read-prepared-equipper",
+        "family": "read",
+        "block_id": "read.prepared_equipper",
+        "adapter_id": "read.prepared_equipper.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer",
+            "enemy_anomaly_or_dot_read"
+          ]
+        },
+        "display_name": "Prepared Equipper"
+      },
+      {
+        "node_id": "read-prepared-template-buff",
+        "family": "read",
+        "block_id": "read.prepared_template_buff",
+        "adapter_id": "read.prepared_template_buff.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer",
+            "enemy_anomaly_or_dot_read"
+          ],
+          "template_buff_index": "legacy_source_review_required"
+        },
+        "display_name": "Prepared Template Buff"
+      },
+      {
+        "node_id": "effect-update-template-buff",
+        "family": "effect",
+        "block_id": "effect.update_template_buff",
+        "adapter_id": "effect.update_template_buff.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer",
+            "enemy_anomaly_or_dot_read"
+          ],
+          "template_buff_index": "legacy_source_review_required",
+          "mode": "set"
+        },
+        "display_name": "Update Template Buff"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge-0",
+        "source_node_id": "effect-issue-runtime-command",
+        "target_node_id": "effect-emit-scheduled-event",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-1",
+        "source_node_id": "effect-emit-scheduled-event",
+        "target_node_id": "condition-tick-window",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-2",
+        "source_node_id": "condition-tick-window",
+        "target_node_id": "read-skill-node",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-3",
+        "source_node_id": "read-skill-node",
+        "target_node_id": "state-scheduled-signal",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-4",
+        "source_node_id": "state-scheduled-signal",
+        "target_node_id": "read-enemy-context",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-5",
+        "source_node_id": "read-enemy-context",
+        "target_node_id": "read-enemy-anomaly-state",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-6",
+        "source_node_id": "read-enemy-anomaly-state",
+        "target_node_id": "read-enemy-anomaly-bar",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-7",
+        "source_node_id": "read-enemy-anomaly-bar",
+        "target_node_id": "condition-enemy-state",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-8",
+        "source_node_id": "condition-enemy-state",
+        "target_node_id": "state-last-observed-enemy-state",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-9",
+        "source_node_id": "state-last-observed-enemy-state",
+        "target_node_id": "read-prepared-owner",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-10",
+        "source_node_id": "read-prepared-owner",
+        "target_node_id": "read-prepared-equipper",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-11",
+        "source_node_id": "read-prepared-equipper",
+        "target_node_id": "read-prepared-template-buff",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-12",
+        "source_node_id": "read-prepared-template-buff",
+        "target_node_id": "effect-update-template-buff",
+        "source_port": "out",
+        "target_port": "in"
+      }
+    ],
+    "params": {
+      "migration_wave": "runtime-command-scheduled-producers",
+      "scout_work_pack": "scout-runtime-scheduled-unblocked-gap-index",
+      "legacy_semantic_review_required": true,
+      "intent_only_runtime_scheduled_blocks": true
+    },
+    "parity_metadata": {
+      "parity_status": "not_run",
+      "candidate_only": true,
+      "unblocked_by": [
+        "shared-helper-runtime-command-scheduled-signal-blocks"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ]
+    },
+    "last_parity_baseline": null,
+    "last_verified_at": null
+  }
+}

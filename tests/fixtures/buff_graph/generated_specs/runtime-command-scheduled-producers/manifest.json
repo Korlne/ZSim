@@ -3,70 +3,100 @@
   "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
   "migration_wave": "runtime-command-scheduled-producers",
   "runtime_status": "legacy_python",
-  "status": "blocked_by_missing_controlled_blocks",
-  "status_note": "No executable BuffGraphSpec was generated for this wave because runtime-command and scheduled-producer behavior requires explicit controlled, port-backed effect adapters. Legacy Python XLogic remains the runtime default and parity oracle.",
-  "generated_specs": [],
+  "status": "generated_candidate_partial",
+  "status_note": "Runtime/scheduled candidate BuffGraphSpec files generated for Scout-proven cases whose required ids are current controlled registry blocks. Effect blocks are intent-only; runtime dispatch remains legacy Python.",
+  "generated_specs": [
+    "astra-yao-core-passive-atk-bonus.buffgraph.json",
+    "branch-blade-song-crit-damage-bonus.buffgraph.json",
+    "cannon-rotor.buffgraph.json",
+    "hugo-core-passive-double-stun-atk-bonus.buffgraph.json",
+    "hugo-core-passive-single-stun-atk-bonus.buffgraph.json",
+    "hugo-core-passive-totalize-trigger.buffgraph.json",
+    "jane-cinema1-ap-trans-to-dmg-bonus.buffgraph.json",
+    "jane-core-skill-strike-crit-rate-bonus.buffgraph.json",
+    "jane-passion-state-ap-trans-to-atk.buffgraph.json",
+    "lighter-additional-ability-ice-fire-bonus.buffgraph.json",
+    "lina-core-skill-pen-ratio-bonus.buffgraph.json",
+    "lunar-noviluna.buffgraph.json",
+    "magnetic-storm-charlie-sp-recover.buffgraph.json",
+    "miyabi-core-skill-ice-fire.buffgraph.json",
+    "seed-cinema6-trigger.buffgraph.json",
+    "soldier0-anby-core-skill-crit-dmg-bonus.buffgraph.json",
+    "trigger-additional-ability-stun-bonus.buffgraph.json",
+    "woodpecker-electro-set4-ca.buffgraph.json",
+    "woodpecker-electro-set4-e-ex.buffgraph.json",
+    "woodpecker-electro-set4-na.buffgraph.json",
+    "yixuan-additional-ability-dmg-bonus.buffgraph.json",
+    "yixuan-cinema2-stun-time-limit-bonus.buffgraph.json",
+    "yixuan-cinema4-tranquility.buffgraph.json",
+    "yuzuha-additional-ability-anomaly-dmg-bonus.buffgraph.json",
+    "yuzuha-cinema6-sheel-trigger.buffgraph.json",
+    "yuzuha-tanuki-wish-atk-bonus.buffgraph.json"
+  ],
   "unsupported_patterns": [
+    "enemy_anomaly_or_dot_read",
     "runtime_command_or_scheduled_producer"
   ],
-  "optional_cross_wave_unsupported_patterns": [
-    "enemy_anomaly_or_dot_read",
-    "character_manager_side_effect"
-  ],
-  "required_future_block_ids": [
-    "condition.hit_frame",
-    "condition.operating_character",
-    "condition.skill_owner",
-    "condition.skill_owner_not_self",
-    "condition.skill_tag_in",
-    "condition.skill_trigger_level",
+  "required_block_ids": [
+    "condition.enemy_state",
+    "condition.tick_window",
     "effect.emit_scheduled_event",
-    "effect.issue_allowed_runtime_command",
-    "effect.publish_resource_refresh",
-    "effect.spawn_planned_skill_node",
-    "effect.start_buff",
-    "effect.update_character_resource",
-    "read.current_action",
+    "effect.issue_runtime_command",
+    "effect.update_template_buff",
+    "read.enemy_anomaly_bar",
     "read.enemy_anomaly_state",
-    "read.refinement",
-    "state.cooldown_gate",
-    "state.last_observed_skill"
+    "read.enemy_context",
+    "read.prepared_equipper",
+    "read.prepared_owner",
+    "read.prepared_template_buff",
+    "read.skill_node",
+    "state.last_observed_enemy_state",
+    "state.scheduled_signal"
   ],
-  "unsupported_cases": [
+  "generated_spec_count": 26,
+  "blocked_false_positive_count": 0,
+  "blocked_false_positives": [],
+  "blocked_case_count": 11,
+  "near_unblocked_cases": [
     {
-      "case_id": "seed-additional-ability-resource-refresh",
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
-      "owner_kind": "character",
-      "owner_name": "席德",
-      "source_buff_index": "Buff-角色-席德-额外能力-正兵回能触发器",
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AstraYaoQuickAssistManagerTrigger.py",
+      "primary_wave": "additional-attack-side-effects",
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "read.current_tick",
+        "read.skill_node",
+        "effect.update_character_manager"
+      ],
+      "missing_block_ids": [
+        "effect.update_character_manager"
+      ],
+      "reason": "Legacy logic pushes the current skill node into AstraYao quick_assist_trigger_manager.update_myself."
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/ElegantVanitySpRecover.py",
+      "primary_wave": "runtime-command-scheduled-producers",
       "unsupported_pattern_ids": [
         "runtime_command_or_scheduled_producer"
       ],
-      "optional_unsupported_pattern_ids": [],
       "required_future_block_ids": [
-        "condition.operating_character",
-        "condition.skill_owner",
-        "condition.hit_frame",
-        "state.cooldown_gate",
+        "read.refinement",
+        "effect.start_buff",
         "effect.publish_resource_refresh",
         "effect.issue_allowed_runtime_command"
       ],
-      "producer_contract_ids": [
-        "resource_refresh_command_port_publish_refresh"
+      "missing_block_ids": [
+        "effect.publish_resource_refresh",
+        "read.refinement"
       ],
-      "reason": "Legacy logic publishes a resource refresh through ResourceRefreshCommandPort after owner, hit-frame, and cooldown gates."
+      "reason": "Legacy logic starts the Buff and publishes an energy refresh command based on W-Engine refinement."
     },
     {
-      "case_id": "slice-of-time-extra-resources",
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SliceofTimeExtraResources.py",
-      "owner_kind": "w_engine",
-      "owner_name": "时光切片",
-      "source_buff_index": "Buff-WEngine-时光切片-额外资源",
+      "primary_wave": "runtime-command-scheduled-producers",
       "unsupported_pattern_ids": [
         "runtime_command_or_scheduled_producer"
-      ],
-      "optional_unsupported_pattern_ids": [
-        "character_manager_side_effect"
       ],
       "required_future_block_ids": [
         "condition.skill_trigger_level",
@@ -76,89 +106,128 @@
         "effect.publish_resource_refresh",
         "effect.issue_allowed_runtime_command"
       ],
-      "producer_contract_ids": [
-        "visible_buff_start",
-        "energy_decibel_refresh_command"
+      "missing_block_ids": [
+        "effect.publish_resource_refresh",
+        "read.current_action"
       ],
       "reason": "Legacy logic starts a visible Buff, computes energy and decibel values from refinement and trigger level, then publishes a scheduled refresh command."
     },
     {
-      "case_id": "elegant-vanity-sp-recover",
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/ElegantVanitySpRecover.py",
-      "owner_kind": "w_engine",
-      "owner_name": "玲珑妆匣",
-      "source_buff_index": "Buff-WEngine-玲珑妆匣-回能",
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py",
+      "primary_wave": "runtime-command-scheduled-producers",
       "unsupported_pattern_ids": [
-        "runtime_command_or_scheduled_producer"
-      ],
-      "optional_unsupported_pattern_ids": [],
-      "required_future_block_ids": [
-        "read.refinement",
-        "effect.start_buff",
-        "effect.publish_resource_refresh",
-        "effect.issue_allowed_runtime_command"
-      ],
-      "producer_contract_ids": [
-        "visible_buff_start",
-        "energy_refresh_command"
-      ],
-      "reason": "Legacy logic starts the Buff and publishes an energy refresh command based on W-Engine refinement."
-    },
-    {
-      "case_id": "yixuan-cinema-1-lightning-event",
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YixuanCinema1Trigger.py",
-      "owner_kind": "cinema",
-      "owner_name": "仪玄",
-      "source_buff_index": "Buff-角色-仪玄-1画-落雷计划事件",
-      "unsupported_pattern_ids": [
-        "runtime_command_or_scheduled_producer"
-      ],
-      "optional_unsupported_pattern_ids": [],
-      "required_future_block_ids": [
-        "condition.skill_owner_not_self",
-        "condition.hit_frame",
-        "effect.spawn_planned_skill_node",
-        "effect.emit_scheduled_event",
-        "effect.issue_allowed_runtime_command",
-        "effect.update_character_resource",
-        "effect.start_buff"
-      ],
-      "producer_contract_ids": [
-        "spawn_lightning_skill_node",
-        "emit_scheduled_skill_node",
-        "same_tick_adrenaline_update"
-      ],
-      "reason": "Legacy logic spawns a lightning SkillNode/LoadingMission, emits it through ScheduledEventEmitter, updates adrenaline, and starts the Buff."
-    },
-    {
-      "case_id": "alice-polarized-assault-event",
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AlicePolarizedAssaultTrigger.py",
-      "owner_kind": "character",
-      "owner_name": "爱丽丝",
-      "source_buff_index": "Buff-角色-爱丽丝-极性强击触发器",
-      "unsupported_pattern_ids": [
-        "runtime_command_or_scheduled_producer"
-      ],
-      "optional_unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
         "enemy_anomaly_or_dot_read"
       ],
       "required_future_block_ids": [
-        "condition.skill_tag_in",
-        "condition.hit_frame",
-        "read.enemy_anomaly_state",
-        "state.last_observed_skill",
+        "effect.issue_runtime_command",
         "effect.emit_scheduled_event",
-        "effect.issue_allowed_runtime_command"
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.dot_runtime_state",
+        "effect.start_dot",
+        "effect.spawn_anomaly_output",
+        "state.anomaly_signal",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
       ],
-      "producer_contract_ids": [
-        "build_polarized_assault_event",
-        "emit_scheduled_event",
-        "clear_trigger_origin"
+      "missing_block_ids": [
+        "effect.spawn_anomaly_output",
+        "effect.start_dot"
       ],
-      "reason": "Legacy logic builds a PolarizedAssaultEvent from copied enemy anomaly state and emits it through the scheduled-event port."
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack."
     }
   ],
-  "producer_contract_sources": [
-    "tests/fixtures/buff_graph/runtime-command-scheduled-producers/producer-contracts.json"
-  ]
+  "still_blocked_case_count": 7,
+  "top_missing_block_ids": [
+    {
+      "block_id": "condition.hit_frame",
+      "case_count": 5
+    },
+    {
+      "block_id": "effect.spawn_anomaly_output",
+      "case_count": 4
+    },
+    {
+      "block_id": "condition.skill_tag_in",
+      "case_count": 3
+    },
+    {
+      "block_id": "effect.update_character_manager",
+      "case_count": 3
+    },
+    {
+      "block_id": "effect.publish_resource_refresh",
+      "case_count": 3
+    },
+    {
+      "block_id": "effect.start_dot",
+      "case_count": 3
+    },
+    {
+      "block_id": "effect.force_quick_assist",
+      "case_count": 2
+    },
+    {
+      "block_id": "effect.spawn_coattack",
+      "case_count": 2
+    },
+    {
+      "block_id": "effect.spawn_extra_attack",
+      "case_count": 2
+    },
+    {
+      "block_id": "read.next_team_member",
+      "case_count": 2
+    },
+    {
+      "block_id": "state.last_observed_skill",
+      "case_count": 1
+    },
+    {
+      "block_id": "read.refinement",
+      "case_count": 1
+    },
+    {
+      "block_id": "condition.operating_character",
+      "case_count": 1
+    },
+    {
+      "block_id": "condition.skill_owner",
+      "case_count": 1
+    },
+    {
+      "block_id": "read.current_action",
+      "case_count": 1
+    },
+    {
+      "block_id": "effect.register_dot_runtime",
+      "case_count": 1
+    },
+    {
+      "block_id": "state.counter",
+      "case_count": 1
+    },
+    {
+      "block_id": "condition.skill_owner_not_self",
+      "case_count": 1
+    },
+    {
+      "block_id": "effect.spawn_planned_skill_node",
+      "case_count": 1
+    },
+    {
+      "block_id": "effect.update_character_resource",
+      "case_count": 1
+    }
+  ],
+  "runtime_status_note": "All specs remain legacy_python candidate evidence until focused parity, UI-driven parity, and full matrix validation pass."
 }
