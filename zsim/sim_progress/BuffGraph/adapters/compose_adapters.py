@@ -23,8 +23,17 @@ class BranchComposeAdapter:
         return BuffGraphAdapterResult(outputs={"condition": condition, "selected": selected})
 
 
+class NotComposeAdapter:
+    adapter_id = "compose.not.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        values = _upstream_booleans(context)
+        value = bool(values[0]) if values else False
+        return BuffGraphAdapterResult(outputs={"passed": not value})
+
+
 def build_low_risk_compose_adapters() -> Mapping[str, object]:
-    adapters = (AllComposeAdapter(), BranchComposeAdapter())
+    adapters = (AllComposeAdapter(), BranchComposeAdapter(), NotComposeAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 
