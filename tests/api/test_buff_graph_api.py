@@ -78,6 +78,60 @@ def test_buff_graph_api_rejects_bad_status_transition(monkeypatch):
     assert "default_requires_verification" in response.text
 
 
+def test_buff_graph_api_runs_low_risk_candidate_harness_when_metadata_is_present(monkeypatch):
+    service = BuffGraphService()
+    monkeypatch.setattr(buff_graph_routes, "buff_graph_service", service)
+    client = TestClient(app)
+    spec = _graph_payload()
+    spec["parity_metadata"] = {
+        "candidate_harness": {
+            "enabled": True,
+            "case_id": "alice-cinema6-api-candidate-harness",
+            "legacy_oracle": "legacy_python_fixture",
+            "tick": 600,
+            "prepared_context": {
+                "event": {
+                    "kind": "skill_hit",
+                    "skill_tag": "basic",
+                }
+            },
+            "expected_final_output": {
+                "command": {
+                    "type": "start_buff",
+                    "buff_index": "Buff-角色-爱丽丝-影画6",
+                    "count": 1,
+                    "duration_ticks": None,
+                }
+            },
+            "expected_trace_kind_checkpoint": [
+                ["graph_started", ""],
+                ["node_evaluated", "node_ready"],
+                ["adapter_executed", "adapter_executed"],
+                ["node_evaluated", "node_ready"],
+                ["adapter_executed", "adapter_executed"],
+                ["effect_requested", "effect_requested"],
+                ["graph_finished", "graph_finished"],
+            ],
+        }
+    }
+
+    created = client.post("/api/buff-graphs", json={"spec": spec})
+    parity = client.post("/api/buff-graphs/alice-cinema6/parity")
+    fetched = client.get("/api/buff-graphs/alice-cinema6")
+
+    assert created.status_code == 200
+    assert parity.status_code == 200
+    payload = parity.json()["data"]
+    assert payload["status"] == "candidate_harness_passed"
+    assert payload["candidate_harness_id"] == "alice-cinema6-api-candidate-harness"
+    assert payload["candidate_runtime_status"] == "visual_graph_candidate"
+    assert payload["candidate_parity_passed"] is True
+    assert payload["full_parity_verified"] is False
+    assert payload["evidence"]["output_passed"] is True
+    assert payload["evidence"]["trace_checkpoint_passed"] is True
+    assert fetched.json()["data"]["runtime_status"] == "legacy_python"
+
+
 def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monkeypatch):
     service = BuffGraphService()
     monkeypatch.setattr(buff_graph_routes, "buff_graph_service", service)
