@@ -1,0 +1,107 @@
+{
+  "schema": "zsim-buffgraph-generated-spec.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "dynamic-owner-equipper-cases",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/HellfireGearsSpRBonus.py",
+  "runtime_status_note": "legacy_python remains default; generated spec is candidate evidence only.",
+  "spec": {
+    "schema_version": "buff-graph-spec.v1",
+    "node_library_version": "buff-graph-node-library.v1",
+    "adapter_contract_version": "buff-graph-adapter-contract.v1",
+    "graph_id": "hellfire-gears-sp-r-bonus",
+    "display_name": "HellfireGearsSpRBonus",
+    "owner_kind": "w_engine",
+    "owner_name": "燃狱齿轮",
+    "source_buff_index": "Buff-WEngine-燃狱齿轮-能量回复",
+    "created_from_xlogic": "zsim/sim_progress/Buff/BuffXLogic/HellfireGearsSpRBonus.py",
+    "runtime_status": "legacy_python",
+    "nodes": [
+      {
+        "node_id": "read-equipper",
+        "family": "read",
+        "block_id": "read.prepared_equipper",
+        "adapter_id": "read.prepared_equipper.v1",
+        "params": {},
+        "display_name": "Prepared Equipper"
+      },
+      {
+        "node_id": "read-foreground",
+        "family": "read",
+        "block_id": "read.foreground_character",
+        "adapter_id": "read.foreground_character.v1",
+        "params": {},
+        "display_name": "Foreground Character"
+      },
+      {
+        "node_id": "condition-background",
+        "family": "condition",
+        "block_id": "condition.equipper_is_background",
+        "adapter_id": "condition.equipper_is_background.v1",
+        "params": {},
+        "display_name": "Equipper Is Background"
+      },
+      {
+        "node_id": "condition-foreground",
+        "family": "condition",
+        "block_id": "condition.equipper_is_foreground",
+        "adapter_id": "condition.equipper_is_foreground.v1",
+        "params": {},
+        "display_name": "Equipper Is Foreground"
+      },
+      {
+        "node_id": "exit-not-background",
+        "family": "compose",
+        "block_id": "compose.not",
+        "adapter_id": "compose.not.v1",
+        "params": {},
+        "display_name": "Not"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge-0",
+        "source_node_id": "read-equipper",
+        "target_node_id": "condition-background",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-1",
+        "source_node_id": "read-foreground",
+        "target_node_id": "condition-background",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-2",
+        "source_node_id": "read-equipper",
+        "target_node_id": "condition-foreground",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-3",
+        "source_node_id": "read-foreground",
+        "target_node_id": "condition-foreground",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-4",
+        "source_node_id": "condition-background",
+        "target_node_id": "exit-not-background",
+        "source_port": "out",
+        "target_port": "in"
+      }
+    ],
+    "params": {
+      "migration_wave": "dynamic-owner-equipper-cases"
+    },
+    "parity_metadata": {
+      "parity_status": "not_run",
+      "candidate_only": true
+    },
+    "last_parity_baseline": null,
+    "last_verified_at": null
+  }
+}
