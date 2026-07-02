@@ -104,6 +104,17 @@ READ_BLOCKS = (
         output_ports=(BlockPort("enemy_context", "Enemy Context", "enemy_context"),),
     ),
     BuffGraphBlockDefinition(
+        block_id="read.enemy_stun_state",
+        family=NodeFamily.READ,
+        display_name="Enemy Stun State",
+        adapter_id="read.enemy_stun_state.v1",
+        input_ports=(BlockPort("enemy_context", "Enemy Context", "enemy_context"),),
+        output_ports=(
+            BlockPort("enemy_stun_state", "Enemy Stun State", "enemy_stun_state"),
+            BlockPort("active", "Active", "bool"),
+        ),
+    ),
+    BuffGraphBlockDefinition(
         block_id="read.enemy_anomaly_state",
         family=NodeFamily.READ,
         display_name="Enemy Anomaly State",

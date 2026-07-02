@@ -151,6 +151,24 @@ class EnemyContextReadAdapter:
         return BuffGraphAdapterResult(outputs={"enemy_context": enemy_context})
 
 
+class EnemyStunStateReadAdapter:
+    adapter_id = "read.enemy_stun_state.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        enemy_context = _enemy_context(context)
+        stun_state = _mapping(context.prepared_context.get("enemy_stun_state"))
+        active = _enemy_stun_active(enemy_context, stun_state, context.prepared_context)
+        return BuffGraphAdapterResult(
+            outputs={
+                "enemy_stun_state": {
+                    "active": active,
+                    "source": stun_state.get("source", "prepared_enemy_context"),
+                },
+                "active": active,
+            }
+        )
+
+
 class EnemyAnomalyStateReadAdapter:
     adapter_id = "read.enemy_anomaly_state.v1"
 
@@ -392,6 +410,7 @@ def build_active_buffs_listener_read_adapters() -> Mapping[str, object]:
 def build_enemy_anomaly_state_read_adapters() -> Mapping[str, object]:
     adapters = (
         EnemyContextReadAdapter(),
+        EnemyStunStateReadAdapter(),
         EnemyAnomalyStateReadAdapter(),
         EnemyAnomalyBarReadAdapter(),
         EnemyEdgeStateReadAdapter(),
@@ -416,6 +435,11 @@ def build_calculator_runtime_formula_read_adapters() -> Mapping[str, object]:
         RefinementReadAdapter(),
         CurrentActionReadAdapter(),
     )
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_yuzuha_cinema2_qte_signal_read_adapters() -> Mapping[str, object]:
+    adapters = (EnemyContextReadAdapter(), EnemyStunStateReadAdapter(), SkillNodeReadAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 
@@ -518,6 +542,25 @@ def _enemy_context(context: BuffGraphAdapterContext) -> Mapping[str, Any]:
         context.prepared_context.get("enemy_context")
         or context.prepared_context.get("enemy")
     )
+
+
+def _enemy_stun_active(
+    enemy_context: Mapping[str, Any],
+    stun_state: Mapping[str, Any],
+    prepared_context: Mapping[str, Any],
+) -> bool:
+    if "active" in stun_state:
+        return bool(stun_state["active"])
+    if "stun" in stun_state:
+        return bool(stun_state["stun"])
+    if "stun" in enemy_context:
+        return bool(enemy_context["stun"])
+    dynamic = _mapping(enemy_context.get("dynamic"))
+    if "stun" in dynamic:
+        return bool(dynamic["stun"])
+    if "enemy_stun_active" in prepared_context:
+        return bool(prepared_context["enemy_stun_active"])
+    return False
 
 
 def _select_keyed_mapping(value: Any, key: Any) -> Mapping[str, Any]:

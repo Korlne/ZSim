@@ -174,6 +174,55 @@ class ForceQuickAssistIntentEffectAdapter(CharacterSideEffectIntentAdapter):
     intent_action = "force_quick_assist"
 
 
+class SetSkillNodeForceQteTriggerIntentEffectAdapter:
+    adapter_id = "effect.set_skill_node_force_qte_trigger.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        enabled = _first_upstream_bool(context.inputs)
+        pending_signal = _mapping(
+            _first_upstream_value(context.inputs, "pending_skill_node_signal")
+        )
+        skill_node = _mapping(pending_signal.get("skill_node"))
+        if not skill_node:
+            skill_node = _mapping(_first_upstream_value(context.inputs, "skill_node"))
+        intent = {
+            "intent_type": "skill_node_mutation",
+            "mutation": "set_force_qte_trigger",
+            "field": "force_qte_trigger",
+            "value": bool(context.node.params.get("value", True)),
+            "skill_node": skill_node,
+            "enabled": enabled and bool(skill_node),
+            "payload": context.node.params.get("payload", {}),
+            "source_buff_index": context.node.params.get("source_buff_index")
+            or context.prepared_context.get("source_buff_index"),
+        }
+        return BuffGraphAdapterResult(outputs={"skill_node_mutation_intent": _without_none(intent)})
+
+
+class NotifyScheduleProcessStateIntentEffectAdapter:
+    adapter_id = "effect.notify_schedule_process_state.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        enabled = _first_upstream_bool(context.inputs)
+        report_flag = context.node.params.get("report_flag")
+        if report_flag is None:
+            report_enabled = bool(context.node.params.get("report_enabled", True))
+        else:
+            report_enabled = bool(context.prepared_context.get(str(report_flag), False))
+        intent = {
+            "intent_type": "process_state_notification",
+            "action": "change_process_state",
+            "reason": context.node.params.get("reason"),
+            "payload": context.node.params.get("payload", {}),
+            "enabled": enabled and report_enabled,
+            "source_buff_index": context.node.params.get("source_buff_index")
+            or context.prepared_context.get("source_buff_index"),
+        }
+        return BuffGraphAdapterResult(
+            outputs={"process_state_notification_intent": _without_none(intent)}
+        )
+
+
 class SpawnCoattackIntentEffectAdapter(CharacterSideEffectIntentAdapter):
     adapter_id = "effect.spawn_coattack.v1"
     intent_action = "spawn_coattack"
@@ -322,6 +371,14 @@ def build_dot_anomaly_output_effect_adapters() -> Mapping[str, object]:
 
 def build_calculator_runtime_formula_effect_adapters() -> Mapping[str, object]:
     adapters = (PublishResourceRefreshIntentEffectAdapter(),)
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_yuzuha_cinema2_qte_signal_effect_adapters() -> Mapping[str, object]:
+    adapters = (
+        SetSkillNodeForceQteTriggerIntentEffectAdapter(),
+        NotifyScheduleProcessStateIntentEffectAdapter(),
+    )
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 

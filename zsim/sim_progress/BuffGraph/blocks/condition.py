@@ -96,6 +96,18 @@ CONDITION_BLOCKS = (
         param_schema={"expected_state": "string", "active": "bool", "anomaly_key": "string"},
     ),
     BuffGraphBlockDefinition(
+        block_id="condition.enemy_stun_active",
+        family=NodeFamily.CONDITION,
+        display_name="Enemy Stun Active",
+        adapter_id="condition.enemy_stun_active.v1",
+        input_ports=(BlockPort("enemy_stun_state", "Enemy Stun State", "enemy_stun_state"),),
+        output_ports=(
+            BlockPort("passed", "Passed", "bool"),
+            BlockPort("active", "Active", "bool"),
+        ),
+        param_schema={"active": "bool"},
+    ),
+    BuffGraphBlockDefinition(
         block_id="condition.edge_transition",
         family=NodeFamily.CONDITION,
         display_name="Edge Transition",
@@ -193,7 +205,11 @@ CONDITION_BLOCKS = (
         adapter_id="condition.cooldown_ready.v1",
         input_ports=(BlockPort("tick", "Tick", "tick"),),
         output_ports=(BlockPort("result", "Result", "bool"),),
-        param_schema={"cooldown_key": "string", "cooldown_ticks": "int"},
+        param_schema={
+            "cooldown_key": "string",
+            "cooldown_ticks": "int",
+            "operator": "comparison_operator",
+        },
     ),
     BuffGraphBlockDefinition(
         block_id="condition.preload_tick",

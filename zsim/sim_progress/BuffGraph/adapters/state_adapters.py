@@ -126,6 +126,68 @@ class ScheduledSignalStateAdapter:
         )
 
 
+class PendingSkillNodeSignalStateAdapter:
+    adapter_id = "state.pending_skill_node_signal.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        signal_key = context.node.params.get("signal_key") or context.node.node_id
+        operation = str(context.node.params.get("operation", "capture"))
+        existing_signal = _pending_skill_node_signal(context.prepared_context, signal_key)
+        upstream_skill = _first_upstream_mapping(context.inputs, "skill_node")
+        skill_node = upstream_skill or _mapping(existing_signal.get("skill_node"))
+        pending = bool(skill_node)
+
+        passed = True
+        error_code = None
+        if operation == "capture":
+            if context.node.params.get("require_empty", False) and existing_signal:
+                passed = False
+                error_code = "pending_signal_exists"
+            if not skill_node:
+                passed = False
+                error_code = error_code or "missing_skill_node"
+        elif operation == "consume":
+            if context.node.params.get("require_pending", False) and not pending:
+                passed = False
+                error_code = "missing_pending_signal"
+
+        signal = {
+            "signal_key": signal_key,
+            "operation": operation,
+            "skill_node": skill_node,
+            "pending": pending,
+        }
+        if error_code is not None:
+            signal["error_code"] = error_code
+        return BuffGraphAdapterResult(
+            outputs={
+                "pending_skill_node_signal": signal,
+                "skill_node": skill_node,
+                "pending": pending,
+                "passed": passed,
+            }
+        )
+
+
+class CommitCooldownTickStateAdapter:
+    adapter_id = "state.commit_cooldown_tick.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        tick = int(context.prepared_context.get("tick", 0))
+        cooldown_key = str(context.node.params.get("cooldown_key") or context.node.node_id)
+        enabled = _first_upstream_bool(context)
+        intent = {
+            "intent_type": "cooldown_commit",
+            "cooldown_key": cooldown_key,
+            "tick": tick,
+            "previous_tick": _state(context).get(cooldown_key),
+            "enabled": enabled,
+            "source_buff_index": context.node.params.get("source_buff_index")
+            or context.prepared_context.get("source_buff_index"),
+        }
+        return BuffGraphAdapterResult(outputs={"cooldown_commit_intent": _without_none(intent)})
+
+
 class LastObservedSkillStateAdapter:
     adapter_id = "state.last_observed_skill.v1"
 
@@ -188,6 +250,14 @@ def build_dot_anomaly_output_state_adapters() -> Mapping[str, object]:
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 
+def build_yuzuha_cinema2_qte_signal_state_adapters() -> Mapping[str, object]:
+    adapters = (
+        PendingSkillNodeSignalStateAdapter(),
+        CommitCooldownTickStateAdapter(),
+    )
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
 def _state(context: BuffGraphAdapterContext) -> Mapping[str, Any]:
     state = context.prepared_context.get("state")
     return state if isinstance(state, Mapping) else {}
@@ -224,6 +294,10 @@ def _mapping(value: Any) -> Mapping[str, Any]:
     return value if isinstance(value, Mapping) else {}
 
 
+def _without_none(value: Mapping[str, Any]) -> Mapping[str, Any]:
+    return {key: item for key, item in value.items() if item is not None}
+
+
 def _state_value(state: Mapping[str, Any]) -> Any:
     for key in ("state", "status", "value", "anomaly_state"):
         if key in state:
@@ -241,4 +315,18 @@ def _scheduled_signal(prepared_context: Mapping[str, Any], signal_key: Any) -> M
             value = next(iter(signals.values()))
             return value if isinstance(value, Mapping) else {"payload": value, "active": True}
     signal = prepared_context.get("scheduled_signal")
+    return signal if isinstance(signal, Mapping) else {}
+
+
+def _pending_skill_node_signal(
+    prepared_context: Mapping[str, Any],
+    signal_key: Any,
+) -> Mapping[str, Any]:
+    signals = prepared_context.get("pending_skill_node_signals")
+    if isinstance(signals, Mapping):
+        if signal_key in signals:
+            return _mapping(signals.get(signal_key))
+        if signal_key is None and signals:
+            return _mapping(next(iter(signals.values())))
+    signal = prepared_context.get("pending_skill_node_signal")
     return signal if isinstance(signal, Mapping) else {}
