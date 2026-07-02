@@ -1,0 +1,93 @@
+{
+  "case_id": "rainforest-gourmet-atk-bonus-candidate",
+  "source_generated_spec": "zsim/sim_progress/BuffGraph/generated_specs/record-cooldown-stack-buffs/rainforest-gourmet-atk-bonus.buffgraph.json",
+  "candidate_runtime_status": "visual_graph_candidate",
+  "legacy_oracle": "generated_spec_fixture_pending_legacy_python_oracle",
+  "tick": 600,
+  "prepared_context": {},
+  "expected_final_output": {
+    "command": {
+      "type": "update_buff_count",
+      "buff_index": "RainforestGourmetATKBonus",
+      "delta": 1
+    }
+  },
+  "expected_trace_kind_checkpoint": [
+    [
+      "graph_started",
+      ""
+    ],
+    [
+      "node_evaluated",
+      "node_ready"
+    ],
+    [
+      "adapter_executed",
+      "adapter_executed"
+    ],
+    [
+      "node_evaluated",
+      "node_ready"
+    ],
+    [
+      "adapter_executed",
+      "adapter_executed"
+    ],
+    [
+      "node_evaluated",
+      "node_ready"
+    ],
+    [
+      "adapter_executed",
+      "adapter_executed"
+    ],
+    [
+      "node_evaluated",
+      "node_ready"
+    ],
+    [
+      "adapter_executed",
+      "adapter_executed"
+    ],
+    [
+      "node_evaluated",
+      "node_ready"
+    ],
+    [
+      "adapter_executed",
+      "adapter_executed"
+    ],
+    [
+      "node_evaluated",
+      "node_ready"
+    ],
+    [
+      "adapter_executed",
+      "adapter_executed"
+    ],
+    [
+      "effect_requested",
+      "effect_requested"
+    ],
+    [
+      "node_evaluated",
+      "node_ready"
+    ],
+    [
+      "adapter_executed",
+      "adapter_executed"
+    ],
+    [
+      "effect_requested",
+      "effect_requested"
+    ],
+    [
+      "graph_finished",
+      "graph_finished"
+    ]
+  ],
+  "notes": [
+    "Generated-spec candidate harness fixture for pure/low-risk wave.",
+    "This fixture expands harness mechanics only; it is not final legacy Python parity or visual_graph_default evidence."
+  ]
+}
