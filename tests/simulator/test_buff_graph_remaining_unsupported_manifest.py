@@ -36,6 +36,14 @@ def test_remaining_unsupported_manifest_covers_every_xlogic_without_generated_sp
         assert "code_node" not in joined
 
 
+def test_generated_specs_have_explicit_candidate_parity_status() -> None:
+    for spec_path in GENERATED_ROOT.glob("*/*.buffgraph.json"):
+        payload = json.loads(spec_path.read_text(encoding="utf-8"))
+        spec = payload.get("spec", payload)
+        assert spec["runtime_status"] == "legacy_python"
+        assert spec["parity_metadata"]["parity_status"] == "not_run"
+
+
 def _current_non_helper_xlogic_paths() -> set[str]:
     excluded = {"__init__.py", "BasicComplexBuffClass.py", "BackendJudge.py"}
     return {

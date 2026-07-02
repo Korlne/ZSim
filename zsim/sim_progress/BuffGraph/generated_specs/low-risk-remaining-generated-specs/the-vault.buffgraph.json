@@ -100,7 +100,9 @@
       }
     ],
     "params": {},
-    "parity_metadata": {},
+    "parity_metadata": {
+      "parity_status": "not_run"
+    },
     "last_parity_baseline": null,
     "last_verified_at": null
   }
