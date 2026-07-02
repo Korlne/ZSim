@@ -1,0 +1,59 @@
+{
+  "case_id": "rainforest-gourmet-atk-bonus",
+  "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/RainforestGourmetATKBonus.py",
+  "owner_kind": "w_engine",
+  "owner_name": "雨林饕客",
+  "source_buff_index": "Buff-WEngine-雨林饕客-攻击力",
+  "prepared_context": {
+    "tick": 240,
+    "owner_name": "雨林饕客",
+    "event": {
+      "kind": "skill_hit",
+      "skill_tag": "unknown"
+    },
+    "buffs": {
+      "RainforestGourmetATKBonus": {
+        "active": true,
+        "count": 2,
+        "remaining_ticks": 300
+      }
+    },
+    "state": {}
+  },
+  "expected_node_block_ids": [
+    "trigger.skill_hit",
+    "condition.character_identity",
+    "condition.buff_active",
+    "read.current_tick",
+    "state.last_active_tick",
+    "effect.start_buff",
+    "effect.update_buff_count"
+  ],
+  "expected_final_output": {
+    "command": {
+      "type": "update_buff_count",
+      "buff_index": "RainforestGourmetATKBonus",
+      "delta": 1
+    }
+  },
+  "expected_trace_kind_checkpoint": [
+    ["graph_started", ""],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["effect_requested", "effect_requested"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["effect_requested", "effect_requested"],
+    ["graph_finished", "graph_finished"]
+  ]
+}
