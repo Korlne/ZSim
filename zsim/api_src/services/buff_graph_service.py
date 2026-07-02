@@ -16,6 +16,21 @@ from zsim.sim_progress.BuffGraph.runtime.compiler import compile_buff_graph_spec
 from zsim.sim_progress.BuffGraph.spec import BuffGraphSpec, RuntimeStatus, validate_buff_graph_spec
 
 
+CAMPAIGN_ID = "buff-20260702-buffxlogic-react-flow-visual-authoring"
+BUFF_GRAPH_MATRIX_COMMAND = "cd electron-app; pnpm smoke:buff-graph:electron -- --run-parity-matrix"
+BUFF_GRAPH_MATRIX_EVIDENCE_PATH = (
+    f"scripts/buff_agents/evidence/{CAMPAIGN_ID}/ui-driven-full-simulation-matrix.json"
+)
+BUFF_GRAPH_MATRIX_RUN_ID = f"{CAMPAIGN_ID}:ui-driven-full-simulation-matrix"
+BUFF_GRAPH_MATRIX_SCOPE = [
+    "react-flow-ui-open-edit-save-validate",
+    "react-flow-ui-initiated-parity",
+    "all-runnable-apl-config-matrix",
+    "gap-dedicated-trigger-scenarios",
+    "legacy-python-xlogic-vs-graph-runtime",
+]
+
+
 class BuffGraphService:
     def __init__(self) -> None:
         self._graphs: dict[str, BuffGraphSpec] = {}
@@ -173,8 +188,30 @@ class BuffGraphService:
     def parity_matrix(self) -> BuffGraphMatrixPayload:
         return BuffGraphMatrixPayload(
             status="not_available",
-            reason="UI-driven full simulation matrix command is produced by later validator/UI packs.",
-            required_command=None,
+            reason=(
+                "UI-driven full simulation matrix evidence is still required. "
+                "The returned command is the stable Electron entrypoint that a later UI runner pack "
+                "must implement before parity can be accepted."
+            ),
+            required_command=BUFF_GRAPH_MATRIX_COMMAND,
+            evidence_path=BUFF_GRAPH_MATRIX_EVIDENCE_PATH,
+            command_status="runner_required",
+            run_id=None,
+            matrix_scope=list(BUFF_GRAPH_MATRIX_SCOPE),
+        )
+
+    def request_parity_matrix_run(self) -> BuffGraphMatrixPayload:
+        return BuffGraphMatrixPayload(
+            status="run_requested",
+            reason=(
+                "Matrix run request recorded as an auditable backend contract only. "
+                "This API pack does not execute the Electron UI runner and does not prove full parity."
+            ),
+            required_command=BUFF_GRAPH_MATRIX_COMMAND,
+            evidence_path=BUFF_GRAPH_MATRIX_EVIDENCE_PATH,
+            command_status="request_recorded",
+            run_id=BUFF_GRAPH_MATRIX_RUN_ID,
+            matrix_scope=list(BUFF_GRAPH_MATRIX_SCOPE),
         )
 
     def _require_graph(self, graph_id: str) -> BuffGraphSpec:

@@ -114,6 +114,7 @@ def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monke
         },
     )
     matrix = client.get("/api/buff-graphs/parity/matrix")
+    matrix_run = client.post("/api/buff-graphs/parity/matrix/run")
 
     assert catalog.status_code == 200
     assert catalog.json()["data"]["custom_python_nodes_allowed"] is False
@@ -129,7 +130,30 @@ def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monke
     assert payload["imported"] is True
     assert payload["spec"]["runtime_status"] == "legacy_python"
     assert matrix.status_code == 200
-    assert matrix.json()["data"]["status"] == "not_available"
+    matrix_payload = matrix.json()["data"]
+    assert matrix_payload["status"] == "not_available"
+    assert matrix_payload["command_status"] == "runner_required"
+    assert (
+        matrix_payload["required_command"]
+        == "cd electron-app; pnpm smoke:buff-graph:electron -- --run-parity-matrix"
+    )
+    assert matrix_payload["evidence_path"].endswith("ui-driven-full-simulation-matrix.json")
+    assert matrix_payload["ui_driven"] is True
+    assert matrix_payload["full_simulation_matrix"] is True
+    assert matrix_payload["full_parity_verified"] is False
+    assert "all-runnable-apl-config-matrix" in matrix_payload["matrix_scope"]
+
+    assert matrix_run.status_code == 200
+    run_payload = matrix_run.json()["data"]
+    assert run_payload["status"] == "run_requested"
+    assert run_payload["command_status"] == "request_recorded"
+    assert run_payload["required_command"] == matrix_payload["required_command"]
+    assert run_payload["evidence_path"] == matrix_payload["evidence_path"]
+    assert run_payload["run_id"] == (
+        "buff-20260702-buffxlogic-react-flow-visual-authoring:"
+        "ui-driven-full-simulation-matrix"
+    )
+    assert run_payload["full_parity_verified"] is False
 
 
 def _graph_payload() -> dict:
