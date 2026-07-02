@@ -70,6 +70,43 @@ class TriggerBuffBoxSizeEqualsConditionAdapter:
         )
 
 
+class TriggerBuffCountCompareConditionAdapter:
+    adapter_id = "condition.trigger_buff_count_compare.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        trigger_state = _trigger_buff_state(context)
+        actual_count = int(trigger_state.get("count", 0))
+        expected_count = int(context.node.params.get("expected_count", 0))
+        operator = str(context.node.params.get("operator", "equals"))
+        passed = _compare(actual_count, expected_count, operator)
+        return BuffGraphAdapterResult(
+            outputs={
+                "passed": passed,
+                "actual_count": actual_count,
+                "expected_count": expected_count,
+                "operator": operator,
+            }
+        )
+
+
+class SkillTriggerLevelConditionAdapter:
+    adapter_id = "condition.skill_trigger_level.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        actual_level = int(_skill_trigger_level(context) or 0)
+        expected_level = int(context.node.params.get("expected_level", 0))
+        operator = str(context.node.params.get("operator", "equals"))
+        passed = _compare(actual_level, expected_level, operator)
+        return BuffGraphAdapterResult(
+            outputs={
+                "passed": passed,
+                "actual_level": actual_level,
+                "expected_level": expected_level,
+                "operator": operator,
+            }
+        )
+
+
 class EquipperIsBackgroundConditionAdapter:
     adapter_id = "condition.equipper_is_background.v1"
 
@@ -103,6 +140,8 @@ def build_prepared_context_condition_adapters() -> Mapping[str, object]:
         EquipperIdentityConditionAdapter(),
         TriggerBuffActiveConditionAdapter(),
         TriggerBuffBoxSizeEqualsConditionAdapter(),
+        TriggerBuffCountCompareConditionAdapter(),
+        SkillTriggerLevelConditionAdapter(),
         EquipperIsBackgroundConditionAdapter(),
         EquipperIsForegroundConditionAdapter(),
     )
@@ -146,6 +185,35 @@ def _built_in_buff_box_size(trigger_state: Mapping[str, Any]) -> int:
     if isinstance(box, (list, tuple, set)):
         return len(box)
     return 0
+
+
+def _compare(actual: int, expected: int, operator: str) -> bool:
+    if operator in {"equals", "==", "eq"}:
+        return actual == expected
+    if operator in {"not_equals", "!=", "ne"}:
+        return actual != expected
+    if operator in {"at_least", ">=", "gte"}:
+        return actual >= expected
+    if operator in {"greater_than", ">", "gt"}:
+        return actual > expected
+    if operator in {"at_most", "<=", "lte"}:
+        return actual <= expected
+    if operator in {"less_than", "<", "lt"}:
+        return actual < expected
+    return False
+
+
+def _skill_trigger_level(context: BuffGraphAdapterContext) -> Any:
+    upstream_level = _first_upstream_value(context.inputs, "trigger_level")
+    if upstream_level is not None:
+        return upstream_level
+    event = _mapping(context.prepared_context.get("event"))
+    if "trigger_level" in event:
+        return event["trigger_level"]
+    skill = _mapping(context.prepared_context.get("skill_node"))
+    if "trigger_level" in skill:
+        return skill["trigger_level"]
+    return context.prepared_context.get("trigger_level")
 
 
 def _equipper(context: BuffGraphAdapterContext) -> Any:

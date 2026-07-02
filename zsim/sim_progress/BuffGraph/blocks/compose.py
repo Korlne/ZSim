@@ -22,5 +22,13 @@ COMPOSE_BLOCKS = (
             BlockPort("false", "False", "control"),
         ),
     ),
+    BuffGraphBlockDefinition(
+        block_id="compose.not",
+        family=NodeFamily.COMPOSE,
+        display_name="Not",
+        adapter_id="compose.not.v1",
+        input_ports=(BlockPort("condition", "Condition", "bool"),),
+        output_ports=(BlockPort("result", "Result", "bool"),),
+    ),
 )
 

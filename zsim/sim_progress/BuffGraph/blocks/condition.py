@@ -49,6 +49,28 @@ CONDITION_BLOCKS = (
         param_schema={"expected_size": "number", "trigger_buff_index": "string"},
     ),
     BuffGraphBlockDefinition(
+        block_id="condition.trigger_buff_count_compare",
+        family=NodeFamily.CONDITION,
+        display_name="Trigger Buff Count Compare",
+        adapter_id="condition.trigger_buff_count_compare.v1",
+        input_ports=(BlockPort("trigger_buff_state", "Trigger Buff State", "buff_state"),),
+        output_ports=(BlockPort("result", "Result", "bool"),),
+        param_schema={
+            "expected_count": "number",
+            "operator": "comparison_operator",
+            "trigger_buff_index": "string",
+        },
+    ),
+    BuffGraphBlockDefinition(
+        block_id="condition.skill_trigger_level",
+        family=NodeFamily.CONDITION,
+        display_name="Skill Trigger Level",
+        adapter_id="condition.skill_trigger_level.v1",
+        input_ports=(BlockPort("context", "Context", "prepared_context"),),
+        output_ports=(BlockPort("result", "Result", "bool"),),
+        param_schema={"expected_level": "number", "operator": "comparison_operator"},
+    ),
+    BuffGraphBlockDefinition(
         block_id="condition.equipper_is_background",
         family=NodeFamily.CONDITION,
         display_name="Equipper Is Background",
