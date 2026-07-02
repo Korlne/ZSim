@@ -4,43 +4,14 @@
   "migration_wave": "remaining-unsupported-patterns",
   "runtime_status": "legacy_python",
   "status": "blocked_by_missing_controlled_blocks",
-  "status_note": "7 calculator/resource formula cases moved to generated candidate specs in migration-calculator-runtime-formula-unblocked-generated-specs; legacy Python XLogic remains runtime default/fallback/oracle.",
+  "status_note": "YuzuhaCinema2Trigger moved to generated candidate specs in migration-yuzuha-cinema2-generated-spec; no current non-helper BuffXLogic remains without generated-spec or explicit-gap accounting. Full parity remains incomplete and legacy Python remains default/fallback/oracle.",
   "current_non_helper_xlogic_count": 150,
-  "generated_spec_source_count": 149,
-  "unsupported_case_count": 1,
-  "unsupported_patterns": [
-    "wave-boundary-gap"
-  ],
-  "required_future_block_ids": [
-    "scout.semantic_source_review"
-  ],
-  "primary_wave_counts": {
-    "enemy-state-edge-triggers": 1
-  },
-  "unsupported_pattern_counts": {
-    "wave-boundary-gap": 1
-  },
-  "required_future_block_counts": {
-    "scout.semantic_source_review": 1
-  },
-  "unsupported_cases": [
-    {
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
-      "primary_wave": "enemy-state-edge-triggers",
-      "all_candidate_waves": [
-        "enemy-state-edge-triggers",
-        "additional-attack-side-effects",
-        "runtime-command-scheduled-producers"
-      ],
-      "unsupported_pattern_ids": [
-        "wave-boundary-gap"
-      ],
-      "required_future_block_ids": [
-        "scout.semantic_source_review"
-      ],
-      "reason": "This trigger combines enemy stun reads, QTE mutation, schedule process-state notification, cooldown memory, and skill-node signal state; it needs explicit controlled blocks, not an arbitrary code node.",
-      "evidence_source": "generated-spec-boundary-gap",
-      "legacy_runtime_status": "legacy_python"
-    }
-  ]
+  "generated_spec_source_count": 150,
+  "unsupported_case_count": 0,
+  "unsupported_patterns": [],
+  "required_future_block_ids": [],
+  "primary_wave_counts": {},
+  "unsupported_pattern_counts": {},
+  "required_future_block_counts": {},
+  "unsupported_cases": []
 }

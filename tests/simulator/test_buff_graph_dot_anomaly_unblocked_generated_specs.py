@@ -94,4 +94,4 @@ def test_dot_anomaly_generated_sources_are_removed_from_remaining_unsupported_ma
     assert remaining_manifest["unsupported_case_count"] == len(remaining_sources)
     assert generated_sources.isdisjoint(remaining_sources)
     assert "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py" not in remaining_sources
-    assert "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py" in remaining_sources
+    assert "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py" not in remaining_sources
