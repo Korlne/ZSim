@@ -42,6 +42,23 @@ const matrixContract = {
     status: 'candidate_harness_passed',
     full_parity_verified: false,
   },
+  candidate_wave_evidence: [
+    {
+      wave_id: 'pure-and-low-risk-stateless',
+      candidate_harness_id: 'pure-low-risk-generated-spec-candidate-harness',
+      status: 'candidate_harness_wave_available',
+      case_ids: [
+        'cordis-germina-crit-rate-bonus-candidate',
+        'rainforest-gourmet-atk-bonus-candidate',
+        'astra-yao-idyllic-cadenza-candidate',
+      ],
+      candidate_runtime_status: 'visual_graph_candidate',
+      candidate_parity_passed: true,
+      full_parity_verified: false,
+      evidence_path:
+        'scripts/buff_agents/evidence/buff-20260702-buffxlogic-react-flow-visual-authoring/oracle-graph-runtime-candidate-harness-pure-low-risk.json',
+    },
+  ],
   matrix_scope: [
     'react-flow-ui-open-edit-save-validate',
     'react-flow-ui-initiated-parity',
@@ -455,6 +472,8 @@ app.on('window-all-closed', () => app.quit());
             text.includes('ui-driven-full-simulation-matrix') &&
             text.includes('alice-cinema6-api-candidate-harness') &&
             text.includes('candidate_harness_passed') &&
+            text.includes('pure-and-low-risk-stateless') &&
+            text.includes('rainforest-gourmet-atk-bonus-candidate') &&
             text.includes('full_parity_verified: false');
         })()
       `),
@@ -464,6 +483,8 @@ app.on('window-all-closed', () => app.quit());
     assert.equal(matrixRunPayload?.status, 'run_requested');
     assert.equal(matrixRunPayload?.candidate_harness_id, 'alice-cinema6-api-candidate-harness');
     assert.equal(matrixRunPayload?.candidate_parity_passed, true);
+    assert.equal(matrixRunPayload?.candidate_wave_evidence?.[0]?.wave_id, 'pure-and-low-risk-stateless');
+    assert.equal(matrixRunPayload?.candidate_wave_evidence?.[0]?.candidate_parity_passed, true);
     assert.equal(matrixRunPayload?.full_parity_verified, false);
   }
 

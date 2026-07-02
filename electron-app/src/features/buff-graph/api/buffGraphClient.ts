@@ -100,6 +100,17 @@ export type BuffGraphCandidateSliceEvidence = {
   full_parity_verified: boolean;
 };
 
+export type BuffGraphCandidateWaveEvidence = {
+  wave_id: string;
+  candidate_harness_id: string;
+  status: string;
+  case_ids: string[];
+  candidate_runtime_status?: BuffGraphRuntimeStatus;
+  candidate_parity_passed: boolean;
+  full_parity_verified: boolean;
+  evidence_path?: string;
+};
+
 export type BuffGraphParityMatrix = {
   status: 'not_available' | 'run_requested';
   reason: string;
@@ -114,6 +125,7 @@ export type BuffGraphParityMatrix = {
   candidate_runtime_status?: BuffGraphRuntimeStatus | null;
   candidate_parity_passed?: boolean;
   candidate_slice_evidence?: BuffGraphCandidateSliceEvidence;
+  candidate_wave_evidence: BuffGraphCandidateWaveEvidence[];
   matrix_scope: string[];
 };
 
@@ -287,6 +299,9 @@ const normalizeMatrix = (payload: unknown): BuffGraphParityMatrix => {
     item.candidate_slice_evidence && typeof item.candidate_slice_evidence === 'object'
       ? (item.candidate_slice_evidence as Record<string, unknown>)
       : undefined;
+  const rawCandidateWaveEvidence = Array.isArray(item.candidate_wave_evidence)
+    ? item.candidate_wave_evidence
+    : [];
   return {
     status,
     reason: String(item.reason ?? 'Parity matrix is not available yet.'),
@@ -330,6 +345,25 @@ const normalizeMatrix = (payload: unknown): BuffGraphParityMatrix => {
           full_parity_verified: rawCandidateEvidence.full_parity_verified === true,
         }
       : undefined,
+    candidate_wave_evidence: rawCandidateWaveEvidence.map(row => {
+      const wave = row && typeof row === 'object' ? (row as Record<string, unknown>) : {};
+      return {
+        wave_id: String(wave.wave_id ?? ''),
+        candidate_harness_id: String(wave.candidate_harness_id ?? ''),
+        status: String(wave.status ?? ''),
+        case_ids: Array.isArray(wave.case_ids) ? wave.case_ids.map(String) : [],
+        candidate_runtime_status:
+          wave.candidate_runtime_status === undefined || wave.candidate_runtime_status === null
+            ? undefined
+            : (String(wave.candidate_runtime_status) as BuffGraphRuntimeStatus),
+        candidate_parity_passed: wave.candidate_parity_passed === true,
+        full_parity_verified: wave.full_parity_verified === true,
+        evidence_path:
+          wave.evidence_path === undefined || wave.evidence_path === null
+            ? undefined
+            : String(wave.evidence_path),
+      };
+    }),
     matrix_scope: Array.isArray(item.matrix_scope) ? item.matrix_scope.map(String) : [],
   };
 };
