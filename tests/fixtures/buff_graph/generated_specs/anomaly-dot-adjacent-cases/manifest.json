@@ -1,0 +1,146 @@
+{
+  "schema": "zsim-buffgraph-generated-spec-manifest.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "anomaly-dot-adjacent-cases",
+  "runtime_status": "legacy_python",
+  "status": "blocked_by_missing_controlled_blocks",
+  "status_note": "No executable BuffGraphSpec was generated for this wave because anomaly/DOT-adjacent behavior requires explicit controlled blocks for enemy anomaly state, active anomaly bars, DOT runtime state, anomaly output spawning, scheduled event emission, and enemy-aware calculator reads. Legacy Python XLogic remains the runtime default and parity oracle.",
+  "generated_specs": [],
+  "unsupported_patterns": [
+    "enemy_anomaly_or_dot_read"
+  ],
+  "optional_cross_wave_unsupported_patterns": [
+    "runtime_command_or_scheduled_producer"
+  ],
+  "required_future_block_ids": [
+    "condition.enemy_state",
+    "condition.hit_frame",
+    "condition.numeric_compare",
+    "condition.skill_tag_in",
+    "effect.emit_scheduled_event",
+    "effect.register_dot_runtime",
+    "effect.spawn_anomaly_output",
+    "effect.start_dot",
+    "read.calculator_attribute",
+    "read.dot_runtime_state",
+    "read.enemy_anomaly_bar",
+    "read.enemy_anomaly_state",
+    "state.anomaly_signal",
+    "state.counter",
+    "state.last_observed_skill"
+  ],
+  "unsupported_cases": [
+    {
+      "case_id": "vivian-dot-trigger",
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py",
+      "owner_kind": "core_passive",
+      "owner_name": "薇薇安",
+      "source_buff_index": "Buff-角色-薇薇安-DOT触发器",
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "optional_unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_anomaly_state",
+        "read.dot_runtime_state",
+        "condition.enemy_state",
+        "condition.skill_tag_in",
+        "condition.hit_frame",
+        "effect.start_dot",
+        "effect.register_dot_runtime",
+        "effect.emit_scheduled_event"
+      ],
+      "contract_ids": [
+        "active_enemy_anomaly_gate",
+        "dot_runtime_find_register",
+        "spawn_start_emit_dot"
+      ],
+      "reason": "Legacy logic requires active enemy anomaly, DOT runtime lookup/registration, DOT start timing, and scheduled emission."
+    },
+    {
+      "case_id": "yanagi-polarity-disorder-trigger",
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+      "owner_kind": "character",
+      "owner_name": "柳",
+      "source_buff_index": "Buff-角色-柳-极性紊乱触发器",
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "optional_unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.skill_tag_in",
+        "condition.hit_frame",
+        "state.anomaly_signal",
+        "state.counter",
+        "effect.spawn_anomaly_output",
+        "effect.emit_scheduled_event"
+      ],
+      "contract_ids": [
+        "polarity_disorder_signal_counter",
+        "active_anomaly_bar_copy_settle",
+        "spawn_emit_polarity_disorder_output"
+      ],
+      "reason": "Legacy logic records a polarity-disorder signal from active enemy anomaly, counts qualifying E hits, settles a copied anomaly bar, spawns output, and emits it."
+    },
+    {
+      "case_id": "alice-polarized-assault-event",
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AlicePolarizedAssaultTrigger.py",
+      "owner_kind": "character",
+      "owner_name": "爱丽丝",
+      "source_buff_index": "Buff-角色-爱丽丝-极性强击触发器",
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "optional_unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "condition.skill_tag_in",
+        "condition.hit_frame",
+        "read.enemy_anomaly_bar",
+        "state.last_observed_skill",
+        "effect.spawn_anomaly_output",
+        "effect.emit_scheduled_event"
+      ],
+      "contract_ids": [
+        "enemy_anomaly_bar_copy",
+        "trigger_origin_binding",
+        "polarized_assault_event_emit"
+      ],
+      "reason": "Legacy logic gates on skill tag and final hit, deep-copies an enemy anomaly bar, stamps trigger origin, builds PolarizedAssaultEvent, and emits it."
+    },
+    {
+      "case_id": "timeweaver-disorder-dmg-mul",
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/TimeweaverDisorderDmgMul.py",
+      "owner_kind": "w_engine",
+      "owner_name": "时流贤者",
+      "source_buff_index": "Buff-WEngine-时流贤者-紊乱增伤",
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "optional_unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_anomaly_state",
+        "read.calculator_attribute",
+        "condition.numeric_compare"
+      ],
+      "contract_ids": [
+        "enemy_aware_calculator_context",
+        "anomaly_proficiency_threshold"
+      ],
+      "reason": "Legacy logic uses an enemy-aware calculator runtime read context and compares anomaly proficiency."
+    }
+  ],
+  "oracle_sources": [
+    "tests/fixtures/buff_graph/anomaly-dot-adjacent-cases/unsupported-cases.json",
+    "tests/fixtures/buff_graph/anomaly-dot-adjacent-cases/dot-anomaly-contracts.json"
+  ]
+}
