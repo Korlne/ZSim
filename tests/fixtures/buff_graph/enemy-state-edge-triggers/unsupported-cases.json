@@ -61,7 +61,6 @@
       "owner_name": "时流贤者",
       "source_buff_index": "Buff-WEngine-时流贤者-紊乱增伤",
       "expected_unsupported_pattern_ids": [
-        "runtime_command_or_scheduled_producer",
         "enemy_anomaly_or_dot_read"
       ],
       "expected_block_hints": {
@@ -80,7 +79,7 @@
         "read.calculator_attribute",
         "condition.numeric_compare"
       ],
-      "reason": "Legacy logic creates a calculator runtime read context with enemy and character, then compares anomaly proficiency; graph support needs enemy-aware calculator read blocks."
+      "reason": "Current logic creates a calculator runtime read context with enemy and character, then compares anomaly proficiency; graph support needs enemy-aware calculator read blocks."
     },
     {
       "case_id": "vivian-dot-trigger",
