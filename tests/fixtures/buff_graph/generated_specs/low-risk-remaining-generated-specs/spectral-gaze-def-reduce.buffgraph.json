@@ -1,0 +1,72 @@
+{
+  "schema": "zsim-buffgraph-generated-spec.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "low-risk-remaining-generated-specs",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SpectralGazeDefReduce.py",
+  "runtime_status_note": "legacy_python remains default; generated spec is candidate evidence only and may need semantic owner/source_buff metadata before parity promotion.",
+  "spec": {
+    "schema_version": "buff-graph-spec.v1",
+    "node_library_version": "buff-graph-node-library.v1",
+    "adapter_contract_version": "buff-graph-adapter-contract.v1",
+    "graph_id": "spectral-gaze-def-reduce",
+    "display_name": "spectral-gaze-def-reduce",
+    "owner_kind": "unknown",
+    "owner_name": "unknown:spectral-gaze-def-reduce",
+    "source_buff_index": null,
+    "created_from_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SpectralGazeDefReduce.py",
+    "runtime_status": "legacy_python",
+    "nodes": [
+      {
+        "node_id": "trigger-0",
+        "family": "trigger",
+        "block_id": "trigger.skill_hit",
+        "adapter_id": "trigger.skill_hit.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SpectralGazeDefReduce.py",
+          "skill_tag": "unknown"
+        },
+        "display_name": "Skill Hit"
+      },
+      {
+        "node_id": "condition-1",
+        "family": "condition",
+        "block_id": "condition.character_identity",
+        "adapter_id": "condition.character_identity.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SpectralGazeDefReduce.py"
+        },
+        "display_name": "Character Identity"
+      },
+      {
+        "node_id": "state-2",
+        "family": "state",
+        "block_id": "state.last_active_tick",
+        "adapter_id": "state.last_active_tick.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SpectralGazeDefReduce.py"
+        },
+        "display_name": "Last Active Tick"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge-0",
+        "source_node_id": "trigger-0",
+        "target_node_id": "condition-1",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-1",
+        "source_node_id": "condition-1",
+        "target_node_id": "state-2",
+        "source_port": "out",
+        "target_port": "in"
+      }
+    ],
+    "params": {},
+    "parity_metadata": {},
+    "last_parity_baseline": null,
+    "last_verified_at": null
+  }
+}

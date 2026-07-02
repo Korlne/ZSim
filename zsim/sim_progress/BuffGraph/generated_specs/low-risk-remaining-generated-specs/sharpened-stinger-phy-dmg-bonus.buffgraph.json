@@ -1,0 +1,143 @@
+{
+  "schema": "zsim-buffgraph-generated-spec.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "low-risk-remaining-generated-specs",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SharpenedStingerPhyDmgBonus.py",
+  "runtime_status_note": "legacy_python remains default; generated spec is candidate evidence only and may need semantic owner/source_buff metadata before parity promotion.",
+  "spec": {
+    "schema_version": "buff-graph-spec.v1",
+    "node_library_version": "buff-graph-node-library.v1",
+    "adapter_contract_version": "buff-graph-adapter-contract.v1",
+    "graph_id": "sharpened-stinger-phy-dmg-bonus",
+    "display_name": "sharpened-stinger-phy-dmg-bonus",
+    "owner_kind": "unknown",
+    "owner_name": "unknown:sharpened-stinger-phy-dmg-bonus",
+    "source_buff_index": null,
+    "created_from_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SharpenedStingerPhyDmgBonus.py",
+    "runtime_status": "legacy_python",
+    "nodes": [
+      {
+        "node_id": "trigger-0",
+        "family": "trigger",
+        "block_id": "trigger.skill_hit",
+        "adapter_id": "trigger.skill_hit.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SharpenedStingerPhyDmgBonus.py",
+          "skill_tag": "unknown"
+        },
+        "display_name": "Skill Hit"
+      },
+      {
+        "node_id": "condition-1",
+        "family": "condition",
+        "block_id": "condition.character_identity",
+        "adapter_id": "condition.character_identity.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SharpenedStingerPhyDmgBonus.py"
+        },
+        "display_name": "Character Identity"
+      },
+      {
+        "node_id": "condition-2",
+        "family": "condition",
+        "block_id": "condition.buff_active",
+        "adapter_id": "condition.buff_active.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SharpenedStingerPhyDmgBonus.py",
+          "buff_index": "SharpenedStingerPhyDmgBonus"
+        },
+        "display_name": "Buff Active"
+      },
+      {
+        "node_id": "read-3",
+        "family": "read",
+        "block_id": "read.current_tick",
+        "adapter_id": "read.current_tick.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SharpenedStingerPhyDmgBonus.py"
+        },
+        "display_name": "Current Tick"
+      },
+      {
+        "node_id": "state-4",
+        "family": "state",
+        "block_id": "state.last_active_tick",
+        "adapter_id": "state.last_active_tick.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SharpenedStingerPhyDmgBonus.py"
+        },
+        "display_name": "Last Active Tick"
+      },
+      {
+        "node_id": "effect-5",
+        "family": "effect",
+        "block_id": "effect.start_buff",
+        "adapter_id": "effect.start_buff.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SharpenedStingerPhyDmgBonus.py",
+          "buff_index": "SharpenedStingerPhyDmgBonus"
+        },
+        "display_name": "Start Buff"
+      },
+      {
+        "node_id": "effect-6",
+        "family": "effect",
+        "block_id": "effect.update_buff_count",
+        "adapter_id": "effect.update_buff_count.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SharpenedStingerPhyDmgBonus.py",
+          "buff_index": "SharpenedStingerPhyDmgBonus"
+        },
+        "display_name": "Update Buff Count"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge-0",
+        "source_node_id": "trigger-0",
+        "target_node_id": "condition-1",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-1",
+        "source_node_id": "condition-1",
+        "target_node_id": "condition-2",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-2",
+        "source_node_id": "condition-2",
+        "target_node_id": "read-3",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-3",
+        "source_node_id": "read-3",
+        "target_node_id": "state-4",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-4",
+        "source_node_id": "state-4",
+        "target_node_id": "effect-5",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-5",
+        "source_node_id": "effect-5",
+        "target_node_id": "effect-6",
+        "source_port": "out",
+        "target_port": "in"
+      }
+    ],
+    "params": {},
+    "parity_metadata": {},
+    "last_parity_baseline": null,
+    "last_verified_at": null
+  }
+}
