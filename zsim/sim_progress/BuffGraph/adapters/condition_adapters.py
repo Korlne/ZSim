@@ -152,6 +152,27 @@ class EnemyStateConditionAdapter:
         )
 
 
+class EnemyStunActiveConditionAdapter:
+    adapter_id = "condition.enemy_stun_active.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        active = _first_upstream_value(context.inputs, "active")
+        if active is None:
+            stun_state = _mapping(_first_upstream_value(context.inputs, "enemy_stun_state"))
+            active = stun_state.get("active")
+        if active is None:
+            active = context.prepared_context.get("enemy_stun_active", False)
+        expected_active = context.node.params.get("active", True)
+        passed = bool(active) is bool(expected_active)
+        return BuffGraphAdapterResult(
+            outputs={
+                "passed": passed,
+                "active": bool(active),
+                "expected_active": bool(expected_active),
+            }
+        )
+
+
 class EdgeTransitionConditionAdapter:
     adapter_id = "condition.edge_transition.v1"
 
@@ -318,17 +339,21 @@ class CooldownReadyConditionAdapter:
         tick = _current_tick(context)
         cooldown_key = context.node.params.get("cooldown_key") or context.node.node_id
         cooldown_ticks = int(context.node.params.get("cooldown_ticks", 0))
+        operator = str(context.node.params.get("operator", ">="))
         cooldowns = _mapping(context.prepared_context.get("cooldowns"))
         last_tick = cooldowns.get(cooldown_key)
         if last_tick is None:
             last_tick = _state(context).get(cooldown_key)
-        ready = last_tick is None or tick - int(last_tick) >= cooldown_ticks
+        elapsed = None if last_tick is None else tick - int(last_tick)
+        ready = last_tick is None or _compare_float(float(elapsed), float(cooldown_ticks), operator)
         return BuffGraphAdapterResult(
             outputs={
                 "passed": ready,
                 "tick": tick,
                 "cooldown_key": cooldown_key,
                 "last_tick": last_tick,
+                "elapsed": elapsed,
+                "operator": operator,
             }
         )
 
@@ -387,7 +412,11 @@ def build_prepared_context_condition_adapters() -> Mapping[str, object]:
 
 
 def build_enemy_anomaly_state_condition_adapters() -> Mapping[str, object]:
-    adapters = (EnemyStateConditionAdapter(), EdgeTransitionConditionAdapter())
+    adapters = (
+        EnemyStateConditionAdapter(),
+        EnemyStunActiveConditionAdapter(),
+        EdgeTransitionConditionAdapter(),
+    )
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 
@@ -412,6 +441,16 @@ def build_character_manager_side_effect_condition_adapters() -> Mapping[str, obj
 
 def build_calculator_runtime_formula_condition_adapters() -> Mapping[str, object]:
     adapters = (NumericCompareConditionAdapter(),)
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_yuzuha_cinema2_qte_signal_condition_adapters() -> Mapping[str, object]:
+    adapters = (
+        EnemyStunActiveConditionAdapter(),
+        HitFrameConditionAdapter(),
+        SkillTagInConditionAdapter(),
+        CooldownReadyConditionAdapter(),
+    )
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 
