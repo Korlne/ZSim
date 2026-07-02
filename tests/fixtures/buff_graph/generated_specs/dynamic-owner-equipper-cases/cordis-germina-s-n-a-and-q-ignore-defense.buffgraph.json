@@ -1,0 +1,117 @@
+{
+  "schema": "zsim-buffgraph-generated-spec.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "dynamic-owner-equipper-cases",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/CordisGerminaSNAAndQIgnoreDefense.py",
+  "runtime_status_note": "legacy_python remains default; generated spec is candidate evidence only.",
+  "spec": {
+    "schema_version": "buff-graph-spec.v1",
+    "node_library_version": "buff-graph-node-library.v1",
+    "adapter_contract_version": "buff-graph-adapter-contract.v1",
+    "graph_id": "cordis-germina-s-n-a-and-q-ignore-defense",
+    "display_name": "CordisGerminaSNAAndQIgnoreDefense",
+    "owner_kind": "w_engine",
+    "owner_name": "机巧心种",
+    "source_buff_index": "Buff-WEngine-机巧心种-普攻大招无视防御",
+    "created_from_xlogic": "zsim/sim_progress/Buff/BuffXLogic/CordisGerminaSNAAndQIgnoreDefense.py",
+    "runtime_status": "legacy_python",
+    "nodes": [
+      {
+        "node_id": "read-equipper",
+        "family": "read",
+        "block_id": "read.prepared_equipper",
+        "adapter_id": "read.prepared_equipper.v1",
+        "params": {},
+        "display_name": "Prepared Equipper"
+      },
+      {
+        "node_id": "read-trigger-state",
+        "family": "read",
+        "block_id": "read.trigger_buff_state",
+        "adapter_id": "read.trigger_buff_state.v1",
+        "params": {
+          "trigger_buff_index": "机巧心种-电属性增伤"
+        },
+        "display_name": "Trigger Buff State"
+      },
+      {
+        "node_id": "condition-equipper",
+        "family": "condition",
+        "block_id": "condition.equipper_identity",
+        "adapter_id": "condition.equipper_identity.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/CordisGerminaSNAAndQIgnoreDefense.py"
+        },
+        "display_name": "Equipper Identity"
+      },
+      {
+        "node_id": "condition-trigger-active",
+        "family": "condition",
+        "block_id": "condition.trigger_buff_active",
+        "adapter_id": "condition.trigger_buff_active.v1",
+        "params": {
+          "trigger_buff_index": "机巧心种-电属性增伤"
+        },
+        "display_name": "Trigger Buff Active"
+      },
+      {
+        "node_id": "condition-box-size",
+        "family": "condition",
+        "block_id": "condition.trigger_buff_box_size_equals",
+        "adapter_id": "condition.trigger_buff_box_size_equals.v1",
+        "params": {
+          "trigger_buff_index": "机巧心种-电属性增伤",
+          "expected_size": 2
+        },
+        "display_name": "Trigger Buff Box Size Equals"
+      },
+      {
+        "node_id": "exit-not-box-size",
+        "family": "compose",
+        "block_id": "compose.not",
+        "adapter_id": "compose.not.v1",
+        "params": {},
+        "display_name": "Not"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge-0",
+        "source_node_id": "read-equipper",
+        "target_node_id": "condition-equipper",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-1",
+        "source_node_id": "read-trigger-state",
+        "target_node_id": "condition-trigger-active",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-2",
+        "source_node_id": "read-trigger-state",
+        "target_node_id": "condition-box-size",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-3",
+        "source_node_id": "condition-box-size",
+        "target_node_id": "exit-not-box-size",
+        "source_port": "out",
+        "target_port": "in"
+      }
+    ],
+    "params": {
+      "migration_wave": "dynamic-owner-equipper-cases"
+    },
+    "parity_metadata": {
+      "parity_status": "not_run",
+      "candidate_only": true
+    },
+    "last_parity_baseline": null,
+    "last_verified_at": null
+  }
+}

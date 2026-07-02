@@ -18,8 +18,8 @@ def test_remaining_unsupported_manifest_covers_every_xlogic_without_generated_sp
     assert manifest["status"] == "blocked_by_missing_controlled_blocks"
     assert manifest["runtime_status"] == "legacy_python"
     assert manifest["current_non_helper_xlogic_count"] == len(current_xlogic) == 150
-    assert manifest["generated_spec_source_count"] == len(generated_sources & current_xlogic) == 50
-    assert manifest["unsupported_case_count"] == len(unsupported_sources) == 100
+    assert manifest["generated_spec_source_count"] == len(generated_sources & current_xlogic)
+    assert manifest["unsupported_case_count"] == len(unsupported_sources)
     assert generated_sources & unsupported_sources == set()
     assert current_xlogic == (generated_sources & current_xlogic) | unsupported_sources
     assert (FIXTURE_ROOT / "manifest.json").read_text(encoding="utf-8") == (

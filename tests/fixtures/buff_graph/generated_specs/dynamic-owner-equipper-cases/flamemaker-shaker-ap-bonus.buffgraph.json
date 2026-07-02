@@ -1,0 +1,137 @@
+{
+  "schema": "zsim-buffgraph-generated-spec.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "dynamic-owner-equipper-cases",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/FlamemakerShakerApBonus.py",
+  "runtime_status_note": "legacy_python remains default; generated spec is candidate evidence only.",
+  "spec": {
+    "schema_version": "buff-graph-spec.v1",
+    "node_library_version": "buff-graph-node-library.v1",
+    "adapter_contract_version": "buff-graph-adapter-contract.v1",
+    "graph_id": "flamemaker-shaker-ap-bonus",
+    "display_name": "FlamemakerShakerApBonus",
+    "owner_kind": "w_engine",
+    "owner_name": "灼心摇壶",
+    "source_buff_index": "Buff-WEngine-灼心摇壶-精通增幅判定",
+    "created_from_xlogic": "zsim/sim_progress/Buff/BuffXLogic/FlamemakerShakerApBonus.py",
+    "runtime_status": "legacy_python",
+    "nodes": [
+      {
+        "node_id": "read-equipper",
+        "family": "read",
+        "block_id": "read.prepared_equipper",
+        "adapter_id": "read.prepared_equipper.v1",
+        "params": {},
+        "display_name": "Prepared Equipper"
+      },
+      {
+        "node_id": "read-template",
+        "family": "read",
+        "block_id": "read.prepared_template_buff",
+        "adapter_id": "read.prepared_template_buff.v1",
+        "params": {
+          "template_buff_index": "Buff-WEngine-灼心摇壶-精通增幅判定"
+        },
+        "display_name": "Prepared Template Buff"
+      },
+      {
+        "node_id": "read-trigger-state",
+        "family": "read",
+        "block_id": "read.trigger_buff_state",
+        "adapter_id": "read.trigger_buff_state.v1",
+        "params": {
+          "trigger_buff_index": "灼心摇壶-触发状态"
+        },
+        "display_name": "Trigger Buff State"
+      },
+      {
+        "node_id": "condition-equipper",
+        "family": "condition",
+        "block_id": "condition.equipper_identity",
+        "adapter_id": "condition.equipper_identity.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/FlamemakerShakerApBonus.py"
+        },
+        "display_name": "Equipper Identity"
+      },
+      {
+        "node_id": "condition-trigger-active",
+        "family": "condition",
+        "block_id": "condition.trigger_buff_active",
+        "adapter_id": "condition.trigger_buff_active.v1",
+        "params": {
+          "trigger_buff_index": "灼心摇壶-触发状态"
+        },
+        "display_name": "Trigger Buff Active"
+      },
+      {
+        "node_id": "condition-count",
+        "family": "condition",
+        "block_id": "condition.trigger_buff_count_compare",
+        "adapter_id": "condition.trigger_buff_count_compare.v1",
+        "params": {
+          "trigger_buff_index": "灼心摇壶-触发状态",
+          "expected_count": 1,
+          "operator": "at_least"
+        },
+        "display_name": "Trigger Buff Count Compare"
+      },
+      {
+        "node_id": "effect-bind-record",
+        "family": "effect",
+        "block_id": "effect.bind_prepared_record",
+        "adapter_id": "effect.bind_prepared_record.v1",
+        "params": {
+          "record_key": "flamemaker_shaker_equipper_ref"
+        },
+        "display_name": "Bind Prepared Record"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge-0",
+        "source_node_id": "read-equipper",
+        "target_node_id": "condition-equipper",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-1",
+        "source_node_id": "read-trigger-state",
+        "target_node_id": "condition-trigger-active",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-2",
+        "source_node_id": "read-trigger-state",
+        "target_node_id": "condition-count",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-3",
+        "source_node_id": "condition-count",
+        "target_node_id": "effect-bind-record",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-4",
+        "source_node_id": "read-template",
+        "target_node_id": "effect-bind-record",
+        "source_port": "out",
+        "target_port": "in"
+      }
+    ],
+    "params": {
+      "migration_wave": "dynamic-owner-equipper-cases"
+    },
+    "parity_metadata": {
+      "parity_status": "not_run",
+      "candidate_only": true
+    },
+    "last_parity_baseline": null,
+    "last_verified_at": null
+  }
+}
