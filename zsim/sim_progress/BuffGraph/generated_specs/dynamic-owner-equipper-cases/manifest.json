@@ -3,18 +3,18 @@
   "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
   "migration_wave": "dynamic-owner-equipper-cases",
   "runtime_status": "legacy_python",
-  "status": "generated_candidate_partial",
-  "status_note": "Five dynamic owner/equipper cases now have candidate BuffGraphSpec files after controlled prepared-context, TriggerBuffRef, compose.not, trigger-count, and skill-level blocks were merged. Remaining cases stay legacy_python and blocked by active-buffs/listener blocks.",
+  "status": "generated_candidate_complete",
+  "status_note": "Seven dynamic owner/equipper cases now have candidate BuffGraphSpec files after controlled prepared-context, TriggerBuffRef, compose.not, trigger-count, skill-level, active-buffs, and listener blocks were merged. All remain legacy_python candidate evidence until parity passes.",
   "generated_specs": [
     "astral-voice.buffgraph.json",
     "cordis-germina-s-n-a-and-q-ignore-defense.buffgraph.json",
     "flamemaker-shaker-ap-bonus.buffgraph.json",
     "hellfire-gears-sp-r-bonus.buffgraph.json",
-    "yunkui-tales-sheer-atk-bonus.buffgraph.json"
+    "ice-jade-teapot-extra-dmg-bonus.buffgraph.json",
+    "yunkui-tales-sheer-atk-bonus.buffgraph.json",
+    "zanshin-herb-case.buffgraph.json"
   ],
-  "surface_imports_not_promoted": [
-    "IceJadeTeaPotExtraDMGBonus.py"
-  ],
+  "surface_imports_not_promoted": [],
   "unsupported_patterns": [
     "dynamic_owner_equipper_prepared_context"
   ],
@@ -37,73 +37,12 @@
     "read.prepared_template_buff",
     "read.trigger_buff_state"
   ],
-  "unsupported_cases": [
-    {
-      "case_id": "ice-jade-teapot-active-buffs-for-equipper",
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/IceJadeTeaPotExtraDMGBonus.py",
-      "owner_kind": "w_engine",
-      "owner_name": "玉壶青冰",
-      "source_buff_index": "Buff-WEngine-玉壶青冰-额外增伤",
-      "current_importer_surface_graph": true,
-      "runtime_status": "legacy_python",
-      "unsupported_pattern_ids": [
-        "dynamic_owner_equipper_prepared_context"
-      ],
-      "required_future_block_ids": [
-        "read.prepared_equipper",
-        "read.active_buffs_for_equipper",
-        "condition.equipper_identity",
-        "condition.trigger_buff_count_compare"
-      ],
-      "contract_ids": [
-        "preparation_context_find_equipper",
-        "active_buffs_scan_for_equipper"
-      ],
-      "reason": "Current importer does not model direct preparation-context equipper lookup or scanning active buffs for that equipper."
-    },
-    {
-      "case_id": "zanshin-herb-case-listener-owner",
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/ZanshinHerbCase.py",
-      "owner_kind": "w_engine",
-      "owner_name": "残心青囊",
-      "source_buff_index": "Buff-WEngine-残心青囊-监听触发",
-      "current_importer_surface_graph": false,
-      "runtime_status": "legacy_python",
-      "unsupported_pattern_ids": [
-        "dynamic_owner_equipper_prepared_context"
-      ],
-      "optional_unsupported_pattern_ids": [
-        "character_manager_side_effect"
-      ],
-      "required_future_block_ids": [
-        "read.prepared_equipper",
-        "condition.equipper_identity",
-        "effect.bind_prepared_record",
-        "effect.register_listener",
-        "read.listener_signal",
-        "effect.consume_listener_signal"
-      ],
-      "contract_ids": [
-        "prepared_listener_owner",
-        "listener_signal_consume"
-      ],
-      "reason": "Current importer blocks on listener-manager side effects, and graph support also needs prepared equipper/record binding before listener owner semantics can be represented."
-    }
-  ],
+  "unsupported_cases": [],
   "oracle_sources": [
     "tests/fixtures/buff_graph/dynamic-owner-equipper-cases/surface-import-cases.json",
     "tests/fixtures/buff_graph/dynamic-owner-equipper-cases/prepared-context-contracts.json"
   ],
-  "generated_spec_count": 5,
-  "blocked_case_count": 2,
-  "remaining_required_future_block_ids": [
-    "condition.equipper_identity",
-    "condition.trigger_buff_count_compare",
-    "effect.bind_prepared_record",
-    "effect.consume_listener_signal",
-    "effect.register_listener",
-    "read.active_buffs_for_equipper",
-    "read.listener_signal",
-    "read.prepared_equipper"
-  ]
+  "generated_spec_count": 7,
+  "blocked_case_count": 0,
+  "remaining_required_future_block_ids": []
 }

@@ -4,13 +4,12 @@
   "migration_wave": "remaining-unsupported-patterns",
   "runtime_status": "legacy_python",
   "status": "blocked_by_missing_controlled_blocks",
-  "status_note": "Consolidated explicit Unsupported XLogic Pattern manifest for every current non-helper XLogic file that still lacks an executable generated BuffGraphSpec. Five dynamic owner/equipper cases moved to generated candidate specs; legacy Python XLogic remains runtime default/fallback/oracle.",
+  "status_note": "Consolidated explicit Unsupported XLogic Pattern manifest for every current non-helper XLogic file that still lacks an executable generated BuffGraphSpec. Seven dynamic owner/equipper cases moved to generated candidate specs; legacy Python XLogic remains runtime default/fallback/oracle.",
   "current_non_helper_xlogic_count": 150,
-  "generated_spec_source_count": 55,
-  "unsupported_case_count": 95,
+  "generated_spec_source_count": 57,
+  "unsupported_case_count": 93,
   "unsupported_patterns": [
     "character_manager_side_effect",
-    "dynamic_owner_equipper_prepared_context",
     "enemy_anomaly_or_dot_read",
     "runtime_command_or_scheduled_producer",
     "wave-boundary-gap"
@@ -21,7 +20,6 @@
     "condition.cooldown_ready",
     "condition.edge_transition",
     "condition.enemy_state",
-    "condition.equipper_identity",
     "condition.hit_frame",
     "condition.numeric_compare",
     "condition.operating_character",
@@ -31,9 +29,6 @@
     "condition.skill_tag_in",
     "condition.skill_trigger_level",
     "condition.tick_window",
-    "condition.trigger_buff_count_compare",
-    "effect.bind_prepared_record",
-    "effect.consume_listener_signal",
     "effect.emit_scheduled_event",
     "effect.external_add_skill",
     "effect.force_quick_assist",
@@ -41,7 +36,6 @@
     "effect.issue_runtime_command",
     "effect.publish_resource_refresh",
     "effect.register_dot_runtime",
-    "effect.register_listener",
     "effect.spawn_anomaly_output",
     "effect.spawn_coattack",
     "effect.spawn_extra_attack",
@@ -52,7 +46,6 @@
     "effect.update_character_manager",
     "effect.update_character_resource",
     "effect.update_template_buff",
-    "read.active_buffs_for_equipper",
     "read.calculator_attribute",
     "read.current_action",
     "read.current_tick",
@@ -61,7 +54,6 @@
     "read.enemy_anomaly_state",
     "read.enemy_context",
     "read.enemy_edge_state",
-    "read.listener_signal",
     "read.next_team_member",
     "read.prepared_equipper",
     "read.prepared_owner",
@@ -81,20 +73,18 @@
     "additional-attack-side-effects": 14,
     "anomaly-dot-adjacent-cases": 7,
     "calculator-runtime-read-buffs": 3,
-    "dynamic-owner-equipper-cases": 2,
     "enemy-state-edge-triggers": 37,
     "runtime-command-scheduled-producers": 32
   },
   "unsupported_pattern_counts": {
     "character_manager_side_effect": 17,
-    "dynamic_owner_equipper_prepared_context": 2,
     "enemy_anomaly_or_dot_read": 66,
     "runtime_command_or_scheduled_producer": 34,
     "wave-boundary-gap": 1
   },
   "required_future_block_counts": {
-    "read.prepared_equipper": 67,
     "effect.update_template_buff": 65,
+    "read.prepared_equipper": 65,
     "read.prepared_owner": 65,
     "read.prepared_template_buff": 65,
     "read.enemy_anomaly_state": 63,
@@ -130,7 +120,6 @@
     "effect.update_buff_count": 3,
     "state.cooldown_gate": 3,
     "condition.edge_transition": 2,
-    "condition.equipper_identity": 2,
     "effect.external_add_skill": 2,
     "state.edge_memory": 2,
     "condition.character_state": 1,
@@ -138,18 +127,12 @@
     "condition.operating_character": 1,
     "condition.preload_tick": 1,
     "condition.skill_owner": 1,
-    "condition.trigger_buff_count_compare": 1,
-    "effect.bind_prepared_record": 1,
-    "effect.consume_listener_signal": 1,
     "effect.register_dot_runtime": 1,
-    "effect.register_listener": 1,
     "effect.spawn_planned_skill_node": 1,
     "effect.update_character_resource": 1,
-    "read.active_buffs_for_equipper": 1,
     "read.current_action": 1,
     "read.current_tick": 1,
     "read.enemy_edge_state": 1,
-    "read.listener_signal": 1,
     "read.refinement": 1,
     "scout.semantic_source_review": 1,
     "state.counter": 1
@@ -810,22 +793,6 @@
       "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
       "recommended_next_action": "write_explicit_unsupported_manifest_case",
       "evidence_source": "scout-xlogic-missing-coverage-classification",
-      "legacy_runtime_status": "legacy_python"
-    },
-    {
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/IceJadeTeaPotExtraDMGBonus.py",
-      "primary_wave": "dynamic-owner-equipper-cases",
-      "unsupported_pattern_ids": [
-        "dynamic_owner_equipper_prepared_context"
-      ],
-      "required_future_block_ids": [
-        "read.prepared_equipper",
-        "read.active_buffs_for_equipper",
-        "condition.equipper_identity",
-        "condition.trigger_buff_count_compare"
-      ],
-      "reason": "Current importer does not model direct preparation-context equipper lookup or scanning active buffs for that equipper.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
       "legacy_runtime_status": "legacy_python"
     },
     {
@@ -2601,24 +2568,6 @@
       "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.",
       "recommended_next_action": "write_explicit_unsupported_manifest_case",
       "evidence_source": "scout-xlogic-missing-coverage-classification",
-      "legacy_runtime_status": "legacy_python"
-    },
-    {
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/ZanshinHerbCase.py",
-      "primary_wave": "dynamic-owner-equipper-cases",
-      "unsupported_pattern_ids": [
-        "dynamic_owner_equipper_prepared_context"
-      ],
-      "required_future_block_ids": [
-        "read.prepared_equipper",
-        "condition.equipper_identity",
-        "effect.bind_prepared_record",
-        "effect.register_listener",
-        "read.listener_signal",
-        "effect.consume_listener_signal"
-      ],
-      "reason": "Current importer blocks on listener-manager side effects, and graph support also needs prepared equipper/record binding before listener owner semantics can be represented.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
       "legacy_runtime_status": "legacy_python"
     }
   ]
