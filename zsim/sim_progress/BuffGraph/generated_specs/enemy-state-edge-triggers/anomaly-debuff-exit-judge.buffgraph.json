@@ -1,0 +1,104 @@
+{
+  "schema": "zsim-buffgraph-generated-spec.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "enemy-state-edge-triggers",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py",
+  "runtime_status_note": "legacy_python remains default; generated spec is candidate evidence only.",
+  "spec": {
+    "schema_version": "buff-graph-spec.v1",
+    "node_library_version": "buff-graph-node-library.v1",
+    "adapter_contract_version": "buff-graph-adapter-contract.v1",
+    "graph_id": "anomaly-debuff-exit-judge",
+    "display_name": "AnomalyDebuffExitJudge",
+    "owner_kind": "unknown",
+    "owner_name": "AnomalyDebuffExitJudge",
+    "source_buff_index": null,
+    "created_from_xlogic": "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py",
+    "runtime_status": "legacy_python",
+    "nodes": [
+      {
+        "node_id": "read-enemy-anomaly-state",
+        "family": "read",
+        "block_id": "read.enemy_anomaly_state",
+        "adapter_id": "read.enemy_anomaly_state.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py",
+          "unsupported_pattern_ids": [
+            "enemy_anomaly_or_dot_read"
+          ],
+          "anomaly_key": "legacy_source_review_required",
+          "element": "legacy_source_review_required"
+        },
+        "display_name": "Enemy Anomaly State"
+      },
+      {
+        "node_id": "state-edge-memory",
+        "family": "state",
+        "block_id": "state.edge_memory",
+        "adapter_id": "state.edge_memory.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py",
+          "unsupported_pattern_ids": [
+            "enemy_anomaly_or_dot_read"
+          ],
+          "state_key": "anomaly-debuff-exit-judge"
+        },
+        "display_name": "Edge Memory"
+      },
+      {
+        "node_id": "condition-edge-transition",
+        "family": "condition",
+        "block_id": "condition.edge_transition",
+        "adapter_id": "condition.edge_transition.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py",
+          "unsupported_pattern_ids": [
+            "enemy_anomaly_or_dot_read"
+          ],
+          "transition": "falling",
+          "from_state": true,
+          "to_state": false
+        },
+        "display_name": "Edge Transition"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge-0",
+        "source_node_id": "read-enemy-anomaly-state",
+        "target_node_id": "state-edge-memory",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-1",
+        "source_node_id": "state-edge-memory",
+        "target_node_id": "condition-edge-transition",
+        "source_port": "out",
+        "target_port": "in"
+      }
+    ],
+    "params": {
+      "migration_wave": "enemy-state-edge-triggers",
+      "scout_work_pack": "scout-enemy-anomaly-unblocked-gap-index",
+      "legacy_semantic_review_required": true
+    },
+    "parity_metadata": {
+      "parity_status": "not_run",
+      "candidate_only": true,
+      "unblocked_by": [
+        "shared-helper-enemy-anomaly-state-read-blocks"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_block_ids": [
+        "read.enemy_anomaly_state",
+        "state.edge_memory",
+        "condition.edge_transition"
+      ]
+    },
+    "last_parity_baseline": null,
+    "last_verified_at": null
+  }
+}
