@@ -1,0 +1,91 @@
+{
+  "contracts": [
+    {
+      "case_id": "alice-cinema-6-extra-attack",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AliceCinema6Trigger.py",
+      "status": "requires_future_building_block",
+      "source_anchors": [
+        "self.record.char.spawn_extra_attack()",
+        "self.record.last_active_tick = self.buff_instance.sim_instance.tick"
+      ],
+      "required_future_block_ids": [
+        "effect.spawn_extra_attack",
+        "state.cooldown_gate"
+      ],
+      "future_block_reason": "Future adapter must call a controlled extra-attack effect and update cooldown state without exposing character methods as graph-authored code."
+    },
+    {
+      "case_id": "astrayao-chord-manager-coattack",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AstraYaoChordManagerTrigger.py",
+      "status": "requires_future_building_block",
+      "source_anchors": [
+        "char.chord_manager.chord_trigger.try_spawn_chord_coattack(",
+        "find_tick(sim_instance=self.buff_instance.sim_instance)"
+      ],
+      "required_future_block_ids": [
+        "effect.update_character_manager",
+        "effect.spawn_coattack"
+      ],
+      "future_block_reason": "Future adapter must model AstraYao chord-manager coattack spawning as a controlled side-effect block."
+    },
+    {
+      "case_id": "astrayao-quick-assist-manager",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AstraYaoQuickAssistManagerTrigger.py",
+      "status": "requires_future_building_block",
+      "source_anchors": [
+        "self.record.char.chord_manager.quick_assist_trigger_manager.update_myself(",
+        "skill_node"
+      ],
+      "required_future_block_ids": [
+        "effect.update_character_manager",
+        "read.skill_node"
+      ],
+      "future_block_reason": "Future adapter must update the quick-assist manager through a controlled effect block instead of exposing manager calls."
+    },
+    {
+      "case_id": "vivian-additional-ability-coattack",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianAdditionalAbilityCoAttackTrigger.py",
+      "status": "requires_future_building_block",
+      "source_anchors": [
+        "coattack_skill_tag = self.record.char.feather_manager.spawn_coattack()",
+        "self.record.preload_data.external_add_skill(input_tuple)"
+      ],
+      "required_future_block_ids": [
+        "effect.spawn_coattack",
+        "effect.external_add_skill",
+        "read.enemy_anomaly_state"
+      ],
+      "future_block_reason": "Future adapter must combine controlled enemy anomaly reads with Vivian feather-manager coattack spawning and external skill enqueueing."
+    },
+    {
+      "case_id": "vivian-coattack-trigger",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianCoattackTrigger.py",
+      "status": "requires_future_building_block",
+      "source_anchors": [
+        "coattack_skill_tag = self.record.char.feather_manager.spawn_coattack()",
+        "self.record.preload_data.external_add_skill(input_tuple)"
+      ],
+      "required_future_block_ids": [
+        "effect.spawn_coattack",
+        "effect.external_add_skill",
+        "condition.hit_frame"
+      ],
+      "future_block_reason": "Future adapter must model first-hit enhanced-special gates and controlled external skill enqueueing for Vivian coattacks."
+    },
+    {
+      "case_id": "yuzuha-cinema-4-quick-assist",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema4QuickAssistTrigger.py",
+      "status": "requires_future_building_block",
+      "source_anchors": [
+        "QAS.force_active_quick_assist(",
+        "self.record.trigger_skill_node = None"
+      ],
+      "required_future_block_ids": [
+        "effect.force_quick_assist",
+        "read.next_team_member",
+        "state.last_observed_skill"
+      ],
+      "future_block_reason": "Future adapter must force quick assist through a controlled effect block and clear stored trigger state after execution."
+    }
+  ]
+}
