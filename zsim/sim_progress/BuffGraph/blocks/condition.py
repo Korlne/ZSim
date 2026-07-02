@@ -86,5 +86,23 @@ CONDITION_BLOCKS = (
         input_ports=(BlockPort("equipper", "Equipper", "character"),),
         output_ports=(BlockPort("result", "Result", "bool"),),
     ),
+    BuffGraphBlockDefinition(
+        block_id="condition.enemy_state",
+        family=NodeFamily.CONDITION,
+        display_name="Enemy State",
+        adapter_id="condition.enemy_state.v1",
+        input_ports=(BlockPort("anomaly_state", "Anomaly State", "enemy_anomaly_state"),),
+        output_ports=(BlockPort("result", "Result", "bool"),),
+        param_schema={"expected_state": "string", "active": "bool", "anomaly_key": "string"},
+    ),
+    BuffGraphBlockDefinition(
+        block_id="condition.edge_transition",
+        family=NodeFamily.CONDITION,
+        display_name="Edge Transition",
+        adapter_id="condition.edge_transition.v1",
+        input_ports=(BlockPort("edge_state", "Edge State", "edge_state"),),
+        output_ports=(BlockPort("result", "Result", "bool"),),
+        param_schema={"transition": "edge_transition", "from_state": "any", "to_state": "any"},
+    ),
 )
 

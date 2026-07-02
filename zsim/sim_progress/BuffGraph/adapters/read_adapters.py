@@ -140,6 +140,125 @@ class ListenerSignalReadAdapter:
         )
 
 
+class EnemyContextReadAdapter:
+    adapter_id = "read.enemy_context.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        enemy_context = _mapping(
+            context.prepared_context.get("enemy_context")
+            or context.prepared_context.get("enemy")
+        )
+        return BuffGraphAdapterResult(outputs={"enemy_context": enemy_context})
+
+
+class EnemyAnomalyStateReadAdapter:
+    adapter_id = "read.enemy_anomaly_state.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        anomaly_key = context.node.params.get("anomaly_key") or context.node.params.get("element")
+        enemy_context = _enemy_context(context)
+        anomaly_state = _select_keyed_mapping(
+            enemy_context.get("anomaly_states")
+            or enemy_context.get("enemy_anomaly_states")
+            or context.prepared_context.get("enemy_anomaly_states"),
+            anomaly_key,
+        )
+        if not anomaly_state:
+            anomaly_state = _mapping(
+                enemy_context.get("anomaly_state")
+                or context.prepared_context.get("enemy_anomaly_state")
+            )
+        state_value = _state_value(anomaly_state)
+        active = bool(anomaly_state.get("active", state_value))
+        return BuffGraphAdapterResult(
+            outputs={
+                "anomaly_state": anomaly_state,
+                "state_value": state_value,
+                "active": active,
+                "anomaly_key": anomaly_key,
+            }
+        )
+
+
+class EnemyAnomalyBarReadAdapter:
+    adapter_id = "read.enemy_anomaly_bar.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        anomaly_key = context.node.params.get("anomaly_key") or context.node.params.get("element")
+        enemy_context = _enemy_context(context)
+        anomaly_bar = _select_keyed_mapping(
+            enemy_context.get("anomaly_bars")
+            or enemy_context.get("enemy_anomaly_bars")
+            or context.prepared_context.get("enemy_anomaly_bars"),
+            anomaly_key,
+        )
+        if not anomaly_bar:
+            anomaly_bar = _mapping(
+                enemy_context.get("anomaly_bar")
+                or context.prepared_context.get("enemy_anomaly_bar")
+            )
+        value = _number(
+            anomaly_bar.get("value")
+            if "value" in anomaly_bar
+            else anomaly_bar.get("current", anomaly_bar.get("amount", 0))
+        )
+        threshold = _number(
+            anomaly_bar.get("threshold")
+            if "threshold" in anomaly_bar
+            else anomaly_bar.get("max", anomaly_bar.get("limit", 0))
+        )
+        ratio = value / threshold if threshold else 0.0
+        return BuffGraphAdapterResult(
+            outputs={
+                "anomaly_bar": anomaly_bar,
+                "anomaly_value": value,
+                "anomaly_threshold": threshold,
+                "anomaly_ratio": ratio,
+                "anomaly_key": anomaly_key,
+            }
+        )
+
+
+class EnemyEdgeStateReadAdapter:
+    adapter_id = "read.enemy_edge_state.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        edge_key = context.node.params.get("edge_key") or context.node.params.get("state_key")
+        edge_state = _select_keyed_mapping(context.prepared_context.get("enemy_edge_states"), edge_key)
+        if not edge_state:
+            edge_state = _mapping(context.prepared_context.get("enemy_edge_state"))
+        previous = edge_state.get("previous")
+        current = edge_state.get("current")
+        return BuffGraphAdapterResult(
+            outputs={
+                "edge_state": edge_state,
+                "previous": previous,
+                "current": current,
+                "changed": bool(edge_state.get("changed", previous != current)),
+            }
+        )
+
+
+class DotRuntimeStateReadAdapter:
+    adapter_id = "read.dot_runtime_state.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        dot_key = context.node.params.get("dot_key")
+        dot_runtime_state = _select_keyed_mapping(
+            context.prepared_context.get("dot_runtime_states"),
+            dot_key,
+        )
+        if not dot_runtime_state:
+            dot_runtime_state = _mapping(context.prepared_context.get("dot_runtime_state"))
+        return BuffGraphAdapterResult(
+            outputs={
+                "dot_runtime_state": dot_runtime_state,
+                "active": bool(dot_runtime_state.get("active", False)),
+                "dot_key": dot_key,
+            }
+        )
+
+
 def build_low_risk_read_adapters() -> Mapping[str, object]:
     adapters = (CurrentTickReadAdapter(), BuffRuntimeViewReadAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
@@ -160,6 +279,17 @@ def build_prepared_context_read_adapters() -> Mapping[str, object]:
 
 def build_active_buffs_listener_read_adapters() -> Mapping[str, object]:
     adapters = (ActiveBuffsForEquipperReadAdapter(), ListenerSignalReadAdapter())
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_enemy_anomaly_state_read_adapters() -> Mapping[str, object]:
+    adapters = (
+        EnemyContextReadAdapter(),
+        EnemyAnomalyStateReadAdapter(),
+        EnemyAnomalyBarReadAdapter(),
+        EnemyEdgeStateReadAdapter(),
+        DotRuntimeStateReadAdapter(),
+    )
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 
@@ -252,6 +382,39 @@ def _listener_signal(
         )
         return signal, signal_key == listener_key
     return {}, False
+
+
+def _enemy_context(context: BuffGraphAdapterContext) -> Mapping[str, Any]:
+    upstream_context = _first_upstream_value(context.inputs, "enemy_context")
+    if isinstance(upstream_context, Mapping):
+        return upstream_context
+    return _mapping(
+        context.prepared_context.get("enemy_context")
+        or context.prepared_context.get("enemy")
+    )
+
+
+def _select_keyed_mapping(value: Any, key: Any) -> Mapping[str, Any]:
+    mapping = _mapping(value)
+    if key is not None and key in mapping:
+        return _mapping(mapping.get(key))
+    if key is None and len(mapping) == 1:
+        return _mapping(next(iter(mapping.values())))
+    return {}
+
+
+def _state_value(state: Mapping[str, Any]) -> Any:
+    for key in ("state", "status", "value", "anomaly_state"):
+        if key in state:
+            return state[key]
+    return None
+
+
+def _number(value: Any) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def _built_in_buff_box_size(trigger_state: Mapping[str, Any]) -> int:

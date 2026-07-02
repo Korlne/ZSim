@@ -130,6 +130,53 @@ class EquipperIsForegroundConditionAdapter:
         )
 
 
+class EnemyStateConditionAdapter:
+    adapter_id = "condition.enemy_state.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        anomaly_state = _anomaly_state(context)
+        actual_state = _state_value(anomaly_state)
+        expected_state = context.node.params.get("expected_state")
+        expected_active = context.node.params.get("active")
+        active = bool(anomaly_state.get("active", actual_state))
+        passed = expected_state is None or actual_state == expected_state
+        if expected_active is not None:
+            passed = passed and active is bool(expected_active)
+        return BuffGraphAdapterResult(
+            outputs={
+                "passed": passed,
+                "actual_state": actual_state,
+                "expected_state": expected_state,
+                "active": active,
+            }
+        )
+
+
+class EdgeTransitionConditionAdapter:
+    adapter_id = "condition.edge_transition.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        edge_state = _edge_state(context)
+        previous = edge_state.get("previous")
+        current = edge_state.get("current")
+        transition = str(context.node.params.get("transition", "changed"))
+        passed = _edge_transition_passed(
+            previous=previous,
+            current=current,
+            transition=transition,
+            from_state=context.node.params.get("from_state"),
+            to_state=context.node.params.get("to_state"),
+        )
+        return BuffGraphAdapterResult(
+            outputs={
+                "passed": passed,
+                "previous": previous,
+                "current": current,
+                "transition": transition,
+            }
+        )
+
+
 def build_low_risk_condition_adapters() -> Mapping[str, object]:
     adapters = (CharacterIdentityConditionAdapter(), BuffActiveConditionAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
@@ -145,6 +192,11 @@ def build_prepared_context_condition_adapters() -> Mapping[str, object]:
         EquipperIsBackgroundConditionAdapter(),
         EquipperIsForegroundConditionAdapter(),
     )
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_enemy_anomaly_state_condition_adapters() -> Mapping[str, object]:
+    adapters = (EnemyStateConditionAdapter(), EdgeTransitionConditionAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 
@@ -234,3 +286,49 @@ def _foreground_character(context: BuffGraphAdapterContext) -> Any:
         if isinstance(name_box, (list, tuple)) and name_box:
             foreground = name_box[0]
     return foreground
+
+
+def _anomaly_state(context: BuffGraphAdapterContext) -> Mapping[str, Any]:
+    upstream_state = _first_upstream_value(context.inputs, "anomaly_state")
+    if isinstance(upstream_state, Mapping):
+        return upstream_state
+    return _mapping(context.prepared_context.get("enemy_anomaly_state"))
+
+
+def _edge_state(context: BuffGraphAdapterContext) -> Mapping[str, Any]:
+    upstream_state = _first_upstream_value(context.inputs, "edge_state")
+    if isinstance(upstream_state, Mapping):
+        return upstream_state
+    return _mapping(context.prepared_context.get("enemy_edge_state"))
+
+
+def _state_value(state: Mapping[str, Any]) -> Any:
+    for key in ("state", "status", "value", "anomaly_state"):
+        if key in state:
+            return state[key]
+    return None
+
+
+def _edge_transition_passed(
+    *,
+    previous: Any,
+    current: Any,
+    transition: str,
+    from_state: Any,
+    to_state: Any,
+) -> bool:
+    if from_state is not None and previous != from_state:
+        return False
+    if to_state is not None and current != to_state:
+        return False
+    if transition in {"changed", "change"}:
+        return previous != current
+    if transition in {"rising", "rising_edge"}:
+        return not bool(previous) and bool(current)
+    if transition in {"falling", "falling_edge"}:
+        return bool(previous) and not bool(current)
+    if transition in {"entered", "to"}:
+        return previous != current and (to_state is None or current == to_state)
+    if transition in {"exited", "from"}:
+        return previous != current and (from_state is None or previous == from_state)
+    return False
