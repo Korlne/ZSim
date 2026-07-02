@@ -79,9 +79,25 @@ export type BuffGraphCompileResult = {
 };
 
 export type BuffGraphParityResult = {
-  status: 'not_available' | 'ready_for_oracle';
+  status:
+    | 'not_available'
+    | 'ready_for_oracle'
+    | 'candidate_harness_passed'
+    | 'candidate_harness_failed';
   graph_id: string;
   reason: string;
+  candidate_harness_id?: string | null;
+  candidate_runtime_status?: BuffGraphRuntimeStatus | null;
+  candidate_parity_passed?: boolean;
+  full_parity_verified?: boolean;
+  evidence?: Record<string, unknown>;
+};
+
+export type BuffGraphCandidateSliceEvidence = {
+  graph_id: string;
+  api_endpoint: string;
+  status: BuffGraphParityResult['status'];
+  full_parity_verified: boolean;
 };
 
 export type BuffGraphParityMatrix = {
@@ -94,6 +110,10 @@ export type BuffGraphParityMatrix = {
   ui_driven: boolean;
   full_simulation_matrix: boolean;
   full_parity_verified: boolean;
+  candidate_harness_id?: string | null;
+  candidate_runtime_status?: BuffGraphRuntimeStatus | null;
+  candidate_parity_passed?: boolean;
+  candidate_slice_evidence?: BuffGraphCandidateSliceEvidence;
   matrix_scope: string[];
 };
 
@@ -263,6 +283,10 @@ const normalizeMatrix = (payload: unknown): BuffGraphParityMatrix => {
   const status = item.status === 'run_requested' ? 'run_requested' : 'not_available';
   const commandStatus =
     item.command_status === 'request_recorded' ? 'request_recorded' : 'runner_required';
+  const rawCandidateEvidence =
+    item.candidate_slice_evidence && typeof item.candidate_slice_evidence === 'object'
+      ? (item.candidate_slice_evidence as Record<string, unknown>)
+      : undefined;
   return {
     status,
     reason: String(item.reason ?? 'Parity matrix is not available yet.'),
@@ -280,6 +304,32 @@ const normalizeMatrix = (payload: unknown): BuffGraphParityMatrix => {
     ui_driven: item.ui_driven === true,
     full_simulation_matrix: item.full_simulation_matrix === true,
     full_parity_verified: item.full_parity_verified === true,
+    candidate_harness_id:
+      item.candidate_harness_id === undefined || item.candidate_harness_id === null
+        ? undefined
+        : String(item.candidate_harness_id),
+    candidate_runtime_status:
+      item.candidate_runtime_status === undefined || item.candidate_runtime_status === null
+        ? undefined
+        : (String(item.candidate_runtime_status) as BuffGraphRuntimeStatus),
+    candidate_parity_passed:
+      item.candidate_parity_passed === undefined
+        ? undefined
+        : item.candidate_parity_passed === true,
+    candidate_slice_evidence: rawCandidateEvidence
+      ? {
+          graph_id: String(rawCandidateEvidence.graph_id ?? ''),
+          api_endpoint: String(rawCandidateEvidence.api_endpoint ?? ''),
+          status: (
+            rawCandidateEvidence.status === 'candidate_harness_passed' ||
+            rawCandidateEvidence.status === 'candidate_harness_failed' ||
+            rawCandidateEvidence.status === 'ready_for_oracle'
+              ? rawCandidateEvidence.status
+              : 'not_available'
+          ) as BuffGraphParityResult['status'],
+          full_parity_verified: rawCandidateEvidence.full_parity_verified === true,
+        }
+      : undefined,
     matrix_scope: Array.isArray(item.matrix_scope) ? item.matrix_scope.map(String) : [],
   };
 };

@@ -12,6 +12,7 @@ export const ParityMatrixView = ({ matrix, loading, error }: ParityMatrixViewPro
   const [runResult, setRunResult] = useState<BuffGraphParityMatrix>();
   const [runError, setRunError] = useState<string>();
   const [running, setRunning] = useState(false);
+  const visibleMatrix = runResult ?? matrix;
 
   const requestRun = async () => {
     setRunning(true);
@@ -44,7 +45,7 @@ export const ParityMatrixView = ({ matrix, loading, error }: ParityMatrixViewPro
           <div className="min-w-0">
             <div className="text-[11px] uppercase text-[#777]">Status</div>
             <div className="mt-[4px] break-words text-[20px] leading-[26px] text-[#222]">
-              {runResult?.status ?? matrix?.status ?? 'not_available'}
+              {visibleMatrix?.status ?? 'not_available'}
             </div>
           </div>
           <button
@@ -57,12 +58,23 @@ export const ParityMatrixView = ({ matrix, loading, error }: ParityMatrixViewPro
           </button>
         </div>
         <div className="mt-[8px] text-[13px] leading-[19px] text-[#666]">
-          {runResult?.reason ?? matrix?.reason ?? 'Parity matrix has not been produced yet.'}
+          {visibleMatrix?.reason ?? 'Parity matrix has not been produced yet.'}
         </div>
-        {(runResult?.required_command || matrix?.required_command) ? (
+        {(visibleMatrix?.required_command) ? (
           <code className="mt-[10px] block overflow-auto rounded-[6px] bg-white p-[8px] text-[12px] text-[#333]">
-            {runResult?.required_command ?? matrix?.required_command}
+            {visibleMatrix.required_command}
           </code>
+        ) : null}
+        {visibleMatrix?.candidate_harness_id || visibleMatrix?.candidate_slice_evidence ? (
+          <div className="mt-[10px] rounded-[6px] border border-[#D8E7D5] bg-[#F4FAF2] p-[8px] text-[12px] leading-[18px] text-[#355B2D]">
+            <div className="font-medium text-[#244B1D]">
+              {visibleMatrix.candidate_harness_id ?? 'candidate harness'}
+            </div>
+            <div>{visibleMatrix.candidate_slice_evidence?.status ?? 'candidate_harness_passed'}</div>
+            <div>{visibleMatrix.candidate_slice_evidence?.graph_id}</div>
+            <div>{visibleMatrix.candidate_slice_evidence?.api_endpoint}</div>
+            <div>candidate_parity_passed: {String(visibleMatrix.candidate_parity_passed)}</div>
+          </div>
         ) : null}
         {runResult?.run_id ? (
           <div className="mt-[10px] rounded-[6px] border border-[#E6E6E6] bg-white p-[8px] text-[12px] leading-[18px] text-[#555]">

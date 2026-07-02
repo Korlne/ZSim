@@ -33,6 +33,15 @@ const matrixContract = {
   ui_driven: true,
   full_simulation_matrix: true,
   full_parity_verified: false,
+  candidate_harness_id: 'alice-cinema6-api-candidate-harness',
+  candidate_runtime_status: 'visual_graph_candidate',
+  candidate_parity_passed: true,
+  candidate_slice_evidence: {
+    graph_id: 'alice-cinema6-candidate-parity',
+    api_endpoint: '/api/buff-graphs/alice-cinema6-candidate-parity/parity',
+    status: 'candidate_harness_passed',
+    full_parity_verified: false,
+  },
   matrix_scope: [
     'react-flow-ui-open-edit-save-validate',
     'react-flow-ui-initiated-parity',
@@ -168,11 +177,24 @@ const server = createServer(async (req, res) => {
       }
 
       if (req.method === 'POST' && action === 'parity') {
-        json(res, 200, {
+      json(res, 200, {
           data: {
-            status: 'ready_for_oracle',
+            status:
+              graphId === 'alice-cinema6-candidate-parity'
+                ? 'candidate_harness_passed'
+                : 'ready_for_oracle',
             graph_id: graphId,
             reason: 'UI smoke parity request accepted by fixture backend.',
+            candidate_harness_id:
+              graphId === 'alice-cinema6-candidate-parity'
+                ? 'alice-cinema6-api-candidate-harness'
+                : null,
+            candidate_runtime_status:
+              graphId === 'alice-cinema6-candidate-parity'
+                ? 'visual_graph_candidate'
+                : null,
+            candidate_parity_passed: graphId === 'alice-cinema6-candidate-parity',
+            full_parity_verified: false,
           },
         });
         return;
@@ -431,6 +453,8 @@ app.on('window-all-closed', () => app.quit());
           const text = document.body.innerText || '';
           return text.includes('run_requested') &&
             text.includes('ui-driven-full-simulation-matrix') &&
+            text.includes('alice-cinema6-api-candidate-harness') &&
+            text.includes('candidate_harness_passed') &&
             text.includes('full_parity_verified: false');
         })()
       `),
@@ -438,6 +462,8 @@ app.on('window-all-closed', () => app.quit());
 
     assert.ok(requestLog.includes('POST /api/buff-graphs/parity/matrix/run'));
     assert.equal(matrixRunPayload?.status, 'run_requested');
+    assert.equal(matrixRunPayload?.candidate_harness_id, 'alice-cinema6-api-candidate-harness');
+    assert.equal(matrixRunPayload?.candidate_parity_passed, true);
     assert.equal(matrixRunPayload?.full_parity_verified, false);
   }
 
