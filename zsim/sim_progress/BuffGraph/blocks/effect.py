@@ -180,5 +180,14 @@ EFFECT_BLOCKS = (
         output_ports=(BlockPort("dot_runtime_intent", "DOT Runtime Intent", "intent"),),
         param_schema={"dot_key": "string", "owner": "character_selector", "payload": "object"},
     ),
+    BuffGraphBlockDefinition(
+        block_id="effect.publish_resource_refresh",
+        family=NodeFamily.EFFECT,
+        display_name="Publish Resource Refresh Intent",
+        adapter_id="effect.publish_resource_refresh.v1",
+        input_ports=(BlockPort("condition", "Condition", "bool"),),
+        output_ports=(BlockPort("resource_refresh_intent", "Resource Refresh Intent", "intent"),),
+        param_schema={"resource": "string", "amount": "number", "payload": "object"},
+    ),
 )
 

@@ -314,6 +314,58 @@ class NextTeamMemberReadAdapter:
         return BuffGraphAdapterResult(outputs={"character": team[index], "team_index": index})
 
 
+class CalculatorAttributeReadAdapter:
+    adapter_id = "read.calculator_attribute.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        attribute = context.node.params.get("attribute")
+        source = context.node.params.get("source")
+        value = _calculator_attribute(context.prepared_context, attribute, source)
+        if value is None:
+            value = context.node.params.get("default", 0)
+        return BuffGraphAdapterResult(
+            outputs={
+                "value": _number(value),
+                "attribute": attribute,
+                "source": source,
+            }
+        )
+
+
+class RefinementReadAdapter:
+    adapter_id = "read.refinement.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        source = context.node.params.get("source")
+        refinement = _refinement(context.prepared_context, source)
+        if refinement is None:
+            refinement = context.node.params.get("default", 1)
+        return BuffGraphAdapterResult(outputs={"refinement": _number(refinement)})
+
+
+class CurrentActionReadAdapter:
+    adapter_id = "read.current_action.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        action = _mapping(
+            context.prepared_context.get("current_action")
+            or context.prepared_context.get("action")
+        )
+        action_name = (
+            action.get("action_name")
+            or action.get("name")
+            or context.prepared_context.get("current_action_name")
+        )
+        trigger_level = action.get("trigger_level", context.prepared_context.get("trigger_level"))
+        return BuffGraphAdapterResult(
+            outputs={
+                "action": action,
+                "action_name": action_name,
+                "trigger_level": trigger_level,
+            }
+        )
+
+
 def build_low_risk_read_adapters() -> Mapping[str, object]:
     adapters = (CurrentTickReadAdapter(), BuffRuntimeViewReadAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
@@ -355,6 +407,15 @@ def build_runtime_command_scheduled_signal_read_adapters() -> Mapping[str, objec
 
 def build_character_manager_side_effect_read_adapters() -> Mapping[str, object]:
     adapters = (NextTeamMemberReadAdapter(),)
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_calculator_runtime_formula_read_adapters() -> Mapping[str, object]:
+    adapters = (
+        CalculatorAttributeReadAdapter(),
+        RefinementReadAdapter(),
+        CurrentActionReadAdapter(),
+    )
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 
@@ -480,6 +541,40 @@ def _number(value: Any) -> float:
         return float(value)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _calculator_attribute(
+    prepared_context: Mapping[str, Any],
+    attribute: Any,
+    source: Any,
+) -> Any:
+    attributes = _mapping(
+        prepared_context.get("calculator_attributes")
+        or prepared_context.get("calculation_attributes")
+    )
+    if source is not None:
+        sourced = _mapping(attributes.get(source))
+        if attribute in sourced:
+            return sourced.get(attribute)
+    if attribute in attributes:
+        return attributes.get(attribute)
+
+    calculator = _mapping(prepared_context.get("calculator"))
+    if source is not None:
+        sourced = _mapping(calculator.get(source))
+        if attribute in sourced:
+            return sourced.get(attribute)
+    return calculator.get(attribute)
+
+
+def _refinement(prepared_context: Mapping[str, Any], source: Any) -> Any:
+    refinements = _mapping(prepared_context.get("refinements"))
+    if source is not None and source in refinements:
+        return refinements.get(source)
+    if "refinement" in prepared_context:
+        return prepared_context.get("refinement")
+    equip = _mapping(prepared_context.get("equipment") or prepared_context.get("w_engine"))
+    return equip.get("refinement")
 
 
 def _built_in_buff_box_size(trigger_state: Mapping[str, Any]) -> int:
