@@ -1,0 +1,28 @@
+{
+  "case_id": "moonlight-lullaby-all-team-dmg-bonus",
+  "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/MoonlightLullabyAllTeamDmgBonus.py",
+  "owner_kind": "w_engine",
+  "owner_name": "Moonlight Lullaby",
+  "source_buff_index": "Buff-WEngine-MoonlightLullaby-AllTeamDmg",
+  "prepared_context": {
+    "owner_name": "Moonlight Lullaby",
+    "tick": 360,
+    "state": {}
+  },
+  "expected_node_block_ids": [
+    "condition.character_identity",
+    "state.last_active_tick"
+  ],
+  "expected_final_output": {
+    "last_active_tick": 360,
+    "active": true
+  },
+  "expected_trace_kind_checkpoint": [
+    ["graph_started", ""],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["graph_finished", "graph_finished"]
+  ]
+}
