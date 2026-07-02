@@ -182,6 +182,13 @@ class BuffGraphParityPayload(BaseModel):
 
 
 class BuffGraphMatrixPayload(BaseModel):
-    status: Literal["not_available"]
+    status: Literal["not_available", "run_requested"]
     reason: str
-    required_command: str | None = None
+    required_command: str
+    evidence_path: str
+    command_status: Literal["runner_required", "request_recorded"]
+    run_id: str | None = None
+    ui_driven: bool = True
+    full_simulation_matrix: bool = True
+    full_parity_verified: bool = False
+    matrix_scope: list[str] = Field(default_factory=list)

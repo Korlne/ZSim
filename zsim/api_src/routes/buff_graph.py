@@ -78,7 +78,7 @@ async def get_parity_matrix():
     response_model=BuffGraphAPIResponse,
 )
 async def run_parity_matrix():
-    return BuffGraphAPIResponse(data=buff_graph_service.parity_matrix())
+    return BuffGraphAPIResponse(data=buff_graph_service.request_parity_matrix_run())
 
 
 @router.get("/buff-graphs/{graph_id}", tags=["BuffGraph"], response_model=BuffGraphAPIResponse)
