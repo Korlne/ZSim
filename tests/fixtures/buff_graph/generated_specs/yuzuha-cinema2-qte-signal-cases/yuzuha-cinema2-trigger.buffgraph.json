@@ -1,0 +1,350 @@
+{
+  "schema": "zsim-buffgraph-generated-spec.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "yuzuha-cinema2-qte-signal-cases",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+  "runtime_status_note": "legacy_python remains default; generated spec is candidate evidence only.",
+  "spec": {
+    "schema_version": "buff-graph-spec.v1",
+    "node_library_version": "buff-graph-node-library.v1",
+    "adapter_contract_version": "buff-graph-adapter-contract.v1",
+    "graph_id": "yuzuha-cinema2-trigger",
+    "display_name": "YuzuhaCinema2Trigger",
+    "owner_kind": "cinema",
+    "owner_name": "Yuzuha Cinema 2",
+    "source_buff_index": "Buff-角色-柚叶-2画-连携技触发器",
+    "created_from_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+    "runtime_status": "legacy_python",
+    "nodes": [
+      {
+        "node_id": "read-current-tick",
+        "family": "read",
+        "block_id": "read.current_tick",
+        "adapter_id": "read.current_tick.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+          "unsupported_pattern_ids": [
+            "enemy-stun-read-gap",
+            "pending-skill-node-signal-gap",
+            "skill-node-force-qte-mutation-gap",
+            "process-state-notification-gap",
+            "cooldown-commit-gap"
+          ]
+        },
+        "display_name": "Current Tick"
+      },
+      {
+        "node_id": "read-enemy-context",
+        "family": "read",
+        "block_id": "read.enemy_context",
+        "adapter_id": "read.enemy_context.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+          "unsupported_pattern_ids": [
+            "enemy-stun-read-gap",
+            "pending-skill-node-signal-gap",
+            "skill-node-force-qte-mutation-gap",
+            "process-state-notification-gap",
+            "cooldown-commit-gap"
+          ]
+        },
+        "display_name": "Enemy Context"
+      },
+      {
+        "node_id": "read-enemy-stun-state",
+        "family": "read",
+        "block_id": "read.enemy_stun_state",
+        "adapter_id": "read.enemy_stun_state.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+          "unsupported_pattern_ids": [
+            "enemy-stun-read-gap",
+            "pending-skill-node-signal-gap",
+            "skill-node-force-qte-mutation-gap",
+            "process-state-notification-gap",
+            "cooldown-commit-gap"
+          ]
+        },
+        "display_name": "Enemy Stun State"
+      },
+      {
+        "node_id": "condition-enemy-not-stunned",
+        "family": "condition",
+        "block_id": "condition.enemy_stun_active",
+        "adapter_id": "condition.enemy_stun_active.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+          "unsupported_pattern_ids": [
+            "enemy-stun-read-gap",
+            "pending-skill-node-signal-gap",
+            "skill-node-force-qte-mutation-gap",
+            "process-state-notification-gap",
+            "cooldown-commit-gap"
+          ],
+          "active": false
+        },
+        "display_name": "Enemy Stun Active"
+      },
+      {
+        "node_id": "read-skill-node",
+        "family": "read",
+        "block_id": "read.skill_node",
+        "adapter_id": "read.skill_node.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+          "unsupported_pattern_ids": [
+            "enemy-stun-read-gap",
+            "pending-skill-node-signal-gap",
+            "skill-node-force-qte-mutation-gap",
+            "process-state-notification-gap",
+            "cooldown-commit-gap"
+          ]
+        },
+        "display_name": "Skill Node"
+      },
+      {
+        "node_id": "condition-skill-tag-in",
+        "family": "condition",
+        "block_id": "condition.skill_tag_in",
+        "adapter_id": "condition.skill_tag_in.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+          "unsupported_pattern_ids": [
+            "enemy-stun-read-gap",
+            "pending-skill-node-signal-gap",
+            "skill-node-force-qte-mutation-gap",
+            "process-state-notification-gap",
+            "cooldown-commit-gap"
+          ],
+          "skill_tags": [
+            "1411_E_EX_A",
+            "1411_E_EX_B",
+            "1411_Q"
+          ]
+        },
+        "display_name": "Skill Tag In"
+      },
+      {
+        "node_id": "condition-hit-frame",
+        "family": "condition",
+        "block_id": "condition.hit_frame",
+        "adapter_id": "condition.hit_frame.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+          "unsupported_pattern_ids": [
+            "enemy-stun-read-gap",
+            "pending-skill-node-signal-gap",
+            "skill-node-force-qte-mutation-gap",
+            "process-state-notification-gap",
+            "cooldown-commit-gap"
+          ],
+          "require_last_hit": true
+        },
+        "display_name": "Hit Frame"
+      },
+      {
+        "node_id": "condition-cooldown-ready",
+        "family": "condition",
+        "block_id": "condition.cooldown_ready",
+        "adapter_id": "condition.cooldown_ready.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+          "unsupported_pattern_ids": [
+            "enemy-stun-read-gap",
+            "pending-skill-node-signal-gap",
+            "skill-node-force-qte-mutation-gap",
+            "process-state-notification-gap",
+            "cooldown-commit-gap"
+          ],
+          "cooldown_key": "yuzuha-cinema2-trigger",
+          "cooldown_ticks": 1200,
+          "operator": ">"
+        },
+        "display_name": "Cooldown Ready"
+      },
+      {
+        "node_id": "state-pending-skill-node-signal",
+        "family": "state",
+        "block_id": "state.pending_skill_node_signal",
+        "adapter_id": "state.pending_skill_node_signal.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+          "unsupported_pattern_ids": [
+            "enemy-stun-read-gap",
+            "pending-skill-node-signal-gap",
+            "skill-node-force-qte-mutation-gap",
+            "process-state-notification-gap",
+            "cooldown-commit-gap"
+          ],
+          "signal_key": "yuzuha-cinema2-trigger",
+          "operation": "capture",
+          "require_empty": true
+        },
+        "display_name": "Pending Skill Node Signal"
+      },
+      {
+        "node_id": "effect-set-force-qte-trigger",
+        "family": "effect",
+        "block_id": "effect.set_skill_node_force_qte_trigger",
+        "adapter_id": "effect.set_skill_node_force_qte_trigger.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+          "unsupported_pattern_ids": [
+            "enemy-stun-read-gap",
+            "pending-skill-node-signal-gap",
+            "skill-node-force-qte-mutation-gap",
+            "process-state-notification-gap",
+            "cooldown-commit-gap"
+          ]
+        },
+        "display_name": "Set Skill Node Force QTE Trigger Intent"
+      },
+      {
+        "node_id": "effect-notify-process-state",
+        "family": "effect",
+        "block_id": "effect.notify_schedule_process_state",
+        "adapter_id": "effect.notify_schedule_process_state.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+          "unsupported_pattern_ids": [
+            "enemy-stun-read-gap",
+            "pending-skill-node-signal-gap",
+            "skill-node-force-qte-mutation-gap",
+            "process-state-notification-gap",
+            "cooldown-commit-gap"
+          ],
+          "reason": "yuzuha-cinema2-force-qte",
+          "report_flag": "YUZUHA_REPORT"
+        },
+        "display_name": "Notify Schedule Process State Intent"
+      },
+      {
+        "node_id": "state-commit-cooldown-tick",
+        "family": "state",
+        "block_id": "state.commit_cooldown_tick",
+        "adapter_id": "state.commit_cooldown_tick.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+          "unsupported_pattern_ids": [
+            "enemy-stun-read-gap",
+            "pending-skill-node-signal-gap",
+            "skill-node-force-qte-mutation-gap",
+            "process-state-notification-gap",
+            "cooldown-commit-gap"
+          ],
+          "cooldown_key": "yuzuha-cinema2-trigger"
+        },
+        "display_name": "Commit Cooldown Tick"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge-0",
+        "source_node_id": "read-enemy-context",
+        "target_node_id": "read-enemy-stun-state",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-1",
+        "source_node_id": "read-enemy-stun-state",
+        "target_node_id": "condition-enemy-not-stunned",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-2",
+        "source_node_id": "read-skill-node",
+        "target_node_id": "condition-skill-tag-in",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-3",
+        "source_node_id": "read-skill-node",
+        "target_node_id": "condition-hit-frame",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-4",
+        "source_node_id": "read-current-tick",
+        "target_node_id": "condition-cooldown-ready",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-5",
+        "source_node_id": "read-skill-node",
+        "target_node_id": "state-pending-skill-node-signal",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-6",
+        "source_node_id": "state-pending-skill-node-signal",
+        "target_node_id": "effect-set-force-qte-trigger",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-7",
+        "source_node_id": "state-pending-skill-node-signal",
+        "target_node_id": "effect-notify-process-state",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-8",
+        "source_node_id": "state-pending-skill-node-signal",
+        "target_node_id": "state-commit-cooldown-tick",
+        "source_port": "out",
+        "target_port": "in"
+      }
+    ],
+    "params": {
+      "migration_wave": "yuzuha-cinema2-qte-signal-cases",
+      "scout_work_pack": "scout-yuzuha-cinema2-semantic-source-review",
+      "unblocked_by": [
+        "shared-helper-yuzuha-cinema2-qte-signal-blocks"
+      ],
+      "legacy_semantic_review_complete": true,
+      "intent_only_qte_and_process_state_blocks": true
+    },
+    "parity_metadata": {
+      "parity_status": "not_run",
+      "candidate_only": true,
+      "unblocked_by": [
+        "shared-helper-yuzuha-cinema2-qte-signal-blocks"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy-stun-read-gap",
+        "pending-skill-node-signal-gap",
+        "skill-node-force-qte-mutation-gap",
+        "process-state-notification-gap",
+        "cooldown-commit-gap"
+      ],
+      "required_block_ids": [
+        "read.current_tick",
+        "read.enemy_context",
+        "read.enemy_stun_state",
+        "condition.enemy_stun_active",
+        "read.skill_node",
+        "condition.skill_tag_in",
+        "condition.hit_frame",
+        "condition.cooldown_ready",
+        "state.pending_skill_node_signal",
+        "effect.set_skill_node_force_qte_trigger",
+        "effect.notify_schedule_process_state",
+        "state.commit_cooldown_tick"
+      ],
+      "legacy_source_lines": {
+        "judge_phase": "49-68",
+        "cooldown_gate": "70-78",
+        "hit_phase": "80-93"
+      }
+    },
+    "last_parity_baseline": null,
+    "last_verified_at": null
+  }
+}
