@@ -3,157 +3,71 @@
   "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
   "migration_wave": "enemy-state-edge-triggers",
   "runtime_status": "legacy_python",
-  "status": "blocked_by_missing_controlled_blocks",
-  "status_note": "No BuffGraphSpec was generated for this wave because current enemy/anomaly/DOT edge behavior requires explicit controlled building blocks. Legacy Python XLogic remains the runtime default and parity oracle.",
-  "generated_specs": [],
+  "status": "generated_candidate_partial",
+  "status_note": "Enemy/anomaly candidate BuffGraphSpec files generated for Scout-proven cases whose required ids are current controlled registry blocks. Runtime remains legacy_python and parity remains not_run.",
+  "generated_specs": [
+    "anomaly-debuff-exit-judge.buffgraph.json",
+    "branch-blade-song-crit-rate-bonus.buffgraph.json",
+    "electro-lip-gloss-atk-and-dmg-bonus.buffgraph.json",
+    "enemy-anomaly-map-read.buffgraph.json",
+    "enemy-debuff-mirror-read.buffgraph.json",
+    "enemy-edge-state-read.buffgraph.json",
+    "enemy-state-read.buffgraph.json",
+    "hailstorm-shrine-ice-bonus.buffgraph.json",
+    "hugo-core-passive-ex-stun-bonus.buffgraph.json",
+    "jane-additional-ability-phy-buildup-bonus.buffgraph.json",
+    "jane-core-skill-strike-crit-dmg-bonus.buffgraph.json",
+    "lighter-unique-skill-stun-time-limit-bonus.buffgraph.json",
+    "lina-additional-skill-ele-dmg-bonus.buffgraph.json",
+    "lycon-additional-ability-stun-vulnerability.buffgraph.json",
+    "magnetic-storm-alpha-am-bonus.buffgraph.json",
+    "magnetic-storm-bravo-ap-bonus.buffgraph.json",
+    "marcato-desire-atk-bonus.buffgraph.json",
+    "miyabi-core-skill-frost-burn.buffgraph.json",
+    "nikole-core-skill-def-reduction.buffgraph.json",
+    "polar-metal-freeze-bonus.buffgraph.json",
+    "precious-fossilized-core-stun-bonus-over50-hp.buffgraph.json",
+    "precious-fossilized-core-stun-bonus-over75-hp.buffgraph.json",
+    "puzzle-sphere-ex-dmg-bonus.buffgraph.json",
+    "qing-yi-core-skill-stun-dmg-bonus.buffgraph.json",
+    "sharpened-stinger-anomaly-buildup-bonus.buffgraph.json",
+    "soldier0-anby-core-skill-dmg-bonus.buffgraph.json",
+    "soldier11-additional-skill-extra-fire-dmg-bonus.buffgraph.json",
+    "timeweaver-ap-bonus.buffgraph.json",
+    "yuzuha-cinem1-ele-res-reduce.buffgraph.json",
+    "yuzuha-core-passive-sweet-scare.buffgraph.json",
+    "yuzuha-sugar-burst-anomaly-buildup-bonus.buffgraph.json",
+    "yuzuha-sugar-burst-max-anomaly-buildup-bonus.buffgraph.json"
+  ],
+  "surface_imports_not_promoted": [],
   "unsupported_patterns": [
     "enemy_anomaly_or_dot_read",
-    "runtime_command_or_scheduled_producer"
+    "wave-boundary-gap"
   ],
-  "optional_legacy_unsupported_patterns": [
-    "runtime_command_or_scheduled_producer"
-  ],
-  "required_future_block_ids": [
+  "required_block_ids": [
     "condition.edge_transition",
     "condition.enemy_state",
-    "condition.numeric_compare",
-    "effect.emit_scheduled_event",
-    "effect.start_dot",
-    "read.calculator_attribute",
-    "read.dot_runtime_state",
+    "effect.update_template_buff",
+    "read.enemy_anomaly_bar",
     "read.enemy_anomaly_state",
+    "read.enemy_context",
     "read.enemy_edge_state",
-    "state.edge_memory"
+    "read.prepared_equipper",
+    "read.prepared_owner",
+    "read.prepared_template_buff",
+    "state.edge_memory",
+    "state.last_observed_enemy_state"
   ],
-  "unsupported_cases": [
+  "generated_spec_count": 32,
+  "blocked_false_positive_count": 1,
+  "blocked_false_positives": [
     {
-      "case_id": "anomaly-debuff-exit-judge",
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py",
-      "owner_kind": "unknown",
-      "owner_name": "enemy-anomaly-debuff",
-      "source_buff_index": "Buff-异常-通用退出判定",
-      "unsupported_pattern_ids": [
-        "enemy_anomaly_or_dot_read"
-      ],
-      "optional_unsupported_pattern_ids": [],
-      "required_future_block_ids": [
-        "read.enemy_anomaly_state",
-        "state.edge_memory",
-        "condition.edge_transition"
-      ],
-      "reason": "Legacy logic reads an enemy anomaly state and exits on a falling edge; graph support needs enemy anomaly read plus edge-memory blocks."
-    },
-    {
-      "case_id": "miyabi-core-skill-frost-burn",
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_FrostBurn.py",
-      "owner_kind": "core_passive",
-      "owner_name": "雅",
-      "source_buff_index": "Buff-角色-雅-核心被动-霜灼",
-      "unsupported_pattern_ids": [
-        "enemy_anomaly_or_dot_read"
-      ],
-      "optional_unsupported_pattern_ids": [],
-      "required_future_block_ids": [
-        "read.enemy_edge_state",
-        "state.edge_memory",
-        "condition.edge_transition"
-      ],
-      "reason": "Legacy logic reads enemy frost/frostbite edge state and exits on a falling edge; graph support needs explicit enemy-edge read semantics."
-    },
-    {
-      "case_id": "timeweaver-disorder-dmg-mul",
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/TimeweaverDisorderDmgMul.py",
-      "owner_kind": "w_engine",
-      "owner_name": "时流贤者",
-      "source_buff_index": "Buff-WEngine-时流贤者-紊乱增伤",
-      "unsupported_pattern_ids": [
-        "enemy_anomaly_or_dot_read"
-      ],
-      "optional_unsupported_pattern_ids": [
-        "runtime_command_or_scheduled_producer"
-      ],
-      "required_future_block_ids": [
-        "read.enemy_anomaly_state",
-        "read.calculator_attribute",
-        "condition.numeric_compare"
-      ],
-      "reason": "Current integration worktree logic creates a calculator runtime read context with enemy and character, then compares anomaly proficiency; clean branches may still see the legacy ScheduledEvent import and classify this as an additional scheduled-producer gap. Graph support needs enemy-aware calculator read blocks either way."
-    },
-    {
-      "case_id": "vivian-dot-trigger",
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py",
-      "owner_kind": "core_passive",
-      "owner_name": "薇薇安",
-      "source_buff_index": "Buff-角色-薇薇安-DOT触发器",
-      "unsupported_pattern_ids": [
-        "runtime_command_or_scheduled_producer",
-        "enemy_anomaly_or_dot_read"
-      ],
-      "optional_unsupported_pattern_ids": [],
-      "required_future_block_ids": [
-        "read.enemy_anomaly_state",
-        "read.dot_runtime_state",
-        "condition.enemy_state",
-        "effect.start_dot",
-        "effect.emit_scheduled_event"
-      ],
-      "reason": "Legacy logic reads enemy anomaly state and DOT runtime state, starts DOT runtime, and emits a scheduled event; graph support needs controlled DOT and scheduled-event blocks."
-    }
-  ],
-  "edge_truth_tables": [
-    {
-      "case_id": "anomaly-debuff-exit-judge",
-      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py",
-      "future_block_reason": "Future adapter must model a falling-edge anomaly exit check through controlled enemy read and edge-memory blocks.",
-      "rows": [
-        {
-          "previous_active": false,
-          "current_active": false,
-          "expected_exit": false
-        },
-        {
-          "previous_active": false,
-          "current_active": true,
-          "expected_exit": false
-        },
-        {
-          "previous_active": true,
-          "current_active": true,
-          "expected_exit": false
-        },
-        {
-          "previous_active": true,
-          "current_active": false,
-          "expected_exit": true
-        }
-      ]
-    },
-    {
-      "case_id": "miyabi-core-skill-frost-burn",
-      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_FrostBurn.py",
-      "future_block_reason": "Future adapter must model frost/frostbite falling-edge exit behavior without reading raw enemy containers from a graph node.",
-      "rows": [
-        {
-          "previous_active": false,
-          "current_active": false,
-          "expected_exit": false
-        },
-        {
-          "previous_active": false,
-          "current_active": true,
-          "expected_exit": false
-        },
-        {
-          "previous_active": true,
-          "current_active": true,
-          "expected_exit": false
-        },
-        {
-          "previous_active": true,
-          "current_active": false,
-          "expected_exit": true
-        }
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+      "reason": "Scout reported fully_unblocked but required ids are not controlled registry blocks.",
+      "missing_block_ids": [
+        "scout.semantic_source_review"
       ]
     }
-  ]
+  ],
+  "runtime_status_note": "All specs remain legacy_python candidate evidence until focused parity, UI-driven parity, and full matrix validation pass."
 }
