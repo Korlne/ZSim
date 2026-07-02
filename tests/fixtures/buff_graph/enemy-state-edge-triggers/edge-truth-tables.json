@@ -1,0 +1,58 @@
+{
+  "tables": [
+    {
+      "case_id": "anomaly-debuff-exit-judge",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py",
+      "future_block_reason": "Future adapter must model a falling-edge anomaly exit check through controlled enemy read and edge-memory blocks.",
+      "rows": [
+        {
+          "previous_active": false,
+          "current_active": false,
+          "expected_exit": false
+        },
+        {
+          "previous_active": false,
+          "current_active": true,
+          "expected_exit": false
+        },
+        {
+          "previous_active": true,
+          "current_active": true,
+          "expected_exit": false
+        },
+        {
+          "previous_active": true,
+          "current_active": false,
+          "expected_exit": true
+        }
+      ]
+    },
+    {
+      "case_id": "miyabi-core-skill-frost-burn",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_FrostBurn.py",
+      "future_block_reason": "Future adapter must model frost/frostbite falling-edge exit behavior without reading raw enemy containers from a graph node.",
+      "rows": [
+        {
+          "previous_active": false,
+          "current_active": false,
+          "expected_exit": false
+        },
+        {
+          "previous_active": false,
+          "current_active": true,
+          "expected_exit": false
+        },
+        {
+          "previous_active": true,
+          "current_active": true,
+          "expected_exit": false
+        },
+        {
+          "previous_active": true,
+          "current_active": false,
+          "expected_exit": true
+        }
+      ]
+    }
+  ]
+}
