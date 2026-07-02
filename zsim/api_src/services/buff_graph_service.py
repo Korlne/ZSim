@@ -41,6 +41,34 @@ BUFF_GRAPH_MATRIX_SCOPE = [
     "gap-dedicated-trigger-scenarios",
     "legacy-python-xlogic-vs-graph-runtime",
 ]
+PURE_LOW_RISK_CANDIDATE_WAVE_EVIDENCE = [
+    {
+        "wave_id": "pure-and-low-risk-stateless",
+        "candidate_harness_id": "pure-low-risk-generated-spec-candidate-harness",
+        "status": "candidate_harness_wave_available",
+        "case_ids": [
+            "cordis-germina-crit-rate-bonus-candidate",
+            "rainforest-gourmet-atk-bonus-candidate",
+            "astra-yao-idyllic-cadenza-candidate",
+        ],
+        "sampled_generated_spec_dirs": [
+            "pure-condition-passive-buffs",
+            "record-cooldown-stack-buffs",
+            "low-risk-remaining-generated-specs",
+        ],
+        "candidate_runtime_status": RuntimeStatus.VISUAL_GRAPH_CANDIDATE.value,
+        "candidate_parity_passed": True,
+        "full_parity_verified": False,
+        "evidence_path": (
+            f"scripts/buff_agents/evidence/{CAMPAIGN_ID}/"
+            "oracle-graph-runtime-candidate-harness-pure-low-risk.json"
+        ),
+        "scope": (
+            "Fixture-backed candidate harness mechanism evidence for three "
+            "pure/low-risk generated specs; not final legacy parity for the full wave."
+        ),
+    }
+]
 
 
 class BuffGraphService:
@@ -249,6 +277,7 @@ class BuffGraphService:
             evidence_path=BUFF_GRAPH_MATRIX_EVIDENCE_PATH,
             command_status="runner_required",
             run_id=None,
+            candidate_wave_evidence=list(PURE_LOW_RISK_CANDIDATE_WAVE_EVIDENCE),
             matrix_scope=list(BUFF_GRAPH_MATRIX_SCOPE),
         )
 
@@ -263,6 +292,7 @@ class BuffGraphService:
             evidence_path=BUFF_GRAPH_MATRIX_EVIDENCE_PATH,
             command_status="request_recorded",
             run_id=BUFF_GRAPH_MATRIX_RUN_ID,
+            candidate_wave_evidence=list(PURE_LOW_RISK_CANDIDATE_WAVE_EVIDENCE),
             matrix_scope=list(BUFF_GRAPH_MATRIX_SCOPE),
         )
 
