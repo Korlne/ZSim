@@ -12,6 +12,7 @@ import {
 } from '@xyflow/react';
 import type { Connection } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import '../styles.css';
 import { buffGraphClient } from '../api/buffGraphClient';
 import type {
   BuffGraphCatalogBlock,
@@ -27,11 +28,14 @@ import { GraphStatusBadge } from '../components/GraphStatusBadge';
 import { GraphValidationPanel } from '../components/GraphValidationPanel';
 import { NodeInspector } from '../components/NodeInspector';
 import { NodePalette } from '../components/NodePalette';
+import { TemplateWizard } from '../components/TemplateWizard';
+import { BuffGraphWorkbenchLayout } from '../components/BuffGraphWorkbenchLayout';
 import { edgeTypes } from '../graph/edgeTypes';
 import { nodeTypes } from '../graph/nodeTypes';
 import { reactFlowToSpec, reactFlowToViewState } from '../graph/reactFlowToSpec';
 import { specToReactFlow } from '../graph/specToReactFlow';
 import type { BuffGraphFlowEdge, BuffGraphFlowNode } from '../graph/specToReactFlow';
+import type { BuffGraphTemplate, BuffGraphTemplateInput } from '../templates/buffGraphTemplates';
 
 type GraphEditorViewProps = {
   graphs: BuffGraphSpecSummary[];
@@ -145,6 +149,20 @@ const GraphEditorCanvas = ({ graphs, catalog, refresh }: GraphEditorViewProps) =
     setSelectedNodeId(nodeId);
   };
 
+  const applyTemplate = (template: BuffGraphTemplate, input: BuffGraphTemplateInput) => {
+    const nextSpec = template.createSpec(input);
+    const nextFlow = specToReactFlow(nextSpec);
+    setSpec(nextSpec);
+    setNodes(nextFlow.nodes);
+    setEdges(nextFlow.edges);
+    setSelectedNodeId(nextFlow.nodes[0]?.id);
+    setValidation(undefined);
+    setCompileResult(undefined);
+    setParity(undefined);
+    setMessage(`${template.display_name} generated`);
+    window.requestAnimationFrame(() => reactFlow.fitView({ padding: 0.18 }));
+  };
+
   const updateSelectedParams = (params: Record<string, unknown>) => {
     if (!selectedNodeId) return;
     setNodes(current =>
@@ -186,11 +204,14 @@ const GraphEditorCanvas = ({ graphs, catalog, refresh }: GraphEditorViewProps) =
   };
 
   return (
-    <div data-buff-graph-view="editor" className="grid min-h-0 flex-1 grid-cols-[220px_minmax(0,1fr)_260px] overflow-hidden">
-      <div className="min-h-0 border-r border-[#E6E6E6]">
-        <NodePalette blocks={catalog?.blocks ?? []} onAddBlock={addBlock} />
-      </div>
-      <div className="relative min-h-0">
+    <BuffGraphWorkbenchLayout
+      left={
+        <>
+          <TemplateWizard onApplyTemplate={applyTemplate} />
+          <NodePalette blocks={catalog?.blocks ?? []} onAddBlock={addBlock} />
+        </>
+      }
+      center={
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -206,8 +227,9 @@ const GraphEditorCanvas = ({ graphs, catalog, refresh }: GraphEditorViewProps) =
           <MiniMap pannable zoomable />
           <Controls />
         </ReactFlow>
-      </div>
-      <div className="flex min-h-0 flex-col overflow-hidden border-l border-[#E6E6E6]">
+      }
+      right={
+        <div className="flex h-full min-h-0 flex-col overflow-hidden">
         <div className="shrink-0 border-b border-[#E6E6E6] p-[10px]">
           <div className="flex items-center justify-between gap-[8px]">
             <div className="min-w-0">
@@ -237,7 +259,8 @@ const GraphEditorCanvas = ({ graphs, catalog, refresh }: GraphEditorViewProps) =
           <GraphParityPanel parity={parity} />
         </div>
       </div>
-    </div>
+      }
+    />
   );
 };
 
