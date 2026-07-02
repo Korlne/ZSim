@@ -147,6 +147,18 @@ class LastObservedSkillStateAdapter:
         )
 
 
+class CounterStateAdapter:
+    adapter_id = "state.counter.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        key = str(context.node.params.get("state_key", context.node.node_id))
+        step = int(context.node.params.get("step", 1))
+        previous = int(_state(context).get(key, 0))
+        active = _first_upstream_bool(context)
+        count = previous + step if active else previous
+        return BuffGraphAdapterResult(outputs={"count": count, "active": active})
+
+
 def build_low_risk_state_adapters() -> Mapping[str, object]:
     adapters = (LastActiveTickStateAdapter(), CooldownGateStateAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
@@ -168,6 +180,11 @@ def build_runtime_command_scheduled_signal_state_adapters() -> Mapping[str, obje
 
 def build_character_manager_side_effect_state_adapters() -> Mapping[str, object]:
     adapters = (LastObservedSkillStateAdapter(),)
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_dot_anomaly_output_state_adapters() -> Mapping[str, object]:
+    adapters = (CounterStateAdapter(),)
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 

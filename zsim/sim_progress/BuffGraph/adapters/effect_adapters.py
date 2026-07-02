@@ -199,6 +199,55 @@ class ExternalAddSkillIntentEffectAdapter(CharacterSideEffectIntentAdapter):
     intent_action = "external_add_skill"
 
 
+class SpawnAnomalyOutputIntentEffectAdapter:
+    adapter_id = "effect.spawn_anomaly_output.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        enabled = _first_upstream_bool(context.inputs)
+        intent = {
+            "intent_type": "anomaly_output",
+            "anomaly_key": context.node.params.get("anomaly_key"),
+            "output_type": context.node.params.get("output_type"),
+            "payload": context.node.params.get("payload", {}),
+            "enabled": enabled,
+            "source_buff_index": context.node.params.get("source_buff_index")
+            or context.prepared_context.get("source_buff_index"),
+        }
+        return BuffGraphAdapterResult(outputs={"anomaly_output_intent": _without_none(intent)})
+
+
+class StartDotIntentEffectAdapter:
+    adapter_id = "effect.start_dot.v1"
+    intent_action = "start_dot"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        enabled = _first_upstream_bool(context.inputs)
+        intent = {
+            "intent_type": "dot_runtime",
+            "action": self.intent_action,
+            "dot_key": context.node.params.get("dot_key"),
+            "duration_ticks": context.node.params.get("duration_ticks"),
+            "payload": context.node.params.get("payload", {}),
+            "enabled": enabled,
+            "source_buff_index": context.node.params.get("source_buff_index")
+            or context.prepared_context.get("source_buff_index"),
+        }
+        return BuffGraphAdapterResult(outputs={"dot_runtime_intent": _without_none(intent)})
+
+
+class RegisterDotRuntimeIntentEffectAdapter(StartDotIntentEffectAdapter):
+    adapter_id = "effect.register_dot_runtime.v1"
+    intent_action = "register_dot_runtime"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        result = super().execute(context)
+        intent = dict(result.outputs["dot_runtime_intent"])
+        owner = context.node.params.get("owner") or context.prepared_context.get("prepared_owner")
+        if owner is not None:
+            intent["owner"] = owner
+        return BuffGraphAdapterResult(outputs={"dot_runtime_intent": intent})
+
+
 def build_low_risk_effect_adapters() -> Mapping[str, object]:
     adapters = (StartBuffEffectAdapter(), UpdateBuffCountEffectAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
@@ -237,6 +286,15 @@ def build_character_manager_side_effect_effect_adapters() -> Mapping[str, object
         SpawnPlannedSkillNodeIntentEffectAdapter(),
         UpdateCharacterResourceIntentEffectAdapter(),
         ExternalAddSkillIntentEffectAdapter(),
+    )
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_dot_anomaly_output_effect_adapters() -> Mapping[str, object]:
+    adapters = (
+        SpawnAnomalyOutputIntentEffectAdapter(),
+        StartDotIntentEffectAdapter(),
+        RegisterDotRuntimeIntentEffectAdapter(),
     )
     return {adapter.adapter_id: adapter for adapter in adapters}
 
