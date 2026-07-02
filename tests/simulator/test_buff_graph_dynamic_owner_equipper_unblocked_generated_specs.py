@@ -32,16 +32,18 @@ REMAINING_ROOT = (
 def test_dynamic_owner_equipper_unblocked_generated_specs_validate_compile_and_mirror() -> None:
     manifest = json.loads((SPEC_ROOT / "manifest.json").read_text(encoding="utf-8"))
 
-    assert manifest["status"] == "generated_candidate_partial"
+    assert manifest["status"] == "generated_candidate_complete"
     assert manifest["runtime_status"] == "legacy_python"
-    assert manifest["generated_spec_count"] == 5
-    assert manifest["blocked_case_count"] == 2
+    assert manifest["generated_spec_count"] == 7
+    assert manifest["blocked_case_count"] == 0
     assert set(manifest["generated_specs"]) == {
         "astral-voice.buffgraph.json",
         "cordis-germina-s-n-a-and-q-ignore-defense.buffgraph.json",
         "flamemaker-shaker-ap-bonus.buffgraph.json",
         "hellfire-gears-sp-r-bonus.buffgraph.json",
+        "ice-jade-teapot-extra-dmg-bonus.buffgraph.json",
         "yunkui-tales-sheer-atk-bonus.buffgraph.json",
+        "zanshin-herb-case.buffgraph.json",
     }
     assert (FIXTURE_ROOT / "manifest.json").read_text(encoding="utf-8") == (
         SPEC_ROOT / "manifest.json"
@@ -78,6 +80,6 @@ def test_dynamic_owner_generated_sources_are_removed_from_remaining_unsupported_
     }
 
     assert remaining_manifest["current_non_helper_xlogic_count"] == 150
-    assert remaining_manifest["generated_spec_source_count"] == 55
-    assert remaining_manifest["unsupported_case_count"] == 95
+    assert remaining_manifest["generated_spec_source_count"] == 57
+    assert remaining_manifest["unsupported_case_count"] == 93
     assert generated_sources.isdisjoint(remaining_sources)

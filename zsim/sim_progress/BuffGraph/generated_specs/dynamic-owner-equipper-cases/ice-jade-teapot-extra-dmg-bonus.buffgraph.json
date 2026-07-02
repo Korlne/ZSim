@@ -1,0 +1,94 @@
+{
+  "schema": "zsim-buffgraph-generated-spec.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "dynamic-owner-equipper-cases",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/IceJadeTeaPotExtraDMGBonus.py",
+  "runtime_status_note": "legacy_python remains default; generated spec is candidate evidence only.",
+  "spec": {
+    "schema_version": "buff-graph-spec.v1",
+    "node_library_version": "buff-graph-node-library.v1",
+    "adapter_contract_version": "buff-graph-adapter-contract.v1",
+    "graph_id": "ice-jade-teapot-extra-dmg-bonus",
+    "display_name": "IceJadeTeaPotExtraDMGBonus",
+    "owner_kind": "w_engine",
+    "owner_name": "玉壶青冰",
+    "source_buff_index": "Buff-WEngine-玉壶青冰-额外增伤",
+    "created_from_xlogic": "zsim/sim_progress/Buff/BuffXLogic/IceJadeTeaPotExtraDMGBonus.py",
+    "runtime_status": "legacy_python",
+    "nodes": [
+      {
+        "node_id": "read-equipper",
+        "family": "read",
+        "block_id": "read.prepared_equipper",
+        "adapter_id": "read.prepared_equipper.v1",
+        "params": {},
+        "display_name": "Prepared Equipper"
+      },
+      {
+        "node_id": "read-active-buffs",
+        "family": "read",
+        "block_id": "read.active_buffs_for_equipper",
+        "adapter_id": "read.active_buffs_for_equipper.v1",
+        "params": {},
+        "display_name": "Active Buffs For Equipper"
+      },
+      {
+        "node_id": "condition-equipper",
+        "family": "condition",
+        "block_id": "condition.equipper_identity",
+        "adapter_id": "condition.equipper_identity.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/IceJadeTeaPotExtraDMGBonus.py"
+        },
+        "display_name": "Equipper Identity"
+      },
+      {
+        "node_id": "condition-active-count",
+        "family": "condition",
+        "block_id": "condition.trigger_buff_count_compare",
+        "adapter_id": "condition.trigger_buff_count_compare.v1",
+        "params": {
+          "operator": "greater_than",
+          "expected_count": 0
+        },
+        "display_name": "Trigger Buff Count Compare"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge-0",
+        "source_node_id": "read-equipper",
+        "target_node_id": "read-active-buffs",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-1",
+        "source_node_id": "read-equipper",
+        "target_node_id": "condition-equipper",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-2",
+        "source_node_id": "read-active-buffs",
+        "target_node_id": "condition-active-count",
+        "source_port": "out",
+        "target_port": "in"
+      }
+    ],
+    "params": {
+      "migration_wave": "dynamic-owner-equipper-cases"
+    },
+    "parity_metadata": {
+      "parity_status": "not_run",
+      "candidate_only": true,
+      "unblocked_by": [
+        "read.active_buffs_for_equipper",
+        "shared-helper-active-buffs-listener-blocks"
+      ]
+    },
+    "last_parity_baseline": null,
+    "last_verified_at": null
+  }
+}
