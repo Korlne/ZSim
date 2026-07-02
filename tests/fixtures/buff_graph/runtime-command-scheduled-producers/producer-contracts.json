@@ -1,0 +1,81 @@
+{
+  "contracts": [
+    {
+      "case_id": "seed-additional-ability-resource-refresh",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
+      "status": "requires_future_building_block",
+      "source_anchors": [
+        "ResourceRefreshCommandPort(",
+        "refresh_commands.publish_refresh(sp_target=sp_target, sp_value=sp_value)"
+      ],
+      "required_future_block_ids": [
+        "effect.publish_resource_refresh",
+        "effect.issue_allowed_runtime_command"
+      ],
+      "future_block_reason": "Future adapter must publish resource refreshes through an allowed runtime-command block backed by ResourceRefreshCommandPort."
+    },
+    {
+      "case_id": "slice-of-time-extra-resources",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SliceofTimeExtraResources.py",
+      "status": "requires_future_building_block",
+      "source_anchors": [
+        "refresh_commands.publish_refresh(",
+        "decibel_target=decibel_target",
+        "self.buff_instance.simple_start(tick_now, self.record.sub_exist_buff_dict)"
+      ],
+      "required_future_block_ids": [
+        "effect.start_buff",
+        "effect.publish_resource_refresh",
+        "effect.issue_allowed_runtime_command"
+      ],
+      "future_block_reason": "Future adapter must preserve the visible Buff start plus scheduled energy/decibel refresh command without exposing queue mutation."
+    },
+    {
+      "case_id": "elegant-vanity-sp-recover",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/ElegantVanitySpRecover.py",
+      "status": "requires_future_building_block",
+      "source_anchors": [
+        "self.buff_instance.simple_start(tick_now, self.record.sub_exist_buff_dict)",
+        "refresh_commands.publish_refresh(sp_target=sp_target, sp_value=sp_value)"
+      ],
+      "required_future_block_ids": [
+        "effect.start_buff",
+        "effect.publish_resource_refresh",
+        "effect.issue_allowed_runtime_command"
+      ],
+      "future_block_reason": "Future adapter must model W-Engine refinement resource refresh as a controlled command effect."
+    },
+    {
+      "case_id": "yixuan-cinema-1-lightning-event",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YixuanCinema1Trigger.py",
+      "status": "requires_future_building_block",
+      "source_anchors": [
+        "lightning_strick_node: \"SkillNode\" = spawn_node(",
+        "self._scheduled_event_emitter().emit_scheduled(lightning_strick_node)",
+        "char.update_adrenaline(sp_value=self.record.adrenaline_value)"
+      ],
+      "required_future_block_ids": [
+        "effect.spawn_planned_skill_node",
+        "effect.emit_scheduled_event",
+        "effect.update_character_resource"
+      ],
+      "future_block_reason": "Future adapter must spawn and emit the lightning planned event through ScheduledEventEmitter while preserving same-tick resource update behavior."
+    },
+    {
+      "case_id": "alice-polarized-assault-event",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AlicePolarizedAssaultTrigger.py",
+      "status": "requires_future_building_block",
+      "source_anchors": [
+        "event = PolarizedAssaultEvent(",
+        "self._scheduled_event_emitter().emit_scheduled(event)",
+        "self.record.trigger_origin = None"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_anomaly_state",
+        "effect.emit_scheduled_event",
+        "state.last_observed_skill"
+      ],
+      "future_block_reason": "Future adapter must construct and emit PolarizedAssaultEvent through a controlled scheduled-event block and clear trigger state afterward."
+    }
+  ]
+}
