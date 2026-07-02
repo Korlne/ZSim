@@ -1,0 +1,176 @@
+{
+  "schema": "zsim-buffgraph-generated-spec-manifest.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "dynamic-owner-equipper-cases",
+  "runtime_status": "legacy_python",
+  "status": "blocked_by_missing_controlled_blocks",
+  "status_note": "No executable BuffGraphSpec was generated for this wave because dynamic owner/equipper behavior requires explicit controlled prepared-context blocks for equipment owner resolution, TriggerBuffRef owner/equipper binding, prepared template Buff reads, active-buff scans, listener-owner binding, and template Buff updates. Current importer surface graphs for some files are intentionally not promoted to generated specs.",
+  "generated_specs": [],
+  "surface_imports_not_promoted": [
+    "AstralVoice.py",
+    "FlamemakerShakerApBonus.py",
+    "YunkuiTalesSheerAtkBonus.py",
+    "IceJadeTeaPotExtraDMGBonus.py"
+  ],
+  "unsupported_patterns": [
+    "dynamic_owner_equipper_prepared_context"
+  ],
+  "optional_cross_wave_unsupported_patterns": [
+    "character_manager_side_effect"
+  ],
+  "required_future_block_ids": [
+    "condition.equipper_identity",
+    "condition.skill_trigger_level",
+    "condition.trigger_buff_active",
+    "condition.trigger_buff_count_compare",
+    "effect.bind_prepared_record",
+    "effect.consume_listener_signal",
+    "effect.register_listener",
+    "effect.update_template_buff",
+    "read.active_buffs_for_equipper",
+    "read.listener_signal",
+    "read.prepared_equipper",
+    "read.prepared_owner",
+    "read.prepared_template_buff",
+    "read.trigger_buff_state"
+  ],
+  "unsupported_cases": [
+    {
+      "case_id": "astral-voice-trigger-owner-ref",
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AstralVoice.py",
+      "owner_kind": "w_engine",
+      "owner_name": "静听嘉音",
+      "source_buff_index": "Buff-驱动盘-静听嘉音-增伤",
+      "current_importer_surface_graph": true,
+      "runtime_status": "legacy_python",
+      "unsupported_pattern_ids": [
+        "dynamic_owner_equipper_prepared_context"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "read.prepared_owner",
+        "read.prepared_template_buff",
+        "read.trigger_buff_state",
+        "condition.equipper_identity",
+        "condition.skill_trigger_level",
+        "condition.trigger_buff_active",
+        "effect.bind_prepared_record",
+        "effect.update_template_buff"
+      ],
+      "contract_ids": [
+        "trigger_buff_ref_owner_operator",
+        "prepared_template_buff_update",
+        "skill_trigger_level_gate"
+      ],
+      "reason": "Current importer can produce a surface graph, but it does not model equipment owner resolution, TriggerBuffRef.owner binding, prepared record data, or template Buff update semantics."
+    },
+    {
+      "case_id": "flamemaker-shaker-trigger-equipper-ref",
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/FlamemakerShakerApBonus.py",
+      "owner_kind": "w_engine",
+      "owner_name": "灼心摇壶",
+      "source_buff_index": "Buff-WEngine-灼心摇壶-精通增幅判定",
+      "current_importer_surface_graph": true,
+      "runtime_status": "legacy_python",
+      "unsupported_pattern_ids": [
+        "dynamic_owner_equipper_prepared_context"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "read.trigger_buff_state",
+        "condition.equipper_identity",
+        "condition.trigger_buff_active",
+        "condition.trigger_buff_count_compare",
+        "effect.bind_prepared_record"
+      ],
+      "contract_ids": [
+        "trigger_buff_ref_equipper",
+        "trigger_buff_count_threshold"
+      ],
+      "reason": "Current importer does not model TriggerBuffRef.equipper lookup, prepared equipment binding, or trigger-buff count threshold semantics."
+    },
+    {
+      "case_id": "yunkui-tales-trigger-owner-from-equipper",
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YunkuiTalesSheerAtkBonus.py",
+      "owner_kind": "drive_disc",
+      "owner_name": "云岿如我",
+      "source_buff_index": "Buff-驱动盘-云岿如我-贯穿力转攻击",
+      "current_importer_surface_graph": true,
+      "runtime_status": "legacy_python",
+      "unsupported_pattern_ids": [
+        "dynamic_owner_equipper_prepared_context"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "read.prepared_owner",
+        "read.prepared_template_buff",
+        "read.trigger_buff_state",
+        "condition.equipper_identity",
+        "condition.trigger_buff_active",
+        "condition.trigger_buff_count_compare",
+        "effect.bind_prepared_record"
+      ],
+      "contract_ids": [
+        "trigger_buff_ref_owner_resolved_equipper",
+        "trigger_buff_count_equality"
+      ],
+      "reason": "Current importer does not model TriggerBuffRef.owner using the resolved equipper as owner, or the trigger-state count equality gate."
+    },
+    {
+      "case_id": "ice-jade-teapot-active-buffs-for-equipper",
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/IceJadeTeaPotExtraDMGBonus.py",
+      "owner_kind": "w_engine",
+      "owner_name": "玉壶青冰",
+      "source_buff_index": "Buff-WEngine-玉壶青冰-额外增伤",
+      "current_importer_surface_graph": true,
+      "runtime_status": "legacy_python",
+      "unsupported_pattern_ids": [
+        "dynamic_owner_equipper_prepared_context"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "read.active_buffs_for_equipper",
+        "condition.equipper_identity",
+        "condition.trigger_buff_count_compare"
+      ],
+      "contract_ids": [
+        "preparation_context_find_equipper",
+        "active_buffs_scan_for_equipper"
+      ],
+      "reason": "Current importer does not model direct preparation-context equipper lookup or scanning active buffs for that equipper."
+    },
+    {
+      "case_id": "zanshin-herb-case-listener-owner",
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/ZanshinHerbCase.py",
+      "owner_kind": "w_engine",
+      "owner_name": "残心青囊",
+      "source_buff_index": "Buff-WEngine-残心青囊-监听触发",
+      "current_importer_surface_graph": false,
+      "runtime_status": "legacy_python",
+      "unsupported_pattern_ids": [
+        "dynamic_owner_equipper_prepared_context"
+      ],
+      "optional_unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "condition.equipper_identity",
+        "effect.bind_prepared_record",
+        "effect.register_listener",
+        "read.listener_signal",
+        "effect.consume_listener_signal"
+      ],
+      "contract_ids": [
+        "prepared_listener_owner",
+        "listener_signal_consume"
+      ],
+      "reason": "Current importer blocks on listener-manager side effects, and graph support also needs prepared equipper/record binding before listener owner semantics can be represented."
+    }
+  ],
+  "oracle_sources": [
+    "tests/fixtures/buff_graph/dynamic-owner-equipper-cases/surface-import-cases.json",
+    "tests/fixtures/buff_graph/dynamic-owner-equipper-cases/prepared-context-contracts.json"
+  ]
+}
