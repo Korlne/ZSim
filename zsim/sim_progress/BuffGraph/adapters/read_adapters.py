@@ -259,6 +259,40 @@ class DotRuntimeStateReadAdapter:
         )
 
 
+class SkillNodeReadAdapter:
+    adapter_id = "read.skill_node.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        skill_key = context.node.params.get("skill_key")
+        skill_node = _select_keyed_mapping(
+            context.prepared_context.get("skill_nodes"),
+            skill_key,
+        )
+        if not skill_node:
+            skill_node = _mapping(
+                context.prepared_context.get("skill_node")
+                or context.prepared_context.get("current_skill")
+            )
+        tag_key = context.node.params.get("tag_key") or "skill_tag"
+        skill_tag = skill_node.get(tag_key) or skill_node.get("tag") or skill_node.get("skill_tag")
+        trigger_level = skill_node.get("trigger_level")
+        hit_index = skill_node.get("hit_index", skill_node.get("hit"))
+        is_last_hit = bool(
+            skill_node.get("is_last_hit")
+            or skill_node.get("last_hit")
+            or skill_node.get("hit_is_last")
+        )
+        return BuffGraphAdapterResult(
+            outputs={
+                "skill_node": skill_node,
+                "skill_tag": skill_tag,
+                "trigger_level": trigger_level,
+                "hit_index": hit_index,
+                "is_last_hit": is_last_hit,
+            }
+        )
+
+
 def build_low_risk_read_adapters() -> Mapping[str, object]:
     adapters = (CurrentTickReadAdapter(), BuffRuntimeViewReadAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
@@ -290,6 +324,11 @@ def build_enemy_anomaly_state_read_adapters() -> Mapping[str, object]:
         EnemyEdgeStateReadAdapter(),
         DotRuntimeStateReadAdapter(),
     )
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_runtime_command_scheduled_signal_read_adapters() -> Mapping[str, object]:
+    adapters = (SkillNodeReadAdapter(),)
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 

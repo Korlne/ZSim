@@ -177,6 +177,28 @@ class EdgeTransitionConditionAdapter:
         )
 
 
+class TickWindowConditionAdapter:
+    adapter_id = "condition.tick_window.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        tick = _first_upstream_value(context.inputs, "tick")
+        if tick is None:
+            tick = context.prepared_context.get("tick", 0)
+        tick = int(tick)
+        start_tick = context.node.params.get("start_tick")
+        end_tick = context.node.params.get("end_tick")
+        start_ok = start_tick is None or tick >= int(start_tick)
+        end_ok = end_tick is None or tick <= int(end_tick)
+        return BuffGraphAdapterResult(
+            outputs={
+                "passed": start_ok and end_ok,
+                "tick": tick,
+                "start_tick": start_tick,
+                "end_tick": end_tick,
+            }
+        )
+
+
 def build_low_risk_condition_adapters() -> Mapping[str, object]:
     adapters = (CharacterIdentityConditionAdapter(), BuffActiveConditionAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
@@ -197,6 +219,11 @@ def build_prepared_context_condition_adapters() -> Mapping[str, object]:
 
 def build_enemy_anomaly_state_condition_adapters() -> Mapping[str, object]:
     adapters = (EnemyStateConditionAdapter(), EdgeTransitionConditionAdapter())
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_runtime_command_scheduled_signal_condition_adapters() -> Mapping[str, object]:
+    adapters = (TickWindowConditionAdapter(),)
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 

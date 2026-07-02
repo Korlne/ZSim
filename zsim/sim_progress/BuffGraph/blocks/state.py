@@ -61,5 +61,18 @@ STATE_BLOCKS = (
         ),
         param_schema={"signal_key": "string"},
     ),
+    BuffGraphBlockDefinition(
+        block_id="state.scheduled_signal",
+        family=NodeFamily.STATE,
+        display_name="Scheduled Signal",
+        adapter_id="state.scheduled_signal.v1",
+        input_ports=(BlockPort("tick", "Tick", "tick"),),
+        output_ports=(
+            BlockPort("scheduled_signal", "Scheduled Signal", "scheduled_signal"),
+            BlockPort("active", "Active", "bool"),
+            BlockPort("scheduled_tick", "Scheduled Tick", "tick"),
+        ),
+        param_schema={"signal_key": "string", "scheduled_tick": "int"},
+    ),
 )
 

@@ -158,5 +158,20 @@ READ_BLOCKS = (
         ),
         param_schema={"dot_key": "string"},
     ),
+    BuffGraphBlockDefinition(
+        block_id="read.skill_node",
+        family=NodeFamily.READ,
+        display_name="Skill Node",
+        adapter_id="read.skill_node.v1",
+        input_ports=(BlockPort("context", "Context", "prepared_context"),),
+        output_ports=(
+            BlockPort("skill_node", "Skill Node", "skill_node"),
+            BlockPort("skill_tag", "Skill Tag", "string"),
+            BlockPort("trigger_level", "Trigger Level", "number"),
+            BlockPort("hit_index", "Hit Index", "number"),
+            BlockPort("is_last_hit", "Is Last Hit", "bool"),
+        ),
+        param_schema={"skill_key": "string", "tag_key": "string"},
+    ),
 )
 

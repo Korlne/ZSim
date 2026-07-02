@@ -104,5 +104,17 @@ CONDITION_BLOCKS = (
         output_ports=(BlockPort("result", "Result", "bool"),),
         param_schema={"transition": "edge_transition", "from_state": "any", "to_state": "any"},
     ),
+    BuffGraphBlockDefinition(
+        block_id="condition.tick_window",
+        family=NodeFamily.CONDITION,
+        display_name="Tick Window",
+        adapter_id="condition.tick_window.v1",
+        input_ports=(BlockPort("tick", "Tick", "tick"),),
+        output_ports=(
+            BlockPort("result", "Result", "bool"),
+            BlockPort("tick", "Tick", "tick"),
+        ),
+        param_schema={"start_tick": "int", "end_tick": "int"},
+    ),
 )
 

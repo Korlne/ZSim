@@ -91,6 +91,41 @@ class AnomalySignalStateAdapter:
         return BuffGraphAdapterResult(outputs={"anomaly_signal": signal, "active": active})
 
 
+class ScheduledSignalStateAdapter:
+    adapter_id = "state.scheduled_signal.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        signal_key = context.node.params.get("signal_key") or context.node.node_id
+        tick = _first_upstream_value(context.inputs, "tick")
+        if tick is None:
+            tick = context.prepared_context.get("tick", 0)
+        scheduled_signal = _scheduled_signal(context.prepared_context, signal_key)
+        scheduled_tick = context.node.params.get("scheduled_tick")
+        if scheduled_tick is None:
+            scheduled_tick = scheduled_signal.get("scheduled_tick")
+        if scheduled_tick is None:
+            scheduled_tick = tick
+        active = bool(
+            scheduled_signal.get("active", False)
+            or scheduled_signal.get("due", False)
+            or int(tick) >= int(scheduled_tick)
+        )
+        signal = {
+            "signal_key": signal_key,
+            "scheduled_tick": scheduled_tick,
+            "current_tick": tick,
+            "active": active,
+            "payload": scheduled_signal.get("payload", {}),
+        }
+        return BuffGraphAdapterResult(
+            outputs={
+                "scheduled_signal": signal,
+                "active": active,
+                "scheduled_tick": scheduled_tick,
+            }
+        )
+
+
 def build_low_risk_state_adapters() -> Mapping[str, object]:
     adapters = (LastActiveTickStateAdapter(), CooldownGateStateAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
@@ -102,6 +137,11 @@ def build_enemy_anomaly_state_state_adapters() -> Mapping[str, object]:
         EdgeMemoryStateAdapter(),
         AnomalySignalStateAdapter(),
     )
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_runtime_command_scheduled_signal_state_adapters() -> Mapping[str, object]:
+    adapters = (ScheduledSignalStateAdapter(),)
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 
@@ -142,3 +182,16 @@ def _state_value(state: Mapping[str, Any]) -> Any:
         if key in state:
             return state[key]
     return None
+
+
+def _scheduled_signal(prepared_context: Mapping[str, Any], signal_key: Any) -> Mapping[str, Any]:
+    signals = prepared_context.get("scheduled_signals")
+    if isinstance(signals, Mapping):
+        if signal_key in signals:
+            value = signals.get(signal_key)
+            return value if isinstance(value, Mapping) else {"payload": value, "active": True}
+        if signal_key is None and signals:
+            value = next(iter(signals.values()))
+            return value if isinstance(value, Mapping) else {"payload": value, "active": True}
+    signal = prepared_context.get("scheduled_signal")
+    return signal if isinstance(signal, Mapping) else {}
