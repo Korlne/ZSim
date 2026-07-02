@@ -34,7 +34,8 @@
       "contribution-guide": "Contribution Guide",
       "data-analysis": "Analysis",
       "session-management": "Session",
-      "simulator": "Simulator"
+      "simulator": "Simulator",
+      "buff-graph": "Buff Graph"
     }
   },
   "simulator": {
@@ -106,5 +107,11 @@
     "theme": "Theme",
     "api": "API Settings",
     "about": "About"
+  },
+  "buffGraph": {
+    "tabs": {
+      "catalog": "Block Catalog",
+      "matrix": "Parity Matrix"
+    }
   }
 }
