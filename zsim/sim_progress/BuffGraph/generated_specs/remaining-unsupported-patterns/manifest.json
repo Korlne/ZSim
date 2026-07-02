@@ -1,0 +1,2742 @@
+{
+  "schema": "zsim-buffgraph-generated-spec-manifest.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "remaining-unsupported-patterns",
+  "runtime_status": "legacy_python",
+  "status": "blocked_by_missing_controlled_blocks",
+  "status_note": "Consolidated explicit Unsupported XLogic Pattern manifest for every current non-helper XLogic file that still lacks an executable generated BuffGraphSpec. Legacy Python XLogic remains runtime default/fallback/oracle.",
+  "current_non_helper_xlogic_count": 150,
+  "generated_spec_source_count": 50,
+  "unsupported_case_count": 100,
+  "unsupported_patterns": [
+    "character_manager_side_effect",
+    "dynamic-owner-equipper-template-resolution",
+    "dynamic_owner_equipper_prepared_context",
+    "enemy_anomaly_or_dot_read",
+    "foreground-character-position-condition",
+    "runtime_command_or_scheduled_producer",
+    "trigger-buff-state-cardinality-condition",
+    "wave-boundary-gap"
+  ],
+  "required_future_block_ids": [
+    "compose.not",
+    "compose.numeric_formula",
+    "condition.character_state",
+    "condition.cooldown_ready",
+    "condition.edge_transition",
+    "condition.enemy_state",
+    "condition.equipper_identity",
+    "condition.equipper_is_background",
+    "condition.equipper_is_foreground",
+    "condition.hit_frame",
+    "condition.numeric_compare",
+    "condition.operating_character",
+    "condition.preload_tick",
+    "condition.skill_owner",
+    "condition.skill_owner_not_self",
+    "condition.skill_tag_in",
+    "condition.skill_trigger_level",
+    "condition.tick_window",
+    "condition.trigger_buff_active",
+    "condition.trigger_buff_box_size_equals",
+    "condition.trigger_buff_count_compare",
+    "effect.bind_prepared_record",
+    "effect.consume_listener_signal",
+    "effect.emit_scheduled_event",
+    "effect.external_add_skill",
+    "effect.force_quick_assist",
+    "effect.issue_allowed_runtime_command",
+    "effect.issue_runtime_command",
+    "effect.publish_resource_refresh",
+    "effect.register_dot_runtime",
+    "effect.register_listener",
+    "effect.spawn_anomaly_output",
+    "effect.spawn_coattack",
+    "effect.spawn_extra_attack",
+    "effect.spawn_planned_skill_node",
+    "effect.start_buff",
+    "effect.start_dot",
+    "effect.update_buff_count",
+    "effect.update_character_manager",
+    "effect.update_character_resource",
+    "effect.update_template_buff",
+    "read.active_buffs_for_equipper",
+    "read.calculator_attribute",
+    "read.current_action",
+    "read.current_tick",
+    "read.dot_runtime_state",
+    "read.enemy_anomaly_bar",
+    "read.enemy_anomaly_state",
+    "read.enemy_context",
+    "read.enemy_edge_state",
+    "read.foreground_character",
+    "read.listener_signal",
+    "read.next_team_member",
+    "read.prepared_equipper",
+    "read.prepared_owner",
+    "read.prepared_template_buff",
+    "read.refinement",
+    "read.skill_node",
+    "read.trigger_buff_state",
+    "scout.semantic_source_review",
+    "state.anomaly_signal",
+    "state.cooldown_gate",
+    "state.counter",
+    "state.edge_memory",
+    "state.last_observed_enemy_state",
+    "state.last_observed_skill",
+    "state.scheduled_signal"
+  ],
+  "primary_wave_counts": {
+    "enemy-state-edge-triggers": 37,
+    "runtime-command-scheduled-producers": 32,
+    "additional-attack-side-effects": 14,
+    "anomaly-dot-adjacent-cases": 7,
+    "dynamic-owner-equipper-cases": 7,
+    "calculator-runtime-read-buffs": 3
+  },
+  "unsupported_pattern_counts": {
+    "enemy_anomaly_or_dot_read": 66,
+    "runtime_command_or_scheduled_producer": 34,
+    "character_manager_side_effect": 17,
+    "dynamic_owner_equipper_prepared_context": 5,
+    "dynamic-owner-equipper-template-resolution": 2,
+    "trigger-buff-state-cardinality-condition": 1,
+    "foreground-character-position-condition": 1,
+    "wave-boundary-gap": 1
+  },
+  "required_future_block_counts": {
+    "read.prepared_equipper": 72,
+    "read.prepared_template_buff": 68,
+    "read.prepared_owner": 67,
+    "effect.update_template_buff": 66,
+    "read.enemy_anomaly_state": 63,
+    "read.enemy_context": 60,
+    "read.enemy_anomaly_bar": 59,
+    "condition.enemy_state": 58,
+    "state.last_observed_enemy_state": 58,
+    "effect.emit_scheduled_event": 33,
+    "read.skill_node": 30,
+    "effect.issue_runtime_command": 29,
+    "condition.tick_window": 29,
+    "state.scheduled_signal": 29,
+    "effect.spawn_coattack": 14,
+    "effect.update_character_manager": 13,
+    "effect.spawn_extra_attack": 12,
+    "effect.force_quick_assist": 12,
+    "read.next_team_member": 12,
+    "effect.spawn_anomaly_output": 9,
+    "condition.hit_frame": 8,
+    "read.dot_runtime_state": 8,
+    "effect.start_dot": 8,
+    "state.anomaly_signal": 8,
+    "effect.start_buff": 6,
+    "condition.equipper_identity": 6,
+    "effect.issue_allowed_runtime_command": 5,
+    "read.calculator_attribute": 4,
+    "condition.skill_tag_in": 4,
+    "state.last_observed_skill": 4,
+    "read.trigger_buff_state": 4,
+    "condition.skill_trigger_level": 4,
+    "condition.trigger_buff_active": 4,
+    "effect.bind_prepared_record": 4,
+    "condition.numeric_compare": 3,
+    "compose.numeric_formula": 3,
+    "effect.update_buff_count": 3,
+    "condition.skill_owner_not_self": 3,
+    "state.cooldown_gate": 3,
+    "effect.publish_resource_refresh": 3,
+    "condition.trigger_buff_count_compare": 3,
+    "state.edge_memory": 2,
+    "condition.edge_transition": 2,
+    "compose.not": 2,
+    "effect.external_add_skill": 2,
+    "condition.character_state": 1,
+    "condition.preload_tick": 1,
+    "read.current_tick": 1,
+    "condition.trigger_buff_box_size_equals": 1,
+    "read.refinement": 1,
+    "read.foreground_character": 1,
+    "condition.equipper_is_background": 1,
+    "condition.equipper_is_foreground": 1,
+    "read.active_buffs_for_equipper": 1,
+    "read.enemy_edge_state": 1,
+    "condition.operating_character": 1,
+    "condition.skill_owner": 1,
+    "read.current_action": 1,
+    "condition.cooldown_ready": 1,
+    "effect.register_dot_runtime": 1,
+    "state.counter": 1,
+    "effect.spawn_planned_skill_node": 1,
+    "effect.update_character_resource": 1,
+    "scout.semantic_source_review": 1,
+    "effect.register_listener": 1,
+    "read.listener_signal": 1,
+    "effect.consume_listener_signal": 1
+  },
+  "unsupported_cases": [
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
+      "primary_wave": "calculator-runtime-read-buffs",
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.calculator_attribute",
+        "condition.numeric_compare",
+        "compose.numeric_formula",
+        "effect.start_buff",
+        "effect.update_buff_count"
+      ],
+      "reason": "Legacy logic reads anomaly mastery through calculator runtime context with enemy and character, checks the 140 threshold, and converts the excess into Buff count. Graph support needs controlled enemy context, calculator attribute, comparison, formula, and Buff count write blocks.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AliceCinema6Trigger.py",
+      "primary_wave": "additional-attack-side-effects",
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "condition.skill_owner_not_self",
+        "condition.character_state",
+        "condition.hit_frame",
+        "state.cooldown_gate",
+        "effect.spawn_extra_attack"
+      ],
+      "reason": "Legacy logic calls Alice.spawn_extra_attack after teammate hit, victory-state, hit-frame, and cooldown gates.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AlicePolarizedAssaultTrigger.py",
+      "primary_wave": "anomaly-dot-adjacent-cases",
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read",
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "condition.skill_tag_in",
+        "condition.hit_frame",
+        "read.enemy_anomaly_bar",
+        "state.last_observed_skill",
+        "effect.spawn_anomaly_output",
+        "effect.emit_scheduled_event",
+        "read.enemy_anomaly_state",
+        "effect.issue_allowed_runtime_command"
+      ],
+      "reason": "Legacy logic gates on skill tag and final hit, deep-copies an enemy anomaly bar, stamps trigger origin, builds PolarizedAssaultEvent, and emits it. | Legacy logic builds a PolarizedAssaultEvent from copied enemy anomaly state and emits it through the scheduled-event port.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AnomalyDebuffExitJudge.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_anomaly_state",
+        "state.edge_memory",
+        "condition.edge_transition"
+      ],
+      "reason": "Legacy logic reads an enemy anomaly state and exits on a falling edge; graph support needs enemy anomaly read plus edge-memory blocks.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AstralVoice.py",
+      "primary_wave": "dynamic-owner-equipper-cases",
+      "unsupported_pattern_ids": [
+        "dynamic_owner_equipper_prepared_context"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "read.prepared_owner",
+        "read.prepared_template_buff",
+        "read.trigger_buff_state",
+        "condition.equipper_identity",
+        "condition.skill_trigger_level",
+        "condition.trigger_buff_active",
+        "effect.bind_prepared_record",
+        "effect.update_template_buff"
+      ],
+      "reason": "Current importer can produce a surface graph, but it does not model equipment owner resolution, TriggerBuffRef.owner binding, prepared record data, or template Buff update semantics.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AstraYaoChordManagerTrigger.py",
+      "primary_wave": "additional-attack-side-effects",
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "condition.skill_trigger_level",
+        "condition.preload_tick",
+        "state.last_observed_skill",
+        "effect.update_character_manager",
+        "effect.spawn_coattack"
+      ],
+      "reason": "Legacy logic delegates to AstraYao.chord_manager.chord_trigger.try_spawn_chord_coattack.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AstraYaoCorePassiveAtkBonus.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AstraYaoQuickAssistManagerTrigger.py",
+      "primary_wave": "additional-attack-side-effects",
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "read.current_tick",
+        "read.skill_node",
+        "effect.update_character_manager"
+      ],
+      "reason": "Legacy logic pushes the current skill node into AstraYao quick_assist_trigger_manager.update_myself.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritDamageBonus.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/BranchBladeSongCritRateBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/CannonRotor.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/CinderCobaltAtkBonus.py",
+      "primary_wave": "additional-attack-side-effects",
+      "all_candidate_waves": [
+        "additional-attack-side-effects",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "effect.spawn_extra_attack",
+        "effect.spawn_coattack",
+        "effect.force_quick_assist",
+        "effect.update_character_manager",
+        "read.next_team_member",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern character_manager_side_effect.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/CordisGerminaSNAAndQIgnoreDefense.py",
+      "primary_wave": "dynamic-owner-equipper-cases",
+      "unsupported_pattern_ids": [
+        "dynamic-owner-equipper-template-resolution",
+        "trigger-buff-state-cardinality-condition"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "read.trigger_buff_state",
+        "condition.trigger_buff_active",
+        "condition.trigger_buff_box_size_equals",
+        "condition.equipper_identity",
+        "compose.not"
+      ],
+      "reason": "Judge is active when the prepared equipper for 机巧心种 has trigger buff 机巧心种-电属性增伤 and read_trigger_buff_state(...).built_in_buff_box has length 2; exit is the inverse judge.",
+      "evidence_source": "scout-manual-semantic-xlogic-review",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/dot_runtime_state_read.py",
+      "primary_wave": "anomaly-dot-adjacent-cases",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "anomaly-dot-adjacent-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.dot_runtime_state",
+        "effect.start_dot",
+        "effect.spawn_anomaly_output",
+        "state.anomaly_signal"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/ElectroLipGlossAtkAndDmgBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/ElegantVanitySpRecover.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "read.refinement",
+        "effect.start_buff",
+        "effect.publish_resource_refresh",
+        "effect.issue_allowed_runtime_command"
+      ],
+      "reason": "Legacy logic starts the Buff and publishes an energy refresh command based on W-Engine refinement.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_map_read.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_read.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "anomaly-dot-adjacent-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.dot_runtime_state",
+        "effect.start_dot",
+        "effect.spawn_anomaly_output",
+        "state.anomaly_signal"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/enemy_debuff_mirror_read.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/enemy_edge_state_read.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/enemy_state_read.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/FlamemakerShakerApBonus.py",
+      "primary_wave": "dynamic-owner-equipper-cases",
+      "unsupported_pattern_ids": [
+        "dynamic_owner_equipper_prepared_context"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "read.trigger_buff_state",
+        "condition.equipper_identity",
+        "condition.trigger_buff_active",
+        "condition.trigger_buff_count_compare",
+        "effect.bind_prepared_record"
+      ],
+      "reason": "Current importer does not model TriggerBuffRef.equipper lookup, prepared equipment binding, or trigger-buff count threshold semantics.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/HailstormShrineIceBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/HeartstringNocturne.py",
+      "primary_wave": "additional-attack-side-effects",
+      "all_candidate_waves": [
+        "additional-attack-side-effects",
+        "runtime-command-scheduled-producers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "effect.spawn_extra_attack",
+        "effect.spawn_coattack",
+        "effect.force_quick_assist",
+        "effect.update_character_manager",
+        "read.next_team_member",
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern character_manager_side_effect.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/HellfireGearsSpRBonus.py",
+      "primary_wave": "dynamic-owner-equipper-cases",
+      "unsupported_pattern_ids": [
+        "dynamic-owner-equipper-template-resolution",
+        "foreground-character-position-condition"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "read.foreground_character",
+        "condition.equipper_is_background",
+        "condition.equipper_is_foreground",
+        "compose.not"
+      ],
+      "reason": "Judge is active when the W-Engine equipper for 燃狱齿轮 is not the foreground character at name_box[0]; exit is active when that equipper becomes foreground.",
+      "evidence_source": "scout-manual-semantic-xlogic-review",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/HormonePunkAtkBonus.py",
+      "primary_wave": "additional-attack-side-effects",
+      "all_candidate_waves": [
+        "additional-attack-side-effects",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "effect.spawn_extra_attack",
+        "effect.spawn_coattack",
+        "effect.force_quick_assist",
+        "effect.update_character_manager",
+        "read.next_team_member",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern character_manager_side_effect.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/HugoAdditionalAbilityExtraQTEDmgBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "additional-attack-side-effects",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read",
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "effect.spawn_extra_attack",
+        "effect.spawn_coattack",
+        "effect.force_quick_assist",
+        "effect.update_character_manager",
+        "read.next_team_member",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Classifier reported unsupported pattern character_manager_side_effect.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveDoubleStunAtkBonus.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveEXStunBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveSingleStunAtkBonus.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/HugoCorePassiveTotalizeTrigger.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/IceJadeTeaPotExtraDMGBonus.py",
+      "primary_wave": "dynamic-owner-equipper-cases",
+      "unsupported_pattern_ids": [
+        "dynamic_owner_equipper_prepared_context"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "read.active_buffs_for_equipper",
+        "condition.equipper_identity",
+        "condition.trigger_buff_count_compare"
+      ],
+      "reason": "Current importer does not model direct preparation-context equipper lookup or scanning active buffs for that equipper.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/JaneAdditionalAbilityPhyBuildupBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritDmgBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/JaneCoreSkillStrikeCritRateBonus.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/JanePassionStateAPTransToATK.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/LighterAdditionalAbility_IceFireBonus.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/LighterUniqueSkillStunTimeLimitBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/LinaAdditionalSkillEleDMGBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/LinaCoreSkillPenRatioBonus.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/LunarNoviluna.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/LyconAdditionalAbilityStunVulnerability.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/MagneticStormAlphaAMBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/MagneticStormBravoApBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/MagneticStormCharlieSpRecover.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/MarcatoDesireAtkBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/MiyabiAdditionalAbility_IgnoreIceRes.py",
+      "primary_wave": "anomaly-dot-adjacent-cases",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "anomaly-dot-adjacent-cases",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.dot_runtime_state",
+        "effect.start_dot",
+        "effect.spawn_anomaly_output",
+        "state.anomaly_signal",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_FrostBurn.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_edge_state",
+        "state.edge_memory",
+        "condition.edge_transition"
+      ],
+      "reason": "Legacy logic reads enemy frost/frostbite edge state and exits on a falling edge; graph support needs explicit enemy-edge read semantics.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/MiyabiCoreSkill_IceFire.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/NikoleCoreSkillDefReduction.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/PolarMetalFreezeBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/PreciousFossilizedCoreStunBonusOver50Hp.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/PreciousFossilizedCoreStunBonusOver75Hp.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/PuzzleSphereExDmgBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/QingYiAdditionalAbilityStunConvertToATK.py",
+      "primary_wave": "calculator-runtime-read-buffs",
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.calculator_attribute",
+        "compose.numeric_formula",
+        "effect.start_buff",
+        "effect.update_buff_count"
+      ],
+      "reason": "Legacy logic reads impact through calculator runtime context with enemy and character, subtracts the template step, applies the conversion, and caps the result by max Buff count.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/QingYiCoreSkillStunDMGBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "condition.operating_character",
+        "condition.skill_owner",
+        "condition.hit_frame",
+        "state.cooldown_gate",
+        "effect.publish_resource_refresh",
+        "effect.issue_allowed_runtime_command"
+      ],
+      "reason": "Legacy logic publishes a resource refresh through ResourceRefreshCommandPort after owner, hit-frame, and cooldown gates.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SeedCinema6Trigger.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SharpenedStingerAnomalyBuildupBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SliceofTimeExtraResources.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "condition.skill_trigger_level",
+        "state.cooldown_gate",
+        "read.current_action",
+        "effect.start_buff",
+        "effect.publish_resource_refresh",
+        "effect.issue_allowed_runtime_command"
+      ],
+      "reason": "Legacy logic starts a visible Buff, computes energy and decibel values from refinement and trigger level, then publishes a scheduled refresh command.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCoreSkillCritDMGBonus.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCoreSkillDMGBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/Soldier11AdditionalSkillExtraFireDMGBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/StreetSuperstar.py",
+      "primary_wave": "additional-attack-side-effects",
+      "all_candidate_waves": [
+        "additional-attack-side-effects",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "effect.spawn_extra_attack",
+        "effect.spawn_coattack",
+        "effect.force_quick_assist",
+        "effect.update_character_manager",
+        "read.next_team_member",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern character_manager_side_effect.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/TimeweaverApBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/TimeweaverDisorderDmgMul.py",
+      "primary_wave": "anomaly-dot-adjacent-cases",
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_anomaly_state",
+        "read.calculator_attribute",
+        "condition.numeric_compare"
+      ],
+      "reason": "Legacy logic uses an enemy-aware calculator runtime read context and compares anomaly proficiency. | Current integration worktree logic creates a calculator runtime read context with enemy and character, then compares anomaly proficiency; clean branches may still see the legacy ScheduledEvent import and classify this as an additional scheduled-producer gap. Graph support needs enemy-aware calculator read blocks either way.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/TriggerAdditionalAbilityStunBonus.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/TriggerAfterShockTrigger.py",
+      "primary_wave": "additional-attack-side-effects",
+      "all_candidate_waves": [
+        "additional-attack-side-effects",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "effect.spawn_extra_attack",
+        "effect.spawn_coattack",
+        "effect.force_quick_assist",
+        "effect.update_character_manager",
+        "read.next_team_member",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern character_manager_side_effect.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianAdditionalAbilityCoAttackTrigger.py",
+      "primary_wave": "additional-attack-side-effects",
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_anomaly_state",
+        "condition.skill_owner_not_self",
+        "condition.cooldown_ready",
+        "state.last_observed_enemy_state",
+        "effect.spawn_coattack",
+        "effect.external_add_skill"
+      ],
+      "reason": "Legacy logic observes new non-Vivian anomaly activations, spawns a Vivian coattack skill tag, and appends it through preload_data.external_add_skill.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianCinema1Debuff.py",
+      "primary_wave": "anomaly-dot-adjacent-cases",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "anomaly-dot-adjacent-cases",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.dot_runtime_state",
+        "effect.start_dot",
+        "effect.spawn_anomaly_output",
+        "state.anomaly_signal",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "additional-attack-side-effects",
+        "multi-wave-composed-xlogic",
+        "anomaly-dot-adjacent-cases",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read",
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "effect.spawn_extra_attack",
+        "effect.spawn_coattack",
+        "effect.force_quick_assist",
+        "effect.update_character_manager",
+        "read.next_team_member",
+        "read.dot_runtime_state",
+        "effect.start_dot",
+        "effect.spawn_anomaly_output",
+        "state.anomaly_signal",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Classifier reported unsupported pattern character_manager_side_effect.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianCoattackTrigger.py",
+      "primary_wave": "additional-attack-side-effects",
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "condition.skill_trigger_level",
+        "condition.hit_frame",
+        "state.last_observed_skill",
+        "effect.spawn_coattack",
+        "effect.external_add_skill"
+      ],
+      "reason": "Legacy logic detects teammate enhanced special first-hit windows, spawns a Vivian coattack skill tag, and appends it as an external skill.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "anomaly-dot-adjacent-cases",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.dot_runtime_state",
+        "effect.start_dot",
+        "effect.spawn_anomaly_output",
+        "state.anomaly_signal",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py",
+      "primary_wave": "anomaly-dot-adjacent-cases",
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read",
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_anomaly_state",
+        "read.dot_runtime_state",
+        "condition.enemy_state",
+        "condition.skill_tag_in",
+        "condition.hit_frame",
+        "effect.start_dot",
+        "effect.register_dot_runtime",
+        "effect.emit_scheduled_event"
+      ],
+      "reason": "Legacy logic requires active enemy anomaly, DOT runtime lookup/registration, DOT start timing, and scheduled emission. | Legacy logic reads enemy anomaly state and DOT runtime state, starts DOT runtime, and emits a scheduled event; graph support needs controlled DOT and scheduled-event blocks.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianFeatherTrigger.py",
+      "primary_wave": "additional-attack-side-effects",
+      "all_candidate_waves": [
+        "additional-attack-side-effects",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "effect.spawn_extra_attack",
+        "effect.spawn_coattack",
+        "effect.force_quick_assist",
+        "effect.update_character_manager",
+        "read.next_team_member",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern character_manager_side_effect.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/WeepingGeminiApBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "anomaly-dot-adjacent-cases",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.dot_runtime_state",
+        "effect.start_dot",
+        "effect.spawn_anomaly_output",
+        "state.anomaly_signal",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/WoodpeckerElectroSet4_CA.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/WoodpeckerElectroSet4_E_EX.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/WoodpeckerElectroSet4_NA.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+      "primary_wave": "anomaly-dot-adjacent-cases",
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.skill_tag_in",
+        "condition.hit_frame",
+        "state.anomaly_signal",
+        "state.counter",
+        "effect.spawn_anomaly_output",
+        "effect.emit_scheduled_event"
+      ],
+      "reason": "Legacy logic records a polarity-disorder signal from active enemy anomaly, counts qualifying E hits, settles a copied anomaly bar, spawns output, and emits it.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YanagiStanceJougen.py",
+      "primary_wave": "additional-attack-side-effects",
+      "all_candidate_waves": [
+        "additional-attack-side-effects",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "effect.spawn_extra_attack",
+        "effect.spawn_coattack",
+        "effect.force_quick_assist",
+        "effect.update_character_manager",
+        "read.next_team_member",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern character_manager_side_effect.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YanagiStanceKagen.py",
+      "primary_wave": "additional-attack-side-effects",
+      "all_candidate_waves": [
+        "additional-attack-side-effects",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "effect.spawn_extra_attack",
+        "effect.spawn_coattack",
+        "effect.force_quick_assist",
+        "effect.update_character_manager",
+        "read.next_team_member",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern character_manager_side_effect.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YixuanAdditionalAbilityDmgBonus.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YixuanCinema1Trigger.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "condition.skill_owner_not_self",
+        "condition.hit_frame",
+        "effect.spawn_planned_skill_node",
+        "effect.emit_scheduled_event",
+        "effect.issue_allowed_runtime_command",
+        "effect.update_character_resource",
+        "effect.start_buff"
+      ],
+      "reason": "Legacy logic spawns a lightning SkillNode/LoadingMission, emits it through ScheduledEventEmitter, updates adrenaline, and starts the Buff.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YixuanCinema2StunTimeLimitBonus.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YixuanCinema4Tranquility.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YunkuiTalesSheerAtkBonus.py",
+      "primary_wave": "dynamic-owner-equipper-cases",
+      "unsupported_pattern_ids": [
+        "dynamic_owner_equipper_prepared_context"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "read.prepared_owner",
+        "read.prepared_template_buff",
+        "read.trigger_buff_state",
+        "condition.equipper_identity",
+        "condition.trigger_buff_active",
+        "condition.trigger_buff_count_compare",
+        "effect.bind_prepared_record"
+      ],
+      "reason": "Current importer does not model TriggerBuffRef.owner using the resolved equipper as owner, or the trigger-state count equality gate.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyBuildupBonus.py",
+      "primary_wave": "calculator-runtime-read-buffs",
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.calculator_attribute",
+        "condition.numeric_compare",
+        "compose.numeric_formula",
+        "effect.start_buff",
+        "effect.update_buff_count"
+      ],
+      "reason": "Legacy logic reads anomaly mastery through calculator runtime context, checks the 100 threshold, applies cinema-dependent conversion, and writes capped Buff count.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyDmgBonus.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "enemy-state-edge-triggers",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer",
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinem1EleResReduce.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "additional-attack-side-effects",
+        "runtime-command-scheduled-producers"
+      ],
+      "unsupported_pattern_ids": [
+        "wave-boundary-gap"
+      ],
+      "required_future_block_ids": [
+        "scout.semantic_source_review"
+      ],
+      "reason": "This trigger combines enemy stun reads, QTE mutation, schedule process-state notification, cooldown memory, and skill-node signal state; it needs explicit controlled blocks, not an arbitrary code node.",
+      "evidence_source": "generated-spec-boundary-gap",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema4QuickAssistTrigger.py",
+      "primary_wave": "additional-attack-side-effects",
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "condition.skill_tag_in",
+        "condition.hit_frame",
+        "read.next_team_member",
+        "state.last_observed_skill",
+        "effect.force_quick_assist"
+      ],
+      "reason": "Legacy logic detects last hit of specific support-assault tags, records the skill node, and forces QuickAssistSystem activation for the next character.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema6SheelTrigger.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema6SugarBurstMaxTrigger.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "additional-attack-side-effects",
+        "multi-wave-composed-xlogic",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read",
+        "character_manager_side_effect"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "effect.spawn_extra_attack",
+        "effect.spawn_coattack",
+        "effect.force_quick_assist",
+        "effect.update_character_manager",
+        "read.next_team_member",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Classifier reported unsupported pattern character_manager_side_effect.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCorePassiveSweetScare.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaSugarBurstAnomalyBuildupBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaSugarBurstMaxAnomalyBuildupBonus.py",
+      "primary_wave": "enemy-state-edge-triggers",
+      "all_candidate_waves": [
+        "enemy-state-edge-triggers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_future_block_ids": [
+        "read.enemy_context",
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.enemy_state",
+        "state.last_observed_enemy_state",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaTanukiWishAtkBonus.py",
+      "primary_wave": "runtime-command-scheduled-producers",
+      "all_candidate_waves": [
+        "runtime-command-scheduled-producers",
+        "dynamic-owner-equipper-cases"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_future_block_ids": [
+        "effect.issue_runtime_command",
+        "effect.emit_scheduled_event",
+        "condition.tick_window",
+        "read.skill_node",
+        "state.scheduled_signal",
+        "read.prepared_owner",
+        "read.prepared_equipper",
+        "read.prepared_template_buff",
+        "effect.update_template_buff"
+      ],
+      "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.",
+      "recommended_next_action": "write_explicit_unsupported_manifest_case",
+      "evidence_source": "scout-xlogic-missing-coverage-classification",
+      "legacy_runtime_status": "legacy_python"
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/ZanshinHerbCase.py",
+      "primary_wave": "dynamic-owner-equipper-cases",
+      "unsupported_pattern_ids": [
+        "dynamic_owner_equipper_prepared_context"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "condition.equipper_identity",
+        "effect.bind_prepared_record",
+        "effect.register_listener",
+        "read.listener_signal",
+        "effect.consume_listener_signal"
+      ],
+      "reason": "Current importer blocks on listener-manager side effects, and graph support also needs prepared equipper/record binding before listener owner semantics can be represented.",
+      "evidence_source": "existing-generated-spec-unsupported-manifest",
+      "legacy_runtime_status": "legacy_python"
+    }
+  ]
+}
