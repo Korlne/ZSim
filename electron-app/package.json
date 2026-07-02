@@ -24,6 +24,7 @@
     "@electron-toolkit/utils": "^4.0.0",
     "@semi-bot/semi-theme-zsim": "^1.0.3",
     "@tailwindcss/vite": "^4.1.12",
+    "@xyflow/react": "^12.11.1",
     "clsx": "^2.1.1",
     "electron-updater": "^6.6.2",
     "i18next": "^25.4.2",
