@@ -143,6 +143,62 @@ class EmitScheduledEventIntentEffectAdapter:
         return BuffGraphAdapterResult(outputs={"scheduled_event_intent": _without_none(intent)})
 
 
+class CharacterSideEffectIntentAdapter:
+    adapter_id = "effect.update_character_manager.v1"
+    intent_action = "update_character_manager"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        enabled = _first_upstream_bool(context.inputs)
+        intent = {
+            "intent_type": "character_side_effect",
+            "action": self.intent_action,
+            "target": context.node.params.get("target"),
+            "skill_tag": context.node.params.get("skill_tag"),
+            "manager": context.node.params.get("manager"),
+            "operation": context.node.params.get("operation"),
+            "resource": context.node.params.get("resource"),
+            "mode": context.node.params.get("mode"),
+            "scheduled_tick": context.node.params.get("scheduled_tick"),
+            "payload": context.node.params.get("payload", {}),
+            "enabled": enabled,
+            "source_buff_index": context.node.params.get("source_buff_index")
+            or context.prepared_context.get("source_buff_index"),
+        }
+        return BuffGraphAdapterResult(
+            outputs={"character_side_effect_intent": _without_none(intent)}
+        )
+
+
+class ForceQuickAssistIntentEffectAdapter(CharacterSideEffectIntentAdapter):
+    adapter_id = "effect.force_quick_assist.v1"
+    intent_action = "force_quick_assist"
+
+
+class SpawnCoattackIntentEffectAdapter(CharacterSideEffectIntentAdapter):
+    adapter_id = "effect.spawn_coattack.v1"
+    intent_action = "spawn_coattack"
+
+
+class SpawnExtraAttackIntentEffectAdapter(CharacterSideEffectIntentAdapter):
+    adapter_id = "effect.spawn_extra_attack.v1"
+    intent_action = "spawn_extra_attack"
+
+
+class SpawnPlannedSkillNodeIntentEffectAdapter(CharacterSideEffectIntentAdapter):
+    adapter_id = "effect.spawn_planned_skill_node.v1"
+    intent_action = "spawn_planned_skill_node"
+
+
+class UpdateCharacterResourceIntentEffectAdapter(CharacterSideEffectIntentAdapter):
+    adapter_id = "effect.update_character_resource.v1"
+    intent_action = "update_character_resource"
+
+
+class ExternalAddSkillIntentEffectAdapter(CharacterSideEffectIntentAdapter):
+    adapter_id = "effect.external_add_skill.v1"
+    intent_action = "external_add_skill"
+
+
 def build_low_risk_effect_adapters() -> Mapping[str, object]:
     adapters = (StartBuffEffectAdapter(), UpdateBuffCountEffectAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
@@ -168,6 +224,19 @@ def build_runtime_command_scheduled_signal_effect_adapters() -> Mapping[str, obj
         IssueRuntimeCommandIntentEffectAdapter(),
         IssueAllowedRuntimeCommandIntentEffectAdapter(),
         EmitScheduledEventIntentEffectAdapter(),
+    )
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_character_manager_side_effect_effect_adapters() -> Mapping[str, object]:
+    adapters = (
+        CharacterSideEffectIntentAdapter(),
+        ForceQuickAssistIntentEffectAdapter(),
+        SpawnCoattackIntentEffectAdapter(),
+        SpawnExtraAttackIntentEffectAdapter(),
+        SpawnPlannedSkillNodeIntentEffectAdapter(),
+        UpdateCharacterResourceIntentEffectAdapter(),
+        ExternalAddSkillIntentEffectAdapter(),
     )
     return {adapter.adapter_id: adapter for adapter in adapters}
 

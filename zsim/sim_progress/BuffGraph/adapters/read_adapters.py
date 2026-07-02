@@ -293,6 +293,27 @@ class SkillNodeReadAdapter:
         )
 
 
+class NextTeamMemberReadAdapter:
+    adapter_id = "read.next_team_member.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        name_box = context.prepared_context.get("name_box")
+        team = list(name_box) if isinstance(name_box, (list, tuple)) else []
+        current = (
+            _first_upstream_value(context.inputs, "character")
+            or context.prepared_context.get("operating_character")
+            or context.prepared_context.get("foreground_character")
+        )
+        offset = int(context.node.params.get("offset", 1))
+        if not team:
+            return BuffGraphAdapterResult(outputs={"character": None, "team_index": None})
+        if current in team:
+            index = (team.index(current) + offset) % len(team)
+        else:
+            index = offset % len(team)
+        return BuffGraphAdapterResult(outputs={"character": team[index], "team_index": index})
+
+
 def build_low_risk_read_adapters() -> Mapping[str, object]:
     adapters = (CurrentTickReadAdapter(), BuffRuntimeViewReadAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
@@ -329,6 +350,11 @@ def build_enemy_anomaly_state_read_adapters() -> Mapping[str, object]:
 
 def build_runtime_command_scheduled_signal_read_adapters() -> Mapping[str, object]:
     adapters = (SkillNodeReadAdapter(),)
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_character_manager_side_effect_read_adapters() -> Mapping[str, object]:
+    adapters = (NextTeamMemberReadAdapter(),)
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 

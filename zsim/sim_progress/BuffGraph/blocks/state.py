@@ -74,5 +74,18 @@ STATE_BLOCKS = (
         ),
         param_schema={"signal_key": "string", "scheduled_tick": "int"},
     ),
+    BuffGraphBlockDefinition(
+        block_id="state.last_observed_skill",
+        family=NodeFamily.STATE,
+        display_name="Last Observed Skill",
+        adapter_id="state.last_observed_skill.v1",
+        input_ports=(BlockPort("skill_node", "Skill Node", "skill_node"),),
+        output_ports=(
+            BlockPort("previous_skill", "Previous Skill", "skill_node"),
+            BlockPort("current_skill", "Current Skill", "skill_node"),
+            BlockPort("changed", "Changed", "bool"),
+        ),
+        param_schema={"state_key": "state_key"},
+    ),
 )
 

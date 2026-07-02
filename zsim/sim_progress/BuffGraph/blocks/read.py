@@ -173,5 +173,17 @@ READ_BLOCKS = (
         ),
         param_schema={"skill_key": "string", "tag_key": "string"},
     ),
+    BuffGraphBlockDefinition(
+        block_id="read.next_team_member",
+        family=NodeFamily.READ,
+        display_name="Next Team Member",
+        adapter_id="read.next_team_member.v1",
+        input_ports=(BlockPort("context", "Context", "prepared_context"),),
+        output_ports=(
+            BlockPort("character", "Character", "character"),
+            BlockPort("team_index", "Team Index", "number"),
+        ),
+        param_schema={"offset": "int"},
+    ),
 )
 

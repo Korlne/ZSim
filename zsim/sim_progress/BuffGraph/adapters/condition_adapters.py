@@ -199,6 +199,153 @@ class TickWindowConditionAdapter:
         )
 
 
+class HitFrameConditionAdapter:
+    adapter_id = "condition.hit_frame.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        skill_node = _skill_node(context)
+        hit_index = skill_node.get("hit_index", skill_node.get("hit"))
+        expected_hit_index = context.node.params.get("expected_hit_index")
+        require_last_hit = bool(context.node.params.get("require_last_hit", False))
+        is_last_hit = bool(
+            skill_node.get("is_last_hit")
+            or skill_node.get("last_hit")
+            or skill_node.get("hit_is_last")
+        )
+        passed = expected_hit_index is None or int(hit_index or -1) == int(expected_hit_index)
+        if require_last_hit:
+            passed = passed and is_last_hit
+        return BuffGraphAdapterResult(
+            outputs={
+                "passed": passed,
+                "hit_index": hit_index,
+                "is_last_hit": is_last_hit,
+            }
+        )
+
+
+class SkillTagInConditionAdapter:
+    adapter_id = "condition.skill_tag_in.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        skill_node = _skill_node(context)
+        skill_tag = skill_node.get("skill_tag") or skill_node.get("tag")
+        expected_tags = context.node.params.get("skill_tags", ())
+        if isinstance(expected_tags, str):
+            expected_tags = (expected_tags,)
+        passed = not expected_tags or skill_tag in set(expected_tags)
+        return BuffGraphAdapterResult(outputs={"passed": passed, "skill_tag": skill_tag})
+
+
+class SkillOwnerNotSelfConditionAdapter:
+    adapter_id = "condition.skill_owner_not_self.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        skill_owner = _skill_owner(context)
+        self_owner = (
+            context.node.params.get("self_owner")
+            or context.prepared_context.get("prepared_owner")
+            or context.prepared_context.get("owner")
+            or context.prepared_context.get("owner_name")
+        )
+        return BuffGraphAdapterResult(
+            outputs={
+                "passed": skill_owner is not None and skill_owner != self_owner,
+                "skill_owner": skill_owner,
+                "self_owner": self_owner,
+            }
+        )
+
+
+class OperatingCharacterConditionAdapter:
+    adapter_id = "condition.operating_character.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        expected = context.node.params.get("character")
+        actual = _first_upstream_value(context.inputs, "character")
+        if actual is None:
+            actual = context.prepared_context.get("operating_character")
+        if actual is None:
+            actual = context.prepared_context.get("foreground_character")
+        return BuffGraphAdapterResult(
+            outputs={"passed": expected is None or actual == expected, "character": actual}
+        )
+
+
+class SkillOwnerConditionAdapter:
+    adapter_id = "condition.skill_owner.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        expected = context.node.params.get("owner")
+        skill_owner = _skill_owner(context)
+        return BuffGraphAdapterResult(
+            outputs={
+                "passed": expected is None or skill_owner == expected,
+                "skill_owner": skill_owner,
+            }
+        )
+
+
+class CharacterStateConditionAdapter:
+    adapter_id = "condition.character_state.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        character = (
+            context.node.params.get("character")
+            or _first_upstream_value(context.inputs, "character")
+            or context.prepared_context.get("prepared_owner")
+            or context.prepared_context.get("owner")
+            or context.prepared_context.get("owner_name")
+        )
+        state_key = context.node.params.get("state_key")
+        state_value = _character_state(context.prepared_context, character, state_key)
+        expected_value = context.node.params.get("expected_value")
+        passed = expected_value is None or state_value == expected_value
+        return BuffGraphAdapterResult(
+            outputs={
+                "passed": passed,
+                "character": character,
+                "state_key": state_key,
+                "state_value": state_value,
+            }
+        )
+
+
+class CooldownReadyConditionAdapter:
+    adapter_id = "condition.cooldown_ready.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        tick = _current_tick(context)
+        cooldown_key = context.node.params.get("cooldown_key") or context.node.node_id
+        cooldown_ticks = int(context.node.params.get("cooldown_ticks", 0))
+        cooldowns = _mapping(context.prepared_context.get("cooldowns"))
+        last_tick = cooldowns.get(cooldown_key)
+        if last_tick is None:
+            last_tick = _state(context).get(cooldown_key)
+        ready = last_tick is None or tick - int(last_tick) >= cooldown_ticks
+        return BuffGraphAdapterResult(
+            outputs={
+                "passed": ready,
+                "tick": tick,
+                "cooldown_key": cooldown_key,
+                "last_tick": last_tick,
+            }
+        )
+
+
+class PreloadTickConditionAdapter:
+    adapter_id = "condition.preload_tick.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        tick = _current_tick(context)
+        expected_tick = int(context.node.params.get("expected_tick", tick))
+        window_ticks = int(context.node.params.get("window_ticks", 0))
+        passed = abs(tick - expected_tick) <= window_ticks
+        return BuffGraphAdapterResult(
+            outputs={"passed": passed, "tick": tick, "expected_tick": expected_tick}
+        )
+
+
 def build_low_risk_condition_adapters() -> Mapping[str, object]:
     adapters = (CharacterIdentityConditionAdapter(), BuffActiveConditionAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
@@ -224,6 +371,20 @@ def build_enemy_anomaly_state_condition_adapters() -> Mapping[str, object]:
 
 def build_runtime_command_scheduled_signal_condition_adapters() -> Mapping[str, object]:
     adapters = (TickWindowConditionAdapter(),)
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_character_manager_side_effect_condition_adapters() -> Mapping[str, object]:
+    adapters = (
+        HitFrameConditionAdapter(),
+        SkillTagInConditionAdapter(),
+        SkillOwnerNotSelfConditionAdapter(),
+        OperatingCharacterConditionAdapter(),
+        SkillOwnerConditionAdapter(),
+        CharacterStateConditionAdapter(),
+        CooldownReadyConditionAdapter(),
+        PreloadTickConditionAdapter(),
+    )
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 
@@ -293,6 +454,52 @@ def _skill_trigger_level(context: BuffGraphAdapterContext) -> Any:
     if "trigger_level" in skill:
         return skill["trigger_level"]
     return context.prepared_context.get("trigger_level")
+
+
+def _skill_node(context: BuffGraphAdapterContext) -> Mapping[str, Any]:
+    upstream_node = _first_upstream_value(context.inputs, "skill_node")
+    if isinstance(upstream_node, Mapping):
+        return upstream_node
+    return _mapping(
+        context.prepared_context.get("skill_node")
+        or context.prepared_context.get("current_skill")
+    )
+
+
+def _skill_owner(context: BuffGraphAdapterContext) -> Any:
+    skill_node = _skill_node(context)
+    return (
+        skill_node.get("owner")
+        or skill_node.get("owner_name")
+        or skill_node.get("character")
+        or skill_node.get("character_name")
+        or context.prepared_context.get("skill_owner")
+    )
+
+
+def _character_state(
+    prepared_context: Mapping[str, Any],
+    character: Any,
+    state_key: Any,
+) -> Any:
+    states = _mapping(prepared_context.get("character_states"))
+    character_state = _mapping(states.get(character)) if character is not None else {}
+    if not character_state:
+        character_state = _mapping(prepared_context.get("character_state"))
+    if state_key is None:
+        return character_state
+    return character_state.get(state_key)
+
+
+def _current_tick(context: BuffGraphAdapterContext) -> int:
+    tick = _first_upstream_value(context.inputs, "tick")
+    if tick is None:
+        tick = context.prepared_context.get("tick", 0)
+    return int(tick)
+
+
+def _state(context: BuffGraphAdapterContext) -> Mapping[str, Any]:
+    return _mapping(context.prepared_context.get("state"))
 
 
 def _equipper(context: BuffGraphAdapterContext) -> Any:

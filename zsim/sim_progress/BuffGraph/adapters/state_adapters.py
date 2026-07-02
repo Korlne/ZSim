@@ -126,6 +126,27 @@ class ScheduledSignalStateAdapter:
         )
 
 
+class LastObservedSkillStateAdapter:
+    adapter_id = "state.last_observed_skill.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        key = str(context.node.params.get("state_key", context.node.node_id))
+        previous_skill = _state(context).get(key)
+        current_skill = _first_upstream_mapping(context.inputs, "skill_node")
+        if not current_skill:
+            current_skill = _mapping(
+                context.prepared_context.get("skill_node")
+                or context.prepared_context.get("current_skill")
+            )
+        return BuffGraphAdapterResult(
+            outputs={
+                "previous_skill": previous_skill,
+                "current_skill": current_skill,
+                "changed": previous_skill != current_skill,
+            }
+        )
+
+
 def build_low_risk_state_adapters() -> Mapping[str, object]:
     adapters = (LastActiveTickStateAdapter(), CooldownGateStateAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
@@ -142,6 +163,11 @@ def build_enemy_anomaly_state_state_adapters() -> Mapping[str, object]:
 
 def build_runtime_command_scheduled_signal_state_adapters() -> Mapping[str, object]:
     adapters = (ScheduledSignalStateAdapter(),)
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_character_manager_side_effect_state_adapters() -> Mapping[str, object]:
+    adapters = (LastObservedSkillStateAdapter(),)
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 
@@ -174,6 +200,10 @@ def _first_upstream_value(inputs: Mapping[str, Any], key: str) -> Any:
 
 def _first_upstream_mapping(inputs: Mapping[str, Any], key: str) -> Mapping[str, Any]:
     value = _first_upstream_value(inputs, key)
+    return value if isinstance(value, Mapping) else {}
+
+
+def _mapping(value: Any) -> Mapping[str, Any]:
     return value if isinstance(value, Mapping) else {}
 
 
