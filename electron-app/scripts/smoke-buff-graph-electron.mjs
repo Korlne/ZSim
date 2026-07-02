@@ -17,8 +17,30 @@ const catalog = JSON.parse(await readFile(fixturePath, 'utf8'));
 
 const apiPort = Number(process.env.ZSIM_BUFF_GRAPH_SMOKE_API_PORT ?? '8000');
 const debugPort = Number(process.env.ZSIM_BUFF_GRAPH_SMOKE_DEBUG_PORT ?? '9223');
+const runParityMatrix = process.argv.includes('--run-parity-matrix');
 const graphStore = new Map();
 const requestLog = [];
+let matrixRunPayload;
+
+const matrixContract = {
+  status: 'not_available',
+  reason: 'UI smoke matrix fixture is not the full campaign parity matrix.',
+  required_command: 'cd electron-app; pnpm smoke:buff-graph:electron -- --run-parity-matrix',
+  evidence_path:
+    'scripts/buff_agents/evidence/buff-20260702-buffxlogic-react-flow-visual-authoring/ui-driven-full-simulation-matrix.json',
+  command_status: 'runner_required',
+  run_id: null,
+  ui_driven: true,
+  full_simulation_matrix: true,
+  full_parity_verified: false,
+  matrix_scope: [
+    'react-flow-ui-open-edit-save-validate',
+    'react-flow-ui-initiated-parity',
+    'all-runnable-apl-config-matrix',
+    'gap-dedicated-trigger-scenarios',
+    'legacy-python-xlogic-vs-graph-runtime',
+  ],
+};
 
 const json = (res, status, payload) => {
   const body = JSON.stringify(payload);
@@ -74,12 +96,22 @@ const server = createServer(async (req, res) => {
 
     if (req.method === 'GET' && url.pathname === '/api/buff-graphs/parity/matrix') {
       json(res, 200, {
-        data: {
-          status: 'not_available',
-          reason: 'UI smoke matrix fixture is not the full campaign parity matrix.',
-          required_command: 'cd electron-app; npm run build; node scripts/smoke-buff-graph-electron.mjs',
-        },
+        data: matrixContract,
       });
+      return;
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/buff-graphs/parity/matrix/run') {
+      matrixRunPayload = {
+        ...matrixContract,
+        status: 'run_requested',
+        reason:
+          'UI smoke matrix run request accepted by fixture backend; this is not full parity evidence.',
+        command_status: 'request_recorded',
+        run_id:
+          'buff-20260702-buffxlogic-react-flow-visual-authoring:ui-driven-full-simulation-matrix',
+      };
+      json(res, 200, { data: matrixRunPayload });
       return;
     }
 
@@ -376,7 +408,40 @@ app.on('window-all-closed', () => app.quit());
   assert.equal(hasForbiddenCodeNode(saved), false);
   assert.ok(requestLog.includes('POST /api/buff-graphs/ui-smoke-graph/parity'));
 
-  console.log('[buff-graph-smoke] passed');
+  if (runParityMatrix) {
+    await evaluate(`window.location.hash = '#buff-graph:matrix'; true`);
+    await waitFor('BuffGraph matrix view', () =>
+      evaluate(`Boolean(document.querySelector('[data-buff-graph-view="parity-matrix"]'))`),
+    );
+
+    await evaluate(`
+      (() => {
+        const button = [...document.querySelectorAll('button')].find(item =>
+          (item.textContent || '').trim() === 'Run Matrix',
+        );
+        if (!button) throw new Error('Run Matrix button missing');
+        button.click();
+        return true;
+      })()
+    `);
+
+    await waitFor('matrix run request result', () =>
+      evaluate(`
+        (() => {
+          const text = document.body.innerText || '';
+          return text.includes('run_requested') &&
+            text.includes('ui-driven-full-simulation-matrix') &&
+            text.includes('full_parity_verified: false');
+        })()
+      `),
+    );
+
+    assert.ok(requestLog.includes('POST /api/buff-graphs/parity/matrix/run'));
+    assert.equal(matrixRunPayload?.status, 'run_requested');
+    assert.equal(matrixRunPayload?.full_parity_verified, false);
+  }
+
+  console.log(runParityMatrix ? '[buff-graph-smoke] matrix request passed' : '[buff-graph-smoke] passed');
 };
 
 try {

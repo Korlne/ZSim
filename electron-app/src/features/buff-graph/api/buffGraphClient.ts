@@ -85,9 +85,16 @@ export type BuffGraphParityResult = {
 };
 
 export type BuffGraphParityMatrix = {
-  status: 'not_available';
+  status: 'not_available' | 'run_requested';
   reason: string;
-  required_command?: string | null;
+  required_command: string;
+  evidence_path: string;
+  command_status: 'runner_required' | 'request_recorded';
+  run_id?: string | null;
+  ui_driven: boolean;
+  full_simulation_matrix: boolean;
+  full_parity_verified: boolean;
+  matrix_scope: string[];
 };
 
 export class BuffGraphApiError extends Error {
@@ -253,13 +260,27 @@ const normalizeCatalog = (payload: unknown): BuffGraphMigrationCatalog => {
 
 const normalizeMatrix = (payload: unknown): BuffGraphParityMatrix => {
   const item = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>;
+  const status = item.status === 'run_requested' ? 'run_requested' : 'not_available';
+  const commandStatus =
+    item.command_status === 'request_recorded' ? 'request_recorded' : 'runner_required';
   return {
-    status: 'not_available',
+    status,
     reason: String(item.reason ?? 'Parity matrix is not available yet.'),
     required_command:
       item.required_command === undefined || item.required_command === null
-        ? undefined
+        ? ''
         : String(item.required_command),
+    evidence_path:
+      item.evidence_path === undefined || item.evidence_path === null
+        ? ''
+        : String(item.evidence_path),
+    command_status: commandStatus,
+    run_id:
+      item.run_id === undefined || item.run_id === null ? undefined : String(item.run_id),
+    ui_driven: item.ui_driven === true,
+    full_simulation_matrix: item.full_simulation_matrix === true,
+    full_parity_verified: item.full_parity_verified === true,
+    matrix_scope: Array.isArray(item.matrix_scope) ? item.matrix_scope.map(String) : [],
   };
 };
 
@@ -303,5 +324,10 @@ export const buffGraphClient = {
   async getParityMatrix(): Promise<BuffGraphParityMatrix> {
     const response = await requireApiClient().get('/api/buff-graphs/parity/matrix');
     return normalizeMatrix(parseDataResponse<unknown>(response, 'Read Buff graph parity matrix'));
+  },
+
+  async requestParityMatrixRun(): Promise<BuffGraphParityMatrix> {
+    const response = await requireApiClient().post('/api/buff-graphs/parity/matrix/run');
+    return normalizeMatrix(parseDataResponse<unknown>(response, 'Request Buff graph parity matrix'));
   },
 };
