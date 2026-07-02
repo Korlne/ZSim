@@ -45,5 +45,23 @@ EFFECT_BLOCKS = (
         output_ports=(BlockPort("binding", "Binding", "prepared_record_binding"),),
         param_schema={"record_key": "string"},
     ),
+    BuffGraphBlockDefinition(
+        block_id="effect.register_listener",
+        family=NodeFamily.EFFECT,
+        display_name="Register Listener",
+        adapter_id="effect.register_listener.v1",
+        input_ports=(BlockPort("context", "Context", "prepared_context"),),
+        output_ports=(BlockPort("listener_registration", "Listener Registration", "effect_result"),),
+        param_schema={"listener_key": "string", "source_buff_index": "string"},
+    ),
+    BuffGraphBlockDefinition(
+        block_id="effect.consume_listener_signal",
+        family=NodeFamily.EFFECT,
+        display_name="Consume Listener Signal",
+        adapter_id="effect.consume_listener_signal.v1",
+        input_ports=(BlockPort("listener_signal", "Listener Signal", "listener_signal"),),
+        output_ports=(BlockPort("listener_consumption", "Listener Consumption", "effect_result"),),
+        param_schema={"listener_key": "string", "consume": "bool"},
+    ),
 )
 
