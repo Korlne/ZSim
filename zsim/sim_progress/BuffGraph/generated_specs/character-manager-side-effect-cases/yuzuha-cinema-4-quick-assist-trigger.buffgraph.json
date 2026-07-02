@@ -1,0 +1,153 @@
+{
+  "schema": "zsim-buffgraph-generated-spec.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "character-manager-side-effect-cases",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema4QuickAssistTrigger.py",
+  "runtime_status_note": "legacy_python remains default; generated spec is candidate evidence only.",
+  "spec": {
+    "schema_version": "buff-graph-spec.v1",
+    "node_library_version": "buff-graph-node-library.v1",
+    "adapter_contract_version": "buff-graph-adapter-contract.v1",
+    "graph_id": "yuzuha-cinema-4-quick-assist-trigger",
+    "display_name": "YuzuhaCinema4QuickAssistTrigger",
+    "owner_kind": "unknown",
+    "owner_name": "YuzuhaCinema4QuickAssistTrigger",
+    "source_buff_index": null,
+    "created_from_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema4QuickAssistTrigger.py",
+    "runtime_status": "legacy_python",
+    "nodes": [
+      {
+        "node_id": "condition-skill-tag-in",
+        "family": "condition",
+        "block_id": "condition.skill_tag_in",
+        "adapter_id": "condition.skill_tag_in.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema4QuickAssistTrigger.py",
+          "unsupported_pattern_ids": [
+            "character_manager_side_effect"
+          ],
+          "skill_tags": [
+            "legacy_source_review_required"
+          ]
+        },
+        "display_name": "Skill Tag In"
+      },
+      {
+        "node_id": "condition-hit-frame",
+        "family": "condition",
+        "block_id": "condition.hit_frame",
+        "adapter_id": "condition.hit_frame.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema4QuickAssistTrigger.py",
+          "unsupported_pattern_ids": [
+            "character_manager_side_effect"
+          ],
+          "require_last_hit": true
+        },
+        "display_name": "Hit Frame"
+      },
+      {
+        "node_id": "read-next-team-member",
+        "family": "read",
+        "block_id": "read.next_team_member",
+        "adapter_id": "read.next_team_member.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema4QuickAssistTrigger.py",
+          "unsupported_pattern_ids": [
+            "character_manager_side_effect"
+          ],
+          "offset": 1
+        },
+        "display_name": "Next Team Member"
+      },
+      {
+        "node_id": "state-last-observed-skill",
+        "family": "state",
+        "block_id": "state.last_observed_skill",
+        "adapter_id": "state.last_observed_skill.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema4QuickAssistTrigger.py",
+          "unsupported_pattern_ids": [
+            "character_manager_side_effect"
+          ],
+          "state_key": "yuzuha-cinema-4-quick-assist-trigger",
+          "signal_key": "yuzuha-cinema-4-quick-assist-trigger",
+          "scheduled_tick": 0
+        },
+        "display_name": "Last Observed Skill"
+      },
+      {
+        "node_id": "effect-force-quick-assist",
+        "family": "effect",
+        "block_id": "effect.force_quick_assist",
+        "adapter_id": "effect.force_quick_assist.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema4QuickAssistTrigger.py",
+          "unsupported_pattern_ids": [
+            "character_manager_side_effect"
+          ],
+          "payload": {
+            "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema4QuickAssistTrigger.py"
+          },
+          "target": "legacy_source_review_required"
+        },
+        "display_name": "Force Quick Assist Intent"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge-0",
+        "source_node_id": "condition-skill-tag-in",
+        "target_node_id": "condition-hit-frame",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-1",
+        "source_node_id": "condition-hit-frame",
+        "target_node_id": "read-next-team-member",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-2",
+        "source_node_id": "read-next-team-member",
+        "target_node_id": "state-last-observed-skill",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-3",
+        "source_node_id": "state-last-observed-skill",
+        "target_node_id": "effect-force-quick-assist",
+        "source_port": "out",
+        "target_port": "in"
+      }
+    ],
+    "params": {
+      "migration_wave": "character-manager-side-effect-cases",
+      "scout_work_pack": "scout-character-manager-unblocked-gap-index",
+      "legacy_semantic_review_required": true,
+      "intent_only_character_side_effect_blocks": true
+    },
+    "parity_metadata": {
+      "parity_status": "not_run",
+      "candidate_only": true,
+      "unblocked_by": [
+        "shared-helper-character-manager-side-effect-intents"
+      ],
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_block_ids": [
+        "condition.skill_tag_in",
+        "condition.hit_frame",
+        "read.next_team_member",
+        "state.last_observed_skill",
+        "effect.force_quick_assist"
+      ]
+    },
+    "last_parity_baseline": null,
+    "last_verified_at": null
+  }
+}

@@ -1,46 +1,57 @@
 {
   "schema": "zsim-buffgraph-generated-spec-manifest.v1",
   "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
-  "migration_wave": "remaining-unsupported-patterns",
+  "migration_wave": "character-manager-side-effect-cases",
   "runtime_status": "legacy_python",
-  "status": "blocked_by_missing_controlled_blocks",
-  "status_note": "17 character-manager/additional-attack cases moved to generated candidate specs in migration-character-manager-unblocked-generated-specs; legacy Python XLogic remains runtime default/fallback/oracle.",
-  "current_non_helper_xlogic_count": 150,
-  "generated_spec_source_count": 132,
-  "unsupported_case_count": 18,
+  "status": "generated_candidate_partial",
+  "status_note": "Character-manager/additional-attack candidate BuffGraphSpec files generated for Scout-proven cases whose required ids are current controlled registry blocks. Effect blocks are intent-only; legacy Python remains default.",
+  "generated_specs": [
+    "alice-cinema-6-trigger.buffgraph.json",
+    "astra-yao-chord-manager-trigger.buffgraph.json",
+    "astra-yao-quick-assist-manager-trigger.buffgraph.json",
+    "cinder-cobalt-atk-bonus.buffgraph.json",
+    "heartstring-nocturne.buffgraph.json",
+    "hormone-punk-atk-bonus.buffgraph.json",
+    "hugo-additional-ability-extra-qte-dmg-bonus.buffgraph.json",
+    "street-superstar.buffgraph.json",
+    "trigger-after-shock-trigger.buffgraph.json",
+    "vivian-additional-ability-co-attack-trigger.buffgraph.json",
+    "vivian-coattack-trigger.buffgraph.json",
+    "vivian-feather-trigger.buffgraph.json",
+    "yanagi-stance-jougen.buffgraph.json",
+    "yanagi-stance-kagen.buffgraph.json",
+    "yixuan-cinema-1-trigger.buffgraph.json",
+    "yuzuha-cinema-4-quick-assist-trigger.buffgraph.json",
+    "yuzuha-cinema-6-sugar-burst-max-trigger.buffgraph.json"
+  ],
   "unsupported_patterns": [
     "character_manager_side_effect",
     "enemy_anomaly_or_dot_read",
-    "runtime_command_or_scheduled_producer",
-    "wave-boundary-gap"
+    "runtime_command_or_scheduled_producer"
   ],
-  "required_future_block_ids": [
-    "compose.numeric_formula",
+  "required_block_ids": [
+    "condition.character_state",
+    "condition.cooldown_ready",
     "condition.enemy_state",
     "condition.hit_frame",
-    "condition.numeric_compare",
-    "condition.operating_character",
-    "condition.skill_owner",
+    "condition.preload_tick",
+    "condition.skill_owner_not_self",
     "condition.skill_tag_in",
     "condition.skill_trigger_level",
     "condition.tick_window",
     "effect.emit_scheduled_event",
+    "effect.external_add_skill",
     "effect.force_quick_assist",
     "effect.issue_allowed_runtime_command",
     "effect.issue_runtime_command",
-    "effect.publish_resource_refresh",
-    "effect.register_dot_runtime",
-    "effect.spawn_anomaly_output",
     "effect.spawn_coattack",
     "effect.spawn_extra_attack",
+    "effect.spawn_planned_skill_node",
     "effect.start_buff",
-    "effect.start_dot",
-    "effect.update_buff_count",
     "effect.update_character_manager",
+    "effect.update_character_resource",
     "effect.update_template_buff",
-    "read.calculator_attribute",
-    "read.current_action",
-    "read.dot_runtime_state",
+    "read.current_tick",
     "read.enemy_anomaly_bar",
     "read.enemy_anomaly_state",
     "read.enemy_context",
@@ -48,73 +59,15 @@
     "read.prepared_equipper",
     "read.prepared_owner",
     "read.prepared_template_buff",
-    "read.refinement",
     "read.skill_node",
-    "scout.semantic_source_review",
-    "state.anomaly_signal",
     "state.cooldown_gate",
-    "state.counter",
     "state.last_observed_enemy_state",
     "state.last_observed_skill",
     "state.scheduled_signal"
   ],
-  "primary_wave_counts": {
-    "anomaly-dot-adjacent-cases": 7,
-    "calculator-runtime-read-buffs": 3,
-    "enemy-state-edge-triggers": 3,
-    "runtime-command-scheduled-producers": 5
-  },
-  "unsupported_pattern_counts": {
-    "character_manager_side_effect": 1,
-    "enemy_anomaly_or_dot_read": 14,
-    "runtime_command_or_scheduled_producer": 7,
-    "wave-boundary-gap": 1
-  },
-  "required_future_block_counts": {
-    "read.enemy_anomaly_state": 11,
-    "read.enemy_context": 10,
-    "read.enemy_anomaly_bar": 9,
-    "effect.spawn_anomaly_output": 9,
-    "condition.enemy_state": 8,
-    "read.dot_runtime_state": 8,
-    "effect.start_dot": 8,
-    "state.anomaly_signal": 8,
-    "state.last_observed_enemy_state": 7,
-    "effect.start_buff": 5,
-    "effect.emit_scheduled_event": 5,
-    "read.prepared_owner": 5,
-    "read.prepared_equipper": 5,
-    "read.prepared_template_buff": 5,
-    "effect.update_template_buff": 5,
-    "read.calculator_attribute": 4,
-    "condition.hit_frame": 4,
-    "effect.issue_allowed_runtime_command": 4,
-    "condition.numeric_compare": 3,
-    "compose.numeric_formula": 3,
-    "effect.update_buff_count": 3,
-    "condition.skill_tag_in": 3,
-    "effect.publish_resource_refresh": 3,
-    "state.cooldown_gate": 2,
-    "effect.issue_runtime_command": 2,
-    "condition.tick_window": 2,
-    "read.skill_node": 2,
-    "state.scheduled_signal": 2,
-    "state.last_observed_skill": 1,
-    "read.refinement": 1,
-    "condition.operating_character": 1,
-    "condition.skill_owner": 1,
-    "condition.skill_trigger_level": 1,
-    "read.current_action": 1,
-    "effect.spawn_extra_attack": 1,
-    "effect.spawn_coattack": 1,
-    "effect.force_quick_assist": 1,
-    "effect.update_character_manager": 1,
-    "read.next_team_member": 1,
-    "effect.register_dot_runtime": 1,
-    "state.counter": 1,
-    "scout.semantic_source_review": 1
-  },
-  "unsupported_cases": [
+  "generated_spec_count": 17,
+  "blocked_case_count": 18,
+  "near_unblocked_cases": [
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
       "primary_wave": "calculator-runtime-read-buffs",
@@ -129,9 +82,15 @@
         "effect.start_buff",
         "effect.update_buff_count"
       ],
+      "missing_block_ids": [
+        "read.calculator_attribute",
+        "condition.numeric_compare",
+        "compose.numeric_formula"
+      ],
+      "missing_block_count": 3,
       "reason": "Legacy logic reads anomaly mastery through calculator runtime context with enemy and character, checks the 140 threshold, and converts the excess into Buff count. Graph support needs controlled enemy context, calculator attribute, comparison, formula, and Buff count write blocks.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AlicePolarizedAssaultTrigger.py",
@@ -150,17 +109,17 @@
         "read.enemy_anomaly_state",
         "effect.issue_allowed_runtime_command"
       ],
+      "missing_block_ids": [
+        "effect.spawn_anomaly_output"
+      ],
+      "missing_block_count": 1,
       "reason": "Legacy logic gates on skill tag and final hit, deep-copies an enemy anomaly bar, stamps trigger origin, builds PolarizedAssaultEvent, and emits it. | Legacy logic builds a PolarizedAssaultEvent from copied enemy anomaly state and emits it through the scheduled-event port.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/dot_runtime_state_read.py",
       "primary_wave": "anomaly-dot-adjacent-cases",
-      "all_candidate_waves": [
-        "enemy-state-edge-triggers",
-        "anomaly-dot-adjacent-cases"
-      ],
       "unsupported_pattern_ids": [
         "enemy_anomaly_or_dot_read"
       ],
@@ -175,10 +134,14 @@
         "effect.spawn_anomaly_output",
         "state.anomaly_signal"
       ],
+      "missing_block_ids": [
+        "effect.start_dot",
+        "effect.spawn_anomaly_output"
+      ],
+      "missing_block_count": 2,
       "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
-      "recommended_next_action": "write_explicit_unsupported_manifest_case",
-      "evidence_source": "scout-xlogic-missing-coverage-classification",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/ElegantVanitySpRecover.py",
@@ -192,17 +155,18 @@
         "effect.publish_resource_refresh",
         "effect.issue_allowed_runtime_command"
       ],
+      "missing_block_ids": [
+        "read.refinement",
+        "effect.publish_resource_refresh"
+      ],
+      "missing_block_count": 2,
       "reason": "Legacy logic starts the Buff and publishes an energy refresh command based on W-Engine refinement.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_read.py",
       "primary_wave": "enemy-state-edge-triggers",
-      "all_candidate_waves": [
-        "enemy-state-edge-triggers",
-        "anomaly-dot-adjacent-cases"
-      ],
       "unsupported_pattern_ids": [
         "enemy_anomaly_or_dot_read"
       ],
@@ -217,19 +181,18 @@
         "effect.spawn_anomaly_output",
         "state.anomaly_signal"
       ],
+      "missing_block_ids": [
+        "effect.start_dot",
+        "effect.spawn_anomaly_output"
+      ],
+      "missing_block_count": 2,
       "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
-      "recommended_next_action": "write_explicit_unsupported_manifest_case",
-      "evidence_source": "scout-xlogic-missing-coverage-classification",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/MiyabiAdditionalAbility_IgnoreIceRes.py",
       "primary_wave": "anomaly-dot-adjacent-cases",
-      "all_candidate_waves": [
-        "enemy-state-edge-triggers",
-        "anomaly-dot-adjacent-cases",
-        "dynamic-owner-equipper-cases"
-      ],
       "unsupported_pattern_ids": [
         "enemy_anomaly_or_dot_read"
       ],
@@ -248,10 +211,14 @@
         "read.prepared_template_buff",
         "effect.update_template_buff"
       ],
+      "missing_block_ids": [
+        "effect.start_dot",
+        "effect.spawn_anomaly_output"
+      ],
+      "missing_block_count": 2,
       "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
-      "recommended_next_action": "write_explicit_unsupported_manifest_case",
-      "evidence_source": "scout-xlogic-missing-coverage-classification",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/QingYiAdditionalAbilityStunConvertToATK.py",
@@ -266,9 +233,14 @@
         "effect.start_buff",
         "effect.update_buff_count"
       ],
+      "missing_block_ids": [
+        "read.calculator_attribute",
+        "compose.numeric_formula"
+      ],
+      "missing_block_count": 2,
       "reason": "Legacy logic reads impact through calculator runtime context with enemy and character, subtracts the template step, applies the conversion, and caps the result by max Buff count.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
@@ -284,9 +256,13 @@
         "effect.publish_resource_refresh",
         "effect.issue_allowed_runtime_command"
       ],
+      "missing_block_ids": [
+        "effect.publish_resource_refresh"
+      ],
+      "missing_block_count": 1,
       "reason": "Legacy logic publishes a resource refresh through ResourceRefreshCommandPort after owner, hit-frame, and cooldown gates.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SliceofTimeExtraResources.py",
@@ -302,9 +278,14 @@
         "effect.publish_resource_refresh",
         "effect.issue_allowed_runtime_command"
       ],
+      "missing_block_ids": [
+        "read.current_action",
+        "effect.publish_resource_refresh"
+      ],
+      "missing_block_count": 2,
       "reason": "Legacy logic starts a visible Buff, computes energy and decibel values from refinement and trigger level, then publishes a scheduled refresh command.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/TimeweaverDisorderDmgMul.py",
@@ -317,18 +298,18 @@
         "read.calculator_attribute",
         "condition.numeric_compare"
       ],
+      "missing_block_ids": [
+        "read.calculator_attribute",
+        "condition.numeric_compare"
+      ],
+      "missing_block_count": 2,
       "reason": "Legacy logic uses an enemy-aware calculator runtime read context and compares anomaly proficiency. | Current integration worktree logic creates a calculator runtime read context with enemy and character, then compares anomaly proficiency; clean branches may still see the legacy ScheduledEvent import and classify this as an additional scheduled-producer gap. Graph support needs enemy-aware calculator read blocks either way.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianCinema1Debuff.py",
       "primary_wave": "anomaly-dot-adjacent-cases",
-      "all_candidate_waves": [
-        "enemy-state-edge-triggers",
-        "anomaly-dot-adjacent-cases",
-        "dynamic-owner-equipper-cases"
-      ],
       "unsupported_pattern_ids": [
         "enemy_anomaly_or_dot_read"
       ],
@@ -347,22 +328,18 @@
         "read.prepared_template_buff",
         "effect.update_template_buff"
       ],
+      "missing_block_ids": [
+        "effect.start_dot",
+        "effect.spawn_anomaly_output"
+      ],
+      "missing_block_count": 2,
       "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
-      "recommended_next_action": "write_explicit_unsupported_manifest_case",
-      "evidence_source": "scout-xlogic-missing-coverage-classification",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianCinema6Trigger.py",
       "primary_wave": "runtime-command-scheduled-producers",
-      "all_candidate_waves": [
-        "runtime-command-scheduled-producers",
-        "enemy-state-edge-triggers",
-        "additional-attack-side-effects",
-        "multi-wave-composed-xlogic",
-        "anomaly-dot-adjacent-cases",
-        "dynamic-owner-equipper-cases"
-      ],
       "unsupported_pattern_ids": [
         "runtime_command_or_scheduled_producer",
         "enemy_anomaly_or_dot_read",
@@ -393,21 +370,18 @@
         "read.prepared_template_buff",
         "effect.update_template_buff"
       ],
+      "missing_block_ids": [
+        "effect.start_dot",
+        "effect.spawn_anomaly_output"
+      ],
+      "missing_block_count": 2,
       "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Classifier reported unsupported pattern character_manager_side_effect.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
-      "recommended_next_action": "write_explicit_unsupported_manifest_case",
-      "evidence_source": "scout-xlogic-missing-coverage-classification",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianCorePassiveTrigger.py",
       "primary_wave": "runtime-command-scheduled-producers",
-      "all_candidate_waves": [
-        "runtime-command-scheduled-producers",
-        "enemy-state-edge-triggers",
-        "multi-wave-composed-xlogic",
-        "anomaly-dot-adjacent-cases",
-        "dynamic-owner-equipper-cases"
-      ],
       "unsupported_pattern_ids": [
         "runtime_command_or_scheduled_producer",
         "enemy_anomaly_or_dot_read"
@@ -432,10 +406,14 @@
         "read.prepared_template_buff",
         "effect.update_template_buff"
       ],
+      "missing_block_ids": [
+        "effect.start_dot",
+        "effect.spawn_anomaly_output"
+      ],
+      "missing_block_count": 2,
       "reason": "Classifier reported unsupported pattern runtime_command_or_scheduled_producer.; Classifier reported unsupported pattern enemy_anomaly_or_dot_read.; Multiple unsupported surfaces appear in one file; use shared-helper blocks first, then a wave-specific migration pack.",
-      "recommended_next_action": "write_explicit_unsupported_manifest_case",
-      "evidence_source": "scout-xlogic-missing-coverage-classification",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py",
@@ -454,18 +432,18 @@
         "effect.register_dot_runtime",
         "effect.emit_scheduled_event"
       ],
+      "missing_block_ids": [
+        "effect.start_dot",
+        "effect.register_dot_runtime"
+      ],
+      "missing_block_count": 2,
       "reason": "Legacy logic requires active enemy anomaly, DOT runtime lookup/registration, DOT start timing, and scheduled emission. | Legacy logic reads enemy anomaly state and DOT runtime state, starts DOT runtime, and emits a scheduled event; graph support needs controlled DOT and scheduled-event blocks.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/WeepingGeminiApBonus.py",
       "primary_wave": "enemy-state-edge-triggers",
-      "all_candidate_waves": [
-        "enemy-state-edge-triggers",
-        "anomaly-dot-adjacent-cases",
-        "dynamic-owner-equipper-cases"
-      ],
       "unsupported_pattern_ids": [
         "enemy_anomaly_or_dot_read"
       ],
@@ -484,10 +462,14 @@
         "read.prepared_template_buff",
         "effect.update_template_buff"
       ],
+      "missing_block_ids": [
+        "effect.start_dot",
+        "effect.spawn_anomaly_output"
+      ],
+      "missing_block_count": 2,
       "reason": "Classifier reported unsupported pattern enemy_anomaly_or_dot_read.",
-      "recommended_next_action": "write_explicit_unsupported_manifest_case",
-      "evidence_source": "scout-xlogic-missing-coverage-classification",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
@@ -505,9 +487,14 @@
         "effect.spawn_anomaly_output",
         "effect.emit_scheduled_event"
       ],
+      "missing_block_ids": [
+        "state.counter",
+        "effect.spawn_anomaly_output"
+      ],
+      "missing_block_count": 2,
       "reason": "Legacy logic records a polarity-disorder signal from active enemy anomaly, counts qualifying E hits, settles a copied anomaly bar, spawns output, and emits it.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyBuildupBonus.py",
@@ -523,27 +510,79 @@
         "effect.start_buff",
         "effect.update_buff_count"
       ],
+      "missing_block_ids": [
+        "read.calculator_attribute",
+        "condition.numeric_compare",
+        "compose.numeric_formula"
+      ],
+      "missing_block_count": 3,
       "reason": "Legacy logic reads anomaly mastery through calculator runtime context, checks the 100 threshold, applies cinema-dependent conversion, and writes capped Buff count.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
       "primary_wave": "enemy-state-edge-triggers",
-      "all_candidate_waves": [
-        "enemy-state-edge-triggers",
-        "additional-attack-side-effects",
-        "runtime-command-scheduled-producers"
-      ],
       "unsupported_pattern_ids": [
         "wave-boundary-gap"
       ],
       "required_future_block_ids": [
         "scout.semantic_source_review"
       ],
+      "missing_block_ids": [
+        "scout.semantic_source_review"
+      ],
+      "missing_block_count": 1,
       "reason": "This trigger combines enemy stun reads, QTE mutation, schedule process-state notification, cooldown memory, and skill-node signal state; it needs explicit controlled blocks, not an arbitrary code node.",
-      "evidence_source": "generated-spec-boundary-gap",
-      "legacy_runtime_status": "legacy_python"
+      "legacy_runtime_status": "legacy_python",
+      "unblock_status": "near_unblocked"
     }
-  ]
+  ],
+  "top_missing_block_ids": [
+    {
+      "block_id": "effect.spawn_anomaly_output",
+      "case_count": 9
+    },
+    {
+      "block_id": "effect.start_dot",
+      "case_count": 8
+    },
+    {
+      "block_id": "read.calculator_attribute",
+      "case_count": 4
+    },
+    {
+      "block_id": "condition.numeric_compare",
+      "case_count": 3
+    },
+    {
+      "block_id": "compose.numeric_formula",
+      "case_count": 3
+    },
+    {
+      "block_id": "effect.publish_resource_refresh",
+      "case_count": 3
+    },
+    {
+      "block_id": "read.refinement",
+      "case_count": 1
+    },
+    {
+      "block_id": "read.current_action",
+      "case_count": 1
+    },
+    {
+      "block_id": "effect.register_dot_runtime",
+      "case_count": 1
+    },
+    {
+      "block_id": "state.counter",
+      "case_count": 1
+    },
+    {
+      "block_id": "scout.semantic_source_review",
+      "case_count": 1
+    }
+  ],
+  "runtime_status_note": "All specs remain legacy_python candidate evidence until focused parity, UI-driven parity, and full matrix validation pass."
 }

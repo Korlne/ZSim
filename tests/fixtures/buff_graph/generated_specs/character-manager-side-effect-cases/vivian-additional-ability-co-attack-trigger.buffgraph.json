@@ -1,0 +1,180 @@
+{
+  "schema": "zsim-buffgraph-generated-spec.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "character-manager-side-effect-cases",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianAdditionalAbilityCoAttackTrigger.py",
+  "runtime_status_note": "legacy_python remains default; generated spec is candidate evidence only.",
+  "spec": {
+    "schema_version": "buff-graph-spec.v1",
+    "node_library_version": "buff-graph-node-library.v1",
+    "adapter_contract_version": "buff-graph-adapter-contract.v1",
+    "graph_id": "vivian-additional-ability-co-attack-trigger",
+    "display_name": "VivianAdditionalAbilityCoAttackTrigger",
+    "owner_kind": "unknown",
+    "owner_name": "VivianAdditionalAbilityCoAttackTrigger",
+    "source_buff_index": null,
+    "created_from_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianAdditionalAbilityCoAttackTrigger.py",
+    "runtime_status": "legacy_python",
+    "nodes": [
+      {
+        "node_id": "read-enemy-anomaly-state",
+        "family": "read",
+        "block_id": "read.enemy_anomaly_state",
+        "adapter_id": "read.enemy_anomaly_state.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianAdditionalAbilityCoAttackTrigger.py",
+          "unsupported_pattern_ids": [
+            "character_manager_side_effect"
+          ],
+          "anomaly_key": "legacy_source_review_required",
+          "element": "legacy_source_review_required"
+        },
+        "display_name": "Enemy Anomaly State"
+      },
+      {
+        "node_id": "condition-skill-owner-not-self",
+        "family": "condition",
+        "block_id": "condition.skill_owner_not_self",
+        "adapter_id": "condition.skill_owner_not_self.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianAdditionalAbilityCoAttackTrigger.py",
+          "unsupported_pattern_ids": [
+            "character_manager_side_effect"
+          ],
+          "self_owner": "legacy_source_review_required"
+        },
+        "display_name": "Skill Owner Not Self"
+      },
+      {
+        "node_id": "condition-cooldown-ready",
+        "family": "condition",
+        "block_id": "condition.cooldown_ready",
+        "adapter_id": "condition.cooldown_ready.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianAdditionalAbilityCoAttackTrigger.py",
+          "unsupported_pattern_ids": [
+            "character_manager_side_effect"
+          ],
+          "cooldown_key": "vivian-additional-ability-co-attack-trigger",
+          "cooldown_ticks": 0
+        },
+        "display_name": "Cooldown Ready"
+      },
+      {
+        "node_id": "state-last-observed-enemy-state",
+        "family": "state",
+        "block_id": "state.last_observed_enemy_state",
+        "adapter_id": "state.last_observed_enemy_state.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianAdditionalAbilityCoAttackTrigger.py",
+          "unsupported_pattern_ids": [
+            "character_manager_side_effect"
+          ],
+          "state_key": "vivian-additional-ability-co-attack-trigger",
+          "signal_key": "vivian-additional-ability-co-attack-trigger",
+          "scheduled_tick": 0
+        },
+        "display_name": "Last Observed Enemy State"
+      },
+      {
+        "node_id": "effect-spawn-coattack",
+        "family": "effect",
+        "block_id": "effect.spawn_coattack",
+        "adapter_id": "effect.spawn_coattack.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianAdditionalAbilityCoAttackTrigger.py",
+          "unsupported_pattern_ids": [
+            "character_manager_side_effect"
+          ],
+          "payload": {
+            "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianAdditionalAbilityCoAttackTrigger.py"
+          },
+          "target": "legacy_source_review_required",
+          "skill_tag": "legacy_source_review_required"
+        },
+        "display_name": "Spawn Coattack Intent"
+      },
+      {
+        "node_id": "effect-external-add-skill",
+        "family": "effect",
+        "block_id": "effect.external_add_skill",
+        "adapter_id": "effect.external_add_skill.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianAdditionalAbilityCoAttackTrigger.py",
+          "unsupported_pattern_ids": [
+            "character_manager_side_effect"
+          ],
+          "payload": {
+            "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianAdditionalAbilityCoAttackTrigger.py"
+          },
+          "target": "legacy_source_review_required",
+          "skill_tag": "legacy_source_review_required"
+        },
+        "display_name": "External Add Skill Intent"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge-0",
+        "source_node_id": "read-enemy-anomaly-state",
+        "target_node_id": "condition-skill-owner-not-self",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-1",
+        "source_node_id": "condition-skill-owner-not-self",
+        "target_node_id": "condition-cooldown-ready",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-2",
+        "source_node_id": "condition-cooldown-ready",
+        "target_node_id": "state-last-observed-enemy-state",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-3",
+        "source_node_id": "state-last-observed-enemy-state",
+        "target_node_id": "effect-spawn-coattack",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-4",
+        "source_node_id": "effect-spawn-coattack",
+        "target_node_id": "effect-external-add-skill",
+        "source_port": "out",
+        "target_port": "in"
+      }
+    ],
+    "params": {
+      "migration_wave": "character-manager-side-effect-cases",
+      "scout_work_pack": "scout-character-manager-unblocked-gap-index",
+      "legacy_semantic_review_required": true,
+      "intent_only_character_side_effect_blocks": true
+    },
+    "parity_metadata": {
+      "parity_status": "not_run",
+      "candidate_only": true,
+      "unblocked_by": [
+        "shared-helper-character-manager-side-effect-intents"
+      ],
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_block_ids": [
+        "read.enemy_anomaly_state",
+        "condition.skill_owner_not_self",
+        "condition.cooldown_ready",
+        "state.last_observed_enemy_state",
+        "effect.spawn_coattack",
+        "effect.external_add_skill"
+      ]
+    },
+    "last_parity_baseline": null,
+    "last_verified_at": null
+  }
+}

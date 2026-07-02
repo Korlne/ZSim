@@ -1,0 +1,157 @@
+{
+  "schema": "zsim-buffgraph-generated-spec.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "character-manager-side-effect-cases",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/VivianCoattackTrigger.py",
+  "runtime_status_note": "legacy_python remains default; generated spec is candidate evidence only.",
+  "spec": {
+    "schema_version": "buff-graph-spec.v1",
+    "node_library_version": "buff-graph-node-library.v1",
+    "adapter_contract_version": "buff-graph-adapter-contract.v1",
+    "graph_id": "vivian-coattack-trigger",
+    "display_name": "VivianCoattackTrigger",
+    "owner_kind": "unknown",
+    "owner_name": "VivianCoattackTrigger",
+    "source_buff_index": null,
+    "created_from_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianCoattackTrigger.py",
+    "runtime_status": "legacy_python",
+    "nodes": [
+      {
+        "node_id": "condition-skill-trigger-level",
+        "family": "condition",
+        "block_id": "condition.skill_trigger_level",
+        "adapter_id": "condition.skill_trigger_level.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianCoattackTrigger.py",
+          "unsupported_pattern_ids": [
+            "character_manager_side_effect"
+          ],
+          "expected_level": 0,
+          "operator": "at_least"
+        },
+        "display_name": "Skill Trigger Level"
+      },
+      {
+        "node_id": "condition-hit-frame",
+        "family": "condition",
+        "block_id": "condition.hit_frame",
+        "adapter_id": "condition.hit_frame.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianCoattackTrigger.py",
+          "unsupported_pattern_ids": [
+            "character_manager_side_effect"
+          ],
+          "require_last_hit": true
+        },
+        "display_name": "Hit Frame"
+      },
+      {
+        "node_id": "state-last-observed-skill",
+        "family": "state",
+        "block_id": "state.last_observed_skill",
+        "adapter_id": "state.last_observed_skill.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianCoattackTrigger.py",
+          "unsupported_pattern_ids": [
+            "character_manager_side_effect"
+          ],
+          "state_key": "vivian-coattack-trigger",
+          "signal_key": "vivian-coattack-trigger",
+          "scheduled_tick": 0
+        },
+        "display_name": "Last Observed Skill"
+      },
+      {
+        "node_id": "effect-spawn-coattack",
+        "family": "effect",
+        "block_id": "effect.spawn_coattack",
+        "adapter_id": "effect.spawn_coattack.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianCoattackTrigger.py",
+          "unsupported_pattern_ids": [
+            "character_manager_side_effect"
+          ],
+          "payload": {
+            "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianCoattackTrigger.py"
+          },
+          "target": "legacy_source_review_required",
+          "skill_tag": "legacy_source_review_required"
+        },
+        "display_name": "Spawn Coattack Intent"
+      },
+      {
+        "node_id": "effect-external-add-skill",
+        "family": "effect",
+        "block_id": "effect.external_add_skill",
+        "adapter_id": "effect.external_add_skill.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianCoattackTrigger.py",
+          "unsupported_pattern_ids": [
+            "character_manager_side_effect"
+          ],
+          "payload": {
+            "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianCoattackTrigger.py"
+          },
+          "target": "legacy_source_review_required",
+          "skill_tag": "legacy_source_review_required"
+        },
+        "display_name": "External Add Skill Intent"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge-0",
+        "source_node_id": "condition-skill-trigger-level",
+        "target_node_id": "condition-hit-frame",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-1",
+        "source_node_id": "condition-hit-frame",
+        "target_node_id": "state-last-observed-skill",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-2",
+        "source_node_id": "state-last-observed-skill",
+        "target_node_id": "effect-spawn-coattack",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-3",
+        "source_node_id": "effect-spawn-coattack",
+        "target_node_id": "effect-external-add-skill",
+        "source_port": "out",
+        "target_port": "in"
+      }
+    ],
+    "params": {
+      "migration_wave": "character-manager-side-effect-cases",
+      "scout_work_pack": "scout-character-manager-unblocked-gap-index",
+      "legacy_semantic_review_required": true,
+      "intent_only_character_side_effect_blocks": true
+    },
+    "parity_metadata": {
+      "parity_status": "not_run",
+      "candidate_only": true,
+      "unblocked_by": [
+        "shared-helper-character-manager-side-effect-intents"
+      ],
+      "unsupported_pattern_ids": [
+        "character_manager_side_effect"
+      ],
+      "required_block_ids": [
+        "condition.skill_trigger_level",
+        "condition.hit_frame",
+        "state.last_observed_skill",
+        "effect.spawn_coattack",
+        "effect.external_add_skill"
+      ]
+    },
+    "last_parity_baseline": null,
+    "last_verified_at": null
+  }
+}
