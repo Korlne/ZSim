@@ -248,6 +248,27 @@ class RegisterDotRuntimeIntentEffectAdapter(StartDotIntentEffectAdapter):
         return BuffGraphAdapterResult(outputs={"dot_runtime_intent": intent})
 
 
+class PublishResourceRefreshIntentEffectAdapter:
+    adapter_id = "effect.publish_resource_refresh.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        enabled = _first_upstream_bool(context.inputs)
+        amount = context.node.params.get("amount")
+        upstream_value = _first_upstream_value(context.inputs, "value")
+        if amount is None and upstream_value is not None:
+            amount = upstream_value
+        intent = {
+            "intent_type": "resource_refresh",
+            "resource": context.node.params.get("resource"),
+            "amount": amount,
+            "payload": context.node.params.get("payload", {}),
+            "enabled": enabled,
+            "source_buff_index": context.node.params.get("source_buff_index")
+            or context.prepared_context.get("source_buff_index"),
+        }
+        return BuffGraphAdapterResult(outputs={"resource_refresh_intent": _without_none(intent)})
+
+
 def build_low_risk_effect_adapters() -> Mapping[str, object]:
     adapters = (StartBuffEffectAdapter(), UpdateBuffCountEffectAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
@@ -296,6 +317,11 @@ def build_dot_anomaly_output_effect_adapters() -> Mapping[str, object]:
         StartDotIntentEffectAdapter(),
         RegisterDotRuntimeIntentEffectAdapter(),
     )
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_calculator_runtime_formula_effect_adapters() -> Mapping[str, object]:
+    adapters = (PublishResourceRefreshIntentEffectAdapter(),)
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 

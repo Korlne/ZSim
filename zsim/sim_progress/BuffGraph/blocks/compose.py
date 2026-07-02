@@ -30,5 +30,21 @@ COMPOSE_BLOCKS = (
         input_ports=(BlockPort("condition", "Condition", "bool"),),
         output_ports=(BlockPort("result", "Result", "bool"),),
     ),
+    BuffGraphBlockDefinition(
+        block_id="compose.numeric_formula",
+        family=NodeFamily.COMPOSE,
+        display_name="Numeric Formula",
+        adapter_id="compose.numeric_formula.v1",
+        input_ports=(BlockPort("value", "Value", "number"),),
+        output_ports=(BlockPort("value", "Value", "number"),),
+        param_schema={
+            "operation": "numeric_formula_operation",
+            "subtract": "number",
+            "multiplier": "number",
+            "offset": "number",
+            "min_value": "number",
+            "max_value": "number",
+        },
+    ),
 )
 

@@ -346,6 +346,28 @@ class PreloadTickConditionAdapter:
         )
 
 
+class NumericCompareConditionAdapter:
+    adapter_id = "condition.numeric_compare.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        actual = _first_upstream_number(context.inputs)
+        if actual is None:
+            actual = _number(context.node.params.get("actual", 0))
+        expected = _number(
+            context.node.params.get("expected", context.node.params.get("threshold", 0))
+        )
+        operator = str(context.node.params.get("operator", ">="))
+        passed = _compare_float(actual, expected, operator)
+        return BuffGraphAdapterResult(
+            outputs={
+                "passed": passed,
+                "actual": actual,
+                "expected": expected,
+                "operator": operator,
+            }
+        )
+
+
 def build_low_risk_condition_adapters() -> Mapping[str, object]:
     adapters = (CharacterIdentityConditionAdapter(), BuffActiveConditionAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
@@ -385,6 +407,11 @@ def build_character_manager_side_effect_condition_adapters() -> Mapping[str, obj
         CooldownReadyConditionAdapter(),
         PreloadTickConditionAdapter(),
     )
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_calculator_runtime_formula_condition_adapters() -> Mapping[str, object]:
+    adapters = (NumericCompareConditionAdapter(),)
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 
@@ -441,6 +468,39 @@ def _compare(actual: int, expected: int, operator: str) -> bool:
     if operator in {"less_than", "<", "lt"}:
         return actual < expected
     return False
+
+
+def _compare_float(actual: float, expected: float, operator: str) -> bool:
+    if operator in {"equals", "==", "eq"}:
+        return actual == expected
+    if operator in {"not_equals", "!=", "ne"}:
+        return actual != expected
+    if operator in {"at_least", ">=", "gte"}:
+        return actual >= expected
+    if operator in {"greater_than", ">", "gt"}:
+        return actual > expected
+    if operator in {"at_most", "<=", "lte"}:
+        return actual <= expected
+    if operator in {"less_than", "<", "lt"}:
+        return actual < expected
+    return False
+
+
+def _first_upstream_number(inputs: Mapping[str, Any]) -> float | None:
+    upstream = _mapping(inputs.get("upstream"))
+    for output in upstream.values():
+        mapped_output = _mapping(output)
+        for key in ("value", "refinement", "trigger_level", "actual", "count"):
+            if key in mapped_output:
+                return _number(mapped_output[key])
+    return None
+
+
+def _number(value: Any) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
 
 
 def _skill_trigger_level(context: BuffGraphAdapterContext) -> Any:

@@ -185,5 +185,39 @@ READ_BLOCKS = (
         ),
         param_schema={"offset": "int"},
     ),
+    BuffGraphBlockDefinition(
+        block_id="read.calculator_attribute",
+        family=NodeFamily.READ,
+        display_name="Calculator Attribute",
+        adapter_id="read.calculator_attribute.v1",
+        input_ports=(BlockPort("context", "Context", "prepared_context"),),
+        output_ports=(
+            BlockPort("value", "Value", "number"),
+            BlockPort("attribute", "Attribute", "string"),
+            BlockPort("source", "Source", "string"),
+        ),
+        param_schema={"attribute": "string", "source": "string", "default": "number"},
+    ),
+    BuffGraphBlockDefinition(
+        block_id="read.refinement",
+        family=NodeFamily.READ,
+        display_name="Refinement",
+        adapter_id="read.refinement.v1",
+        input_ports=(BlockPort("context", "Context", "prepared_context"),),
+        output_ports=(BlockPort("refinement", "Refinement", "number"),),
+        param_schema={"source": "string", "default": "number"},
+    ),
+    BuffGraphBlockDefinition(
+        block_id="read.current_action",
+        family=NodeFamily.READ,
+        display_name="Current Action",
+        adapter_id="read.current_action.v1",
+        input_ports=(BlockPort("context", "Context", "prepared_context"),),
+        output_ports=(
+            BlockPort("action", "Action", "action"),
+            BlockPort("action_name", "Action Name", "string"),
+            BlockPort("trigger_level", "Trigger Level", "number"),
+        ),
+    ),
 )
 

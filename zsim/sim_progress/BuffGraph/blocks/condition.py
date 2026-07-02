@@ -204,5 +204,18 @@ CONDITION_BLOCKS = (
         output_ports=(BlockPort("result", "Result", "bool"),),
         param_schema={"expected_tick": "int", "window_ticks": "int"},
     ),
+    BuffGraphBlockDefinition(
+        block_id="condition.numeric_compare",
+        family=NodeFamily.CONDITION,
+        display_name="Numeric Compare",
+        adapter_id="condition.numeric_compare.v1",
+        input_ports=(BlockPort("value", "Value", "number"),),
+        output_ports=(
+            BlockPort("passed", "Passed", "bool"),
+            BlockPort("actual", "Actual", "number"),
+            BlockPort("expected", "Expected", "number"),
+        ),
+        param_schema={"operator": "comparison_operator", "expected": "number"},
+    ),
 )
 
