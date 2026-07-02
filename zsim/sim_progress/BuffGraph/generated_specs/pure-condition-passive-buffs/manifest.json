@@ -1,0 +1,23 @@
+{
+  "schema": "zsim-buffgraph-generated-spec-manifest.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "pure-condition-passive-buffs",
+  "runtime_status": "legacy_python",
+  "status_note": "Generated specs are candidate evidence only. Legacy Python XLogic remains the runtime default and parity oracle.",
+  "generated_specs": [
+    "cordis-germina-crit-rate-bonus.buffgraph.json",
+    "moonlight-lullaby-all-team-dmg-bonus.buffgraph.json"
+  ],
+  "boundary_gaps": [
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/CordisGerminaEleDmgBonus.py",
+      "next_wave": "record-cooldown-stack-buffs",
+      "reason": "Contains skill-hit/current-tick trigger semantics beyond pure passive condition graphs."
+    },
+    {
+      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/RainforestGourmetATKBonus.py",
+      "next_wave": "record-cooldown-stack-buffs",
+      "reason": "Contains trigger, active-Buff condition, start-Buff, and count-update effects."
+    }
+  ]
+}
