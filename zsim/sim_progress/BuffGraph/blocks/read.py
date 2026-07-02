@@ -67,5 +67,33 @@ READ_BLOCKS = (
         input_ports=(BlockPort("context", "Context", "prepared_context"),),
         output_ports=(BlockPort("character", "Character", "character"),),
     ),
+    BuffGraphBlockDefinition(
+        block_id="read.active_buffs_for_equipper",
+        family=NodeFamily.READ,
+        display_name="Active Buffs For Equipper",
+        adapter_id="read.active_buffs_for_equipper.v1",
+        input_ports=(
+            BlockPort("context", "Context", "prepared_context"),
+            BlockPort("equipper", "Equipper", "character"),
+        ),
+        output_ports=(
+            BlockPort("active_buffs", "Active Buffs", "buff_list"),
+            BlockPort("active_buff_count", "Active Buff Count", "number"),
+            BlockPort("equipper", "Equipper", "character"),
+        ),
+    ),
+    BuffGraphBlockDefinition(
+        block_id="read.listener_signal",
+        family=NodeFamily.READ,
+        display_name="Listener Signal",
+        adapter_id="read.listener_signal.v1",
+        input_ports=(BlockPort("context", "Context", "prepared_context"),),
+        output_ports=(
+            BlockPort("listener_signal", "Listener Signal", "listener_signal"),
+            BlockPort("matched", "Matched", "bool"),
+            BlockPort("listener_key", "Listener Key", "string"),
+        ),
+        param_schema={"listener_key": "string", "signal_key": "string"},
+    ),
 )
 

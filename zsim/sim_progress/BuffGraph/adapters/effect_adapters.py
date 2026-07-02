@@ -60,15 +60,86 @@ class BindPreparedRecordEffectAdapter:
         return BuffGraphAdapterResult(outputs={"binding": _without_none(binding)})
 
 
+class RegisterListenerEffectAdapter:
+    adapter_id = "effect.register_listener.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        listener_key = context.node.params.get("listener_key")
+        registration = {
+            "listener_key": listener_key,
+            "source_buff_index": context.node.params.get("source_buff_index")
+            or context.prepared_context.get("source_buff_index"),
+            "owner": context.prepared_context.get("prepared_owner")
+            or context.prepared_context.get("owner")
+            or context.prepared_context.get("owner_name"),
+            "equipper": context.prepared_context.get("prepared_equipper")
+            or context.prepared_context.get("equipper"),
+            "payload": context.node.params.get("payload"),
+        }
+        return BuffGraphAdapterResult(
+            outputs={"listener_registration": _without_none(registration)}
+        )
+
+
+class ConsumeListenerSignalEffectAdapter:
+    adapter_id = "effect.consume_listener_signal.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        signal = _first_upstream_value(context.inputs, "listener_signal")
+        if signal is None:
+            signal = context.prepared_context.get("listener_signal")
+        listener_key = context.node.params.get("listener_key") or _signal_key(signal)
+        consumption = {
+            "listener_key": listener_key,
+            "consumed": bool(context.node.params.get("consume", True) and signal),
+            "signal": signal,
+        }
+        return BuffGraphAdapterResult(
+            outputs={"listener_consumption": _without_none(consumption)}
+        )
+
+
 def build_low_risk_effect_adapters() -> Mapping[str, object]:
     adapters = (StartBuffEffectAdapter(), UpdateBuffCountEffectAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 
 def build_prepared_context_effect_adapters() -> Mapping[str, object]:
-    adapters = (UpdateTemplateBuffEffectAdapter(), BindPreparedRecordEffectAdapter())
+    adapters = (
+        UpdateTemplateBuffEffectAdapter(),
+        BindPreparedRecordEffectAdapter(),
+        RegisterListenerEffectAdapter(),
+        ConsumeListenerSignalEffectAdapter(),
+    )
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
+def build_active_buffs_listener_effect_adapters() -> Mapping[str, object]:
+    adapters = (RegisterListenerEffectAdapter(), ConsumeListenerSignalEffectAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 
 def _without_none(value: Mapping[str, Any]) -> Mapping[str, Any]:
     return {key: item for key, item in value.items() if item is not None}
+
+
+def _mapping(value: Any) -> Mapping[str, Any]:
+    return value if isinstance(value, Mapping) else {}
+
+
+def _first_upstream_value(inputs: Mapping[str, Any], key: str) -> Any:
+    upstream = _mapping(inputs.get("upstream"))
+    for outputs in upstream.values():
+        output_mapping = _mapping(outputs)
+        if key in output_mapping:
+            return output_mapping[key]
+    return None
+
+
+def _signal_key(signal: Any) -> Any:
+    signal_mapping = _mapping(signal)
+    return (
+        signal_mapping.get("listener_key")
+        or signal_mapping.get("signal_key")
+        or signal_mapping.get("key")
+    )
