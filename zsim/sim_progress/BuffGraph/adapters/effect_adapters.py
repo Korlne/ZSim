@@ -99,6 +99,50 @@ class ConsumeListenerSignalEffectAdapter:
         )
 
 
+class IssueRuntimeCommandIntentEffectAdapter:
+    adapter_id = "effect.issue_runtime_command.v1"
+    command_scope = "runtime"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        enabled = _first_upstream_bool(context.inputs)
+        intent = {
+            "intent_type": "runtime_command",
+            "command_scope": self.command_scope,
+            "command_type": context.node.params.get("command_type"),
+            "command_name": context.node.params.get("command_name"),
+            "payload": context.node.params.get("payload", {}),
+            "enabled": enabled,
+            "source_buff_index": context.node.params.get("source_buff_index")
+            or context.prepared_context.get("source_buff_index"),
+        }
+        return BuffGraphAdapterResult(outputs={"runtime_command_intent": _without_none(intent)})
+
+
+class IssueAllowedRuntimeCommandIntentEffectAdapter(IssueRuntimeCommandIntentEffectAdapter):
+    adapter_id = "effect.issue_allowed_runtime_command.v1"
+    command_scope = "allowed_runtime"
+
+
+class EmitScheduledEventIntentEffectAdapter:
+    adapter_id = "effect.emit_scheduled_event.v1"
+
+    def execute(self, context: BuffGraphAdapterContext) -> BuffGraphAdapterResult:
+        enabled = _first_upstream_bool(context.inputs)
+        scheduled_tick = context.node.params.get("scheduled_tick")
+        if scheduled_tick is None:
+            scheduled_tick = context.prepared_context.get("tick")
+        intent = {
+            "intent_type": "scheduled_event",
+            "event_type": context.node.params.get("event_type"),
+            "scheduled_tick": scheduled_tick,
+            "payload": context.node.params.get("payload", {}),
+            "enabled": enabled,
+            "source_buff_index": context.node.params.get("source_buff_index")
+            or context.prepared_context.get("source_buff_index"),
+        }
+        return BuffGraphAdapterResult(outputs={"scheduled_event_intent": _without_none(intent)})
+
+
 def build_low_risk_effect_adapters() -> Mapping[str, object]:
     adapters = (StartBuffEffectAdapter(), UpdateBuffCountEffectAdapter())
     return {adapter.adapter_id: adapter for adapter in adapters}
@@ -119,6 +163,15 @@ def build_active_buffs_listener_effect_adapters() -> Mapping[str, object]:
     return {adapter.adapter_id: adapter for adapter in adapters}
 
 
+def build_runtime_command_scheduled_signal_effect_adapters() -> Mapping[str, object]:
+    adapters = (
+        IssueRuntimeCommandIntentEffectAdapter(),
+        IssueAllowedRuntimeCommandIntentEffectAdapter(),
+        EmitScheduledEventIntentEffectAdapter(),
+    )
+    return {adapter.adapter_id: adapter for adapter in adapters}
+
+
 def _without_none(value: Mapping[str, Any]) -> Mapping[str, Any]:
     return {key: item for key, item in value.items() if item is not None}
 
@@ -134,6 +187,18 @@ def _first_upstream_value(inputs: Mapping[str, Any], key: str) -> Any:
         if key in output_mapping:
             return output_mapping[key]
     return None
+
+
+def _first_upstream_bool(inputs: Mapping[str, Any]) -> bool:
+    upstream = _mapping(inputs.get("upstream"))
+    if not upstream:
+        return True
+    for outputs in upstream.values():
+        output_mapping = _mapping(outputs)
+        for key in ("passed", "ready", "active", "enabled"):
+            if key in output_mapping:
+                return bool(output_mapping[key])
+    return True
 
 
 def _signal_key(signal: Any) -> Any:

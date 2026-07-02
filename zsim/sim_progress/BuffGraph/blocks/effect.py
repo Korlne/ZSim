@@ -63,5 +63,32 @@ EFFECT_BLOCKS = (
         output_ports=(BlockPort("listener_consumption", "Listener Consumption", "effect_result"),),
         param_schema={"listener_key": "string", "consume": "bool"},
     ),
+    BuffGraphBlockDefinition(
+        block_id="effect.issue_runtime_command",
+        family=NodeFamily.EFFECT,
+        display_name="Issue Runtime Command Intent",
+        adapter_id="effect.issue_runtime_command.v1",
+        input_ports=(BlockPort("condition", "Condition", "bool"),),
+        output_ports=(BlockPort("runtime_command_intent", "Runtime Command Intent", "intent"),),
+        param_schema={"command_type": "string", "command_name": "string", "payload": "object"},
+    ),
+    BuffGraphBlockDefinition(
+        block_id="effect.issue_allowed_runtime_command",
+        family=NodeFamily.EFFECT,
+        display_name="Issue Allowed Runtime Command Intent",
+        adapter_id="effect.issue_allowed_runtime_command.v1",
+        input_ports=(BlockPort("condition", "Condition", "bool"),),
+        output_ports=(BlockPort("runtime_command_intent", "Runtime Command Intent", "intent"),),
+        param_schema={"command_type": "string", "command_name": "string", "payload": "object"},
+    ),
+    BuffGraphBlockDefinition(
+        block_id="effect.emit_scheduled_event",
+        family=NodeFamily.EFFECT,
+        display_name="Emit Scheduled Event Intent",
+        adapter_id="effect.emit_scheduled_event.v1",
+        input_ports=(BlockPort("condition", "Condition", "bool"),),
+        output_ports=(BlockPort("scheduled_event_intent", "Scheduled Event Intent", "intent"),),
+        param_schema={"event_type": "string", "scheduled_tick": "int", "payload": "object"},
+    ),
 )
 
