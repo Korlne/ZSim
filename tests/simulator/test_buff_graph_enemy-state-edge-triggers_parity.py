@@ -26,9 +26,11 @@ def test_enemy_state_edge_xlogic_is_preserved_as_unsupported_until_blocks_exist(
 
         assert import_result.imported is False
         assert import_result.spec is None
-        assert {pattern.pattern_id for pattern in import_result.unsupported_patterns} == set(
-            case["expected_unsupported_pattern_ids"]
-        )
+        actual_pattern_ids = {pattern.pattern_id for pattern in import_result.unsupported_patterns}
+        required_pattern_ids = set(case["expected_unsupported_pattern_ids"])
+        optional_pattern_ids = set(case.get("optional_unsupported_pattern_ids", []))
+        assert required_pattern_ids.issubset(actual_pattern_ids)
+        assert actual_pattern_ids.issubset(required_pattern_ids | optional_pattern_ids)
         assert tuple(case["expected_block_hints"]["triggers"]) == import_result.classification.triggers
         assert tuple(case["expected_block_hints"]["conditions"]) == import_result.classification.conditions
         assert tuple(case["expected_block_hints"]["reads"]) == import_result.classification.reads

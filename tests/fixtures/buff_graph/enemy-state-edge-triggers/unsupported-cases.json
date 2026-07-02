@@ -63,6 +63,9 @@
       "expected_unsupported_pattern_ids": [
         "enemy_anomaly_or_dot_read"
       ],
+      "optional_unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
       "expected_block_hints": {
         "triggers": [],
         "conditions": [
@@ -79,7 +82,7 @@
         "read.calculator_attribute",
         "condition.numeric_compare"
       ],
-      "reason": "Current logic creates a calculator runtime read context with enemy and character, then compares anomaly proficiency; graph support needs enemy-aware calculator read blocks."
+      "reason": "Current integration worktree logic creates a calculator runtime read context with enemy and character, then compares anomaly proficiency; clean branches may still see the legacy ScheduledEvent import and classify this as an additional scheduled-producer gap. Graph support needs enemy-aware calculator read blocks either way."
     },
     {
       "case_id": "vivian-dot-trigger",
