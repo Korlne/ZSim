@@ -87,5 +87,17 @@ STATE_BLOCKS = (
         ),
         param_schema={"state_key": "state_key"},
     ),
+    BuffGraphBlockDefinition(
+        block_id="state.counter",
+        family=NodeFamily.STATE,
+        display_name="Counter",
+        adapter_id="state.counter.v1",
+        input_ports=(BlockPort("active", "Active", "bool"),),
+        output_ports=(
+            BlockPort("count", "Count", "number"),
+            BlockPort("active", "Active", "bool"),
+        ),
+        param_schema={"state_key": "state_key", "step": "int"},
+    ),
 )
 

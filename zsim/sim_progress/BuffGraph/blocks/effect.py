@@ -153,5 +153,32 @@ EFFECT_BLOCKS = (
         output_ports=(BlockPort("character_side_effect_intent", "Character Side Effect Intent", "intent"),),
         param_schema={"skill_tag": "string", "payload": "object"},
     ),
+    BuffGraphBlockDefinition(
+        block_id="effect.spawn_anomaly_output",
+        family=NodeFamily.EFFECT,
+        display_name="Spawn Anomaly Output Intent",
+        adapter_id="effect.spawn_anomaly_output.v1",
+        input_ports=(BlockPort("condition", "Condition", "bool"),),
+        output_ports=(BlockPort("anomaly_output_intent", "Anomaly Output Intent", "intent"),),
+        param_schema={"anomaly_key": "string", "output_type": "string", "payload": "object"},
+    ),
+    BuffGraphBlockDefinition(
+        block_id="effect.start_dot",
+        family=NodeFamily.EFFECT,
+        display_name="Start DOT Intent",
+        adapter_id="effect.start_dot.v1",
+        input_ports=(BlockPort("condition", "Condition", "bool"),),
+        output_ports=(BlockPort("dot_runtime_intent", "DOT Runtime Intent", "intent"),),
+        param_schema={"dot_key": "string", "duration_ticks": "int", "payload": "object"},
+    ),
+    BuffGraphBlockDefinition(
+        block_id="effect.register_dot_runtime",
+        family=NodeFamily.EFFECT,
+        display_name="Register DOT Runtime Intent",
+        adapter_id="effect.register_dot_runtime.v1",
+        input_ports=(BlockPort("condition", "Condition", "bool"),),
+        output_ports=(BlockPort("dot_runtime_intent", "DOT Runtime Intent", "intent"),),
+        param_schema={"dot_key": "string", "owner": "character_selector", "payload": "object"},
+    ),
 )
 
