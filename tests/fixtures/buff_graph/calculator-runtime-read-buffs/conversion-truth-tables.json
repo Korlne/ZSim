@@ -1,0 +1,97 @@
+{
+  "tables": [
+    {
+      "case_id": "alice-additional-ability-ap-bonus",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
+      "formula_id": "alice_am_to_ap_count",
+      "future_block_reason": "Future graph support must read anomaly mastery through a controlled calculator-attribute block and apply the threshold/conversion formula without exposing calculator runtime objects.",
+      "rows": [
+        {
+          "anomaly_mastery": 139,
+          "expected_output": {
+            "active": false,
+            "count": 0
+          }
+        },
+        {
+          "anomaly_mastery": 140,
+          "expected_output": {
+            "active": true,
+            "count": 0
+          }
+        },
+        {
+          "anomaly_mastery": 200,
+          "expected_output": {
+            "active": true,
+            "count": 96
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "qingyi-additional-ability-stun-convert-to-atk",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/QingYiAdditionalAbilityStunConvertToATK.py",
+      "formula_id": "qingyi_impact_to_atk_count",
+      "future_block_reason": "Future graph support must read impact through a controlled calculator-attribute block and cap the conversion by max Buff count.",
+      "rows": [
+        {
+          "impact": 120,
+          "max_count": 600,
+          "expected_output": {
+            "active": true,
+            "count": 0
+          }
+        },
+        {
+          "impact": 150,
+          "max_count": 600,
+          "expected_output": {
+            "active": true,
+            "count": 180
+          }
+        },
+        {
+          "impact": 300,
+          "max_count": 600,
+          "expected_output": {
+            "active": true,
+            "count": 600
+          }
+        }
+      ]
+    },
+    {
+      "case_id": "yuzuha-additional-ability-anomaly-buildup-bonus",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyBuildupBonus.py",
+      "formula_id": "yuzuha_am_to_buildup_count",
+      "future_block_reason": "Future graph support must read anomaly mastery and owner cinema through controlled blocks before applying the capped cinema-ratio conversion.",
+      "rows": [
+        {
+          "anomaly_mastery": 99,
+          "cinema_1_ratio": 1,
+          "expected_output": {
+            "active": false,
+            "count": 0
+          }
+        },
+        {
+          "anomaly_mastery": 150,
+          "cinema_1_ratio": 1,
+          "expected_output": {
+            "active": true,
+            "count": 50
+          }
+        },
+        {
+          "anomaly_mastery": 260,
+          "cinema_1_ratio": 1.3,
+          "expected_output": {
+            "active": true,
+            "count": 130
+          }
+        }
+      ]
+    }
+  ]
+}
