@@ -1,8 +1,15 @@
-import { useCallback, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useLanguage } from './hooks/useLanguage';
 import { useApiStatus } from './hooks/useApiStatus';
 import { useSessionSmoke } from './hooks/useSessionSmoke';
 import LanguageSwitch from './components/LanguageSwitch';
+import { BuffGraphWorkbench } from './features/buff-graph/BuffGraphWorkbench';
+import {
+  BUFF_GRAPH_MENU_KEY,
+  DEFAULT_MENU_KEY,
+  hashForMenuKey,
+  menuKeyFromHashValue,
+} from './appMenuHash';
 import IZsim from '~icons/zsim/zsim';
 
 type MenuItem = {
@@ -10,14 +17,37 @@ type MenuItem = {
   key: string;
 };
 
+const menuKeyFromHash = () => {
+  if (typeof window === 'undefined') return DEFAULT_MENU_KEY;
+  return menuKeyFromHashValue(window.location.hash);
+};
+
 const App = () => {
   const { t } = useLanguage();
   const { apiStatus, apiResponse, testApi } = useApiStatus();
-  const [activeMenu, setActiveMenu] = useState('session-management');
+  const [activeMenu, setActiveMenu] = useState(menuKeyFromHash);
+
+  useEffect(() => {
+    const handleHashChange = () => setActiveMenu(menuKeyFromHash());
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const selectMenu = useCallback((key: string) => {
+    setActiveMenu(key);
+    const nextHash = hashForMenuKey(key);
+    if (nextHash) {
+      window.location.hash = nextHash;
+      return;
+    }
+    if (window.location.hash === `#${BUFF_GRAPH_MENU_KEY}`) {
+      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+    }
+  }, []);
 
   const handleDataAnalysisReady = useCallback(() => {
-    setActiveMenu('data-analysis');
-  }, []);
+    selectMenu('data-analysis');
+  }, [selectMenu]);
 
   const {
     snapshot: sessionSmoke,
@@ -34,6 +64,7 @@ const App = () => {
       { label: t('aside.name.character-configuration'), key: 'character-configuration' },
       { label: t('aside.name.simulator'), key: 'simulator' },
       { label: t('aside.name.data-analysis'), key: 'data-analysis' },
+      { label: t('aside.name.buff-graph'), key: BUFF_GRAPH_MENU_KEY },
       { label: t('aside.name.apl-editor'), key: 'apl-editor' },
       { label: t('aside.name.character-support-list'), key: 'character-support-list' },
       { label: t('aside.name.apl-specification'), key: 'apl-specification' },
@@ -92,7 +123,7 @@ const App = () => {
                     : 'border-transparent hover:bg-[#38302E0D] active:bg-[#38302E17]'
                 }
               `}
-              onClick={() => setActiveMenu(menu.key)}
+              onClick={() => selectMenu(menu.key)}
             >
               <div className="w-[16px] h-[16px] rounded-sm bg-[#6B6B6B40]" />
               <div>{menu.label}</div>
@@ -155,12 +186,16 @@ const App = () => {
         </div>
 
         {/* 模块.3 */}
-        <div className="w-full flex-1 overflow-auto flex gap-[16px]">
-          <div className="shrink-0 w-[248px] h-[767px] ml-[24px] my-[16px] bg-[#F1F1F1] rounded-[12px] border border-solid border-[#E6E6E6]" />
-          <div className="shrink-0 w-[248px] h-[522px] my-[16px] bg-[#F1F1F1] rounded-[12px] border border-solid border-[#E6E6E6]" />
-          <div className="shrink-0 w-[248px] h-[277px] my-[16px] bg-[#F1F1F1] rounded-[12px] border border-solid border-[#E6E6E6]" />
-          <div className="shrink-0 w-[248px] h-[522px] mr-[24px] my-[16px] bg-[#F1F1F1] rounded-[12px] border border-solid border-[#E6E6E6]" />
-        </div>
+        {activeMenu === BUFF_GRAPH_MENU_KEY ? (
+          <BuffGraphWorkbench />
+        ) : (
+          <div className="w-full flex-1 overflow-auto flex gap-[16px]">
+            <div className="shrink-0 w-[248px] h-[767px] ml-[24px] my-[16px] bg-[#F1F1F1] rounded-[12px] border border-solid border-[#E6E6E6]" />
+            <div className="shrink-0 w-[248px] h-[522px] my-[16px] bg-[#F1F1F1] rounded-[12px] border border-solid border-[#E6E6E6]" />
+            <div className="shrink-0 w-[248px] h-[277px] my-[16px] bg-[#F1F1F1] rounded-[12px] border border-solid border-[#E6E6E6]" />
+            <div className="shrink-0 w-[248px] h-[522px] mr-[24px] my-[16px] bg-[#F1F1F1] rounded-[12px] border border-solid border-[#E6E6E6]" />
+          </div>
+        )}
       </div>
     </div>
   );

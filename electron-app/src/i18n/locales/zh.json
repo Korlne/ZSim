@@ -34,7 +34,8 @@
       "contribution-guide": "贡献指南",
       "data-analysis": "数据分析",
       "session-management": "会话管理",
-      "simulator": "模拟器"
+      "simulator": "模拟器",
+      "buff-graph": "Buff 图编辑"
     }
   },
   "simulator": {
@@ -106,5 +107,11 @@
     "theme": "主题",
     "api": "API设置",
     "about": "关于"
+  },
+  "buffGraph": {
+    "tabs": {
+      "catalog": "积木目录",
+      "matrix": "一致性矩阵"
+    }
   }
 }
