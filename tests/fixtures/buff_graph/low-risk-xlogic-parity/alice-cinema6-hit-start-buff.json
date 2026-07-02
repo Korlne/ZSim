@@ -1,0 +1,35 @@
+{
+  "case_id": "alice-cinema6-hit-start-buff",
+  "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AliceCinema6Trigger.py",
+  "owner_kind": "character",
+  "owner_name": "Alice",
+  "source_buff_index": "Buff-角色-爱丽丝-影画6",
+  "source": "class AliceCinema6Trigger:\n    def xhit(self, **kwargs):\n        if kwargs['skill_tag'] == 'basic':\n            self.buff.update_count(1)\n            self.buff.start()\n",
+  "prepared_context": {
+    "event": {
+      "kind": "skill_hit",
+      "skill_tag": "basic"
+    }
+  },
+  "expected_final_output": {
+    "command": {
+      "type": "update_buff_count",
+      "buff_index": "AliceCinema6Trigger",
+      "delta": 1
+    }
+  },
+  "expected_trace_kind_checkpoint": [
+    ["graph_started", ""],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["effect_requested", "effect_requested"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["effect_requested", "effect_requested"],
+    ["graph_finished", "graph_finished"]
+  ]
+}
