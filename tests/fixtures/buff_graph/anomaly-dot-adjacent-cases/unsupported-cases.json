@@ -126,10 +126,11 @@
       "owner_name": "时流贤者",
       "source_buff_index": "Buff-WEngine-时流贤者-紊乱增伤",
       "expected_unsupported_pattern_ids": [
-        "runtime_command_or_scheduled_producer",
         "enemy_anomaly_or_dot_read"
       ],
-      "optional_unsupported_pattern_ids": [],
+      "optional_unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
       "expected_block_hints": {
         "triggers": [],
         "conditions": [
@@ -146,7 +147,7 @@
         "read.calculator_attribute",
         "condition.numeric_compare"
       ],
-      "reason": "Clean integration branches still classify this calculator/enemy context as scheduled-producer plus enemy/DOT-adjacent unsupported work. Graph support needs enemy-aware calculator read blocks without reaching through raw runtime containers."
+      "reason": "Current dirty integration state classifies this as enemy/DOT-adjacent calculator-read work, while clean worker branches may also classify the legacy ScheduledEvent import as a scheduled-producer gap. Graph support needs enemy-aware calculator read blocks without reaching through raw runtime containers."
     }
   ]
 }
