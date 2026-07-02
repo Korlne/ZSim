@@ -1,0 +1,28 @@
+{
+  "case_id": "cordis-germina-crit-rate-bonus",
+  "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/CordisGerminaCritRateBonus.py",
+  "owner_kind": "w_engine",
+  "owner_name": "Cordis Germina",
+  "source_buff_index": "Buff-WEngine-CordisGermina-CritRate",
+  "prepared_context": {
+    "owner_name": "Cordis Germina",
+    "tick": 120,
+    "state": {}
+  },
+  "expected_node_block_ids": [
+    "condition.character_identity",
+    "state.last_active_tick"
+  ],
+  "expected_final_output": {
+    "last_active_tick": 120,
+    "active": true
+  },
+  "expected_trace_kind_checkpoint": [
+    ["graph_started", ""],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["graph_finished", "graph_finished"]
+  ]
+}

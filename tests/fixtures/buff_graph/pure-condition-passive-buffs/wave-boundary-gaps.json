@@ -1,0 +1,15 @@
+{
+  "case_id": "pure-condition-passive-wave-boundary-gaps",
+  "gaps": [
+    {
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/CordisGerminaEleDmgBonus.py",
+      "reason": "Contains skill-hit/current-tick trigger semantics, not a pure passive condition.",
+      "next_wave": "record-cooldown-stack-buffs"
+    },
+    {
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/RainforestGourmetATKBonus.py",
+      "reason": "Contains skill-hit, active-Buff condition, start-Buff, and count-update effects.",
+      "next_wave": "record-cooldown-stack-buffs"
+    }
+  ]
+}
