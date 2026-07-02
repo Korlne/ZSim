@@ -76,6 +76,20 @@ export const ParityMatrixView = ({ matrix, loading, error }: ParityMatrixViewPro
             <div>candidate_parity_passed: {String(visibleMatrix.candidate_parity_passed)}</div>
           </div>
         ) : null}
+        {visibleMatrix?.candidate_wave_evidence.length ? (
+          <div className="mt-[10px] rounded-[6px] border border-[#D8E7D5] bg-[#F4FAF2] p-[8px] text-[12px] leading-[18px] text-[#355B2D]">
+            {visibleMatrix.candidate_wave_evidence.map(wave => (
+              <div key={wave.wave_id} className="mb-[8px] last:mb-0">
+                <div className="font-medium text-[#244B1D]">{wave.wave_id}</div>
+                <div>{wave.status}</div>
+                <div>{wave.candidate_harness_id}</div>
+                <div>{wave.case_ids.join(', ')}</div>
+                <div>candidate_parity_passed: {String(wave.candidate_parity_passed)}</div>
+                <div>full_parity_verified: {String(wave.full_parity_verified)}</div>
+              </div>
+            ))}
+          </div>
+        ) : null}
         {runResult?.run_id ? (
           <div className="mt-[10px] rounded-[6px] border border-[#E6E6E6] bg-white p-[8px] text-[12px] leading-[18px] text-[#555]">
             <div className="font-medium text-[#333]">{runResult.run_id}</div>
