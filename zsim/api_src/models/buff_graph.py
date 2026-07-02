@@ -176,9 +176,14 @@ class BuffGraphCompilePayload(BaseModel):
 
 
 class BuffGraphParityPayload(BaseModel):
-    status: Literal["not_available", "ready_for_oracle"]
+    status: Literal["not_available", "ready_for_oracle", "candidate_harness_passed", "candidate_harness_failed"]
     graph_id: str
     reason: str
+    candidate_harness_id: str | None = None
+    candidate_runtime_status: RuntimeStatus | None = None
+    candidate_parity_passed: bool | None = None
+    full_parity_verified: bool = False
+    evidence: dict[str, Any] | None = None
 
 
 class BuffGraphMatrixPayload(BaseModel):

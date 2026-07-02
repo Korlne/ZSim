@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import asdict
-from typing import Any
+from dataclasses import asdict, replace
+from typing import Any, Mapping
 
 from zsim.api_src.models.buff_graph import (
     BuffGraphCompilePayload,
@@ -10,9 +10,21 @@ from zsim.api_src.models.buff_graph import (
     BuffGraphSpecModel,
     BuffGraphValidationPayload,
 )
+from zsim.sim_progress.BuffGraph.adapters.compose_adapters import build_low_risk_compose_adapters
+from zsim.sim_progress.BuffGraph.adapters.condition_adapters import (
+    build_low_risk_condition_adapters,
+)
+from zsim.sim_progress.BuffGraph.adapters.effect_adapters import build_low_risk_effect_adapters
+from zsim.sim_progress.BuffGraph.adapters.read_adapters import build_low_risk_read_adapters
+from zsim.sim_progress.BuffGraph.adapters.state_adapters import build_low_risk_state_adapters
+from zsim.sim_progress.BuffGraph.adapters.trigger_adapters import build_low_risk_trigger_adapters
 from zsim.sim_progress.BuffGraph.blocks import build_default_block_registry
 from zsim.sim_progress.BuffGraph.migration import classify_xlogic_source, import_xlogic_to_graph
 from zsim.sim_progress.BuffGraph.runtime.compiler import compile_buff_graph_spec
+from zsim.sim_progress.BuffGraph.runtime.parity import (
+    BuffGraphCandidateParityOracle,
+    run_buff_graph_candidate_parity,
+)
 from zsim.sim_progress.BuffGraph.spec import BuffGraphSpec, RuntimeStatus, validate_buff_graph_spec
 
 
@@ -72,6 +84,46 @@ class BuffGraphService:
         spec = self._require_graph(graph_id)
         compile_result = self.compile_graph(graph_id)
         if compile_result.compiled:
+            candidate_harness = _candidate_harness_metadata(spec.parity_metadata)
+            if candidate_harness is not None:
+                result = run_buff_graph_candidate_parity(
+                    replace(
+                        spec,
+                        runtime_status=RuntimeStatus.VISUAL_GRAPH_CANDIDATE,
+                    ),
+                    block_registry=self._block_registry,
+                    adapters=_low_risk_adapters(),
+                    tick=int(candidate_harness.get("tick", 0)),
+                    prepared_context=_mapping(candidate_harness.get("prepared_context")),
+                    oracle=BuffGraphCandidateParityOracle(
+                        case_id=str(candidate_harness.get("case_id", spec.graph_id)),
+                        expected_final_output=_mapping(
+                            candidate_harness.get("expected_final_output")
+                        ),
+                        expected_trace_kind_checkpoint=tuple(
+                            candidate_harness.get("expected_trace_kind_checkpoint", ())
+                        ),
+                        legacy_oracle=str(
+                            candidate_harness.get("legacy_oracle", "legacy_python_fixture")
+                        ),
+                    ),
+                )
+                return BuffGraphParityPayload(
+                    status=(
+                        "candidate_harness_passed"
+                        if result.passed
+                        else "candidate_harness_failed"
+                    ),
+                    graph_id=spec.graph_id,
+                    reason=(
+                        "Low-risk graph candidate harness executed without live Buff runtime cutover."
+                    ),
+                    candidate_harness_id=result.case_id,
+                    candidate_runtime_status=RuntimeStatus.VISUAL_GRAPH_CANDIDATE,
+                    candidate_parity_passed=result.passed,
+                    full_parity_verified=False,
+                    evidence=result.to_evidence(),
+                )
             return BuffGraphParityPayload(
                 status="ready_for_oracle",
                 graph_id=spec.graph_id,
@@ -219,3 +271,26 @@ class BuffGraphService:
             return self._graphs[graph_id]
         except KeyError as exc:
             raise KeyError(f"Buff graph not found: {graph_id}") from exc
+
+
+def _candidate_harness_metadata(parity_metadata: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    value = parity_metadata.get("candidate_harness")
+    return value if isinstance(value, Mapping) and value.get("enabled") else None
+
+
+def _mapping(value: Any) -> Mapping[str, Any]:
+    return value if isinstance(value, Mapping) else {}
+
+
+def _low_risk_adapters() -> dict[str, object]:
+    adapters: dict[str, object] = {}
+    for group in (
+        build_low_risk_trigger_adapters(),
+        build_low_risk_condition_adapters(),
+        build_low_risk_read_adapters(),
+        build_low_risk_effect_adapters(),
+        build_low_risk_state_adapters(),
+        build_low_risk_compose_adapters(),
+    ):
+        adapters.update(group)
+    return adapters
