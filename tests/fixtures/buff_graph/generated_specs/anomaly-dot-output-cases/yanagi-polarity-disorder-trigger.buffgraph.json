@@ -1,0 +1,233 @@
+{
+  "schema": "zsim-buffgraph-generated-spec.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "anomaly-dot-output-cases",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+  "runtime_status_note": "legacy_python remains default; generated spec is candidate evidence only.",
+  "spec": {
+    "schema_version": "buff-graph-spec.v1",
+    "node_library_version": "buff-graph-node-library.v1",
+    "adapter_contract_version": "buff-graph-adapter-contract.v1",
+    "graph_id": "yanagi-polarity-disorder-trigger",
+    "display_name": "YanagiPolarityDisorderTrigger",
+    "owner_kind": "unknown",
+    "owner_name": "YanagiPolarityDisorderTrigger",
+    "source_buff_index": null,
+    "created_from_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+    "runtime_status": "legacy_python",
+    "nodes": [
+      {
+        "node_id": "00-read",
+        "family": "read",
+        "block_id": "read.enemy_anomaly_state",
+        "adapter_id": "read.enemy_anomaly_state.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+          "unsupported_pattern_ids": [
+            "enemy_anomaly_or_dot_read"
+          ],
+          "anomaly_key": "yanagi-polarity-disorder-trigger:anomaly_key:legacy_source_review_required",
+          "element": "yanagi-polarity-disorder-trigger:element:legacy_source_review_required"
+        },
+        "display_name": "Enemy Anomaly State"
+      },
+      {
+        "node_id": "01-read",
+        "family": "read",
+        "block_id": "read.enemy_anomaly_bar",
+        "adapter_id": "read.enemy_anomaly_bar.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+          "unsupported_pattern_ids": [
+            "enemy_anomaly_or_dot_read"
+          ],
+          "anomaly_key": "yanagi-polarity-disorder-trigger:anomaly_key:legacy_source_review_required",
+          "element": "yanagi-polarity-disorder-trigger:element:legacy_source_review_required"
+        },
+        "display_name": "Enemy Anomaly Bar"
+      },
+      {
+        "node_id": "02-condition",
+        "family": "condition",
+        "block_id": "condition.skill_tag_in",
+        "adapter_id": "condition.skill_tag_in.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+          "unsupported_pattern_ids": [
+            "enemy_anomaly_or_dot_read"
+          ],
+          "skill_tags": [
+            "legacy_source_review_required"
+          ]
+        },
+        "display_name": "Skill Tag In"
+      },
+      {
+        "node_id": "03-condition",
+        "family": "condition",
+        "block_id": "condition.hit_frame",
+        "adapter_id": "condition.hit_frame.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+          "unsupported_pattern_ids": [
+            "enemy_anomaly_or_dot_read"
+          ],
+          "expected_hit_index": 0,
+          "require_last_hit": true
+        },
+        "display_name": "Hit Frame"
+      },
+      {
+        "node_id": "04-state",
+        "family": "state",
+        "block_id": "state.anomaly_signal",
+        "adapter_id": "state.anomaly_signal.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+          "unsupported_pattern_ids": [
+            "enemy_anomaly_or_dot_read"
+          ],
+          "signal_key": "yanagi-polarity-disorder-trigger:signal_key:legacy_source_review_required"
+        },
+        "display_name": "Anomaly Signal"
+      },
+      {
+        "node_id": "05-state",
+        "family": "state",
+        "block_id": "state.counter",
+        "adapter_id": "state.counter.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+          "unsupported_pattern_ids": [
+            "enemy_anomaly_or_dot_read"
+          ],
+          "state_key": "yanagi-polarity-disorder-trigger:state_key:legacy_source_review_required",
+          "step": 1
+        },
+        "display_name": "Counter"
+      },
+      {
+        "node_id": "06-effect",
+        "family": "effect",
+        "block_id": "effect.spawn_anomaly_output",
+        "adapter_id": "effect.spawn_anomaly_output.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+          "unsupported_pattern_ids": [
+            "enemy_anomaly_or_dot_read"
+          ],
+          "anomaly_key": "yanagi-polarity-disorder-trigger:anomaly_key:legacy_source_review_required",
+          "output_type": "legacy_source_review_required",
+          "payload": {
+            "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+            "candidate_only": true,
+            "legacy_semantic_review_required": true
+          }
+        },
+        "display_name": "Spawn Anomaly Output Intent"
+      },
+      {
+        "node_id": "07-effect",
+        "family": "effect",
+        "block_id": "effect.emit_scheduled_event",
+        "adapter_id": "effect.emit_scheduled_event.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+          "unsupported_pattern_ids": [
+            "enemy_anomaly_or_dot_read"
+          ],
+          "event_type": "yanagi-polarity-disorder-trigger:event_type:legacy_source_review_required",
+          "scheduled_tick": 0,
+          "payload": {
+            "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py",
+            "candidate_only": true,
+            "legacy_semantic_review_required": true
+          }
+        },
+        "display_name": "Emit Scheduled Event Intent"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge-0",
+        "source_node_id": "00-read",
+        "target_node_id": "01-read",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-1",
+        "source_node_id": "01-read",
+        "target_node_id": "02-condition",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-2",
+        "source_node_id": "02-condition",
+        "target_node_id": "03-condition",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-3",
+        "source_node_id": "03-condition",
+        "target_node_id": "04-state",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-4",
+        "source_node_id": "04-state",
+        "target_node_id": "05-state",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-5",
+        "source_node_id": "05-state",
+        "target_node_id": "06-effect",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-6",
+        "source_node_id": "06-effect",
+        "target_node_id": "07-effect",
+        "source_port": "out",
+        "target_port": "in"
+      }
+    ],
+    "params": {
+      "migration_wave": "anomaly-dot-output-cases",
+      "scout_work_pack": "scout-dot-anomaly-unblocked-gap-index",
+      "legacy_semantic_review_required": true,
+      "intent_only_dot_anomaly_output_blocks": true
+    },
+    "parity_metadata": {
+      "parity_status": "not_run",
+      "candidate_only": true,
+      "unblocked_by": [
+        "shared-helper-enemy-anomaly-state-read-blocks",
+        "shared-helper-runtime-command-scheduled-signal-blocks",
+        "shared-helper-character-manager-side-effect-intents",
+        "shared-helper-dot-anomaly-output-intents"
+      ],
+      "unsupported_pattern_ids": [
+        "enemy_anomaly_or_dot_read"
+      ],
+      "required_block_ids": [
+        "read.enemy_anomaly_state",
+        "read.enemy_anomaly_bar",
+        "condition.skill_tag_in",
+        "condition.hit_frame",
+        "state.anomaly_signal",
+        "state.counter",
+        "effect.spawn_anomaly_output",
+        "effect.emit_scheduled_event"
+      ]
+    },
+    "last_parity_baseline": null,
+    "last_verified_at": null
+  }
+}
