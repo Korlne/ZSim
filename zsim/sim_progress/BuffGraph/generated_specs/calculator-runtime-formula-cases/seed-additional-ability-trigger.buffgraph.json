@@ -1,0 +1,181 @@
+{
+  "schema": "zsim-buffgraph-generated-spec.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "migration_wave": "calculator-runtime-formula-cases",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
+  "runtime_status_note": "legacy_python remains default; generated spec is candidate evidence only.",
+  "spec": {
+    "schema_version": "buff-graph-spec.v1",
+    "node_library_version": "buff-graph-node-library.v1",
+    "adapter_contract_version": "buff-graph-adapter-contract.v1",
+    "graph_id": "seed-additional-ability-trigger",
+    "display_name": "SeedAdditionalAbilityTrigger",
+    "owner_kind": "unknown",
+    "owner_name": "SeedAdditionalAbilityTrigger",
+    "source_buff_index": null,
+    "created_from_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
+    "runtime_status": "legacy_python",
+    "nodes": [
+      {
+        "node_id": "00-condition",
+        "family": "condition",
+        "block_id": "condition.operating_character",
+        "adapter_id": "condition.operating_character.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer"
+          ],
+          "character": "seed-additional-ability-trigger:character:legacy_source_review_required"
+        },
+        "display_name": "Operating Character"
+      },
+      {
+        "node_id": "01-condition",
+        "family": "condition",
+        "block_id": "condition.skill_owner",
+        "adapter_id": "condition.skill_owner.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer"
+          ],
+          "owner": "seed-additional-ability-trigger:owner:legacy_source_review_required"
+        },
+        "display_name": "Skill Owner"
+      },
+      {
+        "node_id": "02-condition",
+        "family": "condition",
+        "block_id": "condition.hit_frame",
+        "adapter_id": "condition.hit_frame.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer"
+          ],
+          "expected_hit_index": 0,
+          "require_last_hit": true
+        },
+        "display_name": "Hit Frame"
+      },
+      {
+        "node_id": "03-state",
+        "family": "state",
+        "block_id": "state.cooldown_gate",
+        "adapter_id": "state.cooldown_gate.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer"
+          ],
+          "cooldown_ticks": 0
+        },
+        "display_name": "Cooldown Gate"
+      },
+      {
+        "node_id": "04-effect",
+        "family": "effect",
+        "block_id": "effect.publish_resource_refresh",
+        "adapter_id": "effect.publish_resource_refresh.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer"
+          ],
+          "resource": "seed-additional-ability-trigger:resource:legacy_source_review_required",
+          "amount": 0,
+          "payload": {
+            "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
+            "candidate_only": true,
+            "legacy_semantic_review_required": true
+          }
+        },
+        "display_name": "Publish Resource Refresh Intent"
+      },
+      {
+        "node_id": "05-effect",
+        "family": "effect",
+        "block_id": "effect.issue_allowed_runtime_command",
+        "adapter_id": "effect.issue_allowed_runtime_command.v1",
+        "params": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
+          "unsupported_pattern_ids": [
+            "runtime_command_or_scheduled_producer"
+          ],
+          "command_type": "seed-additional-ability-trigger:command_type:legacy_source_review_required",
+          "command_name": "seed-additional-ability-trigger:command_name:legacy_source_review_required",
+          "payload": {
+            "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
+            "candidate_only": true,
+            "legacy_semantic_review_required": true
+          }
+        },
+        "display_name": "Issue Allowed Runtime Command Intent"
+      }
+    ],
+    "edges": [
+      {
+        "edge_id": "edge-0",
+        "source_node_id": "00-condition",
+        "target_node_id": "01-condition",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-1",
+        "source_node_id": "01-condition",
+        "target_node_id": "02-condition",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-2",
+        "source_node_id": "02-condition",
+        "target_node_id": "03-state",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-3",
+        "source_node_id": "03-state",
+        "target_node_id": "04-effect",
+        "source_port": "out",
+        "target_port": "in"
+      },
+      {
+        "edge_id": "edge-4",
+        "source_node_id": "04-effect",
+        "target_node_id": "05-effect",
+        "source_port": "out",
+        "target_port": "in"
+      }
+    ],
+    "params": {
+      "migration_wave": "calculator-runtime-formula-cases",
+      "scout_work_pack": "scout-calculator-runtime-formula-unblocked-gap-index",
+      "legacy_semantic_review_required": true,
+      "intent_only_resource_refresh_blocks": true
+    },
+    "parity_metadata": {
+      "parity_status": "not_run",
+      "candidate_only": true,
+      "unblocked_by": [
+        "shared-helper-calculator-runtime-read-formula-blocks"
+      ],
+      "unsupported_pattern_ids": [
+        "runtime_command_or_scheduled_producer"
+      ],
+      "required_block_ids": [
+        "condition.operating_character",
+        "condition.skill_owner",
+        "condition.hit_frame",
+        "state.cooldown_gate",
+        "effect.publish_resource_refresh",
+        "effect.issue_allowed_runtime_command"
+      ]
+    },
+    "last_parity_baseline": null,
+    "last_verified_at": null
+  }
+}

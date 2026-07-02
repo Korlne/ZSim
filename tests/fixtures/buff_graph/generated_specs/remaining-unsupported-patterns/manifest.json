@@ -4,185 +4,26 @@
   "migration_wave": "remaining-unsupported-patterns",
   "runtime_status": "legacy_python",
   "status": "blocked_by_missing_controlled_blocks",
-  "status_note": "10 DOT/anomaly output cases moved to generated candidate specs in migration-dot-anomaly-unblocked-generated-specs; legacy Python XLogic remains runtime default/fallback/oracle.",
+  "status_note": "7 calculator/resource formula cases moved to generated candidate specs in migration-calculator-runtime-formula-unblocked-generated-specs; legacy Python XLogic remains runtime default/fallback/oracle.",
   "current_non_helper_xlogic_count": 150,
-  "generated_spec_source_count": 142,
-  "unsupported_case_count": 8,
+  "generated_spec_source_count": 149,
+  "unsupported_case_count": 1,
   "unsupported_patterns": [
-    "enemy_anomaly_or_dot_read",
-    "runtime_command_or_scheduled_producer",
     "wave-boundary-gap"
   ],
   "required_future_block_ids": [
-    "compose.numeric_formula",
-    "condition.hit_frame",
-    "condition.numeric_compare",
-    "condition.operating_character",
-    "condition.skill_owner",
-    "condition.skill_trigger_level",
-    "effect.issue_allowed_runtime_command",
-    "effect.publish_resource_refresh",
-    "effect.start_buff",
-    "effect.update_buff_count",
-    "read.calculator_attribute",
-    "read.current_action",
-    "read.enemy_anomaly_state",
-    "read.enemy_context",
-    "read.refinement",
-    "scout.semantic_source_review",
-    "state.cooldown_gate"
+    "scout.semantic_source_review"
   ],
   "primary_wave_counts": {
-    "anomaly-dot-adjacent-cases": 1,
-    "calculator-runtime-read-buffs": 3,
-    "enemy-state-edge-triggers": 1,
-    "runtime-command-scheduled-producers": 3
+    "enemy-state-edge-triggers": 1
   },
   "unsupported_pattern_counts": {
-    "enemy_anomaly_or_dot_read": 4,
-    "runtime_command_or_scheduled_producer": 3,
     "wave-boundary-gap": 1
   },
   "required_future_block_counts": {
-    "effect.start_buff": 5,
-    "read.calculator_attribute": 4,
-    "read.enemy_context": 3,
-    "condition.numeric_compare": 3,
-    "compose.numeric_formula": 3,
-    "effect.update_buff_count": 3,
-    "effect.publish_resource_refresh": 3,
-    "effect.issue_allowed_runtime_command": 3,
-    "state.cooldown_gate": 2,
-    "read.refinement": 1,
-    "condition.operating_character": 1,
-    "condition.skill_owner": 1,
-    "condition.hit_frame": 1,
-    "condition.skill_trigger_level": 1,
-    "read.current_action": 1,
-    "read.enemy_anomaly_state": 1,
     "scout.semantic_source_review": 1
   },
   "unsupported_cases": [
-    {
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py",
-      "primary_wave": "calculator-runtime-read-buffs",
-      "unsupported_pattern_ids": [
-        "enemy_anomaly_or_dot_read"
-      ],
-      "required_future_block_ids": [
-        "read.enemy_context",
-        "read.calculator_attribute",
-        "condition.numeric_compare",
-        "compose.numeric_formula",
-        "effect.start_buff",
-        "effect.update_buff_count"
-      ],
-      "reason": "Legacy logic reads anomaly mastery through calculator runtime context with enemy and character, checks the 140 threshold, and converts the excess into Buff count. Graph support needs controlled enemy context, calculator attribute, comparison, formula, and Buff count write blocks.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
-    },
-    {
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/ElegantVanitySpRecover.py",
-      "primary_wave": "runtime-command-scheduled-producers",
-      "unsupported_pattern_ids": [
-        "runtime_command_or_scheduled_producer"
-      ],
-      "required_future_block_ids": [
-        "read.refinement",
-        "effect.start_buff",
-        "effect.publish_resource_refresh",
-        "effect.issue_allowed_runtime_command"
-      ],
-      "reason": "Legacy logic starts the Buff and publishes an energy refresh command based on W-Engine refinement.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
-    },
-    {
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/QingYiAdditionalAbilityStunConvertToATK.py",
-      "primary_wave": "calculator-runtime-read-buffs",
-      "unsupported_pattern_ids": [
-        "enemy_anomaly_or_dot_read"
-      ],
-      "required_future_block_ids": [
-        "read.enemy_context",
-        "read.calculator_attribute",
-        "compose.numeric_formula",
-        "effect.start_buff",
-        "effect.update_buff_count"
-      ],
-      "reason": "Legacy logic reads impact through calculator runtime context with enemy and character, subtracts the template step, applies the conversion, and caps the result by max Buff count.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
-    },
-    {
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SeedAdditionalAbilityTrigger.py",
-      "primary_wave": "runtime-command-scheduled-producers",
-      "unsupported_pattern_ids": [
-        "runtime_command_or_scheduled_producer"
-      ],
-      "required_future_block_ids": [
-        "condition.operating_character",
-        "condition.skill_owner",
-        "condition.hit_frame",
-        "state.cooldown_gate",
-        "effect.publish_resource_refresh",
-        "effect.issue_allowed_runtime_command"
-      ],
-      "reason": "Legacy logic publishes a resource refresh through ResourceRefreshCommandPort after owner, hit-frame, and cooldown gates.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
-    },
-    {
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/SliceofTimeExtraResources.py",
-      "primary_wave": "runtime-command-scheduled-producers",
-      "unsupported_pattern_ids": [
-        "runtime_command_or_scheduled_producer"
-      ],
-      "required_future_block_ids": [
-        "condition.skill_trigger_level",
-        "state.cooldown_gate",
-        "read.current_action",
-        "effect.start_buff",
-        "effect.publish_resource_refresh",
-        "effect.issue_allowed_runtime_command"
-      ],
-      "reason": "Legacy logic starts a visible Buff, computes energy and decibel values from refinement and trigger level, then publishes a scheduled refresh command.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
-    },
-    {
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/TimeweaverDisorderDmgMul.py",
-      "primary_wave": "anomaly-dot-adjacent-cases",
-      "unsupported_pattern_ids": [
-        "enemy_anomaly_or_dot_read"
-      ],
-      "required_future_block_ids": [
-        "read.enemy_anomaly_state",
-        "read.calculator_attribute",
-        "condition.numeric_compare"
-      ],
-      "reason": "Legacy logic uses an enemy-aware calculator runtime read context and compares anomaly proficiency. | Current integration worktree logic creates a calculator runtime read context with enemy and character, then compares anomaly proficiency; clean branches may still see the legacy ScheduledEvent import and classify this as an additional scheduled-producer gap. Graph support needs enemy-aware calculator read blocks either way.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
-    },
-    {
-      "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyBuildupBonus.py",
-      "primary_wave": "calculator-runtime-read-buffs",
-      "unsupported_pattern_ids": [
-        "enemy_anomaly_or_dot_read"
-      ],
-      "required_future_block_ids": [
-        "read.enemy_context",
-        "read.calculator_attribute",
-        "condition.numeric_compare",
-        "compose.numeric_formula",
-        "effect.start_buff",
-        "effect.update_buff_count"
-      ],
-      "reason": "Legacy logic reads anomaly mastery through calculator runtime context, checks the 100 threshold, applies cinema-dependent conversion, and writes capped Buff count.",
-      "evidence_source": "existing-generated-spec-unsupported-manifest",
-      "legacy_runtime_status": "legacy_python"
-    },
     {
       "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YuzuhaCinema2Trigger.py",
       "primary_wave": "enemy-state-edge-triggers",
