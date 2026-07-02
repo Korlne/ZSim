@@ -39,6 +39,51 @@ export type BuffGraphMigrationCatalog = {
   custom_python_nodes_allowed: boolean;
 };
 
+export type BuffGraphNode = {
+  node_id: string;
+  family: string;
+  block_id: string;
+  adapter_id: string;
+  params: Record<string, unknown>;
+  display_name: string;
+};
+
+export type BuffGraphEdge = {
+  edge_id: string;
+  source_node_id: string;
+  target_node_id: string;
+  source_port: string;
+  target_port: string;
+};
+
+export type BuffGraphSpec = BuffGraphSpecSummary & {
+  schema_version: string;
+  node_library_version: string;
+  adapter_contract_version: string;
+  nodes: BuffGraphNode[];
+  edges: BuffGraphEdge[];
+  params: Record<string, unknown>;
+  parity_metadata: Record<string, unknown>;
+  last_parity_baseline?: string | null;
+};
+
+export type BuffGraphValidationResult = {
+  valid: boolean;
+  errors: { code?: string; message?: string; node_id?: string }[];
+};
+
+export type BuffGraphCompileResult = {
+  compiled: boolean;
+  errors: { code?: string; message?: string; node_id?: string }[];
+  execution_order: string[];
+};
+
+export type BuffGraphParityResult = {
+  status: 'not_available' | 'ready_for_oracle';
+  graph_id: string;
+  reason: string;
+};
+
 export type BuffGraphParityMatrix = {
   status: 'not_available';
   reason: string;
@@ -132,6 +177,60 @@ const normalizeGraph = (payload: unknown): BuffGraphSpecSummary => {
   };
 };
 
+const normalizeSpec = (payload: unknown): BuffGraphSpec => {
+  const item = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>;
+  return {
+    ...normalizeGraph(item),
+    schema_version: String(item.schema_version ?? 'buffgraphspec.v1'),
+    node_library_version: String(item.node_library_version ?? 'buffgraphblocks.v1'),
+    adapter_contract_version: String(item.adapter_contract_version ?? 'buffgraph-adapters.v1'),
+    nodes: Array.isArray(item.nodes)
+      ? item.nodes.map(node => {
+          const nodeItem =
+            node && typeof node === 'object' ? (node as Record<string, unknown>) : {};
+          return {
+            node_id: String(nodeItem.node_id ?? ''),
+            family: String(nodeItem.family ?? ''),
+            block_id: String(nodeItem.block_id ?? ''),
+            adapter_id: String(nodeItem.adapter_id ?? ''),
+            params:
+              nodeItem.params && typeof nodeItem.params === 'object' && !Array.isArray(nodeItem.params)
+                ? (nodeItem.params as Record<string, unknown>)
+                : {},
+            display_name: String(nodeItem.display_name ?? nodeItem.block_id ?? ''),
+          };
+        })
+      : [],
+    edges: Array.isArray(item.edges)
+      ? item.edges.map(edge => {
+          const edgeItem =
+            edge && typeof edge === 'object' ? (edge as Record<string, unknown>) : {};
+          return {
+            edge_id: String(edgeItem.edge_id ?? ''),
+            source_node_id: String(edgeItem.source_node_id ?? ''),
+            target_node_id: String(edgeItem.target_node_id ?? ''),
+            source_port: String(edgeItem.source_port ?? 'out'),
+            target_port: String(edgeItem.target_port ?? 'in'),
+          };
+        })
+      : [],
+    params:
+      item.params && typeof item.params === 'object' && !Array.isArray(item.params)
+        ? (item.params as Record<string, unknown>)
+        : {},
+    parity_metadata:
+      item.parity_metadata &&
+      typeof item.parity_metadata === 'object' &&
+      !Array.isArray(item.parity_metadata)
+        ? (item.parity_metadata as Record<string, unknown>)
+        : {},
+    last_parity_baseline:
+      item.last_parity_baseline === undefined || item.last_parity_baseline === null
+        ? undefined
+        : String(item.last_parity_baseline),
+  };
+};
+
 const normalizeCatalog = (payload: unknown): BuffGraphMigrationCatalog => {
   const item = (payload && typeof payload === 'object' ? payload : {}) as Record<string, unknown>;
   return {
@@ -174,6 +273,31 @@ export const buffGraphClient = {
   async getMigrationCatalog(): Promise<BuffGraphMigrationCatalog> {
     const response = await requireApiClient().get('/api/buff-graphs/migration/catalog');
     return normalizeCatalog(parseDataResponse<unknown>(response, 'Read Buff graph catalog'));
+  },
+
+  async saveGraph(spec: BuffGraphSpec): Promise<BuffGraphSpec> {
+    const response = await requireApiClient().post('/api/buff-graphs', { spec });
+    return normalizeSpec(parseDataResponse<unknown>(response, 'Save Buff graph'));
+  },
+
+  async updateGraph(spec: BuffGraphSpec): Promise<BuffGraphSpec> {
+    const response = await requireApiClient().put(`/api/buff-graphs/${spec.graph_id}`, { spec });
+    return normalizeSpec(parseDataResponse<unknown>(response, 'Update Buff graph'));
+  },
+
+  async validateGraph(graphId: string): Promise<BuffGraphValidationResult> {
+    const response = await requireApiClient().post(`/api/buff-graphs/${graphId}/validate`);
+    return parseDataResponse<BuffGraphValidationResult>(response, 'Validate Buff graph');
+  },
+
+  async compileGraph(graphId: string): Promise<BuffGraphCompileResult> {
+    const response = await requireApiClient().post(`/api/buff-graphs/${graphId}/compile`);
+    return parseDataResponse<BuffGraphCompileResult>(response, 'Compile Buff graph');
+  },
+
+  async requestParity(graphId: string): Promise<BuffGraphParityResult> {
+    const response = await requireApiClient().post(`/api/buff-graphs/${graphId}/parity`);
+    return parseDataResponse<BuffGraphParityResult>(response, 'Request Buff graph parity');
   },
 
   async getParityMatrix(): Promise<BuffGraphParityMatrix> {

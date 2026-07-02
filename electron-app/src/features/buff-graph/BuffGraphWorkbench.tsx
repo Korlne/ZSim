@@ -11,31 +11,34 @@ import type {
   BuffGraphParityMatrix,
   BuffGraphSpecSummary,
 } from './api/buffGraphClient';
+import { GraphEditorView } from './views/GraphEditorView';
 import { MigrationCatalogView } from './views/MigrationCatalogView';
 import { ParityMatrixView } from './views/ParityMatrixView';
 
-type WorkbenchTab = 'catalog' | 'matrix';
+type WorkbenchTab = 'editor' | 'catalog' | 'matrix';
 
 type BuffGraphWorkbenchProps = {
   className?: string;
 };
 
-const tabConfig: { key: WorkbenchTab; labelKey: string; Icon: typeof BoxesIcon }[] = [
-  { key: 'catalog', labelKey: 'buffGraph.tabs.catalog', Icon: BoxesIcon },
-  { key: 'matrix', labelKey: 'buffGraph.tabs.matrix', Icon: GitCompareArrowsIcon },
+const tabConfig: { key: WorkbenchTab; label: string; labelKey?: string; Icon: typeof BoxesIcon }[] = [
+  { key: 'editor', label: 'Editor', Icon: NetworkIcon },
+  { key: 'catalog', label: 'Block Catalog', labelKey: 'buffGraph.tabs.catalog', Icon: BoxesIcon },
+  { key: 'matrix', label: 'Parity Matrix', labelKey: 'buffGraph.tabs.matrix', Icon: GitCompareArrowsIcon },
 ];
 
 const tabFromHashValue = (hash: string): WorkbenchTab => {
   const [menuKey, tabKey] = hash.replace(/^#/, '').split(':');
-  if (menuKey !== 'buff-graph') return 'catalog';
-  return tabKey === 'matrix' ? 'matrix' : 'catalog';
+  if (menuKey !== 'buff-graph') return 'editor';
+  if (tabKey === 'catalog') return 'catalog';
+  return tabKey === 'matrix' ? 'matrix' : 'editor';
 };
 
 const hashForWorkbenchTab = (tab: WorkbenchTab) =>
-  tab === 'catalog' ? '#buff-graph' : `#buff-graph:${tab}`;
+  tab === 'editor' ? '#buff-graph' : `#buff-graph:${tab}`;
 
 const initialTab = (): WorkbenchTab => {
-  if (typeof window === 'undefined') return 'catalog';
+  if (typeof window === 'undefined') return 'editor';
   return tabFromHashValue(window.location.hash);
 };
 
@@ -137,7 +140,7 @@ export const BuffGraphWorkbench = ({ className = '' }: BuffGraphWorkbenchProps) 
       </div>
 
       <div className="mb-[12px] flex min-h-[36px] shrink-0 gap-[6px] overflow-x-auto border-b border-[#E6E6E6]">
-        {tabConfig.map(({ key, labelKey, Icon }) => (
+        {tabConfig.map(({ key, label, labelKey, Icon }) => (
           <button
             key={key}
             type="button"
@@ -153,12 +156,15 @@ export const BuffGraphWorkbench = ({ className = '' }: BuffGraphWorkbenchProps) 
             onClick={() => activateTab(key)}
           >
             <Icon className="h-[14px] w-[14px]" />
-            {t(labelKey)}
+            {labelKey ? t(labelKey) : label}
           </button>
         ))}
       </div>
 
       <div className="min-h-0 flex flex-1 overflow-hidden rounded-[8px] border border-[#E6E6E6]">
+        {activeTab === 'editor' ? (
+          <GraphEditorView graphs={graphs} catalog={catalog} refresh={refresh} />
+        ) : null}
         {activeTab === 'catalog' ? (
           <MigrationCatalogView catalog={catalog} loading={loading} error={error} />
         ) : null}
