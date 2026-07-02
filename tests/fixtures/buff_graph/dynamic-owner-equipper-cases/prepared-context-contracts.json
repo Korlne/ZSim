@@ -1,0 +1,101 @@
+{
+  "contracts": [
+    {
+      "case_id": "astral-voice-trigger-owner-ref",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AstralVoice.py",
+      "status": "requires_future_building_block",
+      "future_block_reason": "Needs controlled prepared-equipper, TriggerBuffRef.owner, trigger-state read, skill trigger-level, and template buff update blocks.",
+      "source_anchors": [
+        "ensure_equipper_template_record(",
+        "item_name=\"静听嘉音\"",
+        "trigger_buff_0=TriggerBuffRef.owner(",
+        "self.buff_instance.ft.operator",
+        "\"Buff-驱动盘-静听嘉音-嘉音\"",
+        "self.buff_instance.simple_start(tick_now, self.record.sub_exist_buff_dict)",
+        "self.buff_instance.update_to_buff_0(self.buff_0)"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "read.prepared_owner",
+        "read.prepared_template_buff",
+        "read.trigger_buff_state",
+        "condition.skill_trigger_level",
+        "effect.update_template_buff"
+      ]
+    },
+    {
+      "case_id": "flamemaker-shaker-trigger-equipper-ref",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/FlamemakerShakerApBonus.py",
+      "status": "requires_future_building_block",
+      "future_block_reason": "Needs controlled TriggerBuffRef.equipper and trigger-count comparison blocks.",
+      "source_anchors": [
+        "item_name=\"灼心摇壶\"",
+        "trigger_buff_0=TriggerBuffRef.equipper(\"灼心摇壶-增伤\")",
+        "trigger_state = read_trigger_buff_state(self.record)",
+        "if trigger_state.count < 5:"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "read.trigger_buff_state",
+        "condition.trigger_buff_active",
+        "condition.trigger_buff_count_compare"
+      ]
+    },
+    {
+      "case_id": "yunkui-tales-trigger-owner-from-equipper",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/YunkuiTalesSheerAtkBonus.py",
+      "status": "requires_future_building_block",
+      "future_block_reason": "Needs controlled TriggerBuffRef.owner where the resolved equipper is reused as owner.",
+      "source_anchors": [
+        "item_name=\"云岿如我\"",
+        "trigger_buff_0=TriggerBuffRef.owner(",
+        "self.equipper,",
+        "\"Buff-驱动盘-云岿如我-四件套-暴击率提升\"",
+        "if trigger_state.count == 3:"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "read.prepared_owner",
+        "read.trigger_buff_state",
+        "condition.trigger_buff_count_compare"
+      ]
+    },
+    {
+      "case_id": "ice-jade-teapot-active-buffs-for-equipper",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/IceJadeTeaPotExtraDMGBonus.py",
+      "status": "requires_future_building_block",
+      "future_block_reason": "Needs controlled preparation-context equipper lookup and active-buff scan blocks.",
+      "source_anchors": [
+        "preparation_context = build_preparation_context_from_buff(self.buff_instance)",
+        "equipper = preparation_context.find_equipper(\"玉壶青冰\")",
+        "for buffs in preparation_context.find_active_buffs(equipper):",
+        "if buffs.dy.count >= 15:"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "read.active_buffs_for_equipper",
+        "condition.trigger_buff_count_compare"
+      ]
+    },
+    {
+      "case_id": "zanshin-herb-case-listener-owner",
+      "xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/ZanshinHerbCase.py",
+      "status": "requires_future_building_block",
+      "future_block_reason": "Needs prepared record binding plus controlled listener registration and signal consumption blocks.",
+      "source_anchors": [
+        "item_name=\"残心青囊\"",
+        "self.get_prepared(equipper=\"残心青囊\")",
+        "listener_owner=self.record.char, listener_id=\"Zanshin_Herb_Case_1\"",
+        "active_signal = self.record.listener.active_signal",
+        "self.record.listener.listener_active()"
+      ],
+      "required_future_block_ids": [
+        "read.prepared_equipper",
+        "effect.bind_prepared_record",
+        "effect.register_listener",
+        "read.listener_signal",
+        "effect.consume_listener_signal"
+      ]
+    }
+  ]
+}
