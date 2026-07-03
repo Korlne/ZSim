@@ -107,8 +107,37 @@ ENEMY_STATE_CANDIDATE_WAVE_EVIDENCE = [
         ),
     }
 ]
+DYNAMIC_OWNER_CANDIDATE_WAVE_EVIDENCE = [
+    {
+        "wave_id": "dynamic-owner-equipper",
+        "candidate_harness_id": "dynamic-owner-generated-spec-candidate-harness",
+        "status": "candidate_harness_wave_available",
+        "case_ids": [
+            "dynamic-owner-astral-voice-candidate",
+            "dynamic-owner-hellfire-gears-sp-r-bonus-candidate",
+            "dynamic-owner-ice-jade-teapot-extra-dmg-bonus-candidate",
+            "dynamic-owner-zanshin-herb-case-candidate",
+        ],
+        "sampled_generated_spec_dirs": [
+            "dynamic-owner-equipper-cases",
+        ],
+        "candidate_runtime_status": RuntimeStatus.VISUAL_GRAPH_CANDIDATE.value,
+        "candidate_parity_passed": True,
+        "full_parity_verified": False,
+        "evidence_path": (
+            f"scripts/buff_agents/evidence/{CAMPAIGN_ID}/"
+            "oracle-graph-runtime-candidate-harness-dynamic-owner.json"
+        ),
+        "scope": (
+            "Fixture-backed candidate harness mechanism evidence for four "
+            "dynamic-owner/equipper generated specs; not final legacy parity for the full wave."
+        ),
+    }
+]
 CANDIDATE_WAVE_EVIDENCE = (
-    PURE_LOW_RISK_CANDIDATE_WAVE_EVIDENCE + ENEMY_STATE_CANDIDATE_WAVE_EVIDENCE
+    PURE_LOW_RISK_CANDIDATE_WAVE_EVIDENCE
+    + ENEMY_STATE_CANDIDATE_WAVE_EVIDENCE
+    + DYNAMIC_OWNER_CANDIDATE_WAVE_EVIDENCE
 )
 
 
