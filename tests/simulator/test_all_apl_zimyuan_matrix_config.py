@@ -1,16 +1,24 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
+from scripts.buff_agents import run_all_apl_zimyuan_parity as parity_tool
 from scripts.buff_agents.run_all_apl_zimyuan_parity import (
+    BUFF_TIMELINE_ARTIFACT,
     DEFAULT_STOP_TICK,
+    GRAPH_CANDIDATE_RUNTIME_ARTIFACT,
     MATRIX_ROWS,
+    _child_run_code,
     _remove_existing_path,
+    _run_one_row,
     _rng_seed,
     _session_id,
+    _supplement_empty_public_artifacts,
     build_common_cfg,
     build_matrix,
     compare_artifact,
+    select_matrix_rows,
 )
 
 
@@ -45,6 +53,16 @@ def test_zero_anby_trigger_row_uses_rina_as_third_commoncfg_character() -> None:
         "扳机",
         "丽娜",
     ]
+
+
+def test_row_id_filter_selects_only_requested_matrix_rows() -> None:
+    rows = select_matrix_rows(["apl-alice-yuzuha-jane", "apl-qingyi-rina-miyabi"])
+
+    assert [row.row_id for row in rows] == [
+        "apl-alice-yuzuha-jane",
+        "apl-qingyi-rina-miyabi",
+    ]
+    assert build_matrix(OLD_ROOT, NEW_ROOT, DEFAULT_STOP_TICK, rows)["row_count"] == 2
 
 
 def test_every_matrix_commoncfg_uses_shared_enemy_and_three_characters() -> None:
@@ -115,6 +133,75 @@ def test_parity_runner_removes_stale_session_artifacts(tmp_path: Path) -> None:
     assert not stale_result.exists()
     assert not stale_log.exists()
     assert not missing.exists()
+
+
+def test_parity_runner_supplements_empty_buff_timeline_public_artifact(
+    tmp_path: Path,
+) -> None:
+    result_dir = tmp_path / "result"
+    result_dir.mkdir()
+
+    supplemented = _supplement_empty_public_artifacts(result_dir)
+
+    assert supplemented == [BUFF_TIMELINE_ARTIFACT]
+    assert (result_dir / BUFF_TIMELINE_ARTIFACT).read_text(encoding="utf-8") == "{}\n"
+
+
+def test_new_candidate_child_code_enables_graph_runtime_dry_run() -> None:
+    code = _child_run_code()
+
+    assert "side = sys.argv[4]" in code
+    assert 'if side == "new-candidate":' in code
+    assert "BuffGraphRuntimeActivationIndex.from_generated_spec_paths" in code
+    assert "build_default_adapter_mapping()" in code
+    assert "enable_buff_graph_runtime_candidates = True" in code
+    assert "enable_buff_graph_runtime_candidate_dry_run = True" in code
+    assert GRAPH_CANDIDATE_RUNTIME_ARTIFACT in code
+
+
+def test_new_candidate_row_passes_side_and_records_graph_artifact(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    output_root = tmp_path / "output"
+    row = MATRIX_ROWS[0]
+
+    def fake_build_common_cfg(*, root: Path, row, session_id: str):
+        return {"session_id": session_id}
+
+    def fake_run(command, cwd, **kwargs):
+        assert command[-1] == "new-candidate"
+        assert "enable_buff_graph_runtime_candidate_dry_run = True" in command[2]
+        common_cfg_path = Path(command[3])
+        common_cfg = parity_tool.json.loads(common_cfg_path.read_text(encoding="utf-8"))
+        result_root = Path(cwd) / "results" / common_cfg["session_id"]
+        result_root.mkdir(parents=True)
+        (result_root / "damage.csv").write_text("name,value\n", encoding="utf-8")
+        (result_root / "damage_attribution.json").write_text("{}\n", encoding="utf-8")
+        (result_root / GRAPH_CANDIDATE_RUNTIME_ARTIFACT).write_text(
+            '{"dry_run_result_count": 1}\n',
+            encoding="utf-8",
+        )
+        return subprocess.CompletedProcess(command, 0, "{}", "")
+
+    monkeypatch.setattr(parity_tool, "build_common_cfg", fake_build_common_cfg)
+    monkeypatch.setattr(parity_tool.subprocess, "run", fake_run)
+
+    metadata = _run_one_row(
+        root=root,
+        row=row,
+        output_root=output_root,
+        stop_tick=1,
+        side="new-candidate",
+    )
+
+    assert metadata["returncode"] == 0
+    assert metadata["artifact_supplements"] == [BUFF_TIMELINE_ARTIFACT]
+    assert metadata["graph_candidate_runtime_artifact"]["expected"] is True
+    assert metadata["graph_candidate_runtime_artifact"]["present"] is True
+    assert (output_root / row.row_id / "result" / GRAPH_CANDIDATE_RUNTIME_ARTIFACT).exists()
 
 
 def test_damage_attribution_compare_ignores_result_serialization_noise(tmp_path: Path) -> None:
