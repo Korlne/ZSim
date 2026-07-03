@@ -214,6 +214,12 @@ def test_buff_timeline_processing_keeps_legacy_integer_display_counts():
                 "time_tick": [1, 2, 3],
                 "Buff-角色-扳机-额外能力-追加攻击失衡值提升": [0.0, 63.9, 0.0],
                 "Buff-角色-雅-核心被动-冰焰": [0.0, 77.8, 0.0],
+                "Buff-角色-柚叶-组队被动-属性异常与紊乱伤害增幅": [
+                    0.0,
+                    33.919998,
+                    0.0,
+                ],
+                "Buff-角色-柚叶-组队被动-积蓄值增幅": [0.0, 63.919998, 0.0],
             }
         )
     )
@@ -230,6 +236,18 @@ def test_buff_timeline_processing_keeps_legacy_integer_display_counts():
             "Start": 2,
             "Finish": 2,
             "Value": 77.0,
+        },
+        {
+            "Task": "Buff-角色-柚叶-组队被动-属性异常与紊乱伤害增幅",
+            "Start": 2,
+            "Finish": 2,
+            "Value": 33.0,
+        },
+        {
+            "Task": "Buff-角色-柚叶-组队被动-积蓄值增幅",
+            "Start": 2,
+            "Finish": 2,
+            "Value": 63.0,
         },
     ]
 
