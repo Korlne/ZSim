@@ -1,0 +1,173 @@
+{
+  "schema": "zsim-buffgraph-generated-spec-legacy-oracle.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "case_id": "generated-spec-legacy-oracle-jane-cinema1-ap-trans-to-dmg-bonus",
+  "source_generated_spec": "zsim/sim_progress/BuffGraph/generated_specs/runtime-command-scheduled-producers/jane-cinema1-ap-trans-to-dmg-bonus.buffgraph.json",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py",
+  "graph_id": "jane-cinema1-ap-trans-to-dmg-bonus",
+  "migration_wave": "runtime-command-scheduled-producers",
+  "tick": 600,
+  "legacy_oracle": "legacy_python_collected",
+  "parity_status": "legacy_oracle_materialized_only",
+  "full_parity_verified": false,
+  "legacy_oracle_result": {
+    "case_id": "generated-spec-legacy-oracle-jane-cinema1-ap-trans-to-dmg-bonus",
+    "legacy_oracle": "legacy_python_collected",
+    "judge_result": true,
+    "hit_result": null,
+    "expected_final_output": {
+      "command": {
+        "count": null,
+        "delta": null,
+        "mode": "set",
+        "template_buff_index": "legacy_source_review_required",
+        "type": "update_template_buff"
+      }
+    },
+    "expected_trace_kind_checkpoint": [
+      [
+        "graph_started",
+        ""
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "effect_requested",
+        "effect_requested"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "effect_requested",
+        "effect_requested"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "effect_requested",
+        "effect_requested"
+      ],
+      [
+        "graph_finished",
+        "graph_finished"
+      ]
+    ],
+    "record_before": {},
+    "record_after": {},
+    "record_delta": {},
+    "side_effects": [],
+    "blocked_reason": null
+  },
+  "notes": [
+    "This fixture materializes a legacy oracle result for one generated spec using the test-only collector helper.",
+    "Runtime-command and scheduled-event effects remain intent-only and do not dispatch protected ports or ScheduledEvent runtime.",
+    "It does not promote the generated spec beyond runtime_status legacy_python or parity_status not_run.",
+    "It is not final full parity evidence; UI-driven full simulation matrix remains blocked until later packs execute graph-vs-legacy comparisons."
+  ]
+}
