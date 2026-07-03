@@ -90,6 +90,20 @@ export const ParityMatrixView = ({ matrix, loading, error }: ParityMatrixViewPro
             ))}
           </div>
         ) : null}
+        {visibleMatrix?.generated_spec_legacy_oracle_evidence.length ? (
+          <div className="mt-[10px] rounded-[6px] border border-[#D8E7D5] bg-[#F4FAF2] p-[8px] text-[12px] leading-[18px] text-[#355B2D]">
+            {visibleMatrix.generated_spec_legacy_oracle_evidence.map(item => (
+              <div key={item.case_id} className="mb-[8px] last:mb-0">
+                <div className="font-medium text-[#244B1D]">{item.graph_id}</div>
+                <div>{item.status}</div>
+                <div>{item.case_id}</div>
+                <div>{item.legacy_oracle}</div>
+                <div>{item.fixture_path}</div>
+                <div>full_parity_verified: {String(item.full_parity_verified)}</div>
+              </div>
+            ))}
+          </div>
+        ) : null}
         {runResult?.run_id ? (
           <div className="mt-[10px] rounded-[6px] border border-[#E6E6E6] bg-white p-[8px] text-[12px] leading-[18px] text-[#555]">
             <div className="font-medium text-[#333]">{runResult.run_id}</div>

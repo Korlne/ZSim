@@ -83,7 +83,9 @@ export type BuffGraphParityResult = {
     | 'not_available'
     | 'ready_for_oracle'
     | 'candidate_harness_passed'
-    | 'candidate_harness_failed';
+    | 'candidate_harness_failed'
+    | 'generated_spec_legacy_oracle_passed'
+    | 'generated_spec_legacy_oracle_failed';
   graph_id: string;
   reason: string;
   candidate_harness_id?: string | null;
@@ -111,6 +113,15 @@ export type BuffGraphCandidateWaveEvidence = {
   evidence_path?: string;
 };
 
+export type BuffGraphGeneratedSpecOracleEvidence = {
+  graph_id: string;
+  case_id: string;
+  status: BuffGraphParityResult['status'];
+  legacy_oracle: string;
+  fixture_path: string;
+  full_parity_verified: boolean;
+};
+
 export type BuffGraphParityMatrix = {
   status: 'not_available' | 'run_requested';
   reason: string;
@@ -126,6 +137,7 @@ export type BuffGraphParityMatrix = {
   candidate_parity_passed?: boolean;
   candidate_slice_evidence?: BuffGraphCandidateSliceEvidence;
   candidate_wave_evidence: BuffGraphCandidateWaveEvidence[];
+  generated_spec_legacy_oracle_evidence: BuffGraphGeneratedSpecOracleEvidence[];
   matrix_scope: string[];
 };
 
@@ -302,6 +314,19 @@ const normalizeMatrix = (payload: unknown): BuffGraphParityMatrix => {
   const rawCandidateWaveEvidence = Array.isArray(item.candidate_wave_evidence)
     ? item.candidate_wave_evidence
     : [];
+  const rawGeneratedSpecOracleEvidence = Array.isArray(
+    item.generated_spec_legacy_oracle_evidence,
+  )
+    ? item.generated_spec_legacy_oracle_evidence
+    : [];
+  const normalizeParityStatus = (value: unknown): BuffGraphParityResult['status'] =>
+    value === 'candidate_harness_passed' ||
+    value === 'candidate_harness_failed' ||
+    value === 'ready_for_oracle' ||
+    value === 'generated_spec_legacy_oracle_passed' ||
+    value === 'generated_spec_legacy_oracle_failed'
+      ? value
+      : 'not_available';
   return {
     status,
     reason: String(item.reason ?? 'Parity matrix is not available yet.'),
@@ -335,13 +360,7 @@ const normalizeMatrix = (payload: unknown): BuffGraphParityMatrix => {
       ? {
           graph_id: String(rawCandidateEvidence.graph_id ?? ''),
           api_endpoint: String(rawCandidateEvidence.api_endpoint ?? ''),
-          status: (
-            rawCandidateEvidence.status === 'candidate_harness_passed' ||
-            rawCandidateEvidence.status === 'candidate_harness_failed' ||
-            rawCandidateEvidence.status === 'ready_for_oracle'
-              ? rawCandidateEvidence.status
-              : 'not_available'
-          ) as BuffGraphParityResult['status'],
+          status: normalizeParityStatus(rawCandidateEvidence.status),
           full_parity_verified: rawCandidateEvidence.full_parity_verified === true,
         }
       : undefined,
@@ -362,6 +381,17 @@ const normalizeMatrix = (payload: unknown): BuffGraphParityMatrix => {
           wave.evidence_path === undefined || wave.evidence_path === null
             ? undefined
             : String(wave.evidence_path),
+      };
+    }),
+    generated_spec_legacy_oracle_evidence: rawGeneratedSpecOracleEvidence.map(row => {
+      const item = row && typeof row === 'object' ? (row as Record<string, unknown>) : {};
+      return {
+        graph_id: String(item.graph_id ?? ''),
+        case_id: String(item.case_id ?? ''),
+        status: normalizeParityStatus(item.status),
+        legacy_oracle: String(item.legacy_oracle ?? ''),
+        fixture_path: String(item.fixture_path ?? ''),
+        full_parity_verified: item.full_parity_verified === true,
       };
     }),
     matrix_scope: Array.isArray(item.matrix_scope) ? item.matrix_scope.map(String) : [],
