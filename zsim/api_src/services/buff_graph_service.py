@@ -12,23 +12,27 @@ from zsim.api_src.models.buff_graph import (
 )
 from zsim.sim_progress.BuffGraph.adapters.compose_adapters import build_low_risk_compose_adapters
 from zsim.sim_progress.BuffGraph.adapters.condition_adapters import (
+    build_character_manager_side_effect_condition_adapters,
     build_enemy_anomaly_state_condition_adapters,
     build_low_risk_condition_adapters,
     build_prepared_context_condition_adapters,
     build_runtime_command_scheduled_signal_condition_adapters,
 )
 from zsim.sim_progress.BuffGraph.adapters.effect_adapters import (
+    build_character_manager_side_effect_effect_adapters,
     build_low_risk_effect_adapters,
     build_prepared_context_effect_adapters,
     build_runtime_command_scheduled_signal_effect_adapters,
 )
 from zsim.sim_progress.BuffGraph.adapters.read_adapters import (
+    build_character_manager_side_effect_read_adapters,
     build_enemy_anomaly_state_read_adapters,
     build_low_risk_read_adapters,
     build_prepared_context_read_adapters,
     build_runtime_command_scheduled_signal_read_adapters,
 )
 from zsim.sim_progress.BuffGraph.adapters.state_adapters import (
+    build_character_manager_side_effect_state_adapters,
     build_enemy_anomaly_state_state_adapters,
     build_low_risk_state_adapters,
     build_runtime_command_scheduled_signal_state_adapters,
@@ -165,11 +169,39 @@ RUNTIME_SCHEDULED_CANDIDATE_WAVE_EVIDENCE = [
         ),
     }
 ]
+CHARACTER_MANAGER_CANDIDATE_WAVE_EVIDENCE = [
+    {
+        "wave_id": "character-manager-side-effects",
+        "candidate_harness_id": "character-manager-generated-spec-candidate-harness",
+        "status": "candidate_harness_wave_available",
+        "case_ids": [
+            "character-manager-alice-cinema-6-trigger-candidate",
+            "character-manager-vivian-coattack-trigger-candidate",
+            "character-manager-yixuan-cinema-1-trigger-candidate",
+        ],
+        "sampled_generated_spec_dirs": [
+            "character-manager-side-effect-cases",
+        ],
+        "candidate_runtime_status": RuntimeStatus.VISUAL_GRAPH_CANDIDATE.value,
+        "candidate_parity_passed": True,
+        "full_parity_verified": False,
+        "evidence_path": (
+            f"scripts/buff_agents/evidence/{CAMPAIGN_ID}/"
+            "oracle-graph-runtime-candidate-harness-character-manager.json"
+        ),
+        "scope": (
+            "Fixture-backed candidate harness mechanism evidence for three "
+            "character-manager/additional-attack generated specs; not final legacy parity "
+            "for the full wave and no CharacterManager, ScheduledEvent, or protected-port mutation."
+        ),
+    }
+]
 CANDIDATE_WAVE_EVIDENCE = (
     PURE_LOW_RISK_CANDIDATE_WAVE_EVIDENCE
     + ENEMY_STATE_CANDIDATE_WAVE_EVIDENCE
     + DYNAMIC_OWNER_CANDIDATE_WAVE_EVIDENCE
     + RUNTIME_SCHEDULED_CANDIDATE_WAVE_EVIDENCE
+    + CHARACTER_MANAGER_CANDIDATE_WAVE_EVIDENCE
 )
 
 
@@ -422,16 +454,20 @@ def _candidate_harness_adapters() -> dict[str, object]:
         build_prepared_context_condition_adapters(),
         build_enemy_anomaly_state_condition_adapters(),
         build_runtime_command_scheduled_signal_condition_adapters(),
+        build_character_manager_side_effect_condition_adapters(),
         build_low_risk_read_adapters(),
         build_prepared_context_read_adapters(),
         build_enemy_anomaly_state_read_adapters(),
         build_runtime_command_scheduled_signal_read_adapters(),
+        build_character_manager_side_effect_read_adapters(),
         build_low_risk_effect_adapters(),
         build_prepared_context_effect_adapters(),
         build_runtime_command_scheduled_signal_effect_adapters(),
+        build_character_manager_side_effect_effect_adapters(),
         build_low_risk_state_adapters(),
         build_enemy_anomaly_state_state_adapters(),
         build_runtime_command_scheduled_signal_state_adapters(),
+        build_character_manager_side_effect_state_adapters(),
         build_low_risk_compose_adapters(),
     ):
         adapters.update(group)
