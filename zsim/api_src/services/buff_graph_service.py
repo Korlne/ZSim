@@ -12,11 +12,23 @@ from zsim.api_src.models.buff_graph import (
 )
 from zsim.sim_progress.BuffGraph.adapters.compose_adapters import build_low_risk_compose_adapters
 from zsim.sim_progress.BuffGraph.adapters.condition_adapters import (
+    build_enemy_anomaly_state_condition_adapters,
     build_low_risk_condition_adapters,
+    build_prepared_context_condition_adapters,
 )
-from zsim.sim_progress.BuffGraph.adapters.effect_adapters import build_low_risk_effect_adapters
-from zsim.sim_progress.BuffGraph.adapters.read_adapters import build_low_risk_read_adapters
-from zsim.sim_progress.BuffGraph.adapters.state_adapters import build_low_risk_state_adapters
+from zsim.sim_progress.BuffGraph.adapters.effect_adapters import (
+    build_low_risk_effect_adapters,
+    build_prepared_context_effect_adapters,
+)
+from zsim.sim_progress.BuffGraph.adapters.read_adapters import (
+    build_enemy_anomaly_state_read_adapters,
+    build_low_risk_read_adapters,
+    build_prepared_context_read_adapters,
+)
+from zsim.sim_progress.BuffGraph.adapters.state_adapters import (
+    build_enemy_anomaly_state_state_adapters,
+    build_low_risk_state_adapters,
+)
 from zsim.sim_progress.BuffGraph.adapters.trigger_adapters import build_low_risk_trigger_adapters
 from zsim.sim_progress.BuffGraph.blocks import build_default_block_registry
 from zsim.sim_progress.BuffGraph.migration import classify_xlogic_source, import_xlogic_to_graph
@@ -69,6 +81,35 @@ PURE_LOW_RISK_CANDIDATE_WAVE_EVIDENCE = [
         ),
     }
 ]
+ENEMY_STATE_CANDIDATE_WAVE_EVIDENCE = [
+    {
+        "wave_id": "enemy-state-edge-triggers",
+        "candidate_harness_id": "enemy-state-generated-spec-candidate-harness",
+        "status": "candidate_harness_wave_available",
+        "case_ids": [
+            "anomaly-debuff-exit-judge-candidate",
+            "miyabi-core-skill-frost-burn-candidate",
+            "branch-blade-song-crit-rate-bonus-candidate",
+        ],
+        "sampled_generated_spec_dirs": [
+            "enemy-state-edge-triggers",
+        ],
+        "candidate_runtime_status": RuntimeStatus.VISUAL_GRAPH_CANDIDATE.value,
+        "candidate_parity_passed": True,
+        "full_parity_verified": False,
+        "evidence_path": (
+            f"scripts/buff_agents/evidence/{CAMPAIGN_ID}/"
+            "oracle-graph-runtime-candidate-harness-enemy-state.json"
+        ),
+        "scope": (
+            "Fixture-backed candidate harness mechanism evidence for three "
+            "enemy-state generated specs; not final legacy parity for the full wave."
+        ),
+    }
+]
+CANDIDATE_WAVE_EVIDENCE = (
+    PURE_LOW_RISK_CANDIDATE_WAVE_EVIDENCE + ENEMY_STATE_CANDIDATE_WAVE_EVIDENCE
+)
 
 
 class BuffGraphService:
@@ -120,7 +161,7 @@ class BuffGraphService:
                         runtime_status=RuntimeStatus.VISUAL_GRAPH_CANDIDATE,
                     ),
                     block_registry=self._block_registry,
-                    adapters=_low_risk_adapters(),
+                    adapters=_candidate_harness_adapters(),
                     tick=int(candidate_harness.get("tick", 0)),
                     prepared_context=_mapping(candidate_harness.get("prepared_context")),
                     oracle=BuffGraphCandidateParityOracle(
@@ -144,7 +185,7 @@ class BuffGraphService:
                     ),
                     graph_id=spec.graph_id,
                     reason=(
-                        "Low-risk graph candidate harness executed without live Buff runtime cutover."
+                        "Graph candidate harness executed without live Buff runtime cutover."
                     ),
                     candidate_harness_id=result.case_id,
                     candidate_runtime_status=RuntimeStatus.VISUAL_GRAPH_CANDIDATE,
@@ -277,7 +318,7 @@ class BuffGraphService:
             evidence_path=BUFF_GRAPH_MATRIX_EVIDENCE_PATH,
             command_status="runner_required",
             run_id=None,
-            candidate_wave_evidence=list(PURE_LOW_RISK_CANDIDATE_WAVE_EVIDENCE),
+            candidate_wave_evidence=list(CANDIDATE_WAVE_EVIDENCE),
             matrix_scope=list(BUFF_GRAPH_MATRIX_SCOPE),
         )
 
@@ -292,7 +333,7 @@ class BuffGraphService:
             evidence_path=BUFF_GRAPH_MATRIX_EVIDENCE_PATH,
             command_status="request_recorded",
             run_id=BUFF_GRAPH_MATRIX_RUN_ID,
-            candidate_wave_evidence=list(PURE_LOW_RISK_CANDIDATE_WAVE_EVIDENCE),
+            candidate_wave_evidence=list(CANDIDATE_WAVE_EVIDENCE),
             matrix_scope=list(BUFF_GRAPH_MATRIX_SCOPE),
         )
 
@@ -312,14 +353,20 @@ def _mapping(value: Any) -> Mapping[str, Any]:
     return value if isinstance(value, Mapping) else {}
 
 
-def _low_risk_adapters() -> dict[str, object]:
+def _candidate_harness_adapters() -> dict[str, object]:
     adapters: dict[str, object] = {}
     for group in (
         build_low_risk_trigger_adapters(),
         build_low_risk_condition_adapters(),
+        build_prepared_context_condition_adapters(),
+        build_enemy_anomaly_state_condition_adapters(),
         build_low_risk_read_adapters(),
+        build_prepared_context_read_adapters(),
+        build_enemy_anomaly_state_read_adapters(),
         build_low_risk_effect_adapters(),
+        build_prepared_context_effect_adapters(),
         build_low_risk_state_adapters(),
+        build_enemy_anomaly_state_state_adapters(),
         build_low_risk_compose_adapters(),
     ):
         adapters.update(group)
