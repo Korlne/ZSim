@@ -73,6 +73,22 @@ const matrixContract = {
       evidence_path:
         'scripts/buff_agents/evidence/buff-20260702-buffxlogic-react-flow-visual-authoring/oracle-graph-runtime-candidate-harness-enemy-state.json',
     },
+    {
+      wave_id: 'dynamic-owner-equipper',
+      candidate_harness_id: 'dynamic-owner-generated-spec-candidate-harness',
+      status: 'candidate_harness_wave_available',
+      case_ids: [
+        'dynamic-owner-astral-voice-candidate',
+        'dynamic-owner-hellfire-gears-sp-r-bonus-candidate',
+        'dynamic-owner-ice-jade-teapot-extra-dmg-bonus-candidate',
+        'dynamic-owner-zanshin-herb-case-candidate',
+      ],
+      candidate_runtime_status: 'visual_graph_candidate',
+      candidate_parity_passed: true,
+      full_parity_verified: false,
+      evidence_path:
+        'scripts/buff_agents/evidence/buff-20260702-buffxlogic-react-flow-visual-authoring/oracle-graph-runtime-candidate-harness-dynamic-owner.json',
+    },
   ],
   matrix_scope: [
     'react-flow-ui-open-edit-save-validate',
@@ -491,6 +507,8 @@ app.on('window-all-closed', () => app.quit());
             text.includes('rainforest-gourmet-atk-bonus-candidate') &&
             text.includes('enemy-state-edge-triggers') &&
             text.includes('miyabi-core-skill-frost-burn-candidate') &&
+            text.includes('dynamic-owner-equipper') &&
+            text.includes('dynamic-owner-zanshin-herb-case-candidate') &&
             text.includes('full_parity_verified: false');
         })()
       `),
@@ -504,6 +522,8 @@ app.on('window-all-closed', () => app.quit());
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[0]?.candidate_parity_passed, true);
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[1]?.wave_id, 'enemy-state-edge-triggers');
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[1]?.candidate_parity_passed, true);
+    assert.equal(matrixRunPayload?.candidate_wave_evidence?.[2]?.wave_id, 'dynamic-owner-equipper');
+    assert.equal(matrixRunPayload?.candidate_wave_evidence?.[2]?.candidate_parity_passed, true);
     assert.equal(matrixRunPayload?.full_parity_verified, false);
   }
 
