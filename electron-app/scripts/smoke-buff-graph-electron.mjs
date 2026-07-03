@@ -119,6 +119,21 @@ const matrixContract = {
       evidence_path:
         'scripts/buff_agents/evidence/buff-20260702-buffxlogic-react-flow-visual-authoring/oracle-graph-runtime-candidate-harness-character-manager.json',
     },
+    {
+      wave_id: 'dot-anomaly-output-intents',
+      candidate_harness_id: 'dot-anomaly-generated-spec-candidate-harness',
+      status: 'candidate_harness_wave_available',
+      case_ids: [
+        'dot-anomaly-vivian-dot-trigger-candidate',
+        'dot-anomaly-yanagi-polarity-disorder-trigger-candidate',
+        'dot-anomaly-miyabi-additional-ability-ignore-ice-res-candidate',
+      ],
+      candidate_runtime_status: 'visual_graph_candidate',
+      candidate_parity_passed: true,
+      full_parity_verified: false,
+      evidence_path:
+        'scripts/buff_agents/evidence/buff-20260702-buffxlogic-react-flow-visual-authoring/oracle-graph-runtime-candidate-harness-dot-anomaly.json',
+    },
   ],
   matrix_scope: [
     'react-flow-ui-open-edit-save-validate',
@@ -543,6 +558,8 @@ app.on('window-all-closed', () => app.quit());
             text.includes('runtime-scheduled-astra-yao-core-passive-atk-bonus-candidate') &&
             text.includes('character-manager-side-effects') &&
             text.includes('character-manager-alice-cinema-6-trigger-candidate') &&
+            text.includes('dot-anomaly-output-intents') &&
+            text.includes('dot-anomaly-vivian-dot-trigger-candidate') &&
             text.includes('full_parity_verified: false');
         })()
       `),
@@ -562,6 +579,8 @@ app.on('window-all-closed', () => app.quit());
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[3]?.candidate_parity_passed, true);
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[4]?.wave_id, 'character-manager-side-effects');
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[4]?.candidate_parity_passed, true);
+    assert.equal(matrixRunPayload?.candidate_wave_evidence?.[5]?.wave_id, 'dot-anomaly-output-intents');
+    assert.equal(matrixRunPayload?.candidate_wave_evidence?.[5]?.candidate_parity_passed, true);
     assert.equal(matrixRunPayload?.full_parity_verified, false);
   }
 
