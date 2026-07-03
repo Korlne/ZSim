@@ -15,6 +15,10 @@ def _read_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+GENERATED_SPEC_LEGACY_ORACLE_ROOT = Path(
+    "tests/fixtures/buff_graph/generated-spec-legacy-oracles"
+)
+
 ORACLE_FIXTURES = [
     Path(
         "tests/fixtures/buff_graph/generated-spec-legacy-oracles/"
@@ -40,15 +44,7 @@ PREPARED_CONTEXT_BY_GRAPH = {
 }
 
 
-@pytest.mark.parametrize("fixture_path", ORACLE_FIXTURES)
-def test_materialized_generated_spec_legacy_oracles_execute_without_runtime_promotion(
-    monkeypatch,
-    fixture_path: Path,
-):
-    service = BuffGraphService()
-    monkeypatch.setattr(buff_graph_routes, "buff_graph_service", service)
-    client = TestClient(app)
-
+def _spec_with_oracle_metadata(fixture_path: Path) -> tuple[dict, dict, dict]:
     oracle_fixture = _read_json(fixture_path)
     wrapper = _read_json(Path(oracle_fixture["source_generated_spec"]))
     graph_id = oracle_fixture["graph_id"]
@@ -61,6 +57,20 @@ def test_materialized_generated_spec_legacy_oracles_execute_without_runtime_prom
             "prepared_context": PREPARED_CONTEXT_BY_GRAPH.get(graph_id, {}),
         }
     }
+    return oracle_fixture, original_spec, spec
+
+
+@pytest.mark.parametrize("fixture_path", ORACLE_FIXTURES)
+def test_materialized_generated_spec_legacy_oracles_execute_without_runtime_promotion(
+    monkeypatch,
+    fixture_path: Path,
+):
+    service = BuffGraphService()
+    monkeypatch.setattr(buff_graph_routes, "buff_graph_service", service)
+    client = TestClient(app)
+
+    oracle_fixture, original_spec, spec = _spec_with_oracle_metadata(fixture_path)
+    graph_id = oracle_fixture["graph_id"]
 
     created = client.post("/api/buff-graphs", json={"spec": spec})
     parity = client.post(f"/api/buff-graphs/{graph_id}/parity")
@@ -110,3 +120,59 @@ def test_materialized_generated_spec_legacy_oracles_execute_without_runtime_prom
     )
     assert ready_items[graph_id]["full_parity_verified"] is False
     assert readiness["full_parity_verified_count"] == 0
+
+
+def test_all_materialized_generated_spec_legacy_oracles_execute_without_runtime_promotion(
+    monkeypatch,
+):
+    service = BuffGraphService()
+    monkeypatch.setattr(buff_graph_routes, "buff_graph_service", service)
+    client = TestClient(app)
+    fixture_paths = sorted(GENERATED_SPEC_LEGACY_ORACLE_ROOT.glob("*.json"))
+
+    failures: list[dict[str, object]] = []
+    for fixture_path in fixture_paths:
+        oracle_fixture, original_spec, spec = _spec_with_oracle_metadata(fixture_path)
+        graph_id = oracle_fixture["graph_id"]
+
+        created = client.post("/api/buff-graphs", json={"spec": spec})
+        parity = client.post(f"/api/buff-graphs/{graph_id}/parity")
+        fetched = client.get(f"/api/buff-graphs/{graph_id}")
+        parity_payload = parity.json().get("data", {}) if parity.status_code == 200 else {}
+        fetched_payload = fetched.json().get("data", {}) if fetched.status_code == 200 else {}
+
+        if (
+            created.status_code != 200
+            or parity.status_code != 200
+            or parity_payload.get("status") != "generated_spec_legacy_oracle_passed"
+            or parity_payload.get("candidate_parity_passed") is not True
+            or parity_payload.get("full_parity_verified") is not False
+            or fetched_payload.get("runtime_status") != "legacy_python"
+            or original_spec["parity_metadata"]["parity_status"] != "not_run"
+        ):
+            failures.append(
+                {
+                    "fixture": fixture_path.as_posix(),
+                    "created_status": created.status_code,
+                    "parity_status_code": parity.status_code,
+                    "parity_status": parity_payload.get("status"),
+                    "candidate_parity_passed": parity_payload.get(
+                        "candidate_parity_passed"
+                    ),
+                    "full_parity_verified": parity_payload.get("full_parity_verified"),
+                    "fetched_runtime_status": fetched_payload.get("runtime_status"),
+                }
+            )
+
+    matrix = client.get("/api/buff-graphs/parity/matrix")
+    readiness = matrix.json()["data"]["generated_spec_readiness"]
+
+    assert len(fixture_paths) == 150
+    assert failures == []
+    assert readiness["total_generated_specs"] == 150
+    assert readiness["materialized_legacy_oracle_count"] == 150
+    assert readiness["missing_legacy_oracle_count"] == 0
+    assert readiness["ready_for_execution_count"] == 150
+    assert readiness["full_parity_verified_count"] == 0
+    assert readiness["runtime_status_counts"] == {"legacy_python": 150}
+    assert readiness["parity_status_counts"] == {"not_run": 150}
