@@ -58,6 +58,21 @@ const matrixContract = {
       evidence_path:
         'scripts/buff_agents/evidence/buff-20260702-buffxlogic-react-flow-visual-authoring/oracle-graph-runtime-candidate-harness-pure-low-risk.json',
     },
+    {
+      wave_id: 'enemy-state-edge-triggers',
+      candidate_harness_id: 'enemy-state-generated-spec-candidate-harness',
+      status: 'candidate_harness_wave_available',
+      case_ids: [
+        'anomaly-debuff-exit-judge-candidate',
+        'miyabi-core-skill-frost-burn-candidate',
+        'branch-blade-song-crit-rate-bonus-candidate',
+      ],
+      candidate_runtime_status: 'visual_graph_candidate',
+      candidate_parity_passed: true,
+      full_parity_verified: false,
+      evidence_path:
+        'scripts/buff_agents/evidence/buff-20260702-buffxlogic-react-flow-visual-authoring/oracle-graph-runtime-candidate-harness-enemy-state.json',
+    },
   ],
   matrix_scope: [
     'react-flow-ui-open-edit-save-validate',
@@ -474,6 +489,8 @@ app.on('window-all-closed', () => app.quit());
             text.includes('candidate_harness_passed') &&
             text.includes('pure-and-low-risk-stateless') &&
             text.includes('rainforest-gourmet-atk-bonus-candidate') &&
+            text.includes('enemy-state-edge-triggers') &&
+            text.includes('miyabi-core-skill-frost-burn-candidate') &&
             text.includes('full_parity_verified: false');
         })()
       `),
@@ -485,6 +502,8 @@ app.on('window-all-closed', () => app.quit());
     assert.equal(matrixRunPayload?.candidate_parity_passed, true);
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[0]?.wave_id, 'pure-and-low-risk-stateless');
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[0]?.candidate_parity_passed, true);
+    assert.equal(matrixRunPayload?.candidate_wave_evidence?.[1]?.wave_id, 'enemy-state-edge-triggers');
+    assert.equal(matrixRunPayload?.candidate_wave_evidence?.[1]?.candidate_parity_passed, true);
     assert.equal(matrixRunPayload?.full_parity_verified, false);
   }
 
