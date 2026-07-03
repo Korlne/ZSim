@@ -12,6 +12,10 @@ from zsim.define import (
     EXIST_FILE_PATH,
     JUDGE_FILE_PATH,
 )
+from zsim.sim_progress.BuffGraph.runtime.activation import (
+    BuffGraphActivationDecision,
+    BuffGraphRuntimeActivationIndex,
+)
 from zsim.sim_progress.Character.skill_class import Skill
 
 from .buff_class import Buff
@@ -625,6 +629,118 @@ def _get_buff_load_candidate_index(
     return candidate_index
 
 
+def _maybe_record_buff_graph_runtime_candidate_gate(
+    *,
+    buff_0: Buff,
+    mission: "LoadingMission",
+    time_now: int,
+    sim_instance: "Simulator",
+) -> BuffGraphActivationDecision | None:
+    if not bool(getattr(sim_instance, "enable_buff_graph_runtime_candidates", False)):
+        return None
+
+    buff_index = getattr(buff_0.ft, "index", None)
+    if not isinstance(buff_index, str) or not buff_index:
+        decision = BuffGraphActivationDecision(
+            use_graph=False,
+            reason="legacy_fallback_missing_buff_index",
+        )
+        _record_buff_graph_runtime_candidate_gate(
+            sim_instance=sim_instance,
+            buff_index=str(buff_index),
+            xlogic_path=None,
+            mission=mission,
+            time_now=time_now,
+            decision=decision,
+        )
+        return decision
+
+    activation_index = getattr(sim_instance, "buff_graph_runtime_activation_index", None)
+    if activation_index is None:
+        activation_index = getattr(sim_instance, "_buff_graph_runtime_activation_index", None)
+    if not isinstance(activation_index, BuffGraphRuntimeActivationIndex):
+        decision = BuffGraphActivationDecision(
+            use_graph=False,
+            reason="legacy_fallback_missing_activation_index",
+        )
+        _record_buff_graph_runtime_candidate_gate(
+            sim_instance=sim_instance,
+            buff_index=buff_index,
+            xlogic_path=_buff_xlogic_path(buff_0),
+            mission=mission,
+            time_now=time_now,
+            decision=decision,
+        )
+        return decision
+
+    xlogic_path = _buff_xlogic_path(buff_0)
+    decision = activation_index.choose_for_buff(
+        source_buff_index=buff_index,
+        xlogic_path=xlogic_path,
+    )
+    _record_buff_graph_runtime_candidate_gate(
+        sim_instance=sim_instance,
+        buff_index=buff_index,
+        xlogic_path=xlogic_path,
+        mission=mission,
+        time_now=time_now,
+        decision=decision,
+    )
+    return decision
+
+
+def _buff_xlogic_path(buff_0: Buff) -> str | None:
+    logic = getattr(buff_0, "logic", None)
+    logic_type = type(logic)
+    module_name = getattr(logic_type, "__module__", "")
+    if ".BuffXLogic." not in module_name:
+        return None
+    return module_name.replace(".", "/") + ".py"
+
+
+def _record_buff_graph_runtime_candidate_gate(
+    *,
+    sim_instance: "Simulator",
+    buff_index: str,
+    xlogic_path: str | None,
+    mission: "LoadingMission",
+    time_now: int,
+    decision: BuffGraphActivationDecision,
+) -> None:
+    payload = {
+        "tick": time_now,
+        "buff_index": buff_index,
+        "mission_tag": getattr(mission, "mission_tag", None),
+        "xlogic_path": xlogic_path,
+        "use_graph": decision.use_graph,
+        "use_legacy": decision.use_legacy,
+        "reason": decision.reason,
+        "graph_id": decision.spec.graph_id if decision.spec is not None else None,
+        "diagnostics": [
+            {
+                "code": diagnostic.code,
+                "message": diagnostic.message,
+                "graph_id": diagnostic.graph_id,
+                "source_path": diagnostic.source_path,
+            }
+            for diagnostic in decision.diagnostics
+        ],
+        "runtime_action": "legacy_python_fallback_until_graph_execution_pack",
+    }
+    recorder = getattr(sim_instance, "_record_buff_graph_runtime_candidate_gate", None)
+    if callable(recorder):
+        recorder(payload)
+        return
+    records = getattr(sim_instance, "_buff_graph_runtime_candidate_gate_decisions", None)
+    if not isinstance(records, list):
+        records = []
+        try:
+            setattr(sim_instance, "_buff_graph_runtime_candidate_gate_decisions", records)
+        except Exception:
+            return
+    records.append(payload)
+
+
 def process_buff(
     buff_0,
     sub_exist_buff_dict,
@@ -657,6 +773,12 @@ def process_buff(
         buff_0.ft.index,
         sub_exist_buff_dict,
         cache=load_lifecycle_cache.init_cache,
+    )
+    _maybe_record_buff_graph_runtime_candidate_gate(
+        buff_0=buff_0,
+        mission=mission,
+        time_now=time_now,
+        sim_instance=sim_instance,
     )
     all_match = BuffJudge(
         buff_0,
