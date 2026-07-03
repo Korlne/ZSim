@@ -98,11 +98,13 @@ def test_materialized_generated_spec_legacy_oracles_execute_without_runtime_prom
         for item in readiness["items"]
         if item["candidate_execution_available"]
     }
-    assert sorted(ready_items) == [
-        "alice-cinema-6-trigger",
-        "astra-yao-idyllic-cadenza",
-        "cordis-germina-crit-rate-bonus",
-    ]
+    assert len(ready_items) == 150
+    assert readiness["materialized_legacy_oracle_count"] == 150
+    assert readiness["missing_legacy_oracle_count"] == 0
+    assert readiness["ready_for_execution_count"] == 150
+    assert readiness["readiness_status_counts"] == {
+        "ready_for_generated_spec_legacy_oracle_execution": 150
+    }
     assert ready_items[graph_id]["readiness_status"] == (
         "ready_for_generated_spec_legacy_oracle_execution"
     )

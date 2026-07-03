@@ -671,17 +671,16 @@ def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monke
     assert "yuzuha-qte-yuzuha-cinema2-trigger-candidate" in wave_evidence[7]["case_ids"]
     readiness = matrix_payload["generated_spec_readiness"]
     assert readiness["total_generated_specs"] == 150
-    assert readiness["materialized_legacy_oracle_count"] == 3
-    assert readiness["missing_legacy_oracle_count"] == 147
+    assert readiness["materialized_legacy_oracle_count"] == 150
+    assert readiness["missing_legacy_oracle_count"] == 0
     assert readiness["valid_spec_count"] == 150
     assert readiness["compiled_spec_count"] == 150
-    assert readiness["ready_for_execution_count"] == 3
+    assert readiness["ready_for_execution_count"] == 150
     assert readiness["full_parity_verified_count"] == 0
     assert readiness["runtime_status_counts"] == {"legacy_python": 150}
     assert readiness["parity_status_counts"] == {"not_run": 150}
     assert readiness["readiness_status_counts"] == {
-        "missing_legacy_oracle_fixture": 147,
-        "ready_for_generated_spec_legacy_oracle_execution": 3,
+        "ready_for_generated_spec_legacy_oracle_execution": 150,
     }
     readiness_by_graph = {item["graph_id"]: item for item in readiness["items"]}
     assert len(readiness_by_graph) == 150
@@ -689,6 +688,7 @@ def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monke
         "alice-cinema-6-trigger",
         "astra-yao-idyllic-cadenza",
         "cordis-germina-crit-rate-bonus",
+        "rainforest-gourmet-atk-bonus",
     ]:
         item = readiness_by_graph[graph_id]
         assert item["readiness_status"] == (
@@ -698,10 +698,6 @@ def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monke
         assert item["candidate_execution_available"] is True
         assert item["legacy_oracle_fixture_path"].endswith(f"{graph_id}-legacy-oracle.json")
         assert item["full_parity_verified"] is False
-    missing_item = readiness_by_graph["rainforest-gourmet-atk-bonus"]
-    assert missing_item["readiness_status"] == "missing_legacy_oracle_fixture"
-    assert missing_item["legacy_oracle_materialized"] is False
-    assert missing_item["candidate_execution_available"] is False
 
     assert matrix_run.status_code == 200
     run_payload = matrix_run.json()["data"]
