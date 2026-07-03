@@ -21,6 +21,7 @@ from zsim.sim_progress.BuffGraph.adapters.condition_adapters import (
     build_low_risk_condition_adapters,
     build_prepared_context_condition_adapters,
     build_runtime_command_scheduled_signal_condition_adapters,
+    build_yuzuha_cinema2_qte_signal_condition_adapters,
 )
 from zsim.sim_progress.BuffGraph.adapters.effect_adapters import (
     build_calculator_runtime_formula_effect_adapters,
@@ -29,6 +30,7 @@ from zsim.sim_progress.BuffGraph.adapters.effect_adapters import (
     build_low_risk_effect_adapters,
     build_prepared_context_effect_adapters,
     build_runtime_command_scheduled_signal_effect_adapters,
+    build_yuzuha_cinema2_qte_signal_effect_adapters,
 )
 from zsim.sim_progress.BuffGraph.adapters.read_adapters import (
     build_calculator_runtime_formula_read_adapters,
@@ -37,6 +39,7 @@ from zsim.sim_progress.BuffGraph.adapters.read_adapters import (
     build_low_risk_read_adapters,
     build_prepared_context_read_adapters,
     build_runtime_command_scheduled_signal_read_adapters,
+    build_yuzuha_cinema2_qte_signal_read_adapters,
 )
 from zsim.sim_progress.BuffGraph.adapters.state_adapters import (
     build_character_manager_side_effect_state_adapters,
@@ -44,6 +47,7 @@ from zsim.sim_progress.BuffGraph.adapters.state_adapters import (
     build_enemy_anomaly_state_state_adapters,
     build_low_risk_state_adapters,
     build_runtime_command_scheduled_signal_state_adapters,
+    build_yuzuha_cinema2_qte_signal_state_adapters,
 )
 from zsim.sim_progress.BuffGraph.adapters.trigger_adapters import build_low_risk_trigger_adapters
 from zsim.sim_progress.BuffGraph.blocks import build_default_block_registry
@@ -258,6 +262,31 @@ CALCULATOR_CANDIDATE_WAVE_EVIDENCE = [
         ),
     }
 ]
+YUZUHA_QTE_CANDIDATE_WAVE_EVIDENCE = [
+    {
+        "wave_id": "yuzuha-cinema2-qte-signal",
+        "candidate_harness_id": "yuzuha-qte-generated-spec-candidate-harness",
+        "status": "candidate_harness_wave_available",
+        "case_ids": [
+            "yuzuha-qte-yuzuha-cinema2-trigger-candidate",
+        ],
+        "sampled_generated_spec_dirs": [
+            "yuzuha-cinema2-qte-signal-cases",
+        ],
+        "candidate_runtime_status": RuntimeStatus.VISUAL_GRAPH_CANDIDATE.value,
+        "candidate_parity_passed": True,
+        "full_parity_verified": False,
+        "evidence_path": (
+            f"scripts/buff_agents/evidence/{CAMPAIGN_ID}/"
+            "oracle-graph-runtime-candidate-harness-yuzuha-qte.json"
+        ),
+        "scope": (
+            "Fixture-backed candidate harness mechanism evidence for the final "
+            "YuzuhaCinema2 QTE generated spec; not final legacy parity for the full wave "
+            "and no ScheduledEvent or protected-port dispatch."
+        ),
+    }
+]
 CANDIDATE_WAVE_EVIDENCE = (
     PURE_LOW_RISK_CANDIDATE_WAVE_EVIDENCE
     + ENEMY_STATE_CANDIDATE_WAVE_EVIDENCE
@@ -266,6 +295,7 @@ CANDIDATE_WAVE_EVIDENCE = (
     + CHARACTER_MANAGER_CANDIDATE_WAVE_EVIDENCE
     + DOT_ANOMALY_CANDIDATE_WAVE_EVIDENCE
     + CALCULATOR_CANDIDATE_WAVE_EVIDENCE
+    + YUZUHA_QTE_CANDIDATE_WAVE_EVIDENCE
 )
 
 
@@ -520,23 +550,27 @@ def _candidate_harness_adapters() -> dict[str, object]:
         build_runtime_command_scheduled_signal_condition_adapters(),
         build_character_manager_side_effect_condition_adapters(),
         build_calculator_runtime_formula_condition_adapters(),
+        build_yuzuha_cinema2_qte_signal_condition_adapters(),
         build_low_risk_read_adapters(),
         build_prepared_context_read_adapters(),
         build_enemy_anomaly_state_read_adapters(),
         build_runtime_command_scheduled_signal_read_adapters(),
         build_character_manager_side_effect_read_adapters(),
         build_calculator_runtime_formula_read_adapters(),
+        build_yuzuha_cinema2_qte_signal_read_adapters(),
         build_low_risk_effect_adapters(),
         build_prepared_context_effect_adapters(),
         build_runtime_command_scheduled_signal_effect_adapters(),
         build_character_manager_side_effect_effect_adapters(),
         build_dot_anomaly_output_effect_adapters(),
         build_calculator_runtime_formula_effect_adapters(),
+        build_yuzuha_cinema2_qte_signal_effect_adapters(),
         build_low_risk_state_adapters(),
         build_enemy_anomaly_state_state_adapters(),
         build_runtime_command_scheduled_signal_state_adapters(),
         build_character_manager_side_effect_state_adapters(),
         build_dot_anomaly_output_state_adapters(),
+        build_yuzuha_cinema2_qte_signal_state_adapters(),
         build_low_risk_compose_adapters(),
         build_calculator_runtime_formula_compose_adapters(),
     ):
