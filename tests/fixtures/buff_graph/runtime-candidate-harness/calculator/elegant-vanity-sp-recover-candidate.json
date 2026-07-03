@@ -1,0 +1,38 @@
+{
+  "case_id": "calculator-elegant-vanity-sp-recover-candidate",
+  "source_generated_spec": "zsim/sim_progress/BuffGraph/generated_specs/calculator-runtime-formula-cases/elegant-vanity-sp-recover.buffgraph.json",
+  "legacy_oracle": "generated_spec_fixture_pending_legacy_python_oracle",
+  "tick": 777,
+  "prepared_context": {
+    "refinements": {
+      "elegant-vanity-sp-recover:source:legacy_source_review_required": 5
+    },
+    "source_buff_index": "elegant-vanity-sp-recover:source_buff_index:test"
+  },
+  "expected_final_output": {
+    "runtime_command_intent": {
+      "command_name": "elegant-vanity-sp-recover:command_name:legacy_source_review_required",
+      "command_scope": "allowed_runtime",
+      "command_type": "elegant-vanity-sp-recover:command_type:legacy_source_review_required",
+      "enabled": true,
+      "intent_type": "runtime_command",
+      "payload": {
+        "candidate_only": true,
+        "legacy_semantic_review_required": true,
+        "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/ElegantVanitySpRecover.py"
+      },
+      "source_buff_index": "elegant-vanity-sp-recover:source_buff_index:test"
+    }
+  },
+  "expected_trace_node_count": 4,
+  "expected_trace_effect_node_indexes": [
+    1,
+    2,
+    3
+  ],
+  "covered_intents": [
+    "read.refinement.v1",
+    "effect.publish_resource_refresh.v1",
+    "effect.issue_allowed_runtime_command.v1"
+  ]
+}
