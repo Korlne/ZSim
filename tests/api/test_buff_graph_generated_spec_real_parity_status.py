@@ -1,0 +1,110 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+from fastapi.testclient import TestClient
+
+from zsim.api import app
+from zsim.api_src.routes import buff_graph as buff_graph_routes
+from zsim.api_src.services.buff_graph_service import BuffGraphService
+
+
+def _read_json(path: Path) -> dict:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+ORACLE_FIXTURES = [
+    Path(
+        "tests/fixtures/buff_graph/generated-spec-legacy-oracles/"
+        "alice-cinema-6-trigger-legacy-oracle.json"
+    ),
+    Path(
+        "tests/fixtures/buff_graph/generated-spec-legacy-oracles/"
+        "astra-yao-idyllic-cadenza-legacy-oracle.json"
+    ),
+    Path(
+        "tests/fixtures/buff_graph/generated-spec-legacy-oracles/"
+        "cordis-germina-crit-rate-bonus-legacy-oracle.json"
+    ),
+]
+
+PREPARED_CONTEXT_BY_GRAPH = {
+    "alice-cinema-6-trigger": _read_json(
+        Path(
+            "tests/fixtures/buff_graph/runtime-candidate-harness/character-manager/"
+            "alice-cinema-6-trigger-candidate.json"
+        )
+    )["prepared_context"],
+}
+
+
+@pytest.mark.parametrize("fixture_path", ORACLE_FIXTURES)
+def test_materialized_generated_spec_legacy_oracles_execute_without_runtime_promotion(
+    monkeypatch,
+    fixture_path: Path,
+):
+    service = BuffGraphService()
+    monkeypatch.setattr(buff_graph_routes, "buff_graph_service", service)
+    client = TestClient(app)
+
+    oracle_fixture = _read_json(fixture_path)
+    wrapper = _read_json(Path(oracle_fixture["source_generated_spec"]))
+    graph_id = oracle_fixture["graph_id"]
+    original_spec = wrapper["spec"]
+    spec = json.loads(json.dumps(original_spec))
+    spec["parity_metadata"] = {
+        "generated_spec_legacy_oracle": {
+            "enabled": True,
+            "fixture_path": fixture_path.as_posix(),
+            "prepared_context": PREPARED_CONTEXT_BY_GRAPH.get(graph_id, {}),
+        }
+    }
+
+    created = client.post("/api/buff-graphs", json={"spec": spec})
+    parity = client.post(f"/api/buff-graphs/{graph_id}/parity")
+    fetched = client.get(f"/api/buff-graphs/{graph_id}")
+    matrix = client.get("/api/buff-graphs/parity/matrix")
+
+    assert created.status_code == 200
+    assert parity.status_code == 200
+    payload = parity.json()["data"]
+    assert payload["status"] == "generated_spec_legacy_oracle_passed"
+    assert payload["candidate_harness_id"] == oracle_fixture["case_id"]
+    assert payload["candidate_runtime_status"] == "visual_graph_candidate"
+    assert payload["candidate_parity_passed"] is True
+    assert payload["full_parity_verified"] is False
+    assert payload["evidence"]["case_id"] == oracle_fixture["case_id"]
+    assert payload["evidence"]["legacy_oracle"] == "legacy_python_collected"
+    assert payload["evidence"]["output_passed"] is True
+    assert payload["evidence"]["trace_checkpoint_passed"] is True
+    assert payload["evidence"]["oracle_fixture_path"] == fixture_path.as_posix()
+    assert payload["evidence"]["oracle_fixture_parity_status"] == (
+        "legacy_oracle_materialized_only"
+    )
+    assert payload["evidence"]["oracle_fixture_full_parity_verified"] is False
+
+    fetched_payload = fetched.json()["data"]
+    assert fetched_payload["runtime_status"] == "legacy_python"
+    assert fetched_payload["last_verified_at"] is None
+    assert original_spec["runtime_status"] == "legacy_python"
+    assert original_spec["parity_metadata"]["parity_status"] == "not_run"
+    assert oracle_fixture["full_parity_verified"] is False
+
+    readiness = matrix.json()["data"]["generated_spec_readiness"]
+    ready_items = {
+        item["graph_id"]: item
+        for item in readiness["items"]
+        if item["candidate_execution_available"]
+    }
+    assert sorted(ready_items) == [
+        "alice-cinema-6-trigger",
+        "astra-yao-idyllic-cadenza",
+        "cordis-germina-crit-rate-bonus",
+    ]
+    assert ready_items[graph_id]["readiness_status"] == (
+        "ready_for_generated_spec_legacy_oracle_execution"
+    )
+    assert ready_items[graph_id]["full_parity_verified"] is False
+    assert readiness["full_parity_verified_count"] == 0
