@@ -16,7 +16,7 @@ def test_low_risk_remaining_generated_specs_validate_compile_and_mirror() -> Non
     manifest = json.loads((SPEC_ROOT / "manifest.json").read_text(encoding="utf-8"))
 
     assert manifest["status"] == "generated_candidate"
-    assert manifest["runtime_status"] == "legacy_python"
+    assert manifest["runtime_status"] == "visual_graph_candidate"
     assert manifest["generated_spec_count"] == 45
     assert manifest["blocked_cases"] == []
     assert (FIXTURE_ROOT / "manifest.json").read_text(encoding="utf-8") == (
@@ -30,7 +30,7 @@ def test_low_risk_remaining_generated_specs_validate_compile_and_mirror() -> Non
         assert fixture_payload == production_payload
 
         spec = BuffGraphSpecModel.model_validate(production_payload["spec"]).to_domain()
-        assert spec.runtime_status is RuntimeStatus.LEGACY_PYTHON
+        assert spec.runtime_status is RuntimeStatus.VISUAL_GRAPH_CANDIDATE
         assert spec.created_from_xlogic == production_payload["source_xlogic_path"]
         assert validate_buff_graph_spec(spec) == ()
 

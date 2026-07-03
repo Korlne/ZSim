@@ -2,9 +2,9 @@
   "schema": "zsim-buffgraph-generated-spec-manifest.v1",
   "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
   "migration_wave": "low-risk-remaining-generated-specs",
-  "runtime_status": "legacy_python",
+  "runtime_status": "visual_graph_candidate",
   "status": "generated_candidate",
-  "status_note": "Generated specs are candidate evidence only. Legacy Python XLogic remains the runtime default and parity oracle until focused trace/final-output/UI parity passes.",
+  "status_note": "Generated specs are visual graph candidates for dry-run/parity evidence only. Legacy Python remains fallback and visual_graph_default remains blocked until UI-driven full matrix parity passes.",
   "generated_specs": [
     "astra-yao-idyllic-cadenza.buffgraph.json",
     "dawns-bloom4-set-trigger-n-a-dmg-bonus.buffgraph.json",

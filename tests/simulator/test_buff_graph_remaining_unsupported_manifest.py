@@ -16,7 +16,7 @@ def test_remaining_unsupported_manifest_covers_every_xlogic_without_generated_sp
     unsupported_sources = {case["source_xlogic_path"] for case in manifest["unsupported_cases"]}
 
     assert manifest["status"] == "blocked_by_missing_controlled_blocks"
-    assert manifest["runtime_status"] == "legacy_python"
+    assert manifest["runtime_status"] == "visual_graph_candidate"
     assert manifest["current_non_helper_xlogic_count"] == len(current_xlogic) == 150
     assert manifest["generated_spec_source_count"] == len(generated_sources & current_xlogic)
     assert manifest["unsupported_case_count"] == len(unsupported_sources)
@@ -40,8 +40,8 @@ def test_generated_specs_have_explicit_candidate_parity_status() -> None:
     for spec_path in GENERATED_ROOT.glob("*/*.buffgraph.json"):
         payload = json.loads(spec_path.read_text(encoding="utf-8"))
         spec = payload.get("spec", payload)
-        assert spec["runtime_status"] == "legacy_python"
-        assert spec["parity_metadata"]["parity_status"] == "not_run"
+        assert spec["runtime_status"] == "visual_graph_candidate"
+        assert spec["parity_metadata"]["parity_status"] == "generated_spec_legacy_oracle_passed"
 
 
 def _current_non_helper_xlogic_paths() -> set[str]:

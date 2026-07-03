@@ -2,8 +2,8 @@
   "schema": "zsim-buffgraph-generated-spec-manifest.v1",
   "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
   "migration_wave": "pure-condition-passive-buffs",
-  "runtime_status": "legacy_python",
-  "status_note": "Generated specs are candidate evidence only. Legacy Python XLogic remains the runtime default and parity oracle.",
+  "runtime_status": "visual_graph_candidate",
+  "status_note": "Generated specs are visual graph candidates for dry-run/parity evidence only. Legacy Python remains fallback and visual_graph_default remains blocked until UI-driven full matrix parity passes.",
   "generated_specs": [
     "cordis-germina-crit-rate-bonus.buffgraph.json",
     "moonlight-lullaby-all-team-dmg-bonus.buffgraph.json"

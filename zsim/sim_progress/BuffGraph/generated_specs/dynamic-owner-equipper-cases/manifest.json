@@ -2,9 +2,9 @@
   "schema": "zsim-buffgraph-generated-spec-manifest.v1",
   "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
   "migration_wave": "dynamic-owner-equipper-cases",
-  "runtime_status": "legacy_python",
+  "runtime_status": "visual_graph_candidate",
   "status": "generated_candidate_complete",
-  "status_note": "Seven dynamic owner/equipper cases now have candidate BuffGraphSpec files after controlled prepared-context, TriggerBuffRef, compose.not, trigger-count, skill-level, active-buffs, and listener blocks were merged. All remain legacy_python candidate evidence until parity passes.",
+  "status_note": "Generated specs are visual graph candidates for dry-run/parity evidence only. Legacy Python remains fallback and visual_graph_default remains blocked until UI-driven full matrix parity passes.",
   "generated_specs": [
     "astral-voice.buffgraph.json",
     "cordis-germina-s-n-a-and-q-ignore-defense.buffgraph.json",

@@ -33,7 +33,7 @@ def test_enemy_anomaly_unblocked_generated_specs_validate_compile_and_mirror() -
     manifest = json.loads((SPEC_ROOT / "manifest.json").read_text(encoding="utf-8"))
 
     assert manifest["status"] == "generated_candidate_partial"
-    assert manifest["runtime_status"] == "legacy_python"
+    assert manifest["runtime_status"] == "visual_graph_candidate"
     assert manifest["generated_spec_count"] == 32
     assert manifest["blocked_false_positive_count"] == 1
     assert manifest["blocked_false_positives"] == [
@@ -55,9 +55,9 @@ def test_enemy_anomaly_unblocked_generated_specs_validate_compile_and_mirror() -
         assert fixture_payload == production_payload
 
         spec = BuffGraphSpecModel.model_validate(production_payload["spec"]).to_domain()
-        assert spec.runtime_status is RuntimeStatus.LEGACY_PYTHON
+        assert spec.runtime_status is RuntimeStatus.VISUAL_GRAPH_CANDIDATE
         assert spec.created_from_xlogic == production_payload["source_xlogic_path"]
-        assert spec.parity_metadata["parity_status"] == "not_run"
+        assert spec.parity_metadata["parity_status"] == "generated_spec_legacy_oracle_passed"
         assert validate_buff_graph_spec(spec) == ()
 
         block_ids = {node.block_id for node in spec.nodes}
