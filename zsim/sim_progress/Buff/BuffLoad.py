@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, TypeAlias, TypedDict, cast
 
@@ -16,6 +16,9 @@ from zsim.sim_progress.BuffGraph.runtime.activation import (
     BuffGraphActivationDecision,
     BuffGraphRuntimeActivationIndex,
 )
+from zsim.sim_progress.BuffGraph.blocks import build_default_block_registry
+from zsim.sim_progress.BuffGraph.runtime.compiler import compile_buff_graph_spec
+from zsim.sim_progress.BuffGraph.runtime.executor import execute_compiled_buff_graph
 from zsim.sim_progress.Character.skill_class import Skill
 
 from .buff_class import Buff
@@ -741,6 +744,222 @@ def _record_buff_graph_runtime_candidate_gate(
     records.append(payload)
 
 
+def _maybe_dry_run_buff_graph_runtime_candidate(
+    *,
+    buff_0: Buff,
+    mission: "LoadingMission",
+    time_now: int,
+    sim_instance: "Simulator",
+    decision: BuffGraphActivationDecision | None,
+) -> Mapping[str, object] | None:
+    if not bool(getattr(sim_instance, "enable_buff_graph_runtime_candidate_dry_run", False)):
+        return None
+
+    buff_index = getattr(buff_0.ft, "index", None)
+    if not isinstance(buff_index, str) or not buff_index:
+        buff_index = str(buff_index)
+
+    xlogic_path = _buff_xlogic_path(buff_0)
+    base_payload: dict[str, object] = {
+        "tick": time_now,
+        "buff_index": buff_index,
+        "mission_tag": getattr(mission, "mission_tag", None),
+        "xlogic_path": xlogic_path,
+        "dry_run_enabled": True,
+        "legacy_python_active_path": True,
+        "runtime_action": "graph_runtime_dry_run_legacy_python_still_active",
+    }
+
+    if decision is None or not decision.use_graph or decision.spec is None:
+        payload = {
+            **base_payload,
+            "graph_id": None,
+            "dry_run_executed": False,
+            "passed": False,
+            "reason": "skipped_no_selected_graph_candidate",
+            "errors": [],
+            "outputs": {},
+            "node_outputs": {},
+            "trace_events": [],
+        }
+        _record_buff_graph_runtime_candidate_dry_run(sim_instance, payload)
+        return payload
+
+    adapters = getattr(sim_instance, "buff_graph_runtime_adapters", None)
+    if adapters is None:
+        adapters = getattr(sim_instance, "_buff_graph_runtime_adapters", None)
+    if not isinstance(adapters, Mapping):
+        payload = {
+            **base_payload,
+            "graph_id": decision.spec.graph_id,
+            "dry_run_executed": False,
+            "passed": False,
+            "reason": "skipped_missing_adapter_mapping",
+            "errors": [
+                {
+                    "code": "missing_adapter_mapping",
+                    "message": "Buff graph dry-run requires injected controlled adapter mapping",
+                    "path": "sim_instance.buff_graph_runtime_adapters",
+                }
+            ],
+            "outputs": {},
+            "node_outputs": {},
+            "trace_events": [],
+        }
+        _record_buff_graph_runtime_candidate_dry_run(sim_instance, payload)
+        return payload
+
+    block_registry = getattr(sim_instance, "buff_graph_block_registry", None)
+    if block_registry is None:
+        block_registry = getattr(sim_instance, "_buff_graph_block_registry", None)
+    if block_registry is None:
+        block_registry = build_default_block_registry()
+
+    try:
+        compile_result = compile_buff_graph_spec(
+            decision.spec,
+            block_registry=block_registry,
+        )
+    except Exception as exc:
+        payload = {
+            **base_payload,
+            "graph_id": decision.spec.graph_id,
+            "dry_run_executed": False,
+            "passed": False,
+            "reason": "compile_exception",
+            "errors": [
+                {
+                    "code": "compile_exception",
+                    "message": str(exc),
+                    "path": "compile_buff_graph_spec",
+                }
+            ],
+            "outputs": {},
+            "node_outputs": {},
+            "trace_events": [],
+        }
+        _record_buff_graph_runtime_candidate_dry_run(sim_instance, payload)
+        return payload
+
+    if not compile_result.passed or compile_result.compiled is None:
+        payload = {
+            **base_payload,
+            "graph_id": decision.spec.graph_id,
+            "dry_run_executed": False,
+            "passed": False,
+            "reason": "compile_failed",
+            "errors": [
+                {
+                    "code": error.code,
+                    "message": error.message,
+                    "path": error.path,
+                }
+                for error in compile_result.errors
+            ],
+            "outputs": {},
+            "node_outputs": {},
+            "trace_events": [],
+        }
+        _record_buff_graph_runtime_candidate_dry_run(sim_instance, payload)
+        return payload
+
+    try:
+        execution_result = execute_compiled_buff_graph(
+            compile_result.compiled,
+            adapters=adapters,
+            tick=time_now,
+            prepared_context={
+                "tick": time_now,
+                "buff_index": buff_index,
+                "mission_tag": getattr(mission, "mission_tag", None),
+                "xlogic_path": xlogic_path,
+                "source_buff_index": decision.spec.source_buff_index,
+                "owner_kind": decision.spec.owner_kind.value,
+                "owner_name": decision.spec.owner_name,
+            },
+        )
+    except Exception as exc:
+        payload = {
+            **base_payload,
+            "graph_id": decision.spec.graph_id,
+            "dry_run_executed": True,
+            "passed": False,
+            "reason": "execute_exception",
+            "errors": [
+                {
+                    "code": "execute_exception",
+                    "message": str(exc),
+                    "path": "execute_compiled_buff_graph",
+                }
+            ],
+            "outputs": {},
+            "node_outputs": {},
+            "trace_events": [],
+        }
+        _record_buff_graph_runtime_candidate_dry_run(sim_instance, payload)
+        return payload
+
+    payload = {
+        **base_payload,
+        "graph_id": decision.spec.graph_id,
+        "dry_run_executed": True,
+        "passed": execution_result.passed,
+        "reason": "executed",
+        "errors": [
+            {
+                "code": error.code,
+                "message": error.message,
+                "path": error.path,
+            }
+            for error in execution_result.errors
+        ],
+        "outputs": _json_safe_mapping(execution_result.outputs),
+        "node_outputs": {
+            node_id: _json_safe_mapping(outputs)
+            for node_id, outputs in execution_result.node_outputs.items()
+        },
+        "trace_events": [
+            _json_safe_mapping(event)
+            for event in execution_result.trace.normalized_events()
+        ],
+    }
+    _record_buff_graph_runtime_candidate_dry_run(sim_instance, payload)
+    return payload
+
+
+def _record_buff_graph_runtime_candidate_dry_run(
+    sim_instance: "Simulator",
+    payload: Mapping[str, object],
+) -> None:
+    recorder = getattr(sim_instance, "_record_buff_graph_runtime_candidate_dry_run", None)
+    if callable(recorder):
+        recorder(dict(payload))
+        return
+    records = getattr(sim_instance, "_buff_graph_runtime_candidate_dry_run_results", None)
+    if not isinstance(records, list):
+        records = []
+        try:
+            setattr(sim_instance, "_buff_graph_runtime_candidate_dry_run_results", records)
+        except Exception:
+            return
+    records.append(dict(payload))
+
+
+def _json_safe_mapping(value: Mapping[str, object]) -> dict[str, object]:
+    return {
+        str(key): _json_safe_value(item)
+        for key, item in value.items()
+    }
+
+
+def _json_safe_value(value: object) -> object:
+    if isinstance(value, Mapping):
+        return _json_safe_mapping(value)
+    if isinstance(value, tuple | list):
+        return [_json_safe_value(item) for item in value]
+    return value
+
+
 def process_buff(
     buff_0,
     sub_exist_buff_dict,
@@ -774,11 +993,18 @@ def process_buff(
         sub_exist_buff_dict,
         cache=load_lifecycle_cache.init_cache,
     )
-    _maybe_record_buff_graph_runtime_candidate_gate(
+    graph_runtime_decision = _maybe_record_buff_graph_runtime_candidate_gate(
         buff_0=buff_0,
         mission=mission,
         time_now=time_now,
         sim_instance=sim_instance,
+    )
+    _maybe_dry_run_buff_graph_runtime_candidate(
+        buff_0=buff_0,
+        mission=mission,
+        time_now=time_now,
+        sim_instance=sim_instance,
+        decision=graph_runtime_decision,
     )
     all_match = BuffJudge(
         buff_0,
