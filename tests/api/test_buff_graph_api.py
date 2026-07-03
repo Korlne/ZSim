@@ -464,6 +464,55 @@ def test_buff_graph_api_runs_calculator_candidate_harness_wave_case(monkeypatch)
     assert fetched.json()["data"]["runtime_status"] == "legacy_python"
 
 
+def test_buff_graph_api_runs_yuzuha_qte_candidate_harness_wave_case(monkeypatch):
+    service = BuffGraphService()
+    monkeypatch.setattr(buff_graph_routes, "buff_graph_service", service)
+    client = TestClient(app)
+    case = _read_json(
+        Path(
+            "tests/fixtures/buff_graph/runtime-candidate-harness/yuzuha-qte/"
+            "yuzuha-cinema2-trigger-candidate.json"
+        )
+    )
+    wrapper = _read_json(Path(case["source_generated_spec"]))
+    spec = wrapper["spec"]
+    spec["parity_metadata"] = {
+        "candidate_harness": {
+            "enabled": True,
+            "case_id": case["case_id"],
+            "legacy_oracle": case["legacy_oracle"],
+            "tick": case["tick"],
+            "prepared_context": case["prepared_context"],
+            "expected_final_output": case["expected_final_output"],
+            "expected_trace_kind_checkpoint": _expected_trace(
+                node_count=case["expected_trace_node_count"],
+                effect_node_indexes=case["expected_trace_effect_node_indexes"],
+            ),
+        }
+    }
+
+    created = client.post("/api/buff-graphs", json={"spec": spec})
+    parity = client.post("/api/buff-graphs/yuzuha-cinema2-trigger/parity")
+    fetched = client.get("/api/buff-graphs/yuzuha-cinema2-trigger")
+
+    assert created.status_code == 200
+    assert parity.status_code == 200
+    payload = parity.json()["data"]
+    assert payload["status"] == "candidate_harness_passed"
+    assert payload["candidate_harness_id"] == (
+        "yuzuha-qte-yuzuha-cinema2-trigger-candidate"
+    )
+    assert payload["candidate_runtime_status"] == "visual_graph_candidate"
+    assert payload["candidate_parity_passed"] is True
+    assert payload["full_parity_verified"] is False
+    assert payload["evidence"]["legacy_oracle"] == (
+        "generated_spec_fixture_pending_legacy_python_oracle"
+    )
+    assert payload["evidence"]["output_passed"] is True
+    assert payload["evidence"]["trace_checkpoint_passed"] is True
+    assert fetched.json()["data"]["runtime_status"] == "legacy_python"
+
+
 def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monkeypatch):
     service = BuffGraphService()
     monkeypatch.setattr(buff_graph_routes, "buff_graph_service", service)
@@ -537,6 +586,7 @@ def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monke
         "character-manager-side-effects",
         "dot-anomaly-output-intents",
         "calculator-runtime-formula-intents",
+        "yuzuha-cinema2-qte-signal",
     ]
     assert wave_evidence[0]["candidate_parity_passed"] is True
     assert wave_evidence[0]["full_parity_verified"] is False
@@ -565,6 +615,9 @@ def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monke
         "calculator-alice-additional-ability-ap-bonus-candidate"
         in wave_evidence[6]["case_ids"]
     )
+    assert wave_evidence[7]["candidate_parity_passed"] is True
+    assert wave_evidence[7]["full_parity_verified"] is False
+    assert "yuzuha-qte-yuzuha-cinema2-trigger-candidate" in wave_evidence[7]["case_ids"]
 
     assert matrix_run.status_code == 200
     run_payload = matrix_run.json()["data"]
