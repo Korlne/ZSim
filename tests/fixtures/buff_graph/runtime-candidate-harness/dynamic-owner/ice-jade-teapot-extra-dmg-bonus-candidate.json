@@ -1,0 +1,38 @@
+{
+  "case_id": "dynamic-owner-ice-jade-teapot-extra-dmg-bonus-candidate",
+  "source_generated_spec": "zsim/sim_progress/BuffGraph/generated_specs/dynamic-owner-equipper-cases/ice-jade-teapot-extra-dmg-bonus.buffgraph.json",
+  "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/IceJadeTeaPotExtraDMGBonus.py",
+  "legacy_oracle": "generated_spec_fixture_pending_legacy_python_oracle",
+  "tick": 132,
+  "prepared_context": {
+    "tick": 132,
+    "prepared_equipper": "Soukaku",
+    "equipper": "Soukaku",
+    "active_buffs_by_equipper": {
+      "Soukaku": [
+        {
+          "buff_index": "ice_jade_teapot_stack",
+          "count": 3,
+          "active": true
+        }
+      ]
+    },
+    "trigger_buff_state": {
+      "active": true,
+      "count": 3
+    }
+  },
+  "expected_final_output": {
+    "actual_count": 3,
+    "expected_count": 0,
+    "operator": "greater_than",
+    "passed": true
+  },
+  "expected_trace_node_count": 4,
+  "expected_trace_effect_node_indexes": [],
+  "coverage_notes": [
+    "active buffs for equipper read executes in graph",
+    "count condition currently reads trigger_buff_state as the harness-compatible count source",
+    "mechanism evidence only; not final IceJadeTeaPot semantic parity"
+  ]
+}
