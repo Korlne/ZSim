@@ -15,19 +15,23 @@ from zsim.sim_progress.BuffGraph.adapters.condition_adapters import (
     build_enemy_anomaly_state_condition_adapters,
     build_low_risk_condition_adapters,
     build_prepared_context_condition_adapters,
+    build_runtime_command_scheduled_signal_condition_adapters,
 )
 from zsim.sim_progress.BuffGraph.adapters.effect_adapters import (
     build_low_risk_effect_adapters,
     build_prepared_context_effect_adapters,
+    build_runtime_command_scheduled_signal_effect_adapters,
 )
 from zsim.sim_progress.BuffGraph.adapters.read_adapters import (
     build_enemy_anomaly_state_read_adapters,
     build_low_risk_read_adapters,
     build_prepared_context_read_adapters,
+    build_runtime_command_scheduled_signal_read_adapters,
 )
 from zsim.sim_progress.BuffGraph.adapters.state_adapters import (
     build_enemy_anomaly_state_state_adapters,
     build_low_risk_state_adapters,
+    build_runtime_command_scheduled_signal_state_adapters,
 )
 from zsim.sim_progress.BuffGraph.adapters.trigger_adapters import build_low_risk_trigger_adapters
 from zsim.sim_progress.BuffGraph.blocks import build_default_block_registry
@@ -134,10 +138,38 @@ DYNAMIC_OWNER_CANDIDATE_WAVE_EVIDENCE = [
         ),
     }
 ]
+RUNTIME_SCHEDULED_CANDIDATE_WAVE_EVIDENCE = [
+    {
+        "wave_id": "runtime-command-scheduled-signal",
+        "candidate_harness_id": "runtime-scheduled-generated-spec-candidate-harness",
+        "status": "candidate_harness_wave_available",
+        "case_ids": [
+            "runtime-scheduled-astra-yao-core-passive-atk-bonus-candidate",
+            "runtime-scheduled-branch-blade-song-crit-damage-bonus-candidate",
+            "runtime-scheduled-magnetic-storm-charlie-sp-recover-candidate",
+        ],
+        "sampled_generated_spec_dirs": [
+            "runtime-command-scheduled-producers",
+        ],
+        "candidate_runtime_status": RuntimeStatus.VISUAL_GRAPH_CANDIDATE.value,
+        "candidate_parity_passed": True,
+        "full_parity_verified": False,
+        "evidence_path": (
+            f"scripts/buff_agents/evidence/{CAMPAIGN_ID}/"
+            "oracle-graph-runtime-candidate-harness-runtime-scheduled.json"
+        ),
+        "scope": (
+            "Fixture-backed candidate harness mechanism evidence for three "
+            "runtime-command/scheduled-signal generated specs; not final legacy parity "
+            "for the full wave and no protected-port dispatch."
+        ),
+    }
+]
 CANDIDATE_WAVE_EVIDENCE = (
     PURE_LOW_RISK_CANDIDATE_WAVE_EVIDENCE
     + ENEMY_STATE_CANDIDATE_WAVE_EVIDENCE
     + DYNAMIC_OWNER_CANDIDATE_WAVE_EVIDENCE
+    + RUNTIME_SCHEDULED_CANDIDATE_WAVE_EVIDENCE
 )
 
 
@@ -389,13 +421,17 @@ def _candidate_harness_adapters() -> dict[str, object]:
         build_low_risk_condition_adapters(),
         build_prepared_context_condition_adapters(),
         build_enemy_anomaly_state_condition_adapters(),
+        build_runtime_command_scheduled_signal_condition_adapters(),
         build_low_risk_read_adapters(),
         build_prepared_context_read_adapters(),
         build_enemy_anomaly_state_read_adapters(),
+        build_runtime_command_scheduled_signal_read_adapters(),
         build_low_risk_effect_adapters(),
         build_prepared_context_effect_adapters(),
+        build_runtime_command_scheduled_signal_effect_adapters(),
         build_low_risk_state_adapters(),
         build_enemy_anomaly_state_state_adapters(),
+        build_runtime_command_scheduled_signal_state_adapters(),
         build_low_risk_compose_adapters(),
     ):
         adapters.update(group)

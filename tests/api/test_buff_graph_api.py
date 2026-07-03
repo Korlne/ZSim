@@ -270,6 +270,55 @@ def test_buff_graph_api_runs_dynamic_owner_candidate_harness_wave_case(monkeypat
     assert fetched.json()["data"]["runtime_status"] == "legacy_python"
 
 
+def test_buff_graph_api_runs_runtime_scheduled_candidate_harness_wave_case(monkeypatch):
+    service = BuffGraphService()
+    monkeypatch.setattr(buff_graph_routes, "buff_graph_service", service)
+    client = TestClient(app)
+    case = _read_json(
+        Path(
+            "tests/fixtures/buff_graph/runtime-candidate-harness/runtime-scheduled/"
+            "astra-yao-core-passive-atk-bonus-candidate.json"
+        )
+    )
+    wrapper = _read_json(Path(case["source_generated_spec"]))
+    spec = wrapper["spec"]
+    spec["parity_metadata"] = {
+        "candidate_harness": {
+            "enabled": True,
+            "case_id": case["case_id"],
+            "legacy_oracle": case["legacy_oracle"],
+            "tick": case["tick"],
+            "prepared_context": case["prepared_context"],
+            "expected_final_output": case["expected_final_output"],
+            "expected_trace_kind_checkpoint": _expected_trace(
+                node_count=case["expected_trace_node_count"],
+                effect_node_indexes=case["expected_trace_effect_node_indexes"],
+            ),
+        }
+    }
+
+    created = client.post("/api/buff-graphs", json={"spec": spec})
+    parity = client.post("/api/buff-graphs/astra-yao-core-passive-atk-bonus/parity")
+    fetched = client.get("/api/buff-graphs/astra-yao-core-passive-atk-bonus")
+
+    assert created.status_code == 200
+    assert parity.status_code == 200
+    payload = parity.json()["data"]
+    assert payload["status"] == "candidate_harness_passed"
+    assert payload["candidate_harness_id"] == (
+        "runtime-scheduled-astra-yao-core-passive-atk-bonus-candidate"
+    )
+    assert payload["candidate_runtime_status"] == "visual_graph_candidate"
+    assert payload["candidate_parity_passed"] is True
+    assert payload["full_parity_verified"] is False
+    assert payload["evidence"]["legacy_oracle"] == (
+        "generated_spec_fixture_pending_legacy_python_oracle"
+    )
+    assert payload["evidence"]["output_passed"] is True
+    assert payload["evidence"]["trace_checkpoint_passed"] is True
+    assert fetched.json()["data"]["runtime_status"] == "legacy_python"
+
+
 def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monkeypatch):
     service = BuffGraphService()
     monkeypatch.setattr(buff_graph_routes, "buff_graph_service", service)
@@ -339,6 +388,7 @@ def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monke
         "pure-and-low-risk-stateless",
         "enemy-state-edge-triggers",
         "dynamic-owner-equipper",
+        "runtime-command-scheduled-signal",
     ]
     assert wave_evidence[0]["candidate_parity_passed"] is True
     assert wave_evidence[0]["full_parity_verified"] is False
@@ -349,6 +399,12 @@ def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monke
     assert wave_evidence[2]["candidate_parity_passed"] is True
     assert wave_evidence[2]["full_parity_verified"] is False
     assert "dynamic-owner-zanshin-herb-case-candidate" in wave_evidence[2]["case_ids"]
+    assert wave_evidence[3]["candidate_parity_passed"] is True
+    assert wave_evidence[3]["full_parity_verified"] is False
+    assert (
+        "runtime-scheduled-astra-yao-core-passive-atk-bonus-candidate"
+        in wave_evidence[3]["case_ids"]
+    )
 
     assert matrix_run.status_code == 200
     run_payload = matrix_run.json()["data"]
