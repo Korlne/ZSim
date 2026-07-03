@@ -1,0 +1,76 @@
+{
+  "case_id": "branch-blade-song-crit-rate-bonus-candidate",
+  "source_generated_spec": "zsim/sim_progress/BuffGraph/generated_specs/enemy-state-edge-triggers/branch-blade-song-crit-rate-bonus.buffgraph.json",
+  "candidate_runtime_status": "visual_graph_candidate",
+  "legacy_oracle": "generated_spec_fixture_pending_legacy_python_oracle",
+  "tick": 960,
+  "prepared_context": {
+    "tick": 960,
+    "prepared_owner": "Branch",
+    "prepared_equipper": "Branch",
+    "prepared_template_buff": {
+      "buff_index": "legacy_source_review_required",
+      "count": 0,
+      "active": false
+    },
+    "enemy_context": {
+      "anomaly_state": {
+        "state": "legacy_source_review_required",
+        "active": true,
+        "source": "fixture"
+      },
+      "anomaly_bar": {
+        "value": 55,
+        "threshold": 100
+      }
+    },
+    "enemy_anomaly_state": {
+      "state": "legacy_source_review_required",
+      "active": true,
+      "source": "fixture"
+    },
+    "enemy_anomaly_bar": {
+      "value": 55,
+      "threshold": 100
+    },
+    "state": {
+      "branch-blade-song-crit-rate-bonus": "none"
+    }
+  },
+  "expected_final_output": {
+    "command": {
+      "type": "update_template_buff",
+      "template_buff_index": "legacy_source_review_required",
+      "mode": "set",
+      "count": null,
+      "delta": null
+    }
+  },
+  "expected_trace_kind_checkpoint": [
+    ["graph_started", ""],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["effect_requested", "effect_requested"],
+    ["graph_finished", "graph_finished"]
+  ],
+  "notes": [
+    "Generated-spec candidate harness fixture for enemy-state wave.",
+    "This fixture expands harness mechanics only; it is not final legacy Python parity or visual_graph_default evidence."
+  ]
+}
