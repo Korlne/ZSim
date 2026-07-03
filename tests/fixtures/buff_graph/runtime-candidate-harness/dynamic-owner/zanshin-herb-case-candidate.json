@@ -1,0 +1,44 @@
+{
+  "case_id": "dynamic-owner-zanshin-herb-case-candidate",
+  "source_generated_spec": "zsim/sim_progress/BuffGraph/generated_specs/dynamic-owner-equipper-cases/zanshin-herb-case.buffgraph.json",
+  "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/ZanshinHerbCase.py",
+  "legacy_oracle": "generated_spec_fixture_pending_legacy_python_oracle",
+  "tick": 134,
+  "prepared_context": {
+    "tick": 134,
+    "prepared_owner": "Yuzuha",
+    "owner_name": "Yuzuha",
+    "prepared_equipper": "Yuzuha",
+    "equipper": "Yuzuha",
+    "source_buff_index": "zanshin_herb_case",
+    "listener_signals": {
+      "zanshin-herb-case": {
+        "listener_key": "zanshin-herb-case",
+        "payload": {
+          "event": "quick_assist"
+        },
+        "active": true
+      }
+    }
+  },
+  "expected_final_output": {
+    "listener_registration": {
+      "listener_key": "zanshin-herb-case",
+      "source_buff_index": "Buff-WEngine-\u6b8b\u5fc3\u9752\u56ca-\u76d1\u542c\u89e6\u53d1",
+      "owner": "Yuzuha",
+      "equipper": "Yuzuha"
+    }
+  },
+  "expected_trace_node_count": 6,
+  "expected_trace_effect_node_indexes": [
+    3,
+    4,
+    5
+  ],
+  "coverage_notes": [
+    "listener registration intent",
+    "listener signal read",
+    "listener signal consume intent",
+    "mechanism evidence only; not character-manager side-effect parity"
+  ]
+}
