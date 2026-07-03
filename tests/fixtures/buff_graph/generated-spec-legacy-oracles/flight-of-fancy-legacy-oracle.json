@@ -1,0 +1,83 @@
+{
+  "schema": "zsim-buffgraph-generated-spec-legacy-oracle.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "case_id": "generated-spec-legacy-oracle-flight-of-fancy",
+  "source_generated_spec": "zsim/sim_progress/BuffGraph/generated_specs/low-risk-remaining-generated-specs/flight-of-fancy.buffgraph.json",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/FlightOfFancy.py",
+  "graph_id": "flight-of-fancy",
+  "migration_wave": "low-risk-remaining-generated-specs",
+  "tick": 600,
+  "legacy_oracle": "legacy_python_collected",
+  "parity_status": "legacy_oracle_materialized_only",
+  "full_parity_verified": false,
+  "legacy_oracle_result": {
+    "case_id": "generated-spec-legacy-oracle-flight-of-fancy",
+    "legacy_oracle": "legacy_python_collected",
+    "judge_result": true,
+    "hit_result": null,
+    "expected_final_output": {
+      "active": false,
+      "last_active_tick": null
+    },
+    "expected_trace_kind_checkpoint": [
+      [
+        "graph_started",
+        ""
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "graph_finished",
+        "graph_finished"
+      ]
+    ],
+    "record_before": {},
+    "record_after": {
+      "active": false,
+      "last_active_tick": null
+    },
+    "record_delta": {
+      "active": {
+        "before": null,
+        "after": false
+      }
+    },
+    "side_effects": [],
+    "blocked_reason": null
+  },
+  "notes": [
+    "This fixture materializes low-risk generated-spec legacy oracle evidence through the test-only collector helper.",
+    "It does not edit or promote the generated spec; runtime_status remains legacy_python and parity_status remains not_run.",
+    "It is not final full parity evidence; UI-driven full simulation matrix remains required."
+  ]
+}
