@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+from collections import Counter
 from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any, Mapping
 
 from zsim.api_src.models.buff_graph import (
     BuffGraphCompilePayload,
+    BuffGraphGeneratedSpecReadinessPayload,
+    BuffGraphGeneratedSpecStatusItem,
     BuffGraphMatrixPayload,
     BuffGraphParityPayload,
     BuffGraphSpecModel,
@@ -75,6 +78,10 @@ BUFF_GRAPH_MATRIX_SCOPE = [
     "gap-dedicated-trigger-scenarios",
     "legacy-python-xlogic-vs-graph-runtime",
 ]
+GENERATED_SPECS_ROOT = Path("zsim/sim_progress/BuffGraph/generated_specs")
+GENERATED_SPEC_LEGACY_ORACLE_ROOT = Path(
+    "tests/fixtures/buff_graph/generated-spec-legacy-oracles"
+)
 PURE_LOW_RISK_CANDIDATE_WAVE_EVIDENCE = [
     {
         "wave_id": "pure-and-low-risk-stateless",
@@ -545,6 +552,7 @@ class BuffGraphService:
         }
 
     def parity_matrix(self) -> BuffGraphMatrixPayload:
+        generated_spec_readiness = self.generated_spec_readiness()
         return BuffGraphMatrixPayload(
             status="not_available",
             reason=(
@@ -558,9 +566,11 @@ class BuffGraphService:
             run_id=None,
             candidate_wave_evidence=list(CANDIDATE_WAVE_EVIDENCE),
             matrix_scope=list(BUFF_GRAPH_MATRIX_SCOPE),
+            generated_spec_readiness=generated_spec_readiness,
         )
 
     def request_parity_matrix_run(self) -> BuffGraphMatrixPayload:
+        generated_spec_readiness = self.generated_spec_readiness()
         return BuffGraphMatrixPayload(
             status="run_requested",
             reason=(
@@ -573,6 +583,90 @@ class BuffGraphService:
             run_id=BUFF_GRAPH_MATRIX_RUN_ID,
             candidate_wave_evidence=list(CANDIDATE_WAVE_EVIDENCE),
             matrix_scope=list(BUFF_GRAPH_MATRIX_SCOPE),
+            generated_spec_readiness=generated_spec_readiness,
+        )
+
+    def generated_spec_readiness(self) -> BuffGraphGeneratedSpecReadinessPayload:
+        oracle_fixtures = _generated_spec_legacy_oracle_fixtures()
+        items: list[BuffGraphGeneratedSpecStatusItem] = []
+
+        for path in sorted(GENERATED_SPECS_ROOT.rglob("*.buffgraph.json")):
+            wrapper = json.loads(path.read_text(encoding="utf-8"))
+            spec_payload = _mapping(wrapper.get("spec")) or wrapper
+            spec_model = BuffGraphSpecModel.model_validate(spec_payload)
+            spec = spec_model.to_domain()
+
+            validation_errors = validate_buff_graph_spec(spec)
+            validates = not validation_errors
+            compile_result = compile_buff_graph_spec(
+                spec,
+                block_registry=self._block_registry,
+            )
+            compiles = compile_result.passed
+            fixture_path = oracle_fixtures.get(spec.graph_id)
+            legacy_oracle_materialized = fixture_path is not None
+            readiness_status = _generated_spec_readiness_status(
+                validates=validates,
+                compiles=compiles,
+                legacy_oracle_materialized=legacy_oracle_materialized,
+            )
+            parity_metadata = _mapping(spec.parity_metadata)
+
+            items.append(
+                BuffGraphGeneratedSpecStatusItem(
+                    graph_id=spec.graph_id,
+                    source_generated_spec=path.as_posix(),
+                    source_xlogic_path=(
+                        str(wrapper.get("source_xlogic_path"))
+                        if wrapper.get("source_xlogic_path") is not None
+                        else spec.created_from_xlogic
+                    ),
+                    migration_wave=(
+                        str(wrapper.get("migration_wave"))
+                        if wrapper.get("migration_wave") is not None
+                        else None
+                    ),
+                    runtime_status=spec.runtime_status,
+                    parity_status=(
+                        str(parity_metadata.get("parity_status"))
+                        if parity_metadata.get("parity_status") is not None
+                        else None
+                    ),
+                    validates=validates,
+                    compiles=compiles,
+                    legacy_oracle_materialized=legacy_oracle_materialized,
+                    legacy_oracle_fixture_path=fixture_path,
+                    candidate_execution_available=(
+                        readiness_status
+                        == "ready_for_generated_spec_legacy_oracle_execution"
+                    ),
+                    readiness_status=readiness_status,
+                    full_parity_verified=False,
+                )
+            )
+
+        runtime_status_counts = Counter(item.runtime_status.value for item in items)
+        parity_status_counts = Counter(item.parity_status or "unknown" for item in items)
+        readiness_status_counts = Counter(item.readiness_status for item in items)
+
+        return BuffGraphGeneratedSpecReadinessPayload(
+            total_generated_specs=len(items),
+            materialized_legacy_oracle_count=sum(
+                1 for item in items if item.legacy_oracle_materialized
+            ),
+            missing_legacy_oracle_count=sum(
+                1 for item in items if not item.legacy_oracle_materialized
+            ),
+            valid_spec_count=sum(1 for item in items if item.validates),
+            compiled_spec_count=sum(1 for item in items if item.compiles),
+            ready_for_execution_count=sum(
+                1 for item in items if item.candidate_execution_available
+            ),
+            full_parity_verified_count=0,
+            runtime_status_counts=dict(sorted(runtime_status_counts.items())),
+            parity_status_counts=dict(sorted(parity_status_counts.items())),
+            readiness_status_counts=dict(sorted(readiness_status_counts.items())),
+            items=items,
         )
 
     def _require_graph(self, graph_id: str) -> BuffGraphSpec:
@@ -601,6 +695,31 @@ def _generated_spec_legacy_oracle_metadata(
 def _load_legacy_oracle_fixture(metadata: Mapping[str, Any]) -> Mapping[str, Any]:
     path = Path(str(metadata["fixture_path"]))
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _generated_spec_legacy_oracle_fixtures() -> dict[str, str]:
+    fixtures: dict[str, str] = {}
+    for path in sorted(GENERATED_SPEC_LEGACY_ORACLE_ROOT.glob("*.json")):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        graph_id = payload.get("graph_id")
+        if isinstance(graph_id, str):
+            fixtures[graph_id] = path.as_posix()
+    return fixtures
+
+
+def _generated_spec_readiness_status(
+    *,
+    validates: bool,
+    compiles: bool,
+    legacy_oracle_materialized: bool,
+) -> str:
+    if not validates:
+        return "invalid_spec"
+    if not compiles:
+        return "compile_failed"
+    if legacy_oracle_materialized:
+        return "ready_for_generated_spec_legacy_oracle_execution"
+    return "missing_legacy_oracle_fixture"
 
 
 def _mapping(value: Any) -> Mapping[str, Any]:
