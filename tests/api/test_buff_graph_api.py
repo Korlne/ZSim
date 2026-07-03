@@ -513,6 +513,57 @@ def test_buff_graph_api_runs_yuzuha_qte_candidate_harness_wave_case(monkeypatch)
     assert fetched.json()["data"]["runtime_status"] == "legacy_python"
 
 
+def test_buff_graph_api_runs_generated_spec_legacy_oracle_fixture(monkeypatch):
+    service = BuffGraphService()
+    monkeypatch.setattr(buff_graph_routes, "buff_graph_service", service)
+    client = TestClient(app)
+    oracle_fixture = _read_json(
+        Path(
+            "tests/fixtures/buff_graph/generated-spec-legacy-oracles/"
+            "alice-cinema-6-trigger-legacy-oracle.json"
+        )
+    )
+    wrapper = _read_json(Path(oracle_fixture["source_generated_spec"]))
+    candidate_case = _read_json(
+        Path(
+            "tests/fixtures/buff_graph/runtime-candidate-harness/character-manager/"
+            "alice-cinema-6-trigger-candidate.json"
+        )
+    )
+    spec = wrapper["spec"]
+    spec["parity_metadata"] = {
+        "generated_spec_legacy_oracle": {
+            "enabled": True,
+            "fixture_path": (
+                "tests/fixtures/buff_graph/generated-spec-legacy-oracles/"
+                "alice-cinema-6-trigger-legacy-oracle.json"
+            ),
+            "prepared_context": candidate_case["prepared_context"],
+        }
+    }
+
+    created = client.post("/api/buff-graphs", json={"spec": spec})
+    parity = client.post("/api/buff-graphs/alice-cinema-6-trigger/parity")
+    fetched = client.get("/api/buff-graphs/alice-cinema-6-trigger")
+
+    assert created.status_code == 200
+    assert parity.status_code == 200
+    payload = parity.json()["data"]
+    assert payload["status"] == "generated_spec_legacy_oracle_passed"
+    assert payload["candidate_harness_id"] == oracle_fixture["case_id"]
+    assert payload["candidate_runtime_status"] == "visual_graph_candidate"
+    assert payload["candidate_parity_passed"] is True
+    assert payload["full_parity_verified"] is False
+    assert payload["evidence"]["legacy_oracle"] == "legacy_python_collected"
+    assert payload["evidence"]["output_passed"] is True
+    assert payload["evidence"]["trace_checkpoint_passed"] is True
+    assert payload["evidence"]["oracle_fixture_parity_status"] == (
+        "legacy_oracle_materialized_only"
+    )
+    assert payload["evidence"]["oracle_fixture_full_parity_verified"] is False
+    assert fetched.json()["data"]["runtime_status"] == "legacy_python"
+
+
 def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monkeypatch):
     service = BuffGraphService()
     monkeypatch.setattr(buff_graph_routes, "buff_graph_service", service)

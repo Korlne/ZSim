@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, replace
+from pathlib import Path
 from typing import Any, Mapping
 
 from zsim.api_src.models.buff_graph import (
@@ -380,6 +382,55 @@ class BuffGraphService:
                     full_parity_verified=False,
                     evidence=result.to_evidence(),
                 )
+            legacy_oracle = _generated_spec_legacy_oracle_metadata(spec.parity_metadata)
+            if legacy_oracle is not None:
+                fixture = _load_legacy_oracle_fixture(legacy_oracle)
+                oracle_result = _mapping(fixture.get("legacy_oracle_result"))
+                result = run_buff_graph_candidate_parity(
+                    replace(
+                        spec,
+                        runtime_status=RuntimeStatus.VISUAL_GRAPH_CANDIDATE,
+                    ),
+                    block_registry=self._block_registry,
+                    adapters=_candidate_harness_adapters(),
+                    tick=int(fixture.get("tick", legacy_oracle.get("tick", 0))),
+                    prepared_context=_mapping(legacy_oracle.get("prepared_context")),
+                    oracle=BuffGraphCandidateParityOracle(
+                        case_id=str(fixture.get("case_id", spec.graph_id)),
+                        expected_final_output=_mapping(
+                            oracle_result.get("expected_final_output")
+                        ),
+                        expected_trace_kind_checkpoint=tuple(
+                            oracle_result.get("expected_trace_kind_checkpoint", ())
+                        ),
+                        legacy_oracle=str(
+                            oracle_result.get("legacy_oracle", "legacy_python_collected")
+                        ),
+                    ),
+                )
+                evidence = result.to_evidence()
+                evidence["oracle_fixture_path"] = str(legacy_oracle["fixture_path"])
+                evidence["oracle_fixture_parity_status"] = fixture.get("parity_status")
+                evidence["oracle_fixture_full_parity_verified"] = bool(
+                    fixture.get("full_parity_verified", False)
+                )
+                return BuffGraphParityPayload(
+                    status=(
+                        "generated_spec_legacy_oracle_passed"
+                        if result.passed
+                        else "generated_spec_legacy_oracle_failed"
+                    ),
+                    graph_id=spec.graph_id,
+                    reason=(
+                        "Generated spec candidate executed against a materialized "
+                        "legacy Python oracle fixture without changing persisted runtime status."
+                    ),
+                    candidate_harness_id=result.case_id,
+                    candidate_runtime_status=RuntimeStatus.VISUAL_GRAPH_CANDIDATE,
+                    candidate_parity_passed=result.passed,
+                    full_parity_verified=False,
+                    evidence=evidence,
+                )
             return BuffGraphParityPayload(
                 status="ready_for_oracle",
                 graph_id=spec.graph_id,
@@ -534,6 +585,22 @@ class BuffGraphService:
 def _candidate_harness_metadata(parity_metadata: Mapping[str, Any]) -> Mapping[str, Any] | None:
     value = parity_metadata.get("candidate_harness")
     return value if isinstance(value, Mapping) and value.get("enabled") else None
+
+
+def _generated_spec_legacy_oracle_metadata(
+    parity_metadata: Mapping[str, Any],
+) -> Mapping[str, Any] | None:
+    value = parity_metadata.get("generated_spec_legacy_oracle")
+    if not isinstance(value, Mapping) or not value.get("enabled"):
+        return None
+    if not value.get("fixture_path"):
+        return None
+    return value
+
+
+def _load_legacy_oracle_fixture(metadata: Mapping[str, Any]) -> Mapping[str, Any]:
+    path = Path(str(metadata["fixture_path"]))
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _mapping(value: Any) -> Mapping[str, Any]:
