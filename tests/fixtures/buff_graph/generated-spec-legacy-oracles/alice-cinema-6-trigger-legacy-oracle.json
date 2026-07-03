@@ -1,0 +1,116 @@
+{
+  "schema": "zsim-buffgraph-generated-spec-legacy-oracle.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "case_id": "generated-spec-legacy-oracle-alice-cinema-6-trigger",
+  "source_generated_spec": "zsim/sim_progress/BuffGraph/generated_specs/character-manager-side-effect-cases/alice-cinema-6-trigger.buffgraph.json",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/AliceCinema6Trigger.py",
+  "graph_id": "alice-cinema-6-trigger",
+  "tick": 24,
+  "legacy_oracle": "legacy_python_collected",
+  "parity_status": "legacy_oracle_materialized_only",
+  "full_parity_verified": false,
+  "legacy_oracle_result": {
+    "case_id": "generated-spec-legacy-oracle-alice-cinema-6-trigger",
+    "legacy_oracle": "legacy_python_collected",
+    "judge_result": true,
+    "hit_result": true,
+    "expected_final_output": {
+      "character_side_effect_intent": {
+        "action": "spawn_extra_attack",
+        "enabled": true,
+        "intent_type": "character_side_effect",
+        "payload": {
+          "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/AliceCinema6Trigger.py"
+        },
+        "skill_tag": "legacy_source_review_required",
+        "target": "legacy_source_review_required"
+      }
+    },
+    "expected_trace_kind_checkpoint": [
+      [
+        "graph_started",
+        ""
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "effect_requested",
+        "effect_requested"
+      ],
+      [
+        "graph_finished",
+        "graph_finished"
+      ]
+    ],
+    "record_before": {
+      "extra_attack_count": 0,
+      "last_active_tick": 0
+    },
+    "record_after": {
+      "extra_attack_count": 1,
+      "last_active_tick": 24
+    },
+    "record_delta": {
+      "extra_attack_count": {
+        "before": 0,
+        "after": 1
+      },
+      "last_active_tick": {
+        "before": 0,
+        "after": 24
+      }
+    },
+    "side_effects": [
+      {
+        "kind": "character_extra_attack_intent",
+        "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/AliceCinema6Trigger.py",
+        "target": "legacy_source_review_required",
+        "tick": 24
+      }
+    ],
+    "blocked_reason": null
+  },
+  "notes": [
+    "This fixture materializes a legacy oracle result for one generated spec using the test-only collector helper.",
+    "It does not promote the generated spec beyond runtime_status legacy_python or parity_status not_run.",
+    "It is not final full parity evidence; UI-driven full simulation matrix remains blocked until later packs execute graph-vs-legacy comparisons."
+  ]
+}
