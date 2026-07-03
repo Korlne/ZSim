@@ -176,7 +176,7 @@ def test_buff_graph_api_runs_pure_low_risk_candidate_harness_wave_case(monkeypat
     )
     assert payload["evidence"]["output_passed"] is True
     assert payload["evidence"]["trace_checkpoint_passed"] is True
-    assert fetched.json()["data"]["runtime_status"] == "legacy_python"
+    assert fetched.json()["data"]["runtime_status"] == "visual_graph_candidate"
 
 
 def test_buff_graph_api_runs_enemy_state_candidate_harness_wave_case(monkeypatch):
@@ -220,7 +220,7 @@ def test_buff_graph_api_runs_enemy_state_candidate_harness_wave_case(monkeypatch
     )
     assert payload["evidence"]["output_passed"] is True
     assert payload["evidence"]["trace_checkpoint_passed"] is True
-    assert fetched.json()["data"]["runtime_status"] == "legacy_python"
+    assert fetched.json()["data"]["runtime_status"] == "visual_graph_candidate"
 
 
 def test_buff_graph_api_runs_dynamic_owner_candidate_harness_wave_case(monkeypatch):
@@ -267,7 +267,7 @@ def test_buff_graph_api_runs_dynamic_owner_candidate_harness_wave_case(monkeypat
     )
     assert payload["evidence"]["output_passed"] is True
     assert payload["evidence"]["trace_checkpoint_passed"] is True
-    assert fetched.json()["data"]["runtime_status"] == "legacy_python"
+    assert fetched.json()["data"]["runtime_status"] == "visual_graph_candidate"
 
 
 def test_buff_graph_api_runs_runtime_scheduled_candidate_harness_wave_case(monkeypatch):
@@ -316,7 +316,7 @@ def test_buff_graph_api_runs_runtime_scheduled_candidate_harness_wave_case(monke
     )
     assert payload["evidence"]["output_passed"] is True
     assert payload["evidence"]["trace_checkpoint_passed"] is True
-    assert fetched.json()["data"]["runtime_status"] == "legacy_python"
+    assert fetched.json()["data"]["runtime_status"] == "visual_graph_candidate"
 
 
 def test_buff_graph_api_runs_character_manager_candidate_harness_wave_case(monkeypatch):
@@ -365,7 +365,7 @@ def test_buff_graph_api_runs_character_manager_candidate_harness_wave_case(monke
     )
     assert payload["evidence"]["output_passed"] is True
     assert payload["evidence"]["trace_checkpoint_passed"] is True
-    assert fetched.json()["data"]["runtime_status"] == "legacy_python"
+    assert fetched.json()["data"]["runtime_status"] == "visual_graph_candidate"
 
 
 def test_buff_graph_api_runs_dot_anomaly_candidate_harness_wave_case(monkeypatch):
@@ -412,7 +412,7 @@ def test_buff_graph_api_runs_dot_anomaly_candidate_harness_wave_case(monkeypatch
     )
     assert payload["evidence"]["output_passed"] is True
     assert payload["evidence"]["trace_checkpoint_passed"] is True
-    assert fetched.json()["data"]["runtime_status"] == "legacy_python"
+    assert fetched.json()["data"]["runtime_status"] == "visual_graph_candidate"
 
 
 def test_buff_graph_api_runs_calculator_candidate_harness_wave_case(monkeypatch):
@@ -461,7 +461,7 @@ def test_buff_graph_api_runs_calculator_candidate_harness_wave_case(monkeypatch)
     )
     assert payload["evidence"]["output_passed"] is True
     assert payload["evidence"]["trace_checkpoint_passed"] is True
-    assert fetched.json()["data"]["runtime_status"] == "legacy_python"
+    assert fetched.json()["data"]["runtime_status"] == "visual_graph_candidate"
 
 
 def test_buff_graph_api_runs_yuzuha_qte_candidate_harness_wave_case(monkeypatch):
@@ -510,7 +510,7 @@ def test_buff_graph_api_runs_yuzuha_qte_candidate_harness_wave_case(monkeypatch)
     )
     assert payload["evidence"]["output_passed"] is True
     assert payload["evidence"]["trace_checkpoint_passed"] is True
-    assert fetched.json()["data"]["runtime_status"] == "legacy_python"
+    assert fetched.json()["data"]["runtime_status"] == "visual_graph_candidate"
 
 
 def test_buff_graph_api_runs_generated_spec_legacy_oracle_fixture(monkeypatch):
@@ -561,7 +561,7 @@ def test_buff_graph_api_runs_generated_spec_legacy_oracle_fixture(monkeypatch):
         "legacy_oracle_materialized_only"
     )
     assert payload["evidence"]["oracle_fixture_full_parity_verified"] is False
-    assert fetched.json()["data"]["runtime_status"] == "legacy_python"
+    assert fetched.json()["data"]["runtime_status"] == "visual_graph_candidate"
 
 
 def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monkeypatch):
@@ -677,8 +677,10 @@ def test_buff_graph_migration_endpoints_keep_unsupported_patterns_explicit(monke
     assert readiness["compiled_spec_count"] == 150
     assert readiness["ready_for_execution_count"] == 150
     assert readiness["full_parity_verified_count"] == 0
-    assert readiness["runtime_status_counts"] == {"legacy_python": 150}
-    assert readiness["parity_status_counts"] == {"not_run": 150}
+    assert readiness["runtime_status_counts"] == {"visual_graph_candidate": 150}
+    assert readiness["parity_status_counts"] == {
+        "generated_spec_legacy_oracle_passed": 150
+    }
     assert readiness["readiness_status_counts"] == {
         "ready_for_generated_spec_legacy_oracle_execution": 150,
     }

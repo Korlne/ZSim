@@ -2,9 +2,9 @@
   "schema": "zsim-buffgraph-generated-spec-manifest.v1",
   "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
   "migration_wave": "enemy-state-edge-triggers",
-  "runtime_status": "legacy_python",
+  "runtime_status": "visual_graph_candidate",
   "status": "generated_candidate_partial",
-  "status_note": "Enemy/anomaly candidate BuffGraphSpec files generated for Scout-proven cases whose required ids are current controlled registry blocks. Runtime remains legacy_python and parity remains not_run.",
+  "status_note": "Generated specs are visual graph candidates for dry-run/parity evidence only. Legacy Python remains fallback and visual_graph_default remains blocked until UI-driven full matrix parity passes.",
   "generated_specs": [
     "anomaly-debuff-exit-judge.buffgraph.json",
     "branch-blade-song-crit-rate-bonus.buffgraph.json",

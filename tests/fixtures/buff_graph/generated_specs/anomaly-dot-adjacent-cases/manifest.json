@@ -2,9 +2,9 @@
   "schema": "zsim-buffgraph-generated-spec-manifest.v1",
   "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
   "migration_wave": "anomaly-dot-adjacent-cases",
-  "runtime_status": "legacy_python",
+  "runtime_status": "visual_graph_candidate",
   "status": "blocked_by_missing_controlled_blocks",
-  "status_note": "No executable BuffGraphSpec was generated for this wave because anomaly/DOT-adjacent behavior requires explicit controlled blocks for enemy anomaly state, active anomaly bars, DOT runtime state, anomaly output spawning, scheduled event emission, and enemy-aware calculator reads. Legacy Python XLogic remains the runtime default and parity oracle.",
+  "status_note": "Generated specs are visual graph candidates for dry-run/parity evidence only. Legacy Python remains fallback and visual_graph_default remains blocked until UI-driven full matrix parity passes.",
   "generated_specs": [],
   "unsupported_patterns": [
     "enemy_anomaly_or_dot_read"

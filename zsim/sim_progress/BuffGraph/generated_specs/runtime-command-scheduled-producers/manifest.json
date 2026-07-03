@@ -2,9 +2,9 @@
   "schema": "zsim-buffgraph-generated-spec-manifest.v1",
   "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
   "migration_wave": "runtime-command-scheduled-producers",
-  "runtime_status": "legacy_python",
+  "runtime_status": "visual_graph_candidate",
   "status": "generated_candidate_partial",
-  "status_note": "Runtime/scheduled candidate BuffGraphSpec files generated for Scout-proven cases whose required ids are current controlled registry blocks. Effect blocks are intent-only; runtime dispatch remains legacy Python.",
+  "status_note": "Generated specs are visual graph candidates for dry-run/parity evidence only. Legacy Python remains fallback and visual_graph_default remains blocked until UI-driven full matrix parity passes.",
   "generated_specs": [
     "astra-yao-core-passive-atk-bonus.buffgraph.json",
     "branch-blade-song-crit-damage-bonus.buffgraph.json",

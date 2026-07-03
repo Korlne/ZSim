@@ -2,9 +2,9 @@
   "schema": "zsim-buffgraph-generated-spec-manifest.v1",
   "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
   "migration_wave": "yuzuha-cinema2-qte-signal-cases",
-  "runtime_status": "legacy_python",
+  "runtime_status": "visual_graph_candidate",
   "status": "generated_candidate_partial",
-  "status_note": "YuzuhaCinema2Trigger candidate BuffGraphSpec generated after dedicated QTE signal helper blocks. The spec remains candidate evidence only; legacy Python remains default/fallback/oracle until focused parity and UI-driven matrix validation pass.",
+  "status_note": "Generated specs are visual graph candidates for dry-run/parity evidence only. Legacy Python remains fallback and visual_graph_default remains blocked until UI-driven full matrix parity passes.",
   "generated_specs": [
     "yuzuha-cinema2-trigger.buffgraph.json"
   ],

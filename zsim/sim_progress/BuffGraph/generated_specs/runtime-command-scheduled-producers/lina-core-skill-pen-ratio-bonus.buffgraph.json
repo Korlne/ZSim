@@ -3,7 +3,7 @@
   "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
   "migration_wave": "runtime-command-scheduled-producers",
   "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/LinaCoreSkillPenRatioBonus.py",
-  "runtime_status_note": "legacy_python remains default; generated spec is candidate evidence only.",
+  "runtime_status_note": "Visual graph candidate for dry-run/parity evidence only. Legacy Python remains fallback; visual_graph_default requires UI-driven full matrix parity.",
   "spec": {
     "schema_version": "buff-graph-spec.v1",
     "node_library_version": "buff-graph-node-library.v1",
@@ -14,7 +14,7 @@
     "owner_name": "LinaCoreSkillPenRatioBonus",
     "source_buff_index": null,
     "created_from_xlogic": "zsim/sim_progress/Buff/BuffXLogic/LinaCoreSkillPenRatioBonus.py",
-    "runtime_status": "legacy_python",
+    "runtime_status": "visual_graph_candidate",
     "nodes": [
       {
         "node_id": "effect-issue-runtime-command",
@@ -340,7 +340,7 @@
       "intent_only_runtime_scheduled_blocks": true
     },
     "parity_metadata": {
-      "parity_status": "not_run",
+      "parity_status": "generated_spec_legacy_oracle_passed",
       "candidate_only": true,
       "unblocked_by": [
         "shared-helper-runtime-command-scheduled-signal-blocks"
@@ -364,7 +364,10 @@
         "read.prepared_equipper",
         "read.prepared_template_buff",
         "effect.update_template_buff"
-      ]
+      ],
+      "full_parity_verified": false,
+      "legacy_oracle_fixture_count": "materialized_150_of_150",
+      "status_promotion_reason": "all_generated_spec_legacy_oracle_fixtures_passed_api_parity"
     },
     "last_parity_baseline": null,
     "last_verified_at": null

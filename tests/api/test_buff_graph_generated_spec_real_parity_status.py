@@ -96,10 +96,13 @@ def test_materialized_generated_spec_legacy_oracles_execute_without_runtime_prom
     assert payload["evidence"]["oracle_fixture_full_parity_verified"] is False
 
     fetched_payload = fetched.json()["data"]
-    assert fetched_payload["runtime_status"] == "legacy_python"
+    assert fetched_payload["runtime_status"] == "visual_graph_candidate"
     assert fetched_payload["last_verified_at"] is None
-    assert original_spec["runtime_status"] == "legacy_python"
-    assert original_spec["parity_metadata"]["parity_status"] == "not_run"
+    assert original_spec["runtime_status"] == "visual_graph_candidate"
+    assert (
+        original_spec["parity_metadata"]["parity_status"]
+        == "generated_spec_legacy_oracle_passed"
+    )
     assert oracle_fixture["full_parity_verified"] is False
 
     readiness = matrix.json()["data"]["generated_spec_readiness"]
@@ -147,8 +150,10 @@ def test_all_materialized_generated_spec_legacy_oracles_execute_without_runtime_
             or parity_payload.get("status") != "generated_spec_legacy_oracle_passed"
             or parity_payload.get("candidate_parity_passed") is not True
             or parity_payload.get("full_parity_verified") is not False
-            or fetched_payload.get("runtime_status") != "legacy_python"
-            or original_spec["parity_metadata"]["parity_status"] != "not_run"
+            or fetched_payload.get("runtime_status") != "visual_graph_candidate"
+            or original_spec["runtime_status"] != "visual_graph_candidate"
+            or original_spec["parity_metadata"]["parity_status"]
+            != "generated_spec_legacy_oracle_passed"
         ):
             failures.append(
                 {
@@ -174,5 +179,7 @@ def test_all_materialized_generated_spec_legacy_oracles_execute_without_runtime_
     assert readiness["missing_legacy_oracle_count"] == 0
     assert readiness["ready_for_execution_count"] == 150
     assert readiness["full_parity_verified_count"] == 0
-    assert readiness["runtime_status_counts"] == {"legacy_python": 150}
-    assert readiness["parity_status_counts"] == {"not_run": 150}
+    assert readiness["runtime_status_counts"] == {"visual_graph_candidate": 150}
+    assert readiness["parity_status_counts"] == {
+        "generated_spec_legacy_oracle_passed": 150
+    }
