@@ -1,0 +1,40 @@
+{
+  "case_id": "yuzuha-qte-yuzuha-cinema2-trigger-candidate",
+  "source_generated_spec": "zsim/sim_progress/BuffGraph/generated_specs/yuzuha-cinema2-qte-signal-cases/yuzuha-cinema2-trigger.buffgraph.json",
+  "tick": 1500,
+  "prepared_context": {
+    "tick": 1500,
+    "source_buff_index": "Buff-角色-柚叶-2画-连携技触发器",
+    "enemy_context": {
+      "dynamic": {
+        "stun": false
+      }
+    },
+    "skill_node": {
+      "skill_tag": "1411_E_EX_A",
+      "hit_index": 1,
+      "is_last_hit": true,
+      "force_qte_trigger": false
+    },
+    "state": {
+      "yuzuha-cinema2-trigger": 299
+    },
+    "YUZUHA_REPORT": true
+  },
+  "expected_final_output": {
+    "cooldown_commit_intent": {
+      "intent_type": "cooldown_commit",
+      "cooldown_key": "yuzuha-cinema2-trigger",
+      "tick": 1500,
+      "previous_tick": 299,
+      "enabled": true,
+      "source_buff_index": "Buff-角色-柚叶-2画-连携技触发器"
+    }
+  },
+  "expected_trace_node_count": 12,
+  "expected_trace_effect_node_indexes": [
+    9,
+    10
+  ],
+  "legacy_oracle": "generated_spec_fixture_pending_legacy_python_oracle"
+}
