@@ -1,0 +1,53 @@
+{
+  "case_id": "dot-anomaly-vivian-dot-trigger-candidate",
+  "source_generated_spec": "zsim/sim_progress/BuffGraph/generated_specs/anomaly-dot-output-cases/vivian-dot-trigger.buffgraph.json",
+  "tick": 96,
+  "prepared_context": {
+    "tick": 96,
+    "skill_node": {
+      "skill_tag": "legacy_source_review_required",
+      "hit_index": 0,
+      "is_last_hit": true
+    },
+    "enemy_context": {
+      "anomaly_states": {
+        "vivian-dot-trigger:anomaly_key:legacy_source_review_required": {
+          "state": "vivian-dot-trigger:expected_state:legacy_source_review_required",
+          "active": true
+        }
+      },
+      "anomaly_bars": {
+        "vivian-dot-trigger:anomaly_key:legacy_source_review_required": {
+          "value": 42,
+          "threshold": 100
+        }
+      }
+    },
+    "dot_runtime_states": {
+      "vivian-dot-trigger:dot_key:legacy_source_review_required": {
+        "active": true
+      }
+    },
+    "state": {}
+  },
+  "expected_final_output": {
+    "scheduled_event_intent": {
+      "intent_type": "scheduled_event",
+      "event_type": "vivian-dot-trigger:event_type:legacy_source_review_required",
+      "scheduled_tick": 0,
+      "payload": {
+        "candidate_only": true,
+        "legacy_semantic_review_required": true,
+        "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/VivianDotTrigger.py"
+      },
+      "enabled": true
+    }
+  },
+  "expected_trace_node_count": 8,
+  "expected_trace_effect_node_indexes": [
+    5,
+    6,
+    7
+  ],
+  "legacy_oracle": "generated_spec_fixture_pending_legacy_python_oracle"
+}

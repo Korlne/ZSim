@@ -1,0 +1,47 @@
+{
+  "case_id": "dot-anomaly-yanagi-polarity-disorder-trigger-candidate",
+  "source_generated_spec": "zsim/sim_progress/BuffGraph/generated_specs/anomaly-dot-output-cases/yanagi-polarity-disorder-trigger.buffgraph.json",
+  "tick": 96,
+  "prepared_context": {
+    "tick": 96,
+    "skill_node": {
+      "skill_tag": "legacy_source_review_required",
+      "hit_index": 0,
+      "is_last_hit": true
+    },
+    "enemy_context": {
+      "anomaly_states": {
+        "yanagi-polarity-disorder-trigger:anomaly_key:legacy_source_review_required": {
+          "state": "active",
+          "active": true
+        }
+      },
+      "anomaly_bars": {
+        "yanagi-polarity-disorder-trigger:anomaly_key:legacy_source_review_required": {
+          "value": 42,
+          "threshold": 100
+        }
+      }
+    },
+    "state": {}
+  },
+  "expected_final_output": {
+    "scheduled_event_intent": {
+      "intent_type": "scheduled_event",
+      "event_type": "yanagi-polarity-disorder-trigger:event_type:legacy_source_review_required",
+      "scheduled_tick": 0,
+      "payload": {
+        "candidate_only": true,
+        "legacy_semantic_review_required": true,
+        "source_xlogic": "zsim/sim_progress/Buff/BuffXLogic/YanagiPolarityDisorderTrigger.py"
+      },
+      "enabled": true
+    }
+  },
+  "expected_trace_node_count": 8,
+  "expected_trace_effect_node_indexes": [
+    6,
+    7
+  ],
+  "legacy_oracle": "generated_spec_fixture_pending_legacy_python_oracle"
+}
