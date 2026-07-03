@@ -1,0 +1,93 @@
+{
+  "schema": "zsim-buffgraph-generated-spec-legacy-oracle.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "case_id": "generated-spec-legacy-oracle-enemy-anomaly-map-read",
+  "source_generated_spec": "zsim/sim_progress/BuffGraph/generated_specs/enemy-state-edge-triggers/enemy-anomaly-map-read.buffgraph.json",
+  "source_xlogic_path": "zsim/sim_progress/Buff/BuffXLogic/enemy_anomaly_map_read.py",
+  "graph_id": "enemy-anomaly-map-read",
+  "migration_wave": "enemy-state-edge-triggers",
+  "tick": 600,
+  "legacy_oracle": "legacy_python_collected",
+  "parity_status": "legacy_oracle_materialized_only",
+  "full_parity_verified": false,
+  "legacy_oracle_result": {
+    "case_id": "generated-spec-legacy-oracle-enemy-anomaly-map-read",
+    "legacy_oracle": "legacy_python_collected",
+    "judge_result": true,
+    "hit_result": null,
+    "expected_final_output": {
+      "changed": false,
+      "current_state": null,
+      "previous_state": null
+    },
+    "expected_trace_kind_checkpoint": [
+      [
+        "graph_started",
+        ""
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "node_evaluated",
+        "node_ready"
+      ],
+      [
+        "adapter_executed",
+        "adapter_executed"
+      ],
+      [
+        "graph_finished",
+        "graph_finished"
+      ]
+    ],
+    "record_before": {},
+    "record_after": {
+      "changed": false,
+      "current_state": null,
+      "previous_state": null
+    },
+    "record_delta": {
+      "changed": {
+        "before": null,
+        "after": false
+      }
+    },
+    "side_effects": [],
+    "blocked_reason": null
+  },
+  "notes": [
+    "This fixture materializes enemy-state generated-spec legacy oracle evidence through the test-only collector helper.",
+    "It does not edit or promote the generated spec; runtime_status remains legacy_python and parity_status remains not_run.",
+    "It is not final full parity evidence; UI-driven full simulation matrix remains required."
+  ]
+}
