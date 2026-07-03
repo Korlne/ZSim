@@ -1,0 +1,54 @@
+{
+  "case_id": "runtime-scheduled-astra-yao-core-passive-atk-bonus-candidate",
+  "source_generated_spec": "zsim/sim_progress/BuffGraph/generated_specs/runtime-command-scheduled-producers/astra-yao-core-passive-atk-bonus.buffgraph.json",
+  "legacy_oracle": "generated_spec_fixture_pending_legacy_python_oracle",
+  "tick": 240,
+  "prepared_context": {
+    "tick": 240,
+    "source_buff_index": "Buff-Test-Runtime-Scheduled",
+    "skill_node": {
+      "skill_tag": "EX",
+      "trigger_level": 2,
+      "hit_index": 1,
+      "is_last_hit": true
+    },
+    "scheduled_signals": {
+      "astra-yao-core-passive-atk-bonus": {
+        "scheduled_tick": 240,
+        "active": true,
+        "payload": {
+          "reason": "candidate-harness"
+        }
+      }
+    },
+    "prepared_owner": {
+      "name": "HarnessOwner"
+    },
+    "prepared_equipper": {
+      "name": "HarnessEquipper"
+    },
+    "template_buffs": {
+      "legacy_source_review_required": {
+        "buff_index": "legacy_source_review_required",
+        "count": 1,
+        "duration": 999
+      }
+    }
+  },
+  "expected_final_output": {
+    "command": {
+      "type": "update_template_buff",
+      "template_buff_index": "legacy_source_review_required",
+      "mode": "set",
+      "count": null,
+      "delta": null
+    }
+  },
+  "expected_trace_node_count": 9,
+  "expected_trace_effect_node_indexes": [
+    0,
+    1,
+    8
+  ],
+  "scope_note": "Candidate harness only: proves controlled runtime/scheduled building blocks compile, execute, and trace for this generated legacy_python spec. It is not final legacy Python parity."
+}
