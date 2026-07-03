@@ -1,0 +1,56 @@
+{
+  "case_id": "dot-anomaly-miyabi-additional-ability-ignore-ice-res-candidate",
+  "source_generated_spec": "zsim/sim_progress/BuffGraph/generated_specs/anomaly-dot-output-cases/miyabi-additional-ability-ignore-ice-res.buffgraph.json",
+  "tick": 96,
+  "prepared_context": {
+    "tick": 96,
+    "skill_node": {
+      "skill_tag": "legacy_source_review_required",
+      "hit_index": 0,
+      "is_last_hit": true
+    },
+    "enemy_context": {
+      "anomaly_states": {
+        "miyabi-additional-ability-ignore-ice-res:anomaly_key:legacy_source_review_required": {
+          "state": "miyabi-additional-ability-ignore-ice-res:expected_state:legacy_source_review_required",
+          "active": true
+        }
+      },
+      "anomaly_bars": {
+        "miyabi-additional-ability-ignore-ice-res:anomaly_key:legacy_source_review_required": {
+          "value": 42,
+          "threshold": 100
+        }
+      }
+    },
+    "dot_runtime_states": {
+      "miyabi-additional-ability-ignore-ice-res:dot_key:legacy_source_review_required": {
+        "active": true
+      }
+    },
+    "prepared_owner": "Miyabi",
+    "prepared_equipper": "Miyabi",
+    "template_buffs": {
+      "miyabi-additional-ability-ignore-ice-res:template_buff_index:legacy_source_review_required": {
+        "count": 0
+      }
+    },
+    "state": {}
+  },
+  "expected_final_output": {
+    "command": {
+      "type": "update_template_buff",
+      "template_buff_index": "miyabi-additional-ability-ignore-ice-res:template_buff_index:legacy_source_review_required",
+      "mode": "set",
+      "count": null,
+      "delta": null
+    }
+  },
+  "expected_trace_node_count": 13,
+  "expected_trace_effect_node_indexes": [
+    6,
+    7,
+    12
+  ],
+  "legacy_oracle": "generated_spec_fixture_pending_legacy_python_oracle"
+}
