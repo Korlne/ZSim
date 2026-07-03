@@ -149,6 +149,17 @@ const matrixContract = {
       evidence_path:
         'scripts/buff_agents/evidence/buff-20260702-buffxlogic-react-flow-visual-authoring/oracle-graph-runtime-candidate-harness-calculator.json',
     },
+    {
+      wave_id: 'yuzuha-cinema2-qte-signal',
+      candidate_harness_id: 'yuzuha-qte-generated-spec-candidate-harness',
+      status: 'candidate_harness_wave_available',
+      case_ids: ['yuzuha-qte-yuzuha-cinema2-trigger-candidate'],
+      candidate_runtime_status: 'visual_graph_candidate',
+      candidate_parity_passed: true,
+      full_parity_verified: false,
+      evidence_path:
+        'scripts/buff_agents/evidence/buff-20260702-buffxlogic-react-flow-visual-authoring/oracle-graph-runtime-candidate-harness-yuzuha-qte.json',
+    },
   ],
   matrix_scope: [
     'react-flow-ui-open-edit-save-validate',
@@ -577,6 +588,8 @@ app.on('window-all-closed', () => app.quit());
             text.includes('dot-anomaly-vivian-dot-trigger-candidate') &&
             text.includes('calculator-runtime-formula-intents') &&
             text.includes('calculator-alice-additional-ability-ap-bonus-candidate') &&
+            text.includes('yuzuha-cinema2-qte-signal') &&
+            text.includes('yuzuha-qte-yuzuha-cinema2-trigger-candidate') &&
             text.includes('full_parity_verified: false');
         })()
       `),
@@ -600,6 +613,8 @@ app.on('window-all-closed', () => app.quit());
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[5]?.candidate_parity_passed, true);
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[6]?.wave_id, 'calculator-runtime-formula-intents');
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[6]?.candidate_parity_passed, true);
+    assert.equal(matrixRunPayload?.candidate_wave_evidence?.[7]?.wave_id, 'yuzuha-cinema2-qte-signal');
+    assert.equal(matrixRunPayload?.candidate_wave_evidence?.[7]?.candidate_parity_passed, true);
     assert.equal(matrixRunPayload?.full_parity_verified, false);
   }
 
