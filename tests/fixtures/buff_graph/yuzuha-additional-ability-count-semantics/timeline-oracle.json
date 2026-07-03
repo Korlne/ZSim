@@ -1,0 +1,81 @@
+{
+  "schema": "zsim-buffgraph-yuzuha-additional-ability-count-semantics.v1",
+  "campaign_id": "buff-20260702-buffxlogic-react-flow-visual-authoring",
+  "source_rows": [
+    {
+      "row_id": "apl-alice-yuzuha-jane",
+      "apl_filename": "爱丽丝-柚叶-简.toml"
+    }
+  ],
+  "legacy_xlogic_paths": [
+    "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyBuildupBonus.py",
+    "zsim/sim_progress/Buff/BuffXLogic/YuzuhaAdditionalAbilityAnomalyDmgBonus.py"
+  ],
+  "generated_specs": [
+    {
+      "graph_id": "yuzuha-additional-ability-anomaly-buildup-bonus",
+      "path": "zsim/sim_progress/BuffGraph/generated_specs/calculator-runtime-formula-cases/yuzuha-additional-ability-anomaly-buildup-bonus.buffgraph.json"
+    },
+    {
+      "graph_id": "yuzuha-additional-ability-anomaly-dmg-bonus",
+      "path": "zsim/sim_progress/BuffGraph/generated_specs/runtime-command-scheduled-producers/yuzuha-additional-ability-anomaly-dmg-bonus.buffgraph.json"
+    }
+  ],
+  "legacy_formula": {
+    "description": "Both legacy XLogic files compute count = min(anomaly_mastery - 100, 100) * cinema_1_ratio after reading Yuzuha anomaly mastery through the calculator runtime reader.",
+    "mastery_floor": 100,
+    "clamp_after_subtract": 100,
+    "cinema_1_ratio": {
+      "cinema_less_than_1": 1.0,
+      "cinema_at_least_1": 1.3
+    }
+  },
+  "public_timeline_contract": {
+    "description": "The strict matrix compares public buff_timeline_data.json values. For the reproduced Alice/Yuzuha/Jane row, legacy public timeline values are integer-valued even when the raw mastery-derived count has fractional precision.",
+    "normalization_allowed": false,
+    "comparison_tolerance_allowed": false
+  },
+  "observed_scenarios": [
+    {
+      "task": "Buff-角色-柚叶-组队被动-属性异常与紊乱伤害增幅",
+      "source": "爱丽丝",
+      "anomaly_mastery": 133.919998,
+      "cinema": 0,
+      "cinema_1_ratio": 1.0,
+      "legacy_raw_count": 33.919998,
+      "legacy_public_timeline_value": 33.0,
+      "graph_candidate_observed_value": 33.919998
+    },
+    {
+      "task": "Buff-角色-柚叶-组队被动-属性异常与紊乱伤害增幅",
+      "source": "爱丽丝",
+      "anomaly_mastery": 163.919998,
+      "cinema": 0,
+      "cinema_1_ratio": 1.0,
+      "legacy_raw_count": 63.919998,
+      "legacy_public_timeline_value": 63.0,
+      "graph_candidate_observed_value": 63.919998
+    },
+    {
+      "task": "Buff-角色-柚叶-组队被动-积蓄值增幅",
+      "source": "爱丽丝",
+      "anomaly_mastery": 133.919998,
+      "cinema": 0,
+      "cinema_1_ratio": 1.0,
+      "legacy_raw_count": 33.919998,
+      "legacy_public_timeline_value": 33.0,
+      "graph_candidate_observed_value": 33.919998
+    },
+    {
+      "task": "Buff-角色-柚叶-组队被动-积蓄值增幅",
+      "source": "爱丽丝",
+      "anomaly_mastery": 163.919998,
+      "cinema": 0,
+      "cinema_1_ratio": 1.0,
+      "legacy_raw_count": 63.919998,
+      "legacy_public_timeline_value": 63.0,
+      "graph_candidate_observed_value": 63.919998
+    }
+  ],
+  "next_migration_requirement": "Graph candidate runtime must reproduce the legacy public timeline value exactly for both Yuzuha AdditionalAbility graph specs before the UI-driven full simulation matrix can pass."
+}
