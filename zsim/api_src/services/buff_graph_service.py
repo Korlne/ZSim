@@ -20,6 +20,7 @@ from zsim.sim_progress.BuffGraph.adapters.condition_adapters import (
 )
 from zsim.sim_progress.BuffGraph.adapters.effect_adapters import (
     build_character_manager_side_effect_effect_adapters,
+    build_dot_anomaly_output_effect_adapters,
     build_low_risk_effect_adapters,
     build_prepared_context_effect_adapters,
     build_runtime_command_scheduled_signal_effect_adapters,
@@ -33,6 +34,7 @@ from zsim.sim_progress.BuffGraph.adapters.read_adapters import (
 )
 from zsim.sim_progress.BuffGraph.adapters.state_adapters import (
     build_character_manager_side_effect_state_adapters,
+    build_dot_anomaly_output_state_adapters,
     build_enemy_anomaly_state_state_adapters,
     build_low_risk_state_adapters,
     build_runtime_command_scheduled_signal_state_adapters,
@@ -196,12 +198,40 @@ CHARACTER_MANAGER_CANDIDATE_WAVE_EVIDENCE = [
         ),
     }
 ]
+DOT_ANOMALY_CANDIDATE_WAVE_EVIDENCE = [
+    {
+        "wave_id": "dot-anomaly-output-intents",
+        "candidate_harness_id": "dot-anomaly-generated-spec-candidate-harness",
+        "status": "candidate_harness_wave_available",
+        "case_ids": [
+            "dot-anomaly-vivian-dot-trigger-candidate",
+            "dot-anomaly-yanagi-polarity-disorder-trigger-candidate",
+            "dot-anomaly-miyabi-additional-ability-ignore-ice-res-candidate",
+        ],
+        "sampled_generated_spec_dirs": [
+            "anomaly-dot-output-cases",
+        ],
+        "candidate_runtime_status": RuntimeStatus.VISUAL_GRAPH_CANDIDATE.value,
+        "candidate_parity_passed": True,
+        "full_parity_verified": False,
+        "evidence_path": (
+            f"scripts/buff_agents/evidence/{CAMPAIGN_ID}/"
+            "oracle-graph-runtime-candidate-harness-dot-anomaly.json"
+        ),
+        "scope": (
+            "Fixture-backed candidate harness mechanism evidence for three "
+            "DOT/anomaly output generated specs; not final legacy parity for the full wave "
+            "and no live DOT/anomaly runtime mutation or scheduled-event dispatch."
+        ),
+    }
+]
 CANDIDATE_WAVE_EVIDENCE = (
     PURE_LOW_RISK_CANDIDATE_WAVE_EVIDENCE
     + ENEMY_STATE_CANDIDATE_WAVE_EVIDENCE
     + DYNAMIC_OWNER_CANDIDATE_WAVE_EVIDENCE
     + RUNTIME_SCHEDULED_CANDIDATE_WAVE_EVIDENCE
     + CHARACTER_MANAGER_CANDIDATE_WAVE_EVIDENCE
+    + DOT_ANOMALY_CANDIDATE_WAVE_EVIDENCE
 )
 
 
@@ -464,10 +494,12 @@ def _candidate_harness_adapters() -> dict[str, object]:
         build_prepared_context_effect_adapters(),
         build_runtime_command_scheduled_signal_effect_adapters(),
         build_character_manager_side_effect_effect_adapters(),
+        build_dot_anomaly_output_effect_adapters(),
         build_low_risk_state_adapters(),
         build_enemy_anomaly_state_state_adapters(),
         build_runtime_command_scheduled_signal_state_adapters(),
         build_character_manager_side_effect_state_adapters(),
+        build_dot_anomaly_output_state_adapters(),
         build_low_risk_compose_adapters(),
     ):
         adapters.update(group)
