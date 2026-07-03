@@ -10,8 +10,12 @@ from zsim.api_src.models.buff_graph import (
     BuffGraphSpecModel,
     BuffGraphValidationPayload,
 )
-from zsim.sim_progress.BuffGraph.adapters.compose_adapters import build_low_risk_compose_adapters
+from zsim.sim_progress.BuffGraph.adapters.compose_adapters import (
+    build_calculator_runtime_formula_compose_adapters,
+    build_low_risk_compose_adapters,
+)
 from zsim.sim_progress.BuffGraph.adapters.condition_adapters import (
+    build_calculator_runtime_formula_condition_adapters,
     build_character_manager_side_effect_condition_adapters,
     build_enemy_anomaly_state_condition_adapters,
     build_low_risk_condition_adapters,
@@ -19,6 +23,7 @@ from zsim.sim_progress.BuffGraph.adapters.condition_adapters import (
     build_runtime_command_scheduled_signal_condition_adapters,
 )
 from zsim.sim_progress.BuffGraph.adapters.effect_adapters import (
+    build_calculator_runtime_formula_effect_adapters,
     build_character_manager_side_effect_effect_adapters,
     build_dot_anomaly_output_effect_adapters,
     build_low_risk_effect_adapters,
@@ -26,6 +31,7 @@ from zsim.sim_progress.BuffGraph.adapters.effect_adapters import (
     build_runtime_command_scheduled_signal_effect_adapters,
 )
 from zsim.sim_progress.BuffGraph.adapters.read_adapters import (
+    build_calculator_runtime_formula_read_adapters,
     build_character_manager_side_effect_read_adapters,
     build_enemy_anomaly_state_read_adapters,
     build_low_risk_read_adapters,
@@ -225,6 +231,33 @@ DOT_ANOMALY_CANDIDATE_WAVE_EVIDENCE = [
         ),
     }
 ]
+CALCULATOR_CANDIDATE_WAVE_EVIDENCE = [
+    {
+        "wave_id": "calculator-runtime-formula-intents",
+        "candidate_harness_id": "calculator-generated-spec-candidate-harness",
+        "status": "candidate_harness_wave_available",
+        "case_ids": [
+            "calculator-alice-additional-ability-ap-bonus-candidate",
+            "calculator-elegant-vanity-sp-recover-candidate",
+            "calculator-sliceof-time-extra-resources-candidate",
+        ],
+        "sampled_generated_spec_dirs": [
+            "calculator-runtime-formula-cases",
+        ],
+        "candidate_runtime_status": RuntimeStatus.VISUAL_GRAPH_CANDIDATE.value,
+        "candidate_parity_passed": True,
+        "full_parity_verified": False,
+        "evidence_path": (
+            f"scripts/buff_agents/evidence/{CAMPAIGN_ID}/"
+            "oracle-graph-runtime-candidate-harness-calculator.json"
+        ),
+        "scope": (
+            "Fixture-backed candidate harness mechanism evidence for three "
+            "calculator/resource formula generated specs; not final legacy parity "
+            "for the full wave and no live calculator/resource runtime mutation."
+        ),
+    }
+]
 CANDIDATE_WAVE_EVIDENCE = (
     PURE_LOW_RISK_CANDIDATE_WAVE_EVIDENCE
     + ENEMY_STATE_CANDIDATE_WAVE_EVIDENCE
@@ -232,6 +265,7 @@ CANDIDATE_WAVE_EVIDENCE = (
     + RUNTIME_SCHEDULED_CANDIDATE_WAVE_EVIDENCE
     + CHARACTER_MANAGER_CANDIDATE_WAVE_EVIDENCE
     + DOT_ANOMALY_CANDIDATE_WAVE_EVIDENCE
+    + CALCULATOR_CANDIDATE_WAVE_EVIDENCE
 )
 
 
@@ -485,22 +519,26 @@ def _candidate_harness_adapters() -> dict[str, object]:
         build_enemy_anomaly_state_condition_adapters(),
         build_runtime_command_scheduled_signal_condition_adapters(),
         build_character_manager_side_effect_condition_adapters(),
+        build_calculator_runtime_formula_condition_adapters(),
         build_low_risk_read_adapters(),
         build_prepared_context_read_adapters(),
         build_enemy_anomaly_state_read_adapters(),
         build_runtime_command_scheduled_signal_read_adapters(),
         build_character_manager_side_effect_read_adapters(),
+        build_calculator_runtime_formula_read_adapters(),
         build_low_risk_effect_adapters(),
         build_prepared_context_effect_adapters(),
         build_runtime_command_scheduled_signal_effect_adapters(),
         build_character_manager_side_effect_effect_adapters(),
         build_dot_anomaly_output_effect_adapters(),
+        build_calculator_runtime_formula_effect_adapters(),
         build_low_risk_state_adapters(),
         build_enemy_anomaly_state_state_adapters(),
         build_runtime_command_scheduled_signal_state_adapters(),
         build_character_manager_side_effect_state_adapters(),
         build_dot_anomaly_output_state_adapters(),
         build_low_risk_compose_adapters(),
+        build_calculator_runtime_formula_compose_adapters(),
     ):
         adapters.update(group)
     return adapters
