@@ -1,0 +1,43 @@
+{
+  "case_id": "anomaly-debuff-exit-judge-candidate",
+  "source_generated_spec": "zsim/sim_progress/BuffGraph/generated_specs/enemy-state-edge-triggers/anomaly-debuff-exit-judge.buffgraph.json",
+  "candidate_runtime_status": "visual_graph_candidate",
+  "legacy_oracle": "generated_spec_fixture_pending_legacy_python_oracle",
+  "tick": 600,
+  "prepared_context": {
+    "tick": 600,
+    "enemy_anomaly_state": {
+      "state": "legacy_source_review_required",
+      "active": false,
+      "source": "fixture"
+    },
+    "enemy_edge_state": {
+      "previous": true,
+      "current": false,
+      "changed": true
+    },
+    "state": {
+      "anomaly-debuff-exit-judge": true
+    }
+  },
+  "expected_final_output": {
+    "previous": true,
+    "current": false,
+    "transition": "falling",
+    "passed": true
+  },
+  "expected_trace_kind_checkpoint": [
+    ["graph_started", ""],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["node_evaluated", "node_ready"],
+    ["adapter_executed", "adapter_executed"],
+    ["graph_finished", "graph_finished"]
+  ],
+  "notes": [
+    "Generated-spec candidate harness fixture for enemy-state wave.",
+    "This fixture expands harness mechanics only; it is not final legacy Python parity or visual_graph_default evidence."
+  ]
+}
