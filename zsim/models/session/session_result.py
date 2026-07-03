@@ -31,6 +31,8 @@ LEGACY_INTEGER_BUFF_TIMELINE_VALUE_TASKS = frozenset(
     {
         "Buff-角色-扳机-额外能力-追加攻击失衡值提升",
         "Buff-角色-雅-核心被动-冰焰",
+        "Buff-角色-柚叶-组队被动-属性异常与紊乱伤害增幅",
+        "Buff-角色-柚叶-组队被动-积蓄值增幅",
     }
 )
 
