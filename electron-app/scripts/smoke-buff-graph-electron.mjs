@@ -89,6 +89,21 @@ const matrixContract = {
       evidence_path:
         'scripts/buff_agents/evidence/buff-20260702-buffxlogic-react-flow-visual-authoring/oracle-graph-runtime-candidate-harness-dynamic-owner.json',
     },
+    {
+      wave_id: 'runtime-command-scheduled-signal',
+      candidate_harness_id: 'runtime-scheduled-generated-spec-candidate-harness',
+      status: 'candidate_harness_wave_available',
+      case_ids: [
+        'runtime-scheduled-astra-yao-core-passive-atk-bonus-candidate',
+        'runtime-scheduled-branch-blade-song-crit-damage-bonus-candidate',
+        'runtime-scheduled-magnetic-storm-charlie-sp-recover-candidate',
+      ],
+      candidate_runtime_status: 'visual_graph_candidate',
+      candidate_parity_passed: true,
+      full_parity_verified: false,
+      evidence_path:
+        'scripts/buff_agents/evidence/buff-20260702-buffxlogic-react-flow-visual-authoring/oracle-graph-runtime-candidate-harness-runtime-scheduled.json',
+    },
   ],
   matrix_scope: [
     'react-flow-ui-open-edit-save-validate',
@@ -509,6 +524,8 @@ app.on('window-all-closed', () => app.quit());
             text.includes('miyabi-core-skill-frost-burn-candidate') &&
             text.includes('dynamic-owner-equipper') &&
             text.includes('dynamic-owner-zanshin-herb-case-candidate') &&
+            text.includes('runtime-command-scheduled-signal') &&
+            text.includes('runtime-scheduled-astra-yao-core-passive-atk-bonus-candidate') &&
             text.includes('full_parity_verified: false');
         })()
       `),
@@ -524,6 +541,8 @@ app.on('window-all-closed', () => app.quit());
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[1]?.candidate_parity_passed, true);
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[2]?.wave_id, 'dynamic-owner-equipper');
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[2]?.candidate_parity_passed, true);
+    assert.equal(matrixRunPayload?.candidate_wave_evidence?.[3]?.wave_id, 'runtime-command-scheduled-signal');
+    assert.equal(matrixRunPayload?.candidate_wave_evidence?.[3]?.candidate_parity_passed, true);
     assert.equal(matrixRunPayload?.full_parity_verified, false);
   }
 
