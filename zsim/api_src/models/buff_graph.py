@@ -193,6 +193,41 @@ class BuffGraphParityPayload(BaseModel):
     evidence: dict[str, Any] | None = None
 
 
+class BuffGraphGeneratedSpecStatusItem(BaseModel):
+    graph_id: str
+    source_generated_spec: str
+    source_xlogic_path: str | None = None
+    migration_wave: str | None = None
+    runtime_status: RuntimeStatus
+    parity_status: str | None = None
+    validates: bool
+    compiles: bool
+    legacy_oracle_materialized: bool
+    legacy_oracle_fixture_path: str | None = None
+    candidate_execution_available: bool
+    readiness_status: Literal[
+        "ready_for_generated_spec_legacy_oracle_execution",
+        "missing_legacy_oracle_fixture",
+        "invalid_spec",
+        "compile_failed",
+    ]
+    full_parity_verified: bool = False
+
+
+class BuffGraphGeneratedSpecReadinessPayload(BaseModel):
+    total_generated_specs: int
+    materialized_legacy_oracle_count: int
+    missing_legacy_oracle_count: int
+    valid_spec_count: int
+    compiled_spec_count: int
+    ready_for_execution_count: int
+    full_parity_verified_count: int = 0
+    runtime_status_counts: dict[str, int] = Field(default_factory=dict)
+    parity_status_counts: dict[str, int] = Field(default_factory=dict)
+    readiness_status_counts: dict[str, int] = Field(default_factory=dict)
+    items: list[BuffGraphGeneratedSpecStatusItem] = Field(default_factory=list)
+
+
 class BuffGraphMatrixPayload(BaseModel):
     status: Literal["not_available", "run_requested"]
     reason: str
@@ -205,3 +240,4 @@ class BuffGraphMatrixPayload(BaseModel):
     full_parity_verified: bool = False
     candidate_wave_evidence: list[dict[str, Any]] = Field(default_factory=list)
     matrix_scope: list[str] = Field(default_factory=list)
+    generated_spec_readiness: BuffGraphGeneratedSpecReadinessPayload | None = None
