@@ -161,6 +161,17 @@ const matrixContract = {
         'scripts/buff_agents/evidence/buff-20260702-buffxlogic-react-flow-visual-authoring/oracle-graph-runtime-candidate-harness-yuzuha-qte.json',
     },
   ],
+  generated_spec_legacy_oracle_evidence: [
+    {
+      graph_id: 'alice-cinema-6-trigger',
+      case_id: 'generated-spec-legacy-oracle-alice-cinema-6-trigger',
+      status: 'generated_spec_legacy_oracle_passed',
+      legacy_oracle: 'legacy_python_collected',
+      fixture_path:
+        'tests/fixtures/buff_graph/generated-spec-legacy-oracles/alice-cinema-6-trigger-legacy-oracle.json',
+      full_parity_verified: false,
+    },
+  ],
   matrix_scope: [
     'react-flow-ui-open-edit-save-validate',
     'react-flow-ui-initiated-parity',
@@ -590,6 +601,9 @@ app.on('window-all-closed', () => app.quit());
             text.includes('calculator-alice-additional-ability-ap-bonus-candidate') &&
             text.includes('yuzuha-cinema2-qte-signal') &&
             text.includes('yuzuha-qte-yuzuha-cinema2-trigger-candidate') &&
+            text.includes('generated_spec_legacy_oracle_passed') &&
+            text.includes('generated-spec-legacy-oracle-alice-cinema-6-trigger') &&
+            text.includes('legacy_python_collected') &&
             text.includes('full_parity_verified: false');
         })()
       `),
@@ -615,6 +629,14 @@ app.on('window-all-closed', () => app.quit());
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[6]?.candidate_parity_passed, true);
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[7]?.wave_id, 'yuzuha-cinema2-qte-signal');
     assert.equal(matrixRunPayload?.candidate_wave_evidence?.[7]?.candidate_parity_passed, true);
+    assert.equal(
+      matrixRunPayload?.generated_spec_legacy_oracle_evidence?.[0]?.status,
+      'generated_spec_legacy_oracle_passed',
+    );
+    assert.equal(
+      matrixRunPayload?.generated_spec_legacy_oracle_evidence?.[0]?.legacy_oracle,
+      'legacy_python_collected',
+    );
     assert.equal(matrixRunPayload?.full_parity_verified, false);
   }
 
