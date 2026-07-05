@@ -1,0 +1,84 @@
+from .. import Buff, check_preparation, find_tick
+from ..JudgeTools import build_preparation_context_from_buff
+from ._preparation_helpers import ensure_equipper_template_record, prepare_with_context
+
+
+class StreetSuperstarRecord:
+    def __init__(self):
+        self.equipper = None
+        self.char = None
+        self.sub_exist_buff_dict = None
+        self.qte_counter = 0
+        self.max_qte = 3
+        self.active_signal = None
+
+
+class StreetSuperstar(Buff.BuffLogic):
+    """街头巨星的逻辑核心：任意角色释放QTE叠层、装备者释放大招触发。"""
+
+    def __init__(self, buff_instance):
+        super().__init__(buff_instance)
+        self.buff_instance: Buff = buff_instance
+        self.xjudge = self.special_judge_logic
+        self.xstart = self.special_start_logic
+        self.equipper = None
+        self.buff_0 = None
+        self.record = None
+
+    def get_prepared(self, **kwargs):
+        return prepare_with_context(
+            self,
+            check_preparation_func=check_preparation,
+            context_builder=build_preparation_context_from_buff,
+            **kwargs,
+        )
+
+    def check_record_module(self):
+        ensure_equipper_template_record(
+            self,
+            item_name="街头巨星",
+            record_factory=StreetSuperstarRecord,
+            context_builder=build_preparation_context_from_buff,
+        )
+
+    def special_judge_logic(self, **kwargs):
+        self.check_record_module()
+        self.get_prepared(equipper="街头巨星")
+        skill_node = kwargs.get("skill_node", None)
+        if skill_node is None:
+            return False
+        from zsim.sim_progress.Preload import SkillNode
+
+        if not isinstance(skill_node, SkillNode):
+            raise TypeError(
+                f"{self.buff_instance.ft.index}的xjudge函数获取到的skill_node不是SkillNode类型"
+            )
+        if not skill_node.preload_tick == find_tick(sim_instance=self.buff_instance.sim_instance):
+            return False
+        if skill_node.skill.trigger_buff_level == 5:
+            self.record.qte_counter = min(self.record.qte_counter + 1, self.record.max_qte)
+        elif skill_node.skill.trigger_buff_level == 6:
+            if skill_node.char_name == self.record.char.NAME:
+                self.record.active_signal = skill_node
+                return True
+        return False
+
+    def special_start_logic(self, **kwargs):
+        self.check_record_module()
+        self.get_prepared(equipper="街头巨星", sub_exist_buff_dict=1)
+        if self.record.qte_counter == 0:
+            return
+        self.buff_instance.simple_start(
+            find_tick(sim_instance=self.buff_instance.sim_instance),
+            self.record.sub_exist_buff_dict,
+            specified_count=self.record.qte_counter,
+            no_end=1,
+        )
+        self.buff_instance.dy.endticks = (
+            find_tick(sim_instance=self.buff_instance.sim_instance)
+            + self.record.active_signal.skill.ticks
+        )
+        self.buff_instance.update_to_buff_0(self.buff_0)
+
+        self.record.qte_counter = 0
+        self.active_signal = None

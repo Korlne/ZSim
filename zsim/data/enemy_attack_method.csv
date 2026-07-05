@@ -1,0 +1,5 @@
+ID,method_name,discription,action_set,action_rate,rest_tick
+0,default_method_0,默认攻击策略（固定间隔）,1,1,600
+1,default_method_1,默认攻击策略（随机）,1|2|3,0.3|0.2|0.1,300
+2,default_method_2,默认共计策略（固定间隔抛出重攻击）,4,1,600
+3,default_method_3,默认共计策略（固定时间抛出连续攻击）,5,1,1200

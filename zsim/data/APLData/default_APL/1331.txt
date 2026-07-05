@@ -1,0 +1,1 @@
+# 1331|action+=|1331_SNA_2|action.1331:strict_linked_after:1331_CoAttack_A|action.1331:second_last_node==1331_SNA_1

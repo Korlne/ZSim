@@ -1,0 +1,36 @@
+from datetime import datetime
+from typing import Literal
+from uuid import uuid4
+
+from pydantic import BaseModel, Field
+
+from .session_result import NormalModeResult, ParallelModeResult
+from .session_run import SessionRun
+
+
+def generate_session_id() -> str:
+    """生成唯一会话 ID：YYYYMMDD + uuid4 前 8 位。"""
+    date_str = datetime.now().strftime("%Y%m%d")
+    uuid_part = str(uuid4())[:8]
+    return f"{date_str}-{uuid_part}"
+
+
+class Session(BaseModel):
+    """会话配置模型。"""
+
+    session_id: str = Field(
+        default_factory=generate_session_id, description="随机生成的会话ID，为本日日期+8位UUID前缀"
+    )
+    session_name: str = Field(default="", description="会话名称")
+    create_time: datetime = Field(
+        default_factory=datetime.now, description="会话创建时间，默认当前时间"
+    )
+    session_run: SessionRun | None = None
+    session_result: list[NormalModeResult | ParallelModeResult] | None = None
+    status: Literal["pending", "running", "completed", "stopped", "failed"] = Field(
+        default="pending", description="会话状态"
+    )
+
+
+if __name__ == "__main__":
+    print(Session())

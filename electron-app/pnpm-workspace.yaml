@@ -1,0 +1,12 @@
+allowBuilds:
+  '@parcel/watcher': true
+  '@tailwindcss/oxide': true
+  electron: true
+  electron-winstaller: true
+  esbuild: true
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - '@tailwindcss/oxide'
+  - electron
+  - electron-winstaller
+  - esbuild
