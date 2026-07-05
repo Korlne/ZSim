@@ -30,6 +30,7 @@ class APLArchive:
         self.refresh()
 
     def refresh(self):
+        os.makedirs(COSTOM_APL_DIR, exist_ok=True)
         self.default_apl_map = self.__get_apl_toml(DEFAULT_APL_DIR)
         self.custom_apl_map = self.__get_apl_toml(COSTOM_APL_DIR)
         all_apl_list: list[dict] = list(self.default_apl_map.values()) + list(
