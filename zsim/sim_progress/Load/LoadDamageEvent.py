@@ -3,16 +3,15 @@ from __future__ import annotations
 from typing import Any, Protocol, cast
 
 from zsim.sim_progress.Preload import SkillNode
-
-# import Enemy
 from zsim.sim_progress.Report import report_to_log
+
 from .. import Dot
 from .loading_mission import LoadingMission
 
 
 class ScheduledEventPublisher(Protocol):
     def publish_scheduled(self, event: Any) -> None:
-        """Publish one planned event payload."""
+        """发布一个计划事件载荷。"""
 
 
 SchedulePublisher = ScheduledEventPublisher
@@ -22,12 +21,12 @@ def _as_schedule_publisher(
     schedule_publisher: SchedulePublisher | None,
 ) -> ScheduledEventPublisher:
     if schedule_publisher is None:
-        raise ValueError("schedule_publisher cannot be None")
+        raise ValueError("schedule_publisher 不能为 None")
     if hasattr(schedule_publisher, "publish_scheduled"):
         return cast(ScheduledEventPublisher, schedule_publisher)
     raise TypeError(
-        "schedule_publisher must provide publish_scheduled; raw event_list handoff "
-        "has been retired, pass create_schedule_dispatch_port(...) instead"
+        "schedule_publisher 必须提供 publish_scheduled；原始 event_list 交接已经移除，"
+        "请改用 create_schedule_dispatch_port(...)"
     )
 
 
@@ -40,12 +39,12 @@ def _legacy_schedule_publisher(
     if "event_list" in kwargs:
         kwargs.pop("event_list")
         raise TypeError(
-            "event_list= planned-queue handoff has been retired; pass "
-            "schedule_publisher=create_schedule_dispatch_port(...) instead"
+            "event_list= 形式的计划队列交接已经移除；请改用 "
+            "schedule_publisher=create_schedule_dispatch_port(...)"
         )
     if kwargs and not allow_unexpected:
         unexpected = ", ".join(sorted(kwargs))
-        raise TypeError(f"Unexpected keyword argument(s): {unexpected}")
+        raise TypeError(f"收到未支持的关键字参数：{unexpected}")
     return schedule_publisher
 
 

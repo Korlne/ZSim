@@ -1,17 +1,17 @@
 from typing import Any
 
 from zsim.define import VIVIAN_REPORT
-from zsim.sim_progress.Dot.runtime_state import DotRuntimeStateAdapter
 from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduledEventEmitter,
     ScheduledEventEmitterProvider,
 )
+from zsim.sim_progress.Dot.runtime_state import DotRuntimeStateAdapter
 
 from .. import Buff, JudgeTools, check_preparation, find_tick
 from ..JudgeTools import build_preparation_context_from_buff
 from ._preparation_helpers import ensure_owner_template_record, prepare_with_context
-from .enemy_anomaly_read import read_enemy_anomaly_active
 from .dot_runtime_state_read import DotRuntimeStateReadPort
+from .enemy_anomaly_read import read_enemy_anomaly_active
 
 
 class _LegacyTemplateLookupContext:
@@ -20,9 +20,7 @@ class _LegacyTemplateLookupContext:
 
     def find_sub_exist_buff_dict(self, owner_name: str) -> dict[str, object]:
         lookup_name = "".join(("find", "_exist", "_buff", "_dict"))
-        return getattr(JudgeTools, lookup_name)(sim_instance=self._sim_instance)[
-            owner_name
-        ]
+        return getattr(JudgeTools, lookup_name)(sim_instance=self._sim_instance)[owner_name]
 
 
 def _build_vivian_dot_preparation_context(buff_instance: object) -> object:
@@ -30,9 +28,7 @@ def _build_vivian_dot_preparation_context(buff_instance: object) -> object:
         return build_preparation_context_from_buff(buff_instance)
     except AttributeError:
         sim_instance = getattr(buff_instance, "sim_instance")
-        if hasattr(sim_instance, "load_data") or hasattr(
-            sim_instance, "buff_runtime_state"
-        ):
+        if hasattr(sim_instance, "load_data") or hasattr(sim_instance, "buff_runtime_state"):
             raise
         return _LegacyTemplateLookupContext(sim_instance)
 

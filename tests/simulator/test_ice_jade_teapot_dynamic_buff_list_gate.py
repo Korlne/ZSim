@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from typing import Any, Mapping, Sequence, cast
 
 import pytest
+
 import zsim.define as define_module
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     BuffRuntimeReadPort,
@@ -94,9 +95,7 @@ def _make_sim_instance(
     judge_list_set: list[list[str]] | None = None,
 ) -> object:
     if judge_list_set is None:
-        judge_list_set = [
-            [_ICEJADE_EQUIPPER, _ICEJADE_ITEM_NAME, "test-slot", "test-2pc"]
-        ]
+        judge_list_set = [[_ICEJADE_EQUIPPER, _ICEJADE_ITEM_NAME, "test-slot", "test-2pc"]]
     enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_debuff_list=[]))
     return SimpleNamespace(
         char_data=SimpleNamespace(char_obj_list=[]),
@@ -131,9 +130,7 @@ def _make_logic(
 
 
 def test_ice_jade_first_matching_count_at_or_above_threshold_returns_true() -> None:
-    later_matching_buff = _dynamic_buff_with_failing_count(
-        f"{_ICEJADE_TRIGGER_INDEX}-later-copy"
-    )
+    later_matching_buff = _dynamic_buff_with_failing_count(f"{_ICEJADE_TRIGGER_INDEX}-later-copy")
     logic = _make_logic(
         dynamic_buff_dict={
             _ICEJADE_EQUIPPER: [
@@ -148,9 +145,7 @@ def test_ice_jade_first_matching_count_at_or_above_threshold_returns_true() -> N
 
 
 def test_ice_jade_first_matching_count_below_threshold_returns_false() -> None:
-    later_matching_buff = _dynamic_buff_with_failing_count(
-        f"{_ICEJADE_TRIGGER_INDEX}-later-copy"
-    )
+    later_matching_buff = _dynamic_buff_with_failing_count(f"{_ICEJADE_TRIGGER_INDEX}-later-copy")
     logic = _make_logic(
         dynamic_buff_dict={
             _ICEJADE_EQUIPPER: [
@@ -236,8 +231,7 @@ def _direct_dynamic_lookup_calls(special_judge_node: ast.FunctionDef) -> list[as
     return [
         call
         for call in ast.walk(special_judge_node)
-        if isinstance(call, ast.Call)
-        and _call_name(call) == "JudgeTools.find_dynamic_buff_list"
+        if isinstance(call, ast.Call) and _call_name(call) == "JudgeTools.find_dynamic_buff_list"
     ]
 
 
@@ -259,10 +253,7 @@ def _replacement_helper_or_view_is_present(
             "special_judge_logic",
         }:
             return True
-        if (
-            isinstance(node, ast.ClassDef)
-            and node.name != "IceJadeTeaPotExtraDMGBonus"
-        ):
+        if isinstance(node, ast.ClassDef) and node.name != "IceJadeTeaPotExtraDMGBonus":
             return True
 
     legacy_calls = {

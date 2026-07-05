@@ -21,12 +21,6 @@ def test_buff_judge_mission_cache_key_uses_stable_mission_identity():
     other_skill = _mission("skill-b", 10, 30, [4, 8])
     other_timing = _mission("skill-a", 11, 31, [4, 8])
 
-    assert _buff_judge_mission_cache_key(first) == _buff_judge_mission_cache_key(
-        equivalent
-    )
-    assert _buff_judge_mission_cache_key(first) != _buff_judge_mission_cache_key(
-        other_skill
-    )
-    assert _buff_judge_mission_cache_key(first) != _buff_judge_mission_cache_key(
-        other_timing
-    )
+    assert _buff_judge_mission_cache_key(first) == _buff_judge_mission_cache_key(equivalent)
+    assert _buff_judge_mission_cache_key(first) != _buff_judge_mission_cache_key(other_skill)
+    assert _buff_judge_mission_cache_key(first) != _buff_judge_mission_cache_key(other_timing)

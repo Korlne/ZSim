@@ -5,28 +5,28 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
+
 import zsim.define as define_module
 
 sys.modules.setdefault("define", define_module)
 
-import zsim.sim_progress.Buff.BuffXLogic.VivianDotTrigger as vivian_module
 import zsim.sim_progress.Buff.BuffXLogic.VivianCinema1Debuff as vivian_cinema1_module
-
+import zsim.sim_progress.Buff.BuffXLogic.VivianDotTrigger as vivian_module
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.VivianCinema1Debuff import (
-    VVivianCinema1DebuffRecord,
     VivianCinema1Debuff,
+    VVivianCinema1DebuffRecord,
 )
 from zsim.sim_progress.Buff.BuffXLogic.VivianDotTrigger import (
     VivianDotTrigger,
     VivianDotTriggerRecord,
 )
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
+)
 from zsim.sim_progress.Load import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
-from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
-    ScheduledEventEmitterProvider,
-)
 
 
 class _FailFastEventList(list):
@@ -171,9 +171,7 @@ def _build_vivian_judge_harness(
 
     logic = VivianDotTrigger(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            create_dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(create_dispatch_port),
     )
     dynamic = _CountingAnomalyDynamic(anomaly_active=anomaly_active)
     enemy = SimpleNamespace(dynamic=dynamic)
@@ -226,9 +224,7 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("VivianDotTrigger should not read raw event_list")
 
-    monkeypatch.setattr(
-        JudgeTools, "find_event_list", fail_find_event_list, raising=False
-    )
+    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list, raising=False)
 
 
 def test_vivian_dot_trigger_judge_rejects_missing_skill_node_without_side_effects(
@@ -281,9 +277,7 @@ def test_vivian_dot_trigger_judge_is_pure_for_tag_hit_and_anomaly_gates(
     expected_hit_checks: list[int],
     expected_anomaly_reads: int,
 ) -> None:
-    harness = _build_vivian_judge_harness(
-        monkeypatch, anomaly_active=anomaly_active
-    )
+    harness = _build_vivian_judge_harness(monkeypatch, anomaly_active=anomaly_active)
     skill_node, loading_mission = _make_vivian_judge_skill_node(
         skill_tag=skill_tag,
         hit_now=hit_now,
@@ -331,9 +325,7 @@ def test_vivian_dot_trigger_registers_dot_and_publishes_skill_node_via_dispatch_
     )
     logic = VivianDotTrigger(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
 
     inactive_dot = _PresenceDot(active=False)
@@ -370,6 +362,7 @@ def test_vivian_dot_trigger_registers_dot_and_publishes_skill_node_via_dispatch_
 
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
+
     def fake_print(message: object, *args: object, **kwargs: object) -> None:
         call_order.append("print_report")
         assert message == "核心被动：薇薇安对敌人施加Dot——薇薇安的预言"
@@ -485,9 +478,7 @@ def test_vivian_cinema1_debuff_judges_by_vivians_prophecy_presence(
     record = VVivianCinema1DebuffRecord()
     record.char = SimpleNamespace(NAME="薇薇安")
     dynamic_dot_list = (
-        [_PresenceDot(active=existing_dot_active)]
-        if existing_dot_active is not None
-        else []
+        [_PresenceDot(active=existing_dot_active)] if existing_dot_active is not None else []
     )
 
     record.enemy = SimpleNamespace(
@@ -524,9 +515,9 @@ def test_vivian_cinema1_debuff_record_uses_existing_buff_template(
     monkeypatch.setattr(
         vivian_cinema1_module,
         "build_preparation_context_from_buff",
-        lambda current_buff: _PreparationContextProbe(fake_find_exist_buff_dict(
-            sim_instance=current_buff.sim_instance
-        )),
+        lambda current_buff: _PreparationContextProbe(
+            fake_find_exist_buff_dict(sim_instance=current_buff.sim_instance)
+        ),
     )
     monkeypatch.setattr(JudgeTools, "find_exist_buff_dict", fake_find_exist_buff_dict)
 

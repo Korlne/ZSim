@@ -3,8 +3,8 @@ from csv import DictReader
 from pathlib import Path
 
 import zsim.sim_progress.Report as Report
-from zsim.sim_progress.Report.log_handler import log_queue
 import zsim.sim_progress.Report.result_handler as result_handler
+from zsim.sim_progress.Report.log_handler import log_queue
 from zsim.sim_progress.Report.result_handler import result_queue
 
 
@@ -59,9 +59,7 @@ def test_damage_record_buffer_preserves_base_order_and_appends_extras(
         ]
 
 
-def test_report_dmg_result_flushes_damage_csv_once_on_stop(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_report_dmg_result_flushes_damage_csv_once_on_stop(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.chdir(tmp_path)
     monkeypatch.setattr(result_handler, "DEBUG", True)
     _drain_queue(log_queue)

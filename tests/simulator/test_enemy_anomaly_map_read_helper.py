@@ -9,7 +9,6 @@ from zsim.sim_progress.Buff.BuffXLogic.enemy_anomaly_map_read import (
     snapshot_enemy_anomaly_states,
 )
 
-
 ANOMALY_NAMES = (
     "frostbite",
     "assault",
@@ -113,9 +112,7 @@ def test_read_enemy_anomaly_state_preserves_frost_frostbite_none_exactly() -> No
 
     assert dynamic.reads["frost_frostbite"] == 1
     assert all(
-        dynamic.reads[sibling] == 0
-        for sibling in ANOMALY_NAMES
-        if sibling != "frost_frostbite"
+        dynamic.reads[sibling] == 0 for sibling in ANOMALY_NAMES if sibling != "frost_frostbite"
     )
     assert enemy.forbidden_reads == []
 

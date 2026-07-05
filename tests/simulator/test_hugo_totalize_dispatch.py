@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from typing import Any, Callable, SupportsIndex
 
 import pytest
+
 import zsim.define as define_module
 import zsim.sim_progress.ScheduledEvent as scheduled_event_module
 import zsim.sim_progress.ScheduledEvent.buff_runtime as buff_runtime_module
@@ -14,20 +15,19 @@ import zsim.sim_progress.ScheduledEvent.runtime_command as runtime_command_modul
 sys.modules.setdefault("define", define_module)
 
 import zsim.sim_progress.Buff.BuffXLogic.HugoCorePassiveTotalizeTrigger as hugo_module
-
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.HugoCorePassiveTotalizeTrigger import (
     HugoCorePassiveTotalizeTrigger,
     HugoCorePassiveTotalizeTriggerRecord,
 )
+from zsim.sim_progress.data_struct import StunForcedTerminationEvent
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
+)
 from zsim.sim_progress.Load import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
-from zsim.sim_progress.data_struct import StunForcedTerminationEvent
-from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
-    ScheduledEventEmitterProvider,
-)
 
 
 class _FailFastEventList(list[Any]):
@@ -63,13 +63,9 @@ class _RecordingDispatchPort(ScheduleDispatchPort):
 
 def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
-        raise AssertionError(
-            "HugoCorePassiveTotalizeTrigger should not read raw event_list"
-        )
+        raise AssertionError("HugoCorePassiveTotalizeTrigger should not read raw event_list")
 
-    monkeypatch.setattr(
-        JudgeTools, "find_event_list", fail_find_event_list, raising=False
-    )
+    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list, raising=False)
 
 
 def _build_hugo_harness(
@@ -110,9 +106,7 @@ def _build_hugo_harness(
     )
     logic = HugoCorePassiveTotalizeTrigger(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
     record = HugoCorePassiveTotalizeTriggerRecord()
     record.active_signal = active_signal
@@ -123,9 +117,7 @@ def _build_hugo_harness(
     )
     record.preload_data = SimpleNamespace(skills=[])
     publish_signal_states: list[int | None] = []
-    dispatch_port.on_publish = lambda event: publish_signal_states.append(
-        record.active_signal
-    )
+    dispatch_port.on_publish = lambda event: publish_signal_states.append(record.active_signal)
     return SimpleNamespace(
         call_order=call_order,
         dispatch_port=dispatch_port,
@@ -460,10 +452,7 @@ def test_hugo_judge_non_cinema_six_requires_stun_without_publish(
     harness = _build_hugo_harness(active_signal=None, cinema=1, enemy_stun=False)
     _patch_hugo_dependencies(monkeypatch, harness)
 
-    assert (
-        harness.logic.special_judge_logic(skill_node=_build_hugo_judge_skill())
-        is False
-    )
+    assert harness.logic.special_judge_logic(skill_node=_build_hugo_judge_skill()) is False
 
     assert harness.call_order == []
     assert harness.buff_add_calls == []

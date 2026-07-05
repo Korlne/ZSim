@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .quick_assist_manager import QuickAssistManager
 from ..schedule_dispatch import ScheduledEventEmitter, ScheduledEventEmitterProvider
+from .quick_assist_manager import QuickAssistManager
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Character.character import Character
@@ -99,6 +99,7 @@ class QuickAssistSystem:
     def force_active_quick_assist(self, tick_now: int, skill_node: "SkillNode", char_name: str):
         """强制激活快速支援，主要是服务于外部调用。"""
         self.spawn_event_group(tick_now, skill_node, self.quick_assist_manager_group[char_name])
+
 
 class QuickAssistEvent:
     """快速支援事件"""

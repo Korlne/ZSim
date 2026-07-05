@@ -4,10 +4,11 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, ClassVar, Mapping, Sequence
 
 if TYPE_CHECKING:
-    from .. import Buff
-    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
     from zsim.sim_progress.data_struct.schedule_dispatch import ScheduledEventEmitterProvider
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
     from zsim.simulator.simulator_class import Simulator
+
+    from .. import Buff
 
 
 _PREPARATION_CONTEXT_CACHE_ATTR = "_zsim_preparation_context_cache"
@@ -235,9 +236,7 @@ class ResourceRefreshCommandPort:
             decibel_target=decibel_target,
             decibel_value=decibel_value,
         )
-        self.scheduled_event_emitter_provider.create_emitter().emit_scheduled(
-            refresh_data
-        )
+        self.scheduled_event_emitter_provider.create_emitter().emit_scheduled(refresh_data)
 
 
 @dataclass(frozen=True)
@@ -307,9 +306,7 @@ def _create_template_registry_read_port_from_sim_instance(
             registry_getter = getattr(registry_owner, "mutable_registry", None)
             if registry_getter is None:
                 registry_getter = getattr(registry_owner, "as_compat_dict")
-            return BuffTemplateRegistryReadPort(
-                templates_by_owner=registry_getter()
-            )
+            return BuffTemplateRegistryReadPort(templates_by_owner=registry_getter())
     return BuffTemplateRegistryReadPort(templates_by_owner={})
 
 
@@ -364,24 +361,18 @@ def build_preparation_context_from_sim_instance(
     cached_context = _read_cached_preparation_context(sim_instance, cache_key)
     if cached_context is not None:
         return cached_context
-    template_registry = _create_template_registry_read_port_from_sim_instance(
-        sim_instance
-    )
+    template_registry = _create_template_registry_read_port_from_sim_instance(sim_instance)
     context = PreparationContext(
         character_lookup=CharacterLookup(sim_instance.char_data.char_obj_list),
         equipment_owner_lookup=EquipmentOwnerLookup(sim_instance.init_data.Judge_list_set),
         template_registry=template_registry,
         trigger_buff_lookup=TriggerBuffLookup(template_registry),
-        buff_runtime_read_port=_create_buff_runtime_read_port_from_sim_instance(
-            sim_instance
-        ),
+        buff_runtime_read_port=_create_buff_runtime_read_port_from_sim_instance(sim_instance),
         enemy=sim_instance.schedule_data.enemy,
         action_stack=sim_instance.load_data.action_stack,
         preload_data=sim_instance.preload.preload_data,
         preload_commands=PreloadCommandPort.from_sim_instance(sim_instance),
-        resource_refresh_commands=ResourceRefreshCommandPort.from_sim_instance(
-            sim_instance
-        ),
+        resource_refresh_commands=ResourceRefreshCommandPort.from_sim_instance(sim_instance),
         char_obj_list=sim_instance.char_data.char_obj_list,
     )
     _store_cached_preparation_context(sim_instance, cache_key, context)
@@ -400,10 +391,10 @@ def create_calculator_runtime_read_context_from_sim_instance(
     query_node: Any | None = None,
     beneficiary: str | None = None,
 ) -> Any:
-    from zsim.sim_progress.ScheduledEvent.Calculator import (
+    from zsim.sim_progress.calculation.calculator import (
         create_anomaly_attribute_read_context,
     )
-    from zsim.sim_progress.ScheduledEvent.Calculator import (
+    from zsim.sim_progress.calculation.calculator import (
         create_calculator_runtime_read_context_from_sim_instance as _create_calculator_runtime_read_context_from_sim_instance,
     )
 

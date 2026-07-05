@@ -8,12 +8,12 @@ from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
 
 
 class WakeupSource(Protocol):
-    """Declares the next behavior-relevant Simulation Tick for one subsystem."""
+    """声明某个子系统下一次需要被主循环唤醒的模拟 tick。"""
 
     name: str
 
     def next_wakeup_tick(self, current_tick: int) -> int | None:
-        """Return the next tick strictly after current_tick, or None if idle."""
+        """返回严格晚于 current_tick 的下一次唤醒 tick；空闲时返回 None。"""
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,7 +29,7 @@ class FixedTickWakeupSource:
 
 @dataclass(frozen=True, slots=True)
 class StopTickWakeupSource:
-    """Wakeup source that preserves the configured simulation stop boundary."""
+    """用于保留模拟终止边界的唤醒源。"""
 
     tick: int | None
     name: str = "stop-tick"
@@ -42,7 +42,7 @@ class StopTickWakeupSource:
 
 @dataclass(frozen=True, slots=True)
 class ConservativeTickWakeupSource:
-    """Temporary per-tick wakeup while a subsystem still has hidden polling needs."""
+    """子系统仍有隐式轮询需求时使用的逐 tick 临时唤醒源。"""
 
     name: str = "conservative-next-tick"
 
@@ -60,7 +60,7 @@ class PlannedEventQueueWakeupSource:
 
 
 class SimulationClock:
-    """Owns Simulation Tick advancement without knowing subsystem internals."""
+    """负责推进模拟 tick，不直接依赖各子系统内部细节。"""
 
     def next_wakeup_tick(
         self,
@@ -81,6 +81,6 @@ class SimulationClock:
             candidates.append((tick, source.name))
 
         if not candidates:
-            raise ValueError("SimulationClock requires at least one future WakeupSource")
+            raise ValueError("SimulationClock 至少需要一个未来的 WakeupSource")
 
         return min(tick for tick, _ in candidates)

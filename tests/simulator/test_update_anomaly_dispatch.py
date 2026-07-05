@@ -7,9 +7,17 @@ from typing import Any, cast
 import numpy as np
 import pytest
 
-import zsim.sim_progress.Buff.BuffAddStrategy as buff_add_strategy_module
 import zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput as copied_output_module
+import zsim.sim_progress.Buff.BuffAddStrategy as buff_add_strategy_module
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
+from zsim.sim_progress.anomaly_bar import AnomalyBar
+from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
+    Disorder,
+    NewAnomaly,
+    PolarityDisorder,
+)
+from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
+from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 from zsim.sim_progress.Dot.BaseDot import Dot
 from zsim.sim_progress.Dot.runtime_state import DotRuntimeStateAdapter
 from zsim.sim_progress.Update import UpdateAnomaly as update_anomaly_module
@@ -19,15 +27,6 @@ from zsim.sim_progress.Update.UpdateAnomaly import (
     spawn_output,
     update_anomaly,
 )
-from zsim.sim_progress.anomaly_bar import AnomalyBar
-from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
-    Disorder,
-    NewAnomaly,
-    PolarityDisorder,
-)
-from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
-from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
-
 
 _CallRecord = tuple[str, object]
 _HelperCallRecord = tuple[object, ...]
@@ -696,9 +695,7 @@ def test_update_anomaly_preserves_disorder_branch_order_state_and_optional_new_p
     skill_node = _build_skill_node(element_type=element_type)
     chars = [
         SimpleNamespace(
-            special_resources=lambda anomaly: call_order.append(
-                ("special_resources", anomaly)
-            )
+            special_resources=lambda anomaly: call_order.append(("special_resources", anomaly))
         )
     ]
     new_dot = _FakeDot(index="NewShock", call_order=call_order)
@@ -839,9 +836,7 @@ def test_update_anomaly_records_new_anomaly_field_matrix_with_runtime_dot(
     skill_node = _build_skill_node(element_type=3)
     chars = [
         SimpleNamespace(
-            special_resources=lambda anomaly: call_order.append(
-                ("special_resources", anomaly)
-            )
+            special_resources=lambda anomaly: call_order.append(("special_resources", anomaly))
         )
     ]
     new_dot = _FakeDot(index="Shock", call_order=call_order)
@@ -941,9 +936,7 @@ def test_update_anomaly_ice_frost_mode_zero_publishes_only_when_currently_frozen
     skill_node = _build_skill_node(element_type=element_type)
     chars = [
         SimpleNamespace(
-            special_resources=lambda anomaly: call_order.append(
-                ("special_resources", anomaly)
-            )
+            special_resources=lambda anomaly: call_order.append(("special_resources", anomaly))
         )
     ]
     recording_queue = _RecordingEventList(call_order)
@@ -959,16 +952,11 @@ def test_update_anomaly_ice_frost_mode_zero_publishes_only_when_currently_frozen
         {"alpha": [], "enemy": []},
     )
 
-    special_payloads = [
-        payload for action, payload in call_order if action == "special_resources"
-    ]
+    special_payloads = [payload for action, payload in call_order if action == "special_resources"]
     assert len(special_payloads) == 1
     new_anomaly = special_payloads[0]
     assert enemy.dynamic.frozen is True
-    assert (
-        enemy.dynamic.active_anomaly_bar_dict[element_type].element_type
-        == element_type
-    )
+    assert enemy.dynamic.active_anomaly_bar_dict[element_type].element_type == element_type
     if should_publish:
         assert recording_queue == [new_anomaly]
         assert call_order == [
@@ -1026,25 +1014,23 @@ def test_update_anomaly_runtime_layers_are_split_into_helpers():
     }
     assert "change_info_cause_active" in helper_sources["_activate_anomaly_state"]
     assert "buff_runtime_view=buff_runtime_view" in helper_sources["_activate_anomaly_state"]
-    assert "listener_broadcaster(event=active_bar, signal=LBS.ANOMALY)" in helper_sources[
-        "_broadcast_active_anomaly"
-    ]
+    assert (
+        "listener_broadcaster(event=active_bar, signal=LBS.ANOMALY)"
+        in helper_sources["_broadcast_active_anomaly"]
+    )
     assert "_publish_scheduled_event" in inspect.getsource(
         update_anomaly_module._publish_new_anomaly_if_required
     )
     assert "anomaly_effect_active" in helper_sources["_process_new_or_replaced_anomaly"]
     assert "anomaly_effect_active" in helper_sources["_process_disorder_anomaly"]
     assert "remove_dots_cause_disorder" in helper_sources["_process_disorder_anomaly"]
-    assert "_record_decibel_update(sim_instance, skill_node, \"disorder\")" in helper_sources[
-        "_process_disorder_anomaly"
-    ]
+    assert (
+        '_record_decibel_update(sim_instance, skill_node, "disorder")'
+        in helper_sources["_process_disorder_anomaly"]
+    )
     assert "dot_runtime_state.snapshot()" in helper_sources["_collect_disorder_dots_to_remove"]
-    assert "_publish_scheduled_event" in helper_sources[
-        "_publish_freeze_follow_up_for_removed_dot"
-    ]
-    assert "dot_runtime_state.remove_all" in helper_sources[
-        "_remove_disorder_dot_from_runtime"
-    ]
+    assert "_publish_scheduled_event" in helper_sources["_publish_freeze_follow_up_for_removed_dot"]
+    assert "dot_runtime_state.remove_all" in helper_sources["_remove_disorder_dot_from_runtime"]
     assert "change_process_state" in helper_sources["_record_disorder_dot_removal_process"]
 
 

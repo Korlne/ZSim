@@ -46,14 +46,14 @@ class InitData:
         elif isinstance(common_cfg, CommonCfg):
             self.__api_init(common_cfg)
         else:
-            raise ValueError("Invalid configuration type.")
+            raise ValueError("无效的配置类型。")
         self.sim_instance = sim_instance
 
     def __direct_read_init(self):
         """CLI/WebUI方法不传入常规配置，直接读取文件"""
         config: dict = saved_char_config
         if not config:
-            raise AssertionError("No character init configuration found.")
+            raise AssertionError("未找到角色初始化配置。")
         try:
             self.name_box = config["name_box"]
             self.Judge_list_set = []  # [[瑙掕壊鍚? 姝﹀櫒鍚? 鍥涗欢濂? 浜屼欢濂梋, ...]
@@ -61,7 +61,7 @@ class InitData:
             self.char_1 = config[self.name_box[1]]
             self.char_2 = config[self.name_box[2]]
         except KeyError as e:
-            raise AssertionError(f"Missing key in character init configuration: {e}") from e
+            raise AssertionError(f"角色初始化配置缺少必要字段：{e}") from e
         self.__adjust_weapon_with_sim_cfg()
         for name in self.name_box:
             char = getattr(self, f"char_{self.name_box.index(name)}")
@@ -88,7 +88,7 @@ class InitData:
     def __api_init(self, common_cfg: CommonCfg):
         """API方法传入常规配置"""
         self.name_box = [char.name for char in common_cfg.char_config]
-        assert len(self.name_box) == 3, "Character configuration must be 3."
+        assert len(self.name_box) == 3, "角色配置数量必须为 3。"
 
         # 创建 char_0, char_1, char_2 属性，将 CharConfig 对象转换为字典
         for i, char_config in enumerate(common_cfg.char_config):

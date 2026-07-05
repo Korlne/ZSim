@@ -2,6 +2,7 @@
 from typing import Any
 
 from define import SEED_REPORT
+
 from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduledEventEmitterProvider,
 )
@@ -54,9 +55,7 @@ class SeedAdditionalAbilityTrigger(Buff.BuffLogic):
         sp_target: tuple[str, ...],
         sp_value: float | int,
     ) -> None:
-        refresh_commands = ResourceRefreshCommandPort(
-            self._scheduled_event_emitter_provider
-        )
+        refresh_commands = ResourceRefreshCommandPort(self._scheduled_event_emitter_provider)
         refresh_commands.publish_refresh(sp_target=sp_target, sp_value=sp_value)
 
     def check_record_module(self):

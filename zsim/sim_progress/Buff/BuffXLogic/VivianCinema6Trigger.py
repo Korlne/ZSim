@@ -2,7 +2,7 @@ import math
 from typing import Any
 
 from zsim.define import VIVIAN_REPORT
-from zsim.sim_progress.ScheduledEvent.Calculator import (
+from zsim.sim_progress.calculation.calculator import (
     create_calculator_runtime_read_context_from_sim_instance,
     get_calculator_buff_attribute_reader_service,
 )
@@ -11,7 +11,7 @@ from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduledEventEmitterProvider,
 )
 
-from .. import Buff, JudgeTools, check_preparation
+from .. import Buff, check_preparation
 from ..JudgeTools import build_preparation_context_from_buff
 from ._preparation_helpers import ensure_owner_template_record, prepare_with_context
 from .enemy_anomaly_read import (

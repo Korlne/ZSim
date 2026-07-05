@@ -33,7 +33,7 @@ class LighterUniqueSkillStunTimeLimitBonus(Buff.BuffLogic):
     def check_record_module(self):
         ensure_owner_template_record(
             self,
-            owner_name='莱特',
+            owner_name="莱特",
             record_factory=LighterUniqueSkillStunTimeRecord,
             context_builder=build_preparation_context_from_buff,
         )

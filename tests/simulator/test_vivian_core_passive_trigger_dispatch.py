@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+
 import zsim.define as define_module
 import zsim.sim_progress.ScheduledEvent as scheduled_event_module
 import zsim.sim_progress.ScheduledEvent.buff_runtime as buff_runtime_module
@@ -13,19 +14,18 @@ import zsim.sim_progress.ScheduledEvent.runtime_command as runtime_command_modul
 sys.modules.setdefault("define", define_module)
 
 import zsim.sim_progress.Buff.BuffXLogic.VivianCorePassiveTrigger as trigger_module
-
+from zsim.sim_progress.anomaly_bar import AnomalyBar
+from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import DirgeOfDestinyAnomaly
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.VivianCorePassiveTrigger import (
     VivianCorePassiveTrigger,
     VivianCorePassiveTriggerRecord,
 )
-from zsim.sim_progress.Preload import SkillNode
-from zsim.sim_progress.anomaly_bar import AnomalyBar
-from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import DirgeOfDestinyAnomaly
 from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
     ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
 )
+from zsim.sim_progress.Preload import SkillNode
 
 
 class _FailFastEventList(list):
@@ -113,9 +113,7 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("VivianCorePassiveTrigger should not read raw event_list")
 
-    monkeypatch.setattr(
-        JudgeTools, "find_event_list", fail_find_event_list, raising=False
-    )
+    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list, raising=False)
 
 
 def _patch_runtime_boundary_guards(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -241,9 +239,7 @@ def test_vivian_core_passive_publishes_dirge_anomaly_via_dispatch_port(
 
     logic = VivianCorePassiveTrigger(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            create_dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(create_dispatch_port),
     )
     record = VivianCorePassiveTriggerRecord()
     record.char = char
@@ -320,9 +316,7 @@ def test_vivian_core_passive_judge_wrong_skill_is_noop(
     )
     logic = VivianCorePassiveTrigger(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
     record = VivianCorePassiveTriggerRecord()
     record.enemy = enemy
@@ -332,12 +326,7 @@ def test_vivian_core_passive_judge_wrong_skill_is_noop(
     _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
 
-    assert (
-        logic.special_judge_logic(
-            skill_node=_build_skill_node(skill_tag="1331_SNA_2")
-        )
-        is False
-    )
+    assert logic.special_judge_logic(skill_node=_build_skill_node(skill_tag="1331_SNA_2")) is False
 
     assert dynamic.calls == []
     assert helper_calls == []
@@ -363,9 +352,7 @@ def test_vivian_core_passive_judge_no_anomaly_does_not_publish_or_update_node(
     )
     logic = VivianCorePassiveTrigger(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
     record = VivianCorePassiveTriggerRecord()
     record.enemy = enemy

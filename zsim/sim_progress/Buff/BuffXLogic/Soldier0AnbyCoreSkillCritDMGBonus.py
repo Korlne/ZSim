@@ -1,4 +1,4 @@
-from zsim.sim_progress.ScheduledEvent.Calculator import (
+from zsim.sim_progress.calculation.calculator import (
     get_calculator_buff_attribute_reader_service,
 )
 
@@ -10,7 +10,6 @@ from ..JudgeTools import (
     read_trigger_buff_state_active,
 )
 from ._preparation_helpers import ensure_owner_template_record, prepare_with_context
-
 
 _SOLDIER0_ANBY_SILVER_STAR_TRIGGER_REF = TriggerBuffRef.owner(
     "零号·安比",

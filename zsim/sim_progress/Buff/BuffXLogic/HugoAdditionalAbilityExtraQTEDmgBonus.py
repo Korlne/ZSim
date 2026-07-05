@@ -29,7 +29,7 @@ class HugoAdditionalAbilityExtraQTEDmgBonus(Buff.BuffLogic):
     def check_record_module(self):
         ensure_owner_template_record(
             self,
-            owner_name='雨果',
+            owner_name="雨果",
             record_factory=HugoAdditionalAbilityExtraQTEDmgBonusRecord,
             context_builder=build_preparation_context_from_buff,
         )

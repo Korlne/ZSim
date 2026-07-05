@@ -3,10 +3,15 @@ from typing import TYPE_CHECKING
 from zsim.sim_progress.Buff import Buff
 from zsim.sim_progress.Dot import BaseDot
 from zsim.sim_progress.Enemy import Enemy
-from zsim.sim_progress.Report import report_buff_to_queue, report_to_log
+from zsim.sim_progress.Report import report_buff_to_queue as _report_buff_to_queue
+from zsim.sim_progress.Report import report_to_log
 
 if TYPE_CHECKING:
     from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeFacade
+
+
+def report_buff_to_queue(*args, **kwargs):
+    return _report_buff_to_queue(*args, **kwargs)
 
 
 def update_time_related_effect(

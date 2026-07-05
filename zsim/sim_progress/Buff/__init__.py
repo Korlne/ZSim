@@ -4,7 +4,6 @@ from .BuffAdd import buff_add  # noqa: F401
 from .BuffLoad import BuffInitialize, BuffLoadLoop  # noqa: F401
 from .JudgeTools import *  # noqa: F403
 
-
 # TODO:
 #  buff.ft.label = {"only_CoAttack": 1, "only_技能skill_tag": 1}
 #   skill.label = {"CoAttack": 1, "accept_buff_Buff名字": 1}

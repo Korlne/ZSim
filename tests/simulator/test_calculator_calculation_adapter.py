@@ -6,11 +6,13 @@ from typing import Any
 import numpy as np
 import pytest
 
-import zsim.sim_progress.ScheduledEvent.Calculator as calculator_module
-from zsim.sim_progress.ScheduledEvent.Calculator import Calculator
+import zsim.sim_progress.calculation.calculator as calculator_module
+from zsim.sim_progress.calculation.calculator import Calculator
 from zsim.sim_progress.calculation.identities import FROST_DAMAGE, ICE_AFFINITY
-from zsim.sim_progress.calculation.inputs.regular import RegularDamageBonusInput
-from zsim.sim_progress.calculation.inputs.regular import RegularDamageMultipliers
+from zsim.sim_progress.calculation.inputs.regular import (
+    RegularDamageBonusInput,
+    RegularDamageMultipliers,
+)
 
 
 def _static_statement() -> SimpleNamespace:

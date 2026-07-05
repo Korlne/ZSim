@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from zsim.sim_progress.calculation.inputs.regular import DefenseMultiplierInput
 
-
 LEVEL_COEFFICIENTS = (
     0,
     50,
@@ -88,9 +87,7 @@ def calculate_recipient_defense(
     addon_pen_ratio: float = 0.0,
     addon_pen_numeric: float = 0.0,
 ) -> float:
-    recipient_defense = (
-        max_defense * (1 - percentage_defense_reduction) - flat_defense_reduction
-    )
+    recipient_defense = max_defense * (1 - percentage_defense_reduction) - flat_defense_reduction
     pen_numeric = static_pen_numeric + dynamic_pen_numeric + addon_pen_numeric
     return max(
         0.0,
@@ -106,9 +103,7 @@ def calculate_attacker_level_coefficient(attacker_level: int) -> int:
 def calculate_defense_multiplier(input_snapshot: DefenseMultiplierInput) -> float:
     if input_snapshot.base_attribute == 4:
         return 1.0
-    attacker_coefficient = calculate_attacker_level_coefficient(
-        input_snapshot.attacker_level
-    )
+    attacker_coefficient = calculate_attacker_level_coefficient(input_snapshot.attacker_level)
     pen_ratio = calculate_pen_ratio(
         input_snapshot.static_pen_ratio,
         input_snapshot.dynamic_pen_ratio,

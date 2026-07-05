@@ -8,17 +8,17 @@ from typing import TYPE_CHECKING, Mapping, Sequence
 from zsim.sim_progress.Report import report_to_log
 
 if TYPE_CHECKING:
+    from zsim.sim_progress.anomaly_bar import AnomalyBar
     from zsim.sim_progress.Buff import Buff
     from zsim.sim_progress.Buff.BuffLoad import BuffLoadLifecycleCache
     from zsim.sim_progress.Enemy import Enemy
     from zsim.sim_progress.Load import LoadingMission
     from zsim.sim_progress.Preload import SkillNode
-    from zsim.sim_progress.anomaly_bar import AnomalyBar
     from zsim.simulator.simulator_class import Simulator
 
 
 class BuffRuntimeState:
-    """Run-scoped Buff runtime owner."""
+    """单次模拟过程内的 Buff runtime 持有者。"""
 
     def __init__(
         self,
@@ -38,9 +38,7 @@ class BuffRuntimeState:
             enemy_mirror,
         )
         self._active_store = ActiveBuffStore(active_store)
-        self._enemy_mirror_owner = EnemyDebuffMirror(
-            self._active_store.ensure_beneficiary("enemy")
-        )
+        self._enemy_mirror_owner = EnemyDebuffMirror(self._active_store.ensure_beneficiary("enemy"))
 
     @staticmethod
     def _collapse_enemy_debuff_store(
@@ -81,7 +79,7 @@ class BuffRuntimeState:
 
 
 class BuffTemplateRegistry:
-    """Runtime-owned template registry."""
+    """由 runtime 持有的 Buff 模板注册表。"""
 
     def __init__(self, registry: dict[str, dict[str, "Buff"]]) -> None:
         self._registry = registry
@@ -111,7 +109,7 @@ class BuffTemplateRegistry:
 
 
 class PendingBuffQueue:
-    """Runtime-owned pending Buff queue."""
+    """由 runtime 持有的待激活 Buff 队列。"""
 
     def __init__(self, queues: dict[str, list["Buff"]]) -> None:
         self._queues = queues
@@ -165,7 +163,7 @@ class PendingBuffQueue:
 
 
 class ActiveBuffStore:
-    """Runtime-owned active Buff store."""
+    """由 runtime 持有的激活 Buff 容器。"""
 
     def __init__(self, stores: dict[str, list["Buff"]]) -> None:
         self._stores = stores
@@ -194,10 +192,7 @@ class ActiveBuffStore:
 
     def active_buff_view_snapshot(self) -> Mapping[str, Sequence["Buff"]]:
         return MappingProxyType(
-            {
-                beneficiary: tuple(buffs)
-                for beneficiary, buffs in self._stores.items()
-            }
+            {beneficiary: tuple(buffs) for beneficiary, buffs in self._stores.items()}
         )
 
     def mutable_stores(self) -> dict[str, list["Buff"]]:
@@ -214,7 +209,7 @@ class ActiveBuffStore:
 
 
 class EnemyDebuffMirror:
-    """Runtime-owned enemy debuff mirror tied to the enemy active store list."""
+    """由 runtime 持有的敌人 Debuff 镜像，与敌人激活 Buff 容器绑定。"""
 
     def __init__(self, mirror: list["Buff"]) -> None:
         self._mirror = mirror
@@ -272,7 +267,7 @@ class BuffRuntimeReadPort(ABC):
 
 
 class DefaultBuffRuntimeReadAdapter(BuffRuntimeReadPort):
-    """默认 Buff runtime 只读适配器，包装 run-scoped runtime state owner。"""
+    """默认 Buff runtime 只读适配器，包装本轮模拟的 runtime state 持有者。"""
 
     def __init__(self, *, runtime_state: BuffRuntimeState) -> None:
         self._runtime_state = runtime_state
@@ -377,9 +372,7 @@ class BuffRuntimeFacade(ABC):
         """把本 tick 待激活 Buff 提升到旧 active 容器。"""
 
     @abstractmethod
-    def update_time_related_effects(
-        self, *, tick: int, enemy: "Enemy"
-    ) -> dict[str, list["Buff"]]:
+    def update_time_related_effects(self, *, tick: int, enemy: "Enemy") -> dict[str, list["Buff"]]:
         """执行本 tick 的时间相关 Buff runtime 扫描。"""
 
     @abstractmethod
@@ -405,7 +398,7 @@ class BuffRuntimeFacade(ABC):
 
 
 class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
-    """默认 Buff runtime 门面，包装 run-scoped runtime state owner。"""
+    """默认 Buff runtime 门面，包装本轮模拟的 runtime state 持有者。"""
 
     _EVENT_SETTLED_COMPLEX_EXIT_BUFFS = frozenset(
         {
@@ -424,17 +417,14 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
 
     def get_registered_buff(self, beneficiary: str, buff_index: str) -> "Buff | None":
         return self._runtime_state.template_registry_owner().get_registered_buff(
-            beneficiary,
-            buff_index
+            beneficiary, buff_index
         )
 
     def get_registered_buff_view(self, beneficiary: str) -> Mapping[str, "Buff"]:
         return self._runtime_state.template_registry_owner().owner_snapshot(beneficiary)
 
     def find_registered_buff_source(self, buff_index: str) -> tuple[str, "Buff"] | None:
-        for beneficiary, registered_buffs in (
-            self._runtime_state.template_registry_owner().items()
-        ):
+        for beneficiary, registered_buffs in self._runtime_state.template_registry_owner().items():
             if buff_index in registered_buffs:
                 return beneficiary, registered_buffs[buff_index]
         return None
@@ -449,9 +439,7 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
     ) -> "Buff":
         from copy import deepcopy
 
-        source_registry = self._runtime_state.template_registry_owner().for_owner(
-            beneficiary
-        )
+        source_registry = self._runtime_state.template_registry_owner().for_owner(beneficiary)
         source_buff = source_registry[buff_index]
         buff_new = deepcopy(source_buff)
         buff_new.ft.operator = source_buff.ft.operator
@@ -489,9 +477,7 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
         self._runtime_state.active_store_owner().remove(beneficiary, buff)
 
     def end_active_buff(self, beneficiary: str, buff: "Buff", *, tick: int) -> None:
-        sub_exist_buff_dict = self._runtime_state.template_registry_owner().for_owner(
-            beneficiary
-        )
+        sub_exist_buff_dict = self._runtime_state.template_registry_owner().for_owner(beneficiary)
         buff.end(tick, sub_exist_buff_dict)
         self.remove_active_buff(beneficiary, buff)
         report_to_log(
@@ -609,9 +595,7 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
             self._post_activation_report_tick = int(timenow) + 1
         return self._runtime_state.active_store_owner().mutable_stores()
 
-    def update_time_related_effects(
-        self, *, tick: int, enemy: "Enemy"
-    ) -> dict[str, list["Buff"]]:
+    def update_time_related_effects(self, *, tick: int, enemy: "Enemy") -> dict[str, list["Buff"]]:
         from zsim.sim_progress.Update import Update_Buff
 
         return Update_Buff.update_time_related_effect(
@@ -666,11 +650,9 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
         current_tick: int,
     ) -> int | None:
         if not buff.ft.simple_exit_logic:
-            event_settled_wakeup = (
-                DefaultBuffRuntimeFacade._event_settled_complex_exit_wakeup_tick(
-                    buff,
-                    current_tick=current_tick,
-                )
+            event_settled_wakeup = DefaultBuffRuntimeFacade._event_settled_complex_exit_wakeup_tick(
+                buff,
+                current_tick=current_tick,
             )
             if event_settled_wakeup is not None:
                 return event_settled_wakeup
@@ -686,9 +668,7 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
             candidates = []
             for stack_item in stack_items:
                 end_tick = int(stack_item[1])
-                candidates.append(
-                    end_tick + 1 if end_tick >= current_tick else current_tick + 1
-                )
+                candidates.append(end_tick + 1 if end_tick >= current_tick else current_tick + 1)
             return min(candidates)
         end_tick = int(buff.dy.endticks)
         return end_tick + 1 if end_tick >= current_tick else current_tick + 1
@@ -749,7 +729,7 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
         if not should_continue:
             return
         if action_now is None:
-            print("Warnning！！！ScheduleBuffSettle函数没有找到action_now！")
+            print("警告！！！ScheduleBuffSettle函数没有找到 action_now！")
             return
 
         char_on_field = getattr(action_now, "char_name")
@@ -786,9 +766,7 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
         return self._runtime_state.pending_queue_owner().queue_for_runtime(beneficiary)
 
     def _find_enemy_debuff_mirror(self, buff: "Buff") -> "Buff | None":
-        return self._runtime_state.enemy_mirror_owner().find_by_index(
-            self._get_buff_index(buff)
-        )
+        return self._runtime_state.enemy_mirror_owner().find_by_index(self._get_buff_index(buff))
 
     def _activate_pending_buff(self, beneficiary: str, buff: "Buff") -> None:
         from zsim.sim_progress.Buff.buff_class import Buff
@@ -962,11 +940,7 @@ class DefaultBuffRuntimeFacade(BuffRuntimeFacade):
         name_box_now: list[str],
     ) -> list[str]:
         adding_buff_code = str(int(buff.ft.add_buff_to)).zfill(4)
-        return [
-            name_box_now[i]
-            for i in range(len(name_box_now))
-            if adding_buff_code[i] == "1"
-        ]
+        return [name_box_now[i] for i in range(len(name_box_now)) if adding_buff_code[i] == "1"]
 
     @staticmethod
     def _check_schedule_buff(buff: "Buff") -> None:
@@ -988,9 +962,19 @@ def create_buff_runtime_read_port(
     return runtime_state.create_read_port()
 
 
+LegacyBuffRuntimeFacade = DefaultBuffRuntimeFacade
+
+
+def create_legacy_buff_runtime_facade(
+    *,
+    runtime_state: BuffRuntimeState,
+) -> BuffRuntimeFacade:
+    return runtime_state.create_facade()
+
+
 @dataclass(frozen=True, slots=True)
 class BuffTimeRelatedWakeupSource:
-    """Wakeup source backed by the run-scoped Buff runtime facade."""
+    """由本轮模拟 Buff runtime 门面驱动的时间相关唤醒源。"""
 
     runtime_facade: object
     enemy: "Enemy"
@@ -1016,5 +1000,7 @@ __all__ = [
     "BuffTimeRelatedWakeupSource",
     "DefaultBuffRuntimeFacade",
     "DefaultBuffRuntimeReadAdapter",
+    "LegacyBuffRuntimeFacade",
     "create_buff_runtime_read_port",
+    "create_legacy_buff_runtime_facade",
 ]

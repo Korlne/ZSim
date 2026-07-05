@@ -4,12 +4,11 @@ import sys
 from types import SimpleNamespace
 from typing import Any, cast
 
-import pytest
 import zsim.define as define_module
 from zsim.sim_progress.data_struct import PolarizedAssaultEvent
 from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
     ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
 )
 
 sys.modules.setdefault("define", define_module)
@@ -59,9 +58,7 @@ def _build_trigger(dispatch_port: _RecordingDispatchPort):
     buff_instance = SimpleNamespace(sim_instance=sim_instance)
     trigger = AlicePolarizedAssaultTrigger(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
     trigger_any = cast(Any, trigger)
     trigger_any.check_record_module = lambda: None

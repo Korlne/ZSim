@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from typing import Any, Iterator, Sequence, cast
+from typing import Iterator, Sequence, cast
 
 import numpy as np
 import pytest
 
-import zsim.sim_progress.ScheduledEvent.Calculator as calculator_module
+import zsim.sim_progress.calculation.calculator as calculator_module
 import zsim.sim_progress.ScheduledEvent.event_handlers.handlers.skill as skill_handler_module
-from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
+from zsim.sim_progress.calculation.calculator import Calculator, MultiplierData
 
 
 class _FakeSkillNode(SimpleNamespace):
@@ -214,9 +214,7 @@ def _patch_buff_aggregation(
     monkeypatch: pytest.MonkeyPatch,
     dynamic_attrs: dict[str, float],
 ) -> list[tuple[tuple[object, ...], object | None, object, str | None]]:
-    aggregation_calls: list[
-        tuple[tuple[object, ...], object | None, object, str | None]
-    ] = []
+    aggregation_calls: list[tuple[tuple[object, ...], object | None, object, str | None]] = []
     dynamic_statement = _dynamic_statement_by_attr(**dynamic_attrs)
 
     def fake_cal_buff_total_bonus(
@@ -430,33 +428,81 @@ def test_regular_crit_helpers_split_received_and_personal_values_and_cap_crit_da
     )
     node = _make_skill_node(labels={"aftershock_attack": 1})
 
-    assert calculator_module._calculate_full_crit_rate(static, dynamic) == pytest.approx(
-        1.10
-    )
-    assert calculator_module._calculate_personal_crit_rate(static, dynamic) == pytest.approx(
-        0.80
-    )
-    assert calculator_module._calculate_personal_crit_damage(static, dynamic) == pytest.approx(
-        4.85
-    )
+    assert calculator_module._calculate_full_crit_rate(static, dynamic) == pytest.approx(1.10)
+    assert calculator_module._calculate_personal_crit_rate(static, dynamic) == pytest.approx(0.80)
+    assert calculator_module._calculate_personal_crit_damage(static, dynamic) == pytest.approx(4.85)
     assert calculator_module._calculate_full_crit_damage(static, dynamic, node) == pytest.approx(
         5.0
     )
-    assert calculator_module._calculate_crit_expectation(1.10, 5.0) == pytest.approx(
-        6.0
-    )
+    assert calculator_module._calculate_crit_expectation(1.10, 5.0) == pytest.approx(6.0)
 
 
 @pytest.mark.parametrize(
-    ("element_type", "bonus_attr", "res_attr", "res_decrease_attr", "res_pen_attr", "vulnerability_attr"),
+    (
+        "element_type",
+        "bonus_attr",
+        "res_attr",
+        "res_decrease_attr",
+        "res_pen_attr",
+        "vulnerability_attr",
+    ),
     [
-        (0, "phy_dmg_bonus", "PHY_damage_resistance", "physical_dmg_res_decrease", "physical_res_pen_increase", "physical_vulnerability"),
-        (1, "fire_dmg_bonus", "FIRE_damage_resistance", "fire_dmg_res_decrease", "fire_res_pen_increase", "fire_vulnerability"),
-        (2, "ice_dmg_bonus", "ICE_damage_resistance", "ice_dmg_res_decrease", "ice_res_pen_increase", "ice_vulnerability"),
-        (3, "electric_dmg_bonus", "ELECTRIC_damage_resistance", "electric_dmg_res_decrease", "electric_res_pen_increase", "electric_vulnerability"),
-        (4, "ether_dmg_bonus", "ETHER_damage_resistance", "ether_dmg_res_decrease", "ether_res_pen_increase", "ether_vulnerability"),
-        (5, "ice_dmg_bonus", "ICE_damage_resistance", "ice_dmg_res_decrease", "ice_res_pen_increase", "ice_vulnerability"),
-        (6, "ether_dmg_bonus", "ETHER_damage_resistance", "ether_dmg_res_decrease", "ether_res_pen_increase", "ether_vulnerability"),
+        (
+            0,
+            "phy_dmg_bonus",
+            "PHY_damage_resistance",
+            "physical_dmg_res_decrease",
+            "physical_res_pen_increase",
+            "physical_vulnerability",
+        ),
+        (
+            1,
+            "fire_dmg_bonus",
+            "FIRE_damage_resistance",
+            "fire_dmg_res_decrease",
+            "fire_res_pen_increase",
+            "fire_vulnerability",
+        ),
+        (
+            2,
+            "ice_dmg_bonus",
+            "ICE_damage_resistance",
+            "ice_dmg_res_decrease",
+            "ice_res_pen_increase",
+            "ice_vulnerability",
+        ),
+        (
+            3,
+            "electric_dmg_bonus",
+            "ELECTRIC_damage_resistance",
+            "electric_dmg_res_decrease",
+            "electric_res_pen_increase",
+            "electric_vulnerability",
+        ),
+        (
+            4,
+            "ether_dmg_bonus",
+            "ETHER_damage_resistance",
+            "ether_dmg_res_decrease",
+            "ether_res_pen_increase",
+            "ether_vulnerability",
+        ),
+        (
+            5,
+            "ice_dmg_bonus",
+            "ICE_damage_resistance",
+            "ice_dmg_res_decrease",
+            "ice_res_pen_increase",
+            "ice_vulnerability",
+        ),
+        (
+            6,
+            "ether_dmg_bonus",
+            "ETHER_damage_resistance",
+            "ether_dmg_res_decrease",
+            "ether_res_pen_increase",
+            "ether_vulnerability",
+        ),
     ],
 )
 def test_regular_element_affinity_maps_damage_resistance_and_vulnerability(

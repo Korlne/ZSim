@@ -1,7 +1,10 @@
 from .. import Buff, check_preparation
-from ..JudgeTools import build_preparation_context_from_buff
+from ..JudgeTools import (
+    TriggerBuffRef,
+    build_preparation_context_from_buff,
+    read_trigger_buff_state,
+)
 from ._preparation_helpers import ensure_owner_template_record, prepare_with_context
-from ..JudgeTools import TriggerBuffRef, read_trigger_buff_state
 
 _JANE_PASSION_TRIGGER_REF = TriggerBuffRef.owner("简", "Buff-角色-简-狂热状态触发器")
 
@@ -33,7 +36,7 @@ class JanePassionStatePhyBuildupBonus(Buff.BuffLogic):
     def check_record_module(self):
         ensure_owner_template_record(
             self,
-            owner_name='简',
+            owner_name="简",
             record_factory=JanePassionStatePhyBuildupBonusRecord,
             context_builder=build_preparation_context_from_buff,
         )

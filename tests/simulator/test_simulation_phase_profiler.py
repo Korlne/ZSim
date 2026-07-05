@@ -27,5 +27,5 @@ def test_phase_profiler_records_samples_and_summarizes_median() -> None:
 def test_phase_profiler_rejects_negative_duration() -> None:
     profiler = SimulationPhaseProfiler()
 
-    with pytest.raises(ValueError, match="cannot be negative"):
+    with pytest.raises(ValueError, match="不能为负数"):
         profiler.record("bad", -0.1)

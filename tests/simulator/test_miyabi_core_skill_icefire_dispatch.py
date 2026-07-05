@@ -6,22 +6,22 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
+
 import zsim.define as define_module
 
 sys.modules.setdefault("define", define_module)
 
-import zsim.sim_progress.Buff.BuffXLogic.MiyabiCoreSkill_IceFire as miyabi_module
 
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.MiyabiCoreSkill_IceFire import (
-    MiyabiCoreSkillIF,
     MiyabiCoreSkill_IceFire,
+    MiyabiCoreSkillIF,
+)
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
 )
 from zsim.sim_progress.Preload import SkillNode
-from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
-    ScheduledEventEmitterProvider,
-)
 
 
 class _FailFastEventList(list):
@@ -75,9 +75,7 @@ def test_miyabi_core_skill_icefire_publishes_follow_up_via_dispatch_port_once(
     buff_instance = SimpleNamespace(sim_instance=sim_instance)
     logic = MiyabiCoreSkill_IceFire(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
 
     core_passive_skill = SimpleNamespace(

@@ -8,8 +8,7 @@ from ..SkillsQueue import SkillNode, spawn_node
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Character import Character
-    from zsim.sim_progress.Preload.PreloadDataClass import ExternalSkillTuple
-    from zsim.sim_progress.Preload.PreloadDataClass import PreloadData
+    from zsim.sim_progress.Preload.PreloadDataClass import ExternalSkillTuple, PreloadData
 
 
 class ConfirmEngine(BasePreloadEngine):

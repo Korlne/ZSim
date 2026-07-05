@@ -1,19 +1,19 @@
+import importlib
 from types import SimpleNamespace
 from typing import cast
-import importlib
 
 import pytest
 
 from zsim.sim_progress.Buff import JudgeTools
-from zsim.sim_progress.Preload.PreloadEngine.ConfirmEngine import ConfirmEngine
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
+)
 from zsim.sim_progress.data_struct.SchedulePreload import (
     SchedulePreload,
     schedule_preload_event_factory,
 )
-from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
-    ScheduledEventEmitterProvider,
-)
+from zsim.sim_progress.Preload.PreloadEngine.ConfirmEngine import ConfirmEngine
 
 
 class _FailFastEventList(list):
@@ -42,9 +42,7 @@ def test_schedule_preload_event_factory_preserves_queue_order_without_raw_event_
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("schedule_preload_event_factory should publish via dispatch port")
 
-    monkeypatch.setattr(
-        JudgeTools, "find_event_list", fail_find_event_list, raising=False
-    )
+    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list, raising=False)
 
     schedule_preload_event_factory(
         preload_tick_list=[11, 13],

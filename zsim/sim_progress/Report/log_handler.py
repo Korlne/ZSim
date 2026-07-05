@@ -29,9 +29,10 @@ async def async_log_writer(result_id: str) -> None:
                 except queue.Empty:
                     break
                 lines.append(f"{content}\n")
-                log_queue.task_done()
             if lines:
                 await file.write("".join(lines))
                 await file.flush()
+                for _ in lines:
+                    log_queue.task_done()
                 continue
             await asyncio.sleep(0.01)

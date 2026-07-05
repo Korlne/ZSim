@@ -9,15 +9,11 @@ __pycache__
 
 # 日志和配置文件
 logs
-scripts/ralph/context/*
-!scripts/ralph/context/.gitkeep
-!scripts/ralph/context/buff-refactor-ai-index.md
-!scripts/ralph/context/workflow-doc-map.json
-scripts/ralph/summary CN report/
 mypy.ini
 pytest.ini
 result*
 /results/
+!zsim/sim_progress/Report/result_handler.py
 
 # 开发工具和环境文件
 .idea
@@ -40,8 +36,17 @@ CLAUDE.md
 .mcp.json
 QWEN.md
 AGENTS.md
-# Ai学习用的文件
 knowledge_base*
+
+# 本地工作流产物
+/.agents/
+/.scratch/
+/reports/
+/scripts/
+/tasks/
+/CONTEXT.md
+/skills-lock.json
+
 # 运行时生成的文件
 build*
 dist*
@@ -68,6 +73,9 @@ htmlcov/
 # 生成文件
 zsim/data/APLData/custom/*
 *out*
+!zsim/api_src/routes/
+!zsim/api_src/routes/*.py
+!zsim/sim_progress/anomaly_bar/CopyAnomalyForOutput.py
 .nul
 
 # gemini-cli settings
@@ -76,12 +84,7 @@ zsim/data/APLData/custom/*
 # GitHub App credentials
 gha-creds-*.json
 
-#中文汇报
+# 中文汇报
 summary CN report
 
-#Ralph打包
 artifacts
-
-# MonitorR runtime telemetry
-MonitorR/data/
-scripts/ralph/run-logs/

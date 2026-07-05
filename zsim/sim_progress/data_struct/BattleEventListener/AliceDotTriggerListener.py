@@ -4,8 +4,8 @@ from zsim.define import ALICE_REPORT
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import NewAnomaly
 
-from .BaseListenerClass import BaseListener
 from ..schedule_dispatch import ScheduledEventEmitter, ScheduledEventEmitterProvider
+from .BaseListenerClass import BaseListener
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Character.Alice import Alice

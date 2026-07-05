@@ -20,7 +20,6 @@ from zsim.models.session.session_result import (
 from zsim.simulator.simulator_class import Confirmation
 from zsim.utils import main_loop_consistency as mlc
 
-
 client = TestClient(app)
 SMOKE_SESSION_ID = "electron-smoke-contract-session"
 
@@ -85,9 +84,7 @@ def _matrix_smoke_summary() -> dict[str, object]:
         "missing_input_policy": "block",
         "diff_domain_status": diff_domain_status,
         "mismatch_samples": {},
-        "data_analysis_contract": mlc._external_golden_data_analysis_contract(
-            diff_domain_status
-        ),
+        "data_analysis_contract": mlc._external_golden_data_analysis_contract(diff_domain_status),
     }
     return mlc.build_external_golden_matrix_summary(
         rows=[selected_row],
@@ -160,7 +157,7 @@ async def test_electron_normal_full_simulation_smoke_contract(monkeypatch) -> No
         assert run_response.status_code == 200
         assert run_response.json() == {
             "code": 0,
-            "message": "Session started successfully",
+            "message": "会话已启动",
             "session_id": SMOKE_SESSION_ID,
         }
 
@@ -190,18 +187,13 @@ async def test_electron_normal_full_simulation_smoke_contract(monkeypatch) -> No
         selected_contract = selected_matrix_row["data_analysis_contract"]
 
         assert matrix_summary["schema"] == mlc.EXTERNAL_GOLDEN_MATRIX_SCHEMA
-        assert selected_contract["normal_mode_sections"] == list(
-            NORMAL_RESULT_OPTIONAL_SECTIONS
+        assert selected_contract["normal_mode_sections"] == list(NORMAL_RESULT_OPTIONAL_SECTIONS)
+        assert set(selected_contract["normal_mode_sections"]) == set(data_analysis_payload)
+        assert (
+            tuple(selected_contract["buff_timeline"]["public_fields"])
+            == BUFF_TIMELINE_PUBLIC_FIELDS
         )
-        assert set(selected_contract["normal_mode_sections"]) == set(
-            data_analysis_payload
-        )
-        assert tuple(
-            selected_contract["buff_timeline"]["public_fields"]
-        ) == BUFF_TIMELINE_PUBLIC_FIELDS
-        assert tuple(buff_entry) == tuple(
-            selected_contract["buff_timeline"]["public_fields"]
-        )
+        assert tuple(buff_entry) == tuple(selected_contract["buff_timeline"]["public_fields"])
 
         matrix_aware_payload = {
             **read_payload,

@@ -31,7 +31,7 @@ class Soldier11AdditionalSkillExtraFireDMGBonus(Buff.BuffLogic):
     def check_record_module(self):
         ensure_owner_template_record(
             self,
-            owner_name='11号',
+            owner_name="11号",
             record_factory=Slodier11AdditionalSkillRecord,
             context_builder=build_preparation_context_from_buff,
         )

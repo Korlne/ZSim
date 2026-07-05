@@ -8,8 +8,8 @@ from zsim.sim_progress.anomaly_bar import AnomalyBar as AnB
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
     NewAnomaly,
 )
+from zsim.sim_progress.calculation.anomaly_calculator import CalAnomaly
 
-from ...CalAnomaly import CalAnomaly
 from ..base import BaseEventHandler
 from ..context import EventContext
 

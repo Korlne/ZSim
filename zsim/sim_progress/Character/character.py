@@ -316,13 +316,13 @@ class Character:
             """
             # 参数有效性验证
             if not (0 <= CRIT_score):
-                raise ValueError("CRIT_score must be above 0")
+                raise ValueError("CRIT_score 必须大于 0")
             if not (0 <= CRIT_rate_numeric):
-                raise ValueError("CRIT_rate_numeric must be above 0")
+                raise ValueError("CRIT_rate_numeric 必须大于 0")
             if not (0 <= CRIT_damage_numeric):
-                raise ValueError("CRIT_damage_numeric must be above 0")
+                raise ValueError("CRIT_damage_numeric 必须大于 0")
             if not (0 <= CRIT_rate_limit <= 1):
-                raise ValueError("CRIT_rate_limit must be between 0 and 1")
+                raise ValueError("CRIT_rate_limit 必须位于 0 到 1 之间")
 
             if balancing:
                 limit_score: float = CRIT_rate_limit * 400
@@ -666,7 +666,7 @@ class Character:
             self.CRIT_rate_numeric += scCRIT * SUB_STATS_MAPPING["scCRIT"]
             self.CRIT_damage_numeric += scCRIT_DMG * SUB_STATS_MAPPING["scCRIT_DMG"]
 
-        # Only for parallel
+        # 仅用于并行模拟
         element_dmg_mapping = {
             0: self.PHY_DMG_bonus,
             1: self.FIRE_DMG_bonus,
@@ -732,7 +732,7 @@ class Character:
             if scCRIT_DMG is not None:
                 self.CRIT_damage_numeric = scCRIT_DMG * SUB_STATS_MAPPING["scCRIT_DMG"]
 
-        # Only for parallel
+        # 仅用于并行模拟
         if DMG_BONUS is not None:
             element_dmg_mapping = {
                 0: "PHY_DMG_bonus",
@@ -764,17 +764,17 @@ class Character:
         if sc_name in ALLOW_SC_LIST:
             adjust_pair = {sc_name: sc_value}
         else:
-            raise RuntimeError(f"Parallel Config Segfault: sc_name: {sc_name} do not exist")
+            raise RuntimeError(f"并行配置错误：sc_name {sc_name} 不存在")
         self.hardset_sub_stats(**adjust_pair)
 
     def update_sp_and_decibel(self, *args, **kwargs):
         """自然更新能量和喧响的方法"""
-        # Preload Skill
+        # Preload 技能
         skill_nodes: list[SkillNode] = _skill_node_filter(*args, **kwargs)
         for node in skill_nodes:
             # SP
             self.update_single_node_sp(node)
-        # SP recovery over time
+        # SP 随时间自然恢复
         self.update_sp_overtime(args, kwargs)
 
     def update_sp_overtime(self, args, kwargs):
@@ -783,7 +783,7 @@ class Character:
         elapsed_ticks = self.event_driven_elapsed_ticks()
         for mul in sp_regen_data:
             if mul.char_name == self.NAME:
-                # Event-driven advancement batches skipped integer ticks here.
+                # 事件驱动推进会在这里批量结算被跳过的整数 tick。
                 sp_change_2 = mul.get_sp_regen() / 60 * elapsed_ticks
                 self.update_sp(sp_change_2)
 
@@ -896,7 +896,7 @@ class Character:
         """可外部强制更新喧响的方法"""
         # if self.decibel == 3000 and self.NAME == '仪玄':
         #     print(f"{self.NAME} 释放技能时喧响值已满3000点！")
-        from zsim.sim_progress.ScheduledEvent.Calculator import (
+        from zsim.sim_progress.calculation.calculator import (
             create_calculator_buff_bonus_context_from_sim_instance,
             get_calculator_buff_attribute_reader_service,
         )
@@ -905,10 +905,8 @@ class Character:
             sim_instance=self.sim_instance,
             beneficiary=self.NAME,
         )
-        buff_bonus_dict = (
-            get_calculator_buff_attribute_reader_service().calculate_buff_total_bonus(
-                bonus_context
-            )
+        buff_bonus_dict = get_calculator_buff_attribute_reader_service().calculate_buff_total_bonus(
+            bonus_context
         )
         decibel_get_ratio = buff_bonus_dict.get("喧响获得效率", 0)
         final_decibel_change_value = decibel_value * (1 + decibel_get_ratio)

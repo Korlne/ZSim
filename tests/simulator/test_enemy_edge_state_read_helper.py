@@ -11,7 +11,6 @@ from zsim.sim_progress.Buff.BuffXLogic.enemy_edge_state_read import (
     read_enemy_stun_edge_state,
 )
 
-
 _MISSING = object()
 
 

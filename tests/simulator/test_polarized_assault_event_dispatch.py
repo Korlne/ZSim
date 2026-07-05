@@ -7,18 +7,20 @@ from typing import cast
 import pytest
 
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
-from zsim.sim_progress.Update import UpdateAnomaly as update_anomaly_module
 from zsim.sim_progress.data_struct import PolarizedAssaultEventClass as polarized_module
 from zsim.sim_progress.data_struct.PolarizedAssaultEventClass import PolarizedAssaultEvent
 from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
     ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
 )
+from zsim.sim_progress.Update import UpdateAnomaly as update_anomaly_module
 
 
 class _FailFastEventList(list):
     def append(self, item):
-        raise AssertionError("PolarizedAssaultEvent should publish follow-up events via dispatch port")
+        raise AssertionError(
+            "PolarizedAssaultEvent should publish follow-up events via dispatch port"
+        )
 
 
 class _RecordingDispatchPort:

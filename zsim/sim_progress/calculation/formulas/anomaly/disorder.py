@@ -17,8 +17,8 @@ def calculate_disorder_base_damage(
     """
     计算紊乱基础伤害。
 
-    Formula inputs are snapshot values assembled by callers; this module must not
-    read AnomalyBar, Enemy, Buff, Simulator, listener, schedule, or command state.
+    公式输入是由调用方组装好的快照值；本模块不直接读取 AnomalyBar、Enemy、
+    Buff、Simulator、监听器、Schedule 或命令状态。
     """
     t_s = np.float64(remaining_tick / 60)
 
@@ -45,7 +45,7 @@ def calculate_disorder_base_damage(
             atk = base_multiplier / 0.625
             ratio = np.floor(t_s / 0.5) * 0.625 + 4.5
         case _:
-            raise AssertionError(f"Invalid Element Type {element_type}")
+            raise AssertionError(f"无效的元素类型 {element_type}")
 
     disorder_base_ratio_increase = (
         disorder_basic_multiplier_map[element_type] + disorder_basic_multiplier_map["all"]

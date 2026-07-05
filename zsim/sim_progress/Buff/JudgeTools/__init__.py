@@ -4,23 +4,24 @@ from .DetectEdges import detect_edge  # noqa: F401
 from .FindCharFromCID import find_char_from_CID
 from .FindCharFromName import find_char_from_name
 from .FindEquipper import find_equipper
+from .FindMain import find_all_name_order_box  # noqa: F401
+from .FindMain import find_init_data  # noqa: F401,
+from .FindMain import find_tick  # noqa: F401
 from .FindMain import (
-    find_all_name_order_box,  # noqa: F401
     find_char_list,
     find_enemy,
-    find_init_data,  # noqa: F401,
+    find_exist_buff_dict,
     find_preload_data,
     find_stack,
-    find_tick,  # noqa: F401
 )
 from .PreparationContext import (  # noqa: F401
     BuffTemplateRegistryReadPort,
     CharacterLookup,
     EquipmentOwnerLookup,
-    PreparationContext,
     PreloadCommandPort,
-    TriggerBuffRef,
+    PreparationContext,
     TriggerBuffLookup,
+    TriggerBuffRef,
     build_preparation_context_from_buff,
     build_preparation_context_from_sim_instance,
     create_calculator_runtime_read_context_from_sim_instance,
@@ -47,9 +48,7 @@ def check_preparation(
     这是一个综合函数。根据传入的参数，来执行不同的内容。
     """
     preparation_context = kwargs.pop("preparation_context", None)
-    if preparation_context is not None and not isinstance(
-        preparation_context, PreparationContext
-    ):
+    if preparation_context is not None and not isinstance(preparation_context, PreparationContext):
         raise TypeError("preparation_context必须是PreparationContext实例")
     if "event_list" in kwargs:
         raise ValueError(
@@ -77,9 +76,7 @@ def check_preparation(
     preload_data = kwargs.get("preload_data")
     char_obj_list = kwargs.get("char_obj_list")
     na_skill_level = kwargs.get("na_skill_level")
-    trigger_buff_ref = (
-        TriggerBuffRef.coerce(trigger_buff_0) if trigger_buff_0 else None
-    )
+    trigger_buff_ref = TriggerBuffRef.coerce(trigger_buff_0) if trigger_buff_0 else None
 
     # 参数正确性检查
     if sub_exist_buff_dict and char_NAME is None and char_CID is None and equipper is None:
@@ -181,6 +178,4 @@ def trigger_buff_0_handler(
             operator = record.char.NAME
 
         resolved_trigger_ref = trigger_buff_ref.with_resolved_owner(operator)
-        record.trigger_buff_0 = preparation_context.find_trigger_buff_ref(
-            resolved_trigger_ref
-        )
+        record.trigger_buff_0 = preparation_context.find_trigger_buff_ref(resolved_trigger_ref)

@@ -54,7 +54,7 @@ class MiyabiAdditionalAbility_IgnoreIceRes(Buff.BuffLogic):
     def check_record_module(self):
         ensure_owner_template_record(
             self,
-            owner_name='雅',
+            owner_name="雅",
             record_factory=MiyabiAdditionalAbility,
             context_builder=build_preparation_context_from_buff,
         )

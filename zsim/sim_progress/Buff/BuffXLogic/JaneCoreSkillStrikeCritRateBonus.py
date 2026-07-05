@@ -1,4 +1,4 @@
-from zsim.sim_progress.ScheduledEvent.Calculator import (
+from zsim.sim_progress.calculation.calculator import (
     get_calculator_buff_attribute_reader_service,
 )
 

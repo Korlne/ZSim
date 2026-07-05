@@ -38,9 +38,7 @@ def _node(
 
 def _preload(*nodes: object, pending_confirm: bool = False) -> SimpleNamespace:
     preload_data = SimpleNamespace(
-        preload_action_list_before_confirm=[("skill", True, 0)]
-        if pending_confirm
-        else [],
+        preload_action_list_before_confirm=[("skill", True, 0)] if pending_confirm else [],
         personal_node_stack={1371: _Stack(list(nodes))} if nodes else {},
         current_node_stack=_Stack(list(nodes)),
     )

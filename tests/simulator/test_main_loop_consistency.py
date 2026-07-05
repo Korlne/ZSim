@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
-from typing import Literal
+from typing import Any, Literal
 
 import polars as pl
 import pytest
 
+from tests.teams import auto_register_teams
 from zsim.models.session.session_result import (
     BUFF_TIMELINE_PUBLIC_FIELDS,
     DAMAGE_RESULT_SECTIONS,
@@ -23,8 +23,6 @@ from zsim.utils.main_loop_consistency import (
 )
 from zsim.utils.process_buff_result import _prepare_buff_timeline_data
 from zsim.utils.process_dmg_result import _normalize_damage_schema, sort_df_by_UUID
-
-from tests.teams import auto_register_teams
 
 _DAMAGE_GOLDEN_DIR = Path("tests/fixtures/external_golden_parity/damage-golden")
 _BUFF_CSV_GOLDEN_DIR = Path("tests/fixtures/external_golden_parity/buff-csv-golden")
@@ -507,17 +505,13 @@ def test_run_external_golden_matrix_writes_pass_summary(
     assert summary_contract["schema"] == mlc.EXTERNAL_GOLDEN_DATA_ANALYSIS_CONTRACT_SCHEMA
     assert summary_contract["normal_mode_sections"] == list(NORMAL_RESULT_OPTIONAL_SECTIONS)
     assert summary_contract["damage"]["result_sections"] == list(DAMAGE_RESULT_SECTIONS)
-    assert summary_contract["damage"]["uuid_aggregate_fields"] == list(
-        DAMAGE_UUID_AGGREGATE_FIELDS
-    )
-    assert summary_contract["buff_timeline"]["public_fields"] == list(
-        BUFF_TIMELINE_PUBLIC_FIELDS
-    )
+    assert summary_contract["damage"]["uuid_aggregate_fields"] == list(DAMAGE_UUID_AGGREGATE_FIELDS)
+    assert summary_contract["buff_timeline"]["public_fields"] == list(BUFF_TIMELINE_PUBLIC_FIELDS)
     row_contract = row["data_analysis_contract"]
     assert row_contract["damage"]["domain_status"] == row["diff_domain_status"]["damage"]
-    assert row_contract["buff_timeline"]["domain_status"] == row["diff_domain_status"][
-        "buff_timeline"
-    ]
+    assert (
+        row_contract["buff_timeline"]["domain_status"] == row["diff_domain_status"]["buff_timeline"]
+    )
     assert row_contract["parallel_mode"]["status"] == "unchanged"
     artifact = json.loads(output_path.read_text(encoding="utf-8"))
     assert artifact == summary
@@ -785,7 +779,7 @@ def test_run_external_golden_parity_writes_damage_domain_json(
             "apl_path": "./default.toml",
         }
     )
-    submitted_payloads: list[tuple[dict[str, Any], int, bool]] = []
+    submitted_payloads: list[tuple[dict[str, Any], int, bool, int | None]] = []
 
     def fake_prepare_common_cfg(team: str, apl: str | None) -> mlc.CommonCfg:
         assert team == "fake-team"
@@ -814,8 +808,11 @@ def test_run_external_golden_parity_writes_damage_domain_json(
             common_cfg_data,
             stop_tick,
             use_indexed_buff_load_loop=False,
+            rng_seed=None,
         ):
-            submitted_payloads.append((common_cfg_data, stop_tick, use_indexed_buff_load_loop))
+            submitted_payloads.append(
+                (common_cfg_data, stop_tick, use_indexed_buff_load_loop, rng_seed)
+            )
             return FakeFuture(common_cfg_data["session_id"])
 
     monkeypatch.setattr(mlc, "_prepare_common_cfg", fake_prepare_common_cfg)
@@ -832,11 +829,14 @@ def test_run_external_golden_parity_writes_damage_domain_json(
     )
 
     assert len(submitted_payloads) == 1
-    submitted_cfg, submitted_stop_tick, submitted_indexed_flag = submitted_payloads[0]
+    submitted_cfg, submitted_stop_tick, submitted_indexed_flag, submitted_rng_seed = (
+        submitted_payloads[0]
+    )
     assert submitted_cfg["session_id"] == "candidate-001"
     assert submitted_cfg["apl_path"] == "./override.toml"
     assert submitted_stop_tick == 33
     assert submitted_indexed_flag is False
+    assert submitted_rng_seed is None
     assert report["schema"] == mlc.EXTERNAL_GOLDEN_PARITY_SCHEMA
     assert report["golden_result_dir"].endswith(
         "tests\\fixtures\\external_golden_parity\\minimal-golden"
@@ -1126,7 +1126,7 @@ def test_external_buff_timeline_reports_bounded_mismatch_samples(tmp_path: Path)
 
 
 def test_run_external_golden_parity_rejects_missing_golden_dir(tmp_path: Path):
-    with pytest.raises(FileNotFoundError, match="golden result directory does not exist"):
+    with pytest.raises(FileNotFoundError, match="golden 结果目录 不存在"):
         mlc.run_external_golden_parity(
             golden_result_dir=tmp_path / "missing-golden",
             team="fake-team",
@@ -1166,7 +1166,7 @@ def test_run_main_loop_consistency_uses_runtime_labels_and_cleanup(monkeypatch: 
         ),
     }
     created_session_ids: list[str] = []
-    submitted_payloads: list[tuple[dict[str, Any], int, bool]] = []
+    submitted_payloads: list[tuple[dict[str, Any], int, bool, int | None]] = []
     cleaned_sessions: list[str] = []
 
     monkeypatch.setattr(
@@ -1218,8 +1218,11 @@ def test_run_main_loop_consistency_uses_runtime_labels_and_cleanup(monkeypatch: 
             common_cfg_data,
             stop_tick,
             use_indexed_buff_load_loop=False,
+            rng_seed=None,
         ):
-            submitted_payloads.append((common_cfg_data, stop_tick, use_indexed_buff_load_loop))
+            submitted_payloads.append(
+                (common_cfg_data, stop_tick, use_indexed_buff_load_loop, rng_seed)
+            )
             return FakeFuture(common_cfg_data["session_id"])
 
     monkeypatch.setattr(mlc, "ProcessPoolExecutor", FakeExecutor)
@@ -1236,9 +1239,13 @@ def test_run_main_loop_consistency_uses_runtime_labels_and_cleanup(monkeypatch: 
     )
 
     assert created_session_ids == ["101", "102"]
-    assert [payload["session_id"] for payload, _, _ in submitted_payloads] == ["101", "102"]
-    assert all(stop_tick == 77 for _, stop_tick, _ in submitted_payloads)
-    assert [flag for _, _, flag in submitted_payloads] == [False, False]
+    assert [payload["session_id"] for payload, _, _, _ in submitted_payloads] == ["101", "102"]
+    assert all(stop_tick == 77 for _, stop_tick, _, _ in submitted_payloads)
+    assert [flag for _, _, flag, _ in submitted_payloads] == [False, False]
+    assert [seed for _, _, _, seed in submitted_payloads] == [
+        mlc.CONSISTENCY_RNG_SEED,
+        mlc.CONSISTENCY_RNG_SEED,
+    ]
     assert report["baseline_runtime"] == "default-label"
     assert report["new_buff_runtime"] == "new-buff-label"
     assert report["runtime_selection"]["mode"] == "label-only-current-runtime"
@@ -1319,6 +1326,7 @@ def test_run_main_loop_consistency_candidate_opt_in_only_flags_candidate(
             common_cfg_data,
             stop_tick,
             use_indexed_buff_load_loop=False,
+            rng_seed=None,
         ):
             submitted_flags.append(use_indexed_buff_load_loop)
             return FakeFuture(common_cfg_data["session_id"])
@@ -1354,9 +1362,7 @@ def _matching_opt_in_report(team: str, stop_tick: int = 120) -> dict[str, Any]:
             "by_skill_name": {"Alpha": 2},
             "by_element_type": {"1": 2},
         },
-        buff_timeline={
-            "alpha": [{"Task": "buff-a", "Start": 1, "Finish": 2, "Value": 1.0}]
-        },
+        buff_timeline={"alpha": [{"Task": "buff-a", "Start": 1, "Finish": 2, "Value": 1.0}]},
     )
     new_buff_snapshot = RuntimeSnapshot(
         runtime_label="opt-in-indexed-path",
@@ -1388,9 +1394,7 @@ def _matching_default_report(team: str, stop_tick: int = 120) -> dict[str, Any]:
             "by_skill_name": {"Alpha": 2},
             "by_element_type": {"1": 2},
         },
-        buff_timeline={
-            "alpha": [{"Task": "buff-a", "Start": 1, "Finish": 2, "Value": 1.0}]
-        },
+        buff_timeline={"alpha": [{"Task": "buff-a", "Start": 1, "Finish": 2, "Value": 1.0}]},
     )
     new_buff_snapshot = RuntimeSnapshot(
         runtime_label="new-buff-current-path",
@@ -1595,9 +1599,10 @@ def test_run_multi_team_main_loop_consistency_defaults_candidate_flag_off(
     ]
     assert summary["new_buff_use_indexed_buff_load_loop"] is False
     assert summary["default_indexed_execution"] == "blocked"
-    assert [
-        row["opt_in_flag_status"] for row in summary["matrix_results"]
-    ] == ["default_off_label_only", "default_off_label_only"]
+    assert [row["opt_in_flag_status"] for row in summary["matrix_results"]] == [
+        "default_off_label_only",
+        "default_off_label_only",
+    ]
 
 
 def test_load_runtime_snapshot_falls_back_for_blank_anomaly_column(
@@ -1696,6 +1701,8 @@ def test_script_entrypoint_runs_with_json_output(
     capsys: pytest.CaptureFixture[str],
 ):
     script_path = Path("scripts/run_buff_main_loop_consistency.py").resolve()
+    if not script_path.exists():
+        pytest.skip("root scripts are not included in this release tree")
 
     def fake_run_main_loop_consistency(**_: Any) -> dict[str, Any]:
         return {
@@ -1738,6 +1745,8 @@ def test_script_entrypoint_runs_with_json_output(
 
 def test_script_entrypoint_importable_from_scripts_directory():
     script_path = Path("scripts/run_buff_main_loop_consistency.py").resolve()
+    if not script_path.exists():
+        pytest.skip("root scripts are not included in this release tree")
     content = script_path.read_text(encoding="utf-8")
 
     assert "sys.path.insert(0, str(PROJECT_ROOT))" in content

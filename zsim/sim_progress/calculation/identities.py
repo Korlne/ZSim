@@ -5,7 +5,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True, slots=True)
 class DamageIdentity:
-    """Observable damage or anomaly result identity."""
+    """可观测的伤害或异常结果身份。"""
 
     code: str
     display_name: str
@@ -13,7 +13,7 @@ class DamageIdentity:
 
 @dataclass(frozen=True, slots=True)
 class MultiplierAffinity:
-    """Elemental multiplier family used for formula multiplier reads."""
+    """公式读取乘区时使用的元素乘区亲和。"""
 
     code: str
     display_name: str
@@ -21,7 +21,7 @@ class MultiplierAffinity:
 
 @dataclass(frozen=True, slots=True)
 class AnomalyStateIdentity:
-    """Enemy anomaly state identity represented by a calculation or transition."""
+    """计算或状态迁移所代表的敌人异常状态身份。"""
 
     code: str
     display_name: str

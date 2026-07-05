@@ -7,20 +7,20 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
+
 import zsim.define as define_module
 
 sys.modules.setdefault("define", define_module)
 
 import zsim.sim_progress.Buff.BuffXLogic.CannonRotor as cannon_module
-
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.CannonRotor import CannonRotor
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
+)
 from zsim.sim_progress.Load import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
-from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
-    ScheduledEventEmitterProvider,
-)
 
 
 class _FailFastEventList(list):
@@ -42,9 +42,7 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("CannonRotor should not read raw event_list")
 
-    monkeypatch.setattr(
-        JudgeTools, "find_event_list", fail_find_event_list, raising=False
-    )
+    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list, raising=False)
 
 
 @pytest.mark.parametrize(
@@ -98,9 +96,7 @@ def test_cannon_rotor_publishes_follow_up_skill_node_via_dispatch_port(
     )
     logic = CannonRotor(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
     record = SimpleNamespace(
         char=SimpleNamespace(CID=1101),
@@ -173,9 +169,7 @@ def test_cannon_rotor_judge_blocks_other_character_without_publish(
     dispatch_port = _RecordingDispatchPort([])
     logic = CannonRotor(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
     record = SimpleNamespace(
         char=SimpleNamespace(NAME="Cannon User"),

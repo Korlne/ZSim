@@ -1,15 +1,7 @@
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useLanguage } from './hooks/useLanguage';
 import { useApiStatus } from './hooks/useApiStatus';
-import { useSessionSmoke } from './hooks/useSessionSmoke';
 import LanguageSwitch from './components/LanguageSwitch';
-import { BuffGraphWorkbench } from './features/buff-graph/BuffGraphWorkbench';
-import {
-  BUFF_GRAPH_MENU_KEY,
-  DEFAULT_MENU_KEY,
-  hashForMenuKey,
-  menuKeyFromHashValue,
-} from './appMenuHash';
 import IZsim from '~icons/zsim/zsim';
 
 type MenuItem = {
@@ -17,45 +9,9 @@ type MenuItem = {
   key: string;
 };
 
-const menuKeyFromHash = () => {
-  if (typeof window === 'undefined') return DEFAULT_MENU_KEY;
-  return menuKeyFromHashValue(window.location.hash);
-};
-
 const App = () => {
   const { t } = useLanguage();
   const { apiStatus, apiResponse, testApi } = useApiStatus();
-  const [activeMenu, setActiveMenu] = useState(menuKeyFromHash);
-
-  useEffect(() => {
-    const handleHashChange = () => setActiveMenu(menuKeyFromHash());
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
-
-  const selectMenu = useCallback((key: string) => {
-    setActiveMenu(key);
-    const nextHash = hashForMenuKey(key);
-    if (nextHash) {
-      window.location.hash = nextHash;
-      return;
-    }
-    if (window.location.hash === `#${BUFF_GRAPH_MENU_KEY}`) {
-      window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
-    }
-  }, []);
-
-  const handleDataAnalysisReady = useCallback(() => {
-    selectMenu('data-analysis');
-  }, [selectMenu]);
-
-  const {
-    snapshot: sessionSmoke,
-    runSmoke,
-    isRunning: isSessionSmokeRunning,
-  } = useSessionSmoke({
-    onDataAnalysisReady: handleDataAnalysisReady,
-  });
 
   // DEMO
   const asideMenuList = useMemo<MenuItem[]>(
@@ -64,7 +20,6 @@ const App = () => {
       { label: t('aside.name.character-configuration'), key: 'character-configuration' },
       { label: t('aside.name.simulator'), key: 'simulator' },
       { label: t('aside.name.data-analysis'), key: 'data-analysis' },
-      { label: t('aside.name.buff-graph'), key: BUFF_GRAPH_MENU_KEY },
       { label: t('aside.name.apl-editor'), key: 'apl-editor' },
       { label: t('aside.name.character-support-list'), key: 'character-support-list' },
       { label: t('aside.name.apl-specification'), key: 'apl-specification' },
@@ -82,16 +37,8 @@ const App = () => {
     return map;
   }, [asideMenuList]);
 
-  const smokeStatusText = useMemo(() => {
-    const phaseText = t(`sessionSmoke.phase.${sessionSmoke.phase}`);
-    if (sessionSmoke.error) {
-      return `${phaseText}: ${sessionSmoke.error}`;
-    }
-    if (sessionSmoke.status) {
-      return `${phaseText} (${sessionSmoke.status})`;
-    }
-    return phaseText;
-  }, [sessionSmoke.error, sessionSmoke.phase, sessionSmoke.status, t]);
+  // DEMO
+  const [activeMenu, setActiveMenu] = useState('session-management');
 
   return (
     <div className="w-screen h-screen bg-[#F1F1F1] overflow-hidden">
@@ -123,7 +70,7 @@ const App = () => {
                     : 'border-transparent hover:bg-[#38302E0D] active:bg-[#38302E17]'
                 }
               `}
-              onClick={() => selectMenu(menu.key)}
+              onClick={() => setActiveMenu(menu.key)}
             >
               <div className="w-[16px] h-[16px] rounded-sm bg-[#6B6B6B40]" />
               <div>{menu.label}</div>
@@ -150,52 +97,33 @@ const App = () => {
         </div>
 
         {/* 模块.2 */}
-        <div className="w-[calc(100%-48px)] shrink-0 mx-[24px] h-[56px] flex items-center justify-between gap-[12px]">
-          <div className="min-w-0 flex-1 text-[14px] text-[#666]">
+        <div className="w-[calc(100%-48px)] shrink-0 mx-[24px] h-[56px] flex items-center justify-between">
+          <div className="text-[14px] text-[#666]">
             <span className="mr-[16px]">API 状态: {apiStatus}</span>
             {apiResponse && typeof apiResponse === 'object' && 'message' in apiResponse ? (
               <span className="text-[12px] text-[#999]">
                 后端: {(apiResponse as { message?: string }).message || '未知'}
               </span>
             ) : null}
-            <span className="ml-[16px] text-[12px] text-[#777]">
-              {t('sessionSmoke.status')}: {smokeStatusText}
-            </span>
           </div>
-          <button
-            type="button"
-            className={`
-              px-[10px] h-[32px] rounded-[8px] bg-[#FA7319]
-              flex items-center text-[14px] text-white select-none whitespace-nowrap
-              ${isSessionSmokeRunning ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:brightness-90 active:brightness-80'}
-            `}
-            disabled={isSessionSmokeRunning}
-            onClick={runSmoke}
-          >
-            {isSessionSmokeRunning
-              ? t('sessionSmoke.action.running')
-              : t('sessionSmoke.action.create')}
-          </button>
-          <button
-            type="button"
-            className="px-[10px] h-[32px] rounded-[8px] bg-[#28A745] flex items-center text-[14px] text-white cursor-pointer select-none whitespace-nowrap hover:brightness-90 active:brightness-80"
+          <div className="px-[10px] h-[32px] rounded-[8px] bg-[#FA7319] flex items-center text-[14px] text-white cursor-pointer select-none hover:brightness-90 active:brightness-80 mr-[8px]">
+            创建会话
+          </div>
+          <div
+            className="px-[10px] h-[32px] rounded-[8px] bg-[#28A745] flex items-center text-[14px] text-white cursor-pointer select-none hover:brightness-90 active:brightness-80"
             onClick={testApi}
           >
             重新测试API
-          </button>
+          </div>
         </div>
 
         {/* 模块.3 */}
-        {activeMenu === BUFF_GRAPH_MENU_KEY ? (
-          <BuffGraphWorkbench />
-        ) : (
-          <div className="w-full flex-1 overflow-auto flex gap-[16px]">
-            <div className="shrink-0 w-[248px] h-[767px] ml-[24px] my-[16px] bg-[#F1F1F1] rounded-[12px] border border-solid border-[#E6E6E6]" />
-            <div className="shrink-0 w-[248px] h-[522px] my-[16px] bg-[#F1F1F1] rounded-[12px] border border-solid border-[#E6E6E6]" />
-            <div className="shrink-0 w-[248px] h-[277px] my-[16px] bg-[#F1F1F1] rounded-[12px] border border-solid border-[#E6E6E6]" />
-            <div className="shrink-0 w-[248px] h-[522px] mr-[24px] my-[16px] bg-[#F1F1F1] rounded-[12px] border border-solid border-[#E6E6E6]" />
-          </div>
-        )}
+        <div className="w-full flex-1 overflow-auto flex gap-[16px]">
+          <div className="shrink-0 w-[248px] h-[767px] ml-[24px] my-[16px] bg-[#F1F1F1] rounded-[12px] border border-solid border-[#E6E6E6]" />
+          <div className="shrink-0 w-[248px] h-[522px] my-[16px] bg-[#F1F1F1] rounded-[12px] border border-solid border-[#E6E6E6]" />
+          <div className="shrink-0 w-[248px] h-[277px] my-[16px] bg-[#F1F1F1] rounded-[12px] border border-solid border-[#E6E6E6]" />
+          <div className="shrink-0 w-[248px] h-[522px] mr-[24px] my-[16px] bg-[#F1F1F1] rounded-[12px] border border-solid border-[#E6E6E6]" />
+        </div>
       </div>
     </div>
   );

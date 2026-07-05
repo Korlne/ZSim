@@ -1,7 +1,7 @@
 from .. import Buff, check_preparation
 from ..JudgeTools import build_preparation_context_from_buff
-from ._preparation_helpers import ensure_equipper_template_record, prepare_with_context
 from ._buff_record_base_class import BuffRecordBaseClass as Brbc
+from ._preparation_helpers import ensure_equipper_template_record, prepare_with_context
 
 
 class CordisGerminaEleDmgBonusRecord(Brbc):

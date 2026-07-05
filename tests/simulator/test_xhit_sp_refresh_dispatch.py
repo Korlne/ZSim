@@ -7,11 +7,11 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
 import zsim.define as define_module
 
 sys.modules.setdefault("define", define_module)
 
-import zsim.sim_progress.Buff.BuffXLogic.MagneticStormCharlieSpRecover as magnetic_module
 import zsim.sim_progress.Buff.BuffXLogic.SeedAdditionalAbilityTrigger as seed_module
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.MagneticStormCharlieSpRecover import (
@@ -22,11 +22,10 @@ from zsim.sim_progress.Buff.BuffXLogic.SeedAdditionalAbilityTrigger import (
     SeedAdditionalAbilityTriggerRecord,
 )
 from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
     ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
 )
 from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BUFF_XLOGIC_ROOT = PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffXLogic"
@@ -62,9 +61,7 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("xhit SP refresh producer should not read raw event_list")
 
-    monkeypatch.setattr(
-        JudgeTools, "find_event_list", fail_find_event_list, raising=False
-    )
+    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list, raising=False)
 
 
 def _schedule_refresh_constructor_names(tree: ast.AST) -> set[str]:
@@ -87,16 +84,9 @@ def _direct_schedule_refresh_constructor_findings(path: Path) -> list[str]:
         if not isinstance(node, ast.Call):
             continue
         if isinstance(node.func, ast.Name) and node.func.id in constructor_names:
-            findings.append(
-                f"{path.relative_to(PROJECT_ROOT).as_posix()}:{node.lineno}"
-            )
-        if (
-            isinstance(node.func, ast.Attribute)
-            and node.func.attr == "ScheduleRefreshData"
-        ):
-            findings.append(
-                f"{path.relative_to(PROJECT_ROOT).as_posix()}:{node.lineno}"
-            )
+            findings.append(f"{path.relative_to(PROJECT_ROOT).as_posix()}:{node.lineno}")
+        if isinstance(node.func, ast.Attribute) and node.func.attr == "ScheduleRefreshData":
+            findings.append(f"{path.relative_to(PROJECT_ROOT).as_posix()}:{node.lineno}")
     return findings
 
 
@@ -128,9 +118,7 @@ def test_magnetic_storm_charlie_sp_recover_publishes_after_simple_start_via_disp
     )
     logic = MagneticStormCharlieSpRecover(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
     sub_exist_buff_dict = {"MSC": object()}
     record = SimpleNamespace(
@@ -195,9 +183,7 @@ def test_seed_additional_ability_trigger_publishes_for_vanguard_via_dispatch_por
     )
     logic = SeedAdditionalAbilityTrigger(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)

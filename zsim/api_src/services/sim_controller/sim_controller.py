@@ -25,17 +25,11 @@ from zsim.models.session.session_run import (
     ParallelCfg,
     SessionRun,
 )
-from zsim.models.session.session_run import (
-    SimulationConfig as SimCfg,
-)
+from zsim.models.session.session_run import SimulationConfig as SimCfg
 from zsim.simulator import Simulator
 from zsim.utils.constants import stats_trans_mapping
-from zsim.utils.process_buff_result import (
-    prepare_buff_data_and_cache as process_buff,
-)
-from zsim.utils.process_dmg_result import (
-    prepare_dmg_data_and_cache as process_dmg,
-)
+from zsim.utils.process_buff_result import prepare_buff_data_and_cache as process_buff
+from zsim.utils.process_dmg_result import prepare_dmg_data_and_cache as process_dmg
 from zsim.utils.process_parallel_data import (
     judge_parallel_result,
     merge_parallel_dmg_data,
@@ -345,14 +339,14 @@ class SimController:
         """
         loop = asyncio.get_event_loop()
 
-        # Use ThreadPoolExecutor instead of ProcessPoolExecutor for compatibility
+        # 这里使用 ThreadPoolExecutor，兼容无法被进程序列化的模拟上下文。
         from concurrent.futures import ThreadPoolExecutor
 
         def _run_simulator() -> "Confirmation":
             return _run_default_runtime_simulator(common_cfg, sim_cfg, stop_tick)
 
         if isinstance(self.executor, ProcessPoolExecutor):
-            # For testing, use thread executor to avoid serialization issues
+            # 测试路径下改用线程执行器，避免序列化问题。
             with ThreadPoolExecutor() as thread_executor:
                 return await loop.run_in_executor(thread_executor, _run_simulator)
         else:
@@ -404,13 +398,13 @@ class SimController:
             return
 
         try:
-            processed_result: NormalModeResult | ParallelModeResult = (
-                await self._process_simulation_result(result)
-            )
+            processed_result: (
+                NormalModeResult | ParallelModeResult
+            ) = await self._process_simulation_result(result)
             session.session_result = [processed_result]
         except Exception as e:
             logger.error(
-                f"TODO: 模拟任务 {session_id} 结果处理: {repr(e)}",
+                f"模拟任务 {session_id} 的结果处理失败：{repr(e)}",
                 exc_info=True,
             )
 
@@ -427,7 +421,7 @@ class SimController:
                 - timestamp: 完成时间戳
                 - sim_cfg: 模拟配置（包含并行配置信息）
         """
-        rid = confirmation.session_id  # compatible to webui rid logic
+        rid = confirmation.session_id  # 兼容 WebUI 的 rid 逻辑。
         logger.info(f"开始处理模拟结果: session_id={rid}, status={confirmation.status}")
 
         if judge_parallel_result(rid):
@@ -455,7 +449,7 @@ class SimController:
                 mode="parallel", func=func, result=ParallelResultPayload(root=payload)
             )
         else:
-            # Single run.
+            # 单次模拟。
             dmg_result = process_dmg(rid)
             buff_result = await process_buff(rid)
             result = NormalModeResult(

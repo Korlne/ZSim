@@ -7,12 +7,11 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
+
 import zsim.define as define_module
 
 sys.modules.setdefault("define", define_module)
 
-import zsim.sim_progress.Buff.BuffXLogic.ElegantVanitySpRecover as elegant_module
-import zsim.sim_progress.Buff.BuffXLogic.LunarNoviluna as lunar_module
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.ElegantVanitySpRecover import ElegantVanitySpRecover
 from zsim.sim_progress.Buff.BuffXLogic.LunarNoviluna import LunarNoviluna
@@ -20,11 +19,10 @@ from zsim.sim_progress.Buff.JudgeTools.PreparationContext import (
     ResourceRefreshCommandPort,
 )
 from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
     ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
 )
 from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BUFF_XLOGIC_ROOT = PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffXLogic"
@@ -53,9 +51,7 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("xstart SP refresh producer should not read raw event_list")
 
-    monkeypatch.setattr(
-        JudgeTools, "find_event_list", fail_find_event_list, raising=False
-    )
+    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list, raising=False)
 
 
 def _schedule_refresh_constructor_names(tree: ast.AST) -> set[str]:
@@ -78,16 +74,9 @@ def _direct_schedule_refresh_constructor_findings(path: Path) -> list[str]:
         if not isinstance(node, ast.Call):
             continue
         if isinstance(node.func, ast.Name) and node.func.id in constructor_names:
-            findings.append(
-                f"{path.relative_to(PROJECT_ROOT).as_posix()}:{node.lineno}"
-            )
-        if (
-            isinstance(node.func, ast.Attribute)
-            and node.func.attr == "ScheduleRefreshData"
-        ):
-            findings.append(
-                f"{path.relative_to(PROJECT_ROOT).as_posix()}:{node.lineno}"
-            )
+            findings.append(f"{path.relative_to(PROJECT_ROOT).as_posix()}:{node.lineno}")
+        if isinstance(node.func, ast.Attribute) and node.func.attr == "ScheduleRefreshData":
+            findings.append(f"{path.relative_to(PROJECT_ROOT).as_posix()}:{node.lineno}")
     return findings
 
 
@@ -107,9 +96,7 @@ def test_xstart_resource_refresh_files_do_not_directly_construct_schedule_refres
 def test_resource_refresh_command_port_publishes_sp_only_payload_via_emitter() -> None:
     call_order: list[str] = []
     dispatch_port = _RecordingDispatchPort(call_order)
-    command_port = ResourceRefreshCommandPort(
-        ScheduledEventEmitterProvider(lambda: dispatch_port)
-    )
+    command_port = ResourceRefreshCommandPort(ScheduledEventEmitterProvider(lambda: dispatch_port))
 
     command_port.publish_refresh(sp_target=("可琳",), sp_value=6)
 
@@ -128,7 +115,7 @@ def test_resource_refresh_command_port_keeps_schedule_refresh_numeric_validation
         ScheduledEventEmitterProvider(lambda: _RecordingDispatchPort([]))
     )
 
-    with pytest.raises(TypeError, match="sp_value must be a number"):
+    with pytest.raises(TypeError, match="sp_value 必须是数字"):
         command_port.publish_refresh(sp_target=("可琳",), sp_value=object())  # type: ignore[arg-type]
 
 
@@ -137,16 +124,16 @@ def test_elegant_vanity_sp_recover_publishes_after_simple_start_via_dispatch_por
 ):
     call_order: list[str] = []
     dispatch_port = _RecordingDispatchPort(call_order)
-    sim_instance = SimpleNamespace(tick=27, schedule_data=SimpleNamespace(event_list=_FailFastEventList()))
+    sim_instance = SimpleNamespace(
+        tick=27, schedule_data=SimpleNamespace(event_list=_FailFastEventList())
+    )
     buff_instance = SimpleNamespace(
         sim_instance=sim_instance,
         ft=SimpleNamespace(refinement="3"),
     )
     logic = ElegantVanitySpRecover(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
     sub_exist_buff_dict = {"EV": object()}
     record = SimpleNamespace(
@@ -183,16 +170,16 @@ def test_lunar_noviluna_preserves_publish_then_simple_start_order_via_dispatch_p
 ):
     call_order: list[str] = []
     dispatch_port = _RecordingDispatchPort(call_order)
-    sim_instance = SimpleNamespace(tick=31, schedule_data=SimpleNamespace(event_list=_FailFastEventList()))
+    sim_instance = SimpleNamespace(
+        tick=31, schedule_data=SimpleNamespace(event_list=_FailFastEventList())
+    )
     buff_instance = SimpleNamespace(
         sim_instance=sim_instance,
         ft=SimpleNamespace(refinement=4),
     )
     logic = LunarNoviluna(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
     sub_exist_buff_dict = {"LN": object()}
     record = SimpleNamespace(

@@ -3,8 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
-from typing import Literal
+from typing import Any, Literal
 
 import polars as pl
 import pytest
@@ -644,18 +643,20 @@ def test_run_repeated_runtime_benchmark_preserves_contract_and_opt_in_counts(
         report = _repeat_sample_report(
             baseline_simulator_ms=100.0 + sample_index,
             new_buff_simulator_ms=90.0 + sample_index,
-            baseline_counts={"buff_load_loop": sample_index}
-            if kwargs["include_rebuild_counts"]
-            else None,
-            new_buff_counts={"buff_load_loop": sample_index + 1}
-            if kwargs["include_rebuild_counts"]
-            else None,
-            baseline_scan_metrics={"processed_tick_count": sample_index}
-            if kwargs["include_rebuild_counts"]
-            else None,
-            new_buff_scan_metrics={"processed_tick_count": sample_index + 1}
-            if kwargs["include_rebuild_counts"]
-            else None,
+            baseline_counts=(
+                {"buff_load_loop": sample_index} if kwargs["include_rebuild_counts"] else None
+            ),
+            new_buff_counts=(
+                {"buff_load_loop": sample_index + 1} if kwargs["include_rebuild_counts"] else None
+            ),
+            baseline_scan_metrics=(
+                {"processed_tick_count": sample_index} if kwargs["include_rebuild_counts"] else None
+            ),
+            new_buff_scan_metrics=(
+                {"processed_tick_count": sample_index + 1}
+                if kwargs["include_rebuild_counts"]
+                else None
+            ),
         )
         if kwargs["new_buff_use_indexed_buff_load_loop"]:
             report["runtime_selection"] = {
@@ -1304,9 +1305,7 @@ def test_main_repeat_summary_writes_json_artifact(
     assert captured_kwargs["new_buff_use_indexed_buff_load_loop"] is True
     summary = json.loads(output_path.read_text(encoding="utf-8"))
     assert summary["sample_count"] == 3
-    assert (
-        summary["runtime_selection"]["mode"] == "new-buff-explicit-opt-in-indexed-buff-load-loop"
-    )
+    assert summary["runtime_selection"]["mode"] == "new-buff-explicit-opt-in-indexed-buff-load-loop"
     assert summary["rebuild_count_buckets"]["included"] is True
     assert summary["scan_metric_buckets"]["included"] is True
     output = capsys.readouterr().out
@@ -1319,6 +1318,8 @@ def test_script_entrypoint_runs_with_json_output(
     capsys: pytest.CaptureFixture[str],
 ):
     script_path = Path("scripts/run_buff_runtime_benchmark.py").resolve()
+    if not script_path.exists():
+        pytest.skip("root scripts are not included in this release tree")
     captured_kwargs: dict[str, Any] = {}
 
     def fake_run_runtime_benchmark(**kwargs: Any) -> dict[str, Any]:
@@ -1378,6 +1379,8 @@ def test_script_entrypoint_runs_with_json_output(
 
 def test_script_entrypoint_importable_from_scripts_directory():
     script_path = Path("scripts/run_buff_runtime_benchmark.py").resolve()
+    if not script_path.exists():
+        pytest.skip("root scripts are not included in this release tree")
     content = script_path.read_text(encoding="utf-8")
 
     assert "sys.path.insert(0, str(PROJECT_ROOT))" in content

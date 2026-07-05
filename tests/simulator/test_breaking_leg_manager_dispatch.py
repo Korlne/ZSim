@@ -7,17 +7,18 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
+
 import zsim.define as define_module
 
 sys.modules.setdefault("define", define_module)
 
 import zsim.sim_progress.Buff as buff_module
-from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
-from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
-    ScheduledEventEmitterProvider,
-)
 from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
+)
+from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
 
 breaking_module = import_module("zsim.sim_progress.Enemy.EnemyUniqueMechanic.BreakingLegManager")
 BreakingLegManager = breaking_module.BreakingLegManager
@@ -192,8 +193,7 @@ def test_breaking_leg_manager_injects_rebound_safe_emitter_provider(
     assert len(old_event_list) == 1
     assert len(new_event_list) == 1
     assert all(
-        isinstance(event, ScheduleRefreshData)
-        for event in [old_event_list[0], new_event_list[0]]
+        isinstance(event, ScheduleRefreshData) for event in [old_event_list[0], new_event_list[0]]
     )
     assert find_calls == [(1301, sim_instance)]
 

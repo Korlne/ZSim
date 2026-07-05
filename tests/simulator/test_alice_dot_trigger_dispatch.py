@@ -6,7 +6,6 @@ from typing import cast
 import pytest
 
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
-from zsim.sim_progress.Dot.BaseDot import Dot
 from zsim.sim_progress.data_struct.BattleEventListener import (
     AliceDotTriggerListener as alice_dot_module,
 )
@@ -14,9 +13,10 @@ from zsim.sim_progress.data_struct.BattleEventListener.AliceDotTriggerListener i
     AliceDotTriggerListener,
 )
 from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
     ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
 )
+from zsim.sim_progress.Dot.BaseDot import Dot
 
 
 class _FailFastEventList(list):

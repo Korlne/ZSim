@@ -125,7 +125,7 @@ def _draw_buff_timeline_charts(all_buff_data: dict[str, list[dict[str, Any]]]) -
                 data=[
                     go.Bar(
                         name=row["Task"],
-                        x=[(row["Finish"] - row["Start"])],
+                        x=[row["Finish"] - row["Start"]],
                         base=[row["Start"]],
                         y=[row["Task"]],
                         orientation="h",

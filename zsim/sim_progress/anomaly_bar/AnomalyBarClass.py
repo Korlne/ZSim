@@ -8,9 +8,9 @@ from zsim.define import ElementType
 
 if TYPE_CHECKING:
     from zsim.sim_progress.Buff import Buff
-    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
     from zsim.sim_progress.data_struct.single_hit import SingleHit
     from zsim.sim_progress.Preload import SkillNode
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
     from zsim.simulator.simulator_class import Simulator
 
 

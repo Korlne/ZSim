@@ -25,7 +25,7 @@ class ScheduleDispatchPort(ABC):
 
 
 class ScheduledEventEmitter:
-    """Producer-facing scheduled-event emitter backed by a dispatch port."""
+    """面向生产者的计划事件发射器，内部通过派发端口入队。"""
 
     def __init__(self, dispatch_port: ScheduleDispatchPort) -> None:
         self._dispatch_port = dispatch_port
@@ -39,7 +39,7 @@ class ScheduledEventEmitter:
 
 
 class ScheduledEventEmitterProvider:
-    """Creates fresh scheduled-event emitters without exposing dispatch construction."""
+    """创建新的计划事件发射器，不向调用方暴露派发端口构造细节。"""
 
     def __init__(self, dispatch_port_factory: Callable[[], ScheduleDispatchPort]) -> None:
         self._dispatch_port_factory = dispatch_port_factory
@@ -70,11 +70,11 @@ class ScheduledEventEmitterProvider:
 
 
 class _ScheduleQueueOwner(ABC):
-    """Owns the low-level queue mutation behind schedule dispatch ports."""
+    """封装计划事件派发端口背后的底层队列写入。"""
 
     @abstractmethod
     def enqueue(self, event: Any) -> None:
-        """Append one scheduled event to the owned queue."""
+        """向持有的队列追加一个计划事件。"""
 
 
 class _ScheduleDataQueueOwner(_ScheduleQueueOwner):
@@ -82,7 +82,7 @@ class _ScheduleDataQueueOwner(_ScheduleQueueOwner):
         self._schedule_data = schedule_data
 
     def enqueue(self, event: Any) -> None:
-        # Resolve the owner at publish time so queue rebinding stays current.
+        # 发布时重新解析队列持有者，确保队列重绑定后仍能写入最新对象。
         ensure_planned_event_queue(self._schedule_data).enqueue(event)
 
 
@@ -99,7 +99,7 @@ def create_schedule_dispatch_port(
     sim_instance: "Simulator | None" = None,
     schedule_data: "ScheduleData | None" = None,
 ) -> ScheduleDispatchPort:
-    """创建计划事件发布入口，但不向生产者暴露 raw `event_list`。"""
+    """创建计划事件发布入口，但不向生产者暴露原始 `event_list`。"""
     if schedule_data is None:
         if sim_instance is None:
             raise ValueError("sim_instance 和 schedule_data 不能同时为空")

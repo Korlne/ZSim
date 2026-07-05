@@ -6,8 +6,8 @@ from zsim.define import ANOMALY_MAPPING
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 from zsim.sim_progress import Report
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import Disorder
+from zsim.sim_progress.calculation.anomaly_calculator import CalDisorder
 
-from ...CalAnomaly import CalDisorder
 from ..base import BaseEventHandler
 from ..context import EventContext
 

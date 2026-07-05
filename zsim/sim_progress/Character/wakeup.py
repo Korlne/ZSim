@@ -12,14 +12,12 @@ class CharacterResourceThresholds:
     decibel: tuple[float, ...] = ()
 
     def has_any(self) -> bool:
-        return bool(
-            self.energy or self.special_resource or self.adrenaline or self.decibel
-        )
+        return bool(self.energy or self.special_resource or self.adrenaline or self.decibel)
 
 
 @dataclass(frozen=True, slots=True)
 class CharacterResourceWakeupSource:
-    """Projects when character resources can next affect APL decisions."""
+    """推算角色资源下一次可能影响 APL 决策的 tick。"""
 
     char_obj_list: Iterable[object]
     thresholds_by_cid: Mapping[int, CharacterResourceThresholds] | None = None

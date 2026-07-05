@@ -64,9 +64,7 @@ class _FakeDot(Dot):
 def test_dot_runtime_state_adapter_finds_registers_and_prevents_duplicates() -> None:
     call_order: list[tuple[str, str]] = []
     existing_dot = _FakeDot(index="Shock", label="existing")
-    dynamic_state = SimpleNamespace(
-        dynamic_dot_list=_RecordingDotList(call_order, [existing_dot])
-    )
+    dynamic_state = SimpleNamespace(dynamic_dot_list=_RecordingDotList(call_order, [existing_dot]))
     adapter = DotRuntimeStateAdapter(dynamic_state)
     snapshot = adapter.snapshot()
 

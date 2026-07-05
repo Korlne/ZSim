@@ -3,14 +3,12 @@ from contextlib import redirect_stdout
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from zsim.simulator.config_classes import (
-        SimulationConfig as SimCfg,
-    )
     from zsim.simulator import Simulator
+    from zsim.simulator.config_classes import SimulationConfig as SimCfg
 
 
 def _create_webui_default_runtime_simulator() -> "Simulator":
-    """Create the WebUI worker simulator on the indexed default runtime path."""
+    """按默认索引运行路径创建 WebUI 工作进程中的模拟器。"""
     from zsim.simulator import Simulator  # 真正启动模拟再导入，以优化启动速度
 
     return Simulator(use_indexed_buff_load_loop=True)

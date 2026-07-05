@@ -3,11 +3,11 @@ from typing import TYPE_CHECKING
 from zsim.define import YUZUHA_REPORT
 from zsim.models.event_enums import PostInitObjectType as PIOT
 from zsim.models.event_enums import SpecialStateUpdateSignal as SSUS
-from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduledEventEmitter,
     ScheduledEventEmitterProvider,
 )
+from zsim.sim_progress.Preload import SkillNode
 
 from ...data_struct.SchedulePreload import schedule_preload_event_factory
 from ..character import Character

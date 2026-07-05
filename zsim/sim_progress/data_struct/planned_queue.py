@@ -5,7 +5,7 @@ from typing import Any
 
 
 class PlannedEventQueue:
-    """Owns planned-event queue lifecycle behind explicit owner APIs."""
+    """通过明确的持有者接口管理计划事件队列生命周期。"""
 
     def __init__(
         self,
@@ -35,7 +35,7 @@ class PlannedEventQueue:
         after_tick: int,
         execute_tick_resolver: Callable[[Any], int | None] | None = None,
     ) -> int | None:
-        """Return the next event due tick after after_tick, preserving owner access."""
+        """返回 after_tick 之后最近的事件到期 tick，并保持队列持有者访问边界。"""
         next_tick: int | None = None
         for event in self._events():
             execute_tick = (
@@ -79,9 +79,9 @@ class PlannedEventQueue:
 
 
 def ensure_planned_event_queue(schedule_data: Any) -> PlannedEventQueue:
-    """Return the planned queue owner exposed by ScheduleData."""
+    """返回 ScheduleData 暴露的计划事件队列持有者。"""
     queue = getattr(schedule_data, "planned_event_queue", None)
     if queue is not None:
         return queue
 
-    raise AttributeError("schedule_data must expose planned_event_queue")
+    raise AttributeError("schedule_data 必须暴露 planned_event_queue")

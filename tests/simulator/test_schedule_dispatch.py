@@ -4,22 +4,22 @@ from typing import Any, cast
 
 import pytest
 
-import zsim.sim_progress.Load.LoadDamageEvent as load_damage_event_module
 import zsim.sim_progress.data_struct.schedule_dispatch as schedule_dispatch_module
+import zsim.sim_progress.Load.LoadDamageEvent as load_damage_event_module
+from zsim.sim_progress.data_struct.planned_queue import (
+    ensure_planned_event_queue,
+)
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
+    create_schedule_dispatch_port,
+)
 from zsim.sim_progress.Dot.BaseDot import Dot
 from zsim.sim_progress.Load.LoadDamageEvent import (
     DamageEventJudge,
     ProcessTimeUpdateDots,
 )
 from zsim.sim_progress.Load.loading_mission import LoadingMission
-from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
-    ScheduledEventEmitterProvider,
-    create_schedule_dispatch_port,
-)
-from zsim.sim_progress.data_struct.planned_queue import (
-    ensure_planned_event_queue,
-)
 from zsim.simulator.dataclasses import ScheduleData
 
 
@@ -531,8 +531,7 @@ def test_damage_event_judge_publishes_loading_missions_in_current_order():
     assert second_mission.hitted_count == 1
 
 
-def test_damage_event_judge_dispatch_port_path_does_not_construct_legacy_adapter(
-):
+def test_damage_event_judge_dispatch_port_path_does_not_construct_legacy_adapter():
     mission = _make_loading_mission("1001_First", hit_tick=5)
     enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[]))
     schedule_data = _make_schedule_data()
@@ -558,7 +557,7 @@ def test_damage_event_judge_rejects_raw_event_list_schedule_publisher():
     enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[]))
     raw_event_list: list[object] = []
 
-    with pytest.raises(TypeError, match="raw event_list handoff has been retired"):
+    with pytest.raises(TypeError, match="原始 event_list 交接已经移除"):
         DamageEventJudge(
             5,
             {"first": mission},
@@ -576,7 +575,7 @@ def test_damage_event_judge_rejects_legacy_event_list_keyword():
     enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[]))
     raw_event_list: list[object] = []
 
-    with pytest.raises(TypeError, match="event_list= planned-queue handoff has been retired"):
+    with pytest.raises(TypeError, match="event_list= 形式的计划队列交接已经移除"):
         DamageEventJudge(
             5,
             {"first": mission},
@@ -600,9 +599,7 @@ def test_damage_event_judge_dispatch_port_follows_rebound_queue_order():
         skill_node_data=hidden_skill_payload,
     )
     skill_dot = _ReadyDot(anomaly_data=None, skill_node_data=skill_payload)
-    enemy = SimpleNamespace(
-        dynamic=SimpleNamespace(dynamic_dot_list=[anomaly_dot, skill_dot])
-    )
+    enemy = SimpleNamespace(dynamic=SimpleNamespace(dynamic_dot_list=[anomaly_dot, skill_dot]))
     original_queue = _PlannedQueueOwnerProbe()
     rebound_queue = _PlannedQueueOwnerProbe()
     schedule_data = _owner_schedule_data(original_queue)
@@ -653,7 +650,7 @@ def test_process_time_update_dots_rejects_raw_event_list_schedule_publisher():
     dot = _ReadyDot(anomaly_data=None, skill_node_data=payload)
     raw_event_list: list[object] = []
 
-    with pytest.raises(TypeError, match="raw event_list handoff has been retired"):
+    with pytest.raises(TypeError, match="原始 event_list 交接已经移除"):
         ProcessTimeUpdateDots(12, [dot], raw_event_list)
 
     assert raw_event_list == []

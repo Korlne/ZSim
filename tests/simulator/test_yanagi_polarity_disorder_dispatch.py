@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from typing import Any, Callable, cast
 
 import pytest
+
 import zsim.define as define_module
 import zsim.sim_progress.ScheduledEvent as scheduled_event_module
 import zsim.sim_progress.ScheduledEvent.buff_runtime as buff_runtime_module
@@ -13,18 +14,17 @@ import zsim.sim_progress.ScheduledEvent.runtime_command as runtime_command_modul
 sys.modules.setdefault("define", define_module)
 
 import zsim.sim_progress.Buff.BuffXLogic.YanagiPolarityDisorderTrigger as yanagi_module
-
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.YanagiPolarityDisorderTrigger import (
     YanagiPolarityDisorderTrigger,
     YanagiPolarityDisorderTriggerRecord,
 )
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
+)
 from zsim.sim_progress.Load import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
-from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
-    ScheduledEventEmitterProvider,
-)
 
 
 class _FailFastEventList(list):
@@ -79,21 +79,15 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("YanagiPolarityDisorderTrigger should not read raw event_list")
 
-    monkeypatch.setattr(
-        JudgeTools, "find_event_list", fail_find_event_list, raising=False
-    )
+    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list, raising=False)
 
 
 def _patch_runtime_boundary_guards(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_create_runtime_command_port(*args: object, **kwargs: object) -> None:
-        raise AssertionError(
-            "YanagiPolarityDisorderTrigger should not create RuntimeCommandPort"
-        )
+        raise AssertionError("YanagiPolarityDisorderTrigger should not create RuntimeCommandPort")
 
     def fail_create_buff_runtime_read_port(*args: object, **kwargs: object) -> None:
-        raise AssertionError(
-            "YanagiPolarityDisorderTrigger should not create BuffRuntimeReadPort"
-        )
+        raise AssertionError("YanagiPolarityDisorderTrigger should not create BuffRuntimeReadPort")
 
     monkeypatch.setattr(
         runtime_command_module,
@@ -174,9 +168,7 @@ def test_yanagi_polarity_disorder_trigger_publishes_spawn_output_via_dispatch_po
     )
     logic = YanagiPolarityDisorderTrigger(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
     record = YanagiPolarityDisorderTriggerRecord()
     record.char = SimpleNamespace(cinema=2)
@@ -287,9 +279,7 @@ def test_yanagi_polarity_disorder_judge_wrong_skill_is_noop(
     )
     logic = YanagiPolarityDisorderTrigger(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
     record = YanagiPolarityDisorderTriggerRecord()
     record.char = SimpleNamespace(cinema=2)
@@ -311,10 +301,7 @@ def test_yanagi_polarity_disorder_judge_wrong_skill_is_noop(
     _patch_runtime_boundary_guards(monkeypatch)
     _block_legacy_event_lookup(monkeypatch)
 
-    assert (
-        logic.special_judge_logic(skill_node=_build_skill_node(skill_tag="1221_NA_A"))
-        is False
-    )
+    assert logic.special_judge_logic(skill_node=_build_skill_node(skill_tag="1221_NA_A")) is False
 
     assert dynamic.calls == []
     assert logic.record is record
@@ -338,9 +325,7 @@ def test_yanagi_polarity_disorder_judge_resets_counter_without_publish_when_no_a
     )
     logic = YanagiPolarityDisorderTrigger(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
     record = YanagiPolarityDisorderTriggerRecord()
     record.char = SimpleNamespace(cinema=2)

@@ -30,7 +30,7 @@ class TriggerCoreSkillStunDMGBonus(Buff.BuffLogic):
     def check_record_module(self):
         ensure_owner_template_record(
             self,
-            owner_name='扳机',
+            owner_name="扳机",
             record_factory=TriggerCoreSkillStunDMGBonusRecord,
             context_builder=build_preparation_context_from_buff,
         )

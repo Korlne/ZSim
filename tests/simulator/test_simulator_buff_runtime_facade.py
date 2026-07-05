@@ -7,18 +7,20 @@ import pytest
 
 import zsim.simulator.simulator_class as simulator_class
 from zsim.sim_progress.Buff.BuffLoad import BuffLoadLoop
+from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     BuffRuntimeState,
     BuffTemplateRegistry,
     PendingBuffQueue,
 )
-from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
 from zsim.simulator.simulator_class import Simulator
 
 
 def _planned_queue() -> PlannedEventQueue:
     events: list[Any] = []
-    return PlannedEventQueue(get_events=lambda: events, set_events=lambda new: events.__setitem__(slice(None), new))
+    return PlannedEventQueue(
+        get_events=lambda: events, set_events=lambda new: events.__setitem__(slice(None), new)
+    )
 
 
 def _minimal_runtime_state() -> BuffRuntimeState:
@@ -96,9 +98,13 @@ def test_main_loop_uses_runtime_facade_and_scheduled_event_runtime_state(
     )
 
     monkeypatch.setattr(sim, "_create_buff_runtime_facade", lambda: RuntimeFacade())
-    monkeypatch.setattr(simulator_class, "DamageEventJudge", lambda *_, **__: calls.append(("damage", None)))
+    monkeypatch.setattr(
+        simulator_class, "DamageEventJudge", lambda *_, **__: calls.append(("damage", None))
+    )
     monkeypatch.setattr(simulator_class, "ScE", FakeScheduledEvent)
-    monkeypatch.setattr(simulator_class, "stop_report_threads", lambda: calls.append(("stop", None)))
+    monkeypatch.setattr(
+        simulator_class, "stop_report_threads", lambda: calls.append(("stop", None))
+    )
 
     sim.main_loop(stop_tick=1, use_api=True)
 

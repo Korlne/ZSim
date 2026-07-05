@@ -34,8 +34,7 @@
       "contribution-guide": "Contribution Guide",
       "data-analysis": "Analysis",
       "session-management": "Session",
-      "simulator": "Simulator",
-      "buff-graph": "Buff Graph"
+      "simulator": "Simulator"
     }
   },
   "simulator": {
@@ -85,33 +84,11 @@
     "export": "Export Session",
     "import": "Import Session"
   },
-  "sessionSmoke": {
-    "status": "Smoke",
-    "action": {
-      "create": "Create Session",
-      "running": "Running"
-    },
-    "phase": {
-      "idle": "Idle",
-      "creating": "Creating",
-      "running": "Running",
-      "polling": "Polling",
-      "result-ready": "Result ready",
-      "analysis-ready": "Analysis ready",
-      "failed": "Failed"
-    }
-  },
   "settings": {
     "title": "Settings",
     "language": "Language",
     "theme": "Theme",
     "api": "API Settings",
     "about": "About"
-  },
-  "buffGraph": {
-    "tabs": {
-      "catalog": "Block Catalog",
-      "matrix": "Parity Matrix"
-    }
   }
 }

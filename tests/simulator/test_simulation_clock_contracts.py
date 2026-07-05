@@ -55,7 +55,7 @@ def test_simulation_clock_rejects_non_future_source() -> None:
 def test_simulation_clock_requires_future_wakeup() -> None:
     clock = SimulationClock()
 
-    with pytest.raises(ValueError, match="at least one future"):
+    with pytest.raises(ValueError, match="至少需要一个未来"):
         clock.next_wakeup_tick(
             current_tick=10,
             wakeup_sources=[FixedTickWakeupSource(name="idle", tick=None)],

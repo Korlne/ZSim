@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-import zsim.sim_progress.ScheduledEvent.CalAnomaly as cal_anomaly_module
+import zsim.sim_progress.calculation.anomaly_calculator as cal_anomaly_module
 from zsim.sim_progress.calculation.inputs.anomaly import (
     AnomalyDamageMultipliers,
     AnomalyDamageSnapshot,
@@ -23,10 +23,7 @@ def _damage_snapshot() -> np.ndarray:
 def test_legacy_anomaly_multiplier_vector_helper_delegates_to_formula_module(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    original = (
-        cal_anomaly_module.anomaly_damage_formulas
-        .assemble_anomaly_damage_multiplier_vector
-    )
+    original = cal_anomaly_module.anomaly_damage_formulas.assemble_anomaly_damage_multiplier_vector
     calls: list[tuple[AnomalyDamageSnapshot, AnomalyDamageMultipliers]] = []
 
     def recording_assemble(
@@ -111,7 +108,9 @@ def test_legacy_anomaly_damage_helper_and_public_method_delegate_to_formula_modu
         "calculate_anomaly_damage_expectation",
         recording_damage,
     )
-    final_multipliers = np.array([120.0, 1.15, 2.25, 2.0, 1.35, 1.0, 0.71, 1.06, 1.25, 1.2, 1.4, 1.7, 1.07])
+    final_multipliers = np.array(
+        [120.0, 1.15, 2.25, 2.0, 1.35, 1.0, 0.71, 1.06, 1.25, 1.2, 1.4, 1.7, 1.07]
+    )
 
     helper_result = cal_anomaly_module._calculate_anomaly_damage_expectation(
         final_multipliers,
@@ -265,10 +264,7 @@ def test_legacy_disorder_public_methods_delegate_to_formula_module(
 def test_legacy_polarity_disorder_public_method_delegates_to_formula_module(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    original = (
-        cal_anomaly_module.polarity_disorder_formulas
-        .calculate_polarity_disorder_base_damage
-    )
+    original = cal_anomaly_module.polarity_disorder_formulas.calculate_polarity_disorder_base_damage
     calls: list[dict[str, float]] = []
 
     def recording_polarity(**kwargs) -> np.float64:

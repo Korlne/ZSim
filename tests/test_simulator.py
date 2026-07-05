@@ -429,8 +429,8 @@ class TestSimulator:
 
     def test_webui_default_uses_indexed_buff_load_loop(self, monkeypatch):
         """WebUI worker simulator should use the indexed BuffLoadLoop default."""
-        from zsim.lib_webui import multiprocess_wrapper
         import zsim.simulator as simulator_package
+        from zsim.lib_webui import multiprocess_wrapper
 
         captured = {}
 

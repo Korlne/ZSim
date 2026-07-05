@@ -29,8 +29,11 @@ from zsim.sim_progress.calculation import (
     MultiplierVector,
 )
 
-
 CALCULATION_ROOT = Path("zsim/sim_progress/calculation")
+RUNTIME_ADAPTER_MODULES = {
+    CALCULATION_ROOT / "calculator.py",
+    CALCULATION_ROOT / "anomaly_calculator.py",
+}
 FORBIDDEN_IMPORT_FRAGMENTS = (
     "Enemy",
     "Buff",
@@ -144,6 +147,8 @@ def test_public_exports_cover_identity_input_and_result_interfaces() -> None:
 def test_calculation_domain_model_imports_no_runtime_objects() -> None:
     imports: dict[Path, list[str]] = {}
     for path in CALCULATION_ROOT.rglob("*.py"):
+        if path in RUNTIME_ADAPTER_MODULES:
+            continue
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         names: list[str] = []
         for node in ast.walk(tree):

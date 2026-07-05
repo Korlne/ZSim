@@ -22,7 +22,7 @@ class SimulationPhaseProfiler:
 
     def record(self, phase: str, seconds: float) -> None:
         if seconds < 0:
-            raise ValueError("phase duration cannot be negative")
+            raise ValueError("阶段耗时不能为负数")
         self._samples[phase].append(seconds)
 
     def phase_summary(self, phase: str) -> dict[str, float | int]:
@@ -42,10 +42,7 @@ class SimulationPhaseProfiler:
         }
 
     def summary(self) -> dict[str, object]:
-        phases = {
-            phase: self.phase_summary(phase)
-            for phase in sorted(self._samples)
-        }
+        phases = {phase: self.phase_summary(phase) for phase in sorted(self._samples)}
         total_seconds = round(
             sum(float(item["total_seconds"]) for item in phases.values()),
             6,

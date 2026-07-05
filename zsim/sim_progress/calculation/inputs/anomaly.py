@@ -7,7 +7,7 @@ from zsim.sim_progress.calculation.inputs.common import AnomalyIdentityProfile
 
 @dataclass(frozen=True, slots=True)
 class AnomalyDamageSnapshot:
-    """Legacy anomaly damage snapshot values needed by anomaly damage formulas."""
+    """异常伤害公式需要的旧版异常伤害快照值。"""
 
     base_damage: float
     damage_bonus: float
@@ -19,7 +19,7 @@ class AnomalyDamageSnapshot:
 
 @dataclass(frozen=True, slots=True)
 class AnomalyDamageMultipliers:
-    """Explicit non-snapshot multipliers assembled outside runtime-bound formulas."""
+    """在 runtime 绑定公式外部组装的显式非快照乘区。"""
 
     level_multiplier: float
     active_crit_multiplier: float
@@ -32,7 +32,7 @@ class AnomalyDamageMultipliers:
 
 @dataclass(frozen=True, slots=True)
 class AnomalyDamageInput:
-    """Read-only input snapshot for one anomaly damage calculation."""
+    """单次异常伤害计算的只读输入快照。"""
 
     identity: AnomalyIdentityProfile
     snapshot: AnomalyDamageSnapshot

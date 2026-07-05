@@ -11,7 +11,7 @@ from zsim.sim_progress.Character.wakeup import (
     CharacterResourceThresholds,
     CharacterResourceWakeupSource,
 )
-from zsim.sim_progress.data_struct import ActionStack, Decibelmanager, ListenerManger
+from zsim.sim_progress.data_struct import ActionStack, Decibelmanager, ListenerManger, SPUpdateData
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
 from zsim.sim_progress.Enemy import Enemy
 from zsim.sim_progress.Load import DamageEventJudge, SkillEventSplit
@@ -21,9 +21,9 @@ from zsim.sim_progress.RandomNumberGenerator import RNG
 from zsim.sim_progress.Report import start_report_threads, stop_report_threads
 from zsim.sim_progress.ScheduledEvent import ScheduledEvent as ScE
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
-    BuffTimeRelatedWakeupSource,
     BuffRuntimeFacade,
     BuffRuntimeState,
+    BuffTimeRelatedWakeupSource,
 )
 from zsim.sim_progress.SimulationEngine import (
     FixedTickWakeupSource,
@@ -40,7 +40,6 @@ from zsim.simulator.dataclasses import (
     ScheduleData,
     SimCfg,
 )
-from zsim.sim_progress.data_struct import SPUpdateData
 
 if TYPE_CHECKING:
     from zsim.models.session.session_run import CommonCfg
@@ -167,10 +166,14 @@ class Simulator:
     sim_cfg: SimCfg | None
     use_indexed_buff_load_loop: bool
     _buff_runtime_rebuild_counts: dict[str, int] | None
+    _apl_resource_threshold_cache_key: tuple[Any, ...] | None
+    _apl_resource_threshold_cache: dict[int, CharacterResourceThresholds] | None
 
     def __init__(self, *, use_indexed_buff_load_loop: bool = False) -> None:
         self.use_indexed_buff_load_loop = use_indexed_buff_load_loop
         self._buff_runtime_rebuild_counts = None
+        self._apl_resource_threshold_cache_key = None
+        self._apl_resource_threshold_cache = None
 
     def _apply_indexed_buff_load_loop_option(self, use_indexed_buff_load_loop: bool | None) -> None:
         if use_indexed_buff_load_loop is not None:
@@ -226,6 +229,7 @@ class Simulator:
         stop_tick: int | None = None,
         *,
         use_indexed_buff_load_loop: bool | None = None,
+        rng_seed: int | None = None,
     ) -> Confirmation:
         """api运行模拟器实例的接口。
 
@@ -234,6 +238,7 @@ class Simulator:
             sim_cfg: 模拟配置对象，包含模拟的详细参数
             stop_tick: 停止模拟的帧数，默认为10800帧（3分钟）
             use_indexed_buff_load_loop: 显式请求索引化 BuffLoadLoop 的开关。
+            rng_seed: 可选随机种子；主要供一致性检测使用，普通运行默认不固定随机数。
 
         Returns:
             包含运行确认信息的字典
@@ -242,6 +247,8 @@ class Simulator:
             stop_tick = 10800
         self._apply_indexed_buff_load_loop_option(use_indexed_buff_load_loop)
         self.api_init_simulator(common_cfg, sim_cfg)
+        if rng_seed is not None:
+            self.rng_instance.reseed(rng_seed)
         self.main_loop(stop_tick=stop_tick, sim_cfg=sim_cfg, use_api=True)
 
         # 返回确认信息
@@ -352,6 +359,27 @@ class Simulator:
         return sources
 
     def _apl_resource_thresholds_by_cid(self) -> dict[int, CharacterResourceThresholds]:
+        snapshot = self._apl_resource_threshold_inventory_snapshot()
+        if snapshot is None:
+            self._apl_resource_threshold_cache_key = None
+            self._apl_resource_threshold_cache = None
+            return {}
+
+        apl_unit_inventory, cache_key = snapshot
+        if (
+            getattr(self, "_apl_resource_threshold_cache_key", None) == cache_key
+            and getattr(self, "_apl_resource_threshold_cache", None) is not None
+        ):
+            return self._apl_resource_threshold_cache or {}
+
+        thresholds = self._scan_apl_resource_thresholds_by_cid(apl_unit_inventory)
+        self._apl_resource_threshold_cache_key = cache_key
+        self._apl_resource_threshold_cache = thresholds
+        return thresholds
+
+    def _apl_resource_threshold_inventory_snapshot(
+        self,
+    ) -> tuple[object, tuple[Any, ...]] | None:
         try:
             apl = self.preload.strategy.apl_engine.apl
             apl_operator = apl.apl_operator
@@ -359,10 +387,52 @@ class Simulator:
                 apl_operator = getattr(apl, "operator", None)
             apl_unit_inventory = apl_operator.apl_unit_inventory
         except AttributeError:
-            return {}
+            return None
 
+        if apl_operator is None or apl_unit_inventory is None:
+            return None
+        inventory_items = getattr(apl_unit_inventory, "items", None)
+        if not callable(inventory_items):
+            return None
+
+        unit_fingerprint: list[tuple[Any, ...]] = []
+        for key, apl_unit in inventory_items():
+            sub_conditions = getattr(apl_unit, "sub_conditions_unit_list", ())
+            builtin_conditions = getattr(apl_unit, "builtin_percond_list", ())
+            unit_fingerprint.append(
+                (
+                    key,
+                    id(apl_unit),
+                    id(sub_conditions),
+                    self._safe_len(sub_conditions),
+                    id(builtin_conditions),
+                    self._safe_len(builtin_conditions),
+                )
+            )
+        cache_key = (
+            id(apl_operator),
+            id(apl_unit_inventory),
+            len(unit_fingerprint),
+            tuple(unit_fingerprint),
+        )
+        return apl_unit_inventory, cache_key
+
+    @staticmethod
+    def _safe_len(value: object) -> int | None:
+        try:
+            return len(value)  # type: ignore[arg-type]
+        except TypeError:
+            return None
+
+    @staticmethod
+    def _scan_apl_resource_thresholds_by_cid(
+        apl_unit_inventory: object,
+    ) -> dict[int, CharacterResourceThresholds]:
+        inventory_values = getattr(apl_unit_inventory, "values", None)
+        if not callable(inventory_values):
+            return {}
         thresholds: dict[int, dict[str, set[float]]] = {}
-        for apl_unit in apl_unit_inventory.values():
+        for apl_unit in inventory_values():
             condition_units = list(getattr(apl_unit, "sub_conditions_unit_list", ()))
             condition_units.extend(getattr(apl_unit, "builtin_percond_list", ()))
             for condition in condition_units:
@@ -489,22 +559,20 @@ class Simulator:
         last_processed_tick: int | None = None
         while True:
             skipped_elapsed_ticks = (
-                0
-                if last_processed_tick is None
-                else max(self.tick - last_processed_tick - 1, 0)
+                0 if last_processed_tick is None else max(self.tick - last_processed_tick - 1, 0)
             )
             self._settle_skipped_time_derived_state(
                 elapsed_ticks=skipped_elapsed_ticks,
             )
             self._event_driven_elapsed_ticks = 1
-            # Tick Update
-            # report_to_log(f"[Update] Tick step to {tick}")
+            # tick 更新
+            # report_to_log(f"[更新] tick 推进到 {tick}")
             buff_runtime.update_time_related_effects(
                 tick=self.tick,
                 enemy=self.schedule_data.enemy,
             )
 
-            # Preload
+            # Preload 阶段
             self.preload.do_preload(
                 self.tick,
                 self.schedule_data.enemy,
@@ -518,12 +586,12 @@ class Simulator:
                     not config.apl_mode.enabled
                     and self.preload.preload_data.skills_queue.head is None
                 ):
-                    # Old Sequence mode left, not compatible with APL mode now
+                    # 旧 Sequence 模式的兜底逻辑；当前不再兼容 APL 模式。
                     stop_tick = self.tick + 120
             elif self.tick >= stop_tick:
                 break
 
-            # Load
+            # Load 阶段
             if preload_list:
                 SkillEventSplit(
                     preload_list,
@@ -548,8 +616,8 @@ class Simulator:
             )
             buff_runtime.activate_pending_buffs(timenow=self.tick)
 
-            # Load.DamageEventJudge publishes planned damage events through ScheduleDispatchPort.
-            # ScheduledEvent
+            # Load.DamageEventJudge 通过 ScheduleDispatchPort 发布计划伤害事件。
+            # 计划事件处理
             sce = ScE.from_runtime_state(
                 schedule_data=self.schedule_data,
                 tick=self.tick,

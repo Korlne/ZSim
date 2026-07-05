@@ -1,7 +1,10 @@
 from .. import Buff, check_preparation
-from ..JudgeTools import build_preparation_context_from_buff
+from ..JudgeTools import (
+    TriggerBuffRef,
+    build_preparation_context_from_buff,
+    read_trigger_buff_state,
+)
 from ._preparation_helpers import ensure_owner_template_record, prepare_with_context
-from ..JudgeTools import TriggerBuffRef, read_trigger_buff_state
 
 _JANE_BITE_TRIGGER_REF = TriggerBuffRef.enemy("Buff-角色-简-核心被动-啮咬触发器")
 
@@ -36,7 +39,7 @@ class JaneCoreSkillStrikeCritDmgBonus(Buff.BuffLogic):
     def check_record_module(self):
         ensure_owner_template_record(
             self,
-            owner_name='简',
+            owner_name="简",
             record_factory=JaneCoreSkillStrikeCritDmgBonusRecord,
             context_builder=build_preparation_context_from_buff,
         )

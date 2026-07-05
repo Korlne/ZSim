@@ -36,8 +36,7 @@ class _FakeRuntimeView(BuffRuntimeReadPort):
     def get_exist_buff_snapshot_view(self):
         self.snapshot_view_calls += 1
         return {
-            beneficiary: dict(buff_dict)
-            for beneficiary, buff_dict in self.exist_buff_dict.items()
+            beneficiary: dict(buff_dict) for beneficiary, buff_dict in self.exist_buff_dict.items()
         }
 
 
@@ -100,9 +99,7 @@ def test_create_buff_runtime_read_port_exposes_read_only_views_for_active_and_sn
     assert tuple(runtime_view.get_active_buffs("alpha")) == (alpha_buff,)
     assert tuple(runtime_view.get_active_buff_view()["enemy"]) == (enemy_buff,)
     assert dict(runtime_view.get_exist_buff_snapshot("alpha")) == {"alpha-buff": alpha_buff}
-    assert dict(runtime_view.get_exist_buff_snapshot_view()["enemy"]) == {
-        "enemy-buff": enemy_buff
-    }
+    assert dict(runtime_view.get_exist_buff_snapshot_view()["enemy"]) == {"enemy-buff": enemy_buff}
 
     with pytest.raises(TypeError):
         runtime_view.get_active_buff_view()["alpha"] = ()

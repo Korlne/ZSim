@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 from zsim.sim_progress import Report
+from zsim.sim_progress.calculation.calculator import Calculator
 from zsim.sim_progress.Character import Character
 from zsim.sim_progress.data_struct import SingleHit
 from zsim.sim_progress.data_struct.schedule_dispatch import create_schedule_dispatch_port
@@ -15,7 +16,6 @@ from zsim.sim_progress.Load.LoadDamageEvent import (
 from zsim.sim_progress.Load.loading_mission import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
 
-from ...Calculator import Calculator
 from ..base import BaseEventHandler
 from ..context import EventContext
 

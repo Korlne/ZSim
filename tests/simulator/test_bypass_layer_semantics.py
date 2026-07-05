@@ -5,16 +5,16 @@ from typing import Any, Sequence, cast
 
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
 from zsim.sim_progress.Buff.JudgeTools import build_preparation_context_from_sim_instance
-from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort, BuffRuntimeState
-from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
-from zsim.sim_progress.ScheduledEvent.event_handlers.handlers.preload import PreloadEventHandler
 from zsim.sim_progress.data_struct.BattleEventListener import ListenerManger
-from zsim.sim_progress.data_struct.SchedulePreload import SchedulePreload
 from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
 from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduleDispatchPort,
     create_schedule_dispatch_port,
 )
+from zsim.sim_progress.data_struct.SchedulePreload import SchedulePreload
+from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort, BuffRuntimeState
+from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
+from zsim.sim_progress.ScheduledEvent.event_handlers.handlers.preload import PreloadEventHandler
 
 
 class _RuntimeViewStub(BuffRuntimeReadPort):
@@ -125,9 +125,7 @@ def test_preparation_context_preload_commands_publish_only_scheduled_events() ->
         active_store=sim_instance.global_stats.DYNAMIC_BUFF_DICT,
         enemy_mirror=[],
     )
-    preparation_context = build_preparation_context_from_sim_instance(
-        cast(Any, sim_instance)
-    )
+    preparation_context = build_preparation_context_from_sim_instance(cast(Any, sim_instance))
 
     preparation_context.preload_commands.schedule_preload_events(
         preload_tick_list=[23, 24],

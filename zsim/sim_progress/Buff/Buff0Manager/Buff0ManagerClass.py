@@ -310,9 +310,7 @@ class Buff0Manager:
                                     partner_condition_list.extend(
                                         self.__additional_ability_data.additional_ability_judge_info[
                                             other_key
-                                        ][
-                                            "config_info"
-                                        ]
+                                        ]["config_info"]
                                     )
                             # print(buff_name, condition_list_after_trans, partner_condition_list)
                             for conditions in condition_list_after_trans:

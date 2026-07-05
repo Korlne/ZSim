@@ -32,7 +32,7 @@ class YanagiCinema6EXDmgBonus(Buff.BuffLogic):
     def check_record_module(self):
         ensure_owner_template_record(
             self,
-            owner_name='柳',
+            owner_name="柳",
             record_factory=YanagiCinema6EXDmgBonusRecord,
             context_builder=build_preparation_context_from_buff,
         )

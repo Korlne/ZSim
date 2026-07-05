@@ -92,9 +92,7 @@ def _create_buff_add_runtime_context(
 ) -> BuffAddRuntimeContext:
     return BuffAddRuntimeContext(
         runtime_facade=sim_instance.buff_runtime_state.create_facade(),
-        template_registry_owner=(
-            sim_instance.buff_runtime_state.template_registry_owner()
-        ),
+        template_registry_owner=(sim_instance.buff_runtime_state.template_registry_owner()),
         all_name_order_box=sim_instance.load_data.all_name_order_box,
         tick=sim_instance.tick,
     )
@@ -155,9 +153,7 @@ def let_buff_start(
         tick=tick,
         specified_count=specified_count,
     )
-    buff_existing_check = runtime_facade.find_active_buff_by_index(
-        names, buff_new.ft.index
-    )
+    buff_existing_check = runtime_facade.find_active_buff_by_index(names, buff_new.ft.index)
     if buff_existing_check:
         runtime_facade.remove_active_buff(names, buff_existing_check)
     # print(f'强制添加Buff函数执行，本次为 {names} 添加的Buff为：{buff_new.ft.index}，激活状态为：{buff_new.dy.active}，开始时间为：{buff_new.dy.startticks}，结束时间为：{buff_new.dy.endticks}，层数：{buff_new.dy.count}')

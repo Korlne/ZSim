@@ -6,6 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
 import zsim.define as define_module
 
 sys.modules.setdefault("define", define_module)
@@ -20,11 +21,10 @@ from zsim.sim_progress.Buff.JudgeTools.PreparationContext import (
     ResourceRefreshCommandPort,
 )
 from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
     ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
 )
 from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SLICE_OF_TIME_RESOURCE_REFRESH_FILE = Path(slice_module.__file__).resolve()
@@ -51,9 +51,7 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("SliceofTimeExtraResources should not read raw event_list")
 
-    monkeypatch.setattr(
-        JudgeTools, "find_event_list", fail_find_event_list, raising=False
-    )
+    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list, raising=False)
 
 
 def _schedule_refresh_constructor_names(tree: ast.AST) -> set[str]:
@@ -76,23 +74,14 @@ def _direct_schedule_refresh_constructor_findings(path: Path) -> list[str]:
         if not isinstance(node, ast.Call):
             continue
         if isinstance(node.func, ast.Name) and node.func.id in constructor_names:
-            findings.append(
-                f"{path.relative_to(PROJECT_ROOT).as_posix()}:{node.lineno}"
-            )
-        if (
-            isinstance(node.func, ast.Attribute)
-            and node.func.attr == "ScheduleRefreshData"
-        ):
-            findings.append(
-                f"{path.relative_to(PROJECT_ROOT).as_posix()}:{node.lineno}"
-            )
+            findings.append(f"{path.relative_to(PROJECT_ROOT).as_posix()}:{node.lineno}")
+        if isinstance(node.func, ast.Attribute) and node.func.attr == "ScheduleRefreshData":
+            findings.append(f"{path.relative_to(PROJECT_ROOT).as_posix()}:{node.lineno}")
     return findings
 
 
 def test_slice_of_time_extra_resources_does_not_directly_construct_schedule_refresh_data() -> None:
-    findings = _direct_schedule_refresh_constructor_findings(
-        SLICE_OF_TIME_RESOURCE_REFRESH_FILE
-    )
+    findings = _direct_schedule_refresh_constructor_findings(SLICE_OF_TIME_RESOURCE_REFRESH_FILE)
 
     assert not findings, (
         "Migrated SliceofTimeExtraResources directly constructs ScheduleRefreshData:\n"
@@ -103,9 +92,7 @@ def test_slice_of_time_extra_resources_does_not_directly_construct_schedule_refr
 def test_resource_refresh_command_port_publishes_mixed_refresh_at_call_site() -> None:
     call_order: list[str] = ["before_publish_call"]
     dispatch_port = _RecordingDispatchPort(call_order)
-    command_port = ResourceRefreshCommandPort(
-        ScheduledEventEmitterProvider(lambda: dispatch_port)
-    )
+    command_port = ResourceRefreshCommandPort(ScheduledEventEmitterProvider(lambda: dispatch_port))
     unused_raw_queue = _FailFastEventList()
 
     command_port.publish_refresh(
@@ -142,9 +129,7 @@ def test_slice_of_time_extra_resources_publishes_mixed_refresh_via_dispatch_port
     )
     logic = SliceofTimeExtraResources(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
     sub_exist_buff_dict = {"slice": object()}
     action_now = SimpleNamespace(

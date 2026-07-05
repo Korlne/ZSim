@@ -32,7 +32,7 @@ class LinaAdditionalSkillEleDMGBonus(Buff.BuffLogic):
     def check_record_module(self):
         ensure_owner_template_record(
             self,
-            owner_name='丽娜',
+            owner_name="丽娜",
             record_factory=LinaAdditionalSkillRecord,
             context_builder=build_preparation_context_from_buff,
         )

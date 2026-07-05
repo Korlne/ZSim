@@ -192,8 +192,10 @@ class Yixuan(Character):
     ) -> int | None:
         candidates: list[int] = []
         event_group = self.adrenaline_manager.adrenaline_recover_event_group
-        if thresholds is None and event_group and any(
-            getattr(event, "active", False) for event in event_group
+        if (
+            thresholds is None
+            and event_group
+            and any(getattr(event, "active", False) for event in event_group)
         ):
             return current_tick + 1
         active_event_regen = 0.0
@@ -201,9 +203,8 @@ class Yixuan(Character):
             for event in event_group:
                 if not getattr(event, "active", False):
                     continue
-                event_end_tick = (
-                    int(getattr(event, "last_active_tick", current_tick))
-                    + int(getattr(event, "max_duration", 0))
+                event_end_tick = int(getattr(event, "last_active_tick", current_tick)) + int(
+                    getattr(event, "max_duration", 0)
                 )
                 if event_end_tick > current_tick:
                     candidates.append(event_end_tick)
@@ -224,8 +225,10 @@ class Yixuan(Character):
         )
         if resource_tick is not None:
             candidates.append(resource_tick)
-        if not candidates and event_group and any(
-            getattr(event, "active", False) for event in event_group
+        if (
+            not candidates
+            and event_group
+            and any(getattr(event, "active", False) for event in event_group)
         ):
             return current_tick + 1
         if not candidates:

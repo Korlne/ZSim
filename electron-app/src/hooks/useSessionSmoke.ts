@@ -6,13 +6,7 @@ type ApiResponse = {
 };
 
 type SessionSmokePhase =
-  | 'idle'
-  | 'creating'
-  | 'running'
-  | 'polling'
-  | 'result-ready'
-  | 'analysis-ready'
-  | 'failed';
+  'idle' | 'creating' | 'running' | 'polling' | 'result-ready' | 'analysis-ready' | 'failed';
 
 type BuffTimelineEntry = {
   Task: string;
@@ -99,7 +93,7 @@ const delay = (ms: number) =>
     window.setTimeout(resolve, ms);
   });
 
-const readJsonResponse = <T,>(response: ApiResponse, operation: string): T => {
+const readJsonResponse = <T>(response: ApiResponse, operation: string): T => {
   let parsed: unknown = null;
 
   if (response.body) {
@@ -156,7 +150,9 @@ const findSelectedMatrixRow = (payload: SessionReadPayload) =>
 
 const getMatrixSignoffStatus = (payload: SessionReadPayload) => {
   const selectedRow = findSelectedMatrixRow(payload);
-  return payload.matrix_signoff?.signoff_status ?? selectedRow?.signoff_effect ?? selectedRow?.status;
+  return (
+    payload.matrix_signoff?.signoff_status ?? selectedRow?.signoff_effect ?? selectedRow?.status
+  );
 };
 
 const hasMatrixSignoffEntry = (payload: SessionReadPayload) =>

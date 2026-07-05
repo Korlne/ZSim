@@ -31,7 +31,7 @@ class VivianCinema1Debuff(Buff.BuffLogic):
     def check_record_module(self):
         ensure_owner_template_record(
             self,
-            owner_name='薇薇安',
+            owner_name="薇薇安",
             record_factory=VVivianCinema1DebuffRecord,
             context_builder=build_preparation_context_from_buff,
         )

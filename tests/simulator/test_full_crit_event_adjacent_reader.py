@@ -7,23 +7,24 @@ from types import SimpleNamespace
 from typing import Any, Iterator, Sequence, SupportsIndex, cast
 
 import pytest
+
 import zsim.define as define_module
 
 sys.modules.setdefault("define", define_module)
 
-import zsim.sim_progress.Buff.BuffXLogic.MiyabiCoreSkill_IceFire as miyabi_module
 import zsim.sim_progress.Buff.BuffXLogic.CannonRotor as cannon_module
+import zsim.sim_progress.Buff.BuffXLogic.MiyabiCoreSkill_IceFire as miyabi_module
+import zsim.sim_progress.calculation.calculator as calculator_module
+import zsim.sim_progress.data_struct.schedule_dispatch as schedule_dispatch_module
 import zsim.sim_progress.ScheduledEvent as scheduled_event_module
 import zsim.sim_progress.ScheduledEvent.buff_runtime as buff_runtime_module
-import zsim.sim_progress.ScheduledEvent.Calculator as calculator_module
 import zsim.sim_progress.ScheduledEvent.runtime_command as runtime_command_module
-import zsim.sim_progress.data_struct.schedule_dispatch as schedule_dispatch_module
-
-from zsim.sim_progress.Buff import Buff as BuffClass, JudgeTools
+from zsim.sim_progress.Buff import Buff as BuffClass
+from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.CannonRotor import CannonRotor
 from zsim.sim_progress.Buff.BuffXLogic.MiyabiCoreSkill_IceFire import (
-    MiyabiCoreSkillIF,
     MiyabiCoreSkill_IceFire,
+    MiyabiCoreSkillIF,
 )
 from zsim.sim_progress.Buff.BuffXLogic.WoodpeckerElectroSet4_CA import (
     WoodpeckerElectroSet4_CA,
@@ -34,13 +35,13 @@ from zsim.sim_progress.Buff.BuffXLogic.WoodpeckerElectroSet4_E_EX import (
 from zsim.sim_progress.Buff.BuffXLogic.WoodpeckerElectroSet4_NA import (
     WoodpeckerElectroSet4_NA,
 )
-from zsim.sim_progress.Preload import SkillNode
-from zsim.sim_progress.ScheduledEvent.Calculator import (
+from zsim.sim_progress.calculation.calculator import (
     Calculator,
     CalculatorBuffAttributeReader,
     MultiplierData,
     create_anomaly_attribute_read_context,
 )
+from zsim.sim_progress.Preload import SkillNode
 
 _AggregationCall = tuple[tuple[object, ...], object | None, object, str | None]
 
@@ -667,9 +668,7 @@ def test_cannon_rotor_full_crit_gate_includes_received_bonus_without_publish(
 
     assert result is expected
     assert rng.calls == ["random_float"]
-    assert get_prepared_calls == [
-        {"equipper": "加农转子", "enemy": 1, "sub_exist_buff_dict": 1}
-    ]
+    assert get_prepared_calls == [{"equipper": "加农转子", "enemy": 1, "sub_exist_buff_dict": 1}]
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
     assert fixture.sim_instance.schedule_data.event_list == []
 
@@ -756,9 +755,7 @@ def test_miyabi_icefire_full_crit_read_keeps_old_count_adjustment_order(
 
     logic.special_hit_logic()
 
-    assert get_prepared_calls == [
-        {"char_CID": 1091, "enemy": 1, "sub_exist_buff_dict": 1}
-    ]
+    assert get_prepared_calls == [{"char_CID": 1091, "enemy": 1, "sub_exist_buff_dict": 1}]
     assert calls == [
         ("simple_start", 72, False, 12.0, buff_0),
         ("dy.count", 15.0),
@@ -1175,9 +1172,7 @@ def test_woodpecker_full_crit_gate_pins_rng_and_trigger_level(
 
     assert result is expected
     assert rng.calls == ["random_float"]
-    assert get_prepared_calls == [
-        {"equipper": "啄木鸟电音", "enemy": 1, "action_stack": 1}
-    ]
+    assert get_prepared_calls == [{"equipper": "啄木鸟电音", "enemy": 1, "action_stack": 1}]
     _assert_aggregation_calls(aggregation_calls, fixture, times=1)
     assert fixture.sim_instance.schedule_data.event_list == []
 
@@ -1288,9 +1283,7 @@ def test_woodpecker_full_crit_gate_skips_rng_and_state_sync_on_wrong_actor(
     assert result is False
     assert rng.calls == []
     assert aggregation_calls == []
-    assert get_prepared_calls == [
-        {"equipper": "啄木鸟电音", "enemy": 1, "action_stack": 1}
-    ]
+    assert get_prepared_calls == [{"equipper": "啄木鸟电音", "enemy": 1, "action_stack": 1}]
     assert fixture.sim_instance.schedule_data.event_list == []
 
 
@@ -1362,9 +1355,7 @@ def test_migrated_woodpecker_full_crit_gate_skips_rng_and_state_sync_without_ski
     assert result is False
     assert rng.calls == []
     assert aggregation_calls == []
-    assert get_prepared_calls == [
-        {"equipper": "啄木鸟电音", "enemy": 1, "action_stack": 1}
-    ]
+    assert get_prepared_calls == [{"equipper": "啄木鸟电音", "enemy": 1, "action_stack": 1}]
     assert fixture.sim_instance.schedule_data.event_list == []
 
 

@@ -1,7 +1,6 @@
 from collections.abc import Callable
 from typing import Any, TypeVar
 
-
 RecordT = TypeVar("RecordT")
 _PREPARED_CONTEXT_SIGNATURES_ATTR = "_zsim_prepared_context_signatures"
 
@@ -22,10 +21,7 @@ def _preparation_signature(logic: Any, kwargs: dict[str, Any]) -> tuple[Any, ...
     try:
         hash(kwargs_items)
     except TypeError:
-        kwargs_items = tuple(
-            (key, _freeze_signature_value(value))
-            for key, value in kwargs.items()
-        )
+        kwargs_items = tuple((key, _freeze_signature_value(value)) for key, value in kwargs.items())
     return (
         id(sim_instance),
         id(runtime_state),
@@ -87,10 +83,18 @@ def ensure_owner_template_record(
     context_builder: Callable[[Any], Any],
 ) -> RecordT:
     if logic.buff_0 is None:
-        preparation_context = context_builder(logic.buff_instance)
-        logic.buff_0 = preparation_context.find_sub_exist_buff_dict(owner_name)[
-            logic.buff_instance.ft.index
-        ]
+        try:
+            preparation_context = context_builder(logic.buff_instance)
+            logic.buff_0 = preparation_context.find_sub_exist_buff_dict(owner_name)[
+                logic.buff_instance.ft.index
+            ]
+        except AttributeError:
+            from zsim.sim_progress.Buff import JudgeTools
+
+            legacy_registry = JudgeTools.find_exist_buff_dict(
+                sim_instance=logic.buff_instance.sim_instance
+            )
+            logic.buff_0 = legacy_registry[owner_name][logic.buff_instance.ft.index]
     if not hasattr(logic.buff_0.history, "record") or logic.buff_0.history.record is None:
         logic.buff_0.history.record = record_factory()
     logic.record = logic.buff_0.history.record

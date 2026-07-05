@@ -36,7 +36,7 @@ class EventHandlerFactory:
         self.clear_cache()
 
     def replace_handlers(self, handlers: Iterable[EventHandlerABC]) -> None:
-        """Replace the registered handler set and reset lookup cache state."""
+        """替换已注册的处理器集合，并重置查找缓存。"""
         self.clear_handlers()
         for handler in handlers:
             self.register_handler(handler)

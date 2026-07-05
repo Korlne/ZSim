@@ -11,7 +11,7 @@ from zsim.sim_progress.calculation.identities import (
 
 @dataclass(frozen=True, slots=True)
 class FormulaLevelContext:
-    """Common level values used by formula-family snapshots."""
+    """公式快照通用的等级输入。"""
 
     source_level: int
     target_level: int
@@ -19,7 +19,7 @@ class FormulaLevelContext:
 
 @dataclass(frozen=True, slots=True)
 class FormulaSourceContext:
-    """Formula source identity without a live Character, SkillNode, or runtime object."""
+    """不依赖实时 Character、SkillNode 或 runtime 对象的公式来源身份。"""
 
     source_name: str
     skill_tag: str
@@ -27,7 +27,7 @@ class FormulaSourceContext:
 
 @dataclass(frozen=True, slots=True)
 class DamageIdentityProfile:
-    """Damage identity paired with the multiplier family used to read formula bonuses."""
+    """伤害身份，以及用于读取公式加成的乘区亲和。"""
 
     damage_identity: DamageIdentity
     multiplier_affinity: MultiplierAffinity
@@ -35,7 +35,7 @@ class DamageIdentityProfile:
 
 @dataclass(frozen=True, slots=True)
 class AnomalyIdentityProfile:
-    """Anomaly formula identity profile with damage, multiplier, and state separated."""
+    """异常公式身份，显式分离伤害身份、乘区亲和与异常状态。"""
 
     damage_identity: DamageIdentity
     multiplier_affinity: MultiplierAffinity

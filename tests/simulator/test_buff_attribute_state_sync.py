@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import floor
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Sequence, cast
 
 import pytest
 
-import zsim.sim_progress.ScheduledEvent.Calculator as calculator_module
+import zsim.sim_progress.calculation.calculator as calculator_module
 from zsim.sim_progress.Buff.BuffXLogic import (
     LighterAdditionalAbility_IceFireBonus as lighter_module,
 )
@@ -17,9 +18,7 @@ from zsim.sim_progress.Buff.BuffXLogic import (
 from zsim.sim_progress.Buff.BuffXLogic import (
     Soldier0AnbyCoreSkillCritDMGBonus as soldier0_anby_module,
 )
-from zsim.sim_progress.Buff.BuffXLogic import (
-    TriggerAdditionalAbilityStunBonus as trigger_module,
-)
+from zsim.sim_progress.Buff.BuffXLogic import TriggerAdditionalAbilityStunBonus as trigger_module
 from zsim.sim_progress.Buff.BuffXLogic import (
     YuzuhaAdditionalAbilityAnomalyDmgBonus as yuzuha_dmg_module,
 )
@@ -53,7 +52,7 @@ from zsim.sim_progress.Buff.BuffXLogic.YuzuhaAdditionalAbilityAnomalyBuildupBonu
 from zsim.sim_progress.Buff.BuffXLogic.YuzuhaAdditionalAbilityAnomalyDmgBonus import (
     YuzuhaAdditionalAbilityAnomalyDmgBonus,
 )
-from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
+from zsim.sim_progress.calculation.calculator import Calculator, MultiplierData
 from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
 
 _AggregationCall = tuple[tuple[object, ...], object | None, object, str | None]
@@ -97,9 +96,7 @@ class _StateSyncBuffProbe:
         self._calls = calls
         self.sim_instance = SimpleNamespace(
             tick=tick,
-            schedule_data=SimpleNamespace(
-                change_process_state=self._change_process_state
-            ),
+            schedule_data=SimpleNamespace(change_process_state=self._change_process_state),
         )
 
     def _change_process_state(self) -> None:
@@ -139,13 +136,9 @@ def _assert_final_count_writeback_order(
     final_count_indexes = [
         index
         for index, call in enumerate(calls)
-        if len(call) == 2
-        and call[0] == "dy.count"
-        and call[1] == pytest.approx(expected_count)
+        if len(call) == 2 and call[0] == "dy.count" and call[1] == pytest.approx(expected_count)
     ]
-    update_indexes = [
-        index for index, call in enumerate(calls) if call[0] == "update_to_buff_0"
-    ]
+    update_indexes = [index for index, call in enumerate(calls) if call[0] == "update_to_buff_0"]
 
     assert final_count_indexes
     assert update_indexes == [final_count_indexes[-1] + 1]
@@ -1299,9 +1292,7 @@ def test_selected_owner_family_check_record_module_preserves_old_template_identi
     )
     buff_0 = _make_buff_0(calls, initial_count=7.0, step=1.0)
     expected_lookup_calls = (
-        []
-        if logic_cls is Soldier0AnbyCoreSkillCritDMGBonus
-        else [active_buff.sim_instance]
+        [] if logic_cls is Soldier0AnbyCoreSkillCritDMGBonus else [active_buff.sim_instance]
     )
     preparation_context_calls: list[tuple[str, object]] = []
     expected_preparation_context_calls: list[tuple[str, object]] = []
@@ -1310,9 +1301,7 @@ def test_selected_owner_family_check_record_module_preserves_old_template_identi
 
         class _FakePreparationContext:
             def find_sub_exist_buff_dict(self, target_owner: str) -> dict[str, object]:
-                preparation_context_calls.append(
-                    ("find_sub_exist_buff_dict", target_owner)
-                )
+                preparation_context_calls.append(("find_sub_exist_buff_dict", target_owner))
                 return {index: buff_0}
 
         def fake_build_preparation_context_from_buff(
@@ -1379,9 +1368,7 @@ def test_count_state_sync_preserves_simple_start_assignment_update_order(
     case.logic.special_judge_logic()
 
     assert case.expected_old_count == pytest.approx(8.0)
-    assert case.get_prepared_calls == [
-        {"char_CID": 1401, "sub_exist_buff_dict": 1, "enemy": 1}
-    ]
+    assert case.get_prepared_calls == [{"char_CID": 1401, "sub_exist_buff_dict": 1, "enemy": 1}]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Alice"),
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Alice"),
@@ -1407,9 +1394,7 @@ def test_count_state_sync_skips_writeback_below_am_threshold(
 
     assert result is None
     assert case.expected_old_count is None
-    assert case.get_prepared_calls == [
-        {"char_CID": 1401, "sub_exist_buff_dict": 1, "enemy": 1}
-    ]
+    assert case.get_prepared_calls == [{"char_CID": 1401, "sub_exist_buff_dict": 1, "enemy": 1}]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Alice"),
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Alice"),
@@ -1455,9 +1440,7 @@ def test_yuzuha_buildup_skips_writeback_below_am_threshold(
     assert result is None
     assert case.expected_old_count is None
     assert case.logic.record.cinema_1_ratio == pytest.approx(case.expected_cinema_1_ratio)
-    assert case.get_prepared_calls == [
-        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}
-    ]
+    assert case.get_prepared_calls == [{"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
@@ -1480,9 +1463,7 @@ def test_yuzuha_buildup_reader_path_matches_old_count_for_cinema_zero_order(
 
     assert case.expected_old_count == pytest.approx(45.0)
     assert case.logic.record.cinema_1_ratio == pytest.approx(1.0)
-    assert case.get_prepared_calls == [
-        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}
-    ]
+    assert case.get_prepared_calls == [{"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
@@ -1509,9 +1490,7 @@ def test_yuzuha_buildup_reader_path_matches_old_count_for_cinema_one_plus_cap(
 
     assert case.expected_old_count == pytest.approx(130.0)
     assert case.logic.record.cinema_1_ratio == pytest.approx(1.3)
-    assert case.get_prepared_calls == [
-        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}
-    ]
+    assert case.get_prepared_calls == [{"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
@@ -1542,9 +1521,7 @@ def test_yuzuha_damage_skips_writeback_below_am_threshold(
     assert result is None
     assert case.expected_old_count is None
     assert case.logic.record.cinema_1_ratio == pytest.approx(case.expected_cinema_1_ratio)
-    assert case.get_prepared_calls == [
-        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}
-    ]
+    assert case.get_prepared_calls == [{"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
@@ -1570,9 +1547,7 @@ def test_yuzuha_damage_reader_path_matches_old_count_for_cinema_zero_order(
 
     assert case.expected_old_count == pytest.approx(45.0)
     assert case.logic.record.cinema_1_ratio == pytest.approx(1.0)
-    assert case.get_prepared_calls == [
-        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}
-    ]
+    assert case.get_prepared_calls == [{"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
@@ -1602,9 +1577,7 @@ def test_yuzuha_damage_reader_path_keeps_cinema_one_plus_cap_and_report(
 
     assert case.expected_old_count == pytest.approx(130.0)
     assert case.logic.record.cinema_1_ratio == pytest.approx(1.3)
-    assert case.get_prepared_calls == [
-        {"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}
-    ]
+    assert case.get_prepared_calls == [{"char_CID": 1411, "sub_exist_buff_dict": 1, "enemy": 1}]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "Yuzuha"),
@@ -1900,9 +1873,7 @@ def test_lighter_impact_state_sync_keeps_base_count_order(
     assert case.expected_real_count == pytest.approx(5.0)
     assert case.expected_old_count == pytest.approx(5.0)
     assert case.logic.record.real_count == pytest.approx(case.expected_real_count)
-    assert case.get_prepared_calls == [
-        {"char_CID": 1161, "enemy": 1, "sub_exist_buff_dict": 1}
-    ]
+    assert case.get_prepared_calls == [{"char_CID": 1161, "enemy": 1, "sub_exist_buff_dict": 1}]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "莱特"),
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "莱特"),
@@ -1977,9 +1948,7 @@ def test_qingyi_impact_state_sync_keeps_old_count_adjustment_order(
     case.logic.special_hit_logic()
 
     assert case.expected_old_count == pytest.approx(180.0)
-    assert case.get_prepared_calls == [
-        {"char_CID": 1251, "enemy": 1, "sub_exist_buff_dict": 1}
-    ]
+    assert case.get_prepared_calls == [{"char_CID": 1251, "enemy": 1, "sub_exist_buff_dict": 1}]
     assert case.aggregation_calls == [
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "青衣"),
         (case.expected_enabled_buff, None, case.active_buff.sim_instance, "青衣"),
@@ -2270,9 +2239,9 @@ def test_soldier0_anby_personal_crit_damage_uses_reader_not_multiplier_data_alia
 
 
 def test_alice_additional_ability_uses_reader_not_multiplier_data() -> None:
-    source = Path(
-        "zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py"
-    ).read_text(encoding="utf-8")
+    source = Path("zsim/sim_progress/Buff/BuffXLogic/AliceAdditionalAbilityApBonus.py").read_text(
+        encoding="utf-8"
+    )
 
     assert "MultiplierData" not in source
     assert "Calculator.AnomalyMul.cal_am" not in source
@@ -2313,9 +2282,9 @@ def test_yuzuha_additional_ability_damage_uses_shared_reader_pattern() -> None:
 
 
 def test_jane_cinema1_uses_reader_not_multiplier_data_alias() -> None:
-    source = Path(
-        "zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py"
-    ).read_text(encoding="utf-8")
+    source = Path("zsim/sim_progress/Buff/BuffXLogic/JaneCinema1APTransToDmgBonus.py").read_text(
+        encoding="utf-8"
+    )
 
     assert "MultiplierData as Mul" not in source
     assert "Mul(" not in source
@@ -2342,9 +2311,9 @@ def test_jane_core_skill_crit_rate_uses_reader_not_multiplier_data_alias() -> No
 
 
 def test_jane_passion_state_uses_reader_not_multiplier_data_alias() -> None:
-    source = Path(
-        "zsim/sim_progress/Buff/BuffXLogic/JanePassionStateAPTransToATK.py"
-    ).read_text(encoding="utf-8")
+    source = Path("zsim/sim_progress/Buff/BuffXLogic/JanePassionStateAPTransToATK.py").read_text(
+        encoding="utf-8"
+    )
 
     assert "MultiplierData as Mul" not in source
     assert "Mul(" not in source

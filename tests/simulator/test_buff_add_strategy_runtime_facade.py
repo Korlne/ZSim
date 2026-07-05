@@ -3,8 +3,8 @@ from __future__ import annotations
 from types import SimpleNamespace
 from typing import Any, Iterable, SupportsIndex
 
-from zsim.sim_progress.Buff.BuffAddStrategy import buff_add_strategy
 from zsim.sim_progress.Buff.buff_class import Buff
+from zsim.sim_progress.Buff.BuffAddStrategy import buff_add_strategy
 
 
 class _BuffAddProbe(Buff):
@@ -120,9 +120,7 @@ def _make_sim_instance(
         global_stats=SimpleNamespace(DYNAMIC_BUFF_DICT=dynamic_buff_dict),
         schedule_data=SimpleNamespace(
             event_list=_FailFastEventList(),
-            enemy=SimpleNamespace(
-                dynamic=SimpleNamespace(dynamic_debuff_list=enemy_debuff_mirror)
-            )
+            enemy=SimpleNamespace(dynamic=SimpleNamespace(dynamic_debuff_list=enemy_debuff_mirror)),
         ),
         listener_manager=SimpleNamespace(broadcast_event=_fail_listener_broadcast),
         tick=tick,
@@ -142,9 +140,7 @@ def _install_recording_runtime_facade(monkeypatch: Any) -> list[tuple[str, str, 
     calls: list[tuple[str, str, object]] = []
 
     class _RecordingDefaultBuffRuntimeFacade(buff_runtime.DefaultBuffRuntimeFacade):
-        def find_active_buff_by_index(
-            self, beneficiary: str, buff_index: str
-        ) -> Buff | None:
+        def find_active_buff_by_index(self, beneficiary: str, buff_index: str) -> Buff | None:
             calls.append(("find_active_buff_by_index", beneficiary, buff_index))
             return super().find_active_buff_by_index(beneficiary, buff_index)
 
@@ -168,9 +164,7 @@ def _install_recording_runtime_facade(monkeypatch: Any) -> list[tuple[str, str, 
     return calls
 
 
-def _record_active_owner_calls(
-    monkeypatch: Any, sim_instance: Any
-) -> list[tuple[str, str, str]]:
+def _record_active_owner_calls(monkeypatch: Any, sim_instance: Any) -> list[tuple[str, str, str]]:
     active_owner = sim_instance.buff_runtime_state.active_store_owner()
     calls: list[tuple[str, str, str]] = []
     original_find_by_index = active_owner.find_by_index
@@ -231,9 +225,7 @@ def test_buff_add_strategy_forced_add_template_lookup_uses_runtime_owner(
         dynamic_buff_dict={"Alice": active_store},
         enemy_debuff_mirror=[],
     )
-    sim_instance.load_data.exist_buff_dict = {
-        "Alice": {"owner-buff": raw_shadow_template}
-    }
+    sim_instance.load_data.exist_buff_dict = {"Alice": {"owner-buff": raw_shadow_template}}
     template_owner = sim_instance.buff_runtime_state.template_registry_owner()
     owner_calls: list[tuple[str, str]] = []
     original_items = template_owner.items
@@ -259,9 +251,7 @@ def test_buff_add_strategy_forced_add_template_lookup_uses_runtime_owner(
             tick: int,
             specified_count: int | float | None = None,
         ) -> Buff:
-            raise AssertionError(
-                "buff_add_strategy should clone through BuffTemplateRegistry"
-            )
+            raise AssertionError("buff_add_strategy should clone through BuffTemplateRegistry")
 
     monkeypatch.setattr(template_owner, "items", recording_items)
     monkeypatch.setattr(template_owner, "for_owner", recording_for_owner)
@@ -349,9 +339,7 @@ def test_buff_add_strategy_auto_fanout_replaces_each_selected_target(
 ) -> None:
     facade_calls = _install_recording_runtime_facade(monkeypatch)
     _install_runtime_command_creation_guard(monkeypatch)
-    alice_template = _BuffAddProbe(
-        "fanout-buff", add_buff_to="1100", count=2, step=2
-    )
+    alice_template = _BuffAddProbe("fanout-buff", add_buff_to="1100", count=2, step=2)
     bob_template = _BuffAddProbe("fanout-buff", add_buff_to="1100", count=5)
     corin_template = _BuffAddProbe("fanout-buff", add_buff_to="1100", count=8)
     alice_old = _BuffAddProbe("fanout-buff", count=12)
@@ -388,9 +376,7 @@ def test_buff_add_strategy_auto_fanout_replaces_each_selected_target(
 
     buff_add_strategy("fanout-buff", sim_instance=sim_instance)
 
-    alice_replacements = [
-        buff for buff in alice_store if buff.ft.index == "fanout-buff"
-    ]
+    alice_replacements = [buff for buff in alice_store if buff.ft.index == "fanout-buff"]
     bob_replacements = [buff for buff in bob_store if buff.ft.index == "fanout-buff"]
     assert len(alice_replacements) == 1
     assert len(bob_replacements) == 1

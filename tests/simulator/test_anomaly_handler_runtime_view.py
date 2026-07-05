@@ -7,6 +7,13 @@ from typing import TYPE_CHECKING, Any, cast
 import pytest
 
 from zsim.models.event_enums import ListenerBroadcastSignal as LBS
+from zsim.sim_progress.anomaly_bar import AnomalyBar
+from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
+    DirgeOfDestinyAnomaly,
+    Disorder,
+    NewAnomaly,
+    PolarityDisorder,
+)
 from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
 from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
 from zsim.sim_progress.ScheduledEvent.event_handlers.handlers import abloom as abloom_module
@@ -22,13 +29,6 @@ from zsim.sim_progress.ScheduledEvent.event_handlers.handlers.disorder import (
 )
 from zsim.sim_progress.ScheduledEvent.event_handlers.handlers.polarity_disorder import (
     PolarityDisorderEventHandler,
-)
-from zsim.sim_progress.anomaly_bar import AnomalyBar
-from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
-    DirgeOfDestinyAnomaly,
-    Disorder,
-    NewAnomaly,
-    PolarityDisorder,
 )
 
 if TYPE_CHECKING:
@@ -112,9 +112,7 @@ def _build_context(
         tick=10,
         enemy=enemy,
         buff_runtime_view=runtime_view,
-        runtime_command_port=cast(
-            "RuntimeCommandPort", runtime_command_port or SimpleNamespace()
-        ),
+        runtime_command_port=cast("RuntimeCommandPort", runtime_command_port or SimpleNamespace()),
         action_stack=SimpleNamespace(),
         sim_instance=cast("Simulator", sim_instance),
     )
@@ -1062,8 +1060,7 @@ def test_copied_output_handler_report_payload_fields_match_retained_contracts(
     case["handler_cls"]().handle(event, context)
 
     copied_payload = {
-        field_name: getattr(event, field_name)
-        for field_name in case["copied_payload_fields"]
+        field_name: getattr(event, field_name) for field_name in case["copied_payload_fields"]
     }
     expected_copied_payload = {
         "element_type": case["element_type"],
@@ -1111,9 +1108,7 @@ def test_copied_output_handler_report_payload_fields_match_retained_contracts(
     if case["broadcast_signal"] is None:
         assert listener_broadcasts == []
     else:
-        assert listener_broadcasts == [
-            {"event": event, "signal": case["broadcast_signal"]}
-        ]
+        assert listener_broadcasts == [{"event": event, "signal": case["broadcast_signal"]}]
     stun_updates = [entry for entry in broadcasts if "stun" in entry]
     if case["stun_update"] is None:
         assert stun_updates == []

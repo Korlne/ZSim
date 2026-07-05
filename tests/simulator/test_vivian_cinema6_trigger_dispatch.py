@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from typing import Any
 
 import pytest
+
 import zsim.define as define_module
 import zsim.sim_progress.ScheduledEvent as scheduled_event_module
 import zsim.sim_progress.ScheduledEvent.buff_runtime as buff_runtime_module
@@ -13,19 +14,18 @@ import zsim.sim_progress.ScheduledEvent.runtime_command as runtime_command_modul
 sys.modules.setdefault("define", define_module)
 
 import zsim.sim_progress.Buff.BuffXLogic.VivianCinema6Trigger as trigger_module
-
+from zsim.sim_progress.anomaly_bar import AnomalyBar
+from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import DirgeOfDestinyAnomaly
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.VivianCinema6Trigger import (
     VivianCinema6Trigger,
     VivianCinema6TriggerRecord,
 )
-from zsim.sim_progress.Preload import SkillNode
-from zsim.sim_progress.anomaly_bar import AnomalyBar
-from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import DirgeOfDestinyAnomaly
 from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
     ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
 )
+from zsim.sim_progress.Preload import SkillNode
 
 
 class _FailFastEventList(list):
@@ -34,9 +34,7 @@ class _FailFastEventList(list):
 
 
 class _RecordingDispatchPort(ScheduleDispatchPort):
-    def __init__(
-        self, action_log: list[tuple[str, object]] | None = None
-    ) -> None:
+    def __init__(self, action_log: list[tuple[str, object]] | None = None) -> None:
         self.events: list[object] = []
         self.action_log = action_log
 
@@ -168,9 +166,7 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("VivianCinema6Trigger should not read raw event_list")
 
-    monkeypatch.setattr(
-        JudgeTools, "find_event_list", fail_find_event_list, raising=False
-    )
+    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list, raising=False)
 
 
 def _patch_runtime_boundary_guards(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -254,7 +250,9 @@ def _build_skill_node(
     return skill_node
 
 
-def _build_logic_harness(*, active_anomalies: list[AnomalyBar]) -> tuple[
+def _build_logic_harness(
+    *, active_anomalies: list[AnomalyBar]
+) -> tuple[
     VivianCinema6Trigger,
     VivianCinema6TriggerRecord,
     _RecordingDispatchPort,
@@ -294,9 +292,7 @@ def _build_logic_harness(*, active_anomalies: list[AnomalyBar]) -> tuple[
         listener_calls.append((args, kwargs))
         raise AssertionError("VivianCinema6Trigger should not broadcast listener events")
 
-    sim_instance.listener_manager = SimpleNamespace(
-        broadcast_event=fail_listener_broadcast
-    )
+    sim_instance.listener_manager = SimpleNamespace(broadcast_event=fail_listener_broadcast)
     dynamic = _DynamicReadProbe(active_anomalies)
     enemy = SimpleNamespace(sim_instance=sim_instance, dynamic=dynamic)
     buff_instance = SimpleNamespace(
@@ -312,24 +308,27 @@ def _build_logic_harness(*, active_anomalies: list[AnomalyBar]) -> tuple[
 
     logic = VivianCinema6Trigger(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            create_dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(create_dispatch_port),
     )
     record = VivianCinema6TriggerRecord()
     record.char = char
     record.enemy = enemy
     record.guard_feather = 3
-    return logic, record, dispatch_port, SimpleNamespace(
-        sim_instance=sim_instance,
-        schedule_data=schedule_data,
-        char=char,
-        feather_manager=feather_manager,
-        feather_updates=feather_manager.update_calls,
-        action_log=action_log,
-        dynamic=dynamic,
-        emitter_factory_calls=emitter_factory_calls,
-        listener_calls=listener_calls,
+    return (
+        logic,
+        record,
+        dispatch_port,
+        SimpleNamespace(
+            sim_instance=sim_instance,
+            schedule_data=schedule_data,
+            char=char,
+            feather_manager=feather_manager,
+            feather_updates=feather_manager.update_calls,
+            action_log=action_log,
+            dynamic=dynamic,
+            emitter_factory_calls=emitter_factory_calls,
+            listener_calls=listener_calls,
+        ),
     )
 
 
@@ -337,9 +336,7 @@ def test_vivian_cinema6_publishes_extra_dirge_anomaly_via_dispatch_port(
     monkeypatch: pytest.MonkeyPatch,
 ):
     active_anomaly = _build_active_anomaly(sim_instance=SimpleNamespace())
-    logic, record, dispatch_port, harness = _build_logic_harness(
-        active_anomalies=[active_anomaly]
-    )
+    logic, record, dispatch_port, harness = _build_logic_harness(active_anomalies=[active_anomaly])
     active_anomaly.sim_instance = harness.sim_instance
 
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
@@ -428,9 +425,7 @@ def test_vivian_cinema6_judge_wrong_skill_is_noop(
     monkeypatch: pytest.MonkeyPatch,
 ):
     active_anomaly = _build_active_anomaly(sim_instance=SimpleNamespace())
-    logic, record, dispatch_port, harness = _build_logic_harness(
-        active_anomalies=[active_anomaly]
-    )
+    logic, record, dispatch_port, harness = _build_logic_harness(active_anomalies=[active_anomaly])
 
     monkeypatch.setattr(logic, "check_record_module", lambda: setattr(logic, "record", record))
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)
@@ -441,9 +436,7 @@ def test_vivian_cinema6_judge_wrong_skill_is_noop(
     _block_legacy_event_lookup(monkeypatch)
 
     assert (
-        logic.special_judge_logic(
-            skill_node=_build_skill_node(skill_tag="1331_CoAttack_A")
-        )
+        logic.special_judge_logic(skill_node=_build_skill_node(skill_tag="1331_CoAttack_A"))
         is False
     )
 

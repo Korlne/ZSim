@@ -12,13 +12,6 @@ from zsim.define import (
     EXIST_FILE_PATH,
     JUDGE_FILE_PATH,
 )
-from zsim.sim_progress.BuffGraph.runtime.activation import (
-    BuffGraphActivationDecision,
-    BuffGraphRuntimeActivationIndex,
-)
-from zsim.sim_progress.BuffGraph.blocks import build_default_block_registry
-from zsim.sim_progress.BuffGraph.runtime.compiler import compile_buff_graph_spec
-from zsim.sim_progress.BuffGraph.runtime.executor import execute_compiled_buff_graph
 from zsim.sim_progress.Character.skill_class import Skill
 
 from .buff_class import Buff
@@ -58,7 +51,7 @@ class BuffLoadLoopRegistryLengthSnapshot(TypedDict):
 @dataclass(frozen=True)
 class _StaticJudgeCondition:
     skill_attribute: str
-    allowed_values: tuple[int | float | str, ...]
+    allowed_values: frozenset[int | float | str]
 
 
 @dataclass(frozen=True)
@@ -68,6 +61,7 @@ class _BuffLoadCandidateEntry:
     judge_mode: str
     judge_conditions: tuple[_StaticJudgeCondition, ...] = ()
     prefilter_mode: str | None = None
+    beneficiaries: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -75,6 +69,8 @@ class _ProcessorCandidateEntries:
     entries: tuple[_BuffLoadCandidateEntry, ...]
     statically_skipped_count: int
     full_scan_candidate_count: int
+    signature_skill_attributes: tuple[str, ...]
+    has_prefilter: bool
 
 
 @dataclass(frozen=True)
@@ -92,6 +88,7 @@ class BuffLoadCandidateSelection:
     registry: dict
     mission: "LoadingMission"
     candidate_keys: tuple[str, ...]
+    beneficiaries_by_key: Mapping[str, Sequence[str]]
     full_scan_candidate_count: int
     selected_candidate_count: int
     skipped_candidate_count: int
@@ -182,15 +179,20 @@ def _buff_judge_mission_cache_key(mission: "LoadingMission") -> tuple:
 
 
 class BuffLoadCandidateIndex:
-    """Conservative run-scoped index for BuffLoadLoop candidates."""
+    """单次模拟内用于 BuffLoadLoop 候选池的保守索引。"""
 
     def __init__(
         self,
         buff_registry_by_character: dict,
         character_name_box: Sequence[str],
+        all_name_order_box: Mapping[str, Sequence[str]] | None = None,
     ) -> None:
         self._registry_by_character = buff_registry_by_character
         self._character_name_box = tuple(character_name_box)
+        self._all_name_order_snapshot = self._all_name_order_fingerprint(
+            all_name_order_box,
+            self._character_name_box,
+        )
         self._registry_root_id = id(buff_registry_by_character)
         self._registry_identity_snapshot = self._registry_identity(
             buff_registry_by_character,
@@ -201,8 +203,7 @@ class BuffLoadCandidateIndex:
             self._character_name_box,
         )
         self._registries_by_owner: dict[str, dict] = {
-            owner: buff_registry_by_character[owner]
-            for owner in self._character_name_box
+            owner: buff_registry_by_character[owner] for owner in self._character_name_box
         }
         self._entries_by_owner: dict[str, tuple[_BuffLoadCandidateEntry, ...]] = {
             owner: tuple(
@@ -212,11 +213,13 @@ class BuffLoadCandidateIndex:
                     judge_mode=judge_mode,
                     judge_conditions=judge_conditions,
                     prefilter_mode=self._classify_prefilter(buff),
+                    beneficiaries=self._precompute_beneficiaries(
+                        buff,
+                        all_name_order_box,
+                    ),
                 )
                 for buff_key, buff in registry.items()
-                for judge_mode, judge_conditions in [
-                    self._classify_static_judge(buff)
-                ]
+                for judge_mode, judge_conditions in [self._classify_static_judge(buff)]
             )
             for owner, registry in self._registries_by_owner.items()
         }
@@ -267,21 +270,37 @@ class BuffLoadCandidateIndex:
             for owner in character_name_box
         )
 
+    @staticmethod
+    def _all_name_order_fingerprint(
+        all_name_order_box: Mapping[str, Sequence[str]] | None,
+        character_name_box: Sequence[str],
+    ) -> tuple[tuple[str, tuple[str, ...]], ...] | None:
+        if all_name_order_box is None:
+            return None
+        try:
+            return tuple((owner, tuple(all_name_order_box[owner])) for owner in character_name_box)
+        except (KeyError, TypeError):
+            return None
+
     def matches_registry(
         self,
         buff_registry_by_character: dict,
         character_name_box: Sequence[str],
+        all_name_order_box: Mapping[str, Sequence[str]] | None = None,
     ) -> bool:
         character_name_tuple = tuple(character_name_box)
         if character_name_tuple != self._character_name_box:
             return False
-        if (
-            id(buff_registry_by_character) == self._registry_root_id
-            and self._registry_identity_snapshot
-            == self._registry_identity(
-                buff_registry_by_character,
-                character_name_tuple,
-            )
+        if self._all_name_order_snapshot != self._all_name_order_fingerprint(
+            all_name_order_box,
+            character_name_tuple,
+        ):
+            return False
+        if id(
+            buff_registry_by_character
+        ) == self._registry_root_id and self._registry_identity_snapshot == self._registry_identity(
+            buff_registry_by_character,
+            character_name_tuple,
         ):
             return True
         return self._registry_fingerprint == self.registry_fingerprint(
@@ -316,26 +335,32 @@ class BuffLoadCandidateIndex:
         registry = self._registries_by_owner[owner]
         processor_entries = self._processor_entries_by_owner[(owner, processor)]
         entries = processor_entries.entries
-        static_signature = self._mission_static_signature(entries, mission)
+        static_signature = self._mission_static_signature(processor_entries, mission)
         cache_key = (owner, processor, static_signature)
         cached_selection = self._selection_cache.get(cache_key)
         if cached_selection is not None:
-            candidate_keys, skipped_candidate_count, fallback_candidate_count = (
-                cached_selection
-            )
+            (
+                cached_candidate_keys,
+                skipped_candidate_count,
+                fallback_candidate_count,
+            ) = cached_selection
             return BuffLoadCandidateSelection(
                 processor=processor,
                 owner=owner,
                 registry=registry,
                 mission=mission,
-                candidate_keys=candidate_keys,
+                candidate_keys=cached_candidate_keys,
+                beneficiaries_by_key=self._beneficiaries_for_candidate_keys(
+                    entries,
+                    cached_candidate_keys,
+                ),
                 full_scan_candidate_count=processor_entries.full_scan_candidate_count,
-                selected_candidate_count=len(candidate_keys),
+                selected_candidate_count=len(cached_candidate_keys),
                 skipped_candidate_count=skipped_candidate_count,
                 fallback_candidate_count=fallback_candidate_count,
             )
 
-        candidate_keys: list[str] = []
+        selected_candidate_keys: list[str] = []
         skipped_candidate_count = processor_entries.statically_skipped_count
         fallback_candidate_count = 0
 
@@ -345,19 +370,23 @@ class BuffLoadCandidateIndex:
                 skipped_candidate_count += 1
                 continue
 
-            candidate_keys.append(entry.key)
+            selected_candidate_keys.append(entry.key)
             if fallback:
                 fallback_candidate_count += 1
 
-        candidate_keys_tuple = tuple(candidate_keys)
+        candidate_keys_tuple = tuple(selected_candidate_keys)
         selection = BuffLoadCandidateSelection(
             processor=processor,
             owner=owner,
             registry=registry,
             mission=mission,
             candidate_keys=candidate_keys_tuple,
+            beneficiaries_by_key=self._beneficiaries_for_candidate_keys(
+                entries,
+                candidate_keys_tuple,
+            ),
             full_scan_candidate_count=processor_entries.full_scan_candidate_count,
-            selected_candidate_count=len(candidate_keys),
+            selected_candidate_count=len(candidate_keys_tuple),
             skipped_candidate_count=skipped_candidate_count,
             fallback_candidate_count=fallback_candidate_count,
         )
@@ -369,23 +398,28 @@ class BuffLoadCandidateIndex:
         return selection
 
     @staticmethod
-    def _mission_static_signature(
+    def _beneficiaries_for_candidate_keys(
         entries: tuple[_BuffLoadCandidateEntry, ...],
+        candidate_keys: Sequence[str],
+    ) -> dict[str, tuple[str, ...]]:
+        selected_key_set = frozenset(candidate_keys)
+        return {
+            entry.key: entry.beneficiaries
+            for entry in entries
+            if entry.key in selected_key_set and entry.beneficiaries is not None
+        }
+
+    @staticmethod
+    def _mission_static_signature(
+        processor_entries: _ProcessorCandidateEntries,
         mission: "LoadingMission",
     ) -> tuple[tuple[str, object], ...]:
-        condition_attrs = sorted(
-            {
-                condition.skill_attribute
-                for entry in entries
-                for condition in entry.judge_conditions
-            }
-        )
         skill_now = mission.mission_node.skill
         signature = [
             (skill_attribute, getattr(skill_now, skill_attribute, "<missing>"))
-            for skill_attribute in condition_attrs
+            for skill_attribute in processor_entries.signature_skill_attributes
         ]
-        if any(entry.prefilter_mode is not None for entry in entries):
+        if processor_entries.has_prefilter:
             skill_node = mission.mission_node
             signature.extend(
                 [
@@ -412,14 +446,23 @@ class BuffLoadCandidateIndex:
         processor: str,
     ) -> _ProcessorCandidateEntries:
         selected_entries = tuple(
-            entry
-            for entry in entries
-            if not cls._processor_statically_skips(entry.buff, processor)
+            entry for entry in entries if not cls._processor_statically_skips(entry.buff, processor)
+        )
+        signature_skill_attributes = tuple(
+            sorted(
+                {
+                    condition.skill_attribute
+                    for entry in selected_entries
+                    for condition in entry.judge_conditions
+                }
+            )
         )
         return _ProcessorCandidateEntries(
             entries=selected_entries,
             statically_skipped_count=len(entries) - len(selected_entries),
             full_scan_candidate_count=len(entries),
+            signature_skill_attributes=signature_skill_attributes,
+            has_prefilter=any(entry.prefilter_mode is not None for entry in selected_entries),
         )
 
     def _classify_static_judge(
@@ -444,8 +487,7 @@ class BuffLoadCandidateIndex:
             return "fallback", ()
 
         all_judge_conditions_blank = all(
-            self._is_blank_judge_condition(value)
-            for value in judge_condition_dict.values()
+            self._is_blank_judge_condition(value) for value in judge_condition_dict.values()
         )
         conditions: list[_StaticJudgeCondition] = []
         for condition, skill_attribute in BUFF_LOADING_CONDITION_TRANSLATION_DICT.items():
@@ -455,7 +497,7 @@ class BuffLoadCandidateIndex:
             if self._is_blank_judge_condition(csv_judge_condition):
                 continue
             try:
-                allowed_values = tuple(process_string(csv_judge_condition))
+                allowed_values = frozenset(process_string(csv_judge_condition))
             except Exception:
                 return "fallback", ()
             conditions.append(
@@ -554,6 +596,22 @@ class BuffLoadCandidateIndex:
             return "yixuan_q"
         return None
 
+    @staticmethod
+    def _precompute_beneficiaries(
+        buff: object,
+        all_name_order_box: Mapping[str, Sequence[str]] | None,
+    ) -> tuple[str, ...] | None:
+        if all_name_order_box is None or not isinstance(buff, Buff):
+            return None
+        operator = getattr(buff.ft, "operator", None)
+        if not isinstance(operator, str):
+            return None
+        try:
+            all_name_box = all_name_order_box[operator]
+        except (AttributeError, KeyError, TypeError):
+            return None
+        return tuple(_select_buff_beneficiaries(buff.ft.add_buff_to, all_name_box))
+
 
 def _skill_label_keys(skill: object) -> tuple[str, ...]:
     labels = getattr(skill, "labels", None)
@@ -567,7 +625,9 @@ def _skill_label_keys(skill: object) -> tuple[str, ...]:
 
 def _skill_has_label(skill: object, label: str) -> bool:
     labels = getattr(skill, "labels", None)
-    return bool(labels) and label in labels
+    if not labels:
+        return False
+    return label in cast(Any, labels)
 
 
 def _prefilter_matches_mission(
@@ -598,9 +658,8 @@ def _prefilter_matches_mission(
     if prefilter_mode == "yixuan_c1_teammate":
         return getattr(skill_node, "char_name", None) != "仪玄"
     if prefilter_mode == "yixuan_c4_tranquility":
-        return (
-            getattr(skill_node, "char_name", None) == "仪玄"
-            and (trigger_buff_level == 6 or skill_tag == "1371_E_EX_B_3")
+        return getattr(skill_node, "char_name", None) == "仪玄" and (
+            trigger_buff_level == 6 or skill_tag == "1371_E_EX_B_3"
         )
     if prefilter_mode == "yixuan_ex_b":
         return "1371_E_EX_B_" in skill_tag
@@ -613,17 +672,20 @@ def _get_buff_load_candidate_index(
     sim_instance: "Simulator",
     buff_registry_by_character: dict,
     character_name_box: Sequence[str],
+    all_name_order_box: Mapping[str, Sequence[str]] | None = None,
 ) -> BuffLoadCandidateIndex:
     existing_index = getattr(sim_instance, "_buff_load_candidate_index", None)
     if isinstance(existing_index, BuffLoadCandidateIndex) and existing_index.matches_registry(
         buff_registry_by_character,
         character_name_box,
+        all_name_order_box,
     ):
         return existing_index
 
     candidate_index = BuffLoadCandidateIndex(
         buff_registry_by_character,
         character_name_box,
+        all_name_order_box,
     )
     try:
         setattr(sim_instance, "_buff_load_candidate_index", candidate_index)
@@ -632,324 +694,8 @@ def _get_buff_load_candidate_index(
     return candidate_index
 
 
-def _maybe_record_buff_graph_runtime_candidate_gate(
-    *,
-    buff_0: Buff,
-    mission: "LoadingMission",
-    time_now: int,
-    sim_instance: "Simulator",
-) -> BuffGraphActivationDecision | None:
-    if not bool(getattr(sim_instance, "enable_buff_graph_runtime_candidates", False)):
-        return None
-
-    buff_index = getattr(buff_0.ft, "index", None)
-    if not isinstance(buff_index, str) or not buff_index:
-        decision = BuffGraphActivationDecision(
-            use_graph=False,
-            reason="legacy_fallback_missing_buff_index",
-        )
-        _record_buff_graph_runtime_candidate_gate(
-            sim_instance=sim_instance,
-            buff_index=str(buff_index),
-            xlogic_path=None,
-            mission=mission,
-            time_now=time_now,
-            decision=decision,
-        )
-        return decision
-
-    activation_index = getattr(sim_instance, "buff_graph_runtime_activation_index", None)
-    if activation_index is None:
-        activation_index = getattr(sim_instance, "_buff_graph_runtime_activation_index", None)
-    if not isinstance(activation_index, BuffGraphRuntimeActivationIndex):
-        decision = BuffGraphActivationDecision(
-            use_graph=False,
-            reason="legacy_fallback_missing_activation_index",
-        )
-        _record_buff_graph_runtime_candidate_gate(
-            sim_instance=sim_instance,
-            buff_index=buff_index,
-            xlogic_path=_buff_xlogic_path(buff_0),
-            mission=mission,
-            time_now=time_now,
-            decision=decision,
-        )
-        return decision
-
-    xlogic_path = _buff_xlogic_path(buff_0)
-    decision = activation_index.choose_for_buff(
-        source_buff_index=buff_index,
-        xlogic_path=xlogic_path,
-    )
-    _record_buff_graph_runtime_candidate_gate(
-        sim_instance=sim_instance,
-        buff_index=buff_index,
-        xlogic_path=xlogic_path,
-        mission=mission,
-        time_now=time_now,
-        decision=decision,
-    )
-    return decision
-
-
-def _buff_xlogic_path(buff_0: Buff) -> str | None:
-    logic = getattr(buff_0, "logic", None)
-    logic_type = type(logic)
-    module_name = getattr(logic_type, "__module__", "")
-    if ".BuffXLogic." not in module_name:
-        return None
-    return module_name.replace(".", "/") + ".py"
-
-
-def _record_buff_graph_runtime_candidate_gate(
-    *,
-    sim_instance: "Simulator",
-    buff_index: str,
-    xlogic_path: str | None,
-    mission: "LoadingMission",
-    time_now: int,
-    decision: BuffGraphActivationDecision,
-) -> None:
-    payload = {
-        "tick": time_now,
-        "buff_index": buff_index,
-        "mission_tag": getattr(mission, "mission_tag", None),
-        "xlogic_path": xlogic_path,
-        "use_graph": decision.use_graph,
-        "use_legacy": decision.use_legacy,
-        "reason": decision.reason,
-        "graph_id": decision.spec.graph_id if decision.spec is not None else None,
-        "diagnostics": [
-            {
-                "code": diagnostic.code,
-                "message": diagnostic.message,
-                "graph_id": diagnostic.graph_id,
-                "source_path": diagnostic.source_path,
-            }
-            for diagnostic in decision.diagnostics
-        ],
-        "runtime_action": "legacy_python_fallback_until_graph_execution_pack",
-    }
-    recorder = getattr(sim_instance, "_record_buff_graph_runtime_candidate_gate", None)
-    if callable(recorder):
-        recorder(payload)
-        return
-    records = getattr(sim_instance, "_buff_graph_runtime_candidate_gate_decisions", None)
-    if not isinstance(records, list):
-        records = []
-        try:
-            setattr(sim_instance, "_buff_graph_runtime_candidate_gate_decisions", records)
-        except Exception:
-            return
-    records.append(payload)
-
-
-def _maybe_dry_run_buff_graph_runtime_candidate(
-    *,
-    buff_0: Buff,
-    mission: "LoadingMission",
-    time_now: int,
-    sim_instance: "Simulator",
-    decision: BuffGraphActivationDecision | None,
-) -> Mapping[str, object] | None:
-    if not bool(getattr(sim_instance, "enable_buff_graph_runtime_candidate_dry_run", False)):
-        return None
-
-    buff_index = getattr(buff_0.ft, "index", None)
-    if not isinstance(buff_index, str) or not buff_index:
-        buff_index = str(buff_index)
-
-    xlogic_path = _buff_xlogic_path(buff_0)
-    base_payload: dict[str, object] = {
-        "tick": time_now,
-        "buff_index": buff_index,
-        "mission_tag": getattr(mission, "mission_tag", None),
-        "xlogic_path": xlogic_path,
-        "dry_run_enabled": True,
-        "legacy_python_active_path": True,
-        "runtime_action": "graph_runtime_dry_run_legacy_python_still_active",
-    }
-
-    if decision is None or not decision.use_graph or decision.spec is None:
-        payload = {
-            **base_payload,
-            "graph_id": None,
-            "dry_run_executed": False,
-            "passed": False,
-            "reason": "skipped_no_selected_graph_candidate",
-            "errors": [],
-            "outputs": {},
-            "node_outputs": {},
-            "trace_events": [],
-        }
-        _record_buff_graph_runtime_candidate_dry_run(sim_instance, payload)
-        return payload
-
-    adapters = getattr(sim_instance, "buff_graph_runtime_adapters", None)
-    if adapters is None:
-        adapters = getattr(sim_instance, "_buff_graph_runtime_adapters", None)
-    if not isinstance(adapters, Mapping):
-        payload = {
-            **base_payload,
-            "graph_id": decision.spec.graph_id,
-            "dry_run_executed": False,
-            "passed": False,
-            "reason": "skipped_missing_adapter_mapping",
-            "errors": [
-                {
-                    "code": "missing_adapter_mapping",
-                    "message": "Buff graph dry-run requires injected controlled adapter mapping",
-                    "path": "sim_instance.buff_graph_runtime_adapters",
-                }
-            ],
-            "outputs": {},
-            "node_outputs": {},
-            "trace_events": [],
-        }
-        _record_buff_graph_runtime_candidate_dry_run(sim_instance, payload)
-        return payload
-
-    block_registry = getattr(sim_instance, "buff_graph_block_registry", None)
-    if block_registry is None:
-        block_registry = getattr(sim_instance, "_buff_graph_block_registry", None)
-    if block_registry is None:
-        block_registry = build_default_block_registry()
-
-    try:
-        compile_result = compile_buff_graph_spec(
-            decision.spec,
-            block_registry=block_registry,
-        )
-    except Exception as exc:
-        payload = {
-            **base_payload,
-            "graph_id": decision.spec.graph_id,
-            "dry_run_executed": False,
-            "passed": False,
-            "reason": "compile_exception",
-            "errors": [
-                {
-                    "code": "compile_exception",
-                    "message": str(exc),
-                    "path": "compile_buff_graph_spec",
-                }
-            ],
-            "outputs": {},
-            "node_outputs": {},
-            "trace_events": [],
-        }
-        _record_buff_graph_runtime_candidate_dry_run(sim_instance, payload)
-        return payload
-
-    if not compile_result.passed or compile_result.compiled is None:
-        payload = {
-            **base_payload,
-            "graph_id": decision.spec.graph_id,
-            "dry_run_executed": False,
-            "passed": False,
-            "reason": "compile_failed",
-            "errors": [
-                {
-                    "code": error.code,
-                    "message": error.message,
-                    "path": error.path,
-                }
-                for error in compile_result.errors
-            ],
-            "outputs": {},
-            "node_outputs": {},
-            "trace_events": [],
-        }
-        _record_buff_graph_runtime_candidate_dry_run(sim_instance, payload)
-        return payload
-
-    try:
-        execution_result = execute_compiled_buff_graph(
-            compile_result.compiled,
-            adapters=adapters,
-            tick=time_now,
-            prepared_context={
-                "tick": time_now,
-                "buff_index": buff_index,
-                "mission_tag": getattr(mission, "mission_tag", None),
-                "xlogic_path": xlogic_path,
-                "source_buff_index": decision.spec.source_buff_index,
-                "owner_kind": decision.spec.owner_kind.value,
-                "owner_name": decision.spec.owner_name,
-            },
-        )
-    except Exception as exc:
-        payload = {
-            **base_payload,
-            "graph_id": decision.spec.graph_id,
-            "dry_run_executed": True,
-            "passed": False,
-            "reason": "execute_exception",
-            "errors": [
-                {
-                    "code": "execute_exception",
-                    "message": str(exc),
-                    "path": "execute_compiled_buff_graph",
-                }
-            ],
-            "outputs": {},
-            "node_outputs": {},
-            "trace_events": [],
-        }
-        _record_buff_graph_runtime_candidate_dry_run(sim_instance, payload)
-        return payload
-
-    payload = {
-        **base_payload,
-        "graph_id": decision.spec.graph_id,
-        "dry_run_executed": True,
-        "passed": execution_result.passed,
-        "reason": "executed",
-        "errors": [
-            {
-                "code": error.code,
-                "message": error.message,
-                "path": error.path,
-            }
-            for error in execution_result.errors
-        ],
-        "outputs": _json_safe_mapping(execution_result.outputs),
-        "node_outputs": {
-            node_id: _json_safe_mapping(outputs)
-            for node_id, outputs in execution_result.node_outputs.items()
-        },
-        "trace_events": [
-            _json_safe_mapping(event)
-            for event in execution_result.trace.normalized_events()
-        ],
-    }
-    _record_buff_graph_runtime_candidate_dry_run(sim_instance, payload)
-    return payload
-
-
-def _record_buff_graph_runtime_candidate_dry_run(
-    sim_instance: "Simulator",
-    payload: Mapping[str, object],
-) -> None:
-    recorder = getattr(sim_instance, "_record_buff_graph_runtime_candidate_dry_run", None)
-    if callable(recorder):
-        recorder(dict(payload))
-        return
-    records = getattr(sim_instance, "_buff_graph_runtime_candidate_dry_run_results", None)
-    if not isinstance(records, list):
-        records = []
-        try:
-            setattr(sim_instance, "_buff_graph_runtime_candidate_dry_run_results", records)
-        except Exception:
-            return
-    records.append(dict(payload))
-
-
 def _json_safe_mapping(value: Mapping[str, object]) -> dict[str, object]:
-    return {
-        str(key): _json_safe_value(item)
-        for key, item in value.items()
-    }
+    return {str(key): _json_safe_value(item) for key, item in value.items()}
 
 
 def _json_safe_value(value: object) -> object:
@@ -992,19 +738,6 @@ def process_buff(
         buff_0.ft.index,
         sub_exist_buff_dict,
         cache=load_lifecycle_cache.init_cache,
-    )
-    graph_runtime_decision = _maybe_record_buff_graph_runtime_candidate_gate(
-        buff_0=buff_0,
-        mission=mission,
-        time_now=time_now,
-        sim_instance=sim_instance,
-    )
-    _maybe_dry_run_buff_graph_runtime_candidate(
-        buff_0=buff_0,
-        mission=mission,
-        time_now=time_now,
-        sim_instance=sim_instance,
-        decision=graph_runtime_decision,
     )
     all_match = BuffJudge(
         buff_0,
@@ -1053,10 +786,8 @@ def process_buff(
                     需要向Enemy的buff_0同步广播。否则，record就无法记录enemy身上Buff的正常层数。
                     """
                 if char == "enemy":
-                        enemy_buff_0 = registry_by_character["enemy"][
-                            buff_0.ft.index
-                        ]
-                        buff_new.update_to_buff_0(enemy_buff_0)
+                    enemy_buff_0 = registry_by_character["enemy"][buff_0.ft.index]
+                    buff_new.update_to_buff_0(enemy_buff_0)
         else:
             """
             这个分支主要是为了处理复杂的effect类的buff的
@@ -1167,25 +898,18 @@ def _record_buff_load_loop_scan_metrics(
     candidate_plan_mismatch_count = 0
     if candidate_plan is not None:
         candidate_plan_count = candidate_plan["candidate_count"]
-        candidate_plan_on_field_candidate_count = candidate_plan[
-            "on_field_candidate_count"
-        ]
-        candidate_plan_backend_candidate_count = candidate_plan[
-            "backend_candidate_count"
-        ]
+        candidate_plan_on_field_candidate_count = candidate_plan["on_field_candidate_count"]
+        candidate_plan_backend_candidate_count = candidate_plan["backend_candidate_count"]
         candidate_plan_mission_count = candidate_plan["mission_count"]
         candidate_plan_character_count = candidate_plan["character_count"]
         candidate_plan_mismatch_count = sum(
             [
                 candidate_plan_count != full_scan_candidate_count,
-                candidate_plan_on_field_candidate_count
-                != full_scan_on_field_candidate_count,
-                candidate_plan_backend_candidate_count
-                != full_scan_backend_candidate_count,
+                candidate_plan_on_field_candidate_count != full_scan_on_field_candidate_count,
+                candidate_plan_backend_candidate_count != full_scan_backend_candidate_count,
                 candidate_plan_mission_count != mission_count,
                 candidate_plan_character_count != character_count,
-                full_scan_candidate_count
-                != trigger_candidate_count + skipped_candidate_count,
+                full_scan_candidate_count != trigger_candidate_count + skipped_candidate_count,
                 full_scan_on_field_candidate_count
                 != on_field_candidate_count + skipped_on_field_candidate_count,
                 full_scan_backend_candidate_count
@@ -1214,12 +938,8 @@ def _record_buff_load_loop_scan_metrics(
     metrics["fallback_backend_candidate_count"] += fallback_backend_candidate_count
     metrics["pending_queue_count"] += pending_queue_count
     metrics["candidate_plan_count"] += candidate_plan_count
-    metrics["candidate_plan_on_field_candidate_count"] += (
-        candidate_plan_on_field_candidate_count
-    )
-    metrics["candidate_plan_backend_candidate_count"] += (
-        candidate_plan_backend_candidate_count
-    )
+    metrics["candidate_plan_on_field_candidate_count"] += candidate_plan_on_field_candidate_count
+    metrics["candidate_plan_backend_candidate_count"] += candidate_plan_backend_candidate_count
     metrics["candidate_plan_mission_count"] += candidate_plan_mission_count
     metrics["candidate_plan_character_count"] += candidate_plan_character_count
     metrics["candidate_plan_mismatch_count"] += candidate_plan_mismatch_count
@@ -1365,6 +1085,7 @@ def _process_on_field_buff_candidates(
     sim_instance: "Simulator",
     *,
     load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
+    beneficiaries_by_key: Mapping[str, Sequence[str]] | None = None,
 ) -> None:
     for buff_key in candidate_keys:
         buff_0 = sub_exist_buff_dict[buff_key]
@@ -1377,7 +1098,11 @@ def _process_on_field_buff_candidates(
 
         main_char = buff_0.ft.operator
         all_name_box = all_name_order_box[main_char]
-        selected_characters = buff_go_to(buff_0, all_name_box)
+        selected_characters = (
+            beneficiaries_by_key.get(buff_key) if beneficiaries_by_key is not None else None
+        )
+        if selected_characters is None:
+            selected_characters = buff_go_to(buff_0, all_name_box)
         process_buff(
             buff_0,
             sub_exist_buff_dict,
@@ -1402,6 +1127,7 @@ def _process_backend_buff_candidates(
     sim_instance: "Simulator",
     *,
     load_lifecycle_cache: BuffLoadLifecycleCache | None = None,
+    beneficiaries_by_key: Mapping[str, Sequence[str]] | None = None,
 ) -> None:
     for other_buff_key in candidate_keys:
         other_buff_0 = sub_exist_buff_dict[other_buff_key]
@@ -1415,7 +1141,11 @@ def _process_backend_buff_candidates(
             continue
         main_char = other_buff_0.ft.operator
         name_order_box = all_name_order_box[main_char]
-        selected_characters_back = buff_go_to(other_buff_0, name_order_box)
+        selected_characters_back = (
+            beneficiaries_by_key.get(other_buff_key) if beneficiaries_by_key is not None else None
+        )
+        if selected_characters_back is None:
+            selected_characters_back = buff_go_to(other_buff_0, name_order_box)
         process_buff(
             other_buff_0,
             sub_exist_buff_dict,
@@ -1441,6 +1171,7 @@ def _execute_buff_load_loop_candidate_step(
     sim_instance: "Simulator",
     load_lifecycle_cache: BuffLoadLifecycleCache,
     candidate_keys: Sequence[str] | None = None,
+    beneficiaries_by_key: Mapping[str, Sequence[str]] | None = None,
 ) -> None:
     if processor == "on_field":
         if candidate_keys is None:
@@ -1465,6 +1196,7 @@ def _execute_buff_load_loop_candidate_step(
                 registry_by_character,
                 sim_instance=sim_instance,
                 load_lifecycle_cache=load_lifecycle_cache,
+                beneficiaries_by_key=beneficiaries_by_key,
             )
         return
     if processor == "backend":
@@ -1490,6 +1222,7 @@ def _execute_buff_load_loop_candidate_step(
                 registry_by_character,
                 sim_instance=sim_instance,
                 load_lifecycle_cache=load_lifecycle_cache,
+                beneficiaries_by_key=beneficiaries_by_key,
             )
         return
     raise ValueError(f"未知的BuffLoadLoop候选执行器：{processor}")
@@ -1543,8 +1276,7 @@ def BuffLoadLoop(
     fallback_backend_candidate_count = 0
     if record_scan_metrics:
         registered_buff_count = sum(
-            len(buff_registry_by_character.get(character, {}))
-            for character in character_name_box
+            len(buff_registry_by_character.get(character, {})) for character in character_name_box
         )
 
     all_name_box = character_name_box + ["enemy"]
@@ -1565,6 +1297,7 @@ def BuffLoadLoop(
             sim_instance,
             buff_registry_by_character,
             character_name_box,
+            all_name_order_box,
         )
         for selection in candidate_index.iter_candidate_steps(load_mission_dict):
             processor = selection.processor
@@ -1593,6 +1326,7 @@ def BuffLoadLoop(
                     buff_registry_by_character,
                     sim_instance=sim_instance,
                     load_lifecycle_cache=load_lifecycle_cache,
+                    beneficiaries_by_key=selection.beneficiaries_by_key,
                 )
             else:
                 _process_backend_buff_candidates(
@@ -1605,6 +1339,7 @@ def BuffLoadLoop(
                     buff_registry_by_character,
                     sim_instance=sim_instance,
                     load_lifecycle_cache=load_lifecycle_cache,
+                    beneficiaries_by_key=selection.beneficiaries_by_key,
                 )
     else:
         # 遍历load_mission_dict中的任务
@@ -1615,7 +1350,7 @@ def BuffLoadLoop(
             if actor_name not in buff_registry_by_character:
                 raise ValueError("当前角色的Buff源并未创建！")
             # 提取当前角色的 Buff 列表
-            # Enemy templates are handled through the runtime-owned registry.
+            # 敌人模板由 runtime 持有的注册表统一处理。
 
             for char_name in character_name_box:
                 registry = buff_registry_by_character[char_name]
@@ -1790,18 +1525,21 @@ def buff_go_to(buff_0, all_name_box):
             setattr(buff_0, "_zsim_buff_go_to_cache", cache)
         except (AttributeError, TypeError):
             cache = None
-    cached_selected_characters = (
-        cache.get(cache_key) if cache is not None else None
-    )
+    cached_selected_characters = cache.get(cache_key) if cache is not None else None
     if cached_selected_characters is not None:
         return cached_selected_characters
-    adding_code = str(int(buff_0.ft.add_buff_to)).zfill(4)
-    selected_characters = [
-        all_name_box[i] for i in range(len(all_name_box)) if adding_code[i] == "1"
-    ]
+    selected_characters = _select_buff_beneficiaries(
+        buff_0.ft.add_buff_to,
+        all_name_box,
+    )
     if cache is not None:
         cache[cache_key] = selected_characters
     return selected_characters
+
+
+def _select_buff_beneficiaries(add_buff_to: object, all_name_box: Sequence[str]) -> list[str]:
+    adding_code = str(int(cast(Any, add_buff_to))).zfill(4)
+    return [all_name_box[i] for i in range(len(all_name_box)) if adding_code[i] == "1"]
 
 
 def BuffInitialize(
@@ -1867,7 +1605,7 @@ def BuffJudge(
         result = True
         return save_cache_and_return(result)
     if static_info.blank_simple_judge:
-        # EXPLAIN：全部数据都是None并且是简单判断逻辑
+        # 说明：全部数据都是None并且是简单判断逻辑
         #   这通常意味着Buff的判断不在Load阶段，而是通过某种方式在其他阶段暴力添加。
         #   但是部分alltime的buff也会进入这一分支，所以需要在判断alltime之后再进行全空判断。
         result = False
@@ -1915,7 +1653,7 @@ def _simple_judge_conditions(
             conditions.append(
                 _StaticJudgeCondition(
                     skill_attribute=judge_condition,
-                    allowed_values=tuple(process_string(csv_judge_condition)),
+                    allowed_values=frozenset(process_string(csv_judge_condition)),
                 )
             )
     result = tuple(conditions)

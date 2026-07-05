@@ -2,23 +2,23 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from types import SimpleNamespace
-from typing import Any, Iterator, Sequence, cast
+from typing import Any, Iterator, cast
 
 import numpy as np
 import pytest
 
-import zsim.sim_progress.ScheduledEvent.CalAnomaly as cal_anomaly_module
-import zsim.sim_progress.ScheduledEvent.Calculator as calculator_module
-from zsim.sim_progress.ScheduledEvent.CalAnomaly import (
-    CalDisorder,
-    CalPolarityDisorder,
-)
-from zsim.sim_progress.ScheduledEvent.Calculator import Calculator, MultiplierData
+import zsim.sim_progress.calculation.anomaly_calculator as cal_anomaly_module
+import zsim.sim_progress.calculation.calculator as calculator_module
 from zsim.sim_progress.anomaly_bar import AnomalyBar
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
     Disorder,
     PolarityDisorder,
 )
+from zsim.sim_progress.calculation.anomaly_calculator import (
+    CalDisorder,
+    CalPolarityDisorder,
+)
+from zsim.sim_progress.calculation.calculator import Calculator, MultiplierData
 
 
 @dataclass(frozen=True)
@@ -210,9 +210,7 @@ def _patch_buff_aggregation(
     monkeypatch: pytest.MonkeyPatch,
     dynamic_statement: dict[str, float],
 ) -> list[tuple[tuple[object, ...], object | None, object, str | None]]:
-    aggregation_calls: list[
-        tuple[tuple[object, ...], object | None, object, str | None]
-    ] = []
+    aggregation_calls: list[tuple[tuple[object, ...], object | None, object, str | None]] = []
 
     def fake_cal_buff_total_bonus(
         *,
@@ -358,9 +356,7 @@ def test_cal_polarity_disorder_current_ratio_and_yanagi_ap_additional_term(
     )
 
     expected_yanagi_ap = 400.0 * (1 + 0.25) + 60.0
-    expected_polarity_base = (case.expected_base_dmg * 0.13) + (
-        expected_yanagi_ap * 17.5
-    )
+    expected_polarity_base = (case.expected_base_dmg * 0.13) + (expected_yanagi_ap * 17.5)
     assert aggregation_calls == [
         ((), polarity_payload, fixture.enemy.sim_instance, fixture.character.NAME),
         ((), None, fixture.enemy.sim_instance, yanagi.NAME),

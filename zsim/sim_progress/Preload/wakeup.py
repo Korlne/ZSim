@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from zsim.sim_progress.Preload.PreloadEngine import SwapCancelValidateEngine
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class PreloadWakeupSource:
-    """Projects the next Preload/APL-observable action boundary."""
+    """推算下一次 Preload/APL 可观察到的动作边界。"""
 
     preload: "PreloadClass"
     name: str = "preload-action"

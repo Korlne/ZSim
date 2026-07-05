@@ -6,11 +6,11 @@ from typing import NoReturn
 
 import pytest
 
-from zsim.sim_progress.Dot.initialization import (
-    DotInitializationReadContext,
-    RINA_SHOCK_DURATION_EXTENSION_BUFF_INDEX,
-)
 from zsim.sim_progress.Dot.Dots.Shock import Shock
+from zsim.sim_progress.Dot.initialization import (
+    RINA_SHOCK_DURATION_EXTENSION_BUFF_INDEX,
+    DotInitializationReadContext,
+)
 
 
 class _ForbiddenLayer:

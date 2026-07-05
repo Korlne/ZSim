@@ -16,14 +16,13 @@ from zsim.sim_progress.calculation.inputs.common import DamageIdentityProfile
 
 @dataclass(frozen=True, slots=True, init=False)
 class AffinityValueMap:
-    """Read-only multiplier-affinity keyed numeric values."""
+    """以乘区亲和为键的只读数值集合。"""
 
     values: tuple[tuple[MultiplierAffinity, float], ...]
 
     def __init__(
         self,
-        values: Mapping[MultiplierAffinity, float]
-        | Iterable[tuple[MultiplierAffinity, float]],
+        values: Mapping[MultiplierAffinity, float] | Iterable[tuple[MultiplierAffinity, float]],
     ) -> None:
         object.__setattr__(
             self,
@@ -40,7 +39,7 @@ class AffinityValueMap:
 
 @dataclass(frozen=True, slots=True)
 class RegularBaseAttributeInput:
-    """Read-only scalar inputs for regular base attribute and base damage math."""
+    """常规基础属性与基础伤害计算的只读标量输入。"""
 
     damage_ratio: float
     hit_times: float
@@ -67,7 +66,7 @@ class RegularBaseAttributeInput:
 
 @dataclass(frozen=True, slots=True)
 class RegularDamageBonusInput:
-    """Read-only scalar inputs for the regular damage bonus multiplier."""
+    """常规增伤乘区的只读标量输入。"""
 
     identity: DamageIdentityProfile
     static_damage_bonuses: AffinityValueMap
@@ -81,7 +80,7 @@ class RegularDamageBonusInput:
 
 @dataclass(frozen=True, slots=True)
 class RegularCritInput:
-    """Read-only crit-rate and crit-damage inputs for regular damage."""
+    """常规伤害的只读暴击率与暴击伤害输入。"""
 
     static_crit_rate: float
     dynamic_crit_rate: float
@@ -97,7 +96,7 @@ class RegularCritInput:
 
 @dataclass(frozen=True, slots=True)
 class RegularDamageMultipliers:
-    """Fully assembled regular damage multipliers in legacy vector order."""
+    """按旧版向量顺序组装完成的常规伤害乘区。"""
 
     base_damage: float
     damage_bonus: float
@@ -114,7 +113,7 @@ class RegularDamageMultipliers:
 
 @dataclass(frozen=True, slots=True)
 class RegularDamageInput:
-    """Read-only input snapshot for one regular damage product."""
+    """单次常规伤害乘积计算的只读输入快照。"""
 
     identity: DamageIdentityProfile
     multipliers: RegularDamageMultipliers
@@ -122,7 +121,7 @@ class RegularDamageInput:
 
 @dataclass(frozen=True, slots=True)
 class DefenseMultiplierInput:
-    """Read-only inputs for regular defense-zone helpers."""
+    """常规防御区辅助函数的只读输入。"""
 
     max_defense: float
     percentage_defense_reduction: float
@@ -137,7 +136,7 @@ class DefenseMultiplierInput:
 
 @dataclass(frozen=True, slots=True)
 class ResistanceMultiplierInput:
-    """Read-only inputs for regular resistance-zone helpers."""
+    """常规抗性区辅助函数的只读输入。"""
 
     affinity: MultiplierAffinity
     target_resistances: AffinityValueMap
@@ -150,7 +149,7 @@ class ResistanceMultiplierInput:
 
 @dataclass(frozen=True, slots=True)
 class DamageVulnerabilityInput:
-    """Read-only inputs for elemental vulnerability-zone helpers."""
+    """属性易伤区辅助函数的只读输入。"""
 
     affinity: MultiplierAffinity
     damage_vulnerabilities: AffinityValueMap
@@ -159,7 +158,7 @@ class DamageVulnerabilityInput:
 
 @dataclass(frozen=True, slots=True)
 class StunVulnerabilityInput:
-    """Read-only inputs for stun vulnerability-zone helpers."""
+    """失衡易伤区辅助函数的只读输入。"""
 
     is_stunned: bool
     stun_damage_taken_ratio: float
@@ -169,7 +168,7 @@ class StunVulnerabilityInput:
 
 @dataclass(frozen=True, slots=True)
 class SpecialMultiplierInput:
-    """Read-only inputs for special and sheer multiplier helpers."""
+    """特殊乘区与贯穿乘区辅助函数的只读输入。"""
 
     special_multiplier_zone: float
     diff_multiplier: int
@@ -177,7 +176,7 @@ class SpecialMultiplierInput:
 
 
 def multiplier_affinity_from_regular_element_type(element_type: int) -> MultiplierAffinity:
-    """Map current legacy regular-damage element_type values to multiplier affinity."""
+    """将当前旧版常规伤害 element_type 映射为乘区亲和。"""
 
     if element_type == 0:
         return PHYSICAL_AFFINITY
@@ -189,9 +188,7 @@ def multiplier_affinity_from_regular_element_type(element_type: int) -> Multipli
         return ELECTRIC_AFFINITY
     if element_type in (4, 6):
         return ETHER_AFFINITY
-    raise ValueError(
-        f"Invalid regular element_type: {element_type}, must be an integer in 0..6"
-    )
+    raise ValueError(f"无效的常规伤害 element_type：{element_type}，必须是 0..6 的整数")
 
 
 __all__ = [

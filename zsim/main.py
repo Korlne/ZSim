@@ -69,9 +69,7 @@ def resolve_use_indexed_buff_load_loop(args: argparse.Namespace) -> bool:
 
 
 def create_cli_simulator(args: argparse.Namespace) -> Simulator:
-    return Simulator(
-        use_indexed_buff_load_loop=resolve_use_indexed_buff_load_loop(args)
-    )
+    return Simulator(use_indexed_buff_load_loop=resolve_use_indexed_buff_load_loop(args))
 
 
 if __name__ == "__main__":

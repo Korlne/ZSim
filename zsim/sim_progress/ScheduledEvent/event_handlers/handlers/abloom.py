@@ -4,8 +4,8 @@ from typing import Any
 
 from zsim.sim_progress import Report
 from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import DirgeOfDestinyAnomaly as Abloom
+from zsim.sim_progress.calculation.anomaly_calculator import CalAbloom
 
-from ...CalAnomaly import CalAbloom
 from ..base import BaseEventHandler
 from ..context import EventContext
 

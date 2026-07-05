@@ -6,7 +6,6 @@ from ..JudgeTools import (
 )
 from ._preparation_helpers import ensure_owner_template_record, prepare_with_context
 
-
 _YANGI_CINEMA1_TRIGGER_REF = TriggerBuffRef.owner(
     "柳",
     "Buff-角色-柳-1画-洞悉",

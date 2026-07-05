@@ -34,7 +34,7 @@ class YuzuhaCinem1EleResReduce(Buff.BuffLogic):
     def check_record_module(self):
         ensure_owner_template_record(
             self,
-            owner_name='柚叶',
+            owner_name="柚叶",
             record_factory=YuzuhaCinem1EleResReduceRecord,
             context_builder=build_preparation_context_from_buff,
         )

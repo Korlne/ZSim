@@ -1,9 +1,9 @@
-from zsim.sim_progress.ScheduledEvent.Calculator import (
+from zsim.sim_progress.calculation.calculator import (
     create_calculator_runtime_read_context_from_sim_instance,
     get_calculator_buff_attribute_reader_service,
 )
 
-from .. import Buff, JudgeTools, check_preparation, find_tick
+from .. import Buff, JudgeTools, check_preparation
 from ..JudgeTools import build_preparation_context_from_buff
 from ._preparation_helpers import ensure_owner_template_record, prepare_with_context
 
@@ -62,7 +62,7 @@ class TriggerAdditionalAbilityStunBonus(Buff.BuffLogic):
         """判定通过后，执行Buff激活，计算实时暴击率，替换当前层数。"""
         self.check_record_module()
         self.get_prepared(char_CID=1361, sub_exist_buff_dict=1, enemy=1)
-        tick = find_tick(sim_instance=self.buff_instance.sim_instance)
+        tick = JudgeTools.find_tick(sim_instance=self.buff_instance.sim_instance)
         context = create_calculator_runtime_read_context_from_sim_instance(
             sim_instance=self.buff_instance.sim_instance,
             enemy=self.record.enemy,

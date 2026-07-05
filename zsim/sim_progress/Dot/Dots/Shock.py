@@ -37,9 +37,7 @@ class Shock(Dot):
             if self.sim_instance is None:
                 raise ValueError("sim_instance is None, but it should not be.")
 
-            read_context = DotInitializationReadContext.from_sim_instance(
-                self.sim_instance
-            )
+            read_context = DotInitializationReadContext.from_sim_instance(self.sim_instance)
             self.char_name_box = read_context.name_box
             self.exist_buff_dict = read_context.exist_buff_dict
             if read_context.has_rina_shock_duration_extension():

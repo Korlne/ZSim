@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import copy
-from dataclasses import dataclass, field, fields
 import inspect
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Callable, Iterator, Sequence, cast
@@ -10,9 +10,16 @@ from typing import Any, Callable, Iterator, Sequence, cast
 import numpy as np
 import pytest
 
-import zsim.sim_progress.ScheduledEvent.CalAnomaly as cal_anomaly_module
-import zsim.sim_progress.ScheduledEvent.Calculator as calculator_module
+import zsim.sim_progress.calculation.anomaly_calculator as cal_anomaly_module
+import zsim.sim_progress.calculation.calculator as calculator_module
 import zsim.sim_progress.data_struct.data_analyzer as data_analyzer_module
+from zsim.sim_progress.anomaly_bar import AnomalyBar
+from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
+    DirgeOfDestinyAnomaly,
+    Disorder,
+    NewAnomaly,
+    PolarityDisorder,
+)
 from zsim.sim_progress.Buff import Buff
 from zsim.sim_progress.Buff.BuffXLogic.BranchBladeSongCritDamageBonus import (
     BranchBladeSongCritDamageBonus,
@@ -23,13 +30,13 @@ from zsim.sim_progress.Buff.BuffXLogic.LinaCoreSkillPenRatioBonus import (
 from zsim.sim_progress.Buff.BuffXLogic.TimeweaverDisorderDmgMul import (
     TimeweaverDisorderDmgMul,
 )
-from zsim.sim_progress.ScheduledEvent.Calculator import (
+from zsim.sim_progress.calculation.calculator import (
     BuffAttributeReadContext,
     Calculator,
-    CalculatorBuffBonusReadContext,
-    CalculatorRuntimeReadContext,
     CalculatorBuffAttributeReader,
     CalculatorBuffAttributeReaderService,
+    CalculatorBuffBonusReadContext,
+    CalculatorRuntimeReadContext,
     MultiplierData,
     RetainedFormulaSnapshot,
     create_anomaly_attribute_read_context,
@@ -39,26 +46,17 @@ from zsim.sim_progress.ScheduledEvent.Calculator import (
     create_calculator_runtime_read_context_from_sim_instance,
     get_calculator_buff_attribute_reader_service,
 )
-from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort, BuffRuntimeState
-from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
 from zsim.sim_progress.Character.character import Character
 from zsim.sim_progress.data_struct.sp_update_data import SPUpdateData
 from zsim.sim_progress.Preload.SkillsQueue import SkillNode
-from zsim.sim_progress.anomaly_bar import AnomalyBar
-from zsim.sim_progress.anomaly_bar.CopyAnomalyForOutput import (
-    DirgeOfDestinyAnomaly,
-    Disorder,
-    NewAnomaly,
-    PolarityDisorder,
-)
+from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort, BuffRuntimeState
+from zsim.sim_progress.ScheduledEvent.event_handlers.context import EventContext
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 _AggregationCall = tuple[tuple[object, ...], object | None, object, str | None]
 _FormulaDataOracle = Callable[[Any], Any]
-_ReaderContextOracle = Callable[
-    [CalculatorBuffAttributeReader, BuffAttributeReadContext], Any
-]
+_ReaderContextOracle = Callable[[CalculatorBuffAttributeReader, BuffAttributeReadContext], Any]
 
 
 @dataclass(frozen=True)
@@ -534,9 +532,7 @@ def _make_enemy(
         anomaly_resistance_dict=(
             {} if anomaly_resistance_attrs is None else dict(anomaly_resistance_attrs)
         ),
-        stun_resistance_dict=(
-            {} if stun_resistance_attrs is None else dict(stun_resistance_attrs)
-        ),
+        stun_resistance_dict=({} if stun_resistance_attrs is None else dict(stun_resistance_attrs)),
         **resistance_values,
     )
 
@@ -693,9 +689,7 @@ def _make_settled_anomaly_formula_fixture(
     activation = SimpleNamespace(skill=SimpleNamespace(char_obj=character))
     enemy = _make_enemy()
     active_buff_view: dict[str, list[object]] = {character.NAME: []}
-    anomaly_bar = AnomalyBar(
-        sim_instance=cast(Any, sim_instance), element_type=element_type
-    )
+    anomaly_bar = AnomalyBar(sim_instance=cast(Any, sim_instance), element_type=element_type)
     anomaly_bar.current_ndarray = np.array(source_snapshot, dtype=np.float64, copy=True)
     anomaly_bar.current_effective_anomaly = np.float64(30.0)
     anomaly_bar.current_anomaly = np.float64(129.0)
@@ -735,15 +729,11 @@ def _legacy_full_crit_rate_oracle(fixture: _AttributeReadFixture) -> float:
 
 
 def _legacy_personal_crit_rate_oracle(fixture: _AttributeReadFixture) -> float:
-    return Calculator.RegularMul.cal_personal_crit_rate(
-        _legacy_multiplier_data(fixture)
-    )
+    return Calculator.RegularMul.cal_personal_crit_rate(_legacy_multiplier_data(fixture))
 
 
 def _legacy_personal_crit_damage_oracle(fixture: _AttributeReadFixture) -> float:
-    return Calculator.RegularMul.cal_personal_crit_dmg(
-        _legacy_multiplier_data(fixture)
-    )
+    return Calculator.RegularMul.cal_personal_crit_dmg(_legacy_multiplier_data(fixture))
 
 
 def _legacy_pen_ratio_oracle(fixture: _AttributeReadFixture) -> float:
@@ -756,14 +746,18 @@ def _assert_aggregation_calls(
     *,
     times: int = 2,
 ) -> None:
-    assert aggregation_calls == [
-        (
-            fixture.expected_enabled_buff,
-            fixture.context.query_node,
-            fixture.enemy.sim_instance,
-            fixture.char.NAME,
-        )
-    ] * times
+    assert (
+        aggregation_calls
+        == [
+            (
+                fixture.expected_enabled_buff,
+                fixture.context.query_node,
+                fixture.enemy.sim_instance,
+                fixture.char.NAME,
+            )
+        ]
+        * times
+    )
 
 
 def test_create_anomaly_attribute_read_context_preserves_inputs() -> None:
@@ -950,9 +944,7 @@ def test_calculator_buff_bonus_context_from_sim_instance_reads_only_beneficiary_
         sim_instance=sim_instance,
         beneficiary="panel-reader",
     )
-    bonus = get_calculator_buff_attribute_reader_service().calculate_buff_total_bonus(
-        context
-    )
+    bonus = get_calculator_buff_attribute_reader_service().calculate_buff_total_bonus(context)
 
     assert isinstance(context, CalculatorBuffBonusReadContext)
     assert bonus == {"喧响获得效率": 0.25}
@@ -1127,15 +1119,19 @@ def test_calculator_reader_service_public_surface_matches_reader() -> None:
     }
     service = get_calculator_buff_attribute_reader_service()
 
-    assert service_methods == reader_methods == {
-        "read_anomaly_mastery",
-        "read_anomaly_proficiency",
-        "read_impact",
-        "read_full_crit_rate",
-        "read_personal_crit_rate",
-        "read_personal_crit_damage",
-        "read_pen_ratio",
-    }
+    assert (
+        service_methods
+        == reader_methods
+        == {
+            "read_anomaly_mastery",
+            "read_anomaly_proficiency",
+            "read_impact",
+            "read_full_crit_rate",
+            "read_personal_crit_rate",
+            "read_personal_crit_damage",
+            "read_pen_ratio",
+        }
+    )
     assert service is get_calculator_buff_attribute_reader_service()
     assert isinstance(service, CalculatorBuffAttributeReaderService)
 
@@ -1283,9 +1279,9 @@ def _run_formula_oracle_case(
             ("retained", retained_data),
             ("reader-snapshot", reader_snapshot_data),
         ):
-            assert getattr(data.dynamic, attr_name) == case.tolerance.approx(
-                expected_value
-            ), f"{case.case_id}:{source_label}:{attr_name}"
+            assert getattr(data.dynamic, attr_name) == case.tolerance.approx(expected_value), (
+                f"{case.case_id}:{source_label}:{attr_name}"
+            )
 
     reader = CalculatorBuffAttributeReader()
     reader_expectation_count = 0
@@ -1402,8 +1398,7 @@ _MIGRATED_READER_SEAM_SAMPLES = (
         case_id="p2b-qingyi-impact",
         phase="P2-B",
         migrated_file=(
-            "zsim/sim_progress/Buff/BuffXLogic/"
-            "QingYiAdditionalAbilityStunConvertToATK.py"
+            "zsim/sim_progress/Buff/BuffXLogic/QingYiAdditionalAbilityStunConvertToATK.py"
         ),
         formula_key="cal_imp",
         fixture_kwargs={
@@ -1439,10 +1434,7 @@ _MIGRATED_READER_SEAM_SAMPLES = (
     _MigratedReaderSeamSample(
         case_id="p2b-anby-personal-crit-dmg",
         phase="P2-B",
-        migrated_file=(
-            "zsim/sim_progress/Buff/BuffXLogic/"
-            "Soldier0AnbyCoreSkillCritDMGBonus.py"
-        ),
+        migrated_file=("zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCoreSkillCritDMGBonus.py"),
         formula_key="cal_personal_crit_dmg",
         fixture_kwargs={
             "name": "Soldier0Anby",
@@ -1787,9 +1779,7 @@ _FORMULA_ORACLE_TABLE_CASES = (
             _FormulaOracleExpectation(
                 label="cal_dmg_vulnerability",
                 expected_value=1.0,
-                retained_value=lambda data: Calculator.RegularMul.cal_dmg_vulnerability(
-                    data
-                ),
+                retained_value=lambda data: Calculator.RegularMul.cal_dmg_vulnerability(data),
             ),
         ),
     ),
@@ -1841,9 +1831,7 @@ _FORMULA_ORACLE_TABLE_CASES = (
             _FormulaOracleExpectation(
                 label="cal_dmg_vulnerability",
                 expected_value=1.0,
-                retained_value=lambda data: Calculator.RegularMul.cal_dmg_vulnerability(
-                    data
-                ),
+                retained_value=lambda data: Calculator.RegularMul.cal_dmg_vulnerability(data),
             ),
         ),
     ),
@@ -1871,9 +1859,7 @@ _FORMULA_ORACLE_TABLE_CASES = (
             _FormulaOracleExpectation(
                 label="cal_sheer_dmg_bonus",
                 expected_value=1.45,
-                retained_value=lambda data: Calculator.RegularMul.cal_sheer_dmg_bonus(
-                    data
-                ),
+                retained_value=lambda data: Calculator.RegularMul.cal_sheer_dmg_bonus(data),
             ),
         ),
     ),
@@ -1935,9 +1921,7 @@ _FORMULA_ORACLE_TABLE_CASES = (
             _FormulaOracleExpectation(
                 label="cal_dmg_vulnerability",
                 expected_value=1.30,
-                retained_value=lambda data: Calculator.RegularMul.cal_dmg_vulnerability(
-                    data
-                ),
+                retained_value=lambda data: Calculator.RegularMul.cal_dmg_vulnerability(data),
             ),
         ),
     ),
@@ -1974,22 +1958,14 @@ _FORMULA_ORACLE_TABLE_CASES = (
             _FormulaOracleExpectation(
                 label="cal_crit_rate",
                 expected_value=0.60,
-                retained_value=lambda data: Calculator.RegularMul.cal_crit_rate(
-                    data
-                ),
-                reader_value=lambda reader, context: reader.read_full_crit_rate(
-                    context
-                ),
+                retained_value=lambda data: Calculator.RegularMul.cal_crit_rate(data),
+                reader_value=lambda reader, context: reader.read_full_crit_rate(context),
             ),
             _FormulaOracleExpectation(
                 label="cal_personal_crit_rate",
                 expected_value=0.35,
-                retained_value=lambda data: Calculator.RegularMul.cal_personal_crit_rate(
-                    data
-                ),
-                reader_value=lambda reader, context: reader.read_personal_crit_rate(
-                    context
-                ),
+                retained_value=lambda data: Calculator.RegularMul.cal_personal_crit_rate(data),
+                reader_value=lambda reader, context: reader.read_personal_crit_rate(context),
             ),
             _FormulaOracleExpectation(
                 label="cal_crit_dmg",
@@ -1999,12 +1975,8 @@ _FORMULA_ORACLE_TABLE_CASES = (
             _FormulaOracleExpectation(
                 label="cal_personal_crit_dmg",
                 expected_value=1.00,
-                retained_value=lambda data: Calculator.RegularMul.cal_personal_crit_dmg(
-                    data
-                ),
-                reader_value=lambda reader, context: reader.read_personal_crit_damage(
-                    context
-                ),
+                retained_value=lambda data: Calculator.RegularMul.cal_personal_crit_dmg(data),
+                reader_value=lambda reader, context: reader.read_personal_crit_damage(context),
             ),
         ),
     ),
@@ -2042,12 +2014,8 @@ _FORMULA_ORACLE_TABLE_CASES = (
             _FormulaOracleExpectation(
                 label="cal_personal_crit_dmg",
                 expected_value=0.90,
-                retained_value=lambda data: Calculator.RegularMul.cal_personal_crit_dmg(
-                    data
-                ),
-                reader_value=lambda reader, context: reader.read_personal_crit_damage(
-                    context
-                ),
+                retained_value=lambda data: Calculator.RegularMul.cal_personal_crit_dmg(data),
+                reader_value=lambda reader, context: reader.read_personal_crit_damage(context),
             ),
         ),
     ),
@@ -2085,12 +2053,8 @@ _FORMULA_ORACLE_TABLE_CASES = (
             _FormulaOracleExpectation(
                 label="cal_personal_crit_dmg",
                 expected_value=0.90,
-                retained_value=lambda data: Calculator.RegularMul.cal_personal_crit_dmg(
-                    data
-                ),
-                reader_value=lambda reader, context: reader.read_personal_crit_damage(
-                    context
-                ),
+                retained_value=lambda data: Calculator.RegularMul.cal_personal_crit_dmg(data),
+                reader_value=lambda reader, context: reader.read_personal_crit_damage(context),
             ),
         ),
     ),
@@ -2142,31 +2106,23 @@ _FORMULA_ORACLE_TABLE_CASES = (
                 label="cal_am",
                 expected_value=170.0,
                 retained_value=lambda data: Calculator.AnomalyMul.cal_am(data),
-                reader_value=lambda reader, context: reader.read_anomaly_mastery(
-                    context
-                ),
+                reader_value=lambda reader, context: reader.read_anomaly_mastery(context),
             ),
             _FormulaOracleExpectation(
                 label="cal_ap",
                 expected_value=415.0,
                 retained_value=lambda data: Calculator.AnomalyMul.cal_ap(data),
-                reader_value=lambda reader, context: reader.read_anomaly_proficiency(
-                    context
-                ),
+                reader_value=lambda reader, context: reader.read_anomaly_proficiency(context),
             ),
             _FormulaOracleExpectation(
                 label="cal_anomaly_buildup",
                 expected_value=62.8575,
-                retained_value=lambda data: Calculator.AnomalyMul.cal_anomaly_buildup(
-                    data
-                ),
+                retained_value=lambda data: Calculator.AnomalyMul.cal_anomaly_buildup(data),
             ),
             _FormulaOracleExpectation(
                 label="cal_base_damage",
                 expected_value=160.0,
-                retained_value=lambda data: Calculator.AnomalyMul.cal_base_damage(
-                    data
-                ),
+                retained_value=lambda data: Calculator.AnomalyMul.cal_base_damage(data),
             ),
         ),
     ),
@@ -2227,9 +2183,7 @@ _FORMULA_ORACLE_TABLE_CASES = (
                 label="cal_ap",
                 expected_value=460.0,
                 retained_value=lambda data: Calculator.AnomalyMul.cal_ap(data),
-                reader_value=lambda reader, context: reader.read_anomaly_proficiency(
-                    context
-                ),
+                reader_value=lambda reader, context: reader.read_anomaly_proficiency(context),
             ),
             _FormulaOracleExpectation(
                 label="cal_ap_mul",
@@ -2262,9 +2216,7 @@ _FORMULA_ORACLE_TABLE_CASES = (
             _FormulaOracleExpectation(
                 label="cal_ano_extra_mul",
                 expected_value=1.50,
-                retained_value=lambda data: Calculator.AnomalyMul.cal_ano_extra_mul(
-                    data
-                ),
+                retained_value=lambda data: Calculator.AnomalyMul.cal_ano_extra_mul(data),
             ),
         ),
     ),
@@ -2656,17 +2608,13 @@ _FORMULA_ORACLE_TABLE_CASES = (
                 label="cal_am",
                 expected_value=130.0,
                 retained_value=lambda data: Calculator.AnomalyMul.cal_am(data),
-                reader_value=lambda reader, context: reader.read_anomaly_mastery(
-                    context
-                ),
+                reader_value=lambda reader, context: reader.read_anomaly_mastery(context),
             ),
             _FormulaOracleExpectation(
                 label="cal_ap",
                 expected_value=345.0,
                 retained_value=lambda data: Calculator.AnomalyMul.cal_ap(data),
-                reader_value=lambda reader, context: reader.read_anomaly_proficiency(
-                    context
-                ),
+                reader_value=lambda reader, context: reader.read_anomaly_proficiency(context),
             ),
             _FormulaOracleExpectation(
                 label="cal_imp",
@@ -2677,22 +2625,14 @@ _FORMULA_ORACLE_TABLE_CASES = (
             _FormulaOracleExpectation(
                 label="cal_crit_rate",
                 expected_value=0.6,
-                retained_value=lambda data: Calculator.RegularMul.cal_crit_rate(
-                    data
-                ),
-                reader_value=lambda reader, context: reader.read_full_crit_rate(
-                    context
-                ),
+                retained_value=lambda data: Calculator.RegularMul.cal_crit_rate(data),
+                reader_value=lambda reader, context: reader.read_full_crit_rate(context),
             ),
             _FormulaOracleExpectation(
                 label="cal_personal_crit_dmg",
                 expected_value=1.25,
-                retained_value=lambda data: Calculator.RegularMul.cal_personal_crit_dmg(
-                    data
-                ),
-                reader_value=lambda reader, context: reader.read_personal_crit_damage(
-                    context
-                ),
+                retained_value=lambda data: Calculator.RegularMul.cal_personal_crit_dmg(data),
+                reader_value=lambda reader, context: reader.read_personal_crit_damage(context),
             ),
         ),
     ),
@@ -2723,17 +2663,13 @@ _FORMULA_ORACLE_TABLE_CASES = (
                 label="cal_am",
                 expected_value=90.0,
                 retained_value=lambda data: Calculator.AnomalyMul.cal_am(data),
-                reader_value=lambda reader, context: reader.read_anomaly_mastery(
-                    context
-                ),
+                reader_value=lambda reader, context: reader.read_anomaly_mastery(context),
             ),
             _FormulaOracleExpectation(
                 label="cal_ap",
                 expected_value=310.0,
                 retained_value=lambda data: Calculator.AnomalyMul.cal_ap(data),
-                reader_value=lambda reader, context: reader.read_anomaly_proficiency(
-                    context
-                ),
+                reader_value=lambda reader, context: reader.read_anomaly_proficiency(context),
             ),
             _FormulaOracleExpectation(
                 label="cal_imp",
@@ -3661,8 +3597,7 @@ def test_migrated_reader_seam_regression_sample_scope_is_representative() -> Non
         ),
         (
             "P2-B",
-            "zsim/sim_progress/Buff/BuffXLogic/"
-            "QingYiAdditionalAbilityStunConvertToATK.py",
+            "zsim/sim_progress/Buff/BuffXLogic/QingYiAdditionalAbilityStunConvertToATK.py",
             "cal_imp",
         ),
         (
@@ -3672,8 +3607,7 @@ def test_migrated_reader_seam_regression_sample_scope_is_representative() -> Non
         ),
         (
             "P2-B",
-            "zsim/sim_progress/Buff/BuffXLogic/"
-            "Soldier0AnbyCoreSkillCritDMGBonus.py",
+            "zsim/sim_progress/Buff/BuffXLogic/Soldier0AnbyCoreSkillCritDMGBonus.py",
             "cal_personal_crit_dmg",
         ),
     }
@@ -3765,9 +3699,9 @@ def test_cal_am_retained_multiplier_data_oracle_rows(
             ("retained", retained_data),
             ("reader-snapshot", reader_snapshot_data),
         ):
-            assert getattr(data.dynamic, attr_name) == case.tolerance.approx(
-                expected_value
-            ), f"{case.case_id}:{source_label}:{attr_name}"
+            assert getattr(data.dynamic, attr_name) == case.tolerance.approx(expected_value), (
+                f"{case.case_id}:{source_label}:{attr_name}"
+            )
 
     expected = case.tolerance.approx(case.expected_value)
     retained_value = Calculator.AnomalyMul.cal_am(retained_data)
@@ -3804,16 +3738,14 @@ def test_cal_ap_retained_multiplier_data_oracle_rows(
             ("retained", retained_data),
             ("reader-snapshot", reader_snapshot_data),
         ):
-            assert getattr(data.dynamic, attr_name) == case.tolerance.approx(
-                expected_value
-            ), f"{case.case_id}:{source_label}:{attr_name}"
+            assert getattr(data.dynamic, attr_name) == case.tolerance.approx(expected_value), (
+                f"{case.case_id}:{source_label}:{attr_name}"
+            )
 
     expected = case.tolerance.approx(case.expected_value)
     retained_value = Calculator.AnomalyMul.cal_ap(retained_data)
     reader_snapshot_value = Calculator.AnomalyMul.cal_ap(reader_snapshot_data)
-    reader_value = CalculatorBuffAttributeReader().read_anomaly_proficiency(
-        fixture.context
-    )
+    reader_value = CalculatorBuffAttributeReader().read_anomaly_proficiency(fixture.context)
 
     assert retained_value == expected, f"{case.case_id}:retained"
     assert reader_snapshot_value == expected, f"{case.case_id}:reader-snapshot"
@@ -3910,9 +3842,9 @@ def test_cal_imp_retained_multiplier_data_oracle_rows(
             ("retained", retained_data),
             ("reader-snapshot", reader_snapshot_data),
         ):
-            assert getattr(data.dynamic, attr_name) == case.tolerance.approx(
-                expected_value
-            ), f"{case.case_id}:{source_label}:{attr_name}"
+            assert getattr(data.dynamic, attr_name) == case.tolerance.approx(expected_value), (
+                f"{case.case_id}:{source_label}:{attr_name}"
+            )
 
     expected = case.tolerance.approx(case.expected_value)
     retained_value = Calculator.StunMul.cal_imp(retained_data)
@@ -4021,9 +3953,7 @@ def test_stun_array_delegates_to_module_helper(
         stun_bonus: float,
         stun_received: float,
     ) -> np.ndarray:
-        helper_calls.append(
-            (imp, stun_ratio, stun_res, stun_bonus, stun_received)
-        )
+        helper_calls.append((imp, stun_ratio, stun_res, stun_bonus, stun_received))
         return expected_array
 
     monkeypatch.setattr(
@@ -4203,9 +4133,9 @@ def test_cal_res_pen_retained_and_reader_snapshot_select_same_dynamic_field(
         ("reader-snapshot", reader_snapshot_data),
     ):
         for field_name in _CAL_RES_PEN_DYNAMIC_FIELD_NAMES:
-            assert getattr(data.dynamic, field_name) == pytest.approx(
-                dynamic_attrs[field_name]
-            ), f"{case_id}:{source_label}:{field_name}"
+            assert getattr(data.dynamic, field_name) == pytest.approx(dynamic_attrs[field_name]), (
+                f"{case_id}:{source_label}:{field_name}"
+            )
         assert _anomaly_mul_res_pen(data) == pytest.approx(expected_value), (
             f"{case_id}:{source_label}:cal_res_pen"
         )
@@ -4285,13 +4215,8 @@ def test_formula_parity_fixture_builds_independent_calculator_inputs(
     assert fixture.char.statement.AM == pytest.approx(100.0)
     assert fixture.char.statement.AP == pytest.approx(300.0)
     assert len(fixture.active_buff_view[fixture.char.NAME]) == 2
-    assert tuple(fixture.enemy.dynamic.dynamic_debuff_list) == (
-        fixture.expected_enabled_buff[2:]
-    )
-    assert (
-        tuple(fixture.enemy.dynamic.dynamic_dot_list)
-        == fixture.expected_enemy_dot_buff
-    )
+    assert tuple(fixture.enemy.dynamic.dynamic_debuff_list) == (fixture.expected_enabled_buff[2:])
+    assert tuple(fixture.enemy.dynamic.dynamic_dot_list) == fixture.expected_enemy_dot_buff
     assert data.dynamic.field_anomaly_mastery == pytest.approx(0.2)
     assert data.dynamic.anomaly_proficiency == pytest.approx(30.0)
     assert reader_data.dynamic.field_imp_percentage == pytest.approx(0.1)
@@ -4419,10 +4344,7 @@ def test_enemy_dynamic_debuff_reads_feed_old_and_reader_formula_snapshots(
     assert tuple(fixture.enemy.dynamic.dynamic_debuff_list) == tuple(
         fixture.expected_enabled_buff[char_buff_count:]
     )
-    assert (
-        tuple(fixture.enemy.dynamic.dynamic_dot_list)
-        == fixture.expected_enemy_dot_buff
-    )
+    assert tuple(fixture.enemy.dynamic.dynamic_dot_list) == fixture.expected_enemy_dot_buff
     _assert_aggregation_calls(aggregation_calls, fixture, times=5)
     for enabled_buff, *_ in aggregation_calls:
         assert all(dot not in enabled_buff for dot in fixture.expected_enemy_dot_buff)
@@ -4488,9 +4410,7 @@ def test_anomaly_formula_fixture_copies_snapshot_inputs_for_copied_output(
     )
 
     source_snapshot[0, 0] = -111.0
-    assert fixture.anomaly_bar.current_ndarray[0, 0] == pytest.approx(
-        original_snapshot[0, 0]
-    )
+    assert fixture.anomaly_bar.current_ndarray[0, 0] == pytest.approx(original_snapshot[0, 0])
     fixture.anomaly_bar.current_ndarray[0, 0] = -222.0
     assert copied.current_ndarray[0, 0] == pytest.approx(original_snapshot[0, 0])
 
@@ -4585,9 +4505,7 @@ def test_copied_payload_constructors_preserve_formula_inputs_and_payload_fields(
     }
     assert tuple(effective_anomaly_fields) == _COPIED_OUTPUT_EFFECTIVE_ANOMALY_FIELDS
     assert effective_anomaly_fields == {
-        "current_effective_anomaly": pytest.approx(
-            fixture.anomaly_bar.current_effective_anomaly
-        ),
+        "current_effective_anomaly": pytest.approx(fixture.anomaly_bar.current_effective_anomaly),
         "current_anomaly": pytest.approx(fixture.anomaly_bar.current_anomaly),
         "settled": True,
     }
@@ -4621,9 +4539,7 @@ def test_copied_payload_constructors_preserve_formula_inputs_and_payload_fields(
     assert listener_report_payload_only_fields == {
         "rename_tag": case.payload_fields["rename_tag"],
         "accompany_dot": case.payload_fields["accompany_dot"],
-        "anomaly_dmg_ratio": pytest.approx(
-            case.payload_fields["anomaly_dmg_ratio"]
-        ),
+        "anomaly_dmg_ratio": pytest.approx(case.payload_fields["anomaly_dmg_ratio"]),
     }
 
     assert copied.schedule_priority == 999
@@ -4631,9 +4547,7 @@ def test_copied_payload_constructors_preserve_formula_inputs_and_payload_fields(
     source_bar.current_ndarray[0, 0] = -10.0
     assert copied.current_ndarray[0, 0] == pytest.approx(source_snapshot[0, 0])
     copied.current_ndarray[0, 1] = -20.0
-    assert source_bar.current_ndarray[0, 1] == pytest.approx(
-        source_snapshot[0, 1]
-    )
+    assert source_bar.current_ndarray[0, 1] == pytest.approx(source_snapshot[0, 1])
 
     if case.copied_kind == "polarity_disorder":
         polarity_only_fields = {
@@ -4917,15 +4831,13 @@ def test_multiplier_data_dynamic_statement_translates_python_attr_names() -> Non
     dynamic = MultiplierData.DynamicStatement(translated_statement)
     for attr_name, expected_value in attr_values.items():
         assert getattr(dynamic, attr_name) == pytest.approx(expected_value)
-    assert dynamic.ano_extra_bonus["all"] == pytest.approx(
-        attr_values["all_anomaly_dmg_mul"]
-    )
+    assert dynamic.ano_extra_bonus["all"] == pytest.approx(attr_values["all_anomaly_dmg_mul"])
 
 
 def test_multiplier_data_dynamic_statement_rejects_invalid_effect_key() -> None:
     invalid_key = "not-a-real-effect-key"
 
-    with pytest.raises(KeyError, match=f"Invalid buff multiplier key: {invalid_key}"):
+    with pytest.raises(KeyError, match=f"无效的 Buff 乘区键：{invalid_key}"):
         MultiplierData.DynamicStatement({invalid_key: 1.0})
 
 
@@ -5052,9 +4964,9 @@ def test_attribute_reader_keeps_query_node_optional(
         fake_cal_buff_total_bonus,
     )
 
-    assert CalculatorBuffAttributeReader().read_anomaly_mastery(
-        fixture.context
-    ) == pytest.approx(90.0)
+    assert CalculatorBuffAttributeReader().read_anomaly_mastery(fixture.context) == pytest.approx(
+        90.0
+    )
 
 
 @pytest.mark.parametrize(
@@ -5097,9 +5009,7 @@ def test_attribute_reader_matches_old_anomaly_proficiency_helper(
         },
     )
 
-    reader_value = CalculatorBuffAttributeReader().read_anomaly_proficiency(
-        fixture.context
-    )
+    reader_value = CalculatorBuffAttributeReader().read_anomaly_proficiency(fixture.context)
 
     old_data = MultiplierData(
         cast(Any, fixture.enemy),
@@ -5401,23 +5311,17 @@ def test_calculator_regular_mul_crit_formula_families_preserve_received_boundari
     retained_dynamic = cast(Any, retained_data).dynamic
     values = {
         "cal_crit_rate": Calculator.RegularMul.cal_crit_rate(retained_data),
-        "cal_personal_crit_rate": Calculator.RegularMul.cal_personal_crit_rate(
-            retained_data
-        ),
+        "cal_personal_crit_rate": Calculator.RegularMul.cal_personal_crit_rate(retained_data),
         "cal_crit_dmg": Calculator.RegularMul.cal_crit_dmg(retained_data),
         "cal_crit_expect": _regular_mul_crit_expect(retained_data),
-        "cal_personal_crit_dmg": Calculator.RegularMul.cal_personal_crit_dmg(
-            retained_data
-        ),
+        "cal_personal_crit_dmg": Calculator.RegularMul.cal_personal_crit_dmg(retained_data),
     }
 
     assert values == pytest.approx(expected_values)
     assert retained_dynamic.crit_rate_received_increase == pytest.approx(
         expected_received_crit_rate
     )
-    assert retained_dynamic.received_crit_dmg_bonus == pytest.approx(
-        expected_received_crit_damage
-    )
+    assert retained_dynamic.received_crit_dmg_bonus == pytest.approx(expected_received_crit_damage)
     assert values["cal_crit_rate"] - values["cal_personal_crit_rate"] == pytest.approx(
         retained_dynamic.crit_rate_received_increase
     )
@@ -5550,9 +5454,7 @@ def test_regular_mul_base_damage_delegates_to_module_helper_and_base_attr_call(
     base_attr_calls: list[tuple[Any, int, MultiplierData]] = []
     helper_calls: list[tuple[float, float, Any]] = []
 
-    def fake_cal_base_attr(
-        self: Any, base_attr: int, data: MultiplierData
-    ) -> float:
+    def fake_cal_base_attr(self: Any, base_attr: int, data: MultiplierData) -> float:
         base_attr_calls.append((self, base_attr, data))
         return 444.0
 
@@ -5624,9 +5526,7 @@ def test_regular_mul_branch_matrix_defense_group_delegates_to_module_helpers(
         *,
         addon_pen_ratio: float = 0.0,
     ) -> float:
-        helper_calls.append(
-            ("pen-ratio", static_statement, dynamic_statement, addon_pen_ratio)
-        )
+        helper_calls.append(("pen-ratio", static_statement, dynamic_statement, addon_pen_ratio))
         return 0.33
 
     def fake_calculate_recipient_defense(
@@ -5667,9 +5567,7 @@ def test_regular_mul_branch_matrix_defense_group_delegates_to_module_helpers(
         fake_calculate_recipient_defense,
     )
 
-    assert regular_mul.cal_defense_mul(retained_data) == pytest.approx(
-        777.0 / (777.0 + 123.0)
-    )
+    assert regular_mul.cal_defense_mul(retained_data) == pytest.approx(777.0 / (777.0 + 123.0))
     assert Calculator.RegularMul.cal_pen_ratio(
         retained_data,
         addon_pen_ratio=0.12,
@@ -5757,15 +5655,11 @@ def test_regular_mul_branch_matrix_res_vulnerability_and_special_delegate_to_mod
         )
         return 0.42
 
-    def fake_calculate_damage_vulnerability(
-        dynamic_statement: Any, element_type: Any
-    ) -> float:
+    def fake_calculate_damage_vulnerability(dynamic_statement: Any, element_type: Any) -> float:
         helper_calls.append(("damage-vulnerability", dynamic_statement, element_type))
         return 1.23
 
-    def fake_calculate_stun_vulnerability(
-        enemy_obj: Any, dynamic_statement: Any
-    ) -> float:
+    def fake_calculate_stun_vulnerability(enemy_obj: Any, dynamic_statement: Any) -> float:
         helper_calls.append(("stun-vulnerability", enemy_obj, dynamic_statement))
         return 2.34
 
@@ -5802,16 +5696,12 @@ def test_regular_mul_branch_matrix_res_vulnerability_and_special_delegate_to_mod
         element_type=3,
         snapshot_res_pen=0.44,
     ) == pytest.approx(0.42)
-    assert Calculator.RegularMul.cal_dmg_vulnerability(retained_data) == pytest.approx(
-        1.23
-    )
+    assert Calculator.RegularMul.cal_dmg_vulnerability(retained_data) == pytest.approx(1.23)
     assert Calculator.RegularMul.cal_dmg_vulnerability(
         retained_data,
         element_type=4,
     ) == pytest.approx(1.23)
-    assert Calculator.RegularMul.cal_stun_vulnerability(retained_data) == pytest.approx(
-        2.34
-    )
+    assert Calculator.RegularMul.cal_stun_vulnerability(retained_data) == pytest.approx(2.34)
     assert Calculator.RegularMul.cal_special_mul(retained_data) == pytest.approx(3.45)
     assert helper_calls == [
         (
@@ -5857,9 +5747,7 @@ def test_regular_mul_full_crit_rate_delegates_to_module_helper(
     retained_data = _legacy_multiplier_data(fixture)
     helper_calls: list[tuple[Any, Any]] = []
 
-    def fake_calculate_full_crit_rate(
-        static_statement: Any, dynamic_statement: Any
-    ) -> float:
+    def fake_calculate_full_crit_rate(static_statement: Any, dynamic_statement: Any) -> float:
         helper_calls.append((static_statement, dynamic_statement))
         return 9.87
 
@@ -5973,9 +5861,7 @@ def test_regular_mul_personal_crit_damage_delegates_to_module_helper(
     retained_data = _legacy_multiplier_data(fixture)
     helper_calls: list[tuple[Any, Any]] = []
 
-    def fake_calculate_personal_crit_damage(
-        static_statement: Any, dynamic_statement: Any
-    ) -> float:
+    def fake_calculate_personal_crit_damage(static_statement: Any, dynamic_statement: Any) -> float:
         helper_calls.append((static_statement, dynamic_statement))
         return 8.76
 
@@ -6030,9 +5916,7 @@ def test_reader_personal_crit_damage_anchor_preserves_full_and_personal_crit_con
         fake_cal_personal_crit_dmg,
     )
 
-    reader_value = CalculatorBuffAttributeReader().read_personal_crit_damage(
-        fixture.context
-    )
+    reader_value = CalculatorBuffAttributeReader().read_personal_crit_damage(fixture.context)
 
     assert reader_value == pytest.approx(8.76)
     assert len(formula_calls) == 1
@@ -6111,8 +5995,8 @@ def test_full_crit_damage_reader_api_and_snapshot_contract_stay_bounded(
     retained_dynamic = cast(Any, retained_data).dynamic
     full_crit_damage = Calculator.RegularMul.cal_crit_dmg(retained_data)
     personal_crit_damage = Calculator.RegularMul.cal_personal_crit_dmg(retained_data)
-    reader_personal_crit_damage = (
-        CalculatorBuffAttributeReader().read_personal_crit_damage(fixture.context)
+    reader_personal_crit_damage = CalculatorBuffAttributeReader().read_personal_crit_damage(
+        fixture.context
     )
 
     assert full_crit_damage == pytest.approx(1.4)
@@ -6322,9 +6206,7 @@ def test_calculator_regular_mul_branch_matrix_characterizes_selected_methods(
     )
 
     retained_data = _legacy_multiplier_data(fixture)
-    assert _regular_mul_branch_matrix_values(retained_data) == pytest.approx(
-        expected_values
-    )
+    assert _regular_mul_branch_matrix_values(retained_data) == pytest.approx(expected_values)
 
     if reader_snapshot_supported:
         assert _regular_mul_branch_matrix_values(
@@ -6377,17 +6259,13 @@ def test_regular_mul_retained_sheer_base_attr_requires_char_instance_conversion_
 
     retained_data = _legacy_multiplier_data(fixture)
     assert _regular_mul_base_attr(retained_data, 4) == pytest.approx(355.0)
-    assert Calculator.RegularMul.cal_sheer_dmg_bonus(retained_data) == pytest.approx(
-        1.45
-    )
+    assert Calculator.RegularMul.cal_sheer_dmg_bonus(retained_data) == pytest.approx(1.45)
 
     reader_snapshot_data = _reader_snapshot_data(fixture.context)
     assert not hasattr(reader_snapshot_data, "char_instance")
     with pytest.raises(AttributeError, match="char_instance"):
         _regular_mul_base_attr(reader_snapshot_data, 4)
-    assert Calculator.RegularMul.cal_sheer_dmg_bonus(
-        reader_snapshot_data
-    ) == pytest.approx(1.45)
+    assert Calculator.RegularMul.cal_sheer_dmg_bonus(reader_snapshot_data) == pytest.approx(1.45)
 
     _assert_aggregation_calls(aggregation_calls, fixture, times=2)
 
@@ -6554,9 +6432,7 @@ def test_p2b_parity_fixture_matches_old_personal_crit_damage_helper(
         },
     )
 
-    reader_value = CalculatorBuffAttributeReader().read_personal_crit_damage(
-        fixture.context
-    )
+    reader_value = CalculatorBuffAttributeReader().read_personal_crit_damage(fixture.context)
     reader_data = _reader_snapshot_data(fixture.context)
     old_value = _legacy_personal_crit_damage_oracle(fixture)
 
@@ -6640,9 +6516,9 @@ def test_calculator_am_ap_impact_formula_boundaries_remain_retained_compatibilit
     ):
         assert isinstance(data.dynamic, MultiplierData.DynamicStatement), source_label
         for attr_name, expected_value in expected_dynamic_fields.items():
-            assert getattr(data.dynamic, attr_name) == pytest.approx(
-                expected_value
-            ), f"{source_label}:{attr_name}"
+            assert getattr(data.dynamic, attr_name) == pytest.approx(expected_value), (
+                f"{source_label}:{attr_name}"
+            )
 
     retained_formula_values = {
         "cal_am": Calculator.AnomalyMul.cal_am(retained_data),
@@ -6702,13 +6578,9 @@ def test_calculator_attribute_formula_boundaries_remain_retained_compatibility(
     retained_dynamic = cast(Any, retained_data).dynamic
     formula_boundaries = {
         "cal_crit_rate": Calculator.RegularMul.cal_crit_rate(retained_data),
-        "cal_personal_crit_rate": Calculator.RegularMul.cal_personal_crit_rate(
-            retained_data
-        ),
+        "cal_personal_crit_rate": Calculator.RegularMul.cal_personal_crit_rate(retained_data),
         "cal_crit_dmg": Calculator.RegularMul.cal_crit_dmg(retained_data),
-        "cal_personal_crit_dmg": Calculator.RegularMul.cal_personal_crit_dmg(
-            retained_data
-        ),
+        "cal_personal_crit_dmg": Calculator.RegularMul.cal_personal_crit_dmg(retained_data),
     }
     expected_boundaries = {
         "cal_crit_rate": 0.6,
@@ -6726,16 +6598,12 @@ def test_calculator_attribute_formula_boundaries_remain_retained_compatibility(
 
     assert formula_boundaries == pytest.approx(expected_boundaries)
     # 受暴击字段仍只属于完整双暴公式；个人双暴读口不接收这些字段。
-    assert reader_values == pytest.approx(
-        {key: formula_boundaries[key] for key in reader_values}
-    )
+    assert reader_values == pytest.approx({key: formula_boundaries[key] for key in reader_values})
     assert (
-        formula_boundaries["cal_crit_rate"]
-        - formula_boundaries["cal_personal_crit_rate"]
+        formula_boundaries["cal_crit_rate"] - formula_boundaries["cal_personal_crit_rate"]
     ) == pytest.approx(retained_dynamic.crit_rate_received_increase)
     assert (
-        formula_boundaries["cal_crit_dmg"]
-        - formula_boundaries["cal_personal_crit_dmg"]
+        formula_boundaries["cal_crit_dmg"] - formula_boundaries["cal_personal_crit_dmg"]
     ) == pytest.approx(retained_dynamic.received_crit_dmg_bonus)
     assert retained_dynamic.crit_rate_received_increase == pytest.approx(0.25)
     assert retained_dynamic.received_crit_dmg_bonus == pytest.approx(0.4)
@@ -6791,9 +6659,7 @@ def test_anomaly_bar_settlement_and_copied_snapshot_inputs_remain_retained_compa
     np.testing.assert_allclose(bar.current_ndarray, expected_snapshot)
     source_current_ndarray = bar.current_ndarray
 
-    activation = SimpleNamespace(
-        skill=SimpleNamespace(char_obj=SimpleNamespace(NAME="快照角色"))
-    )
+    activation = SimpleNamespace(skill=SimpleNamespace(char_obj=SimpleNamespace(NAME="快照角色")))
     copied = NewAnomaly(
         bar,
         active_by=cast(Any, activation),
@@ -6858,9 +6724,7 @@ def test_anomaly_bar_current_ndarray_reset_deepcopy_and_shallow_copy_matrix() ->
     source_bar.ready = False
     source_bar.active = True
     source_bar.max_anomaly = 120
-    activation = SimpleNamespace(
-        skill=SimpleNamespace(char_obj=SimpleNamespace(NAME="矩阵角色"))
-    )
+    activation = SimpleNamespace(skill=SimpleNamespace(char_obj=SimpleNamespace(NAME="矩阵角色")))
     source_bar.activated_by = cast(Any, activation)
 
     shallow = AnomalyBar.create_new_from_existing(source_bar)
@@ -6884,13 +6748,9 @@ def test_anomaly_bar_current_ndarray_reset_deepcopy_and_shallow_copy_matrix() ->
 
     source_bar.current_ndarray[0, 0] = -10.0
     assert shallow.current_ndarray[0, 0] == pytest.approx(-10.0)
-    assert deep.current_ndarray[0, 0] == pytest.approx(
-        source_snapshot_before_deepcopy[0, 0]
-    )
+    assert deep.current_ndarray[0, 0] == pytest.approx(source_snapshot_before_deepcopy[0, 0])
     deep.current_ndarray[0, 1] = -20.0
-    assert source_bar.current_ndarray[0, 1] == pytest.approx(
-        source_snapshot_before_deepcopy[0, 1]
-    )
+    assert source_bar.current_ndarray[0, 1] == pytest.approx(source_snapshot_before_deepcopy[0, 1])
 
     active_change_bar = AnomalyBar(sim_instance=cast(Any, sim_instance), element_type=0)
     active_change_bar.current_ndarray = _make_anomaly_snapshot()
@@ -7082,9 +6942,7 @@ def test_cal_anomaly_final_multiplier_helper_preserves_order_and_damage_expectat
     }
     assert list(final_multiplier_by_slot) == list(_CAL_ANOMALY_FINAL_MULTIPLIER_ORDER)
     assert final_multiplier_by_slot["snapshot_impact"] == pytest.approx(snapshot[0, 9])
-    assert final_multiplier_by_slot["snapshot_stun_bonus"] == pytest.approx(
-        snapshot[0, 10]
-    )
+    assert final_multiplier_by_slot["snapshot_stun_bonus"] == pytest.approx(snapshot[0, 10])
 
     damage = cal_anomaly_module._calculate_anomaly_damage_expectation(
         final_multipliers,
@@ -7095,9 +6953,7 @@ def test_cal_anomaly_final_multiplier_helper_preserves_order_and_damage_expectat
 
     assert isinstance(damage, np.float64)
     assert damage == pytest.approx(
-        np.prod(expected_multipliers)
-        / (expected_multipliers[9] * expected_multipliers[10])
-        * 1.25
+        np.prod(expected_multipliers) / (expected_multipliers[9] * expected_multipliers[10]) * 1.25
     )
 
 
@@ -7141,9 +6997,7 @@ def test_anomaly_mul_snapshot_vector_matches_expected_retained_fields(
             character.NAME,
         )
     ]
-    assert anomaly_mul.anomaly_snapshot.shape == (
-        len(_ANOMALY_MUL_SNAPSHOT_FIELDS),
-    )
+    assert anomaly_mul.anomaly_snapshot.shape == (len(_ANOMALY_MUL_SNAPSHOT_FIELDS),)
     np.testing.assert_allclose(
         anomaly_mul.anomaly_snapshot,
         np.array(case.expected_snapshot, dtype=np.float64),
@@ -7158,8 +7012,7 @@ def test_anomaly_mul_snapshot_vector_matches_expected_retained_fields(
     }
     assert snapshot_by_field == pytest.approx(expected_by_field)
     dynamic_inputs = {
-        attr_name: getattr(retained_data.dynamic, attr_name)
-        for attr_name in case.dynamic_attrs
+        attr_name: getattr(retained_data.dynamic, attr_name) for attr_name in case.dynamic_attrs
     }
     assert dynamic_inputs == pytest.approx(case.dynamic_attrs)
 
@@ -7214,9 +7067,7 @@ def test_cal_anomaly_uses_settled_snapshot_mul_data_and_retained_damage_ratios(
         helper_calls.append(("cal_res_mul", data, element_type, snapshot_res_pen))
         return np.float64(0.7)
 
-    def _cal_dmg_vulnerability_probe(
-        data: object, *, element_type: object
-    ) -> np.float64:
+    def _cal_dmg_vulnerability_probe(data: object, *, element_type: object) -> np.float64:
         helper_calls.append(("cal_dmg_vulnerability", data, element_type))
         return np.float64(0.9)
 
@@ -7314,10 +7165,7 @@ def test_cal_anomaly_uses_settled_snapshot_mul_data_and_retained_damage_ratios(
     assert created_mul_data[0].judge_node is anomaly_bar
     assert created_mul_data[0].dynamic_buff is active_buff_view
     assert created_mul_data[0].character_obj is character
-    assert (
-        tuple(created_mul_data[0].enemy_obj.dynamic.dynamic_debuff_list)
-        == enemy_debuffs
-    )
+    assert tuple(created_mul_data[0].enemy_obj.dynamic.dynamic_debuff_list) == enemy_debuffs
     assert tuple(created_mul_data[0].enemy_obj.dynamic.dynamic_dot_list) == enemy_dots
     assert calculator.v_char_level == 60
     assert calculator.dmg_sp is anomaly_bar.current_ndarray
@@ -7430,9 +7278,7 @@ def test_cal_anomaly_multiplier_inputs_remain_retained_mul_data_snapshot(
 
     assert snapshot_inputs == pytest.approx(case.expected_snapshot_fields)
     assert dynamic_inputs == pytest.approx(case.expected_dynamic_fields)
-    assert calculator.v_char_level == int(
-        case.expected_snapshot_fields["virtual_character_level"]
-    )
+    assert calculator.v_char_level == int(case.expected_snapshot_fields["virtual_character_level"])
     np.testing.assert_allclose(
         calculator.final_multipliers,
         np.array(case.expected_final_multipliers, dtype=np.float64),
@@ -7459,9 +7305,7 @@ def test_cal_anomaly_multiplier_inputs_remain_retained_mul_data_snapshot(
         * final_multiplier_by_slot["snapshot_stun_bonus"]
     )
     assert fixture.anomaly_bar.scaling_factor == pytest.approx(case.scaling_factor)
-    assert calculator.cal_anomaly_dmg() == pytest.approx(
-        unscaled_damage * case.scaling_factor
-    )
+    assert calculator.cal_anomaly_dmg() == pytest.approx(unscaled_damage * case.scaling_factor)
 
 
 @pytest.mark.parametrize(
@@ -7535,9 +7379,7 @@ def test_cal_abloom_formula_inputs_and_fixture_blockers(
     assert len(helper_calls) == 1
     helper_vector, helper_base_multiplier, helper_ratio = helper_calls[0]
     assert helper_vector is calculator.final_multipliers
-    assert helper_base_multiplier == pytest.approx(
-        base_case.expected_final_multipliers[0]
-    )
+    assert helper_base_multiplier == pytest.approx(base_case.expected_final_multipliers[0])
     assert helper_ratio == pytest.approx(case.anomaly_dmg_ratio)
     assert abloom_payload.current_ndarray is not fixture.anomaly_bar.current_ndarray
     np.testing.assert_allclose(
@@ -7587,9 +7429,7 @@ def test_cal_abloom_formula_inputs_and_fixture_blockers(
     assert snapshot_inputs == pytest.approx(base_case.expected_snapshot_fields)
     assert dynamic_inputs == pytest.approx(base_case.expected_dynamic_fields)
     assert deterministic_fields == pytest.approx(case.expected_deterministic_fields)
-    assert set(case.copied_payload_sentinel_fields).isdisjoint(
-        formula_expectation_fields
-    )
+    assert set(case.copied_payload_sentinel_fields).isdisjoint(formula_expectation_fields)
     np.testing.assert_allclose(
         calculator.final_multipliers,
         np.array(case.expected_final_multipliers, dtype=np.float64),
@@ -7638,9 +7478,7 @@ def test_cal_disorder_formula_inputs_remain_separate_from_copied_payload(
 
     assert disorder_payload.is_disorder is True
     assert disorder_payload.current_ndarray is not fixture.anomaly_bar.current_ndarray
-    assert disorder_payload.remaining_tick() == pytest.approx(
-        case.expected_remaining_tick
-    )
+    assert disorder_payload.remaining_tick() == pytest.approx(case.expected_remaining_tick)
     for attr_name, value in case.payload_fields.items():
         assert getattr(disorder_payload, attr_name) == value
     assert calculator.dmg_sp is disorder_payload.current_ndarray
@@ -7662,40 +7500,31 @@ def test_cal_disorder_formula_inputs_remain_separate_from_copied_payload(
         calculator.final_multipliers,
         np.array(case.expected_final_multipliers, dtype=np.float64),
     )
-    assert calculator.cal_disorder_base_dmg(
-        np.float64(case.snapshot_values[0])
-    ) == pytest.approx(case.expected_final_multipliers[0])
+    assert calculator.cal_disorder_base_dmg(np.float64(case.snapshot_values[0])) == pytest.approx(
+        case.expected_final_multipliers[0]
+    )
     assert cal_anomaly_module._calculate_disorder_base_damage(
         element_type=case.element_type,
         base_mul=np.float64(case.snapshot_values[0]),
         remaining_tick=disorder_payload.remaining_tick(),
         disorder_basic_mul_map=calculator.data.dynamic.disorder_basic_mul_map,
     ) == pytest.approx(case.expected_final_multipliers[0])
-    assert calculator.cal_disorder_extra_mul() == pytest.approx(
-        case.expected_final_multipliers[4]
-    )
+    assert calculator.cal_disorder_extra_mul() == pytest.approx(case.expected_final_multipliers[4])
     assert cal_anomaly_module._calculate_disorder_extra_multiplier(
         calculator.data.dynamic.ano_extra_bonus
     ) == pytest.approx(case.expected_final_multipliers[4])
-    assert calculator.cal_disorder_stun() == pytest.approx(
-        case.expected_disorder_stun
-    )
+    assert calculator.cal_disorder_stun() == pytest.approx(case.expected_disorder_stun)
     assert cal_anomaly_module._calculate_disorder_stun_multiplier(
         impact=np.float64(calculator.final_multipliers[9]),
         snapshot_stun_bonus=np.float64(calculator.final_multipliers[10]),
-        stun_res=Calculator.StunMul.cal_stun_res(
-            calculator.data, calculator.element_type
-        ),
+        stun_res=Calculator.StunMul.cal_stun_res(calculator.data, calculator.element_type),
         received_stun_increase=Calculator.StunMul.cal_stun_received(calculator.data),
         v_char_level=calculator.v_char_level,
     ) == pytest.approx(case.expected_disorder_stun)
     product_with_snapshot_impact_and_stun = np.prod(case.expected_final_multipliers)
     assert calculator.cal_anomaly_dmg() == pytest.approx(
         product_with_snapshot_impact_and_stun
-        / (
-            case.expected_final_multipliers[9]
-            * case.expected_final_multipliers[10]
-        )
+        / (case.expected_final_multipliers[9] * case.expected_final_multipliers[10])
         * case.scaling_factor
     )
 
@@ -7720,9 +7549,7 @@ def test_cal_polarity_disorder_formula_inputs_and_payload_boundary(
     fixture.anomaly_bar.max_duration = base_case.max_duration
     fixture.anomaly_bar.last_active = base_case.last_active
     fixture.enemy.dynamic.stun = False
-    fixture.enemy.stun_resistance_dict[
-        base_case.element_type
-    ] = base_case.enemy_stun_resistance
+    fixture.enemy.stun_resistance_dict[base_case.element_type] = base_case.enemy_stun_resistance
     aggregation_calls = _patch_buff_aggregation(
         monkeypatch,
         _dynamic_statement_by_attr(**case.dynamic_attrs),
@@ -7764,17 +7591,11 @@ def test_cal_polarity_disorder_formula_inputs_and_payload_boundary(
 
     assert polarity_payload.is_disorder is True
     assert polarity_payload.current_ndarray is not fixture.anomaly_bar.current_ndarray
-    assert polarity_payload.remaining_tick() == pytest.approx(
-        base_case.expected_remaining_tick
-    )
+    assert polarity_payload.remaining_tick() == pytest.approx(base_case.expected_remaining_tick)
     for attr_name, value in payload_fields.items():
         assert getattr(polarity_payload, attr_name) == value
-    assert polarity_payload.polarity_disorder_ratio == pytest.approx(
-        case.polarity_disorder_ratio
-    )
-    assert polarity_payload.additional_dmg_ap_ratio == pytest.approx(
-        case.additional_dmg_ap_ratio
-    )
+    assert polarity_payload.polarity_disorder_ratio == pytest.approx(case.polarity_disorder_ratio)
+    assert polarity_payload.additional_dmg_ap_ratio == pytest.approx(case.additional_dmg_ap_ratio)
     assert calculator.dmg_sp is polarity_payload.current_ndarray
     assert calculator.data.judge_node is polarity_payload
     assert aggregation_calls == [
@@ -7835,10 +7656,7 @@ def test_cal_polarity_disorder_formula_inputs_and_payload_boundary(
     )
     assert calculator.cal_anomaly_dmg() == pytest.approx(
         np.prod(case.expected_final_multipliers)
-        / (
-            case.expected_final_multipliers[9]
-            * case.expected_final_multipliers[10]
-        )
+        / (case.expected_final_multipliers[9] * case.expected_final_multipliers[10])
         * base_case.scaling_factor
     )
 
@@ -7898,9 +7716,7 @@ def test_branch_blade_song_gate_uses_attribute_reader_with_old_helper_parity(
     assert "read_anomaly_mastery" in source
     assert reader_gate == old_gate
     assert reader_gate is expected_gate
-    assert get_prepared_calls == [
-        {"equipper": "折枝剑歌", "enemy": 1}
-    ]
+    assert get_prepared_calls == [{"equipper": "折枝剑歌", "enemy": 1}]
     assert aggregation_calls == [
         (
             fixture.expected_enabled_buff,
@@ -7972,9 +7788,7 @@ def test_timeweaver_disorder_gate_uses_attribute_reader_with_old_helper_parity(
     assert "read_anomaly_proficiency" in source
     assert reader_gate == old_gate
     assert bool(reader_gate) is expected_gate
-    assert get_prepared_calls == [
-        {"equipper": "时流贤者", "preload_data": 1, "enemy": 1}
-    ]
+    assert get_prepared_calls == [{"equipper": "时流贤者", "preload_data": 1, "enemy": 1}]
     assert aggregation_calls == [
         (
             fixture.expected_enabled_buff,
@@ -8021,8 +7835,8 @@ def test_lina_pen_ratio_bonus_uses_reader_service_with_old_helper_parity(
         ft=SimpleNamespace(maxcount=99.0),
         dy=SimpleNamespace(count=0.0),
     )
-    buff_instance.simple_start = (
-        lambda tick, sub_exist: simple_start_calls.append((tick, sub_exist))
+    buff_instance.simple_start = lambda tick, sub_exist: simple_start_calls.append(
+        (tick, sub_exist)
     )
     buff_instance.update_to_buff_0 = lambda buff_0_arg: update_calls.append(buff_0_arg)
     logic.buff_instance = buff_instance

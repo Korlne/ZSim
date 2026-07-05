@@ -12,7 +12,6 @@ from zsim.sim_progress.calculation.inputs.anomaly import (
 from zsim.sim_progress.calculation.results.anomaly import AnomalyDamageResult
 from zsim.sim_progress.calculation.results.common import MultiplierVector
 
-
 ANOMALY_DAMAGE_MULTIPLIER_LABELS = (
     "base_damage",
     "damage_bonus",
@@ -64,9 +63,7 @@ def calculate_anomaly_damage_expectation(
 ) -> np.float64:
     """计算异常伤害期望，保留旧公式中的冲击力与失衡值增幅抵消。"""
     return np.float64(
-        np.prod(tuple(final_multipliers))
-        / (snapshot_impact * snapshot_stun_bonus)
-        * scaling_factor
+        np.prod(tuple(final_multipliers)) / (snapshot_impact * snapshot_stun_bonus) * scaling_factor
     )
 
 
@@ -98,7 +95,7 @@ def apply_anomaly_damage_ratio(
 ) -> MultiplierVector:
     """应用紊乱绽放异常伤害倍率，等价于旧公式乘区 0 的倍率调整。"""
     if not final_multipliers.values:
-        raise ValueError("Anomaly damage multiplier vector cannot be empty")
+        raise ValueError("异常伤害乘区向量不能为空")
     values = (
         np.float64(final_multipliers.values[0]) * anomaly_damage_ratio,
         *final_multipliers.values[1:],

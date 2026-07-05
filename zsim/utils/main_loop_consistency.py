@@ -23,8 +23,14 @@ from zsim.models.session.session_result import (
     DAMAGE_RESULT_SECTIONS,
     DAMAGE_UUID_AGGREGATE_FIELDS,
     NORMAL_RESULT_OPTIONAL_SECTIONS,
+)
+from zsim.models.session.session_result import (
     normalize_buff_timeline_entry as normalize_result_buff_timeline_entry,
+)
+from zsim.models.session.session_result import (
     normalize_buff_timeline_payload as normalize_result_buff_timeline_payload,
+)
+from zsim.models.session.session_result import (
     normalize_buff_timeline_value as normalize_result_buff_timeline_value,
 )
 from zsim.models.session.session_run import CommonCfg
@@ -53,9 +59,8 @@ MULTI_TEAM_CONSISTENCY_SCHEMA = "zsim-buffload-opt-in-multi-team-consistency.v1"
 EXTERNAL_GOLDEN_PARITY_SCHEMA = "zsim-external-golden-parity.v1"
 EXTERNAL_GOLDEN_MATRIX_SCHEMA = "zsim-external-golden-matrix.v1"
 EXTERNAL_GOLDEN_MATRIX_ROW_SCHEMA = "zsim-external-golden-matrix-row.v1"
-EXTERNAL_GOLDEN_DATA_ANALYSIS_CONTRACT_SCHEMA = (
-    "zsim-external-golden-data-analysis-contract.v1"
-)
+EXTERNAL_GOLDEN_DATA_ANALYSIS_CONTRACT_SCHEMA = "zsim-external-golden-data-analysis-contract.v1"
+CONSISTENCY_RNG_SEED = 20260705
 RUNTIME_LABEL_CONTRACT = {
     "mode": "label-only-current-runtime",
     "description": (
@@ -146,7 +151,7 @@ def _load_team_config(team_name: str) -> CommonCfg:
     team_config = registry.get_team(team_name)
     if team_config is None:
         available = ", ".join(sorted(registry.list_team_names()))
-        raise ValueError(f"unknown team '{team_name}'. available teams: {available}")
+        raise ValueError(f"未知队伍：{team_name}。可用队伍：{available}")
     return team_config.create_config()
 
 
@@ -161,6 +166,7 @@ def _run_single_runtime_process(
     common_cfg_data: dict[str, Any],
     stop_tick: int,
     use_indexed_buff_load_loop: bool = False,
+    rng_seed: int | None = None,
 ) -> str:
     os.chdir(PROJECT_ROOT)
     common_cfg = CommonCfg.model_validate(common_cfg_data)
@@ -170,6 +176,7 @@ def _run_single_runtime_process(
         sim_cfg=None,
         stop_tick=stop_tick,
         use_indexed_buff_load_loop=use_indexed_buff_load_loop,
+        rng_seed=rng_seed,
     )
     return confirmation.session_id
 
@@ -190,9 +197,7 @@ def _summarize_event_counts(
 
     disorder_total = 0
     if "is_disorder" in dmg_result_df.columns:
-        disorder_total = int(
-            dmg_result_df.filter(pl.col("is_disorder").fill_null(False) == True).height  # noqa: E712
-        )
+        disorder_total = int(dmg_result_df.filter(pl.col("is_disorder").fill_null(False)).height)
 
     return {
         "total": int(uuid_df.height),
@@ -228,7 +233,7 @@ def _prepare_damage_data_for_consistency(session_id: str) -> tuple[pl.DataFrame,
         dmg_result_df = dmg_data["dmg_result_df"]
         uuid_df = dmg_data["uuid_df"]
         if not isinstance(dmg_result_df, pl.DataFrame) or not isinstance(uuid_df, pl.DataFrame):
-            raise RuntimeError(f"unexpected damage payload for session '{session_id}'")
+            raise RuntimeError(f"会话 {session_id} 的伤害结果格式异常")
         return dmg_result_df, uuid_df
 
     dmg_result_df = _normalize_consistency_damage_df(_load_damage_result_df(session_id))
@@ -263,11 +268,9 @@ def _event_count_differences(
         new_buff_map = new_buff_counts.get(key, {})
         keys = sorted(set(baseline_map) | set(new_buff_map))
         return {
-            item_key: int(new_buff_map.get(item_key, 0))
-            - int(baseline_map.get(item_key, 0))
+            item_key: int(new_buff_map.get(item_key, 0)) - int(baseline_map.get(item_key, 0))
             for item_key in keys
-            if int(new_buff_map.get(item_key, 0))
-            != int(baseline_map.get(item_key, 0))
+            if int(new_buff_map.get(item_key, 0)) != int(baseline_map.get(item_key, 0))
         }
 
     return {
@@ -449,7 +452,7 @@ def build_multi_team_consistency_summary(
     generated_at: str | None = None,
 ) -> dict[str, Any]:
     if not reports:
-        raise ValueError("multi-team consistency summary requires at least one report")
+        raise ValueError("多队伍一致性摘要至少需要一份报告")
 
     matrix_results = [_team_consistency_summary(report) for report in reports]
     teams = list(dict.fromkeys(result["team"] for result in matrix_results))
@@ -515,10 +518,10 @@ def run_multi_team_main_loop_consistency(
     output_path: str | Path | None = None,
 ) -> dict[str, Any]:
     if not teams:
-        raise ValueError("at least one team is required")
+        raise ValueError("至少需要指定一个队伍")
     matrix_stop_ticks = list(stop_ticks or [stop_tick])
     if not matrix_stop_ticks:
-        raise ValueError("at least one stop tick is required")
+        raise ValueError("至少需要指定一个停止 tick")
     baseline_label = _resolve_baseline_runtime_label(
         baseline_runtime=baseline_runtime,
         default="default-current-path",
@@ -584,6 +587,7 @@ def run_main_loop_consistency(
                 runtime_cfg_data,
                 stop_tick,
                 use_indexed_buff_load_loop,
+                CONSISTENCY_RNG_SEED,
             )
             finished_session_id = future.result()
 
@@ -606,16 +610,16 @@ def run_main_loop_consistency(
 def _resolve_existing_directory(path: str | Path, label: str) -> Path:
     resolved = Path(path).expanduser()
     if not resolved.exists():
-        raise FileNotFoundError(f"{label} does not exist: {resolved}")
+        raise FileNotFoundError(f"{label} 不存在：{resolved}")
     if not resolved.is_dir():
-        raise NotADirectoryError(f"{label} is not a directory: {resolved}")
+        raise NotADirectoryError(f"{label} 不是目录：{resolved}")
     return resolved.resolve()
 
 
 def _load_common_cfg_from_file(common_cfg_path: str | Path) -> CommonCfg:
     path = Path(common_cfg_path).expanduser()
     if not path.exists():
-        raise FileNotFoundError(f"common cfg file does not exist: {path}")
+        raise FileNotFoundError(f"通用配置文件不存在：{path}")
     payload = json.loads(path.read_text(encoding="utf-8"))
     if isinstance(payload, dict) and isinstance(payload.get("common_config"), dict):
         payload = payload["common_config"]
@@ -631,7 +635,7 @@ def _prepare_external_golden_common_cfg(
     has_team = team is not None
     has_common_cfg = common_cfg is not None
     if has_team == has_common_cfg:
-        raise ValueError("provide exactly one run config input: --team or --common-cfg")
+        raise ValueError("只能提供一种运行配置输入：--team 或 --common-cfg")
 
     if team is not None:
         prepared_cfg = _prepare_common_cfg(team, apl)
@@ -725,10 +729,7 @@ def _count_by_string_value(df: pl.DataFrame, column: str) -> dict[str, int]:
         .len()
         .sort("__count_key")
     )
-    return {
-        str(row["__count_key"]): int(row["len"])
-        for row in grouped.iter_rows(named=True)
-    }
+    return {str(row["__count_key"]): int(row["len"]) for row in grouped.iter_rows(named=True)}
 
 
 def _diff_count_maps(golden: dict[str, int], candidate: dict[str, int]) -> dict[str, int]:
@@ -817,7 +818,9 @@ def _damage_uuid_differences(
 ) -> dict[str, Any]:
     golden_by_uuid = {record["UUID"]: record for record in golden_records}
     candidate_by_uuid = {record["UUID"]: record for record in candidate_records}
-    golden_only = [golden_by_uuid[key] for key in sorted(set(golden_by_uuid) - set(candidate_by_uuid))]
+    golden_only = [
+        golden_by_uuid[key] for key in sorted(set(golden_by_uuid) - set(candidate_by_uuid))
+    ]
     candidate_only = [
         candidate_by_uuid[key] for key in sorted(set(candidate_by_uuid) - set(golden_by_uuid))
     ]
@@ -894,9 +897,11 @@ def _build_external_damage_domain(
     golden = _load_external_damage_data(golden_result_dir)
     candidate = _load_external_damage_data(candidate_result_path)
     scalar_differences = {
-        key: round(float(candidate.summary[key]) - float(golden.summary[key]), 4)
-        if key == "total_damage"
-        else int(candidate.summary[key]) - int(golden.summary[key])
+        key: (
+            round(float(candidate.summary[key]) - float(golden.summary[key]), 4)
+            if key == "total_damage"
+            else int(candidate.summary[key]) - int(golden.summary[key])
+        )
         for key in (
             "total_damage",
             "row_count",
@@ -1102,14 +1107,10 @@ def _buff_timeline_entry_differences(
     candidate_keys = set(candidate_by_key)
 
     baseline_only = [
-        record
-        for key in sorted(golden_keys - candidate_keys)
-        for record in golden_by_key[key]
+        record for key in sorted(golden_keys - candidate_keys) for record in golden_by_key[key]
     ]
     candidate_only = [
-        record
-        for key in sorted(candidate_keys - golden_keys)
-        for record in candidate_by_key[key]
+        record for key in sorted(candidate_keys - golden_keys) for record in candidate_by_key[key]
     ]
     changed: list[dict[str, Any]] = []
     for key in sorted(golden_keys & candidate_keys):
@@ -1257,7 +1258,9 @@ def _json_path_differences(golden_payload: Any, candidate_payload: Any) -> dict[
         "candidate_only_path_count": len(candidate_paths - golden_paths),
         "changed_type_count": len(changed_types),
         "changed_value_count": len(changed_values),
-        "sample_golden_only_paths": sorted(golden_paths - candidate_paths)[:_DAMAGE_DIFF_SAMPLE_LIMIT],
+        "sample_golden_only_paths": sorted(golden_paths - candidate_paths)[
+            :_DAMAGE_DIFF_SAMPLE_LIMIT
+        ],
         "sample_candidate_only_paths": sorted(candidate_paths - golden_paths)[
             :_DAMAGE_DIFF_SAMPLE_LIMIT
         ],
@@ -1327,7 +1330,9 @@ def _build_damage_attribution_domain(
             "sample_changed_values": path_differences["sample_changed_values"],
         }
 
-    matches = golden_present == candidate_present and (not both_present or structure_matches and values_match)
+    matches = golden_present == candidate_present and (
+        not both_present or structure_matches and values_match
+    )
     status = "not_provided"
     if golden_present or candidate_present:
         status = "match" if matches else "mismatch"
@@ -1446,7 +1451,7 @@ def run_external_golden_parity(
     output_path: str | Path | None = None,
 ) -> dict[str, Any]:
     os.chdir(PROJECT_ROOT)
-    golden_path = _resolve_existing_directory(golden_result_dir, "golden result directory")
+    golden_path = _resolve_existing_directory(golden_result_dir, "golden 结果目录")
     base_cfg, run_config_identity = _prepare_external_golden_common_cfg(
         team=team,
         common_cfg=common_cfg,
@@ -1482,13 +1487,13 @@ def run_external_golden_parity(
 def _load_external_golden_matrix_config(matrix_config_path: str | Path) -> dict[str, Any]:
     path = Path(matrix_config_path).expanduser()
     if not path.exists():
-        raise FileNotFoundError(f"matrix config does not exist: {path}")
+        raise FileNotFoundError(f"matrix 配置不存在：{path}")
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        raise ValueError("matrix config must be a JSON object")
+        raise ValueError("matrix 配置必须是 JSON 对象")
     rows = payload.get("rows")
     if not isinstance(rows, list):
-        raise ValueError("matrix config must contain a rows list")
+        raise ValueError("matrix 配置必须包含 rows 列表")
     return payload
 
 
@@ -1597,7 +1602,7 @@ def _validate_external_golden_matrix_row(
         blocked = _external_golden_matrix_blocked_row(
             row={},
             index=index,
-            reason="matrix row must be an object",
+            reason="matrix 行必须是对象",
             reason_code="invalid-row-type",
             default_tolerance_policy=default_tolerance_policy,
         )
@@ -1608,7 +1613,7 @@ def _validate_external_golden_matrix_row(
         blocked = _external_golden_matrix_blocked_row(
             row=row,
             index=index,
-            reason="missing_input_policy must be block, skip, or provisional",
+            reason="missing_input_policy 必须是 block、skip 或 provisional",
             reason_code="invalid-missing-input-policy",
             default_tolerance_policy=default_tolerance_policy,
         )
@@ -1667,7 +1672,7 @@ def _validate_external_golden_matrix_row(
         blocked = _external_golden_matrix_blocked_row(
             row=row,
             index=index,
-            reason="matrix row stop_tick must be a positive integer",
+            reason="matrix 行 stop_tick 必须是正整数",
             reason_code="invalid-stop-tick",
             default_tolerance_policy=default_tolerance_policy,
         )
@@ -1895,8 +1900,7 @@ def _external_golden_matrix_completed_row(
     unavailable_expected = [
         name
         for name, status in diff_domain_status.items()
-        if status["expected"]
-        and (not status["implemented"] or status["status"] == "not_provided")
+        if status["expected"] and (not status["implemented"] or status["status"] == "not_provided")
     ]
     mismatched_expected = [
         name
@@ -1973,9 +1977,9 @@ def _external_golden_matrix_signoff_status(rows: list[dict[str, Any]]) -> str:
         return "blocked"
     passed_rows = [row for row in rows if row.get("status") == "pass"]
     fixture_only = bool(passed_rows) and all(
-        str(row.get("golden_result_dir", "")).replace("\\", "/").find(
-            "tests/fixtures/external_golden_parity/"
-        )
+        str(row.get("golden_result_dir", ""))
+        .replace("\\", "/")
+        .find("tests/fixtures/external_golden_parity/")
         >= 0
         for row in passed_rows
     )
@@ -2001,9 +2005,7 @@ def build_external_golden_matrix_summary(
         "row_schema": EXTERNAL_GOLDEN_MATRIX_ROW_SCHEMA,
         "generated_at": generated_at or time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "matrix_source": matrix_source,
-        "signoff_metadata": dict(signoff_metadata)
-        if isinstance(signoff_metadata, dict)
-        else {},
+        "signoff_metadata": dict(signoff_metadata) if isinstance(signoff_metadata, dict) else {},
         "row_count": len(rows),
         "counts": counts,
         "pass_count": counts["pass"],
@@ -2029,9 +2031,9 @@ def run_external_golden_matrix(
     output_path: str | Path | None = None,
 ) -> dict[str, Any]:
     if matrix_config_path is not None and (matrix_config is not None or rows is not None):
-        raise ValueError("provide matrix_config_path or in-memory rows/config, not both")
+        raise ValueError("只能提供 matrix_config_path 或内存中的 rows/config，不能同时提供")
     if matrix_config is not None and rows is not None:
-        raise ValueError("provide matrix_config or rows, not both")
+        raise ValueError("只能提供 matrix_config 或 rows，不能同时提供")
 
     source: dict[str, Any]
     if matrix_config_path is not None:
@@ -2046,7 +2048,7 @@ def run_external_golden_matrix(
     elif matrix_config is not None:
         matrix_rows = matrix_config.get("rows", [])
         if not isinstance(matrix_rows, list):
-            raise ValueError("matrix config must contain a rows list")
+            raise ValueError("矩阵配置必须包含 rows 列表")
         source = {
             "kind": "matrix_config",
             "path": None,
@@ -2060,7 +2062,7 @@ def run_external_golden_matrix(
             "schema": None,
         }
     else:
-        raise ValueError("matrix rows are required")
+        raise ValueError("矩阵 rows 不能为空")
 
     if matrix_config is not None:
         signoff_metadata = _matrix_config_signoff_metadata(matrix_config)
@@ -2141,24 +2143,24 @@ def run_external_golden_matrix(
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Run a Buff main-loop consistency comparison")
-    parser.add_argument("--team", default=None, help="Registered team name to simulate")
+    parser = argparse.ArgumentParser(description="运行 Buff 主循环一致性对比")
+    parser.add_argument("--team", default=None, help="要模拟的已注册队伍名称")
     parser.add_argument(
         "--teams",
         nargs="+",
         default=None,
-        help="Registered team names to simulate into one multi-team summary.",
+        help="要模拟的多个已注册队伍名称，并汇总为一份多队伍摘要。",
     )
     parser.add_argument(
         "--apl",
         default=None,
-        help="Optional APL path override. Defaults to the selected team's config.",
+        help="可选：覆盖 APL 路径。默认使用所选队伍配置。",
     )
     parser.add_argument(
         "--stop-tick",
         type=int,
         default=config.stop_tick,
-        help="Stop tick for each runtime run.",
+        help="每次运行的停止 tick。",
     )
     parser.add_argument(
         "--stop-ticks",
@@ -2166,102 +2168,102 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         help=(
-            "Optional stop-tick matrix for --teams. When omitted, --teams preserves "
-            "the single --stop-tick behavior."
+            "可选：为 --teams 指定 stop-tick 矩阵。省略时，--teams 使用单个 "
+            "--stop-tick 的行为。"
         ),
     )
     parser.add_argument(
         "--baseline-runtime",
         dest="baseline_runtime",
         default="default-current",
-        help="First/default current run label to record in the report; this does not select a runtime.",
+        help="报告中记录的第一组/默认当前运行标签；该参数不选择实际运行时。",
     )
     parser.add_argument(
         "--new-buff-runtime",
         default="new-buff-current",
-        help="Second run label to record in the report; this does not select a runtime.",
+        help="报告中记录的第二组运行标签；该参数不选择实际运行时。",
     )
     parser.add_argument(
         "--keep-artifacts",
         action="store_true",
-        help="Keep raw results/<session_id> artifacts after the report is generated.",
+        help="报告生成后保留原始 results/<session_id> 产物。",
     )
     parser.add_argument(
         "--new-buff-use-indexed-buff-load-loop",
         action="store_true",
         help=(
-            "Explicitly request indexed BuffLoadLoop for the new Buff run only; "
-            "omitting this keeps both runs on the default current path."
+            "仅为 new Buff 运行显式启用带索引的 BuffLoadLoop；"
+            "省略时两组运行都使用默认当前路径。"
         ),
     )
     parser.add_argument(
         "--summary-json",
         default=None,
-        help="Optional JSON artifact path for the generated report or multi-team summary.",
+        help="可选：生成报告或多队伍摘要的 JSON 产物路径。",
     )
     parser.add_argument(
         "--json",
         action="store_true",
-        help="Print the full JSON report to stdout.",
+        help="将完整 JSON 报告打印到标准输出。",
     )
     return parser
 
 
 def build_external_golden_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Run one current Buff simulation and compare it with an external golden result directory"
+        description="运行一次当前 Buff 模拟，并与外部 golden 结果目录对比"
     )
     parser.add_argument(
         "--golden-result-dir",
         required=True,
-        help="External golden result directory to compare against.",
+        help="用于对比的外部 golden 结果目录。",
     )
     run_config_group = parser.add_mutually_exclusive_group(required=True)
-    run_config_group.add_argument("--team", default=None, help="Registered team name to simulate.")
+    run_config_group.add_argument("--team", default=None, help="要模拟的已注册队伍名称。")
     run_config_group.add_argument(
         "--common-cfg",
         default=None,
-        help="Path to a CommonCfg JSON file, or a SessionRun JSON file containing common_config.",
+        help="CommonCfg JSON 文件路径，或包含 common_config 的 SessionRun JSON 文件路径。",
     )
     parser.add_argument(
         "--apl",
         default=None,
-        help="Optional APL path override for the selected team or common config.",
+        help="可选：覆盖所选队伍或通用配置中的 APL 路径。",
     )
     parser.add_argument(
         "--stop-tick",
         type=int,
         default=config.stop_tick,
-        help="Stop tick for the single candidate run.",
+        help="单次候选运行的停止 tick。",
     )
     parser.add_argument(
         "--output-json",
         required=True,
-        help="JSON artifact path for the external golden parity envelope.",
+        help="外部 golden 对齐结果的 JSON 产物路径。",
     )
     return parser
 
 
 def build_external_golden_matrix_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Run an explicit external golden matrix and write an aggregate JSON summary"
+        description="运行显式外部 golden 矩阵，并写出聚合 JSON 摘要"
     )
     source_group = parser.add_mutually_exclusive_group(required=True)
     source_group.add_argument(
         "--matrix-config",
         default=None,
-        help="JSON matrix config containing a rows list.",
+        help="包含 rows 列表的 JSON 矩阵配置。",
     )
     source_group.add_argument(
         "--row-json",
         action="append",
         default=None,
-        help="Single matrix row as a JSON object. Repeat for multiple explicit rows.",
+        help="单条 JSON 矩阵行。可重复传入多条显式行。",
     )
     parser.add_argument(
         "--output-json",
         required=True,
-        help="JSON artifact path for the external golden matrix aggregate.",
+        help="外部 golden 矩阵聚合结果的 JSON 产物路径。",
     )
     return parser
 
@@ -2332,9 +2334,7 @@ def _format_external_golden_matrix_human_summary(summary: dict[str, Any]) -> str
             f"blocked_count: {counts['blocked']}",
             f"signoff_status: {summary['signoff_status']}",
             "rows: "
-            + ", ".join(
-                f"{row.get('row_id')}={row.get('status')}" for row in summary["rows"]
-            ),
+            + ", ".join(f"{row.get('row_id')}={row.get('status')}" for row in summary["rows"]),
         ]
     )
 

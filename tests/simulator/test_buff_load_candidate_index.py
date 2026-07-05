@@ -6,8 +6,8 @@ from typing import Any
 import pandas as pd
 
 from zsim.sim_progress.Buff import BuffLoad as bl
-from zsim.sim_progress.Buff.BuffLoad import BuffLoadCandidateIndex, BuffLoadLoop
 from zsim.sim_progress.Buff.buff_class import Buff
+from zsim.sim_progress.Buff.BuffLoad import BuffLoadCandidateIndex, BuffLoadLoop
 from zsim.sim_progress.Load import LoadingMission
 from zsim.sim_progress.ScheduledEvent.buff_runtime import (
     BuffTemplateRegistry,
@@ -19,6 +19,7 @@ def _buff(
     index: str,
     *,
     operator: str = "alpha",
+    add_buff_to: int = 1000,
     simple_judge_logic: bool = True,
     simple_effect_logic: bool = True,
     schedule_judge: bool = False,
@@ -30,7 +31,7 @@ def _buff(
     buff.ft = SimpleNamespace(
         index=index,
         operator=operator,
-        add_buff_to=1000,
+        add_buff_to=add_buff_to,
         schedule_judge=schedule_judge,
         passively_updating=passively_updating,
         backend_acitve=backend_acitve,
@@ -269,9 +270,7 @@ def test_complex_prefilters_skip_only_failed_necessary_conditions(monkeypatch) -
         "Buff-武器-精5索魂影眸-减防",
     )
     assert aftershock_selection.fallback_candidate_count == 2
-    assert yixuan_q_selection.candidate_keys == (
-        "Buff-角色-仪玄-2画-失衡时间提升",
-    )
+    assert yixuan_q_selection.candidate_keys == ("Buff-角色-仪玄-2画-失衡时间提升",)
 
 
 def test_named_complex_prefilters_keep_only_required_mission_shapes(monkeypatch) -> None:
@@ -344,15 +343,9 @@ def test_named_complex_prefilters_keep_only_required_mission_shapes(monkeypatch)
     assert yixuan_self_selection.candidate_keys == ()
     assert yixuan_self_selection.skipped_candidate_count == 2
     assert yixuan_c4_selection.candidate_keys == ("Buff-角色-仪玄-4画-静心",)
-    assert yixuan_teammate_selection.candidate_keys == (
-        "Buff-角色-仪玄-1画-落雷触发器",
-    )
-    assert astra_selection.candidate_keys == (
-        "Buff-角色-耀佳音-震音管理器-触发器",
-    )
-    assert trigger_aftershock_selection.candidate_keys == (
-        "Buff-角色-扳机-1画-失衡易伤提升",
-    )
+    assert yixuan_teammate_selection.candidate_keys == ("Buff-角色-仪玄-1画-落雷触发器",)
+    assert astra_selection.candidate_keys == ("Buff-角色-耀佳音-震音管理器-触发器",)
+    assert trigger_aftershock_selection.candidate_keys == ("Buff-角色-扳机-1画-失衡易伤提升",)
 
 
 def test_complex_effect_with_simple_judge_can_still_be_statically_skipped(

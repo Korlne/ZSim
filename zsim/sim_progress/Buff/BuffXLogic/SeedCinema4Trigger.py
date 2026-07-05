@@ -1,7 +1,7 @@
 from .. import Buff, check_preparation
 from ..JudgeTools import build_preparation_context_from_buff
-from ._preparation_helpers import ensure_owner_template_record, prepare_with_context
 from ._buff_record_base_class import BuffRecordBaseClass as BRBC
+from ._preparation_helpers import ensure_owner_template_record, prepare_with_context
 
 
 class SeedCinema4TriggerRecord(BRBC):
@@ -30,7 +30,7 @@ class SeedCinema4Trigger(Buff.BuffLogic):
     def check_record_module(self):
         ensure_owner_template_record(
             self,
-            owner_name='席德',
+            owner_name="席德",
             record_factory=SeedCinema4TriggerRecord,
             context_builder=build_preparation_context_from_buff,
         )

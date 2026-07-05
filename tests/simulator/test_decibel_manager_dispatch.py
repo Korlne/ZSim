@@ -1,21 +1,20 @@
 from __future__ import annotations
 
+import sys
 from types import SimpleNamespace
 from typing import cast
 
 import zsim.define as define_module
 
-import sys
-
 sys.modules.setdefault("define", define_module)
 
 from zsim.sim_progress.data_struct.DecibelManager.DecibelManagerClass import Decibelmanager
-from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
-from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
-    ScheduledEventEmitterProvider,
-)
 from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
+)
+from zsim.sim_progress.data_struct.sp_update_data import ScheduleRefreshData
 
 
 class _FailFastEventList(list):

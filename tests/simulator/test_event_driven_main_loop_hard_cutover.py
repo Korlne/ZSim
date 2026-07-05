@@ -6,12 +6,12 @@ from typing import Any, cast
 import pytest
 
 import zsim.simulator.simulator_class as simulator_class
+from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
+from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
 from zsim.sim_progress.SimulationEngine import (
     PlannedEventQueueWakeupSource,
     StopTickWakeupSource,
 )
-from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
-from zsim.sim_progress.data_struct.planned_queue import PlannedEventQueue
 from zsim.simulator.simulator_class import (
     EnemySpecialStateWakeupSource,
     LoadMissionWakeupSource,
@@ -230,9 +230,7 @@ def test_main_loop_wakeup_sources_pass_apl_resource_thresholds() -> None:
         ),
         strategy=SimpleNamespace(
             apl_engine=SimpleNamespace(
-                apl=SimpleNamespace(
-                    apl_operator=SimpleNamespace(apl_unit_inventory={1: apl_unit})
-                )
+                apl=SimpleNamespace(apl_operator=SimpleNamespace(apl_unit_inventory={1: apl_unit}))
             )
         ),
     )

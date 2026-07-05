@@ -50,9 +50,7 @@ class HailstormShrineIceBonus(Buff.BuffLogic):
         self.check_record_module()
         self.get_prepared(equipper="霰落星殿", enemy=1, action_stack=1)
         action_now = self.record.action_stack.peek()
-        current_anomalies = snapshot_enemy_anomaly_states(
-            self.record.enemy, anomaly_name_list
-        )
+        current_anomalies = snapshot_enemy_anomaly_states(self.record.enemy, anomaly_name_list)
         # 判断总异常数量是否 >= 2
         if sum(current_anomalies.values()) >= 2 or sum(self.record.anomaly_state.values()) >= 2:
             raise ValueError("当前ticks总异常数量为2！")

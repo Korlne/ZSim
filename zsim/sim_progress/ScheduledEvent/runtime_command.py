@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 
 from zsim.sim_progress.Update.UpdateAnomaly import (
     create_anomaly_runtime_context,
-    update_anomaly as _run_update_anomaly,
 )
+from zsim.sim_progress.Update.UpdateAnomaly import update_anomaly as _run_update_anomaly
 
 
 def run_update_anomaly(**kwargs) -> None:
@@ -14,14 +14,16 @@ def run_update_anomaly(**kwargs) -> None:
 
 
 if TYPE_CHECKING:
-    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeFacade
-    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeReadPort
-    from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
+    from zsim.sim_progress.anomaly_bar import AnomalyBar
+    from zsim.sim_progress.data_struct import ActionStack
     from zsim.sim_progress.Enemy import Enemy
     from zsim.sim_progress.Load import LoadingMission
     from zsim.sim_progress.Preload import SkillNode
-    from zsim.sim_progress.anomaly_bar import AnomalyBar
-    from zsim.sim_progress.data_struct import ActionStack
+    from zsim.sim_progress.ScheduledEvent.buff_runtime import (
+        BuffRuntimeFacade,
+        BuffRuntimeReadPort,
+        BuffRuntimeState,
+    )
     from zsim.simulator.dataclasses import ScheduleData
     from zsim.simulator.simulator_class import Simulator
 
@@ -124,7 +126,7 @@ class _RuntimeCommandAdapterBase(RuntimeCommandPort):
 
 
 class DefaultRuntimeCommandAdapter(_RuntimeCommandAdapterBase):
-    """Production runtime command adapter backed by run-scoped Buff runtime state."""
+    """基于本轮模拟 Buff runtime state 的生产路径命令适配器。"""
 
     def __init__(
         self,

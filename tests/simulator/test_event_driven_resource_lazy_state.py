@@ -9,10 +9,10 @@ from zsim.sim_progress.Character.wakeup import (
 )
 from zsim.sim_progress.Character.Yixuan import Yixuan
 from zsim.sim_progress.Character.Yixuan.AdrenalineEventClass import AuricArray
+from zsim.sim_progress.data_struct import SPUpdateData
 from zsim.sim_progress.data_struct.enemy_special_state_manager.special_classes import (
     SweetScare,
 )
-from zsim.sim_progress.data_struct import SPUpdateData
 
 
 def _sp_update_data(char_name: str, regen: float) -> SPUpdateData:

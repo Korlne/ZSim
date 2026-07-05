@@ -9,9 +9,7 @@ from zsim.sim_progress.Buff.BuffXLogic._preparation_helpers import (
 
 def _logic_probe() -> SimpleNamespace:
     return SimpleNamespace(
-        buff_instance=SimpleNamespace(
-            sim_instance=SimpleNamespace(buff_runtime_state=object())
-        ),
+        buff_instance=SimpleNamespace(sim_instance=SimpleNamespace(buff_runtime_state=object())),
         buff_0=SimpleNamespace(history=SimpleNamespace(record=object())),
     )
 

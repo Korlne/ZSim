@@ -15,7 +15,6 @@ from zsim.sim_progress.calculation.inputs.regular import (
 from zsim.sim_progress.calculation.results.common import MultiplierVector
 from zsim.sim_progress.calculation.results.regular import RegularDamageResult
 
-
 REGULAR_DAMAGE_MULTIPLIER_LABELS = (
     "base_damage",
     "damage_bonus",
@@ -52,11 +51,8 @@ def calculate_non_sheer_base_attribute(
     if base_attribute == 2:
         return defense * (1 + field_defense_percentage) + flat_defense
     if base_attribute == 3:
-        return (
-            anomaly_proficiency * (1 + field_anomaly_proficiency)
-            + flat_anomaly_proficiency
-        )
-    raise AssertionError("Invalid base attribute")
+        return anomaly_proficiency * (1 + field_anomaly_proficiency) + flat_anomaly_proficiency
+    raise AssertionError("无效的基础属性")
 
 
 def calculate_sheer_base_attribute(
@@ -107,7 +103,7 @@ def calculate_base_attribute(input_snapshot: RegularBaseAttributeInput) -> float
             field_sheer_attack_percentage=input_snapshot.field_sheer_attack_percentage,
             flat_sheer_attack=input_snapshot.flat_sheer_attack,
         )
-    raise AssertionError("Invalid base attribute")
+    raise AssertionError("无效的基础属性")
 
 
 def calculate_base_damage(
@@ -136,29 +132,20 @@ def calculate_regular_base_damage(input_snapshot: RegularBaseAttributeInput) -> 
 
 
 def calculate_regular_damage_bonus(input_snapshot: RegularDamageBonusInput) -> float:
-    element_damage_bonus = (
-        input_snapshot.static_damage_bonuses.get(
-            input_snapshot.identity.multiplier_affinity
-        )
-        + input_snapshot.dynamic_damage_bonuses.get(
-            input_snapshot.identity.multiplier_affinity
-        )
-    )
+    element_damage_bonus = input_snapshot.static_damage_bonuses.get(
+        input_snapshot.identity.multiplier_affinity
+    ) + input_snapshot.dynamic_damage_bonuses.get(input_snapshot.identity.multiplier_affinity)
     if input_snapshot.trigger_buff_level == 10:
         trigger_damage_bonus = 0.0
-    elif 0 <= input_snapshot.trigger_buff_level < len(
-        input_snapshot.trigger_damage_bonuses
-    ):
+    elif 0 <= input_snapshot.trigger_buff_level < len(input_snapshot.trigger_damage_bonuses):
         trigger_damage_bonus = input_snapshot.trigger_damage_bonuses[
             input_snapshot.trigger_buff_level
         ]
     else:
-        raise AssertionError("Invalid trigger_level")
+        raise AssertionError("无效的 trigger_level")
 
     label_damage_bonus = (
-        input_snapshot.aftershock_attack_damage_bonus
-        if input_snapshot.aftershock_attack
-        else 0.0
+        input_snapshot.aftershock_attack_damage_bonus if input_snapshot.aftershock_attack else 0.0
     )
     return (
         1
@@ -264,9 +251,7 @@ def calculate_regular_damage_product(
     *,
     mode: Literal["expect", "crit", "not_crit"] = "expect",
 ) -> np.float64:
-    return np.float64(
-        np.prod(assemble_regular_damage_multiplier_array(multipliers, mode=mode))
-    )
+    return np.float64(np.prod(assemble_regular_damage_multiplier_array(multipliers, mode=mode)))
 
 
 def calculate_regular_damage(

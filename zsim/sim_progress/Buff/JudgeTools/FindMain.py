@@ -39,6 +39,14 @@ def find_schedule_data(sim_instance: "Simulator" = None):
     return schedule_data
 
 
+def _legacy_exist_buff_dict_for_compat(sim_instance: "Simulator" = None):
+    return sim_instance.load_data.exist_buff_dict
+
+
+def find_exist_buff_dict(sim_instance: "Simulator" = None):
+    return _legacy_exist_buff_dict_for_compat(sim_instance)
+
+
 def find_preload_data(sim_instance: "Simulator" = None):
     preload_data = sim_instance.preload.preload_data
     return preload_data

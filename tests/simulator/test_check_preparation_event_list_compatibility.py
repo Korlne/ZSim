@@ -14,16 +14,15 @@ from types import SimpleNamespace
 import pytest
 
 import zsim.sim_progress.Buff.JudgeTools as judge_tools
-from zsim.sim_progress.Buff.BuffXLogic.WoodpeckerElectroSet4_NA import (
-    WoodpeckerElectroSet4_NA,
-)
+from zsim.sim_progress.Buff.BuffXLogic._buff_record_base_class import BuffRecordBaseClass
 from zsim.sim_progress.Buff.BuffXLogic.AliceAdditionalAbilityApBonus import (
     AliceAdditionalAbilityApBonus,
     AliceAdditionalAbilityApBonusRecord,
 )
-from zsim.sim_progress.Buff.BuffXLogic._buff_record_base_class import BuffRecordBaseClass
+from zsim.sim_progress.Buff.BuffXLogic.WoodpeckerElectroSet4_NA import (
+    WoodpeckerElectroSet4_NA,
+)
 from zsim.sim_progress.ScheduledEvent.buff_runtime import BuffRuntimeState
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BUFF_XLOGIC_ROOT = PROJECT_ROOT / "zsim" / "sim_progress" / "Buff" / "BuffXLogic"
@@ -207,9 +206,7 @@ def _collect_config_event_list_findings() -> list[ConfigEventListFinding]:
         if suffix == ".csv":
             findings.extend(_collect_csv_event_list_findings(path))
         elif suffix == ".json":
-            findings.extend(
-                _walk_config_value(path, json.loads(path.read_text(encoding="utf-8")))
-            )
+            findings.extend(_walk_config_value(path, json.loads(path.read_text(encoding="utf-8"))))
         elif suffix == ".toml":
             findings.extend(
                 _walk_config_value(path, tomllib.loads(path.read_text(encoding="utf-8")))

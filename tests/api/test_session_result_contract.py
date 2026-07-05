@@ -27,7 +27,6 @@ from zsim.utils import main_loop_consistency as mlc
 from zsim.utils import process_buff_result as utility_buff
 from zsim.utils import process_dmg_result as utility_dmg
 
-
 DamageNormalizer = Callable[[pl.DataFrame], pl.DataFrame]
 
 
@@ -96,6 +95,32 @@ def test_buff_timeline_public_fields_are_shared_by_processors_and_parity() -> No
     assert {tuple(entry) for entry in utility_entries} == {BUFF_TIMELINE_PUBLIC_FIELDS}
 
 
+def test_buff_timeline_normalizes_legacy_integer_display_by_task_name() -> None:
+    payload = normalize_buff_timeline_payload(
+        {
+            "爱丽丝": [
+                {
+                    "Task": "Buff-角色-柚叶-组队被动-积蓄值增幅",
+                    "Start": 1,
+                    "Finish": 2,
+                    "Value": 63.919998,
+                }
+            ],
+            "柚叶": [
+                {
+                    "Task": "Buff-角色-柚叶-组队被动-积蓄值增幅",
+                    "Start": 1,
+                    "Finish": 2,
+                    "Value": 63.919998,
+                }
+            ],
+        }
+    )
+
+    assert payload["爱丽丝"][0]["Value"] == 63.0
+    assert payload["柚叶"][0]["Value"] == 63.0
+
+
 def test_normal_mode_result_serializes_data_analysis_contract_shape() -> None:
     damage_uuid_row = {field: None for field in DAMAGE_UUID_AGGREGATE_FIELDS}
     damage_uuid_row.update(
@@ -146,9 +171,7 @@ def test_normal_mode_result_accepts_current_and_internal_buff_timeline_payloads(
             buff_result=BuffResult(
                 root={
                     "alias_payload": [{"Task": "buff_alpha", "Start": 1, "Finish": 2, "Value": 1}],
-                    "field_payload": [
-                        {"task": "buff_beta", "start": 3, "finish": 4, "value": 2.5}
-                    ],
+                    "field_payload": [{"task": "buff_beta", "start": 3, "finish": 4, "value": 2.5}],
                 }
             ),
         ),
@@ -245,9 +268,7 @@ def test_matrix_summary_contract_is_serializable_for_data_analysis_consumers() -
         "missing_input_policy": "block",
         "diff_domain_status": diff_domain_status,
         "mismatch_samples": {},
-        "data_analysis_contract": mlc._external_golden_data_analysis_contract(
-            diff_domain_status
-        ),
+        "data_analysis_contract": mlc._external_golden_data_analysis_contract(diff_domain_status),
     }
 
     summary = mlc.build_external_golden_matrix_summary(
@@ -262,16 +283,10 @@ def test_matrix_summary_contract_is_serializable_for_data_analysis_consumers() -
     )
     row_contract = dumped["rows"][0]["data_analysis_contract"]
     assert row_contract["damage"]["result_sections"] == list(DAMAGE_RESULT_SECTIONS)
-    assert row_contract["damage"]["uuid_aggregate_fields"] == list(
-        DAMAGE_UUID_AGGREGATE_FIELDS
-    )
+    assert row_contract["damage"]["uuid_aggregate_fields"] == list(DAMAGE_UUID_AGGREGATE_FIELDS)
     assert row_contract["damage"]["domain_status"] == diff_domain_status["damage"]
-    assert row_contract["buff_timeline"]["public_fields"] == list(
-        BUFF_TIMELINE_PUBLIC_FIELDS
-    )
-    assert row_contract["buff_timeline"]["domain_status"] == diff_domain_status[
-        "buff_timeline"
-    ]
+    assert row_contract["buff_timeline"]["public_fields"] == list(BUFF_TIMELINE_PUBLIC_FIELDS)
+    assert row_contract["buff_timeline"]["domain_status"] == diff_domain_status["buff_timeline"]
     assert row_contract["parallel_mode"] == {
         "status": "unchanged",
         "model": "ParallelModeResult",

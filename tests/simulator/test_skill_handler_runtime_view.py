@@ -79,11 +79,14 @@ def test_skill_handler_reads_runtime_view_and_routes_writes_through_runtime_comm
         buff_runtime_view=runtime_view,
         runtime_command_port=cast(Any, runtime_command_port),
         action_stack=SimpleNamespace(),
-        sim_instance=cast(Any, SimpleNamespace(
-            tick=10,
-            char_data=SimpleNamespace(char_obj_list=[character]),
-            listener_manager=SimpleNamespace(broadcast_event=lambda **kwargs: None),
-        )),
+        sim_instance=cast(
+            Any,
+            SimpleNamespace(
+                tick=10,
+                char_data=SimpleNamespace(char_obj_list=[character]),
+                listener_manager=SimpleNamespace(broadcast_event=lambda **kwargs: None),
+            ),
+        ),
     )
     call_order: list[str] = []
     captured: dict[str, object] = {}

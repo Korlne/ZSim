@@ -2,12 +2,11 @@ from copy import deepcopy
 from typing import Any
 
 from zsim.define import ALICE_REPORT
-
-from zsim.sim_progress.Preload import SkillNode
 from zsim.sim_progress.data_struct.schedule_dispatch import (
     ScheduledEventEmitter,
     ScheduledEventEmitterProvider,
 )
+from zsim.sim_progress.Preload import SkillNode
 
 from .. import Buff, check_preparation
 from ..JudgeTools import build_preparation_context_from_buff

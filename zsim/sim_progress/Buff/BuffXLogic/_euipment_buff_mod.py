@@ -34,9 +34,7 @@ class BuffXLogicName(Buff.BuffLogic):
         if self.buff_0 is None:
             assert self.equipper is not None, "装备模板必须先解析装备者"
             if preparation_context is None:
-                preparation_context = build_preparation_context_from_buff(
-                    self.buff_instance
-                )
+                preparation_context = build_preparation_context_from_buff(self.buff_instance)
             self.buff_0 = preparation_context.find_sub_exist_buff_dict(self.equipper)[
                 self.buff_instance.ft.index
             ]

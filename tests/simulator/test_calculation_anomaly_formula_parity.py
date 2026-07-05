@@ -6,12 +6,11 @@ from typing import Any
 import numpy as np
 import pytest
 
-import zsim.sim_progress.ScheduledEvent.CalAnomaly as cal_anomaly_module
-from zsim.sim_progress.Buff import Buff
-from zsim.sim_progress.ScheduledEvent.Calculator import MultiplierData
+import zsim.sim_progress.calculation.anomaly_calculator as cal_anomaly_module
 from zsim.sim_progress.anomaly_bar import AnomalyBar
+from zsim.sim_progress.Buff import Buff
+from zsim.sim_progress.calculation.calculator import MultiplierData
 from zsim.sim_progress.data_struct.data_analyzer import cal_buff_total_bonus
-
 
 _FINAL_MULTIPLIER_ORDER = (
     "base_dmg",
@@ -202,10 +201,7 @@ def test_cal_anomaly_public_entry_point_assembles_current_physical_damage_vector
         label: calculator.final_multipliers[index]
         for index, label in enumerate(_FINAL_MULTIPLIER_ORDER)
     } == pytest.approx(
-        {
-            label: expected_multipliers[index]
-            for index, label in enumerate(_FINAL_MULTIPLIER_ORDER)
-        }
+        {label: expected_multipliers[index] for index, label in enumerate(_FINAL_MULTIPLIER_ORDER)}
     )
 
     expected_damage = (
@@ -242,7 +238,5 @@ def test_cal_anomaly_level_lookup_clamps_to_current_retained_table(
     log_messages: list[str] = []
     monkeypatch.setattr(cal_anomaly_module, "report_to_log", log_messages.append)
 
-    assert cal_anomaly_module.CalAnomaly.cal_k_level(input_level) == pytest.approx(
-        expected
-    )
+    assert cal_anomaly_module.CalAnomaly.cal_k_level(input_level) == pytest.approx(expected)
     assert tuple(log_messages) == expected_messages

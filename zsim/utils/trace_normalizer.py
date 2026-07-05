@@ -5,17 +5,16 @@ import re
 from collections import Counter
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Sequence
 
-
-_PRELOAD_RE = re.compile(r"\[PRELOAD\]:In tick:\s*(?P<tick>\d+),\s*(?P<label>.+?) has been preloaded")
+_PRELOAD_RE = re.compile(
+    r"\[PRELOAD\]:In tick:\s*(?P<tick>\d+),\s*(?P<label>.+?) has been preloaded"
+)
 _SKILL_LOAD_RE = re.compile(r"\[Skill LOAD\]:(?P<tick>\d+):(?P<label>.+?)开始并拆分子任务")
 _SKILL_END_RE = re.compile(r"\[Skill LOAD\]:(?P<tick>\d+):(?P<label>.+?)已经结束")
 _BUFF_END_RE = re.compile(r"\[Buff END\]:(?P<tick>\d+):(?P<label>.+?)结束")
 _DOT_END_RE = re.compile(r"\[Dot END\]:(?P<tick>\d+):(?P<label>.+?)结束")
-_ANOMALY_RE = re.compile(
-    r"\[(?:Anomaly|ANOMALY|Disorder|DISORDER)\]:(?P<tick>\d+):(?P<label>.+)"
-)
+_ANOMALY_RE = re.compile(r"\[(?:Anomaly|ANOMALY|Disorder|DISORDER)\]:(?P<tick>\d+):(?P<label>.+)")
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,9 +45,7 @@ class TraceDiff:
             "mismatch_count": self.mismatch_count,
             "baseline_only_count": len(self.baseline_only),
             "candidate_only_count": len(self.candidate_only),
-            "baseline_only_sample": [
-                asdict(event) for event in self.baseline_only[:sample_limit]
-            ],
+            "baseline_only_sample": [asdict(event) for event in self.baseline_only[:sample_limit]],
             "candidate_only_sample": [
                 asdict(event) for event in self.candidate_only[:sample_limit]
             ],
@@ -68,7 +65,9 @@ def normalize_trace_text(text: str, *, preserve_order: bool = False) -> list[Tra
 
 def normalize_trace_file(path: str | Path, *, preserve_order: bool = False) -> list[TraceEvent]:
     trace_path = Path(path)
-    return normalize_trace_text(trace_path.read_text(encoding="utf-8"), preserve_order=preserve_order)
+    return normalize_trace_text(
+        trace_path.read_text(encoding="utf-8"), preserve_order=preserve_order
+    )
 
 
 def diff_traces(
@@ -179,7 +178,9 @@ def _classify_action_domain(label: str) -> str | None:
     return None
 
 
-def _expand_diff_counter(counter: Counter[tuple[int, str, str, str, str | None]]) -> list[TraceEvent]:
+def _expand_diff_counter(
+    counter: Counter[tuple[int, str, str, str, str | None]],
+) -> list[TraceEvent]:
     events: list[TraceEvent] = []
     for (tick, domain, kind, label, action_domain), count in sorted(counter.items()):
         events.extend(

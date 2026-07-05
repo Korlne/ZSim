@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-
 RINA_SHOCK_DURATION_EXTENSION_BUFF_INDEX = "Buff-角色-丽娜-组队被动-延长感电"
 
 

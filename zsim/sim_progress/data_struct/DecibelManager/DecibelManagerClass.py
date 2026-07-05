@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from zsim.sim_progress.Enemy import Enemy
     from zsim.sim_progress.Load.loading_mission import LoadingMission
     from zsim.sim_progress.Preload.SkillsQueue import SkillNode
-    from zsim.simulator.dataclasses import ScheduleData
     from zsim.simulator.simulator_class import Simulator
 
 
@@ -110,7 +109,7 @@ class Decibelmanager:
                 output_key = 0
             else:
                 if node.active_generation:
-                    # EXPLAIN: 这里要筛选重攻击标签——因为像雅这种角色的连携技分3段，如果不筛选主动动作，那么雅就会多次吃到连携技的喧响值奖励
+                    # 说明：这里要筛选重攻击标签——因为像雅这种角色的连携技分3段，如果不筛选主动动作，那么雅就会多次吃到连携技的喧响值奖励
                     #  风险：暂未发现该筛选存在Bug风险。
                     decibel_value = self.DECIBEL_EVENT_MAP[node.skill.trigger_buff_level][0]
                     output_key = node.skill.trigger_buff_level

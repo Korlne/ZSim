@@ -34,8 +34,7 @@
       "contribution-guide": "贡献指南",
       "data-analysis": "数据分析",
       "session-management": "会话管理",
-      "simulator": "模拟器",
-      "buff-graph": "Buff 图编辑"
+      "simulator": "模拟器"
     }
   },
   "simulator": {
@@ -85,33 +84,11 @@
     "export": "导出会话",
     "import": "导入会话"
   },
-  "sessionSmoke": {
-    "status": "烟测",
-    "action": {
-      "create": "创建会话",
-      "running": "运行中"
-    },
-    "phase": {
-      "idle": "空闲",
-      "creating": "创建中",
-      "running": "运行中",
-      "polling": "轮询中",
-      "result-ready": "结果就绪",
-      "analysis-ready": "分析就绪",
-      "failed": "失败"
-    }
-  },
   "settings": {
     "title": "设置",
     "language": "语言",
     "theme": "主题",
     "api": "API设置",
     "about": "关于"
-  },
-  "buffGraph": {
-    "tabs": {
-      "catalog": "积木目录",
-      "matrix": "一致性矩阵"
-    }
   }
 }

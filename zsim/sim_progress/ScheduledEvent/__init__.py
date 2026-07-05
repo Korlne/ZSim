@@ -20,7 +20,7 @@ from zsim.sim_progress.data_struct.planned_queue import (
 from zsim.sim_progress.Load.loading_mission import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
 
-from .buff_runtime import BuffRuntimeState
+from .buff_runtime import BuffRuntimeState, create_buff_runtime_read_port
 from .event_handlers import EventContext, create_default_event_handler_factory
 from .event_handlers.handlers.factory import EventHandlerFactory
 from .runtime_command import create_runtime_command_port
@@ -28,6 +28,7 @@ from .runtime_command import create_runtime_command_port
 if TYPE_CHECKING:
     from zsim.simulator.dataclasses import ScheduleData
     from zsim.simulator.simulator_class import Simulator
+
     from .buff_runtime import BuffRuntimeReadPort
     from .runtime_command import RuntimeCommandPort
 
@@ -51,7 +52,7 @@ class _ScheduledEventRuntimePorts:
 
 
 class ScheduledEventRuntimePortFactory:
-    """Creates ScheduledEvent runtime ports from current per-tick inputs."""
+    """根据当前 tick 的输入创建 ScheduledEvent runtime 读写端口。"""
 
     def create(
         self,
@@ -96,7 +97,7 @@ class ScheduledEvent:
         buff_runtime_state: BuffRuntimeState,
         sim_instance: "Simulator",
     ) -> "ScheduledEvent":
-        """Production constructor boundary backed by the run-scoped Buff runtime."""
+        """基于本轮模拟 Buff runtime 的生产路径构造入口。"""
         return cls(
             schedule_data,
             tick,

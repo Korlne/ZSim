@@ -5,23 +5,23 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
+
 import zsim.define as define_module
 
 sys.modules.setdefault("define", define_module)
 
 import zsim.sim_progress.Buff.BuffXLogic.YixuanCinema1Trigger as yixuan_module
-
 from zsim.sim_progress.Buff import JudgeTools
 from zsim.sim_progress.Buff.BuffXLogic.YixuanCinema1Trigger import (
     YixuanCinema1Trigger,
     YixuanCinema1TriggerRecord,
 )
+from zsim.sim_progress.data_struct.schedule_dispatch import (
+    ScheduledEventEmitterProvider,
+    ScheduleDispatchPort,
+)
 from zsim.sim_progress.Load import LoadingMission
 from zsim.sim_progress.Preload import SkillNode
-from zsim.sim_progress.data_struct.schedule_dispatch import (
-    ScheduleDispatchPort,
-    ScheduledEventEmitterProvider,
-)
 
 
 class _FailFastEventList(list):
@@ -43,9 +43,7 @@ def _block_legacy_event_lookup(monkeypatch: pytest.MonkeyPatch) -> None:
     def fail_find_event_list(*args, **kwargs):
         raise AssertionError("YixuanCinema1Trigger should not read raw event_list")
 
-    monkeypatch.setattr(
-        JudgeTools, "find_event_list", fail_find_event_list, raising=False
-    )
+    monkeypatch.setattr(JudgeTools, "find_event_list", fail_find_event_list, raising=False)
 
 
 def test_yixuan_cinema1_publishes_lightning_after_loading_mission_via_dispatch_port(
@@ -72,9 +70,7 @@ def test_yixuan_cinema1_publishes_lightning_after_loading_mission_via_dispatch_p
     )
     logic = YixuanCinema1Trigger(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
 
     def fake_update_adrenaline(*, sp_value: int | float) -> None:
@@ -157,9 +153,7 @@ def test_yixuan_cinema1_judge_blocks_yixuan_skill_without_publish(
     dispatch_port = _RecordingDispatchPort([])
     logic = YixuanCinema1Trigger(
         buff_instance,
-        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(
-            lambda: dispatch_port
-        ),
+        scheduled_event_emitter_provider=ScheduledEventEmitterProvider(lambda: dispatch_port),
     )
     monkeypatch.setattr(logic, "check_record_module", lambda: None)
     monkeypatch.setattr(logic, "get_prepared", lambda **kwargs: None)

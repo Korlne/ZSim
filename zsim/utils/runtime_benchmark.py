@@ -21,13 +21,12 @@ from zsim.utils.main_loop_consistency import (
     RUNTIME_LABEL_CONTRACT,
     _build_session_id,
     _cleanup_result_artifacts,
-    _prepare_damage_data_for_consistency,
     _prepare_common_cfg,
+    _prepare_damage_data_for_consistency,
     _resolve_baseline_runtime_label,
     _runtime_selection_contract,
 )
 from zsim.utils.process_buff_result import prepare_buff_data_and_cache
-
 
 REPEAT_BENCHMARK_SUMMARY_SCHEMA = "zsim-buff-runtime-repeat-benchmark.v1"
 FUTURE_THRESHOLD_MIN_REPEAT_SAMPLES = 5
@@ -126,8 +125,7 @@ def _hotspot_comparisons(
     hotspot_names = sorted(set(baseline_hotspots) | set(new_buff_hotspots))
     return {
         hotspot_name: round(
-            new_buff_hotspots.get(hotspot_name, 0.0)
-            - baseline_hotspots.get(hotspot_name, 0.0),
+            new_buff_hotspots.get(hotspot_name, 0.0) - baseline_hotspots.get(hotspot_name, 0.0),
             4,
         )
         for hotspot_name in hotspot_names
@@ -202,7 +200,7 @@ def _simulator_runtime_ms(report: dict[str, Any], bucket: str) -> float:
     for hotspot in report.get("hotspots", {}).get(bucket, []):
         if hotspot.get("name") == "simulator_run_ms":
             return float(hotspot["runtime_ms"])
-    raise KeyError(f"missing simulator_run_ms hotspot for {bucket}")
+    raise KeyError(f"{bucket} 缺少 simulator_run_ms 热点数据")
 
 
 def _report_rebuild_count_buckets(report: dict[str, Any]) -> dict[str, dict[str, int]]:
@@ -323,10 +321,9 @@ def _build_threshold_policy() -> dict[str, Any]:
         "blocked_if_required_metrics_missing": True,
         "default_enablement_authorized": False,
         "rule": (
-            "Ten samples, rebuild metrics, scan metrics, candidate-plan metrics, and "
-            "zero candidate-plan mismatches are required before benchmark evidence can "
-            "be eligible for a later enablement PRD. Relative median delta must be at "
-            "or below -5%; otherwise the evidence needs more samples. "
+            "需要 10 组样本、重建指标、扫描指标、候选计划指标，并且候选计划不匹配数为 0，"
+            "benchmark 证据才可用于后续启用 PRD。相对中位数差异必须小于等于 -5%，"
+            "否则需要补充更多样本。"
             + NO_DEFAULT_ENABLEMENT_STATEMENT
         ),
     }
@@ -349,9 +346,7 @@ def _build_threshold_verdict(
     if mismatch_max > 0:
         return {
             "status": "blocked",
-            "reasons": [
-                f"candidate_plan_mismatch_count max {mismatch_max:g} is above zero"
-            ],
+            "reasons": [f"candidate_plan_mismatch_count max {mismatch_max:g} is above zero"],
         }
 
     if not include_rebuild_counts:
@@ -371,8 +366,7 @@ def _build_threshold_verdict(
         return {
             "status": "needs_more_samples",
             "reasons": [
-                f"sample_count {sample_count} is below "
-                f"{BENCHMARK_THRESHOLD_MIN_REPEAT_SAMPLES}"
+                f"sample_count {sample_count} is below {BENCHMARK_THRESHOLD_MIN_REPEAT_SAMPLES}"
             ],
         }
 
@@ -386,9 +380,7 @@ def _build_threshold_verdict(
         }
 
     if median_relative_delta <= BENCHMARK_ELIGIBLE_MEDIAN_RELATIVE_DELTA:
-        reasons.append(
-            "relative median delta is at or below the conservative -5% eligibility line"
-        )
+        reasons.append("relative median delta is at or below the conservative -5% eligibility line")
         return {"status": "eligible_for_enablement_prd", "reasons": reasons}
 
     if median_relative_delta > BENCHMARK_NOISE_RELATIVE_DELTA:
@@ -408,7 +400,7 @@ def build_repeat_runtime_benchmark_summary(
     include_rebuild_counts: bool = False,
 ) -> dict[str, Any]:
     if not reports:
-        raise ValueError("repeat benchmark summary requires at least one report")
+        raise ValueError("重复 benchmark 摘要至少需要一份报告")
 
     first_report = reports[0]
     baseline_simulator_runtime_ms = [
@@ -736,7 +728,7 @@ def run_repeated_runtime_benchmark(
     new_buff_use_indexed_buff_load_loop: bool = False,
 ) -> dict[str, Any]:
     if repeat_samples < 1:
-        raise ValueError("repeat_samples must be at least 1")
+        raise ValueError("repeat_samples 必须至少为 1")
     reports = [
         run_runtime_benchmark(
             team=team,
@@ -772,44 +764,44 @@ def write_repeat_runtime_benchmark_summary(
 def _positive_int(value: str) -> int:
     parsed = int(value)
     if parsed < 1:
-        raise argparse.ArgumentTypeError("value must be at least 1")
+        raise argparse.ArgumentTypeError("数值必须至少为 1")
     return parsed
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Run a Buff runtime benchmark comparison")
-    parser.add_argument("--team", required=True, help="Registered team name to simulate")
+    parser = argparse.ArgumentParser(description="运行 Buff 运行时 benchmark 对比")
+    parser.add_argument("--team", required=True, help="要模拟的已注册队伍名称")
     parser.add_argument(
         "--apl",
         default=None,
-        help="Optional APL path override. Defaults to the selected team's config.",
+        help="可选：覆盖 APL 路径。默认使用所选队伍配置。",
     )
     parser.add_argument(
         "--stop-tick",
         type=int,
         default=config.stop_tick,
-        help="Stop tick for each benchmarked runtime run.",
+        help="每次 benchmark 运行的停止 tick。",
     )
     parser.add_argument(
         "--baseline-runtime",
         dest="baseline_runtime",
         default="default-current",
-        help="First/default current run label to record in the report; this does not select a runtime.",
+        help="报告中记录的第一组/默认当前运行标签；该参数不选择实际运行时。",
     )
     parser.add_argument(
         "--new-buff-runtime",
         default="new-buff-current",
-        help="Second run label to record in the report; this does not select a runtime.",
+        help="报告中记录的第二组运行标签；该参数不选择实际运行时。",
     )
     parser.add_argument(
         "--keep-artifacts",
         action="store_true",
-        help="Keep raw results/<session_id> artifacts after the report is generated.",
+        help="报告生成后保留原始 results/<session_id> 产物。",
     )
     parser.add_argument(
         "--json",
         action="store_true",
-        help="Print the full JSON report to stdout.",
+        help="将完整 JSON 报告打印到标准输出。",
     )
     parser.add_argument(
         "--repeat-samples",
@@ -817,24 +809,24 @@ def build_parser() -> argparse.ArgumentParser:
         dest="repeat_samples",
         type=_positive_int,
         default=1,
-        help="Run this many label-only benchmark samples before summarizing.",
+        help="汇总前运行指定次数的仅标签 benchmark 样本。",
     )
     parser.add_argument(
         "--summary-json",
         default=None,
-        help="Write a repeat benchmark JSON summary artifact to this path.",
+        help="将重复 benchmark 的 JSON 摘要产物写入该路径。",
     )
     parser.add_argument(
         "--include-rebuild-counts",
         action="store_true",
-        help="Include Buff runtime rebuild count and BuffLoadLoop scan metric buckets in the report.",
+        help="在报告中包含 Buff runtime 重建次数与 BuffLoadLoop 扫描指标分桶。",
     )
     parser.add_argument(
         "--new-buff-use-indexed-buff-load-loop",
         action="store_true",
         help=(
-            "Explicitly request indexed BuffLoadLoop for the new Buff run only; "
-            "omitting this keeps both runs on the default current path."
+            "仅为 new Buff 运行显式启用带索引的 BuffLoadLoop；"
+            "省略时两组运行都使用默认当前路径。"
         ),
     )
     return parser
@@ -924,10 +916,7 @@ def _format_repeat_summary(summary: dict[str, Any]) -> str:
         f"speedup_target_defined={policy['speedup_target_defined']}; "
         f"minimum_repeat_samples={policy['minimum_repeat_samples']}; " + policy["noise_reporting"]
     )
-    lines.append(
-        "threshold_verdict: "
-        + threshold_verdict.get("status", "needs_more_samples")
-    )
+    lines.append("threshold_verdict: " + threshold_verdict.get("status", "needs_more_samples"))
     return "\n".join(lines)
 
 

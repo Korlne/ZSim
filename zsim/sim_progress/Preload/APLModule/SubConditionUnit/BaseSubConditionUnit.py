@@ -33,6 +33,7 @@ class BaseSubConditionUnit(ABC):
             sub_condition_dict["value"]
         )  # 参与计算的值 或者调用的函数名
         self._checked_target_cid: int | None = None
+        self.decision_cache_identity = id(self)
 
     @abstractmethod
     def check_myself(

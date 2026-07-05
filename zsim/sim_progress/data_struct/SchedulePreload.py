@@ -70,8 +70,9 @@ def schedule_preload_event_factory(
         raise ValueError("apl_priority_list和skill_tag_list的长度不一致")
     if active_generation_list is not None and len(active_generation_list) != event_count:
         raise ValueError("active_generation_list和skill_tag_list的长度不一致")
-    emitter_provider = scheduled_event_emitter_provider or ScheduledEventEmitterProvider.from_sim_instance(
-        sim_instance
+    emitter_provider = (
+        scheduled_event_emitter_provider
+        or ScheduledEventEmitterProvider.from_sim_instance(sim_instance)
     )
     emitter = emitter_provider.create_emitter()
     for i in range(event_count):

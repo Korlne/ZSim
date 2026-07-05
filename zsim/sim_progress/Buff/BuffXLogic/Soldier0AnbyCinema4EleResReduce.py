@@ -6,7 +6,6 @@ from ..JudgeTools import (
 )
 from ._preparation_helpers import ensure_owner_template_record, prepare_with_context
 
-
 _SOLDIER0_ANBY_SILVER_STAR_TRIGGER_REF = TriggerBuffRef.owner(
     "零号·安比",
     "Buff-角色-零号·安比-银星触发器",

@@ -152,12 +152,8 @@ def test_facade_wakes_one_tick_after_pending_activation_for_reporting(
 
     facade.activate_pending_buffs(timenow=10)
 
-    assert facade.next_time_related_wakeup_tick(
-        current_tick=10, enemy=SimpleNamespace()
-    ) == 11
-    assert facade.next_time_related_wakeup_tick(
-        current_tick=11, enemy=SimpleNamespace()
-    ) == 101
+    assert facade.next_time_related_wakeup_tick(current_tick=10, enemy=SimpleNamespace()) == 11
+    assert facade.next_time_related_wakeup_tick(current_tick=11, enemy=SimpleNamespace()) == 101
 
 
 def test_facade_sweep_active_buffs_uses_template_owner_for_expiry(
