@@ -14,6 +14,8 @@ pytest.ini
 result*
 /results/
 !zsim/sim_progress/Report/result_handler.py
+!zsim/sim_progress/calculation/results/
+!zsim/sim_progress/calculation/results/*.py
 
 # 开发工具和环境文件
 .idea
